@@ -1,0 +1,45 @@
+{
+    "name": "zendframework/skeleton-application",
+    "description": "Skeleton Application for ZF2",
+    "license": "BSD-3-Clause",
+    "keywords": [
+        "framework",
+        "zf2"
+    ],
+    "homepage": "http://framework.zend.com/",
+    "require": {
+        "php": ">=5.5",
+        "zendframework/zendframework": "~2.5",
+        "jroedel/zf2-juser": "@dev",
+        "jroedel/zf2-jtranslate": "@dev",
+        "jroedel/locale": "dev-master@dev",
+        "nesbot/carbon": "^1.21",
+        "giggsey/libphonenumber-for-php": "^7.7",
+        "neitanod/forceutf8": "^2.0",
+        "tedivm/jshrink": "^1.1",
+        "voku/html2text": "^3.4",
+        "tijsverkoyen/css-to-inline-styles": "^2.2",
+        "neilime/zf2-twb-bundle": "^3.0",
+        "neilime/zf2-assets-bundle": "^3.7"
+    },
+    "require-dev": {
+        "bjyoungblood/bjy-profiler": "^1.1",
+        "zendframework/zend-developer-tools": "^1.1",
+        "phpunit/phpunit": "^5.7",
+        "zendframework/zend-test": "^2.5"
+    },
+	"repositories": [
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/zf2-jtranslate"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/zf2-juser"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/SlmLocale"
+	   }
+	]
+}
