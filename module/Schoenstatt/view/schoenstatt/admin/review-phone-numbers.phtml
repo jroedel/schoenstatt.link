@@ -1,0 +1,34 @@
+<?php 
+use JTranslate\View\Helper\CountryName;
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset('js/bootstrap-sortable.js'));
+$this->headLink()->appendStylesheet($this->basePath() . '/'. $this->asset('css/bootstrap-sortable.css'));
+$pageTitle = 'Person phone numbers';
+$this->headTitle($pageTitle);?>
+<h1><?php echo $this->translate($pageTitle);?></h1>
+<table class="table sortable">
+<thead>
+<tr>
+	<th><?php echo $this->translate('Person');?></th>
+	<th><?php echo $this->translate('Label');?></th>
+	<th><?php echo $this->translate('Phone number');?></th>
+	<th><?php echo $this->translate('Home territory');?></th>
+	<th><?php echo $this->translate('Home country');?></th>
+</tr>
+</thead>
+<tbody>
+<?php foreach ($this->phones as $phone) : ?>
+<tr>
+	<td><?php echo $this->formatPerson($phone['person']);?></td>
+	<td><?php echo $this->translate($phone['label']);?></td>
+	<td><span><?php echo $this->telephone($phone['number'], 
+	    isset($phone['whatsApp']) ? $phone['whatsApp'] : false,
+			$this->isAllowed('route/fathers/father/edit-contact-info'));?></span></td>
+	<td><?php if (!is_null($phone['person']['homeTerritoryId'])):
+    echo $this->formatScope('territory', $phone['person']['homeTerritoryName'], $phone['person']['homeTerritoryId'],
+        null, false, $phone['person']['homeTerritoryActive']);
+endif;?></td>
+	<td><?php echo $this->countryName($phone['person']['country'], true, CountryName::COUNTRY_NAME_COMMON);?></td>
+</tr>
+<?php endforeach; ?>
+</tbody>
+</table>

@@ -1,0 +1,191 @@
+<?php
+$form = $this->form;
+$jsScript = '';
+if ($this->entity == 'contactInfo' || $this->entity == 'person') :
+    if ($this->entity == 'person') : ?>
+        <hr>
+        <h2><?php echo $this->translate('Contact Info');?></h2>
+    <?php endif;
+    echo $this->formRow($form->get('email'));
+    echo $this->formRow($form->get('email2'));?>
+    <div class="form-group ">
+        <?php echo $this->formLabel($form->get('cellPhone'));
+        echo $this->formElement($form->get('cellPhone'));
+        echo $this->formElementErrors($form->get('cellPhone'));
+        echo $this->formElement($form->get('cellPhoneHasWhatsApp'));
+        echo $this->formElementErrors($form->get('cellPhoneHasWhatsApp'));?>
+    </div>
+    <?php echo $this->formRow($form->get('phone1'));
+    echo $this->formRow($form->get('phone1Label'));
+    echo $this->formRow($form->get('phone2'));
+    echo $this->formRow($form->get('phone2Label'));
+    echo $this->formRow($form->get('phone3'));
+    echo $this->formRow($form->get('phone3Label'));
+    echo $this->formRow($form->get('skypeUser')); //@todo validate before submission
+    echo $this->formRow($form->get('twitterUser')); //@todo validate before submission
+    echo $this->formRow($form->get('instagramUser')); //@todo validate before submission
+    echo $this->formRow($form->get('slackUser')); //@todo validate before submission
+    echo $this->formRow($form->get('facebookUrl'));
+    echo $this->formRow($form->get('url1'));
+    echo $this->formRow($form->get('url1Label'));
+    echo $this->formRow($form->get('url2'));
+    echo $this->formRow($form->get('url2Label'));
+    echo $this->formRow($form->get('url3'));
+    echo $this->formRow($form->get('url3Label'));
+    echo $this->formRow($form->get('contactNotes'));
+    $jsScript .= <<<JS
+$("select[name='phone1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+
+JS;
+endif;
+if ($this->entity == 'personalInfo' || $this->entity == 'person') :
+    if ($this->entity == 'person') : ?>
+    <hr>
+    <h2><?php echo $this->translate('Personal Info');?></h2>
+    <?php endif;
+    echo $this->formRow($form->get('firstName'));
+    echo $this->formRow($form->get('lastName'));
+    $showTitle = $form->get('automaticTitle')->getValue() == 0;
+    $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>
+    <div class="form-group">
+    	<?php echo $this->formRow($form->get('automaticTitle'));?>
+    </div>
+ 	<div class="collapse <?php if ($showTitle) echo 'in';?>" id="titleGroup" aria-expanded="<?php
+        echo $showTitle ? 'true' : 'false';?>">
+        <?php
+        echo $this->formRow($form->get('manualTitle'));?>
+	</div>
+	<?php
+    $this->formSelect()->setTranslatorEnabled(false);
+    echo $this->formRow($form->get('country'));
+    $this->formSelect()->setTranslatorEnabled(true);
+    echo $this->formRow($form->get('birthDate'));?>
+<div class="form-group "><div class="row">
+<?php $monthElement = $form->get('nameDay')->getMonthElement();
+$dayElement = $form->get('nameDay')->getDayElement();
+$monthElement->setValueOptions([
+    ''   => '',
+    '01' => 'January',
+    '02' => 'February',
+    '03' => 'March',
+    '04' => 'April',
+    '05' => 'May',
+    '06' => 'June',
+    '07' => 'July',
+    '08' => 'August',
+    '09' => 'September',
+    '10' => 'October',
+    '11' => 'November',
+    '12' => 'December',
+]);
+$dayElement->setValueOptions([
+    ''   => '',
+    '01' => '1',
+    '02' => '2',
+    '03' => '3',
+    '04' => '4',
+    '05' => '5',
+    '06' => '6',
+    '07' => '7',
+    '08' => '8',
+    '09' => '9',
+    '10' => '10',
+    '11' => '11',
+    '12' => '12',
+    '13' => '13',
+    '14' => '14',
+    '15' => '15',
+    '16' => '16',
+    '17' => '17',
+    '18' => '18',
+    '19' => '19',
+    '20' => '20',
+    '21' => '21',
+    '22' => '22',
+    '23' => '23',
+    '24' => '24',
+    '25' => '25',
+    '26' => '26',
+    '27' => '27',
+    '28' => '28',
+    '29' => '29',
+    '30' => '30',
+    '31' => '31',
+]);?>
+<label class="col-sm-12"><?php echo 'Name day';?></label>
+<div class="col-sm-4">
+<?php
+ echo $this->formSelect($form->get('nameDay')->getMonthElement());?>
+<div class="help"><?php echo $this->translate('Month');?></div>
+</div>
+<div class="col-sm-4">
+<?php
+ $this->formSelect()->setTranslatorEnabled(false);
+ echo $this->formSelect($form->get('nameDay')->getDayElement());?>
+<div class="help"><?php echo $this->translate('Day');?></div></div>
+<input type="hidden" name="nameDay[year]" value="1900">
+</div> <!-- form-group row -->
+<div class="row"><?php echo $this->formElementErrors($form->get('nameDay'));?></div>
+</div> <!-- form-group -->
+    <?php echo $this->formRow($form->get('deaconDate'));
+    echo $this->formRow($form->get('priestDate'));
+    echo $this->formRow($form->get('bishopDate'));
+    echo $this->formRow($form->get('deathDate'));
+    echo $this->formRow($form->get('leaveDate'));
+    echo $this->formRow($form->get('publicNotes'));
+endif;
+if ($this->entity == 'privateInfo' || $this->entity == 'person') :
+    if ($this->entity == 'person') : ?>
+    <hr>
+    <h2><?php echo $this->translate('Private Info');?></h2>
+    <?php endif;
+ $this->formSelect()->setTranslatorEnabled(false);
+    echo $this->formRow($form->get('nationalities'));
+    echo $this->formRow($form->get('birthCity'));
+ $this->formSelect()->setTranslatorEnabled(false);
+    echo $this->formRow($form->get('adminNotes'));
+    echo $this->formRow($form->get('adminTags'));
+    $jsScript .= <<<JS
+$("select[name='nationalities[]']").selectize({
+    create: false,
+    maxItems: 3,
+    sortField: 'text'
+});
+$("select[name='adminTags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+
+JS;
+endif;
+
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();

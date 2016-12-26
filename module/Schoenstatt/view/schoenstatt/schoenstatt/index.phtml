@@ -1,3 +1,10 @@
-<strong>Module:</strong>        Schoenstatt &raquo;
-<strong>Controller:</strong>    Skeleton &raquo;
-<strong>Action:</strong>        index
+<?php echo $this->partial('search-bar', array('form' => $form, 'centerOnPage' => false));?>
+
+<div class="row">
+	<div class="col-md-6">
+    	<?php $message = "Welcome message with %s email address.";
+    $emailAddress = "<a href=\"mailto:webmaster@schoenstatt.link?Subject=Patres database update\" target=\"_top\">webmaster@schoenstatt.link</a>";?>
+        <p><?php echo sprintf($this->escapeHtml($this->translate($message)), $emailAddress);?>
+        </p>
+	</div>
+</div>

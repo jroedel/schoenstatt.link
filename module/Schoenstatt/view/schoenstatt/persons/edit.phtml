@@ -1,0 +1,73 @@
+<?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/jquery-ui.min.css');
+$this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/person-edit.js"));
+
+$isModeration = false;
+switch ($this->action) {
+    case 'persons/person/edit-contact-info':
+        $headText = 'Edit Contact Info';
+        $titleText = 'Edit %s';
+        break;
+    case 'persons/person/edit-private-info':
+        $headText = 'Edit Private Info';
+        $titleText = 'Edit %s';
+        break;
+    case 'persons/person/edit-personal-info':
+        $headText = 'Edit Personal Info';
+        $titleText = 'Edit %s';
+        break;
+    case 'persons/person/edit':
+        $headText = 'Edit Person Info';
+        $titleText = 'Edit %s';
+        break;
+    case 'persons/person/moderate':
+        $headText = 'Moderate Contact Info Suggestion';
+        $titleText = 'Moderate Contact Info Suggestion';
+        $isModeration = true;
+        break;
+}
+if (isset($titleText)) {
+    $this->headTitle()->setTranslatorEnabled(false);
+    $this->headTitle(sprintf($this->translate($titleText), $this->personName));
+}?>
+<h1><?php echo $this->translate($headText);?></h1>
+<p class="lead"><?php echo $this->escapeHtml($this->personName);?></p>
+
+<?php if ($isModeration) {
+    echo $this->partial('patres/patres/moderate-form-text', ['suggestion' => $this->person]);
+} else {
+    echo $this->partial('show-active-living-situation', ['person' => $this->person]);
+    if ($this->entity != 'person') {
+        echo '<hr>';
+    }
+}
+
+$form = $this->form;
+$form->setAttribute('action', $this->url($this->action,
+    [
+        'person_id' => $this->personId,
+        //only used if we're reviewing a suggestion:
+        'suggestion_id' => isset($this->person['suggestionId']) ? $this->person['suggestionId'] : null,
+    ]));
+ $form->prepare();
+ echo $this->form()->openTag($form);
+ echo $this->formRow($form->get('personId')); //print this here because the partial is reused for the create form
+ echo $this->partial('fields-partial', array(
+     'form' => $form,
+     'entity' => $this->entity,
+ ));
+ if ($isModeration) {
+     echo $this->formRow($form->get('suggestionResponse'));
+     echo $this->formHidden($form->get('suggestionId'));
+ }
+ echo $this->formRow($form->get('security'));
+ echo $this->formSubmit($form->get('submit'));
+ if ($isModeration) :
+     echo '&nbsp;'.$this->formSubmit($form->get('deny'));
+ else : ?>
+     <a href="<?php echo $this->url('living-situations/create', ['person_id' => $this->personId]);?>" class="btn btn-default"><?php
+     echo $this->translate('New living situation')?></a>
+<?php endif;
+ echo $this->form()->closeTag();
+?>

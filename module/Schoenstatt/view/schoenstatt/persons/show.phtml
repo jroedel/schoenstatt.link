@@ -1,0 +1,383 @@
+<?php
+use JTranslate\View\Helper\CountryName;
+use Carbon\Carbon;
+use Patres\Model\PatresTable;
+
+$person = $this->person;
+$pageTitle = '';
+$pageHeader = '';
+if (!$person['isLiving']) {
+    $pageTitle .= '✝';
+    $pageHeader .= '✝';
+}
+if ($person['title']) {
+    $title =  $this->escapeHtml($this->translate($person['title']));
+    $pageTitle .= $title . ' ';
+    $pageHeader .= $title . ' ';
+}
+$pageTitle .= $this->escapeHtml($person['fullFriendlyName']);
+$pageHeader .= $this->escapeHtml($person['fullName']);
+$this->headTitle()->setTranslatorEnabled(false);
+$this->headTitle($pageTitle);
+?>
+<h1<?php if (!$person['isLiving']) { echo ' class="text-center"';}?>><?php echo $pageHeader;?></h1>
+<div class="row">
+<div class="col-md-3<?php if (!$person['isLiving']) { echo ' col-md-offset-5';}?>">
+<?php if (file_exists(sprintf('public/persons/photos/%s.jpg', $person['personId']))) : ?>
+	<img src="<?php echo $this->basePath() . sprintf("/persons/photos/%s.jpg", $person['personId']); ?>"
+	height="200px" alt="<?php echo $this->escapeHtmlAttr($person['firstName'].' '.$person['lastName']);?>">
+<?php endif;?>
+<p class="align-center"><?php echo $this->escapeHtml(ucwords($person['condition']));?></p>
+</div>
+<?php if ($person['isLiving']):?>
+<div class="col-md-9">
+<div class="panel panel-default" id="contactInfoPanel">
+    <div class="panel-heading">
+    	<div class="row">
+    	<div class="col-xs-4">
+        	<h3 class="panel-title"><?php echo $this->translate('Contact Info'); //@todo add contact notes and modified date?>
+        </h3>
+        </div>
+        <div class="col-xs-5">
+        	<?php if (!is_null($person['contactInfoUpdatedOn'])) :?>
+        		<span class="pull-right"><small><?php echo sprintf($this->translate('Updated %s'), 
+        		    $this->diffForHumans($person['contactInfoUpdatedOn']));?></small></span>
+        	<?php endif;?>
+        </div>
+        
+        <div class="col-xs-3">
+        	<?php if ($this->isAllowed('route/persons/person/edit-contact-info')) :  ?>
+        	   <span class="pull-right"><a class="btn btn-default btn-sm"
+                href="<?php echo $this->url('persons/person/edit-contact-info', ['person_id' => $person['personId']]);?>"><?php 
+                echo $this->translate("Edit information");?></a></span>
+        	<?php elseif ($this->isAllowed('route/persons/person/suggest-contact-info')) :  ?>
+        	   <span class="pull-right"><a class="btn btn-default btn-sm"
+                href="<?php echo $this->url('persons/person/suggest-contact-info', [
+                    'person_id' => $person['personId'],
+                    'suggestForm' => $this->suggestForm,
+                ]);?>"><?php 
+                echo $this->translate("Update information");?></a></span>
+            <?php endif;?>
+        </div>
+        </div>
+	</div>
+    <div class="panel-body">
+    	<div class="row">
+    	<div class="col-md-7">
+            <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php 
+            if (!is_null($person['email'])) { //@todo add checks for validated
+                echo $this->email($person['email']);
+                if (!is_null($person['email2'])) {
+                    echo ', '.$this->email($person['email2']);
+                }
+            }?></p>
+            <div class="row">
+            <div class="col-md-12">
+            	<div class="row"><div class="col-md-12">
+            	<?php foreach ($person['urls'] as $urlRow) :?>
+            	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
+            	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
+            	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
+            	</a>&nbsp;
+            	<?php endforeach; //@todo add email modified date?>
+            	</div></div> <!-- Websites row and column -->
+            </div> <!-- Links column -->
+            </div> <!-- Links row -->
+        </div>
+        <div class="col-md-5">
+            <?php foreach ($person['phones'] as $phoneRow) : ?>
+                <p><strong><?php echo $this->translate($phoneRow['label']); ?>:</strong>
+				<span><?php echo $this->telephone($phoneRow['number'], 
+						isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
+						$this->isAllowed('route/persons/person/edit-contact-info'));?></span></p>
+            <?php endforeach; 
+            if (!is_null($person['phonesUpdatedOn'])) :  //@todo add a question mark here with text
+                //@todo use diffForHumans view helper
+        	    $phoneUpdated = Carbon::instance($person['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
+                <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
+        	<?php endif;?>
+        	<!-- 
+        	Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information. 
+        	Please help in confirming and/or updating out-dated information.
+        	 -->
+		</div> <!-- phones column -->
+        </div>
+    </div> <!-- contact info panel body -->
+</div> <!-- contact info panel -->
+</div> <!-- col-md-9 -->
+<?php endif;?>
+</div> <!-- row -->
+
+<div class="row"> <!-- personal info row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="personalInfoPanel">
+    <div class="panel-heading">
+    	<div class="row">
+        <div class="col-xs-8">
+            <h3 class="panel-title"><?php echo $this->translate('Personal Info');?></h3>
+        </div>
+        <div class="col-xs-4">
+        	<?php if ($this->isAllowed('route/persons/person/edit-personal-info')) :  ?>
+        	   <span class="pull-right"><a class="btn btn-default btn-sm"
+                href="<?php echo $this->url('persons/person/edit-personal-info', ['person_id' => $person['personId']]);?>"><?php 
+                echo $this->translate("Edit information");?></a></span>
+        	<?php elseif ($this->isAllowed('route/suggest')) :
+        	   echo $this->partial('patres/patres/suggest-button', 
+                ['entityType' => 'person-misc', 'entityId' => $person['personId'], 
+                    'class' => 'btn btn-default btn-sm pull-right',
+        	       'suggestForm' => $this->suggestForm]);
+            endif;?>
+        </div>
+        </div>
+	</div>
+    <div class="panel-body">
+    
+<div class="row"> <!-- personal info panel row -->
+<div class="col-md-6"> <!-- community info column (free and official) -->
+<p><strong><?php echo $this->translate('Home country'); ?>:</strong> <?php echo $this->countryName($person['country'], true, CountryName::COUNTRY_NAME_OFFICIAL);?></p>
+<?php if ($this->isAllowed('courses')):?>
+    <p><strong><?php echo $this->translate('Course');?>:</strong> <?php 
+        echo $this->formatCourse($person['courseName'],$person['courseId']); ?>
+    </p><?php 
+    if (!is_null($person['generationId'])) :?>
+    <p><strong><?php echo $this->translate('Generation');?>:</strong> 
+        <a href="<?php echo $this->url('generations/generation', array('generation_id' => $person['generationId']));?>">
+        <?php echo $this->escapeHtml($person['generationName']);?></a>
+    </p>
+    <?php endif;?>
+<?php endif;?>
+<p><strong><?php echo $this->translate('Home territory'); ?>:</strong>
+<?php if (!is_null($person['homeTerritoryId'])):
+    echo $this->formatScope('territory', $person['homeTerritoryName'], $person['homeTerritoryId'],
+        null, false, $person['homeTerritoryActive']);
+endif;?></p>
+<hr>
+<p><strong><?php echo $this->translate('Filiation'); ?>:</strong> <?php 
+if (!is_null($person['filiationId'])) {
+    echo $this->formatScope('filiation', $person['filiationName'], $person['filiationId'], 
+        $person['filiationCountry'], false, $person['filiationActive']);
+    echo $this->editPencil('living-situation', $person['activeLivingSituation']['livingSituationId']);
+    if (is_array($person['activeLivingSituation']) &&
+        $person['activeLivingSituation']['status'] != PatresTable::STATUS_INTERN
+    ) {
+        echo ' '. $this->label(PatresTable::STATUS_LABELS[$person['activeLivingSituation']['status']], 'label-info');
+    }
+}?></p>
+<p><strong><?php echo $this->translate('House'); ?>:</strong> <?php 
+if (!is_null($person['houseId'])) :
+    echo $this->formatScope('house', $person['houseName'], $person['houseFiliationId'], 
+        $person['houseCountry'], false, $person['houseActive']);
+endif;?></p>
+<p><strong><?php echo $this->translate('Responsible territory'); ?>:</strong>
+<?php if (!is_null($person['responsibleTerritoryId'])):
+    echo $this->formatScope('territory', $person['responsibleTerritoryName'], $person['responsibleTerritoryId'],
+        null, false, $person['responsibleTerritoryActive']);
+endif;?></p>
+<?php //@todo add in public and admin notes of the living situation?>
+</div> <!-- community info column -->
+
+<div class="col-md-6"> <!-- dates column -->
+    <p><strong><?php echo $this->translate('Birthday'); ?>: </strong> <?php 
+    if (is_object($person['birthDate'])) {
+        echo $this->dateFormat($person['birthDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    }?></p>
+    <?php if (is_object($person['deathDate'])): ?>
+        <p><strong><?php echo $this->translate('Passed away on'); ?>:</strong> <?php 
+        echo $this->dateFormat($person['deathDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+    <?php endif;?>
+    <p><strong><?php echo $this->translate('Nameday'); ?>: </strong> <?php
+    if ($person['nameDay']) {
+        echo $this->dayFormat($person['nameDay']);
+    }?></p>
+    <p><strong><?php echo $this->translate('Baptism day'); ?>: </strong> <?php 
+    if (is_object($person['baptismDate'])) {
+        echo $this->dateFormat($person['baptismDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    }?></p>
+
+    <?php if (is_object($person['novitiateDate'])): ?>
+        <p><strong><?php echo $this->translate('Novitiate start'); ?>:</strong> <?php 
+        echo $this->dateFormat($person['novitiateDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+        ?></p><?php 
+    endif;?>
+    
+    <p><strong><?php echo $this->translate('Diaconate ordination'); ?>:</strong>
+    <?php if (is_object($person['deaconDate'])) {
+        echo $this->dateFormat($person['deaconDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    }?></p>
+    <p><strong><?php echo $this->translate('Priestly ordination'); ?>:</strong>
+    <?php if (is_object($person['priestDate'])) {
+        echo $this->dateFormat($person['priestDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    }?></p>
+    
+    <p><strong><?php echo $this->translate('Community membership date'); ?>:</strong> <?php 
+    if (is_object($person['communityMembershipDate'])) {
+        echo $this->dateFormat($person['communityMembershipDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    }?>
+    <a data-toggle="popover" title="<?php echo $this->translate('Community membership date');?>" 
+    data-content="<?php echo $this->translate('COMMUNITY_MEMBERSHIP_DATE_EXPLANATION')?>" data-placement="bottom" >
+    <i class="fa fa-question-circle-o" aria-hidden="true"></i></a></p>
+    
+    <?php if (is_object($person['bishopDate'])): ?>
+        <p><strong><?php echo $this->translate('Episcopal ordination'); ?>:</strong> <?php 
+        echo $this->dateFormat($person['bishopDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+        ?></p>
+    <?php endif;?>
+    
+    <?php if (is_object($person['leaveDate']) && is_object($person['leaveDate'])): ?>
+        <p><strong><?php echo $this->translate('Left the Community'); ?>:</strong> <?php 
+        echo $this->dateFormat($person['leaveDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+    <?php endif;?>
+</div> <!-- dates column -->
+</div> <!-- personal info panel row -->
+
+</div> <!-- personal info panel body -->
+</div> <!-- personal info panel -->
+</div> <!-- personal info column 12 -->
+</div> <!-- personal info row -->
+
+<?php if ($this->isAllowed('patres_details')) {
+    echo $this->partial('show-living-situations', ['person' => $person]);
+}?>
+
+<?php if ($this->isAllowed('patres_details')):?>
+<div class="row"> <!-- private info row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="privateInfoPanel">
+    <div class="panel-heading">
+    	
+    	<div class="row">
+        <div class="col-xs-8">
+            <h3 class="panel-title"><?php echo $this->translate('Private Info');?></h3>
+        </div>
+        <div class="col-xs-4">
+        	<?php if ($this->isAllowed('route/persons/person/edit-private-info')) :  ?>
+        	   <span class="pull-right"><a class="btn btn-default btn-sm"
+                href="<?php echo $this->url('persons/person/edit-private-info', ['person_id' => $person['personId']]);?>"><?php 
+                echo $this->translate("Edit information");?></a></span>
+        	<?php elseif ($this->isAllowed('route/suggest')) :
+        	   echo $this->partial('patres/patres/suggest-button', 
+                ['entityType' => 'person', 'entityId' => $person['personId'], 
+                    'class' => 'btn btn-default btn-sm pull-right',
+                    'suggestForm' => $this->suggestForm,]);
+            endif;?>
+        </div>
+        </div>
+	</div>
+    <div class="panel-body">
+    
+<div class="row"> <!-- private info panel row -->
+<div class="col-md-6"> <!-- private facts column -->
+<!-- Nationalities, birth city -->
+<p><strong><?php echo $this->translate('Nationality'); ?>:</strong>
+<?php 
+if (is_array($person['nationalities'])) {
+$printNats = [];
+foreach ($person['nationalities'] as $nat) {
+    $printNats[] = $this->countryName($nat, true, CountryName::COUNTRY_NAME_COMMON);
+}}
+echo implode(', ', $printNats);
+?></p>
+<p><strong><?php echo $this->translate('Birth city'); ?>:</strong>
+<?php 
+if (!is_null($person['birthCity'])) {
+    echo $this->escapeHtml($person['birthCity']);
+}?></p>
+<?php if (!empty($person['adminTags'])) :?>
+<p><strong><?php echo $this->translate('Admin tags'); ?>:</strong> <?php 
+$adminTagFormat = '<span class="label label-default">%s</span>';
+$formattedAdminTags = array();
+foreach ($person['adminTags'] as $value) {
+    $formattedAdminTags[] = sprintf($adminTagFormat, $this->escapeHtml($value));
+}
+echo implode(' ', $formattedAdminTags);?>
+<?php endif;?>
+</div> <!-- private facts column -->
+
+<div class="col-md-6"> <!-- emergency contact column -->
+<p><strong><?php echo $this->translate('Emergency contacts'); ?>:</strong></p>
+<?php if (!is_null($person['emergencyContact1Name']) && !is_null($person['emergencyContact1Phone'])) : ?>
+    <p><?php echo $this->escapeHtml($person['emergencyContact1Name']);
+    if (!is_null($person['emergencyContact1Relation'])){
+        echo ' ('. $this->escapeHtml($this->translate($person['emergencyContact1Relation'])) . ')';
+    }?>
+    <br>
+    <span><?php echo $this->telephone($person['emergencyContact1Phone'],
+    		false,
+    		$this->isAllowed('route/persons/person/edit-contact-info'));?></span>
+    </p>
+<?php endif;?>
+<?php if (!is_null($person['emergencyContact2Name']) && !is_null($person['emergencyContact2Phone'])) : ?>
+    <p><?php echo $this->escapeHtml($person['emergencyContact2Name']);
+    if (!is_null($person['emergencyContact2Relation'])){
+        echo ' ('. $this->escapeHtml($this->translate($person['emergencyContact2Relation'])) . ')';
+    }?>
+    <br>
+    <span><?php echo $this->telephone($person['emergencyContact2Phone'],
+    		false,
+    		$this->isAllowed('route/persons/person/edit-contact-info'));?></span>
+    </p>
+<?php endif;?>
+</div> <!-- emergency contact column -->
+
+<?php if (!is_null($person['adminNotes']) && $this->isAllowed('patres_details')): ?>
+<div class="col-md-12">
+    <p><strong><?php echo $this->translate('Admin Notes');?>:</strong></p>
+    <div><?php echo $this->markdown($person['adminNotes']);?>
+    </div>
+</div> <!-- admin notes column -->
+<?php endif;?>
+
+</div> <!-- private info panel row -->
+
+</div> <!-- private info panel body -->
+</div> <!-- private info panel -->
+</div> <!-- private info column 12 -->
+</div> <!-- private info row -->
+<?php endif;?>
+
+<?php if (!empty($person['assignments'])) : ?>
+<div class="row"> <!-- assignments row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="assignmentsPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title"><?php echo $this->translate('Assignments'); //@todo add "+" add button with link to new assignment?></h3>
+	</div>
+  <ul class="list-group">
+   <?php foreach ($person['assignments'] as $assignment) : 
+   if ($assignment['active'] || $this->isAllowed('patres_details')) :?>
+       <li class="list-group-item <?php if (!$assignment['active']) echo 'disabled';?>"><?php 
+           echo $this->formatPersonAssignment($assignment);?>
+       </li>
+   <?php endif;
+   endforeach;?>
+   </ul>
+</div> <!-- assignments panel -->
+</div> <!-- assignments column 12 -->
+</div> <!-- assignments row -->
+<?php endif;?>
+
+  <?php if (!is_null($person['publicNotes']) && 0 !== strlen($person['publicNotes'])):?>
+<div class="row"> <!-- notes row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="notesPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title"><?php echo $this->translate('Notes'); ?></h3>
+	</div>
+    <div class="panel-body">
+    <div><?php echo $this->markdown($person['publicNotes']);?>
+    </div>
+	</div> <!-- notes panel body -->
+</div> <!-- notes panel -->
+</div> <!-- notes column 12 -->
+</div> <!-- notes row -->
+<?php endif;?>
+
+<?php //@todo add date modified and counter?>
+
+<div class="row"><div class="col-md-12">
+<?php if ($this->isAllowed('route/persons/person/edit')):?>
+      <a target="_blank" class="btn btn-primary"
+    href="<?php echo $this->url('persons/person/edit', array('person_id' => $person['personId']));?>"><?php 
+    echo $this->translate("Edit details")?></a>
+<?php endif;?>
+</div></div>

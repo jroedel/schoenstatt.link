@@ -5,21 +5,28 @@
  * @see http://framework.zend.com/manual/current/en/tutorials/config.advanced.html#environment-specific-system-configuration
  * @see http://framework.zend.com/manual/current/en/tutorials/config.advanced.html#environment-specific-application-configuration
  */
+$toolsOrNot = [];
+$env = getenv('APP_ENV') ?: 'production';
+if ($env == 'development') {
+    $toolsOrNot[] = 'ZendDeveloperTools';
+}
+$modules = [
+    'TwbBundle',
+    'ZfcBase',
+    'ZfcUser',
+	'BjyAuthorize',
+    'SlmLocale',
+	'GoalioRememberMe',
+    'JUser',
+    'SionModel',
+	'JTranslate',
+    'Application',
+    'Schoenstatt',
+];
+$modules = array_merge($toolsOrNot, $modules);
 return array(
     // This should be an array of module namespaces used in the application.
-    'modules' => array(
-        'TwbBundle',
-        'ZfcBase',
-        'ZfcUser',
-		'BjyAuthorize',
-        'SlmLocale',
-		'GoalioRememberMe',
-        'JUser',
-        'SionModel',
-		'JTranslate',
-        'Application',
-        'Schoenstatt',
-    ),
+    'modules' => $modules,
 
     // These are various options for the listeners attached to the ModuleManager
     'module_listener_options' => array(
