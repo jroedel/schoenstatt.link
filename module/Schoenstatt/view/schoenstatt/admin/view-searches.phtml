@@ -1,0 +1,50 @@
+<?php $headText = 'View Searches';
+$this->headTitle($headText);
+?>
+<table class="table">
+	<tr>
+		<th><?php echo $this->translate("User");?></th>
+		<th><?php echo $this->translate("Time");?></th>
+		<th><?php echo $this->translate("Results");?></th>
+		<th><?php echo $this->translate("Search");?></th>
+		<th><?php echo $this->translate("Location");?></th>
+	</tr>
+	<?php foreach ($this->searches as $search): ?>
+	<tr>
+		<td><?php echo $this->escapeHtml($search['display_name']);?></td>
+		<td><?php echo $this->escapeHtml($search['search_datetime']);?></td>
+		<td><?php echo $this->escapeHtml($search['search_results']);?></td>
+		<td>
+            <?php $criteria = array();
+            if (!is_null($search['search_query'])) {
+                $criteria[] = "\"".$search['search_query']."\"";
+            }
+            if (!is_null($search['search_filiation'])) {
+                $criteria[] = $this->translate('Filiation').": <a href=\"".
+                $this->url('filiations/filiation', array('filiation_id' => $search['search_filiation'])).
+                "\">".$this->flag($search['Country']).'&nbsp;'.$this->escapeHtml($search['FilName'])."</a>";
+            }
+            if (!is_null($search['search_course'])) {
+                $criteria[] = $this->translate('Course').": <a href=\"".
+                $this->url('courses/course', array('course_id' => $search['search_course'])).
+                "\">".$this->escapeHtml($search['KursName'])."</a>";
+            }
+            if (!is_null($search['search_generation'])) {
+                $criteria[] = $this->translate('Generation').": <a href=\"".
+                $this->url('generations/generation', array('generation_id' => $search['search_generation'])).
+                "\">".$this->escapeHtml($search['GenName'])."</a>";
+            }
+            if (!is_null($search['search_house'])) {
+                $criteria[] = $this->translate('House').": ".$this->escapeHtml($search['HausName']);
+            }
+            if (!is_null($search['search_country'])) {
+                $criteria[] = $this->translate('Country of origin').": ".$this->escapeHtml($search['LandName_en']);
+            }
+            if (!is_null($search['search_territory'])) {
+                $criteria[] = $this->translate('Territory').": ".$this->escapeHtml($search['GebName']);
+            } 
+            echo implode(", ",$criteria);?></td>
+		<td><?php echo $this->ipPlace($search['search_ip']);?></td>
+		<?php endforeach; ?>
+	</tr>
+</table>

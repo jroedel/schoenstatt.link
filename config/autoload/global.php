@@ -11,6 +11,15 @@
  * file.
  */
 
-return array(
-    // ...
-);
+return [
+    'navigation' => [
+        // navigation with name default
+        'default' => [
+            [
+                'label' => 'Associations',
+                'route' => 'associations',
+                'resource' => 'route/associations',
+            ],
+        ],
+    ],
+];

@@ -13,9 +13,9 @@ use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Form\PersonForm;
-use Patres\Model\PatresTable;
 use Patres\Mailing\Mailer;
 use JTranslate\Controller\Plugin\NowMessenger;
+use Schoenstatt\Model\SchoenstattTable;
 
 class PersonsController extends AbstractActionController
 {
@@ -104,8 +104,8 @@ class PersonsController extends AbstractActionController
             return $this->redirect()->toRoute('schoenstatt');
         }
         $sm = $this->getServiceLocator();
-        /** @var \Patres\Model\PatresTable $table */
-        $table = $sm->get('Patres\Model\PatresTable');
+        /** @var \Schoenstatt\Model\SchoenstattTable $table */
+        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
         $person = $table->getPerson($id);
         if (!$person) {
             $this->flashMessenger()
@@ -120,13 +120,13 @@ class PersonsController extends AbstractActionController
             $mobileDetect->isiOS() ? 'ios' : 'default'; //android, ios, default
         $this->addUserNamesToUrlList($person, $deviceType); //$person is ByRef
 
-        $table->registerVisit(PatresTable::ENTITY_PERSON, $person['personId']);
+        $table->registerVisit(SchoenstattTable::ENTITY_PERSON, $person['personId']);
 //         var_dump($person['urls']);
 //         var_dump($person);
         return new ViewModel(array(
             'person'        => $person,
             'deviceType'    => $deviceType,
-            'suggestForm'   => $sm->get('Patres\Form\SuggestForm'),
+            'suggestForm'   => $sm->get('Schoenstatt\Form\SuggestForm'),
         ));
     }
 
@@ -134,7 +134,7 @@ class PersonsController extends AbstractActionController
     {
         $sm = $this->getServiceLocator();
         $config = $sm->get('Config');
-        $urlConfig = $config['patres']['url_map'];
+        $urlConfig = $config['schoenstatt']['url_map'];
 
         //first check the existing urls to fill in logo info
         foreach ($person['urls'] as $urlsKey => $values) {
@@ -182,8 +182,8 @@ class PersonsController extends AbstractActionController
             return $this->redirect()->toRoute('schoenstatt');
         }
         $sm = $this->getServiceLocator();
-        /** @var \Patres\Model\PatresTable $table */
-        $table = $sm->get('Patres\Model\PatresTable');
+        /** @var \Schoenstatt\Model\SchoenstattTable $table */
+        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
         $person = $table->getPerson($id);
         if (!$person) {
             $this->flashMessenger()
@@ -193,7 +193,7 @@ class PersonsController extends AbstractActionController
         }
 
         /** @var PersonForm $form */
-        $form = $sm->get('Patres\Form\PersonForm');
+        $form = $sm->get('Schoenstatt\Form\PersonForm');
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
@@ -212,7 +212,7 @@ class PersonsController extends AbstractActionController
 //                     var_dump($data);
                     $result = $table->updateEntity('person', $id, $data);
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
-                    $this->redirect()->toRoute ( 'fathers/father', array('person_id' => $id) );
+                    $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
                 } catch (\Exception $e) {
                     //@todo this message should be logged
                     if ($debug) {
@@ -243,8 +243,8 @@ class PersonsController extends AbstractActionController
     {
         $id = ( int ) $this->params ()->fromRoute ( 'person_id' );
         $sm = $this->getServiceLocator ();
-        /** @var PatresTable $table **/
-        $table = $sm->get ( 'Patres\Model\PatresTable' );
+        /** @var SchoenstattTable $table **/
+        $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
         if (! $id) {
             $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Course not found.' );
@@ -256,7 +256,7 @@ class PersonsController extends AbstractActionController
             return $this->redirect ()->toRoute ( 'home');
         }
         /** @var PersonForm $form **/
-        $form = $sm->get('Patres\Form\PersonForm');
+        $form = $sm->get('Schoenstatt\Form\PersonForm');
         $form->prepareForSuggestion($sm);
         $request = $this->getRequest();
         if ($request->isPost ()) {
@@ -278,9 +278,9 @@ class PersonsController extends AbstractActionController
                     //send an email to admin
                     $suggestion = $table->getLastSuggestion();
                     /** @var Mailer $mailer **/
-                    $mailer = $sm->get('Patres\Mailing\Mailer');
+                    $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
                     $mailer->sendNewSuggestionNotice($suggestion);
-                    $this->redirect()->toRoute ( 'fathers/father', ['person_id' => $id] );
+                    $this->redirect()->toRoute ( 'persons/person', ['person_id' => $id] );
                 } catch (\Exception $e) {
                     //@todo this message should be logged
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.');
@@ -302,8 +302,8 @@ class PersonsController extends AbstractActionController
         $suggestionId = ( int ) $this->params ()->fromRoute ( 'suggestion_id' );
 
         $sm = $this->getServiceLocator();
-        /** @var PatresTable $table **/
-        $table = $sm->get ( 'Patres\Model\PatresTable' );
+        /** @var SchoenstattTable $table **/
+        $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
         $oldData = null;
         $person = $table->getSuggestionData( $suggestionId, $oldData); //$oldData is a byRef return
@@ -313,8 +313,8 @@ class PersonsController extends AbstractActionController
             return $this->redirect ()->toRoute ( 'home' );
         }
 
-        /** @var \Patres\Form\EditCourseForm $form **/
-        $form = $sm->get('Patres\Form\PersonForm');
+        /** @var \Schoenstatt\Form\EditCourseForm $form **/
+        $form = $sm->get('Schoenstatt\Form\PersonForm');
         $form->prepareForModeration($oldData);
         $request = $this->getRequest();
         if ($request->isPost ()) {
@@ -341,7 +341,7 @@ class PersonsController extends AbstractActionController
 
                         //send an email to user
                         /** @var Mailer $mailer **/
-                        $mailer = $sm->get('Patres\Mailing\Mailer');
+                        $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
                         $suggestion = $table->getSuggestion($data['suggestionId']);
                         $mailer->sendReviewedSuggestionNotice($suggestion);
 
@@ -363,21 +363,21 @@ class PersonsController extends AbstractActionController
         }
 
         $view = new ViewModel([
-            'action' => 'fathers/father/moderate',
+            'action' => 'persons/person/moderate',
             'entity' => 'contactInfo',
             'person' => $person,
             'personId' => $person['personId'],
             'personName' => $person['fullName'],
             'form' => $form,
         ]);
-        $view->setTemplate('patres/fathers/edit');
+        $view->setTemplate('schoenstatt/persons/edit');
         return $view;
     }
 
     public function createAction()
     {
         $sm = $this->getServiceLocator ();
-        /** @var PatresTable $table **/
+        /** @var SchoenstattTable $table **/
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
         /** @var \Schoenstatt\Form\PersonForm $form */
@@ -394,7 +394,7 @@ class PersonsController extends AbstractActionController
                         $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                     } else {
                         $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully created.' );
-                        $this->redirect ()->toRoute ( 'fathers/father', array('person_id' => $newId) );
+                        $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
                     }
                 } catch (\Exception $e) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );

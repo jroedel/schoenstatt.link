@@ -11,6 +11,7 @@ if ($env == 'development') {
     $toolsOrNot[] = 'ZendDeveloperTools';
 }
 $modules = [
+    'MaglMarkdown',
     'TwbBundle',
     'ZfcBase',
     'ZfcUser',
@@ -20,6 +21,8 @@ $modules = [
     'JUser',
     'SionModel',
 	'JTranslate',
+    'AssetManager',
+    'ZfcDatagrid',
     'Application',
     'Schoenstatt',
 ];

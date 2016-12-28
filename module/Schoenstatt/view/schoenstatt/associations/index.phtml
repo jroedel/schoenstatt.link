@@ -1,0 +1,36 @@
+<div class="table-responsive">
+	<table class="table">
+		<tr>
+			<th><?php echo $this->translate("Association");?></th>
+			<th><?php echo $this->translate("Type");?></th>
+			<th><?php echo $this->translate("Email");?></th>
+			<th><?php echo $this->translate("Phone");?></th>
+			<th><?php echo $this->translate("Website");?></th>
+		</tr>
+		<?php foreach ($this->entities as $entity): ?>
+		<tr>
+			<td><?php if (!is_null($entity['associationId'])) :
+			     echo str_repeat('&nbsp;', $entity['heirarchyLevel'] -1).str_repeat('↪', $entity['heirarchyLevel'] -1);?>
+				<a
+				href="<?php echo $this->url('associations/association',
+				        ['association_id' => $entity['associationId']]);?>">
+					<?php
+					if ($entity['isNameTranslateable']) {
+					   echo $this->translate($entity['name']);
+					} else {
+					   echo $entity['name'];
+                    }?>
+			</a> <?php endif;?>
+			</td>
+			<td><?php echo $this->escapeHtml($entity['kind']);?>
+			</td>
+			<td><?php echo $this->escapeHtml('');?>
+			</td>
+			<td><?php echo $this->escapeHtml('');?>
+			</td>
+			<td><?php echo $this->escapeHtml('');?>
+			</td>
+			<?php endforeach; ?>
+		</tr>
+	</table>
+</div>

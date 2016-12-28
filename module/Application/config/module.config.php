@@ -61,6 +61,7 @@ return [
         ],
         'factories' => [
             'translator' => 'Zend\Mvc\Service\TranslatorServiceFactory',
+            'navigation' => 'Zend\Navigation\Service\DefaultNavigationFactory'
         ],
     ],
     'translator' => [

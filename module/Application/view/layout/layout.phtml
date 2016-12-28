@@ -1,6 +1,7 @@
-<?php echo $this->doctype(); ?>
+<?php use Zend\Math\Rand;
+echo $this->doctype(); ?>
 
-<html lang="en">
+<html lang="<?php echo Locale::getPrimaryLanguage(Locale::getDefault()); ?>">
     <head>
         <meta charset="utf-8">
         <?php echo $this->headTitle('ZF2 '. $this->translate('Skeleton Application'))->setSeparator(' - ')->setAutoEscape(false) ?>
@@ -34,17 +35,79 @@
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="<?php echo $this->url('home') ?>"><img src="<?php echo $this->basePath('img/zf2-logo.png') ?>" alt="Zend Framework 2"/>&nbsp;<?php echo $this->translate('Skeleton Application') ?></a>
+                    <a class="navbar-brand" href="<?php echo $this->url('home') ?>"><?php echo $this->translate('Schoenstatt Org') ?></a>
                 </div>
                 <div class="collapse navbar-collapse">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a href="<?php echo $this->url('home') ?>"><?php echo $this->translate('Home') ?></a></li>
-                    </ul>
+                    <?php
+                    echo $this->navigation('navigation')
+                        ->menu()
+                        ->setMinDepth(0)
+                        ->setMaxDepth(0)
+                        ->setUlClass('nav navbar-nav')
+                        ->render();
+                    ?>
+    				<ul class="nav navbar-nav pull-right">
+    					<?php $username = $this->zfcUserDisplayName();
+    					if (0 != strcmp($this->routeName(), 'search') && $username) :?>
+    					<li class="hidden-sm">
+    						<form class="navbar-form"
+    							action="<?php echo $this->url('contacts') ?>" method="get"
+    							role="search">
+    							<div class="input-group">
+    								<input type="text" class="form-control" name="search"
+    									placeholder="<?php echo $this->translate("Search", 'Application');?>">
+    							<span class="input-group-btn">
+    								<button class="btn btn-info" type="submit">
+    									<i class="glyphicon glyphicon-search"></i>
+    								</button>
+    							</span>
+    							</div>
+    						</form>
+    					</li>
+    					<?php endif;?>
+    					<?php if ($username) : ?>
+        					<li><a href="<?php echo $this->url('zfcuser/logout');?>"><?php
+        					echo $this->translate("Logout", 'Application');?></a></li>
+    					<?php else:?>
+        					<li><a href="<?php echo $this->url('zfcuser/login');?>"><?php
+        					echo $this->translate("Login", 'Application');?></a></li>
+    					<?php endif;?>
+    				</ul>
                 </div><!--/.nav-collapse -->
             </div>
         </nav>
         <div class="container">
-            <?php echo $this->content; ?>
+        	<div class="row">
+            	<div id="langs" class="pull-right" data-toggle="tooltip" data-placement="bottom"
+            	data-container="body" data-original-title="<?php echo $this->translate("Current:", 'Application').
+    					' '.Locale::getDefault();?>">
+    				<?php $en = array('us', 'gb');
+    				      $es = array('ar', 'es', 'cl', 'mx');
+    				      $de = array('de', 'ch');
+    				      $pt = array('pt', 'br');?>
+                	<a href="?lang=en_US"><span class="flag-icon flag-icon-<?php echo $en[Rand::getInteger(0, 1)]; ?>"></span></a>
+                	<a href="?lang=es_ES"><span class="flag-icon flag-icon-<?php echo $es[Rand::getInteger(0, 3)]; ?>"></span></a>
+                	<a href="?lang=de_DE"><span class="flag-icon flag-icon-<?php echo $de[Rand::getInteger(0, 1)]; ?>"></span></a>
+                	<a href="?lang=pt_BR"><span class="flag-icon flag-icon-<?php echo $pt[Rand::getInteger(0, 1)]; ?>"></span></a>
+            	</div>
+    		</div>
+            <?php
+    		$flash = $this->flashMessenger();
+    		$flash->setMessageOpenFormat('<div%s>
+         <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
+             &times;
+         </button>
+         ')
+         ->setMessageSeparatorString('</br>')
+         ->setMessageCloseString('</div>');
+
+         echo $flash->render('error',   array('alert', 'alert-dismissable', 'alert-danger'));
+         echo $flash->render('info',    array('alert', 'alert-dismissable', 'alert-info'));
+         echo $flash->render('default', array('alert', 'alert-dismissable', 'alert-warning'));
+         echo $flash->render('success', array('alert', 'alert-dismissable', 'alert-success'));
+         echo $this->nowMessenger();
+
+         echo $this->content; ?>
             <hr>
             <footer>
                 <p>&copy; 2005 - <?php echo date('Y') ?> by Zend Technologies Ltd. <?php echo $this->translate('All rights reserved.') ?></p>

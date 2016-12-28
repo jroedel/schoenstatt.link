@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "c5bfced64a83c943d7aa2afac630cd16",
-    "content-hash": "140c6fb57d149f8bdb1cd6e4a2b47ab3",
+    "hash": "a558032989ee4fd5f6c2ca23027015ab",
+    "content-hash": "9881e26fe2d6742b175b06f4bd448898",
     "packages": [
         {
             "name": "bjyoungblood/bjy-authorize",
@@ -79,16 +79,16 @@
         },
         {
             "name": "cakephp/utility",
-            "version": "3.3.10",
+            "version": "3.3.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cakephp/utility.git",
-                "reference": "97c2b65f3c34ebe082aa0ec2ed9810048ee3c7b6"
+                "reference": "2ecfe66e93d710ffdb2a630c808fb4267ac500e5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cakephp/utility/zipball/97c2b65f3c34ebe082aa0ec2ed9810048ee3c7b6",
-                "reference": "97c2b65f3c34ebe082aa0ec2ed9810048ee3c7b6",
+                "url": "https://api.github.com/repos/cakephp/utility/zipball/2ecfe66e93d710ffdb2a630c808fb4267ac500e5",
+                "reference": "2ecfe66e93d710ffdb2a630c808fb4267ac500e5",
                 "shasum": ""
             },
             "suggest": {
@@ -114,7 +114,7 @@
                 }
             ],
             "description": "CakePHP Utility classes such as Inflector, String, Hash, and Security",
-            "time": "2016-11-17 22:13:33"
+            "time": "2016-12-14 03:51:56"
         },
         {
             "name": "container-interop/container-interop",
@@ -196,6 +196,92 @@
                 "instantiate"
             ],
             "time": "2015-06-14 21:17:01"
+        },
+        {
+            "name": "erusev/parsedown",
+            "version": "1.6.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/erusev/parsedown.git",
+                "reference": "20ff8bbb57205368b4b42d094642a3e52dac85fb"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/erusev/parsedown/zipball/20ff8bbb57205368b4b42d094642a3e52dac85fb",
+                "reference": "20ff8bbb57205368b4b42d094642a3e52dac85fb",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Parsedown": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Emanuil Rusev",
+                    "email": "hello@erusev.com",
+                    "homepage": "http://erusev.com"
+                }
+            ],
+            "description": "Parser for Markdown.",
+            "homepage": "http://parsedown.org",
+            "keywords": [
+                "markdown",
+                "parser"
+            ],
+            "time": "2016-11-02 15:56:58"
+        },
+        {
+            "name": "erusev/parsedown-extra",
+            "version": "0.7.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/erusev/parsedown-extra.git",
+                "reference": "0db5cce7354e4b76f155d092ab5eb3981c21258c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/erusev/parsedown-extra/zipball/0db5cce7354e4b76f155d092ab5eb3981c21258c",
+                "reference": "0db5cce7354e4b76f155d092ab5eb3981c21258c",
+                "shasum": ""
+            },
+            "require": {
+                "erusev/parsedown": "~1.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "ParsedownExtra": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Emanuil Rusev",
+                    "email": "hello@erusev.com",
+                    "homepage": "http://erusev.com"
+                }
+            ],
+            "description": "An extension of Parsedown that adds support for Markdown Extra.",
+            "homepage": "https://github.com/erusev/parsedown-extra",
+            "keywords": [
+                "markdown",
+                "markdown extra",
+                "parsedown",
+                "parser"
+            ],
+            "time": "2015-11-01 10:19:22"
         },
         {
             "name": "geoip/geoip",
@@ -608,6 +694,270 @@
                 "issues": "https://github.com/jroedel/zf2-juser/issues"
             },
             "time": "2016-12-07 22:12:02"
+        },
+        {
+            "name": "kriswallsmith/assetic",
+            "version": "v1.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kriswallsmith/assetic.git",
+                "reference": "e911c437dbdf006a8f62c2f59b15b2d69a5e0aa1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kriswallsmith/assetic/zipball/e911c437dbdf006a8f62c2f59b15b2d69a5e0aa1",
+                "reference": "e911c437dbdf006a8f62c2f59b15b2d69a5e0aa1",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.1",
+                "symfony/process": "~2.1|~3.0"
+            },
+            "conflict": {
+                "twig/twig": "<1.27"
+            },
+            "require-dev": {
+                "leafo/lessphp": "^0.3.7",
+                "leafo/scssphp": "~0.1",
+                "meenie/javascript-packer": "^1.1",
+                "mrclay/minify": "<2.3",
+                "natxet/cssmin": "3.0.4",
+                "patchwork/jsqueeze": "~1.0|~2.0",
+                "phpunit/phpunit": "~4.8 || ^5.6",
+                "psr/log": "~1.0",
+                "ptachoire/cssembed": "~1.0",
+                "symfony/phpunit-bridge": "~2.7|~3.0",
+                "twig/twig": "~1.23|~2.0",
+                "yfix/packager": "dev-master"
+            },
+            "suggest": {
+                "leafo/lessphp": "Assetic provides the integration with the lessphp LESS compiler",
+                "leafo/scssphp": "Assetic provides the integration with the scssphp SCSS compiler",
+                "leafo/scssphp-compass": "Assetic provides the integration with the SCSS compass plugin",
+                "patchwork/jsqueeze": "Assetic provides the integration with the JSqueeze JavaScript compressor",
+                "ptachoire/cssembed": "Assetic provides the integration with phpcssembed to embed data uris",
+                "twig/twig": "Assetic provides the integration with the Twig templating engine"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.4-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Assetic": "src/"
+                },
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Kris Wallsmith",
+                    "email": "kris.wallsmith@gmail.com",
+                    "homepage": "http://kriswallsmith.net/"
+                }
+            ],
+            "description": "Asset Management for PHP",
+            "homepage": "https://github.com/kriswallsmith/assetic",
+            "keywords": [
+                "assets",
+                "compression",
+                "minification"
+            ],
+            "time": "2016-11-11 18:43:20"
+        },
+        {
+            "name": "league/commonmark",
+            "version": "0.15.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/thephpleague/commonmark.git",
+                "reference": "c8b43ee5821362216f8e9ac684f0f59de164edcc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/thephpleague/commonmark/zipball/c8b43ee5821362216f8e9ac684f0f59de164edcc",
+                "reference": "c8b43ee5821362216f8e9ac684f0f59de164edcc",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=5.4.8"
+            },
+            "replace": {
+                "colinodell/commonmark-php": "*"
+            },
+            "require-dev": {
+                "cebe/markdown": "~1.0",
+                "erusev/parsedown": "~1.0",
+                "jgm/commonmark": "0.27",
+                "michelf/php-markdown": "~1.4",
+                "mikehaertl/php-shellcommand": "~1.2.0",
+                "phpunit/phpunit": "~4.3|~5.0",
+                "scrutinizer/ocular": "~1.1",
+                "symfony/finder": "~2.3|~3.0"
+            },
+            "suggest": {
+                "league/commonmark-extras": "Library of useful extensions including smart punctuation"
+            },
+            "bin": [
+                "bin/commonmark"
+            ],
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "0.16-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "League\\CommonMark\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Colin O'Dell",
+                    "email": "colinodell@gmail.com",
+                    "homepage": "https://www.colinodell.com",
+                    "role": "Lead Developer"
+                }
+            ],
+            "description": "Markdown parser for PHP based on the CommonMark spec",
+            "homepage": "https://github.com/thephpleague/commonmark",
+            "keywords": [
+                "commonmark",
+                "markdown",
+                "parser"
+            ],
+            "time": "2016-12-19 00:11:43"
+        },
+        {
+            "name": "maglnet/magl-markdown",
+            "version": "1.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/maglnet/MaglMarkdown.git",
+                "reference": "2329f8e10675a1d6f20645ebe36af73405f76221"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/maglnet/MaglMarkdown/zipball/2329f8e10675a1d6f20645ebe36af73405f76221",
+                "reference": "2329f8e10675a1d6f20645ebe36af73405f76221",
+                "shasum": ""
+            },
+            "require": {
+                "container-interop/container-interop": "^1.1",
+                "erusev/parsedown": "^1.6",
+                "erusev/parsedown-extra": "~0.5",
+                "ext-curl": "*",
+                "league/commonmark": "~0.5",
+                "michelf/php-markdown": "^1.4",
+                "php": "^5.3 || ^7.0",
+                "zendframework/zend-cache": "^2.4",
+                "zendframework/zend-eventmanager": "^2.4 || ^3.0",
+                "zendframework/zend-http": "^2.4",
+                "zendframework/zend-modulemanager": "^2.4",
+                "zendframework/zend-mvc": "^2.4 || ^3.0",
+                "zendframework/zend-servicemanager": "^2.4 || ^3.1.1",
+                "zendframework/zend-stdlib": "^2.4 || ^3.0",
+                "zendframework/zend-view": "^2.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8",
+                "zendframework/zend-console": "^2.4",
+                "zendframework/zend-i18n": "^2.4",
+                "zendframework/zend-log": "^2.4",
+                "zendframework/zend-serializer": "^2.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MaglMarkdown\\": "src/MaglMarkdown/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Matthias Glaub",
+                    "email": "magl@magl.net",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Provides a ZF2 View Helper to render markdown syntax. It uses third-party libraries for the rendering and you can switch between different renderers.",
+            "homepage": "https://github.com/maglnet/MaglMarkdown",
+            "keywords": [
+                "Zend Framework",
+                "gfm",
+                "github flavoured markdown",
+                "markdown",
+                "parsedown",
+                "zf2"
+            ],
+            "time": "2016-09-26 21:49:22"
+        },
+        {
+            "name": "michelf/php-markdown",
+            "version": "1.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/michelf/php-markdown.git",
+                "reference": "1f51cc520948f66cd2af8cbc45a5ee175e774220"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/michelf/php-markdown/zipball/1f51cc520948f66cd2af8cbc45a5ee175e774220",
+                "reference": "1f51cc520948f66cd2af8cbc45a5ee175e774220",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-lib": "1.4.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Michelf": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Michel Fortin",
+                    "email": "michel.fortin@michelf.ca",
+                    "homepage": "https://michelf.ca/",
+                    "role": "Developer"
+                },
+                {
+                    "name": "John Gruber",
+                    "homepage": "https://daringfireball.net/"
+                }
+            ],
+            "description": "PHP Markdown",
+            "homepage": "https://michelf.ca/projects/php-markdown/",
+            "keywords": [
+                "markdown"
+            ],
+            "time": "2016-10-29 18:58:20"
         },
         {
             "name": "mledoze/countries",
@@ -1228,6 +1578,63 @@
             "time": "2016-11-25 06:54:22"
         },
         {
+            "name": "phpoffice/phpexcel",
+            "version": "1.8.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHPOffice/PHPExcel.git",
+                "reference": "372c7cbb695a6f6f1e62649381aeaa37e7e70b32"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHPOffice/PHPExcel/zipball/372c7cbb695a6f6f1e62649381aeaa37e7e70b32",
+                "reference": "372c7cbb695a6f6f1e62649381aeaa37e7e70b32",
+                "shasum": ""
+            },
+            "require": {
+                "ext-xml": "*",
+                "ext-xmlwriter": "*",
+                "php": ">=5.2.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "PHPExcel": "Classes/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "LGPL"
+            ],
+            "authors": [
+                {
+                    "name": "Maarten Balliauw",
+                    "homepage": "http://blog.maartenballiauw.be"
+                },
+                {
+                    "name": "Mark Baker"
+                },
+                {
+                    "name": "Franck Lefevre",
+                    "homepage": "http://blog.rootslabs.net"
+                },
+                {
+                    "name": "Erik Tilt"
+                }
+            ],
+            "description": "PHPExcel - OpenXML - Read, Create and Write Spreadsheet documents in PHP - Spreadsheet engine",
+            "homepage": "http://phpexcel.codeplex.com",
+            "keywords": [
+                "OpenXML",
+                "excel",
+                "php",
+                "spreadsheet",
+                "xls",
+                "xlsx"
+            ],
+            "time": "2015-05-01 07:00:55"
+        },
+        {
             "name": "phpspec/prophecy",
             "version": "v1.6.2",
             "source": {
@@ -1771,6 +2178,73 @@
                 "psr-3"
             ],
             "time": "2016-10-10 12:19:37"
+        },
+        {
+            "name": "rwoverdijk/assetmanager",
+            "version": "1.7.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/RWOverdijk/AssetManager.git",
+                "reference": "e09fa3d4e426d72beaefefe6a9fe3f39a7572782"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/RWOverdijk/AssetManager/zipball/e09fa3d4e426d72beaefefe6a9fe3f39a7572782",
+                "reference": "e09fa3d4e426d72beaefefe6a9fe3f39a7572782",
+                "shasum": ""
+            },
+            "require": {
+                "kriswallsmith/assetic": "^1.2.1",
+                "php": "^5.5 || ^7.0",
+                "zendframework/zend-eventmanager": "^2.6.3 || ^3.0.1",
+                "zendframework/zend-loader": "^2.5.1",
+                "zendframework/zend-modulemanager": "^2.7.2",
+                "zendframework/zend-mvc": "^2.7.9 || ^3.0.2",
+                "zendframework/zend-servicemanager": "^2.7.6 || ^3.1.1",
+                "zendframework/zend-stdlib": "^2.7.7 || ^3.0.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8",
+                "squizlabs/php_codesniffer": "~1.5.0",
+                "zendframework/zend-cache": "^2.7.1",
+                "zendframework/zend-console": "^2.6",
+                "zendframework/zend-http": "^2.5.4",
+                "zendframework/zend-view": "^2.8.1"
+            },
+            "suggest": {
+                "zendframework/zend-mvc-console": "zend-mvc-console provides the ability to expose zend-mvc as a console application"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "AssetManager": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Wesley Overdijk",
+                    "email": "r.w.overdijk@gmail.com",
+                    "homepage": "http://blog.spoonx.nl/"
+                },
+                {
+                    "name": "Marco Pivetta",
+                    "email": "ocramius@gmail.com",
+                    "homepage": "http://ocramius.github.com/"
+                }
+            ],
+            "description": "An assetmanager module for Zend Framework 2.",
+            "homepage": "https://github.com/RWOverdijk/AssetManager",
+            "keywords": [
+                "asset",
+                "asset manager",
+                "zend framework 2",
+                "zf2"
+            ],
+            "time": "2016-08-23 11:24:22"
         },
         {
             "name": "sebastian/code-unit-reverse-lookup",
@@ -2667,6 +3141,55 @@
             "time": "2016-11-14 01:15:23"
         },
         {
+            "name": "symfony/process",
+            "version": "v3.2.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/process.git",
+                "reference": "02ea84847aad71be7e32056408bb19f3a616cdd3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/symfony/process/zipball/02ea84847aad71be7e32056408bb19f3a616cdd3",
+                "reference": "02ea84847aad71be7e32056408bb19f3a616cdd3",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.5.9"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "3.2-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Symfony\\Component\\Process\\": ""
+                },
+                "exclude-from-classmap": [
+                    "/Tests/"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Symfony Community",
+                    "homepage": "https://symfony.com/contributors"
+                }
+            ],
+            "description": "Symfony Process Component",
+            "homepage": "https://symfony.com",
+            "time": "2016-11-24 10:40:28"
+        },
+        {
             "name": "symfony/translation",
             "version": "v3.2.1",
             "source": {
@@ -2832,6 +3355,82 @@
             "time": "2015-07-04 07:35:09"
         },
         {
+            "name": "thadafinser/zfc-datagrid",
+            "version": "v1.3.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ThaDafinser/ZfcDatagrid.git",
+                "reference": "9134f451ca513171397277852cd39e9e66f5447c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ThaDafinser/ZfcDatagrid/zipball/9134f451ca513171397277852cd39e9e66f5447c",
+                "reference": "9134f451ca513171397277852cd39e9e66f5447c",
+                "shasum": ""
+            },
+            "require": {
+                "php": "~5.6|~7.0",
+                "zendframework/zend-cache": "~2.5",
+                "zendframework/zend-http": "~2.5",
+                "zendframework/zend-modulemanager": "~2.5",
+                "zendframework/zend-mvc": "~2.7|~3.0",
+                "zendframework/zend-paginator": "~2.5",
+                "zendframework/zend-servicemanager": "~2.7|~3.0",
+                "zendframework/zend-session": "~2.5",
+                "zendframework/zend-view": "~2.5"
+            },
+            "require-dev": {
+                "doctrine/doctrine-orm-module": "^1.1.0",
+                "friendsofphp/php-cs-fixer": "^1.11",
+                "phpunit/phpunit": "^5.6.1",
+                "zendframework/zend-console": "~2.5",
+                "zendframework/zend-db": "~2.5",
+                "zendframework/zend-i18n": "~2.5",
+                "zendframework/zend-json": "~2.5",
+                "zendframework/zend-text": "~2.5"
+            },
+            "suggest": {
+                "doctrine/doctrine-orm-module": "for doctrine support",
+                "ext-intl": "*",
+                "phpoffice/phpexcel": "^1.8",
+                "tecnickcom/tcpdf": "^6.2",
+                "zendframework/zend-json": "to support date ranges",
+                "zendframework/zend-text": "~2.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "ZfcDatagrid\\": "src/ZfcDatagrid"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Martin Keckeis",
+                    "email": "martin.keckeis1@gmail.com"
+                }
+            ],
+            "description": "Zend Framework 2 Module that provides a datagrid for different datasources and output formats",
+            "keywords": [
+                "Zend Framework",
+                "ZfcDatagrid",
+                "bootstrap",
+                "datagrid",
+                "datatable",
+                "doctrine",
+                "excel",
+                "jqgrid",
+                "module",
+                "pdf",
+                "zf2",
+                "zfc-datagrid"
+            ],
+            "time": "2016-11-11 07:38:34"
+        },
+        {
             "name": "tijsverkoyen/css-to-inline-styles",
             "version": "2.2.0",
             "source": {
@@ -2922,16 +3521,16 @@
         },
         {
             "name": "voku/portable-utf8",
-            "version": "3.1.8",
+            "version": "3.1.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/voku/portable-utf8.git",
-                "reference": "cd7fbc3919881978fddba84ce097542ab7c5bf1a"
+                "reference": "820a447596f9f2ec310266e40fc8269cb938a762"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/voku/portable-utf8/zipball/cd7fbc3919881978fddba84ce097542ab7c5bf1a",
-                "reference": "cd7fbc3919881978fddba84ce097542ab7c5bf1a",
+                "url": "https://api.github.com/repos/voku/portable-utf8/zipball/820a447596f9f2ec310266e40fc8269cb938a762",
+                "reference": "820a447596f9f2ec310266e40fc8269cb938a762",
                 "shasum": ""
             },
             "require": {
@@ -2988,7 +3587,7 @@
                 "utf-8",
                 "utf8"
             ],
-            "time": "2016-12-24 13:41:52"
+            "time": "2016-12-27 12:05:56"
         },
         {
             "name": "webmozart/assert",

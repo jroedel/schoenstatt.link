@@ -1,0 +1,72 @@
+<?php
+$form = $this->form;
+$jsScript = '';
+echo $this->formHidden($form->get('associationId'));?>
+<div class="form-group ">
+    <?php echo $this->formLabel($form->get('name'));
+    echo $this->formElement($form->get('name'));
+    echo $this->formElementErrors($form->get('name'));
+    echo $this->formElement($form->get('isNameTranslateable'));
+    echo $this->formElementErrors($form->get('isNameTranslateable')).'<br>';
+    echo $this->formElement($form->get('isLifeCommunity'));
+    echo $this->formElementErrors($form->get('isLifeCommunity')).'<br>';
+    echo $this->formElement($form->get('isActive'));
+    echo $this->formElementErrors($form->get('isActive'));?>
+</div>
+<?php
+echo $this->formRow($form->get('kind'));
+echo $this->formRow($form->get('country'));
+echo $this->formRow($form->get('foundationDate'));
+echo $this->formRow($form->get('suppressionDate'));?>
+<div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
+<?php echo $this->formRow($form->get('publicNotes'));
+echo $this->formRow($form->get('adminNotes'));?>
+    <hr>
+    <h2><?php echo $this->translate('Contact Info');?></h2>
+<?php
+echo $this->formRow($form->get('email'));
+echo $this->formRow($form->get('email2'));
+echo $this->formRow($form->get('phone1'));
+echo $this->formRow($form->get('phone1Label'));
+echo $this->formRow($form->get('phone2'));
+echo $this->formRow($form->get('phone2Label'));
+echo $this->formRow($form->get('phone3'));
+echo $this->formRow($form->get('phone3Label'));
+echo $this->formRow($form->get('twitterUser')); //@todo validate before submission
+echo $this->formRow($form->get('instagramUser')); //@todo validate before submission
+echo $this->formRow($form->get('facebookUrl'));
+echo $this->formRow($form->get('url1'));
+echo $this->formRow($form->get('url1Label'));
+echo $this->formRow($form->get('url2'));
+echo $this->formRow($form->get('url2Label'));
+echo $this->formRow($form->get('url3'));
+echo $this->formRow($form->get('url3Label'));
+echo $this->formRow($form->get('contactNotes'));
+echo $this->formRow($form->get('security'));
+$jsScript .= <<<JS
+$("select[name='phone1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+
+JS;
