@@ -16,6 +16,7 @@ use Schoenstatt\Form\PersonForm;
 use Patres\Mailing\Mailer;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
+use Schoenstatt\Form\SearchForm;
 
 class PersonsController extends AbstractActionController
 {
@@ -93,6 +94,39 @@ class PersonsController extends AbstractActionController
         ],
     ];
 
+    /**
+     * @return \Zend\View\Model\ViewModel
+     */
+    public function searchAction()
+    {
+        $sm = $this->getServiceLocator();
+        //make sure we get clean parameters
+        $params = $this->params()->fromQuery();
+        /** @var SearchForm $form */
+        $form = new SearchForm();
+        $form->setData($params);
+        $persons = null;
+//         $showPhotos = false;
+        if ($form->isValid()) {
+            $data = $form->getData();
+//             $showPhotos = $data['showPhotos'];
+//             $data['exMembers'] = false;
+//             unset($data['showPhotos']);
+            if (!empty($data)) {
+                /** @var SchoenstattTable $table */
+                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $persons = $table->searchPersons($data);
+            }
+        }
+        if (is_array($persons) && empty($persons)) {
+            $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
+        }
+        return new ViewModel(array(
+            'persons'       => $persons,
+            'form'          => $form,
+        ));
+    }
+
     public function showAction()
     {
         $id = (Int)$this->params()->fromRoute('person_id');
@@ -101,7 +135,7 @@ class PersonsController extends AbstractActionController
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Person not found.');
-            return $this->redirect()->toRoute('schoenstatt');
+            return $this->redirect()->toRoute('persons');
         }
         $sm = $this->getServiceLocator();
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
@@ -111,7 +145,7 @@ class PersonsController extends AbstractActionController
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Person not found.');
-            return $this->redirect()->toRoute('schoenstatt');
+            return $this->redirect()->toRoute('persons');
         }
 
         $mobileDetect = $this->mobileDetect(); //Retrieve "\Mobile_Detect" object
@@ -120,13 +154,13 @@ class PersonsController extends AbstractActionController
             $mobileDetect->isiOS() ? 'ios' : 'default'; //android, ios, default
         $this->addUserNamesToUrlList($person, $deviceType); //$person is ByRef
 
-        $table->registerVisit(SchoenstattTable::ENTITY_PERSON, $person['personId']);
+//         $table->registerVisit(SchoenstattTable::ENTITY_PERSON, $person['personId']);
 //         var_dump($person['urls']);
 //         var_dump($person);
         return new ViewModel(array(
             'person'        => $person,
             'deviceType'    => $deviceType,
-            'suggestForm'   => $sm->get('Schoenstatt\Form\SuggestForm'),
+//             'suggestForm'   => $sm->get('Schoenstatt\Form\SuggestForm'),
         ));
     }
 
@@ -385,22 +419,23 @@ class PersonsController extends AbstractActionController
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
-            $form->setValidationGroup($this->entityFieldMap['personCreate']['validationFields']);
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
                 try {
                     if (!($newId = $table->createEntity('person', $data))) {
+//                         var_dump('no new id');
                         $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                     } else {
                         $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully created.' );
-                        $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
+//                         $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
                     }
                 } catch (\Exception $e) {
+//                         var_dump('Exception');
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 }
             } else {
-//                 var_dump($form);
+                        print_r(array_keys($form->getInputFilter()->getInvalidInput()));
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }

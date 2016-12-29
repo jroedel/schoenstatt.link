@@ -31,11 +31,13 @@ return [
             */
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['guest', 'patres_user', 'patres_basic']],
-                ['route' => 'home', 'roles' => ['guest']],
+                ['route' => 'home', 'roles' => ['guest', 'patres_user']],
                 ['route' => 'contacts', 'roles' => ['patres_user']],
                 ['route' => 'schoenstatt', 'roles' => ['patres_user']],
                 ['route' => 'admin', 'roles' => ['patres_user']],
+                ['route' => 'persons', 'roles' => ['patres_user', 'patres_basic']],
                 ['route' => 'persons/person', 'roles' => ['patres_user', 'patres_basic']],
+                ['route' => 'persons/search', 'roles' => ['patres_user', 'patres_basic']],
                 ['route' => 'persons/create', 'roles' => ['patres_administrator', 'patres_moderator_general']],
                 ['route' => 'persons/person/edit', 'roles' => ['patres_administrator', 'patres_moderator_general']],
                 ['route' => 'persons/person/edit-private-info', 'roles' => ['patres_administrator', 'patres_moderator_general']],

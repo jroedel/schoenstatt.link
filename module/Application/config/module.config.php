@@ -12,46 +12,46 @@ namespace Application;
 return [
     'router' => [
         'routes' => [
-            'home' => [
-                'type' => 'Zend\Mvc\Router\Http\Literal',
-                'options' => [
-                    'route'    => '/',
-                    'defaults' => [
-                        'controller' => 'Application\Controller\Index',
-                        'action'     => 'index',
-                    ],
-                ],
-            ],
+//             'home' => [
+//                 'type' => 'Zend\Mvc\Router\Http\Literal',
+//                 'options' => [
+//                     'route'    => '/',
+//                     'defaults' => [
+//                         'controller' => 'Application\Controller\Index',
+//                         'action'     => 'index',
+//                     ],
+//                 ],
+//             ],
             // The following is a route to simplify getting started creating
             // new controllers and actions without needing to create a new
             // module. Simply drop new controllers in, and you can access them
             // using the path /application/:controller/:action
-            'application' => [
-                'type'    => 'Literal',
-                'options' => [
-                    'route'    => '/application',
-                    'defaults' => [
-                        '__NAMESPACE__' => 'Application\Controller',
-                        'controller'    => 'Index',
-                        'action'        => 'index',
-                    ],
-                ],
-                'may_terminate' => true,
-                'child_routes' => [
-                    'default' => [
-                        'type'    => 'Segment',
-                        'options' => [
-                            'route'    => '/[:controller[/:action]]',
-                            'constraints' => [
-                                'controller' => '[a-zA-Z][a-zA-Z0-9_-]*',
-                                'action'     => '[a-zA-Z][a-zA-Z0-9_-]*',
-                            ],
-                            'defaults' => [
-                            ],
-                        ],
-                    ],
-                ],
-            ],
+//             'application' => [
+//                 'type'    => 'Literal',
+//                 'options' => [
+//                     'route'    => '/application',
+//                     'defaults' => [
+//                         '__NAMESPACE__' => 'Application\Controller',
+//                         'controller'    => 'Index',
+//                         'action'        => 'index',
+//                     ],
+//                 ],
+//                 'may_terminate' => true,
+//                 'child_routes' => [
+//                     'default' => [
+//                         'type'    => 'Segment',
+//                         'options' => [
+//                             'route'    => '/[:controller[/:action]]',
+//                             'constraints' => [
+//                                 'controller' => '[a-zA-Z][a-zA-Z0-9_-]*',
+//                                 'action'     => '[a-zA-Z][a-zA-Z0-9_-]*',
+//                             ],
+//                             'defaults' => [
+//                             ],
+//                         ],
+//                     ],
+//                 ],
+//             ],
         ],
     ],
     'service_manager' => [
@@ -95,6 +95,55 @@ return [
             __DIR__ . '/../view',
         ],
     ],
+    'asset_manager' => array(
+        'resolver_configs' => array(
+            'collections' => array(
+                'js/basic.js' => array(
+                    'js/jquery.min.js',
+                    'js/bootstrap.min.js',
+                    'js/basic-include.js',
+                ),
+                'css/basic.css' => array(
+                    'css/bootstrap.min.css',
+                    'css/flag-icon.min.css',
+                    'css/font-awesome.min.css',
+                ),
+            ),
+            'paths' => array(
+//                 'photos' => __DIR__ . '/../../../../data/foto',
+                'Application' => __DIR__ . '/../public',
+            ),
+//             'map' => array(
+//                 'specific-path.css' => __DIR__ . '/some/particular/file.css',
+//             ),
+        ),
+        'caching' => array(
+            'css/basic.css' => array(
+                'cache'     => 'AssetManager\\Cache\\FilePathCache',
+                'options' => array(
+                    'dir' => 'public', // path/to/cache
+                ),
+            ),
+            'js/basic.js' => array(
+                'cache'     => 'AssetManager\\Cache\\FilePathCache',
+                'options' => array(
+                    'dir' => 'public', // path/to/cache
+                ),
+            ),
+        ),
+//         'filters' => array(
+//             'js/d.js' => array(
+//                 array(
+//                     // Note: You will need to require the classes used for the filters yourself.
+//                     'filter' => 'JSMin',
+//                 ),
+//             ),
+//         ),
+        'view_helper' => array(
+            // Note: You will need to require the factory used for the cache yourself.
+//             'cache'        => 'Application\Cache\Redis',
+        ),
+    ),
     // Placeholder for console routes
     'console' => [
         'router' => [

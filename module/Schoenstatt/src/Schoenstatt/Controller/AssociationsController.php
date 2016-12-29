@@ -14,7 +14,6 @@ use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Model\SchoenstattTable;
-use Patres\Form\GenerationForm;
 use Schoenstatt\Form\AssociationForm;
 use JTranslate\Controller\Plugin\NowMessenger;
 
@@ -23,35 +22,40 @@ class AssociationsController extends AbstractActionController
     public function indexAction()
     {
         //heirarchize the array
-        $associations = [
-            1 => [
-                'associationId'             => 1,
-                'name'                      => 'Schoenstatt Fathers',
-                'parent'                    => null,
-                'heirarchyLevel'            => 1,
-                'kind'                      => 'schoenstatt-institute',
-                'isNameTranslateable'       => true,
-                'isActive'                  => true,
-            ],
-            2 => [
-                'associationId'             => 2,
-                'name'                      => 'Schoenstatt Movement of USA',
-                'parent'                    => null,
-                'heirarchyLevel'            => 1,
-                'kind'                      => 'Kind',
-                'isNameTranslateable'       => true,
-                'isActive'                  => true,
-            ],
-            3 => [
-                'associationId'             => 3,
-                'name'                      => 'Schoenstatt Movement of Austin',
-                'parent'                    => 2,
-                'heirarchyLevel'            => 2,
-                'kind'                      => 'sch-diocesan-movement',
-                'isNameTranslateable'       => true,
-                'isActive'                  => true,
-            ],
-        ];
+
+        $sm = $this->getServiceLocator();
+        /** @var SchoenstattTable $table */
+        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $associations = $table->getAssociations();
+//         $associations = [
+//             1 => [
+//                 'associationId'             => 1,
+//                 'name'                      => 'Schoenstatt Fathers',
+//                 'parent'                    => null,
+//                 'heirarchyLevel'            => 1,
+//                 'kind'                      => 'schoenstatt-institute',
+//                 'isNameTranslateable'       => true,
+//                 'isActive'                  => true,
+//             ],
+//             2 => [
+//                 'associationId'             => 2,
+//                 'name'                      => 'Schoenstatt Movement of USA',
+//                 'parent'                    => null,
+//                 'heirarchyLevel'            => 1,
+//                 'kind'                      => 'Kind',
+//                 'isNameTranslateable'       => true,
+//                 'isActive'                  => true,
+//             ],
+//             3 => [
+//                 'associationId'             => 3,
+//                 'name'                      => 'Schoenstatt Movement of Austin',
+//                 'parent'                    => 2,
+//                 'heirarchyLevel'            => 2,
+//                 'kind'                      => 'sch-diocesan-movement',
+//                 'isNameTranslateable'       => true,
+//                 'isActive'                  => true,
+//             ],
+//         ];
         return new ViewModel([
             'entities'      => $associations,
         ]);
@@ -91,56 +95,58 @@ class AssociationsController extends AbstractActionController
 
     public function editAction()
     {
-        $id = (Int)$this->params()->fromRoute('generation_id');
+        $id = (Int)$this->params()->fromRoute('association_id');
         //var_dump($id);
         if (!$id) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Generation not found.');
-            return $this->redirect()->toRoute('courses');
+            ->addMessage('Association not found.');
+            return $this->redirect()->toRoute('associations');
         }
         $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $generation = $table->getSimpleGeneration($id);
-        if (!$generation) {
+        $association = $table->getAssociation($id);
+        if (!$association) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Generation not found.');
-            return $this->redirect()->toRoute('courses');
+            ->addMessage('Association not found.');
+            return $this->redirect()->toRoute('associations');
         }
 
-        $form = new GenerationForm();
+        $form = $sm->get('Schoenstatt\Form\AssociationForm');
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
             $form->setData($data);
-            if ($data ['generationId'] != $id) { // make sure the user is trying to update the right event
+            if ($data ['associationId'] != $id) { // make sure the user is trying to update the right event
                 $this->flashMessenger()
                 ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-                ->addMessage('Generation not found.');
-                return $this->redirect()->toRoute('courses');
+                ->addMessage('Association not found.');
+                return $this->redirect()->toRoute('associations');
             }
             if ($form->isValid()) {
                 $data = $form->getData();
                 try {
-                    $result = $table->updateEntity('generation', $id, $data);
+                    $result = $table->updateEntity('association', $id, $data);
 
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Generation successfully updated.' );
-                    $this->redirect()->toRoute ( 'generations/generation', array('generation_id' => $generation['generationId']) );
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully updated.' );
+//                     $this->redirect()->toRoute ( 'associations/association', array('association_id' => $association['associationId']) );
                 } catch (\Exception $e) {
                     //@todo this message should be logged
+                    var_dump($e);
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.');
                 }
             } else {
+                    var_dump('invalidform');
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         } else {
-            $form->setData($generation);
+            $form->setData($association);
         }
         return array (
             'form' => $form,
-            'entity' => $generation,
+            'entity' => $association,
         );
     }
 

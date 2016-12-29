@@ -5,8 +5,7 @@ $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
 // $this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/person-edit.js"));
 
 $headText = 'Create New Person';
-$this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle(sprintf($this->translate($headText), $this->personName)); ?>
+$this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
 // var_dump($form);
@@ -18,7 +17,6 @@ echo $this->partial('fields-partial', array(
     'form' => $form,
     'entity' => 'person',
 ));
-echo $this->formRow($form->get('security'));
 echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();
 ?>

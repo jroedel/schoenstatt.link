@@ -25,9 +25,9 @@ return [
 
         'auth_identity_fields' => [ 'username', 'email' ],
 
-        'login_redirect_route' => 'schoenstatt',
+        'login_redirect_route' => 'home',
 
-        'logout_redirect_route' => 'home',
+        'logout_redirect_route' => 'zfcuser/login',
 
         'use_redirect_parameter_if_present' => true,
 

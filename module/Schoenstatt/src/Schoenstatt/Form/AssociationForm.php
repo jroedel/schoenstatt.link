@@ -39,6 +39,21 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		]);
 		$this->add([
+			'name' => 'parent',
+			'type' => 'Select',
+			'options' => [
+				'label' => 'Parent organization (for sorting purposes)',
+		        'empty_option' => '',
+		        'unselected_value' => '',
+    			'disable_inarray_validator' => true,
+			    'value_options' => [
+			    ],
+			],
+			'attributes' => [
+				'required' => false,
+			],
+		]);
+		$this->add([
 			'name' => 'kind',
 			'type' => 'Select',
 			'options' => [
@@ -509,6 +524,9 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 	            ],
 			],
 		    'isNameTranslateable' => [
+		        'required' => false,
+		    ],
+		    'parent' => [
 		        'required' => false,
 		    ],
 		    'kind' => [

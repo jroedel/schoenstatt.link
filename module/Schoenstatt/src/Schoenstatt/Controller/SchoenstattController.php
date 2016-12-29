@@ -13,7 +13,6 @@ use Zend\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
 use Zend\View\Model\ViewModel;
-use JTranslate\Controller\Plugin\NowMessenger;
 
 class SchoenstattController extends AbstractActionController
 {
@@ -30,39 +29,5 @@ class SchoenstattController extends AbstractActionController
         return new ViewModel([
             'form' => $form,
         ]);
-    }
-
-    /**
-     * @return \Zend\View\Model\ViewModel
-     */
-    public function searchAction()
-    {
-        $sm = $this->getServiceLocator();
-        //make sure we get clean parameters
-        $params = $this->params()->fromQuery();
-        /** @var SearchForm $form */
-        $form = new SearchForm();
-        $form->setData($params);
-        $fathers = null;
-        $showPhotos = false;
-        if ($form->isValid()) {
-            $data = $form->getData();
-            $showPhotos = $data['showPhotos'];
-            $data['exMembers'] = false;
-            unset($data['showPhotos']);
-            if (!empty($data)) {
-                /** @var SchoenstattTable $table */
-                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-                $fathers = $table->searchPersons($data);
-            }
-        }
-        if (is_array($fathers) && empty($fathers)) {
-            $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
-        }
-        return new ViewModel(array(
-            'fathers'       => $fathers,
-            'showPhotos'    => $showPhotos,
-            'form'          => $form,
-        ));
     }
 }

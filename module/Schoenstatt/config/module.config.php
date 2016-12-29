@@ -17,6 +17,98 @@ return [
             'Schoenstatt\Config'                 => 'Schoenstatt\Service\ConfigServiceFactory',
         ],
     ],
+    'schoenstatt' => [
+        'association_kinds' => [
+            'sch-institute'                         => 'Schoenstatt institute',
+            'sch-national-federation'               => 'Schoenstatt national federation',
+            'sch-diocesan-movement'                 => 'Schoenstatt diocesan movement',
+            'sch-national-movement'                 => 'Schoenstatt national movement',
+            'sch-movement-international-structure'  => 'Schoenstatt movement international structure',
+            'sch-other'                             => 'Other Schoenstatt entity',
+            'legal-entity'                          => 'Legal entity',
+        ],
+        'post_place_line_format' => ':zip :cityState',
+        'post_place_line_format_by_country' => [
+            'US' => ':cityState :zip',
+            'CL' => ':cityState :zip',
+        ],
+        'url_map' => [
+            'g+' => [
+                'android'   => '%s',
+                'ios'       => '%s',
+                'default'   => '%s',
+                'logo'      => 'img/g+.png',
+                'label'     => 'G+',
+            ],
+            'skype' => [
+                'android'   => 'skype:%s?call',
+                'ios'       => 'skype:%s?call',
+                'default'   => 'skype:%s?call',
+                'logo'      => 'img/skype.png',
+                'userKey'   => 'skypeUser',
+                'label'     => 'Skype',
+            ],
+            'instagram' => [
+                'android'   => 'https://www.instagram.com/%s',
+                'ios'       => 'instagram://user?username=%s',
+                'default'   => 'https://www.instagram.com/%s',
+                'logo'      => 'img/instagram.png',
+                'userKey'   => 'instagramUser',
+                'label'     => 'Instagram',
+            ],
+            'slack' => [
+                'android'   => 'https://schoenstatt-fathers.slack.com/messages/%s/',
+                'ios'       => 'https://schoenstatt-fathers.slack.com/messages/%s/',
+                'default'   => 'https://schoenstatt-fathers.slack.com/messages/%s/',
+                'logo'      => 'img/slack.png',
+                'userKey'   => 'slackUser',
+                'label'     => 'Slack',
+            ],
+            'twitter' => [
+                'android'   => 'https://twitter.com/%s',
+                'ios'       => 'twitter://user?screen_name=%s',
+                'default'   => 'https://twitter.com/%s',
+                'logo'      => 'img/twitter.png',
+                'userKey'   => 'twitterUser',
+                'label'     => 'Twitter',
+            ],
+            'facebook' => [
+                'android'   => '%s',
+                'ios'       => '%s',
+                'default'   => '%s',
+                'logo'      => 'img/facebook.png',
+                'userKey'   => 'facebookUrl',
+                'label'     => 'Facebook',
+            ],
+            'blog' => [
+                'logo'      => 'img/blogger.png',
+                'label'     => 'Blog',
+            ],
+        ],
+        'excel_columns' => [
+            'fullFriendlyName'  => 'Name',
+            'condition'         => 'Condition',
+            'country'           => 'Home country',
+            'email'             => 'Email',
+            'cellPhone'         => 'Cell phone',
+            'courseName'        => 'Course',
+            'generationName'    => 'Generation',
+            'homeTerritoryName' => 'Home territory',
+            'responsibleTerritoryName' => 'Responsible territory',
+            'filiationName'     => 'Filiation',
+            'filiationCountry'  => 'Filiation country',
+            'houseName'         => 'House',
+            'houseCountry'      => 'House country',
+            'birthDate'         => 'Birthday',
+            'novitiateDate'     => 'Novitiate date',
+            'firstContractDate' => 'First contract date',
+            'perpetualDate'     => 'Perpetual date',
+            'deaconDate'        => 'Deacon date',
+            'priestDate'        => 'Priest date',
+            'deathDate'         => 'Death date',
+            'leaveDate'         => 'Leave date',
+        ],
+    ],
     'router' => [
         'routes' => [
             'admin' => [
@@ -46,11 +138,11 @@ return [
                     ],
                 ],
             ],
-            'contacts' => [
+            'home' => [
                 'type'    => 'Literal',
                 'options' => [
                     // Change this to something specific to your module
-                    'route'    => '/contacts',
+                    'route'    => '/',
                     'defaults' => [
                         // Change this value to reflect the namespace in which
                         // the controllers for your module are found
@@ -60,11 +152,18 @@ return [
                     ],
                 ],
                 'may_terminate' => true,
+            ],
+            'persons' => [
+                'type'    => 'Literal',
+                'options' => [
+                    'route'    => '/persons',
+                    'defaults' => [
+                        'controller' => 'Schoenstatt\Controller\Persons',
+                        'action'     => 'search',
+                    ],
+                ],
+                'may_terminate' => true,
                 'child_routes' => [
-                    // This route is a sane default when developing a module;
-                    // as you solidify the routes for your module, however,
-                    // you may want to remove it and replace it with more
-                    // specific routes.
                     'search' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -74,19 +173,6 @@ return [
                             ],
                         ],
                     ],
-                ],
-            ],
-            'persons' => [
-                'type'    => 'Literal',
-                'options' => [
-                    'route'    => '/persons',
-                    'defaults' => [
-                        'controller' => 'Schoenstatt\Controller\Persons',
-                        'action'     => 'show',
-                    ],
-                ],
-                'may_terminate' => false,
-                'child_routes' => [
                     'create' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -102,6 +188,9 @@ return [
                             'route'    => '/:person_id',
                             'constraints' => [
                                 'person_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
                             ],
                         ],
                         'may_terminate' => true,
@@ -258,7 +347,7 @@ return [
                 'table_key' => 'PersonId',
                 'entity_key_field' => 'personId',
                 'update_reference_data_function' => 'getPerson',
-                'name_column' => 'fullName',
+                'name_field' => 'fullName',
                 'has_dedicated_suggest_form' => false,
 //                 'scope' => 'Person',
                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
@@ -422,7 +511,7 @@ return [
                 'table_key' => 'AssociationId',
                 'entity_key_field' => 'associationId',
                 'update_reference_data_function' => 'getAssociation',
-                'name_column' => 'associationName',
+                'name_field' => 'associationName',
                 'has_dedicated_suggest_form' => false,
 //                 'scope' => 'Person',
 //                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
@@ -534,20 +623,20 @@ return [
             ],
         ],
     ],
-    'schoenstatt' => [
-        'association_kinds' => [
-            'sch-institute'                         => 'Schoenstatt institute',
-            'sch-national-federation'               => 'Schoenstatt national federation',
-            'sch-diocesan-movement'                 => 'Schoenstatt diocesan movement',
-            'sch-national-movement'                 => 'Schoenstatt national movement',
-            'sch-movement-international-structure'  => 'Schoenstatt movement international structure',
-            'sch-other'                             => 'Other Schoenstatt entity',
-            'legal-entity'                          => 'Legal entity',
-        ],
-    ],
     'view_manager' => [
         'template_path_stack' => [
             'Schoenstatt' => __DIR__ . '/../view',
+        ],
+    ],
+    'view_helpers' => [
+        'factories' => [
+        ],
+        'invokables' => [
+            'clipboardButton'		=> 'Schoenstatt\View\Helper\ClipboardButton',
+            'editPencil'		    => 'Schoenstatt\View\Helper\EditPencil',
+            'formatEntity'          => 'Schoenstatt\View\Helper\FormatEntity',
+        	'formatPerson'          => 'Schoenstatt\View\Helper\FormatPerson',
+            'languageChooser'       => 'Schoenstatt\View\Helper\LanguageChooser',
         ],
     ],
     'asset_manager' => [

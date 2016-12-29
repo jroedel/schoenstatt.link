@@ -190,34 +190,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		]);
 		$this->add([
-			'name' => 'skypeUser',
-			'type' => 'Text',
-			'options' => [
-				'label' => 'Skype user',
-			],
-			'attributes' => [
-				'required' => false
-			],
-		    'attributes' => [
-		        'placeholder' => 'ex. fr_johnsmith',
-		        'maxlength' => '32',
-		    ],
-		]);
-		$this->add([
-			'name' => 'slackUser',
-			'type' => 'Text',
-			'options' => [
-				'label' => 'Slack user',
-			],
-			'attributes' => [
-				'required' => false
-			],
-		    'attributes' => [
-		        'placeholder' => 'ex. fr_johnsmith',
-		        'maxlength' => '50',
-		    ],
-		]);
-		$this->add([
 			'name' => 'facebookUrl',
 			'type' => 'Url',
 			'options' => [
@@ -354,7 +326,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    'name' => 'firstName',
 		    'type' => 'Text',
 		    'options' => [
-		        'label' => 'Full first name',
+		        'label' => 'First name',
 		        'required' => true,
 		    ],
 		    'attributes' => [
@@ -366,7 +338,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	    'name' => 'lastName',
     	    'type' => 'Text',
     	    'options' => [
-    	        'label' => 'Full last name',
+    	        'label' => 'Last name',
     	        'required' => true,
     	    ],
     	    'attributes' => [
@@ -407,9 +379,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	        'checked_value' => '1',
     	        'unchecked_value' => '0',
     	        'use_hidden_element' => true,
-    	        'value' => '1',
     	    ],
     	    'attributes' => [
+    	        'value' => '1',
 		        'data-toggle'     => 'collapse',
 		        'data-target'     => '#titleGroup',
 		        'aria-expanded'   => 'false',
@@ -426,7 +398,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 			    'value_options' => [],// $this->customValueOptions['country'],
 		    ],
 		    'attributes' => [
-		        'required' => true
+		        'required' => false
 		    ],
 		]);
 
@@ -535,26 +507,24 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		        'required' => false,
 		    ],
 		]);
-		$this->add([
-		    'name' => 'leaveDate',
-		    'type' => 'Date',
-		    'options' => [
-		        'label' => 'Date of leaving the community',
-		        'format' => 'Y-m-d',
-		    ],
-		    'attributes' => [
-		        'min' => '1900-01-01',
-		        'step' => 'any',
-		        'required' => false,
-		    ],
-		]);
+// 		$this->add([
+// 		    'name' => 'leaveDate',
+// 		    'type' => 'Date',
+// 		    'options' => [
+// 		        'label' => 'Date of leaving the community',
+// 		        'format' => 'Y-m-d',
+// 		    ],
+// 		    'attributes' => [
+// 		        'min' => '1900-01-01',
+// 		        'step' => 'any',
+// 		        'required' => false,
+// 		    ],
+// 		]);
 
 
 /**
  * Private info
  * [
-        'emergencyContact1Name', 'emergencyContact1Relation', 'emergencyContact1Phone',
-        'emergencyContact2Name', 'emergencyContact2Relation', 'emergencyContact2Phone',
         'nationalities', 'birthCity', 'sionInfoGroups',
         'adminNotes', 'adminTags'
     ],
@@ -564,7 +534,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    'name' => 'nationalities',
 		    'type' => 'Select',
 		    'options' => [
-		        'label' => 'Nationalities',
+		        'label' => 'Nationality',
 		        'empty_option' => '',
 		        'unselected_value' => '',
 		        'value_options' => [],// $this->customValueOptions['country'],
@@ -996,6 +966,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 /**
  * Private info input filter
  */
+		    'nationalities' => [
+				'required' => false,
+		    ],
 		    'birthCity' => [
 				'required' => false,
                 'filters' => [
@@ -1032,7 +1005,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
  * Common columns
  */
 		    'personId'  => [
-				'required' => true,
+				'required' => false,
                 'filters' => [
                     ['name' => 'ToInt'],
                 ],

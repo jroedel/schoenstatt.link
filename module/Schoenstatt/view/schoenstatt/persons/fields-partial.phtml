@@ -1,39 +1,51 @@
 <?php
 $form = $this->form;
 $jsScript = '';
-if ($this->entity == 'contactInfo' || $this->entity == 'person') :
-    if ($this->entity == 'person') : ?>
-        <hr>
-        <h2><?php echo $this->translate('Contact Info');?></h2>
-    <?php endif;
-    echo $this->formRow($form->get('email'));
-    echo $this->formRow($form->get('email2'));?>
-    <div class="form-group ">
-        <?php echo $this->formLabel($form->get('cellPhone'));
-        echo $this->formElement($form->get('cellPhone'));
-        echo $this->formElementErrors($form->get('cellPhone'));
-        echo $this->formElement($form->get('cellPhoneHasWhatsApp'));
-        echo $this->formElementErrors($form->get('cellPhoneHasWhatsApp'));?>
+
+    echo $this->formRow($form->get('firstName'));
+    echo $this->formRow($form->get('lastName'));
+    $showTitle = $form->get('automaticTitle')->getValue() == 0;
+    $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>
+    <div class="form-group">
+    	<?php echo $this->formRow($form->get('automaticTitle'));?>
     </div>
-    <?php echo $this->formRow($form->get('phone1'));
-    echo $this->formRow($form->get('phone1Label'));
-    echo $this->formRow($form->get('phone2'));
-    echo $this->formRow($form->get('phone2Label'));
-    echo $this->formRow($form->get('phone3'));
-    echo $this->formRow($form->get('phone3Label'));
-    echo $this->formRow($form->get('skypeUser')); //@todo validate before submission
-    echo $this->formRow($form->get('twitterUser')); //@todo validate before submission
-    echo $this->formRow($form->get('instagramUser')); //@todo validate before submission
-    echo $this->formRow($form->get('slackUser')); //@todo validate before submission
-    echo $this->formRow($form->get('facebookUrl'));
-    echo $this->formRow($form->get('url1'));
-    echo $this->formRow($form->get('url1Label'));
-    echo $this->formRow($form->get('url2'));
-    echo $this->formRow($form->get('url2Label'));
-    echo $this->formRow($form->get('url3'));
-    echo $this->formRow($form->get('url3Label'));
-    echo $this->formRow($form->get('contactNotes'));
-    $jsScript .= <<<JS
+ 	<div class="collapse <?php if ($showTitle) echo 'in';?>" id="titleGroup" aria-expanded="<?php
+        echo $showTitle ? 'true' : 'false';?>">
+        <?php
+        echo $this->formRow($form->get('manualTitle'));?>
+	</div>
+	<?php
+    $this->formSelect()->setTranslatorEnabled(false);
+    echo $this->formRow($form->get('country'));
+    $this->formSelect()->setTranslatorEnabled(true);?>
+    <hr>
+    <h2><?php echo $this->translate('Contact Info');?></h2>
+<?php echo $this->formRow($form->get('email'));
+echo $this->formRow($form->get('email2'));?>
+<div class="form-group ">
+    <?php echo $this->formLabel($form->get('cellPhone'));
+    echo $this->formElement($form->get('cellPhone'));
+    echo $this->formElementErrors($form->get('cellPhone'));
+    echo $this->formElement($form->get('cellPhoneHasWhatsApp'));
+    echo $this->formElementErrors($form->get('cellPhoneHasWhatsApp'));?>
+</div>
+<?php echo $this->formRow($form->get('phone1'));
+echo $this->formRow($form->get('phone1Label'));
+echo $this->formRow($form->get('phone2'));
+echo $this->formRow($form->get('phone2Label'));
+echo $this->formRow($form->get('phone3'));
+echo $this->formRow($form->get('phone3Label'));
+echo $this->formRow($form->get('twitterUser')); //@todo validate before submission
+echo $this->formRow($form->get('instagramUser')); //@todo validate before submission
+echo $this->formRow($form->get('facebookUrl'));
+echo $this->formRow($form->get('url1'));
+echo $this->formRow($form->get('url1Label'));
+echo $this->formRow($form->get('url2'));
+echo $this->formRow($form->get('url2Label'));
+echo $this->formRow($form->get('url3'));
+echo $this->formRow($form->get('url3Label'));
+echo $this->formRow($form->get('contactNotes'));
+$jsScript .= <<<JS
 $("select[name='phone1Label']").selectize({
     create: true,
     sortField: 'text'
@@ -60,28 +72,10 @@ $("select[name='url3Label']").selectize({
 });
 
 JS;
-endif;
-if ($this->entity == 'personalInfo' || $this->entity == 'person') :
-    if ($this->entity == 'person') : ?>
+?>
     <hr>
     <h2><?php echo $this->translate('Personal Info');?></h2>
-    <?php endif;
-    echo $this->formRow($form->get('firstName'));
-    echo $this->formRow($form->get('lastName'));
-    $showTitle = $form->get('automaticTitle')->getValue() == 0;
-    $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>
-    <div class="form-group">
-    	<?php echo $this->formRow($form->get('automaticTitle'));?>
-    </div>
- 	<div class="collapse <?php if ($showTitle) echo 'in';?>" id="titleGroup" aria-expanded="<?php
-        echo $showTitle ? 'true' : 'false';?>">
-        <?php
-        echo $this->formRow($form->get('manualTitle'));?>
-	</div>
-	<?php
-    $this->formSelect()->setTranslatorEnabled(false);
-    echo $this->formRow($form->get('country'));
-    $this->formSelect()->setTranslatorEnabled(true);
+    <?php
     echo $this->formRow($form->get('birthDate'));?>
 <div class="form-group "><div class="row">
 <?php $monthElement = $form->get('nameDay')->getMonthElement();
@@ -154,20 +148,17 @@ $dayElement->setValueOptions([
     echo $this->formRow($form->get('priestDate'));
     echo $this->formRow($form->get('bishopDate'));
     echo $this->formRow($form->get('deathDate'));
-    echo $this->formRow($form->get('leaveDate'));
-    echo $this->formRow($form->get('publicNotes'));
-endif;
-if ($this->entity == 'privateInfo' || $this->entity == 'person') :
-    if ($this->entity == 'person') : ?>
+    echo $this->formRow($form->get('publicNotes'));?>
     <hr>
     <h2><?php echo $this->translate('Private Info');?></h2>
-    <?php endif;
+    <?php
  $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('nationalities'));
     echo $this->formRow($form->get('birthCity'));
  $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('adminNotes'));
     echo $this->formRow($form->get('adminTags'));
+    echo $this->formRow($form->get('security'));
     $jsScript .= <<<JS
 $("select[name='nationalities[]']").selectize({
     create: false,
@@ -180,7 +171,6 @@ $("select[name='adminTags[]']").selectize({
 });
 
 JS;
-endif;
 
 $this->inlineScript()->captureStart();
 echo <<<JS

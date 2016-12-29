@@ -16,7 +16,6 @@ echo $this->form()->openTag($form);
 echo $this->partial('fields-partial', array(
     'form' => $form,
 ));
-echo $this->formRow($form->get('security'));
 echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();
 ?>

@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "a558032989ee4fd5f6c2ca23027015ab",
-    "content-hash": "9881e26fe2d6742b175b06f4bd448898",
+    "hash": "fa4bfda9ac5229441bbfba3ec3cd17cf",
+    "content-hash": "0236c5e05daad67148d94965a36a303e",
     "packages": [
         {
             "name": "bjyoungblood/bjy-authorize",
@@ -601,12 +601,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/jroedel/zf2-jtranslate.git",
-                "reference": "619c48769120064a280155240ff9f68f5793bbdd"
+                "reference": "67a3b86ea8ba2b4cdd7534461092d2a69867b89d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jroedel/zf2-jtranslate/zipball/619c48769120064a280155240ff9f68f5793bbdd",
-                "reference": "619c48769120064a280155240ff9f68f5793bbdd",
+                "url": "https://api.github.com/repos/jroedel/zf2-jtranslate/zipball/67a3b86ea8ba2b4cdd7534461092d2a69867b89d",
+                "reference": "67a3b86ea8ba2b4cdd7534461092d2a69867b89d",
                 "shasum": ""
             },
             "require": {
@@ -647,7 +647,7 @@
                 "issues": "https://github.com/jroedel/zf2-jtranslate/issues",
                 "source": "https://github.com/jroedel/zf2-jtranslate/tree/master"
             },
-            "time": "2016-11-24 22:52:42"
+            "time": "2016-12-28 23:28:16"
         },
         {
             "name": "jroedel/zf2-juser",
@@ -1006,6 +1006,60 @@
             "time": "2016-09-01 09:41:00"
         },
         {
+            "name": "mobiledetect/mobiledetectlib",
+            "version": "2.8.24",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/serbanghita/Mobile-Detect.git",
+                "reference": "cdf8f8efaf993bc687e78e4622f5eebd0b8b3bf3"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/serbanghita/Mobile-Detect/zipball/cdf8f8efaf993bc687e78e4622f5eebd0b8b3bf3",
+                "reference": "cdf8f8efaf993bc687e78e4622f5eebd0b8b3bf3",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.0.0"
+            },
+            "require-dev": {
+                "codeclimate/php-test-reporter": "dev-master",
+                "johnkary/phpunit-speedtrap": "~1.0@dev",
+                "phpunit/phpunit": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "classmap": [
+                    "Mobile_Detect.php"
+                ],
+                "psr-0": {
+                    "Detection": "namespaced/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Serban Ghita",
+                    "email": "serbanghita@gmail.com",
+                    "homepage": "http://mobiledetect.net",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Mobile_Detect is a lightweight PHP class for detecting mobile devices. It uses the User-Agent string combined with specific HTTP headers to detect the mobile environment.",
+            "homepage": "https://github.com/serbanghita/Mobile-Detect",
+            "keywords": [
+                "detect mobile devices",
+                "mobile",
+                "mobile detect",
+                "mobile detector",
+                "php mobile detect"
+            ],
+            "time": "2016-11-11 14:56:25"
+        },
+        {
             "name": "mrclay/minify",
             "version": "2.3.0",
             "source": {
@@ -1171,6 +1225,60 @@
                 "zf2"
             ],
             "time": "2016-12-16 10:22:25"
+        },
+        {
+            "name": "neilime/zf2-mobile-detect",
+            "version": "1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/neilime/zf2-mobile-detect.git",
+                "reference": "0da033831b12c979d09767259e28d0ab3a2143d9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/neilime/zf2-mobile-detect/zipball/0da033831b12c979d09767259e28d0ab3a2143d9",
+                "reference": "0da033831b12c979d09767259e28d0ab3a2143d9",
+                "shasum": ""
+            },
+            "require": {
+                "mobiledetect/mobiledetectlib": "2.*@stable",
+                "php": ">=5.3.3",
+                "zendframework/zendframework": "2.*@stable"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0-dev"
+                }
+            },
+            "autoload": {
+                "psr-0": {
+                    "Neilime\\MobileDetect": "src"
+                },
+                "classmap": [
+                    "Module.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Neilime",
+                    "homepage": "https://github.com/neilime",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Zend Framework 2 module that provides Mobile-Detect features",
+            "homepage": "https://github.com/neilime/zf2-mobile-detect",
+            "keywords": [
+                "Mobile-Detect",
+                "mobile",
+                "mobile detect",
+                "zend framework 2"
+            ],
+            "time": "2013-07-01 13:20:49"
         },
         {
             "name": "neilime/zf2-twb-bundle",
@@ -1943,16 +2051,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "5.7.4",
+            "version": "5.7.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "af91da3f2671006ff5d0628023de3b7ac4d1ef09"
+                "reference": "50fd2be8f3e23e91da825f36f08e5f9633076ffe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/af91da3f2671006ff5d0628023de3b7ac4d1ef09",
-                "reference": "af91da3f2671006ff5d0628023de3b7ac4d1ef09",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/50fd2be8f3e23e91da825f36f08e5f9633076ffe",
+                "reference": "50fd2be8f3e23e91da825f36f08e5f9633076ffe",
                 "shasum": ""
             },
             "require": {
@@ -2021,7 +2129,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2016-12-13 16:19:44"
+            "time": "2016-12-28 07:18:51"
         },
         {
             "name": "phpunit/phpunit-mock-objects",

@@ -24,7 +24,8 @@
         "maglnet/magl-markdown": "~1.1",
         "thadafinser/zfc-datagrid": "^1.3",
         "phpoffice/phpexcel": "^1.8",
-        "rwoverdijk/assetmanager": "1.7.*"
+        "rwoverdijk/assetmanager": "1.7.*",
+    	"neilime/zf2-mobile-detect": "1.*.*"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

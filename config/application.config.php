@@ -21,6 +21,7 @@ $modules = [
     'JUser',
     'SionModel',
 	'JTranslate',
+    'Neilime\MobileDetect',
     'AssetManager',
     'ZfcDatagrid',
     'Application',
