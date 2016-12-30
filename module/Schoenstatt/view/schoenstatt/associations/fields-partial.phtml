@@ -16,7 +16,9 @@ echo $this->formHidden($form->get('associationId'));?>
 <?php
 echo $this->formRow($form->get('parent'));
 echo $this->formRow($form->get('kind'));
+$this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('country'));
+$this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
 echo $this->formRow($form->get('suppressionDate'));?>
 <div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>

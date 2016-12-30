@@ -27,7 +27,7 @@ class AdminController extends AbstractActionController
 //             'roles'                 => "Manage Roles",
 //             'admin/view-searches'   => "View Searches",
 //             'admin/view-changes'    => "View Changes",
-//             'samuser'               => "User Management",
+            'samuser'               => "User Management",
 //             'admin/moderate'        => "Review Suggestions",
 //             'admin/fix-flags'       => "Fix Flag Problems",
             'jtranslate'            => "Manage Translations",

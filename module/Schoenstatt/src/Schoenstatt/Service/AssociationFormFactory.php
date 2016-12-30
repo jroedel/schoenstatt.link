@@ -38,7 +38,7 @@ class AssociationFormFactory implements FactoryInterface
          * @todo Update this
          * @var unknown
          */
-		$adminTags = $table->getPersonAdminTags();
+// 		$adminTags = $table->getPersonAdminTags();
 
 		$associations = $table->getAssociationValueOptions();
 
@@ -50,7 +50,7 @@ class AssociationFormFactory implements FactoryInterface
 		$form->get('parent')->setValueOptions($associations);
 		$form->get('country')->setValueOptions($countryNames);
 		$form->get('kind')->setValueOptions($config['association_kinds']);
-		$form->get('adminTags')->setValueOptions($adminTags);
+// 		$form->get('adminTags')->setValueOptions($adminTags);
 		return $form;
     }
 }

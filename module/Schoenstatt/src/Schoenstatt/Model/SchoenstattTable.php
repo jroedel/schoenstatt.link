@@ -223,6 +223,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
                 'heirarchyLevel'        => 1, //@todo find a way to do this
+
+                'roles'                 => [],
 /**
  * Contact fields
  */

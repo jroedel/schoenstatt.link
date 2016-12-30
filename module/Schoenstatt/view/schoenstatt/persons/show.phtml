@@ -3,33 +3,33 @@ use JTranslate\View\Helper\CountryName;
 use Carbon\Carbon;
 use Patres\Model\PatresTable;
 
-$person = $this->person;
+$entity = $this->person;
 $pageTitle = '';
 $pageHeader = '';
-if (!$person['isLiving']) {
+if (!$entity['isLiving']) {
     $pageTitle .= '✝';
     $pageHeader .= '✝';
 }
-if ($person['title']) {
-    $title =  $this->escapeHtml($this->translate($person['title']));
+if ($entity['title']) {
+    $title =  $this->escapeHtml($this->translate($entity['title']));
     $pageTitle .= $title . ' ';
     $pageHeader .= $title . ' ';
 }
-$pageTitle .= $this->escapeHtml($person['fullFriendlyName']);
-$pageHeader .= $this->escapeHtml($person['fullName']);
+$pageTitle .= $this->escapeHtml($entity['fullFriendlyName']);
+$pageHeader .= $this->escapeHtml($entity['fullName']);
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($pageTitle);
 ?>
-<h1<?php if (!$person['isLiving']) { echo ' class="text-center"';}?>><?php echo $pageHeader;?></h1>
+<h1<?php if (!$entity['isLiving']) { echo ' class="text-center"';}?>><?php echo $pageHeader;?></h1>
 <div class="row">
-<div class="col-md-3<?php if (!$person['isLiving']) { echo ' col-md-offset-5';}?>">
-<?php if (file_exists(sprintf('public/persons/photos/%s.jpg', $person['personId']))) : ?>
-	<img src="<?php echo $this->basePath() . sprintf("/persons/photos/%s.jpg", $person['personId']); ?>"
-	height="200px" alt="<?php echo $this->escapeHtmlAttr($person['firstName'].' '.$person['lastName']);?>">
+<div class="col-md-3<?php if (!$entity['isLiving']) { echo ' col-md-offset-5';}?>">
+<?php if (file_exists(sprintf('public/persons/photos/%s.jpg', $entity['personId']))) : ?>
+	<img src="<?php echo $this->basePath() . sprintf("/persons/photos/%s.jpg", $entity['personId']); ?>"
+	height="200px" alt="<?php echo $this->escapeHtmlAttr($entity['firstName'].' '.$entity['lastName']);?>">
 <?php endif;?>
-<p class="align-center"><?php echo $this->escapeHtml(ucwords($person['condition']));?></p>
+<p class="align-center"><?php echo $this->escapeHtml(ucwords($entity['condition']));?></p>
 </div>
-<?php if ($person['isLiving']):?>
+<?php if ($entity['isLiving']):?>
 <div class="col-md-9">
 <div class="panel panel-default" id="contactInfoPanel">
     <div class="panel-heading">
@@ -39,9 +39,9 @@ $this->headTitle($pageTitle);
         </h3>
         </div>
         <div class="col-xs-5">
-        	<?php if (!is_null($person['contactInfoUpdatedOn'])) :?>
+        	<?php if (!is_null($entity['contactInfoUpdatedOn'])) :?>
         		<span class="pull-right"><small><?php echo sprintf($this->translate('Updated %s'),
-        		    $this->diffForHumans($person['contactInfoUpdatedOn']));?></small></span>
+        		    $this->diffForHumans($entity['contactInfoUpdatedOn']));?></small></span>
         	<?php endif;?>
         </div>
         </div>
@@ -50,16 +50,16 @@ $this->headTitle($pageTitle);
     	<div class="row">
     	<div class="col-md-7">
             <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
-            if (!is_null($person['email'])) { //@todo add checks for validated
-                echo $this->email($person['email']);
-                if (!is_null($person['email2'])) {
-                    echo ', '.$this->email($person['email2']);
+            if (!is_null($entity['email'])) { //@todo add checks for validated
+                echo $this->email($entity['email']);
+                if (!is_null($entity['email2'])) {
+                    echo ', '.$this->email($entity['email2']);
                 }
             }?></p>
             <div class="row">
             <div class="col-md-12">
             	<div class="row"><div class="col-md-12">
-            	<?php foreach ($person['urls'] as $urlRow) :?>
+            	<?php foreach ($entity['urls'] as $urlRow) :?>
             	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
             	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
             	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
@@ -70,15 +70,15 @@ $this->headTitle($pageTitle);
             </div> <!-- Links row -->
         </div>
         <div class="col-md-5">
-            <?php foreach ($person['phones'] as $phoneRow) : ?>
+            <?php foreach ($entity['phones'] as $phoneRow) : ?>
                 <p><strong><?php echo $this->translate($phoneRow['label']); ?>:</strong>
 				<span><?php echo $this->telephone($phoneRow['number'],
 						isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
 						$this->isAllowed('route/persons/person/edit-contact-info'));?></span></p>
             <?php endforeach;
-            if (!is_null($person['phonesUpdatedOn'])) :  //@todo add a question mark here with text
+            if (!is_null($entity['phonesUpdatedOn'])) :  //@todo add a question mark here with text
                 //@todo use diffForHumans view helper
-        	    $phoneUpdated = Carbon::instance($person['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
+        	    $phoneUpdated = Carbon::instance($entity['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
         	<?php endif;?>
         	<!--
@@ -103,7 +103,7 @@ $this->headTitle($pageTitle);
 
 <div class="row"> <!-- personal info panel row -->
 <div class="col-md-6"> <!-- community info column (free and official) -->
-<p><strong><?php echo $this->translate('Home country'); ?>:</strong> <?php echo $this->countryName($person['country'], true, CountryName::COUNTRY_NAME_OFFICIAL);?></p>
+<p><strong><?php echo $this->translate('Home country'); ?>:</strong> <?php echo $this->countryName($entity['country'], true, CountryName::COUNTRY_NAME_OFFICIAL);?></p>
 
 <hr>
 <?php //@todo add in public and admin notes of the living situation?>
@@ -111,29 +111,29 @@ $this->headTitle($pageTitle);
 
 <div class="col-md-6"> <!-- dates column -->
     <p><strong><?php echo $this->translate('Birthday'); ?>: </strong> <?php
-    if (is_object($person['birthDate'])) {
-        echo $this->dateFormat($person['birthDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    if (is_object($entity['birthDate'])) {
+        echo $this->dateFormat($entity['birthDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
     }?></p>
-    <?php if (is_object($person['deathDate'])): ?>
+    <?php if (is_object($entity['deathDate'])): ?>
         <p><strong><?php echo $this->translate('Passed away on'); ?>:</strong> <?php
-        echo $this->dateFormat($person['deathDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+        echo $this->dateFormat($entity['deathDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
     <?php endif;?>
     <p><strong><?php echo $this->translate('Nameday'); ?>: </strong> <?php
-    if ($person['nameDay']) {
-        echo $this->dayFormat($person['nameDay']);
+    if ($entity['nameDay']) {
+        echo $this->dayFormat($entity['nameDay']);
     }?></p>
 
     <p><strong><?php echo $this->translate('Diaconate ordination'); ?>:</strong>
-    <?php if (is_object($person['deaconDate'])) {
-        echo $this->dateFormat($person['deaconDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    <?php if (is_object($entity['deaconDate'])) {
+        echo $this->dateFormat($entity['deaconDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
     }?></p>
     <p><strong><?php echo $this->translate('Priestly ordination'); ?>:</strong>
-    <?php if (is_object($person['priestDate'])) {
-        echo $this->dateFormat($person['priestDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    <?php if (is_object($entity['priestDate'])) {
+        echo $this->dateFormat($entity['priestDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
     }?></p>
-    <?php if (is_object($person['bishopDate'])): ?>
+    <?php if (is_object($entity['bishopDate'])): ?>
         <p><strong><?php echo $this->translate('Episcopal ordination'); ?>:</strong> <?php
-        echo $this->dateFormat($person['bishopDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+        echo $this->dateFormat($entity['bishopDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
         ?></p>
     <?php endif;?>
 
@@ -158,11 +158,11 @@ $this->headTitle($pageTitle);
         <div class="col-xs-4">
         	<?php if ($this->isAllowed('route/persons/person/edit-private-info')) :  ?>
         	   <span class="pull-right"><a class="btn btn-default btn-sm"
-                href="<?php echo $this->url('persons/person/edit-private-info', ['person_id' => $person['personId']]);?>"><?php
+                href="<?php echo $this->url('persons/person/edit-private-info', ['person_id' => $entity['personId']]);?>"><?php
                 echo $this->translate("Edit information");?></a></span>
         	<?php elseif ($this->isAllowed('route/suggest')) :
         	   echo $this->partial('patres/patres/suggest-button',
-                ['entityType' => 'person', 'entityId' => $person['personId'],
+                ['entityType' => 'person', 'entityId' => $entity['personId'],
                     'class' => 'btn btn-default btn-sm pull-right',
                     'suggestForm' => $this->suggestForm,]);
             endif;?>
@@ -176,28 +176,28 @@ $this->headTitle($pageTitle);
 <!-- Nationalities, birth city -->
 <p><strong><?php echo $this->translate('Nationality'); ?>:</strong>
 <?php
-if (is_array($person['nationalities'])) {
+if (is_array($entity['nationalities'])) {
 $printNats = [];
-foreach ($person['nationalities'] as $nat) {
+foreach ($entity['nationalities'] as $nat) {
     $printNats[] = $this->countryName($nat, true, CountryName::COUNTRY_NAME_COMMON);
 }}
 echo implode(', ', $printNats);
 ?></p>
-<?php if (!empty($person['adminTags'])) :?>
+<?php if (!empty($entity['adminTags'])) :?>
 <p><strong><?php echo $this->translate('Admin tags'); ?>:</strong> <?php
 $adminTagFormat = '<span class="label label-default">%s</span>';
 $formattedAdminTags = array();
-foreach ($person['adminTags'] as $value) {
+foreach ($entity['adminTags'] as $value) {
     $formattedAdminTags[] = sprintf($adminTagFormat, $this->escapeHtml($value));
 }
 echo implode(' ', $formattedAdminTags);?>
 <?php endif;?>
 </div> <!-- private facts column -->
 
-<?php if (!is_null($person['adminNotes']) && $this->isAllowed('patres_details')): ?>
+<?php if (!is_null($entity['adminNotes']) && $this->isAllowed('patres_details')): ?>
 <div class="col-md-12">
     <p><strong><?php echo $this->translate('Admin Notes');?>:</strong></p>
-    <div><?php echo $this->markdown($person['adminNotes']);?>
+    <div><?php echo $this->markdown($entity['adminNotes']);?>
     </div>
 </div> <!-- admin notes column -->
 <?php endif;?>
@@ -210,7 +210,7 @@ echo implode(' ', $formattedAdminTags);?>
 </div> <!-- private info row -->
 <?php endif;?>
 
-<?php if (!empty($person['assignments'])) : ?>
+<?php if (!empty($entity['assignments'])) : ?>
 <div class="row"> <!-- assignments row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="assignmentsPanel">
@@ -218,7 +218,7 @@ echo implode(' ', $formattedAdminTags);?>
         <h3 class="panel-title"><?php echo $this->translate('Assignments'); //@todo add "+" add button with link to new assignment?></h3>
 	</div>
   <ul class="list-group">
-   <?php foreach ($person['assignments'] as $assignment) :
+   <?php foreach ($entity['assignments'] as $assignment) :
    if ($assignment['active'] || $this->isAllowed('patres_details')) :?>
        <li class="list-group-item <?php if (!$assignment['active']) echo 'disabled';?>"><?php
            echo $this->formatPersonAssignment($assignment);?>
@@ -231,7 +231,7 @@ echo implode(' ', $formattedAdminTags);?>
 </div> <!-- assignments row -->
 <?php endif;?>
 
-  <?php if (!is_null($person['publicNotes']) && 0 !== strlen($person['publicNotes'])):?>
+  <?php if (!is_null($entity['publicNotes']) && 0 !== strlen($entity['publicNotes'])):?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="notesPanel">
@@ -239,7 +239,7 @@ echo implode(' ', $formattedAdminTags);?>
         <h3 class="panel-title"><?php echo $this->translate('Notes'); ?></h3>
 	</div>
     <div class="panel-body">
-    <div><?php echo $this->markdown($person['publicNotes']);?>
+    <div><?php echo $this->markdown($entity['publicNotes']);?>
     </div>
 	</div> <!-- notes panel body -->
 </div> <!-- notes panel -->
@@ -252,7 +252,7 @@ echo implode(' ', $formattedAdminTags);?>
 <div class="row"><div class="col-md-12">
 <?php if ($this->isAllowed('route/persons/person/edit')):?>
       <a target="_blank" class="btn btn-primary"
-    href="<?php echo $this->url('persons/person/edit', array('person_id' => $person['personId']));?>"><?php
+    href="<?php echo $this->url('persons/person/edit', array('person_id' => $entity['personId']));?>"><?php
     echo $this->translate("Edit details")?></a>
 <?php endif;?>
 </div></div>

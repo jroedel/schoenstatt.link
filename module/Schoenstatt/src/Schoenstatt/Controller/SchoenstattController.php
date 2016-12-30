@@ -19,7 +19,7 @@ class SchoenstattController extends AbstractActionController
     public function indexAction()
     {
         if (!$this->zfcUserAuthentication()->hasIdentity()) {
-            return $this->redirect()->toRoute('home');
+            return $this->redirect()->toRoute('zfcuser/login');
         }
 
         $sm = $this->getServiceLocator();

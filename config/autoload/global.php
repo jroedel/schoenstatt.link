@@ -20,6 +20,11 @@ return [
                 'route' => 'associations',
                 'resource' => 'route/associations',
             ],
+            [
+                'label' => 'Admin',
+                'route' => 'admin',
+                'resource' => 'route/admin',
+            ],
         ],
     ],
 ];

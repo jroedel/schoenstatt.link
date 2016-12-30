@@ -77,7 +77,7 @@ class AssociationsController extends AbstractActionController
         if (!$id) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Generation not found.');
+            ->addMessage('Association not found.');
             return $this->redirect()->toRoute('associations');
         }
         $sm = $this->getServiceLocator();

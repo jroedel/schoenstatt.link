@@ -1,53 +1,92 @@
 <?php
 $entity = $this->entity;
 $this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle($entity['generationName']);?>
-<h1><?php echo $this->escapeHtml($this->entity['generationName']);?></h1>
+$this->headTitle($entity['name']);?>
+<h1><?php echo $this->escapeHtml($this->entity['name']);?></h1>
+<div class="row">
 
+<div class="col-md-9">
+<div class="panel panel-default" id="contactInfoPanel">
+    <div class="panel-heading">
+    	<div class="row">
+    	<div class="col-xs-4">
+        	<h3 class="panel-title"><?php echo $this->translate('Contact Info'); //@todo add contact notes and modified date?>
+        </h3>
+        </div>
+        <div class="col-xs-5">
+        	<?php if (!is_null($entity['contactInfoUpdatedOn'])) :?>
+        		<span class="pull-right"><small><?php echo sprintf($this->translate('Updated %s'),
+        		    $this->diffForHumans($entity['contactInfoUpdatedOn']));?></small></span>
+        	<?php endif;?>
+        </div>
+        </div>
+	</div>
+    <div class="panel-body">
+    	<div class="row">
+    	<div class="col-md-7">
+            <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
+            if (!is_null($entity['email'])) { //@todo add checks for validated
+                echo $this->email($entity['email']);
+                if (!is_null($entity['email2'])) {
+                    echo ', '.$this->email($entity['email2']);
+                }
+            }?></p>
+            <div class="row">
+            <div class="col-md-12">
+            	<div class="row"><div class="col-md-12">
+            	<?php foreach ($entity['urls'] as $urlRow) :?>
+            	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
+            	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
+            	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
+            	</a>&nbsp;
+            	<?php endforeach; //@todo add email modified date?>
+            	</div></div> <!-- Websites row and column -->
+            </div> <!-- Links column -->
+            </div> <!-- Links row -->
+        </div>
+        <div class="col-md-5">
+            <?php foreach ($entity['phones'] as $phoneRow) : ?>
+                <p><strong><?php echo $this->translate($phoneRow['label']); ?>:</strong>
+				<span><?php echo $this->telephone($phoneRow['number'],
+						isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
+						$this->isAllowed('route/persons/person/edit-contact-info'));?></span></p>
+            <?php endforeach;
+            if (!is_null($entity['phonesUpdatedOn'])) :  //@todo add a question mark here with text
+                //@todo use diffForHumans view helper
+        	    $phoneUpdated = Carbon::instance($entity['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
+                <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
+        	<?php endif;?>
+        	<!--
+        	Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
+        	Please help in confirming and/or updating out-dated information.
+        	 -->
+		</div> <!-- phones column -->
+        </div>
+    </div> <!-- contact info panel body -->
+</div> <!-- contact info panel -->
+</div> <!-- col-md-9 -->
+</div>
 <div class="row">
 <div class="col-md-12">
 <div class="panel panel-default" id="infoPanel">
     <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-6">
-        	<h3 class="panel-title"><?php echo $this->translate('Generation Info'); ?></h3>
-        </div>
-
-        <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/generations/generation/edit')): ?>
-                <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
-                    echo $this->url('generations/generation/edit', array('generation_id' => $entity['generationId']));?>">
-                    <?php echo $this->translate('Edit generation')?></a>
-                </span>
-            <?php elseif (false)://@todo $this->isAllowed('route/generations/generation/suggest')):?>
-                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('courses/course/suggest', array('generation_id' => $entity['generationId']));?>">
-                    <?php echo $this->translate('Suggest change')?></a>
-                </span>
-            <?php endif;?>
-        </div>
-        </div>
+    	<h3 class="panel-title"><?php echo $this->translate('Association Info'); ?></h3>
 	</div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-        <p><strong><?php echo $this->translate('Celebration date');?>:</strong>
-      <?php if (!is_null($entity['celebrationDate'])) {
-        echo $this->dateFormat($entity['celebrationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
-      }?></p>
-      <p><strong><?php echo $this->translate('Foundation date');?>:</strong> <?php
-        if (!is_null($entity['foundingDate'])) {
-            echo $this->dateFormat($entity['foundingDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        <p><strong><?php echo $this->translate('Foundation date');?>:</strong>
+        <?php if (!is_null($entity['foundationDate'])) {
+        echo $this->dateFormat($entity['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
         }?></p>
-      <hr>
-      <h4 class="text-center"><strong><?php echo $this->translate('Courses');?></strong></h4>
-      <?php foreach ($entity['courses'] as $course) :?>
-          <p><a href="#course<?php echo $course['courseId']?>"><?php
-            echo $course['courseName'];?></a></p>
-      <?php endforeach;?>
+		<?php if (!is_null($entity['suppressionDate'])) :?>
+      		<p><strong><?php echo $this->translate('Suppression date');?>:</strong> <?php
+                echo $this->dateFormat($entity['suppressionDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+            ?></p>
+		<?php endif;?>
 	</div> <!-- info 1 column -->
 
     <div class="col-md-6">
-      <h4 class="text-center"><strong><?php echo $this->translate('Generation representatives');?></strong></h4>
+      <h4 class="text-center"><strong><?php echo $this->translate('Association representatives');?></strong></h4>
     <?php foreach ($entity['roles'] as $role) : ?>
     <p>
     	<?php if ($role['assignmentPersonId']) :?>
@@ -75,83 +114,3 @@ $this->headTitle($entity['generationName']);?>
 </div> <!-- course info 1 panel -->
 </div><!-- info 1 column -->
 </div> <!-- Info row -->
-
-<?php if (count($entity['idealLanguages']) > 0) :?>
-<div class="row"> <!-- ideal row -->
-<div class="col-md-12">
-<div class="panel panel-default" id="generationIdealPanel">
-    <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-8">
-        	<h3 class="panel-title"><?php echo $this->translate('Ideal Statement');?>
-        </h3>
-        </div>
-        <div class="col-xs-4"><div class="pull-right">
-        	<?php
-        	$selectedLanguage = $this->languageChooser(array_keys($entity['idealLanguages']));
-        	$firstSelector = true;
-        	foreach ($entity['idealLanguages'] as $language => $key) :
-                $divId = $language.'IdealGeneration'.$entity['generationId'];
-                if ($language === $selectedLanguage) {
-                    $isSelected = true;
-                } else {
-                    $isSelected = false;
-                }
-                if (!$firstSelector) {
-                    echo '|';
-                } else {
-                    $firstSelector = false;
-                }?>
-        		<a data-toggle ="collapse"
-		        data-target="#<?php echo $divId;?>"
-		        aria-expanded="<?php echo $isSelected ? 'true' : 'false';?>"
-		        aria-controls="<?php echo $divId;?>"
-		        aria-expanded="<?php echo $isSelected ? 'true' : 'false';?>">
-        		<?php echo strtoupper($language);?></a>
-        	<?php endforeach;?></div>
-        </div>
-
-        </div>
-	</div>
-	<div class="panel-body">
-	<?php
-	$jsScript = '';
-    foreach ($entity['idealLanguages'] as $language => $key) {
-        $divId = $language.'IdealGeneration'.$entity['generationId'];
-        if ($language == $selectedLanguage) {
-            echo '<div class="collapse in" id="'.$divId.'" aria-expanded="true">';
-        } else {
-            echo '<div class="collapse" id="'.$divId.'" aria-expanded="false">';
-        }
-        echo $this->markdown($entity[$key]);
-        echo '</div>';
-	    $jsScript .= <<<JS
-$("#$divId").on('show.bs.collapse', function (e) {
-  $("#$divId").siblings().collapse('hide');
-})
-
-JS;
-    }
-$this->inlineScript()->captureStart();
-echo <<<JS
-$(function () {
-$jsScript
-});
-JS;
-$this->inlineScript()->captureEnd();
-    ?>
-	</div>
-</div> <!-- ideal panel -->
-</div> <!-- ideal column -->
-</div> <!-- ideal row -->
-<?php endif;?>
-
-<?php foreach ($this->entity['courses'] as $course) {
-    echo $this->partial('patres/courses/course-partial', [
-        'course' => $course,
-        'showExMembers' => false, //only if the user has permission
-        'showNotes' => false,
-        'showIdealStatement' => false,
-        'headerLevel' => 3,
-    ]);
-}
