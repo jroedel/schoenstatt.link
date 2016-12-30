@@ -745,22 +745,22 @@ return [
         'filters' => [
             'js/markdown-form-en.js' => [
                 [
-                    'filter' => 'Application\\Filter\\JShrinkFilter',
+                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
                 ],
             ],
             'js/markdown-form-es.js' => [
                 [
-                    'filter' => 'Application\\Filter\\JShrinkFilter',
+                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
                 ],
             ],
             'js/markdown-form-de.js' => [
                 [
-                    'filter' => 'Application\\Filter\\JShrinkFilter',
+                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
                 ],
             ],
             'js/markdown-form-pt.js' => [
                 [
-                    'filter' => 'Application\\Filter\\JShrinkFilter',
+                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
                 ],
             ],
         ],

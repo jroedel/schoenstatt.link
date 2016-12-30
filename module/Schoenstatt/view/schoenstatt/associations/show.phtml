@@ -114,3 +114,11 @@ $this->headTitle($entity['name']);?>
 </div> <!-- course info 1 panel -->
 </div><!-- info 1 column -->
 </div> <!-- Info row -->
+
+<div class="row"><div class="col-md-12">
+<?php if ($this->isAllowed('route/associations/association/edit')):?>
+      <a class="btn btn-primary" href="<?php echo $this->url('associations/association/edit',
+          ['association_id' => $entity['associationId']]);?>"><?php
+    echo $this->translate("Edit details")?></a>
+<?php endif;?>
+</div></div>
