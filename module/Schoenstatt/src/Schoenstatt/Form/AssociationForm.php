@@ -396,6 +396,89 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		        'maxlength' => '50',
 		    ],
 		]);
+
+		$this->add([
+		    'name' => 'post1Street1',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Street line 1 (post1)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post1Street2',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Street line 2 (post1)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post1CityState',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'City/State (post1)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post1Zip',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Zip/PLZ (post1)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post1Country',
+		    'type' => 'Select',
+		    'options' => [
+		        'label' => 'Country (post1)',
+		        'empty_option' => '',
+		        'unselected_value' => '',
+		    ],
+		    'attributes' => [
+		        'required' => false
+		    ],
+		]);
+
+		$this->add([
+		    'name' => 'post2Street1',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Street line 1 (post2)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post2Street2',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Street line 2 (post2)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post2CityState',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'City/State (post2)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post2Zip',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Zip/PLZ (post2)',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'post2Country',
+		    'type' => 'Select',
+		    'options' => [
+		        'label' => 'Country (post2)',
+		        'empty_option' => '',
+		        'unselected_value' => '',
+		    ],
+		    'attributes' => [
+		        'required' => false
+		    ],
+		]);
+
 		$this->add([
 			'name' => 'contactNotes',
 			'type' => 'Textarea',
@@ -708,6 +791,168 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 	            'validators' => [
                     ['name' => 'SionModel\Validator\Instagram'],
 	            ],
+		    ],
+		    'post1Street1' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 70,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post1Street2' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 70,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post1CityState' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 40,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post1Zip' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 15,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post1Country' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		    ],
+		    'post2Street1' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 70,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post2Street2' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 70,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post2CityState' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 40,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post2Zip' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+		                'name' => 'StringLength',
+		                'options' => [
+		                    'encoding' => 'UTF-8',
+		                    'max' => 15,
+		                ],
+		            ],
+		        ],
+		    ],
+		    'post2Country' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
 		    ],
 		    'contactNotes' => [
 				'required' => false,

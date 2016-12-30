@@ -22,15 +22,14 @@ $this->headTitle($pageTitle);
 ?>
 <h1<?php if (!$entity['isLiving']) { echo ' class="text-center"';}?>><?php echo $pageHeader;?></h1>
 <div class="row">
-<div class="col-md-3<?php if (!$entity['isLiving']) { echo ' col-md-offset-5';}?>">
+<div class="col-md-2<?php if (!$entity['isLiving']) { echo ' col-md-offset-5';}?>">
 <?php if (file_exists(sprintf('public/persons/photos/%s.jpg', $entity['personId']))) : ?>
 	<img src="<?php echo $this->basePath() . sprintf("/persons/photos/%s.jpg", $entity['personId']); ?>"
 	height="200px" alt="<?php echo $this->escapeHtmlAttr($entity['firstName'].' '.$entity['lastName']);?>">
 <?php endif;?>
-<p class="align-center"><?php echo $this->escapeHtml(ucwords($entity['condition']));?></p>
 </div>
 <?php if ($entity['isLiving']):?>
-<div class="col-md-9">
+<div class="col-md-10">
 <div class="panel panel-default" id="contactInfoPanel">
     <div class="panel-heading">
     	<div class="row">
@@ -48,7 +47,14 @@ $this->headTitle($pageTitle);
 	</div>
     <div class="panel-body">
     	<div class="row">
-    	<div class="col-md-7">
+    	<?php if (isset($entity['postStreet1'])) {
+    	   $emailUrlCols = 5;
+    	   $phoneCols = 4;
+    	} else {
+    	   $emailUrlCols = 7;
+    	   $phoneCols = 5;
+    	}?>
+    	<div class="col-md-<?php echo $emailUrlCols;?>">
             <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
             if (!is_null($entity['email'])) { //@todo add checks for validated
                 echo $this->email($entity['email']);
@@ -60,16 +66,28 @@ $this->headTitle($pageTitle);
             <div class="col-md-12">
             	<div class="row"><div class="col-md-12">
             	<?php foreach ($entity['urls'] as $urlRow) :?>
-            	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
-            	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
-            	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
-            	</a>&nbsp;
+                	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
+                	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
+                	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
+                	</a>&nbsp;
             	<?php endforeach; //@todo add email modified date?>
             	</div></div> <!-- Websites row and column -->
             </div> <!-- Links column -->
             </div> <!-- Links row -->
         </div>
-        <div class="col-md-5">
+        <?php if (isset($entity['postStreet1'])) :?>
+        <div class="col-md-3">
+        	<p><strong><?php echo $this->translate('Postal address');?>:</strong></p>
+			<?php echo $this->address([
+			    'street1'    => $entity['postStreet1'],
+			    'street2'    => $entity['postStreet2'],
+			    'cityState'  => $entity['postCityState'],
+			    'zip'        => $entity['postZip'],
+			    'country'    => $entity['postCountry'],
+			]);?>
+        </div>
+        <?php endif;?>
+        <div class="col-md-<?php echo $phoneCols;?>">
             <?php foreach ($entity['phones'] as $phoneRow) : ?>
                 <p><strong><?php echo $this->translate($phoneRow['label']); ?>:</strong>
 				<span><?php echo $this->telephone($phoneRow['number'],
@@ -122,21 +140,6 @@ $this->headTitle($pageTitle);
     if ($entity['nameDay']) {
         echo $this->dayFormat($entity['nameDay']);
     }?></p>
-
-    <p><strong><?php echo $this->translate('Diaconate ordination'); ?>:</strong>
-    <?php if (is_object($entity['deaconDate'])) {
-        echo $this->dateFormat($entity['deaconDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-    }?></p>
-    <p><strong><?php echo $this->translate('Priestly ordination'); ?>:</strong>
-    <?php if (is_object($entity['priestDate'])) {
-        echo $this->dateFormat($entity['priestDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-    }?></p>
-    <?php if (is_object($entity['bishopDate'])): ?>
-        <p><strong><?php echo $this->translate('Episcopal ordination'); ?>:</strong> <?php
-        echo $this->dateFormat($entity['bishopDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-        ?></p>
-    <?php endif;?>
-
 </div> <!-- dates column -->
 </div> <!-- personal info panel row -->
 

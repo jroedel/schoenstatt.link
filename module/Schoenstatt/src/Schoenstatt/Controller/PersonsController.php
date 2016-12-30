@@ -20,80 +20,6 @@ use Schoenstatt\Form\SearchForm;
 
 class PersonsController extends AbstractActionController
 {
-    protected $entityFieldMap = [
-        'contactInfo' => [
-            'validationFields' => [
-                'email', 'email2', 'cellPhone', 'cellPhoneHasWhatsApp',
-                'phone1', 'phone1Label', 'phone2', 'phone2Label', 'phone3',
-                'phone3Label', 'skypeUser', 'twitterUser', 'instagramUser', 'facebookUrl', 'slackUser',
-                'url1', 'url1Label','url2', 'url2Label', 'url3', 'url3Label', 'contactNotes', 'personId',
-                'security',
-            ],
-        ],
-        'suggestContactInfo' => [
-            'validationFields' => [
-                'email', 'email2', 'cellPhone', 'cellPhoneHasWhatsApp',
-                'phone1', 'phone1Label', 'phone2', 'phone2Label', 'phone3',
-                'phone3Label', 'skypeUser', 'twitterUser', 'instagramUser', 'facebookUrl', 'slackUser',
-                'url1', 'url1Label','url2', 'url2Label', 'url3', 'url3Label', 'contactNotes', 'personId',
-                'security', 'suggestionNotes', 'suggestionByPersonId', 'suggestionByEmail'
-            ],
-        ],
-        'moderateContactInfo' => [
-            'validationFields' => [
-                'email', 'email2', 'cellPhone', 'cellPhoneHasWhatsApp',
-                'phone1', 'phone1Label', 'phone2', 'phone2Label', 'phone3',
-                'phone3Label', 'skypeUser', 'twitterUser', 'instagramUser', 'facebookUrl', 'slackUser',
-                'url1', 'url1Label','url2', 'url2Label', 'url3', 'url3Label', 'contactNotes', 'personId',
-                'security', 'suggestionResponse', 'suggestionId', 'deny'
-            ],
-        ],
-        'personalInfo' => [
-            'validationFields' => [
-                'firstName', 'lastName', 'manualTitle', 'automaticTitle', 'country', 'publicNotes',
-                'birthDate', 'nameDay', 'deaconDate', 'priestDate', 'bishopDate', 'deathDate',
-                'leaveDate', 'personId', 'security',
-            ],
-        ],
-        'privateInfo' => [
-            'validationFields' => [
-                'nationalities', 'birthCity', 'adminNotes', 'adminTags', 'personId', 'security',
-            ],
-        ],
-        'person' => [
-            'validationFields' => [
-                'personId', 'security',
-
-                'email', 'email2', 'cellPhone', 'cellPhoneHasWhatsApp',
-                'phone1', 'phone1Label', 'phone2', 'phone2Label', 'phone3',
-                'phone3Label', 'skypeUser', 'twitterUser', 'instagramUser', 'facebookUrl', 'slackUser',
-                'url1', 'url1Label','url2', 'url2Label', 'url3', 'url3Label', 'contactNotes',
-
-                'firstName', 'lastName', 'manualTitle', 'automaticTitle', 'country', 'publicNotes',
-                'birthDate', 'nameDay', 'deaconDate', 'priestDate', 'bishopDate', 'deathDate',
-                'leaveDate',
-
-                'nationalities', 'birthCity', 'adminNotes', 'adminTags'
-            ],
-        ],
-        'personCreate' => [
-            'validationFields' => [
-                'security',
-
-                'email', 'email2', 'cellPhone', 'cellPhoneHasWhatsApp',
-                'phone1', 'phone1Label', 'phone2', 'phone2Label', 'phone3',
-                'phone3Label', 'skypeUser', 'twitterUser', 'instagramUser', 'facebookUrl',
-                'url1', 'url1Label','url2', 'url2Label', 'url3', 'url3Label', 'contactNotes',
-
-                'firstName', 'lastName', 'manualTitle','automaticTitle', 'country', 'publicNotes',
-                'birthDate', 'nameDay', 'deaconDate', 'priestDate', 'bishopDate', 'deathDate',
-                'leaveDate',
-
-                'nationalities', 'birthCity', 'adminNotes', 'adminTags'
-            ],
-        ],
-    ];
-
     /**
      * @return \Zend\View\Model\ViewModel
      */
@@ -164,6 +90,11 @@ class PersonsController extends AbstractActionController
         ));
     }
 
+    /**
+     * Refactor this out to SionModel
+     * @param unknown $person
+     * @param unknown $deviceType
+     */
     protected function addUserNamesToUrlList(&$person, $deviceType)
     {
         $sm = $this->getServiceLocator();
@@ -207,13 +138,11 @@ class PersonsController extends AbstractActionController
         $id = (Int)$this->params()->fromRoute('person_id');
         $entity = $this->params()->fromRoute('entity');
         $routeName = $this->getEvent()->getRouteMatch()->getMatchedRouteName();
-        $debug = $this->params()->fromQuery('debugme') === 'true';
-        //var_dump($id);
         if (!$id) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Person not found.');
-            return $this->redirect()->toRoute('schoenstatt');
+            return $this->redirect()->toRoute('home');
         }
         $sm = $this->getServiceLocator();
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
@@ -223,7 +152,7 @@ class PersonsController extends AbstractActionController
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Person not found.');
-            return $this->redirect()->toRoute('schoenstatt');
+            return $this->redirect()->toRoute('home');
         }
 
         /** @var PersonForm $form */
@@ -231,33 +160,19 @@ class PersonsController extends AbstractActionController
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
-            $form->setValidationGroup($this->entityFieldMap[$entity]['validationFields']);
             $form->setData($data);
             if ($data ['personId'] != $id) { // make sure the user is trying to update the right event
                 $this->flashMessenger()
                     ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
                     ->addMessage('Person not found.');
-                return $this->redirect()->toRoute('schoenstatt');
+                return $this->redirect()->toRoute('home');
             }
             if ($form->isValid()) {
                 $data = $form->getData();
-                try {
-//                     var_dump('Form is valid!');
-//                     var_dump($data);
-                    $result = $table->updateEntity('person', $id, $data);
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
-                    $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
-                } catch (\Exception $e) {
-                    //@todo this message should be logged
-                    if ($debug) {
-                        var_dump($e);
-                    }
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.');
-                }
+                $result = $table->updateEntity('person', $id, $data);
+                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
+                $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
             } else {
-                if ($debug) {
-                    var_dump($form->getMessages());
-                }
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         } else {
@@ -422,20 +337,14 @@ class PersonsController extends AbstractActionController
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
-                try {
-                    if (!($newId = $table->createEntity('person', $data))) {
-//                         var_dump('no new id');
-                        $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                    } else {
-                        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully created.' );
-//                         $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
-                    }
-                } catch (\Exception $e) {
-//                         var_dump('Exception');
+                if (!($newId = $table->createEntity('person', $data))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                } else {
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully created.' );
+                    $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
                 }
             } else {
-                        print_r(array_keys($form->getInputFilter()->getInvalidInput()));
+                print_r(array_keys($form->getInputFilter()->getInvalidInput()));
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }

@@ -44,6 +44,11 @@ echo $this->formRow($form->get('url2'));
 echo $this->formRow($form->get('url2Label'));
 echo $this->formRow($form->get('url3'));
 echo $this->formRow($form->get('url3Label'));
+echo $this->formRow($form->get('postStreet1'));
+echo $this->formRow($form->get('postStreet2'));
+echo $this->formRow($form->get('postCityState'));
+echo $this->formRow($form->get('postZip'));
+echo $this->formRow($form->get('postCountry'));
 echo $this->formRow($form->get('contactNotes'));
 $jsScript .= <<<JS
 $("select[name='phone1Label']").selectize({
@@ -144,17 +149,13 @@ $dayElement->setValueOptions([
 </div> <!-- form-group row -->
 <div class="row"><?php echo $this->formElementErrors($form->get('nameDay'));?></div>
 </div> <!-- form-group -->
-    <?php echo $this->formRow($form->get('deaconDate'));
-    echo $this->formRow($form->get('priestDate'));
-    echo $this->formRow($form->get('bishopDate'));
-    echo $this->formRow($form->get('deathDate'));
+    <?php echo $this->formRow($form->get('deathDate'));
     echo $this->formRow($form->get('publicNotes'));?>
     <hr>
     <h2><?php echo $this->translate('Private Info');?></h2>
     <?php
  $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('nationalities'));
-    echo $this->formRow($form->get('birthCity'));
  $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('adminNotes'));
     echo $this->formRow($form->get('adminTags'));

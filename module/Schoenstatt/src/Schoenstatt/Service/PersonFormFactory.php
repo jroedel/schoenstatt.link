@@ -23,11 +23,11 @@ class PersonFormFactory implements FactoryInterface
 		/** @var \Zend\I18n\Translator\Translator $translator */
 		$translator = $serviceLocator->get ( 'translator' );
 
-		$valueOptions = array();
+		$valueOptions = [];
 
 		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
 
-		$adminTags = $table->getPersonAdminTags();
+// 		$adminTags = $table->getPersonAdminTags();
 
 		/** @var FormElementManagerV2Polyfill $formManager */
 		$formManager = $serviceLocator->get('FormElementManager');
@@ -35,8 +35,9 @@ class PersonFormFactory implements FactoryInterface
 		$form = $formManager->get('Schoenstatt\Form\PersonForm', [], true);
 
 		$form->get('country')->setValueOptions($countryNames);
+		$form->get('postCountry')->setValueOptions($countryNames);
 		$form->get('nationalities')->setValueOptions($countryNames);
-		$form->get('adminTags')->setValueOptions($adminTags);
+// 		$form->get('adminTags')->setValueOptions($adminTags);
 		return $form;
     }
 }

@@ -7,6 +7,16 @@ use Zend\View\Helper\AbstractHelper;
 
 class FormatEntity extends AbstractHelper
 {
+    public $associationLabels = [];
+
+    /**
+     *
+     * @param mixed[] $config The 'schoenstatt' config key
+     */
+    public function __construct($config)
+    {
+        $this->associationLabels = $config['association_kinds'];
+    }
 
     /**
      *
@@ -17,12 +27,15 @@ class FormatEntity extends AbstractHelper
     public function __invoke($entityType, $data, $options = [])
     {
     	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
+        $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : true;
+
         switch ($entityType) {
             case 'person':
                 return $this->view->formatPerson($data, $options);
                 break;
             case 'association':
                 if (!is_null($data['associationId'])) {
+
                     $finalMarkup = str_repeat('&nbsp;', $data['heirarchyLevel'] -1).str_repeat('↪', $data['heirarchyLevel'] -1);
     				$finalMarkup .= '<a href="'. $this->view->url('associations/association',
 				        ['association_id' => $data['associationId']]).'">';
@@ -32,6 +45,11 @@ class FormatEntity extends AbstractHelper
 					   $finalMarkup .= $data['name'];
                     }
                     $finalMarkup .= '</a>';
+
+                    if ($showLabelOption && isset($this->associationLabels[$data['kind']])) {
+                        $finalMarkup .= '&nbsp;'.$this->view->label($this->associationLabels[$data['kind']],
+                            'label-info');
+                    }
                     if ($editPencilOption) {
                         $finalMarkup .= $this->view->editPencil('association', $data['associationId']);
                     }

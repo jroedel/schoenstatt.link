@@ -162,21 +162,21 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
      */
     public function getAssociations()
     {
-
         if (!is_null($this->associationsCache)) {
             return $this->associationsCache;
         }
 
         $sql = "SELECT `AssociationId`, `AssociationName`, `Parent`, `Kind`,
-`Country`, `FoundationDate`, `SuppressionDate`, `IsLifeCommunity`,
-`IsNameTranslateable`, `IsActive`, `PublicNotes`, `PublicNotesUpdatedOn`,
-`PublicNotesUpdatedBy`, `AdminTags`, `AdminNotes`, `AdminNotesUpdatedOn`,
-`AdminNotesUpdatedBy`, `Email`, `Email2`, `EmailsUpdatedOn`, `EmailsUpdatedBy`,
-`Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`, `Phone3Label`,
-`PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`, `Url2`, `Url2Label`,
-`Url3`, `Url3Label`, `FacebookUrl`, `TwitterUser`, `InstagramUser`, `ContactNotes`,
-`ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
-`CreatedOn`, `CreatedBy` FROM `sch_associations` WHERE 1";
+`Country`, `FoundationDate`, `SuppressionDate`, `IsLifeCommunity`, `IsNameTranslateable`,
+`IsActive`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`, `AdminTags`,
+`AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `Email`, `Email2`,
+`EmailsUpdatedOn`, `EmailsUpdatedBy`, `Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`,
+`Phone3`, `Phone3Label`, `PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`,
+`Url2`, `Url2Label`, `Url3`, `Url3Label`, `FacebookUrl`, `TwitterUser`, `InstagramUser`,
+`Post1Street1`, `Post1Street2`, `Post1CityState`, `Post1Zip`, `Post1Country`,
+`Post2Street1`, `Post2Street2`, `Post2CityState`, `Post2Zip`, `Post2Country`,
+`ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`, `UpdatedOn`,
+`UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_associations` WHERE 1";
 
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
@@ -251,6 +251,16 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
                 'twitterUser'               => $this->filterDbString($row['TwitterUser']),
                 'instagramUser'             => $this->filterDbString($row['InstagramUser']),
+                'post1Street1'               => $this->filterDbString($row['Post1Street1']),
+                'post1Street2'               => $this->filterDbString($row['Post1Street2']),
+                'post1CityState'             => $this->filterDbString($row['Post1CityState']),
+                'post1Zip'                   => $this->filterDbString($row['Post1Zip']),
+                'post1Country'               => $this->filterDbString($row['Post1Country']),
+                'post2Street1'               => $this->filterDbString($row['Post2Street1']),
+                'post2Street2'               => $this->filterDbString($row['Post2Street2']),
+                'post2CityState'             => $this->filterDbString($row['Post2CityState']),
+                'post2Zip'                   => $this->filterDbString($row['Post2Zip']),
+                'post2Country'               => $this->filterDbString($row['Post2Country']),
                 'contactNotes'              => $this->filterDbString($row['ContactNotes']),
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
@@ -308,7 +318,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     /**
      * Get a parsed array of all the persons in the database
      * Results are cached
-     * Default order is leaveDate, deathDate, country, lastName
+     * Default order is deathDate, country, lastName
      * @return array
      */
     public function getPersons()
@@ -318,19 +328,18 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         }
 
         $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`,
-`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `ReligiousStatus`, `Title`,
-`TitleAutomatic`, `Country`, `BirthDate`, `NameDay`, `DeaconDate`, `PriestDate`,
-`BishopDate`, `DeathDate`, `LeaveDate`, `PublicNotes`, `PublicNotesUpdatedOn`,
-`PublicNotesUpdatedBy`, `PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`,
-`BirthCity`, `Nationalities`, `AdminNotes`, `AdminNotesUpdatedOn`,
-`AdminNotesUpdatedBy`, `PrivateInfoUpdatedOn`, `PrivateInfoUpdatedBy`,
-`Email`, `Email2`, `EmailsUpdatedOn`, `EmailsUpdatedBy`, `CellPhone`,
-`CellPhoneHasWhatsApp`, `Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`,
-`Phone3Label`, `PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`, `Url2`,
-`Url2Label`, `Url3`, `Url3Label`, `FacebookUrl`, `SkypeUser`, `TwitterUser`,
-`InstagramUser`, `SlackUser`, `ContactNotes`, `ContactInfoUpdatedOn`,
-`ContactInfoUpdatedBy`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`
-FROM `sch_persons` WHERE 1
+`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `ReligiousStatus`,
+`Title`, `TitleAutomatic`, `Country`, `BirthDate`, `NameDay`, `DeathDate`,
+`PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
+`PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`, `Nationalities`,
+`AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `Email`, `Email2`,
+`EmailsUpdatedOn`, `EmailsUpdatedBy`, `CellPhone`, `CellPhoneHasWhatsApp`,
+`Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`, `Phone3Label`,
+`PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`, `Url2`, `Url2Label`,
+`Url3`, `Url3Label`, `FacebookUrl`, `SkypeUser`, `TwitterUser`, `InstagramUser`,
+`SlackUser`, `PostStreet1`, `PostStreet2`, `PostCityState`, `PostZip`,
+`PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`,
+`UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_persons` WHERE 1
 ORDER BY `BirthDate`";
         $results = $this->fetchSome(null, $sqlPers, null);
         if (is_null($results) || 0 == count($results)) {
@@ -352,11 +361,7 @@ ORDER BY `BirthDate`";
         $today = new \DateTime(null, $tz);
         foreach ($results as $row) {
             $id = $this->filterDbId($row['PersonId']);
-            $leaveDate = $this->filterDbDate($row['LeaveDate']);
             $deathDate = $this->filterDbDate($row['DeathDate']);
-            $deaconDate = $this->filterDbDate($row['DeaconDate']);
-            $priestDate = $this->filterDbDate($row['PriestDate']);
-            $bishopDate = $this->filterDbDate($row['BishopDate']);
             $birthDate = $this->filterDbDate($row['BirthDate']);
             $nameDay = null;
             if (!is_null($row['NameDay']) && $row['NameDay'] != '0000-00-00') {
@@ -370,11 +375,6 @@ ORDER BY `BirthDate`";
             if (is_object($birthDate)) {
                 $interval = $today->diff($birthDate);
                 $age = $interval->y;
-            }
-            $priestYears = null;
-            if (is_object($priestDate)) {
-                $interval = $today->diff($priestDate);
-                $priestYears = $interval->y;
             }
             $nationalities = $this->filterDbArray($row['Nationalities']);
             foreach ($nationalities as $key => $value) {
@@ -393,53 +393,9 @@ ORDER BY `BirthDate`";
 
             $today = new \DateTime(null, $tz);
             $isLiving = is_null($deathDate);
-            $isMember = !(!is_null($leaveDate) && $leaveDate < $today);
-            $category = null;
-            $condition = null;
+//             $category = null;
+//             $condition = null;
             $title = null;
-            if (!$isMember) {
-                $category = $this::CATEGORY_EXMEMBER;
-                if (!is_null($bishopDate) && $bishopDate < $today) {
-                    $condition = $this::CONDITION_EXMEMBER_BISHOP;
-                } elseif (!is_null($priestDate) && $priestDate < $today) {
-                    $condition = $this::CONDITION_EXMEMBER_PRIEST;
-                } elseif (!is_null($deaconDate) && $deaconDate < $today) {
-                    $condition = $this::CONDITION_EXMEMBER_DEACON;
-                } elseif (!is_null($deathDate)) {
-                    $condition = $this::CONDITION_DECEASED_EXMEMBER;
-                } else {
-                    $condition = $this::CONDITION_EXMEMBER;
-                }
-            } elseif (!$isLiving) {
-                $category = $this::CATEGORY_DECEASED;
-                if (!is_null($bishopDate) && $bishopDate < $today) {
-                    $title = $this::TITLE_BISHOP;
-                    $condition = $this::CONDITION_DECEASED_BISHOP;
-                } elseif (!is_null($priestDate) && $priestDate < $today) {
-                    $title = $this::TITLE_PRIEST;
-                    $condition = $this::CONDITION_DECEASED_PRIEST;
-                } elseif (!is_null($deaconDate) && $deaconDate < $today) {
-                    $title = $this::TITLE_DEACON;
-                    $condition = $this::CONDITION_DECEASED_DEACON;
-                } else {
-                    $condition = $this::CONDITION_DECEASED;
-                }
-            } elseif (!is_null($bishopDate) && $bishopDate < $today) {
-                $category = $this::CATEGORY_BISHOP;
-                $title = $this::TITLE_BISHOP;
-                $condition = $this::CONDITION_BISHOP;
-            } elseif (!is_null($priestDate) && $priestDate < $today) {
-                $category = $this::CATEGORY_PRIEST;
-                $title = $this::TITLE_PRIEST;
-                $condition = $this::CONDITION_PRIEST;
-            } elseif (!is_null($deaconDate) && $deaconDate < $today) {
-                $category = $this::CATEGORY_DEACON;
-                $title = $this::TITLE_DEACON;
-                $condition = $this::CONDITION_DEACON;
-            } else {
-                $category = $this::CATEGORY_OTHER;
-                $condition = $this::CONDITION_OTHER;
-            }
 
             $automaticTitle = $this->filterDbBool($row['TitleAutomatic']);
             $manualTitle = $this->filterDbString($row['Title']);
@@ -478,11 +434,17 @@ ORDER BY `BirthDate`";
                 ];
             }
 
+            $address = [
+                'street1'               => $this->filterDbString($row['PostStreet1']),
+                'street2'               => $this->filterDbString($row['PostStreet2']),
+                'cityState'             => $this->filterDbString($row['PostCityState']),
+                'zip'                   => $this->filterDbString($row['PostZip']),
+                'country'               => $this->filterDbString($row['PostCountry']),
+            ];
+
             $return[$id] = [
                 'personId'                  => $id,
                 'isLiving'                  => $isLiving,
-                'isMember'                  => $isMember,
-                'isActive'                  => $isLiving && $isMember,
                 'title'                     => $title, //this is a calculated field, not for updating
                 'assignments'               => [],
                 'roleTitles'                => [],
@@ -505,18 +467,13 @@ ORDER BY `BirthDate`";
                 'fullFriendlyName'          => $fullName,
                 'automaticTitle'            => $automaticTitle,
                 'country'                   => $this->filterDbString($row['Country']),
-                'category'                  => $category,
+//                 'category'                  => $category,
                 'religiousStatus'           => $this->filterDbString($row['ReligiousStatus']),
-                'condition'                 => $condition,
+//                 'condition'                 => $condition,
                 'manualTitle'               => $manualTitle,
                 'primaryLocale'             => 'en_US', //@todo add this column
 
                 'deathDate'                 => $deathDate,
-                'leaveDate'                 => $leaveDate,
-                'deaconDate'                => $deaconDate,
-                'priestDate'                => $priestDate,
-                'bishopDate'                => $bishopDate,
-                'priestYears'               => $priestYears,
                 'birthDate'                 => $birthDate,
                 'age'                       => $age,
                 'nameDay'                   => $nameDay,
@@ -557,6 +514,15 @@ ORDER BY `BirthDate`";
                 'twitterUser'               => $this->filterDbString($row['TwitterUser']),
                 'instagramUser'             => $this->filterDbString($row['InstagramUser']),
                 'slackUser'                 => $this->filterDbString($row['SlackUser']),
+
+                'address'                   => $address,
+
+                'postStreet1'               => $address['street1'],
+                'postStreet2'               => $address['street2'],
+                'postCityState'             => $address['cityState'],
+                'postZip'                   => $address['zip'],
+                'postCountry'               => $address['country'],
+
                 'contactNotes'              => $this->filterDbString($row['ContactNotes']),
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
@@ -567,7 +533,7 @@ ORDER BY `BirthDate`";
 /**
  * Private info
  */
-                'birthCity'                 => $this->filterDbString($row['BirthCity']),
+//                 'birthCity'                 => $this->filterDbString($row['BirthCity']),
                 'nationalities'             => $nationalities,
 
                 'adminTags'                 => $this->filterDbArray(strtolower($row['AdminTags'])),
@@ -575,8 +541,6 @@ ORDER BY `BirthDate`";
                 'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
                 'adminNotesUpdatedBy'       => $this->filterDbId($row['AdminNotesUpdatedBy']),
 
-                'privateInfoUpdateOn'      => $this->filterDbDate($row['PrivateInfoUpdatedOn']),
-                'privateInfoUpdateBy'      => $this->filterDbDate($row['PrivateInfoUpdatedBy']),
             ];
         }
 

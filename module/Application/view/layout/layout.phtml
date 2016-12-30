@@ -4,7 +4,7 @@ echo $this->doctype(); ?>
 <html lang="<?php echo Locale::getPrimaryLanguage(Locale::getDefault()); ?>">
     <head>
         <meta charset="utf-8">
-        <?php echo $this->headTitle('ZF2 '. $this->translate('Skeleton Application'))->setSeparator(' - ')->setAutoEscape(false) ?>
+        <?php echo $this->headTitle($this->translate('Schoenstatt Link'))->setSeparator(' - ')->setAutoEscape(false) ?>
 
         <?php echo $this->headMeta()
             ->appendName('viewport', 'width=device-width, initial-scale=1.0')
@@ -37,7 +37,7 @@ echo $this->doctype(); ?>
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="<?php echo $this->url('home') ?>"><?php echo $this->translate('Schoenstatt Org') ?></a>
+                    <a class="navbar-brand" href="<?php echo $this->url('home') ?>"><?php echo $this->translate('Schoenstatt Link') ?></a>
                 </div>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <?php

@@ -302,6 +302,48 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		        'maxlength' => '50',
 		    ],
 		]);
+
+		$this->add([
+		    'name' => 'postStreet1',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Street Line 1',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'postStreet2',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Street Line 2',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'postCityState',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'City/State',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'postZip',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Zip/PLZ',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'postCountry',
+		    'type' => 'Select',
+		    'options' => [
+		        'label' => 'Country',
+		        'empty_option' => '',
+		        'unselected_value' => '',
+		    ],
+		    'attributes' => [
+		        'required' => false
+		    ],
+		]);
+
 		$this->add([
 			'name' => 'contactNotes',
 			'type' => 'Textarea',
@@ -311,17 +353,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 			],
 		]);
 
-/**
- * Personal elements
-	[
-	'firstName', 'lastName', 'friendlyFirstName', 'friendlyLastName', 'manualTitle', 'automaticTitle',
-	'courseId', 'homeTerritory', 'country', 'publicNotes',
-	'birthDate', 'nameDay', 'baptismDate', 'preCommunityMembershipDate', 'postulantDate',
-	'novitiateDate', 'firstContractDate', 'perpetualContractDate',
-	'deaconDate', 'priestDate', 'bishopDate', 'retirementDate', 'deathDate',
-	'leaveDate',
-	],
- */
 		$this->add([
 		    'name' => 'firstName',
 		    'type' => 'Text',
@@ -356,7 +387,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	        'empty_option' => '',
     	        'disable_inarray_validator' => true,
     	        'unselected_value' => '',
-    	        'value_options' => [
+    	        'value_options' => [ //@todo move this to config
     	            SchoenstattTable::TITLE_BROTHER => SchoenstattTable::TITLE_BROTHER,
     	            SchoenstattTable::TITLE_DEACON => SchoenstattTable::TITLE_DEACON,
     	            SchoenstattTable::TITLE_PRIEST => SchoenstattTable::TITLE_PRIEST,
@@ -392,10 +423,10 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    'name' => 'country',
 		    'type' => 'Select',
 		    'options' => [
-		        'label' => 'Country',
+		        'label' => 'Home country',
 		        'empty_option' => '',
 		        'unselected_value' => '',
-			    'value_options' => [],// $this->customValueOptions['country'],
+			    'value_options' => [],
 		    ],
 		    'attributes' => [
 		        'required' => false
@@ -456,45 +487,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		]);
 
 		$this->add([
-		    'name' => 'deaconDate',
-		    'type' => 'Date',
-		    'options' => [
-		        'label' => 'Diaconate ordination date',
-		        'format' => 'Y-m-d',
-		    ],
-		    'attributes' => [
-		        'min' => '1900-01-01',
-		        'step' => 'any',
-		        'required' => false,
-		    ],
-		]);
-		$this->add([
-		    'name' => 'priestDate',
-		    'type' => 'Date',
-		    'options' => [
-		        'label' => 'Priestly ordination date',
-		        'format' => 'Y-m-d',
-		    ],
-		    'attributes' => [
-		        'min' => '1900-01-01',
-		        'step' => 'any',
-		        'required' => false,
-		    ],
-		]);
-		$this->add([
-		    'name' => 'bishopDate',
-		    'type' => 'Date',
-		    'options' => [
-		        'label' => 'Episcopal ordination date',
-		        'format' => 'Y-m-d',
-		    ],
-		    'attributes' => [
-		        'min' => '1900-01-01',
-		        'step' => 'any',
-		        'required' => false,
-		    ],
-		]);
-		$this->add([
 		    'name' => 'deathDate',
 		    'type' => 'Date',
 		    'options' => [
@@ -507,20 +499,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		        'required' => false,
 		    ],
 		]);
-// 		$this->add([
-// 		    'name' => 'leaveDate',
-// 		    'type' => 'Date',
-// 		    'options' => [
-// 		        'label' => 'Date of leaving the community',
-// 		        'format' => 'Y-m-d',
-// 		    ],
-// 		    'attributes' => [
-// 		        'min' => '1900-01-01',
-// 		        'step' => 'any',
-// 		        'required' => false,
-// 		    ],
-// 		]);
-
 
 /**
  * Private info
@@ -545,18 +523,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		]);
 
-		$this->add([
-		    'name' => 'birthCity',
-		    'type' => 'Text',
-		    'options' => [
-		        'label' => 'Birth city',
-		        'required' => false,
-		    ],
-		    'attributes' => [
-		        'placeholder' => 'ex. Madrid, Spain',
-		        'maxlength' => '255',
-		    ],
-		]);
+
 
 
 		$this->add([//http://www.codingdrama.com/bootstrap-markdown/
@@ -804,6 +771,87 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\Slack'],
 	            ],
 			],
+    		'postStreet1' => [
+    		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'StripTags'],
+    		        ['name' => 'StripNewlines'],
+    		        ['name' => 'StringTrim'],
+    		        ['name' => 'ToNull'],
+    		    ],
+    		    'validators' => [
+    		        [
+    		            'name' => 'StringLength',
+    		            'options' => [
+    		                'encoding' => 'UTF-8',
+    		                'max' => 70,
+    		            ],
+    		        ],
+    		    ],
+    		],
+    		'postStreet2' => [
+    		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'StripTags'],
+    		        ['name' => 'StripNewlines'],
+    		        ['name' => 'StringTrim'],
+    		        ['name' => 'ToNull'],
+    		    ],
+    		    'validators' => [
+    		        [
+    		            'name' => 'StringLength',
+    		            'options' => [
+    		                'encoding' => 'UTF-8',
+    		                'max' => 70,
+    		            ],
+    		        ],
+    		    ],
+    		],
+    		'postCityState' => [
+    		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'StripTags'],
+    		        ['name' => 'StripNewlines'],
+    		        ['name' => 'StringTrim'],
+    		        ['name' => 'ToNull'],
+    		    ],
+    		    'validators' => [
+    		        [
+    		            'name' => 'StringLength',
+    		            'options' => [
+    		                'encoding' => 'UTF-8',
+    		                'max' => 40,
+    		            ],
+    		        ],
+    		    ],
+    		],
+    		'postZip' => [
+    		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'StripTags'],
+    		        ['name' => 'StripNewlines'],
+    		        ['name' => 'StringTrim'],
+    		        ['name' => 'ToNull'],
+    		    ],
+    		    'validators' => [
+    		        [
+    		            'name' => 'StringLength',
+    		            'options' => [
+    		                'encoding' => 'UTF-8',
+    		                'max' => 15,
+    		            ],
+    		        ],
+    		    ],
+    		],
+    		'postCountry' => [
+    		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'StripTags'],
+    		        ['name' => 'StripNewlines'],
+    		        ['name' => 'StringTrim'],
+    		        ['name' => 'ToNull'],
+    		    ],
+    		],
 		    'contactNotes' => [
 				'required' => false,
                 'filters' => [
@@ -920,43 +968,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\DateSelectNoYear'],
                 ],
 		    ],
-		    'baptismDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
-		    'preCommunityMembershipDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
-		    'deaconDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
-		    'priestDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
-		    'bishopDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
 		    'deathDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
-		    'leaveDate' => [
 				'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
@@ -969,18 +981,77 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    'nationalities' => [
 				'required' => false,
 		    ],
-		    'birthCity' => [
+	        'street1' => [
 				'required' => false,
-                'filters' => [
+		        'filters' => [
                     ['name' => 'StripTags'],
                     ['name' => 'StripNewlines'],
                     ['name' => 'StringTrim'],
-		            ['name' => 'ToNull',
-		                'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-		            ],
-                ],
+		            ['name' => 'ToNull'],
+		        ],
+	            'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 70,
+                        ],
+                    ],
+	            ],
+			],
+	        'street2' => [
+				'required' => false,
+		        'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+	            'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 70,
+                        ],
+                    ],
+	            ],
+			],
+	        'cityState' => [
+				'required' => false,
+		        'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+	            'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 40,
+                        ],
+                    ],
+	            ],
+			],
+	        'zip' => [
+				'required' => false,
+		        'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+	            'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 15,
+                        ],
+                    ],
+	            ],
 			],
 		    'adminNotes' => [
 				'required' => false,

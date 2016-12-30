@@ -67,9 +67,6 @@ class FormatPerson extends AbstractHelper
     	} else {
     	    $finalMarkup .= $this->view->escapeHtml($nameText);
     	}
-    	if ($person['leaveDate'] && $person['leaveDate'] instanceof \DateTime) {
-    	    $finalMarkup .= ' (&times;' . $person['leaveDate']->format('Y') . ')';
-    	}
     	if ($person['deathDate'] && $person['deathDate'] instanceof \DateTime) {
     		$finalMarkup .= ' (✝' . $person['deathDate']->format('Y') . ')';
     	}
