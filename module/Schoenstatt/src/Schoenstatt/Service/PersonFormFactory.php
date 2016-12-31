@@ -18,7 +18,7 @@ class PersonFormFactory implements FactoryInterface
      */
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
-        /** @var \Patres\Model\SchoenstattTable $table **/
+        /** @var \Schoenstatt\Model\SchoenstattTable $table **/
 		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
 		/** @var \Zend\I18n\Translator\Translator $translator */
 		$translator = $serviceLocator->get ( 'translator' );
@@ -26,6 +26,8 @@ class PersonFormFactory implements FactoryInterface
 		$valueOptions = [];
 
 		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
+
+		$lifeCommunities = $table->getAssociationValueOptions(false, true);
 
 // 		$adminTags = $table->getPersonAdminTags();
 
@@ -35,6 +37,7 @@ class PersonFormFactory implements FactoryInterface
 		$form = $formManager->get('Schoenstatt\Form\PersonForm', [], true);
 
 		$form->get('country')->setValueOptions($countryNames);
+		$form->get('lifeCommunity')->setValueOptions($lifeCommunities);
 		$form->get('postCountry')->setValueOptions($countryNames);
 		$form->get('nationalities')->setValueOptions($countryNames);
 // 		$form->get('adminTags')->setValueOptions($adminTags);

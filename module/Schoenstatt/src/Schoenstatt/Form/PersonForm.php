@@ -379,6 +379,18 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	]);
 
     	$this->add([
+    	    'name' => 'lifeCommunity',
+    	    'type' => 'Select',
+    	    'options' => [
+    	        'label' => 'Life community',
+    	        'empty_option' => '',
+    	        'unselected_value' => '',
+    	    ],
+    	    'attributes' => [
+    	        'required' => false
+    	    ],
+    	]);
+    	$this->add([
     	    'name' => 'manualTitle',
     	    'type' => 'Select',
     	    'options' => [
@@ -980,6 +992,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
  */
 		    'nationalities' => [
 				'required' => false,
+		    ],
+		    'lifeCommunity' => [
+		        'required' => false,
 		    ],
 	        'street1' => [
 				'required' => false,

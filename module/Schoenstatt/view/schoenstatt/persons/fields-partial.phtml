@@ -4,6 +4,7 @@ $jsScript = '';
 
     echo $this->formRow($form->get('firstName'));
     echo $this->formRow($form->get('lastName'));
+    echo $this->formRow($form->get('lifeCommunity'));
     $showTitle = $form->get('automaticTitle')->getValue() == 0;
     $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>
     <div class="form-group">

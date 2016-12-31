@@ -328,7 +328,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         }
 
         $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`,
-`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `ReligiousStatus`,
+`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `ReligiousStatus`, `LifeCommunity`,
 `Title`, `TitleAutomatic`, `Country`, `BirthDate`, `NameDay`, `DeathDate`,
 `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`, `Nationalities`,
@@ -469,6 +469,7 @@ ORDER BY `BirthDate`";
                 'country'                   => $this->filterDbString($row['Country']),
 //                 'category'                  => $category,
                 'religiousStatus'           => $this->filterDbString($row['ReligiousStatus']),
+                'lifeCommunity'             => $this->filterDbId($row['LifeCommunity']),
 //                 'condition'                 => $condition,
                 'manualTitle'               => $manualTitle,
                 'primaryLocale'             => 'en_US', //@todo add this column
