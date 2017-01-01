@@ -1,8 +1,8 @@
 <?php
 $areResults = isset($this->entities) && 0!=count($this->entities);
 
-if ($this->isAllowed('route/persons/create')) :?>
-<a href="<?php echo $this->url('persons/create')?>"><?php echo $this->translate('Add person');?></a>
+if ($this->isAllowed('route/assignments/create')) :?>
+<a href="<?php echo $this->url('assignments/create')?>"><?php echo $this->translate('Add person');?></a>
 <?php endif;
 if ($areResults) :?>
 <table class="table">
@@ -18,10 +18,10 @@ if ($areResults) :?>
 <?php
 foreach ($this->entities as $entity) :?>
 <tr>
-    <td><?php echo $this->formatEntity('person', $entity);?></td>
+    <td><?php echo $this->formatEntity('person', $entity['person']);?></td>
     <td></td>
-    <td><?php echo $this->escapeHtml($entity['email']);?></td>
-    <td><?php echo $this->escapeHtml($entity['cellPhone']);?></td>
+    <td><?php echo $this->escapeHtml($entity['person']['email']);?></td>
+    <td><?php echo $this->escapeHtml($entity['person']['cellPhone']);?></td>
 </tr>
 <?php endforeach;?>
     </tbody>

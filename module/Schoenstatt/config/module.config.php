@@ -6,6 +6,7 @@ return [
             'Schoenstatt\Controller\Persons'        => 'Schoenstatt\Controller\PersonsController',
             'Schoenstatt\Controller\Associations'   => 'Schoenstatt\Controller\AssociationsController',
             'Schoenstatt\Controller\Admin'          => 'Schoenstatt\Controller\AdminController',
+            'Schoenstatt\Controller\Assignments'    => 'Schoenstatt\Controller\AssignmentsController',
         ],
     ],
     'service_manager' => [
@@ -272,6 +273,82 @@ return [
                     ],
                 ],
             ],
+            'assignments' => [
+                'type'    => 'Literal',
+                'options' => [
+                    'route'    => '/assignments',
+                    'defaults' => [
+                        'controller' => 'Schoenstatt\Controller\Assignments',
+                        'action'     => 'search',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'search' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/search',
+                            'defaults' => [
+                                'action'     => 'search',
+                            ],
+                        ],
+                    ],
+                    'create' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/create',
+                            'defaults' => [
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
+                    'assignment' => [
+                        'type'    => 'Segment',
+                        'options' => [
+                            'route'    => '/:assignment_id',
+                            'constraints' => [
+                                'assignment_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'edit' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/edit',
+                                    'defaults' => [
+                                        'action'     => 'edit',
+                                    ],
+                                ],
+                            ],
+                            'suggest' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/suggest',
+                                    'defaults' => [
+                                        'action'     => 'suggest',
+                                    ],
+                                ],
+                            ],
+                            'moderate' => [
+                                'type'    => 'Segment',
+                                'options' => [
+                                    'route'    => '/moderate/:suggestion_id',
+                                    'constraints' => [
+                                        'suggestion_id' => '[0-9]{1,5}',
+                                    ],
+                                    'defaults' => [
+                                        'action'     => 'moderate',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'associations' => [
                 'type'    => 'Literal',
                 'options' => [
@@ -386,6 +463,7 @@ return [
                     'phonesUpdatedOn',
                     'updatedOn',
                     'createdOn',
+                    'dataSourceUpdatedOn',
                 ],
                 'many_to_one_update_columns' => [
                     'email'                     => 'emails',
@@ -505,6 +583,7 @@ return [
                     'personId'                  => 'PersonId',
                     'dataSource'                => 'DataSource',
                     'dataSourceId'              => 'DataSourceId',
+                    'dataSourceUpdatedOn'       => 'DataSourceUpdatedOn',
                     'updatedOn'                 => 'UpdatedOn',
                     'updatedBy'                 => 'UpdatedBy',
                     'createdOn'                 => 'CreatedOn',
@@ -622,6 +701,87 @@ return [
                     'contactNotes'              => 'ContactNotes',
                     'contactInfoUpdatedOn'      => 'ContactInfoUpdatedOn',
                     'contactInfoUpdatedBy'      => 'ContactInfoUpdatedBy',
+                    'updatedOn'                 => 'UpdatedOn',
+                    'updatedBy'                 => 'UpdatedBy',
+                    'createdOn'                 => 'CreatedOn',
+                    'createdBy'                 => 'CreatedBy',
+        	    ],
+            ],
+            'role' => [
+                'table_name' => 'sch_roles',
+                'table_key' => 'RoleId',
+                'entity_key_field' => 'roleId',
+                'update_reference_data_function' => 'getRole',
+                'name_field' => 'roleTitle',
+                'has_dedicated_suggest_form' => false,
+//                 'scope' => 'Person',
+//                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
+                'required_columns_for_creation' => [ //required for creation
+        	        'roleTitle',
+        	        'associationId',
+        	    ],
+//                 'moderate_route' => 'associations/association/moderate',
+//                 'moderate_route_entity_key' => 'association_id',
+                'show_route' => 'roles/role',
+                'show_route_key' => 'role_id',
+                'show_route_key_field' => 'roleId',
+                'text_columns' => [
+                ],
+                'date_columns' => [
+                    'updatedOn',
+                    'createdOn',
+                ],
+                'many_to_one_update_columns' => [
+                ],
+                'update_columns' => [
+                    'roleId'                    => 'RoleId',
+                    'roleTitle'                 => 'RoleTitle',
+                    'associationId'             => 'AssociationId',
+                    'isMainRole'                => 'IsMainRole',
+                    'isSinglePosition'          => 'IsSinglePosition',
+                    'sort'                      => 'Sort',
+                    'isActive'                  => 'IsActive',
+                    'updatedOn'                 => 'UpdatedOn',
+                    'updatedBy'                 => 'UpdatedBy',
+                    'createdOn'                 => 'CreatedOn',
+                    'createdBy'                 => 'CreatedBy',
+        	    ],
+            ],
+            'assignment' => [
+                'table_name' => 'sch_assignments',
+                'table_key' => 'AssignmentId',
+                'entity_key_field' => 'roleId',
+                'update_reference_data_function' => 'getAssignment',
+                'name_field' => 'name',
+                'has_dedicated_suggest_form' => false,
+//                 'scope' => 'Person',
+//                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
+                'required_columns_for_creation' => [ //required for creation
+        	        'roleId',
+                    'personId',
+        	    ],
+//                 'moderate_route' => 'associations/association/moderate',
+//                 'moderate_route_entity_key' => 'association_id',
+                'show_route' => 'assignments/assignment',
+                'show_route_key' => 'assignment_id',
+                'show_route_key_field' => 'assignmentId',
+                'text_columns' => [
+                ],
+                'date_columns' => [
+                    'startDate',
+                    'endDate',
+                    'updatedOn',
+                    'createdOn',
+                ],
+                'many_to_one_update_columns' => [
+                ],
+                'update_columns' => [
+                    'assignmentId'              => 'AssignmentId',
+                    'roleId'                    => 'RoleId',
+                    'personId'                  => 'Personid',
+                    'startDate'                 => 'StartDate',
+                    'endDate'                   => 'EndDate',
+                    'isActive'                  => 'IsActive',
                     'updatedOn'                 => 'UpdatedOn',
                     'updatedBy'                 => 'UpdatedBy',
                     'createdOn'                 => 'CreatedOn',

@@ -32,7 +32,7 @@ if ($this->options) {
         $options['showLabels'] = $this->options['showLabels'];
     }
 }
-$areResults = isset($this->persons) && 0!=count($this->persons);
+$areResults = isset($this->entities) && 0!=count($this->entities);
 // var_dump($this->persons);
 if ($areResults) :
 $emails = array();
@@ -55,7 +55,7 @@ foreach ($resultsCount as $key => $value) {
 		</tr>
 		</thead>
 		<tbody>
-		<?php foreach ($this->persons as $person):
+		<?php foreach ($this->entities as $person):
     		if (is_null($person['deathDate']) && is_null($person['leaveDate']) &&
     		    $emailValidator->isValid($person['email']))
     		{
