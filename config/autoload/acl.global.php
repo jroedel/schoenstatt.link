@@ -35,6 +35,7 @@ return [
                 ['route' => 'contacts', 'roles' => ['patres_user']],
                 ['route' => 'schoenstatt', 'roles' => ['patres_user']],
                 ['route' => 'admin', 'roles' => ['patres_user']],
+                ['route' => 'admin/import-father', 'roles' => ['patres_administrator']],
                 ['route' => 'persons', 'roles' => ['patres_user', 'patres_basic']],
                 ['route' => 'persons/person', 'roles' => ['patres_user', 'patres_basic']],
                 ['route' => 'persons/search', 'roles' => ['patres_user', 'patres_basic']],

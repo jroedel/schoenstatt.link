@@ -11,3 +11,5 @@ ALTER TABLE `sch_associations` ADD `Post1Street1` VARCHAR(200) NULL DEFAULT NULL
   DROP `PrivateInfoUpdatedBy`;
   
   ALTER TABLE `sch_persons` ADD `LifeCommunity` VARCHAR(50) NULL DEFAULT NULL AFTER `ReligiousStatus`;
+
+  ALTER TABLE `sch_persons` ADD `DataSource` VARCHAR(50) NULL DEFAULT NULL AFTER `ContactInfoUpdatedBy`, ADD `DataSourceId` INT NULL DEFAULT NULL AFTER `DataSource`;

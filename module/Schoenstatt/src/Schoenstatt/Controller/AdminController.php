@@ -16,9 +16,15 @@ use JTranslate\Model\TranslationsTable;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Patres\Mailing\Mailer;
 use SionModel\Service\ProblemService;
+use Schoenstatt\Form\PersonForm;
+use Zend\Http\Client;
+use Zend\Json\Json;
+use Zend\Mvc\Controller\Plugin\FlashMessenger;
 
 class AdminController extends AbstractActionController
 {
+    protected $personInputFilter;
+
     public function indexAction()
     {
         $pages = [
@@ -27,6 +33,7 @@ class AdminController extends AbstractActionController
 //             'roles'                 => "Manage Roles",
 //             'admin/view-searches'   => "View Searches",
 //             'admin/view-changes'    => "View Changes",
+            'admin/import-father'   => "Import Schoenstatt Father",
             'samuser'               => "User Management",
 //             'admin/moderate'        => "Review Suggestions",
 //             'admin/fix-flags'       => "Fix Flag Problems",
@@ -51,6 +58,88 @@ class AdminController extends AbstractActionController
             'pages' => $pages,
             'badges' => $badges,
         ]);
+    }
+
+    public function importFatherAction()
+    {
+        $sm = $this->getServiceLocator();
+        $form = $sm->get('Schoenstatt\Form\ImportFatherForm');
+        $request = $this->getRequest();
+        if ($request->isPost ()) {
+            $data = $request->getPost ()->toArray ();
+            $form->setData($data);
+            if ($form->isValid()) { //here the sent personId will be checked against the haystack
+                /** @var \Schoenstatt\Model\SchoenstattTable $table */
+                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $personId = $form->getData()['personId'];
+                $personData = $this->getPersonInfo($personId);
+                $personData['dataSource'] = 'patres-sion';
+                $personData['dataSourceId'] = $personId;
+                var_dump($personData);
+                if (0 !== count($table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId])))
+                {
+                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Person already exists in the database.' );
+                } else {
+                    $result = $table->createEntity('person', $personData);
+                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully imported.' );
+                }
+//                 $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
+            } else {
+                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+            }
+        }
+        return new ViewModel([
+            'form'  => $form,
+        ]);
+    }
+
+    /**
+     * Retrieve and validate person info from Patres database
+     * @param unknown $id
+     * @throws \Exception
+     */
+    protected function getPersonInfo($id)
+    {
+        $config = $this->getServiceLocator()->get('Schoenstatt\Config');
+        if (!isset($config['patres_api_key'])) {
+            throw new \Exception('No \'patres_api_key\' set to retrieve data from Patres Sion.');
+        }
+        $key = $config['patres_api_key'];
+        $getPersonUrl = sprintf($config['patres_api_get_person_uri'], $id);
+        $client = new Client();
+        $client->setMethod('get');
+        $client->setUri($getPersonUrl);
+        $client->setParameterGet(['key' => $key]);
+        $response = $client->send();
+
+        if (200 != $response->getStatusCode()) {
+            throw new \Exception('Request for information on father \''.$id.'\' failed. Status code: '.$response->getStatusCode());
+        }
+        $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
+        if (!isset($data['data'])) {
+            throw new \Exception('Request for information on father \''.$id.'\' failed. No information returned.');
+        }
+        $person = $data['data'];
+        //validate
+        $inputFilter = $this->getPersonInputFilter();
+        $inputFilter->setData($person);
+        return $inputFilter->getValues();
+    }
+
+    /**
+     * Get a fresh InputFilter to test person data
+     * @return \Zend\InputFilter\InputFilterInterface
+     */
+    protected function getPersonInputFilter()
+    {
+        if (is_null($this->personInputFilter)) {
+            /**
+             * @var PersonForm $form
+             */
+            $form = $this->getServiceLocator()->get('Schoenstatt\Form\PersonForm');
+            $this->personInputFilter = $form->getInputFilter();
+        }
+        return clone $this->personInputFilter;
     }
 
     /**

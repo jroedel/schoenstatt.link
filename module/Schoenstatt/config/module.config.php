@@ -14,6 +14,7 @@ return [
             'Schoenstatt\Form\PersonForm'        => 'Schoenstatt\Service\PersonFormFactory',
             'Schoenstatt\Form\AssociationForm'   => 'Schoenstatt\Service\AssociationFormFactory',
             'Schoenstatt\Config'                 => 'Schoenstatt\Service\ConfigServiceFactory',
+            'Schoenstatt\Form\ImportFatherForm'  => 'Schoenstatt\Service\ImportFatherFormFactory',
         ],
     ],
     'view_manager' => [
@@ -123,6 +124,16 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'import-father' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/import-father',
+                            'defaults' => [
+                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'action'     => 'importFather',
+                            ],
+                        ],
+                    ],
                     'moderate' => [
                         'type'    => 'Segment',
                         'options' => [
@@ -492,6 +503,8 @@ return [
                     'contactInfoUpdatedBy'      => 'ContactInfoUpdatedBy',
 
                     'personId'                  => 'PersonId',
+                    'dataSource'                => 'DataSource',
+                    'dataSourceId'              => 'DataSourceId',
                     'updatedOn'                 => 'UpdatedOn',
                     'updatedBy'                 => 'UpdatedBy',
                     'createdOn'                 => 'CreatedOn',

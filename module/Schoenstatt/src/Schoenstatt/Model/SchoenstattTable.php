@@ -339,6 +339,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
 `Url3`, `Url3Label`, `FacebookUrl`, `SkypeUser`, `TwitterUser`, `InstagramUser`,
 `SlackUser`, `PostStreet1`, `PostStreet2`, `PostCityState`, `PostZip`,
 `PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`,
+`DataSource`, `DataSourceId`,
 `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_persons` WHERE 1
 ORDER BY `BirthDate`";
         $results = $this->fetchSome(null, $sqlPers, null);
@@ -536,7 +537,8 @@ ORDER BY `BirthDate`";
  */
 //                 'birthCity'                 => $this->filterDbString($row['BirthCity']),
                 'nationalities'             => $nationalities,
-
+                'dataSource'                => $this->filterDbString($row['DataSource']),
+                'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
                 'adminTags'                 => $this->filterDbArray(strtolower($row['AdminTags'])),
                 'adminNotes'                => $this->filterDbString($row['AdminNotes']),
                 'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
@@ -928,6 +930,7 @@ ORDER BY l.StartDate DESC";
                 false === stripos($person['searchName'], $query['personName'])) {
                 continue;
             }
+            //@todo I'm not actually checking the value here I think?
             if (isset($query['deceased']) && false === $query['deceased'] && !is_null($person['deathDate'])) {
                 continue;
             }
@@ -936,6 +939,13 @@ ORDER BY l.StartDate DESC";
             }
             if (isset($query['category']) && !is_null($query['category']) &&
                 !in_array($person['category'], $query['category']))
+            {
+                continue;
+            }
+            if (isset($query['dataSource']) && !is_null($query['dataSource']) &&
+                isset($query['dataSourceId']) && !is_null($query['dataSourceId']) &&
+                $query['dataSource'] != $person['dataSource'] &&
+                $query['dataSourceId'] != $person['dataSourceId'])
             {
                 continue;
             }
