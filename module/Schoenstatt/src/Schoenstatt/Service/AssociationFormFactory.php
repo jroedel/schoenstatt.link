@@ -25,34 +25,14 @@ class AssociationFormFactory implements FactoryInterface
 		/** @var \Zend\I18n\Translator\Translator $translator */
 		$translator = $serviceLocator->get ( 'translator' );
 
-		$valueOptions = array();
-
-		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
-
-		$config = $serviceLocator->get ( 'Schoenstatt\Config' );
-        if (!isset($config['association_kinds'])) {
-            throw new \Exception('The \'association_kinds\' key in the \'schoenstatt\' config must be set.');
-        }
-
-        /**
-         * @todo Update this
-         * @var unknown
-         */
-// 		$adminTags = $table->getPersonAdminTags();
-
-		$associations = $table->getAssociationValueOptions();
+		$associations = $table->getAssociationValueOptions($translator);
 
 		/** @var FormElementManagerV2Polyfill $formManager */
 		$formManager = $serviceLocator->get('FormElementManager');
 		/** @var \Schoenstatt\Form\AssociationForm $form */
-		$form = $formManager->get('Schoenstatt\Form\AssociationForm', [], true);
+		$form = $formManager->get('Schoenstatt\Form\AssignmentForm', [], true);
 
-		$form->get('parent')->setValueOptions($associations);
-		$form->get('country')->setValueOptions($countryNames);
-		$form->get('post1Country')->setValueOptions($countryNames);
-		$form->get('post2Country')->setValueOptions($countryNames);
-		$form->get('kind')->setValueOptions($config['association_kinds']);
-// 		$form->get('adminTags')->setValueOptions($adminTags);
+		$form->get('associationId')->setValueOptions($associations);
 		return $form;
     }
 }

@@ -1,0 +1,9 @@
+<?php
+$form = $this->form;
+echo $this->formHidden($form->get('assignmentId'));
+$this->formSelect()->setTranslatorEnabled(false);
+echo $this->formRow($form->get('associationId'));
+echo $this->formRow($form->get('roleId'));
+$this->formSelect()->setTranslatorEnabled(true);
+echo $this->formRow($form->get('startDate'));
+echo $this->formRow($form->get('endDate'));

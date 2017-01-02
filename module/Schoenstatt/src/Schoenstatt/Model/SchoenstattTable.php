@@ -10,6 +10,7 @@ use Zend\Uri\Http;
 use SionModel\Problem\EntityProblem;
 use Patres\Problem\PersonProblem;
 use SionModel\Problem\ProblemProviderInterface;
+use Zend\I18n\Translator\TranslatorInterface;
 
 class SchoenstattTable extends SionTable implements ProblemProviderInterface
 {
@@ -82,7 +83,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     const PROBLEM_PERSON_NO_EMAIL = 'person-no-email';
 
     /**
-     * Patres config
+     * Schoenstatt config
      * @var mixed[]
      */
     protected $config;
@@ -145,15 +146,22 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
 
     /**
      * Gets a simple key => value array of the generation
-     * @param bool $includeInactive
+     * @param TranslatorInterface $translator
+     * @param string $includeInactive
+     * @param string $includeNonLifeLongMembership
+     * @return unknown[]
      */
-    public function getAssociationValueOptions($includeInactive = false, $includeNonLifeLongMembership = true)
+    public function getAssociationValueOptions($translator = null, $includeInactive = false, $includeNonLifeLongMembership = true)
     {
-        $sql = "SELECT `AssociationId`, `AssociationName` FROM `sch_associations`";
+        $sql = "SELECT `AssociationId`, `AssociationName`, `IsNameTranslateable` FROM `sch_associations`";
         $results = $this->fetchSome(null, $sql, null);
         $valueOptions = [];
         foreach ($results as $row) {
-            $valueOptions[$row['AssociationId']] = $row['AssociationName'];
+            if ($translator instanceof TranslatorInterface && $this->filterDbBool($row['IsNameTranslateable'])) {
+                $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName']);
+            } else {
+                $valueOptions[$row['AssociationId']] = $row['AssociationName'];
+            }
         }
         ksort($valueOptions);
         return $valueOptions;
@@ -789,197 +797,6 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
             $text.= $yearRange;
         }
         return $text;
-    }
-
-    /**
-     *
-     * @param \DateTime $startDate
-     * @param \DateTime $endDate
-     * @return string|NULL
-     */
-    public static function getYearRange($startDate, $endDate)
-    {
-        if ((!is_null($startDate) && !$startDate instanceof \DateTime) ||
-            (!is_null($endDate) && !$endDate instanceof \DateTime))
-        {
-            throw new \InvalidArgumentException('Date parameters must be either DateTime instances or null.');
-        }
-
-        $text = '';
-        if ((!is_null($startDate) && $startDate instanceof \DateTime) ||
-            (!is_null($endDate) && $startDate instanceof \DateTime))
-        {
-            if (!is_null($startDate) xor !is_null($endDate)) { //only one is set
-                if (!is_null($startDate)) {
-                    $text .=' '. $startDate->format('Y');
-                } else {
-                    $text .=' '. $endDate->format('Y');
-                }
-            } else {
-                $startYear = (int)$startDate->format('Y');
-                $endYear = (int)$endDate->format('Y');
-                if ($startYear == $endYear) {
-                    $text .=' '. $startYear;
-                } else {
-                    $text .=' '. $startYear.'-'.$endYear;
-                }
-            }
-            return $text;
-        } else {
-            return null;
-        }
-    }
-
-    /**
-     * Returns a Living Situation array entity
-     * @param int $id
-     * @throws \Exception
-     * @return NULL|mixed[]
-     */
-    public function getLivingSituation($id)
-    {
-        if (is_null($id) || $id < 1 ) {
-            throw new \Exception('Invalid id.');
-        }
-        $allSituations = $this->getLivingSituations();
-        if (!isset($allSituations[$id])) {
-            return null;
-        }
-        return $allSituations[$id];
-    }
-
-    /**
-     * Queries the database and returns a keyed-array of living situation array entities
-     * Results are cached for the session
-     * @return mixed[][]
-     */
-    public function getLivingSituations()
-    {
-        if (!is_null($this->livingSituationsCache)) {
-            return $this->livingSituationsCache;
-        }
-        $sql = "SELECT l.`LivingSituationId`, l.`PersonId`, l.`FiliationId`, l.`HouseId`,
-l.`SituationStatus`, l.`ResponsibleTerritoryId`, l.`PublicNotes`,
-l.`PublicNotesUpdatedOn`, l.`PublicNotesUpdatedBy`,
-l.`AdminNotes`, l.`AdminNotesUpdatedOn`, l.`AdminNotesUpdatedBy`,
-l.`StartDate`, l.`EndDate`, l.`UpdatedOn`, l.`UpdatedBy`, l.`CreatedOn`, l.`CreatedBy`,
-f.FilName,  f.Country AS FilCountry, f.MainHouse, f.Active AS FilActive,
-h.HausLand, h.HausName, h.HausAktiv AS HausActive, h.HausFilID, h.HausTel,
-g.Category AS GenCategory, g.GebName, g.Active AS GebActive
-FROM `a_data_person_living` l
-LEFT JOIN `a_data_filiale` f ON f.FilID = l.FiliationId
-LEFT JOIN `a_data_haus` h ON h.HausID = l.HouseId
-LEFT JOIN a_data_gebiet g ON g.`GebID` = l.ResponsibleTerritoryId
-ORDER BY l.StartDate DESC";
-
-        $rows = $this->fetchSome ( null, $sql, null );
-
-        $tz = new \DateTimeZone('UTC');
-        $now = new \DateTime(null, $tz);
-        $livingSituations = [];
-        foreach ($rows as $row) {
-            $id =  $this->filterDbId($row['LivingSituationId']);
-            $personId =  $this->filterDbId($row['PersonId']);
-            $startDate = $this->filterDbDate($row['StartDate']);
-            $endDate = $this->filterDbDate($row['EndDate']);
-            $active = ($startDate < $now && (is_null($endDate) || $endDate > $now)) || (is_null($startDate) && (is_null($endDate) || $endDate > $now));
-            $livingSituations[$id] = [
-                'livingSituationId'     => $id,
-                'personId'              => $personId,
-//                 'personFullName'        => $persons[$personId]['fullName'],
-                'filiationId'           => $this->filterDbId($row['FiliationId']),
-                'filiationName'         => $this->filterDbString($row['FilName']),
-                'filiationCountry'      => $this->filterDbString($row['FilCountry']),
-                'filiationActive'       => $this->filterDbBool($row['FilActive']),
-                'houseId'               => $this->filterDbId($row['HouseId']),
-                'houseName'             => $this->filterDbString($row['HausName']),
-                'houseFiliationId'      => $this->filterDbId($row['HausFilID']),
-                'houseCountry'          => $this->filterDbString($row['HausLand']),
-                'houseIsMain'           => $row['MainHouse'] == $row['HouseId'],
-                'housePhone'            => $this->filterDbString($row['HausTel']),
-                'houseActive'           => $this->filterDbBool($row['HausActive']),
-                'responsibleTerritoryId'=> $this->filterDbId($row['ResponsibleTerritoryId']),
-                'responsibleTerritoryName'=> $this->filterDbString($row['GebName']),
-                'responsibleTerritoryActive'=> $this->filterDbBool($row['GebActive']),
-                'status'                => $this->filterDbString($row['SituationStatus']),
-                'startDate'             => $startDate,
-                'endDate'               => $endDate,
-                'active'                => $active,
-                'publicNotes'           => $this->filterDbString($row['PublicNotes']),
-                'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
-                'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
-                'adminNotes'            => $this->filterDbString($row['AdminNotes']),
-                'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
-                'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
-                'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
-                'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
-                'createdOn'             => $this->filterDbDate($row['CreatedOn']),
-                'createdBy'             => $this->filterDbId($row['CreatedBy']),
-            ];
-        }
-
-        $this->livingSituationsCache = $livingSituations;
-        return $livingSituations;
-    }
-
-    /**
-     *
-     * @param int|string $id
-     */
-    public function existsLivingSituation($id)
-    {
-        try {
-            $gateway = new TableGateway('a_data_person_living', $this->adapter);
-            $result = $gateway->select(array('LivingSituationId' => $id));
-        }
-        catch (\Exception $e) {
-            return false;
-        }
-        return 1 == $result->count();
-    }
-
-    /**
-     * no validation of id
-     * @todo report errors
-     * @param int|string $id
-     */
-    public function deleteLivingSituation($id)
-    {
-        $gateway = new TableGateway('a_data_person_living', $this->adapter);
-        $result = $gateway->delete(array('LivingSituationId' => $id));
-        $changeVals = array(array(
-            'table'    => 'a_data_person_living',
-            'column'   => 'entryDeleted',
-            'id'       => $id
-        ));
-        $this->reportChange($changeVals);
-        return $result;
-    }
-
-    public function registerVisit($entity, $entityId)
-    {
-        if ($entity !== $this::ENTITY_COURSE &&
-            $entity !== $this::ENTITY_TERRITORY &&
-            $entity !== $this::ENTITY_FILIATION &&
-            $entity !== $this::ENTITY_PERSON &&
-            $entity !== $this::ENTITY_GENERATION )
-        {
-            throw new \InvalidArgumentException('Invalid entity submitted for visit registration');
-        }
-
-        if (!is_numeric($entityId)) {
-            throw new \InvalidArgumentException('Invalid entity id submitted for visit registration');
-        }
-
-        $date = new \DateTime(null, new \DateTimeZone('UTC'));
-        $params = [
-            'Entity' => $entity,
-            'EntityId' => $entityId,
-            'UserId' => $this->actingUserId,
-            'IpAddress' => $_SERVER['REMOTE_ADDR'],
-            'VisitedAt' => $date->format('Y-m-d H:i:s'),
-        ];
-        $this->getVisitTableGateway()->insert($params);
     }
 
     public function getAllPersonPhoneNumbers($includeInactive = false)
@@ -1634,223 +1451,5 @@ LIMIT 200";
             }
         }
         return $problems;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getCourseTableGateway()
-    {
-        if (null == $this->courseTableGateway) {
-            $this->courseTableGateway = new TableGateway('a_data_kurs', $this->adapter);
-        }
-        return $this->courseTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setCourseTableGateway($gateway)
-    {
-        $this->courseTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getHouseTableGateway()
-    {
-        if (null == $this->houseTableGateway) {
-            $this->houseTableGateway = new TableGateway('a_data_haus', $this->adapter);
-        }
-        return $this->houseTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setHouseTableGateway($gateway)
-    {
-        $this->houseTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getFiliationTableGateway()
-    {
-        if (null == $this->filiationTableGateway) {
-            $this->filiationTableGateway = new TableGateway('a_data_filiale', $this->adapter);
-        }
-        return $this->filiationTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setFiliationTableGateway($gateway)
-    {
-        $this->filiationTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getAssignmentTableGateway()
-    {
-        if (null == $this->assignmentTableGateway) {
-            $this->assignmentTableGateway = new TableGateway('a_data_role_assignment', $this->adapter);
-        }
-        return $this->assignmentTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setAssignmentTableGateway($gateway)
-    {
-        $this->assignmentTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getRoleTableGateway()
-    {
-        if (null == $this->assignmentTableGateway) {
-            $this->roleTableGateway = new TableGateway('a_data_role', $this->adapter);
-        }
-        return $this->roleTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setRoleTableGateway($gateway)
-    {
-        $this->roleTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getPersonTableGateway()
-    {
-        if (null == $this->personTableGateway) {
-            $this->personTableGateway = new TableGateway('a_data_person', $this->adapter);
-        }
-        return $this->personTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setPersonTableGateway($gateway)
-    {
-        $this->personTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getSuggestionTableGateway()
-    {
-        if (null == $this->suggestionTableGateway) {
-            $this->suggestionTableGateway = new TableGateway('a_data_suggestion', $this->adapter);
-        }
-        return $this->suggestionTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setSuggestionTableGateway($gateway)
-    {
-        $this->suggestionTableGateway = $gateway;
-        return $this;
-    }
-    /**
-     * @return TableGateway
-     */
-    public function getSuggestionColumnTableGateway()
-    {
-        if (null == $this->suggestionColumnTableGateway) {
-            $this->suggestionColumnTableGateway = new TableGateway('a_data_suggestion_columns', $this->adapter);
-        }
-        return $this->suggestionColumnTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setSuggestionColumnTableGateway($gateway)
-    {
-        $this->suggestionColumnTableGateway = $gateway;
-        return $this;
-    }
-    /**
-     * @return TableGateway
-     */
-    public function getSearchTableGateway()
-    {
-        if (null == $this->searchTableGateway) {
-            $this->searchTableGateway = new TableGateway('a_data_searches', $this->adapter);
-        }
-        return $this->searchTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setSearchTableGateway($gateway)
-    {
-        $this->searchTableGateway = $gateway;
-        return $this;
-    }
-
-    /**
-     * @return TableGateway
-     */
-    public function getVisitTableGateway()
-    {
-        if (null == $this->visitTableGateway) {
-            $this->visitTableGateway = new TableGateway('a_data_visit', $this->adapter);
-        }
-        return $this->visitTableGateway;
-    }
-
-    /**
-     *
-     * @param TableGateway $gateway
-     * @return self
-     */
-    public function setVisitTableGateway($gateway)
-    {
-        $this->visitTableGateway = $gateway;
-        return $this;
     }
 }

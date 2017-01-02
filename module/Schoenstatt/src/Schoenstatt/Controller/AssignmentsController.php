@@ -17,6 +17,7 @@ use Patres\Mailing\Mailer;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
+use Schoenstatt\Form\AssociationForm;
 
 class AssignmentsController extends AbstractActionController
 {
@@ -88,22 +89,22 @@ class AssignmentsController extends AbstractActionController
         /** @var SchoenstattTable $table **/
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
-        /** @var \Schoenstatt\Form\PersonForm $form */
-        $form = $sm->get('Schoenstatt\Form\PersonForm');
+        /** @var AssociationForm $form */
+        $form = $sm->get('Schoenstatt\Form\AssociationForm');
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
-                if (!($newId = $table->createEntity('person', $data))) {
+                if (!($newId = $table->createEntity('assignment', $data))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully created.' );
-                    $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Assignment successfully created.' );
+                    $this->redirect ()->toRoute ( 'assignments/assignment', array('assignment_id' => $newId) );
                 }
             } else {
-                print_r(array_keys($form->getInputFilter()->getInvalidInput()));
+//                 print_r(array_keys($form->getInputFilter()->getInvalidInput()));
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }

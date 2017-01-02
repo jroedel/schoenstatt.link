@@ -1,0 +1,19 @@
+<?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
+$entity = $this->entity;
+$headText = 'Edit Association';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$form->setAttribute('action', $this->url('associations/association/edit',
+		['association_id' => $this->entity['associationId']]));
+ $form->prepare();
+ echo $this->form()->openTag($form);
+ echo $this->partial('fields-partial', [
+     'form' => $form,
+ ]);
+ echo $this->formSubmit($form->get('submit'));
+ echo $this->form()->closeTag();
+?>

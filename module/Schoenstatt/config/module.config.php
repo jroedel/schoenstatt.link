@@ -430,6 +430,8 @@ return [
         ],
     ],
     'sion_model' => [
+		'changes_table' => 'sch_changes',
+        'visits_table' => 'sch_visits',
         'entities' => [
             'person' => [
                 'table_name' => 'sch_persons',
@@ -437,6 +439,7 @@ return [
                 'entity_key_field' => 'personId',
                 'update_reference_data_function' => 'getPerson',
                 'name_field' => 'fullName',
+                'report_changes' => true,
                 'has_dedicated_suggest_form' => false,
 //                 'scope' => 'Person',
                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
@@ -596,6 +599,7 @@ return [
                 'entity_key_field' => 'associationId',
                 'update_reference_data_function' => 'getAssociation',
                 'name_field' => 'associationName',
+                'report_changes' => true,
                 'has_dedicated_suggest_form' => false,
 //                 'scope' => 'Person',
 //                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
@@ -714,6 +718,7 @@ return [
                 'update_reference_data_function' => 'getRole',
                 'name_field' => 'roleTitle',
                 'has_dedicated_suggest_form' => false,
+                'report_changes' => true,
 //                 'scope' => 'Person',
 //                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
                 'required_columns_for_creation' => [ //required for creation
@@ -753,6 +758,7 @@ return [
                 'entity_key_field' => 'roleId',
                 'update_reference_data_function' => 'getAssignment',
                 'name_field' => 'name',
+                'report_changes' => true,
                 'has_dedicated_suggest_form' => false,
 //                 'scope' => 'Person',
 //                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array

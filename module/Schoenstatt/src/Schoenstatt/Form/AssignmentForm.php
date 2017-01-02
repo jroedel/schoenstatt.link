@@ -3,8 +3,9 @@ namespace Schoenstatt\Form;
 
 use Zend\Form\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\SionForm;
 
-class AssignmentForm extends Form implements InputFilterProviderInterface
+class AssignmentForm extends SionForm implements InputFilterProviderInterface
 {
 	public function __construct($name = null)
 	{
