@@ -24,6 +24,7 @@ $modules = [
     'Neilime\MobileDetect',
     'AssetManager',
     'ZfcDatagrid',
+    'Books',
     'Application',
     'Schoenstatt',
 ];

@@ -319,6 +319,57 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         return $association;
     }
 
+
+    /**
+     * Inserts new roles for a newly created entity
+     * Returns the number of roles inserted
+     * @param string $scope
+     * @param string|int $scopeId
+     * @return int
+     */
+    public function createAssociatedRoles($scope, $scopeId)
+    {
+        if (!$scopeId || $scopeId == 0 || $scopeId == '') {
+            throw new \Exception('Invalid scope id argument passed.');
+        }
+        static $scopeRoles = [
+            'Scholasticate' => [
+                array('RoleTitle' => 'Rector', 'SinglePosition' => true, 'Sort' => 100, 'MainRole' => true),
+                array('RoleTitle' => 'Formator', 'SinglePosition' => false, 'Sort' => 200, 'MainRole' => false),
+            ],
+            'Province' => [
+                array('RoleTitle' => 'Provincial Superior', 'SinglePosition' => true, 'Sort' => 20, 'MainRole' => true),
+                array('RoleTitle' => 'Provincial First Councelor', 'SinglePosition' => true, 'Sort' => 21, 'MainRole' => false),
+                array('RoleTitle' => 'Provincial Councelor', 'SinglePosition' => false, 'Sort' => 25, 'MainRole' => false),
+                array('RoleTitle' => 'Provincial Treasurer', 'SinglePosition' => true, 'Sort' => 28, 'MainRole' => false),
+            ],
+            'Region' => [
+                array('RoleTitle' => 'Regional Superior', 'SinglePosition' => true, 'Sort' => 30, 'MainRole' => true),
+                array('RoleTitle' => 'Regional First Councelor', 'SinglePosition' => true, 'Sort' => 31, 'MainRole' => false),
+                array('RoleTitle' => 'Regional Councelor', 'SinglePosition' => false, 'Sort' => 35, 'MainRole' => false),
+                array('RoleTitle' => 'Regional Treasurer', 'SinglePosition' => true, 'Sort' => 38, 'MainRole' => false),
+            ],
+            'Delegation' => [
+                array('RoleTitle' => 'Delegate Superior', 'SinglePosition' => true, 'Sort' => 40, 'MainRole' => true),
+                array('RoleTitle' => 'Delegation First Councelor', 'SinglePosition' => true, 'Sort' => 41, 'MainRole' => false),
+                array('RoleTitle' => 'Delegation Councelor', 'SinglePosition' => false, 'Sort' => 45, 'MainRole' => false),
+                array('RoleTitle' => 'Delegation Treasurer', 'SinglePosition' => true, 'Sort' => 48, 'MainRole' => false),
+            ],
+        ];
+        if (!key_exists($scope, $scopeRoles)) {
+            return 0;
+        }
+        $i=0;
+        foreach ($scopeRoles[$scope] as $role) {
+            $params = $role;
+            $params['ScopeId'] = $scopeId;
+            $params['Scope'] = $scope;
+            $this->getRoleTableGateway()->insert($params);
+            $i++;
+        }
+        return $i;
+    }
+
     /**
      * Get all records from the mailings table
      * @return mixed[][]

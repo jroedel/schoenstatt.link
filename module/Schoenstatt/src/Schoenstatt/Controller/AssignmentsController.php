@@ -75,8 +75,6 @@ class AssignmentsController extends AbstractActionController
         }
 
 //         $table->registerVisit(SchoenstattTable::ENTITY_PERSON, $person['personId']);
-//         var_dump($person['urls']);
-//         var_dump($person);
         return new ViewModel([
             'person'        => $person,
 //             'suggestForm'   => $sm->get('Schoenstatt\Form\SuggestForm'),
