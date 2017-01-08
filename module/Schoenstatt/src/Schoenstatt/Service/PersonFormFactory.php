@@ -27,7 +27,7 @@ class PersonFormFactory implements FactoryInterface
 
 		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
 
-		$lifeCommunities = $table->getAssociationValueOptions(false, true);
+		$lifeCommunities = $table->getAssociationValueOptions($translator, false, true);
 
 // 		$adminTags = $table->getPersonAdminTags();
 

@@ -6,7 +6,6 @@ use Zend\Filter\ToNull;
 use Assetic\Exception\Exception;
 use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
-use Zend\Uri\Http;
 use SionModel\Problem\EntityProblem;
 use Patres\Problem\PersonProblem;
 use SionModel\Problem\ProblemProviderInterface;
@@ -163,13 +162,51 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 $valueOptions[$row['AssociationId']] = $row['AssociationName'];
             }
         }
-        ksort($valueOptions);
+        asort($valueOptions);
         return $valueOptions;
     }
 
-    public function getRolesPlusOtherPeopleAndAssociations()
+    /**
+     * Gets a simple key => value array of the role titles
+     * @param TranslatorInterface $translator
+     * @return mixed[]
+     */
+    public function getRoleTitleValueOptions()
     {
+        $sql = "SELECT DISTINCT `RoleTitle` FROM `sch_roles` WHERE (`IsActive` = 1)";
+        $results = $this->fetchSome(null, $sql, null);
+        $valueOptions = [];
+        foreach ($results as $row) {
+            $valueOptions[$row['RoleTitle']] = $row['RoleTitle'];
+        }
+        asort($valueOptions);
+        return $valueOptions;
+    }
 
+    /**
+     * Each key of the return array will be an array of value options. The idea is that
+     * as a user selects an associationId, the associationId will be used to lookup the
+     * corresponding value option array.
+     */
+    public function getJavascriptRoleTitleValueOptions($includeInactive = false)
+    {
+        $roles = $this->getUnlinkedRoles();
+
+        $valueOptions = [];
+        foreach ($roles as $roleId => $role) {
+            if ($includeInactive || $role['isActive']) {
+                if (key_exists($role['associationId'], $valueOptions)) {
+                    if (!key_exists($role['roleTitle'], $valueOptions[$role['associationId']])) {
+                        $valueOptions[$role['associationId']][$role['roleTitle']] = $role['roleTitle'];
+                    }
+                } else {
+                    $valueOptions[$role['associationId']] = [
+                        $role['roleTitle'] => $role['roleTitle'],
+                    ];
+                }
+            }
+        }
+        return $valueOptions;
     }
 
     /**
@@ -635,13 +672,18 @@ ORDER BY `BirthDate`";
             return $this->rolesCache;
         }
         $entities = $this->getUnlinkedRoles();
+        $associations = $this->getUnlinkedAssociations();
+        foreach ($entities as $key => $role) {
+            if ($role['associationId'] && isset($associations[$role['associationId']])) {
+                $entities[$key]['association'] = $associations[$role['associationId']];
+            }
+        }
 
         return $this->rolesCache = $entities;
     }
 
     protected function getUnlinkedRoles()
     {
-
         $sql = "SELECT `RoleId`, `RoleTitle`, `AssociationId`,
 `IsMainRole`, `IsSinglePosition`, `Sort`, `IsActive`, `UpdatedOn`,
 `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_roles` WHERE 1";
@@ -654,9 +696,10 @@ ORDER BY `BirthDate`";
                 'roleId'                    => $id,
                 'roleTitle'                 => $this->filterDbString($row['RoleTitle']),
                 'associationId'             => $this->filterDbId($row['AssociationId']),
+                'association'               => null,
+                'sort'                      => $this->filterDbInt($row['Sort']),
                 'isMainRole'                => $this->filterDbBool($row['IsMainRole']),
                 'isSinglePosition'          => $this->filterDbBool($row['IsSinglePosition']),
-                'sort'                      => $this->filterDbInt($row['Sort']),
                 'isActive'                  => $this->filterDbBool($row['IsActive']),
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'                 => $this->filterDbId($row['CreatedBy']),
@@ -1283,86 +1326,6 @@ ORDER BY Sort, Scope, ScopeId";
             }
         }
         return null;
-    }
-
-    /**
-     * Inserts new roles for a newly created entity
-     * Returns the number of roles inserted
-     * @param string $scope
-     * @param string|int $scopeId
-     * @return int
-     */
-    public function createAssociatedRoles($scope, $scopeId)
-    {
-        if (!$scopeId || $scopeId == 0 || $scopeId == '') {
-            throw new \Exception('Invalid scope id argument passed.');
-        }
-        static $scopeRoles = array(
-            'Course' => array(
-                array('RoleTitle' => 'Course Leader', 'SinglePosition' => true, 'Sort' => 127, 'MainRole' => true),
-            ),
-            'Generation' => array(
-                array('RoleTitle' => 'Generation Representative', 'SinglePosition' => true, 'Sort' => 127, 'MainRole' => true),
-            ),
-            'Filiation' => array(
-                array('RoleTitle' => 'Rector', 'SinglePosition' => true, 'Sort' => 127, 'MainRole' => true),
-            ),
-            'Novitiate' => array(
-                array('RoleTitle' => 'Novice Master', 'SinglePosition' => true, 'Sort' => 100, 'MainRole' => true),
-                array('RoleTitle' => 'Sozius', 'SinglePosition' => false, 'Sort' => 200, 'MainRole' => false),
-            ),
-            'Scholasticate' => array(
-                array('RoleTitle' => 'Rector', 'SinglePosition' => true, 'Sort' => 100, 'MainRole' => true),
-                array('RoleTitle' => 'Formator', 'SinglePosition' => false, 'Sort' => 200, 'MainRole' => false),
-            ),
-            'Province' => array(
-                array('RoleTitle' => 'Provincial Superior', 'SinglePosition' => true, 'Sort' => 20, 'MainRole' => true),
-                array('RoleTitle' => 'Provincial First Councelor', 'SinglePosition' => true, 'Sort' => 21, 'MainRole' => false),
-                array('RoleTitle' => 'Provincial Councelor', 'SinglePosition' => false, 'Sort' => 25, 'MainRole' => false),
-                array('RoleTitle' => 'Provincial Treasurer', 'SinglePosition' => true, 'Sort' => 28, 'MainRole' => false),
-            ),
-            'Region' => array(
-                array('RoleTitle' => 'Regional Superior', 'SinglePosition' => true, 'Sort' => 30, 'MainRole' => true),
-                array('RoleTitle' => 'Regional First Councelor', 'SinglePosition' => true, 'Sort' => 31, 'MainRole' => false),
-                array('RoleTitle' => 'Regional Councelor', 'SinglePosition' => false, 'Sort' => 35, 'MainRole' => false),
-                array('RoleTitle' => 'Regional Treasurer', 'SinglePosition' => true, 'Sort' => 38, 'MainRole' => false),
-            ),
-            'Delegation' => array(
-                array('RoleTitle' => 'Delegate Superior', 'SinglePosition' => true, 'Sort' => 40, 'MainRole' => true),
-                array('RoleTitle' => 'Delegation First Councelor', 'SinglePosition' => true, 'Sort' => 41, 'MainRole' => false),
-                array('RoleTitle' => 'Delegation Councelor', 'SinglePosition' => false, 'Sort' => 45, 'MainRole' => false),
-                array('RoleTitle' => 'Delegation Treasurer', 'SinglePosition' => true, 'Sort' => 48, 'MainRole' => false),
-            ),
-        );
-        if (!key_exists($scope, $scopeRoles)) {
-            return 0;
-        }
-        $i=0;
-        foreach ($scopeRoles[$scope] as $role) {
-            $params = $role;
-            $params['ScopeId'] = $scopeId;
-            $params['Scope'] = $scope;
-            $this->getRoleTableGateway()->insert($params);
-            $i++;
-        }
-        return $i;
-    }
-
-    public function getAssociatedScopesForInStatement($entityType, $preformatForSql = false)
-    {
-        $types = array(
-            'Filiation' => array('Filiation', 'Quasifiliation', 'Novitiate', 'Scholasticate'),
-            'Territory' => array('Community', 'Formation', 'Territory', 'Province', 'Delegation', 'Region'),
-            'Course' => array('Course'),
-            'Generation' => array('Generation'),
-        );
-        if (!isset($types[$entityType])) {
-            throw new \InvalidArgumentException('Invalid entity type passed.');
-        }
-        if ($preformatForSql) {
-            return "('".implode("', '", $types[$entityType])."')";
-        }
-        return $types[$entityType];
     }
 
     public function getChanges()

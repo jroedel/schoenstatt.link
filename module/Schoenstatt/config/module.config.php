@@ -1,4 +1,5 @@
 <?php
+
 return [
     'controllers' => [
         'invokables' => [
@@ -7,6 +8,7 @@ return [
             'Schoenstatt\Controller\Associations'   => 'Schoenstatt\Controller\AssociationsController',
             'Schoenstatt\Controller\Admin'          => 'Schoenstatt\Controller\AdminController',
             'Schoenstatt\Controller\Assignments'    => 'Schoenstatt\Controller\AssignmentsController',
+            'Schoenstatt\Controller\Roles'          => 'Schoenstatt\Controller\RolesController',
         ],
     ],
     'service_manager' => [
@@ -14,6 +16,7 @@ return [
             'Schoenstatt\Model\SchoenstattTable' => 'Schoenstatt\Service\SchoenstattTableFactory',
             'Schoenstatt\Form\PersonForm'        => 'Schoenstatt\Service\PersonFormFactory',
             'Schoenstatt\Form\AssociationForm'   => 'Schoenstatt\Service\AssociationFormFactory',
+            'Schoenstatt\Form\RoleForm'          => 'Schoenstatt\Service\RoleFormFactory',
             'Schoenstatt\Config'                 => 'Schoenstatt\Service\ConfigServiceFactory',
             'Schoenstatt\Form\ImportFatherForm'  => 'Schoenstatt\Service\ImportFatherFormFactory',
         ],
@@ -50,7 +53,7 @@ return [
                         'singlePosition' => false,
                         'sort' => 100,
                         'mainRole' => true,
-                    ]
+                    ],
                 ],
             ],
             'sch-national-federation' => [
@@ -246,42 +249,12 @@ return [
                                     ],
                                 ],
                             ],
-                            'edit-personal-info' => [
+                            'suggest' => [
                                 'type'    => 'Literal',
                                 'options' => [
-                                    'route'    => '/edit-personal-info',
+                                    'route'    => '/suggest',
                                     'defaults' => [
-                                        'action'    => 'edit',
-                                        'entity'    => 'personalInfo'
-                                    ],
-                                ],
-                            ],
-                            'edit-contact-info' => [
-                                'type'    => 'Literal',
-                                'options' => [
-                                    'route'    => '/edit-contact-info',
-                                    'defaults' => [
-                                        'action'     => 'edit',
-                                        'entity'    => 'contactInfo'
-                                    ],
-                                ],
-                            ],
-                            'edit-private-info' => [
-                                'type'    => 'Literal',
-                                'options' => [
-                                    'route'    => '/edit-private-info',
-                                    'defaults' => [
-                                        'action'    => 'edit',
-                                        'entity'    => 'privateInfo'
-                                    ],
-                                ],
-                            ],
-                            'suggest-contact-info' => [
-                                'type'    => 'Literal',
-                                'options' => [
-                                    'route'    => '/suggest-contact-info',
-                                    'defaults' => [
-                                        'action'     => 'suggest-contact-info',
+                                        'action'     => 'suggest',
                                     ],
                                 ],
                             ],
@@ -370,6 +343,53 @@ return [
                                     ],
                                     'defaults' => [
                                         'action'     => 'moderate',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'roles' => [
+                'type'    => 'Literal',
+                'options' => [
+                    'route'    => '/roles',
+                    'defaults' => [
+                        'controller' => 'Schoenstatt\Controller\Roles',
+                        'action'     => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'create' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/create',
+                            'defaults' => [
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
+                    'role' => [
+                        'type'    => 'Segment',
+                        'options' => [
+                            'route'    => '/:role_id',
+                            'constraints' => [
+                                'role_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
+                            ],
+                        ],
+                        'may_terminate' => false, //no show action
+                        'child_routes' => [
+                            'edit' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/edit',
+                                    'defaults' => [
+                                        'action'     => 'edit',
+                                        'entity'    => 'role'
                                     ],
                                 ],
                             ],
@@ -1034,4 +1054,34 @@ return [
             ],
         ],
     ],
+
+    'bjyauthorize' => [
+        'guards' => [
+            'BjyAuthorize\Guard\Route' => [
+                ['route' => 'admin', 'roles' => ['sch_user']],
+                ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
+                ['route' => 'assignments', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'assignments/search', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'assignments/create', 'roles' => ['sch_general_moderator']],
+                ['route' => 'persons', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'persons/person', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'persons/search', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'persons/create', 'roles' => ['sch_general_moderator']],
+                ['route' => 'persons/person/edit', 'roles' => ['sch_general_moderator']],
+                ['route' => 'persons/person/moderate', 'roles' => ['sch_moderator']],
+                ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'associations/create', 'roles' => ['sch_general_moderator']],
+                ['route' => 'associations/association/edit', 'roles' => ['sch_general_moderator']],
+                ['route' => 'associations/association/moderate', 'roles' => ['sch_general_moderator']],
+                ['route' => 'roles', 'roles' => ['sch_moderator']],
+                ['route' => 'roles/create', 'roles' => ['sch_moderator']],
+                ['route' => 'roles/role', 'roles' => ['sch_moderator']],
+                ['route' => 'roles/role/edit', 'roles' => ['sch_moderator']],
+                ['route' => 'roles/role/delete', 'roles' => ['sch_general_moderator']],
+            ],
+        ],
+    ],
+
 ];

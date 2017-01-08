@@ -15,7 +15,13 @@ class FormatEntity extends AbstractHelper
      */
     public function __construct($config)
     {
-        $this->associationLabels = $config['association_kinds'];
+        $associationLabels = [];
+        foreach ($config['association_kinds'] as $key => $value) {
+            if (is_array($value) && key_exists('label', $value)) {
+                $associationLabels[$key] = $value['label'];
+            }
+        }
+        $this->associationLabels = $associationLabels;
     }
 
     /**
@@ -28,7 +34,7 @@ class FormatEntity extends AbstractHelper
     {
     	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
         $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : true;
-
+        $finalMarkup = '';
         switch ($entityType) {
             case 'person':
                 return $this->view->formatPerson($data, $options);
@@ -53,6 +59,13 @@ class FormatEntity extends AbstractHelper
                     if ($editPencilOption) {
                         $finalMarkup .= $this->view->editPencil('association', $data['associationId']);
                     }
+                }
+                return $finalMarkup;
+                break;
+            case 'role':
+                $finalMarkup = $this->view->escapeHtml($this->view->translate($data['roleTitle']));
+                if ($editPencilOption) {
+                    $finalMarkup .= $this->view->editPencil('role', $data['roleId']);
                 }
                 return $finalMarkup;
                 break;

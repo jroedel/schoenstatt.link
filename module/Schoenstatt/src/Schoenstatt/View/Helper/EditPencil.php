@@ -7,9 +7,14 @@ use Zend\View\Helper\AbstractHelper;
 
 class EditPencil extends AbstractHelper
 {
+    /**
+     * @todo I should be getting this info from the config
+     * @var unknown
+     */
     protected $scopeRoutes = [
         'association'   => ['route' => 'associations/association/edit', 'key' => 'association_id'],
         'person'        => ['route' => 'persons/person/edit', 'key' => 'person_id'],
+        'role'          => ['route' => 'roles/role/edit', 'key' => 'role_id'],
     ];
 
     /**

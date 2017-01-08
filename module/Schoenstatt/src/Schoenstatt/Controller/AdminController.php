@@ -19,7 +19,6 @@ use SionModel\Service\ProblemService;
 use Schoenstatt\Form\PersonForm;
 use Zend\Http\Client;
 use Zend\Json\Json;
-use Zend\Mvc\Controller\Plugin\FlashMessenger;
 
 class AdminController extends AbstractActionController
 {
@@ -75,12 +74,13 @@ class AdminController extends AbstractActionController
                 $personData = $this->getPersonInfo($personId);
                 $personData['dataSource'] = 'patres-sion';
                 $personData['dataSourceId'] = $personId;
-                var_dump($personData);
                 if (0 !== count($table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId])))
                 {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Person already exists in the database.' );
                 } else {
                     $result = $table->createEntity('person', $personData);
+                    //prime the form a new request
+                    $form = $sm->get('Schoenstatt\Form\ImportFatherForm');
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully imported.' );
                 }
 //                 $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );

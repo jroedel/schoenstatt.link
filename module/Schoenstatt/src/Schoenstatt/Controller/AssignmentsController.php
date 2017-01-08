@@ -86,7 +86,7 @@ class AssignmentsController extends AbstractActionController
         $sm = $this->getServiceLocator ();
         /** @var SchoenstattTable $table **/
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
-
+        var_dump($table->getJavascriptRoleTitleValueOptions());
         /** @var AssociationForm $form */
         $form = $sm->get('Schoenstatt\Form\AssociationForm');
         $request = $this->getRequest();

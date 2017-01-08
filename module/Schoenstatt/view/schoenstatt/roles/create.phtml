@@ -1,0 +1,53 @@
+<?php
+$headText = 'Create New Role';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$form->setAttribute('action', $this->url('roles/create'));
+$form->prepare();
+echo $this->form()->openTag($form);
+echo $this->partial('fields-partial', ['form' => $form]);
+echo $this->formSubmit($form->get('submit'));
+echo $this->form()->closeTag();$script = <<<JS
+$(function() {
+    var roles = $rolesJson;
+    var \$roleSelect = $("#roleSelect");
+    \$scopeNameGroup.append( '<ul class="ui-autocomplete ui-front ui-menu ui-widget ui-widget-content" id="ui-id-1" tabindex="0" style="display: none;"></ul>' );
+    \$scopeName.catcomplete({
+      delay: 0,
+      source: roles,
+      select: function( event, ui ) {
+          console.log(ui);
+          if (ui.item) {
+        	  \$scope.val(ui.item.scopeId);
+          	\$scopeNameGroup.removeClass('has-warning');
+        	\$scopeNameGroup.addClass('has-success');
+
+          var selectOptions = "";
+          for (i = 0; i < ui.item.roleTitles.length; i++) {
+        	  selectOptions = selectOptions + "<option value=\""+ui.item.roleTitles[i].roleId+"\">"+
+              ui.item.roleTitles[i].roleTitle+"</option>";
+          }
+          console.log(selectOptions);
+    		\$roleSelect.html(selectOptions);
+    		\$roleSelect.prop( "disabled", false );
+    		\$roleSelect.parent().addClass('has-success');
+          }
+      }
+    });
+    \$scopeName.keyup( function() {
+    	\$scopeNameGroup.addClass('has-warning');
+        if (\$scope.val()) {
+        	\$scopeNameGroup.removeClass('has-success');
+    		\$roleSelect.parent().removeClass('has-success');
+    		\$roleSelect.html('');
+    		\$roleSelect.prop( "disabled", true );
+        	\$scope.val(null);
+        }
+    });
+});
+JS;
+$this->inlineScript()->captureStart();
+echo $this->jshrink($script);
+$this->inlineScript()->captureEnd();
+?>
