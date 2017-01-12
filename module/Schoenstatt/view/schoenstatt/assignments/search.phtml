@@ -4,12 +4,18 @@ $areResults = isset($this->entities) && 0!=count($this->entities);
 if ($this->isAllowed('route/assignments/create')) :?>
 <a href="<?php echo $this->url('assignments/create')?>"><?php echo $this->translate('Add assignment');?></a>
 <?php endif;
+if ($this->isAllowed('route/persons/create')) :?>
+|&nbsp;<a href="<?php echo $this->url('persons/create')?>"><?php echo $this->translate('Add person');?></a>
+<?php endif;
+if ($this->isAllowed('route/associations/create')) :?>
+|&nbsp;<a href="<?php echo $this->url('associations/create')?>"><?php echo $this->translate('Add association');?></a>
+<?php endif;
 if ($areResults) :?>
 <table class="table">
     <thead>
     <tr>
     <th><?php echo $this->translate('Name');?></th>
-    <th><?php echo $this->translate('Community');?></th>
+    <th><?php echo $this->translate('Person');?></th>
     <th><?php echo $this->translate('Email');?></th>
     <th><?php echo $this->translate('Cell phone');?></th>
     </tr>

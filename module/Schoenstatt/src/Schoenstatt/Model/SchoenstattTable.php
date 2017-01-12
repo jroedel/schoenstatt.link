@@ -1,15 +1,16 @@
 <?php
 namespace Schoenstatt\Model;
 
-use Zend\Db\TableGateway\TableGateway;
 use Zend\Filter\ToNull;
 use Assetic\Exception\Exception;
 use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;
-use Patres\Problem\PersonProblem;
 use SionModel\Problem\ProblemProviderInterface;
 use Zend\I18n\Translator\TranslatorInterface;
+use Zend\Db\Adapter\AdapterInterface;
+use Zend\Db\TableGateway\TableGatewayInterface;
+use Zend\Db\TableGateway\TableGateway;
 
 class SchoenstattTable extends SionTable implements ProblemProviderInterface
 {
@@ -31,20 +32,6 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         self::CATEGORY_OTHER     => 'others',
     ];
 
-    const CONDITION_EXMEMBER_BISHOP = 'ex-member bishop';
-    const CONDITION_EXMEMBER_PRIEST = 'ex-member priest';
-    const CONDITION_EXMEMBER_DEACON = 'ex-member deacon';
-    const CONDITION_DECEASED_EXMEMBER = 'deceased ex-member';
-    const CONDITION_EXMEMBER = 'ex-member';
-    const CONDITION_DECEASED_BISHOP = 'deceased bishop';
-    const CONDITION_DECEASED_PRIEST = 'deceased priest';
-    const CONDITION_DECEASED_DEACON = 'deceased deacon';
-    const CONDITION_DECEASED = 'deceased'; //only a theoretical possibility
-    const CONDITION_BISHOP = 'bishop';
-    const CONDITION_PRIEST = 'priest';
-    const CONDITION_DEACON = 'deacon';
-    const CONDITION_OTHER = 'other';
-
     const TITLE_BISHOP = 'Most Rev.';
     const TITLE_PRIEST = 'Fr.';
     const TITLE_MONSIGNOR = 'Msgr.';
@@ -53,31 +40,6 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     const TITLE_SISTER = 'Sr.';
     const TITLE_DOCTOR = 'Dr.';
     const TITLE_PROFESSOR = 'Prof.';
-
-    const ENTITY_PERSON = 'person';
-    const ENTITY_COURSE = 'course';
-    const ENTITY_GENERATION = 'generation';
-    const ENTITY_FILIATION = 'filiation';
-    const ENTITY_TERRITORY = 'territory';
-    const ENTITY_HOUSE = 'house';
-    const ENTITY_ASSIGNMENT = 'assignment';
-    const ENTITY_LIVING_SITUATION = 'living_situation';
-
-    const MAILING_STATUS_QUEUED = 'queued';
-    const MAILING_STATUS_ERROR = 'error';
-    const MAILING_STATUS_ERROR_1 = 'error-1';
-    const MAILING_STATUS_ERROR_2 = 'error-2';
-    const MAILING_STATUS_ERROR_3 = 'error-3';
-    const MAILING_STATUS_SENT = 'sent';
-
-    const MAILING_STATUS_LABELS = [
-        self::MAILING_STATUS_QUEUED => 'Queued',
-        self::MAILING_STATUS_ERROR => 'Error',
-        self::MAILING_STATUS_ERROR_1 => 'Error 1st attempt',
-        self::MAILING_STATUS_ERROR_2 => 'Error 2nd attempt',
-        self::MAILING_STATUS_ERROR_3 => 'Error 3rd attempt',
-        self::MAILING_STATUS_SENT => 'Sent',
-    ];
 
     const PROBLEM_PERSON_NO_EMAIL = 'person-no-email';
 
@@ -93,39 +55,21 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
      */
     protected $entityProblemPrototype;
 
-    /**
-     *
-     * @var TableGateway $suggestionColumnTableGateway
-     */
-    protected $suggestionColumnTableGateway;
-    /**
-     *
-     * @var TableGateway $suggestionTableGateway
-     */
-    protected $suggestionTableGateway;
-    /**
-     *
-     * @var TableGateway $suggestionTableGateway
-     */
-    protected $visitTableGateway;
-
     protected $personsCache;
-
-    protected $emailAddressesCache;
-
-    protected $mailingsCache;
 
     protected $mainRolesCache;
 
     protected $assignmentsCache;
 
-    protected $roleTitleAliasesCache;
-
-    protected $usedCountries = [];
-
     protected $associationsCache;
 
     protected $rolesCache;
+
+    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $schoenstattConfig)
+    {
+        parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
+        $this->config = $schoenstattConfig;
+    }
 
     /**
      * Gets a simple key => value array of the generation
@@ -137,7 +81,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         $result = [''=>''];
         foreach ($persons as $per) {
             if ($includeInactive || $per['isActive']) { //put it in
-                $result[$per['personId']] = $per['friendlyLastName'].', '.$per['friendlyFirstName'];
+                $result[$per['personId']] = $per['fullName'];
             }
         }
         return $result;
@@ -197,11 +141,11 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
             if ($includeInactive || $role['isActive']) {
                 if (key_exists($role['associationId'], $valueOptions)) {
                     if (!key_exists($role['roleTitle'], $valueOptions[$role['associationId']])) {
-                        $valueOptions[$role['associationId']][$role['roleTitle']] = $role['roleTitle'];
+                        $valueOptions[$role['associationId']][$role['roleId']] = $role['roleTitle'];
                     }
                 } else {
                     $valueOptions[$role['associationId']] = [
-                        $role['roleTitle'] => $role['roleTitle'],
+                        $role['roleId'] => $role['roleTitle'],
                     ];
                 }
             }
@@ -360,47 +304,29 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     /**
      * Inserts new roles for a newly created entity
      * Returns the number of roles inserted
-     * @param string $scope
-     * @param string|int $scopeId
+     * @param string $associationId
+     * @param string $kind
      * @return int
      */
-    public function createAssociatedRoles($scope, $scopeId)
+    public function createAssociatedRoles($associationId, $kind)
     {
-        if (!$scopeId || $scopeId == 0 || $scopeId == '') {
-            throw new \Exception('Invalid scope id argument passed.');
-        }
-        static $scopeRoles = [
-            'Scholasticate' => [
-                array('RoleTitle' => 'Rector', 'SinglePosition' => true, 'Sort' => 100, 'MainRole' => true),
-                array('RoleTitle' => 'Formator', 'SinglePosition' => false, 'Sort' => 200, 'MainRole' => false),
-            ],
-            'Province' => [
-                array('RoleTitle' => 'Provincial Superior', 'SinglePosition' => true, 'Sort' => 20, 'MainRole' => true),
-                array('RoleTitle' => 'Provincial First Councelor', 'SinglePosition' => true, 'Sort' => 21, 'MainRole' => false),
-                array('RoleTitle' => 'Provincial Councelor', 'SinglePosition' => false, 'Sort' => 25, 'MainRole' => false),
-                array('RoleTitle' => 'Provincial Treasurer', 'SinglePosition' => true, 'Sort' => 28, 'MainRole' => false),
-            ],
-            'Region' => [
-                array('RoleTitle' => 'Regional Superior', 'SinglePosition' => true, 'Sort' => 30, 'MainRole' => true),
-                array('RoleTitle' => 'Regional First Councelor', 'SinglePosition' => true, 'Sort' => 31, 'MainRole' => false),
-                array('RoleTitle' => 'Regional Councelor', 'SinglePosition' => false, 'Sort' => 35, 'MainRole' => false),
-                array('RoleTitle' => 'Regional Treasurer', 'SinglePosition' => true, 'Sort' => 38, 'MainRole' => false),
-            ],
-            'Delegation' => [
-                array('RoleTitle' => 'Delegate Superior', 'SinglePosition' => true, 'Sort' => 40, 'MainRole' => true),
-                array('RoleTitle' => 'Delegation First Councelor', 'SinglePosition' => true, 'Sort' => 41, 'MainRole' => false),
-                array('RoleTitle' => 'Delegation Councelor', 'SinglePosition' => false, 'Sort' => 45, 'MainRole' => false),
-                array('RoleTitle' => 'Delegation Treasurer', 'SinglePosition' => true, 'Sort' => 48, 'MainRole' => false),
-            ],
-        ];
-        if (!key_exists($scope, $scopeRoles)) {
-            return 0;
-        }
+        $associatedRoles = $this->getDefaultAssociatedRoles($kind);
+
         $i=0;
-        foreach ($scopeRoles[$scope] as $role) {
-            $params = $role;
-            $params['ScopeId'] = $scopeId;
-            $params['Scope'] = $scope;
+        foreach ($associatedRoles as $role) {
+            if (!isset($role['roleTitle'])) {
+                throw new \InvalidArgumentException('Default role for association kind '.$kind.' has no role title.');
+            }
+            $params = [
+                'roleTitle'                 => $role['roleTitle'],
+                'associationId'             => $associationId,
+                'isMainRole'                => isset($role['isMainRole']) ? $role['isMainRole'] : false,
+                'isSinglePosition'          => isset($role['isSinglePosition']) ? $role['isSinglePosition'] : false,
+                'shouldAlwaysBeFilled'      => isset($role['shouldAlwaysBeFilled']) ? $role['shouldAlwaysBeFilled'] : false,
+                'sort'                      => isset($role['sort']) ? $role['sort'] : 100,
+                'isActive'                  => true,
+            ];
+
             $this->getRoleTableGateway()->insert($params);
             $i++;
         }
@@ -685,7 +611,7 @@ ORDER BY `BirthDate`";
     protected function getUnlinkedRoles()
     {
         $sql = "SELECT `RoleId`, `RoleTitle`, `AssociationId`,
-`IsMainRole`, `IsSinglePosition`, `Sort`, `IsActive`, `UpdatedOn`,
+`IsMainRole`, `IsSinglePosition`, `ShouldAlwaysBeFilled`, `Sort`, `IsActive`, `UpdatedOn`,
 `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_roles` WHERE 1";
 
         $results = $this->fetchSome(null, $sql, null);
@@ -700,6 +626,7 @@ ORDER BY `BirthDate`";
                 'sort'                      => $this->filterDbInt($row['Sort']),
                 'isMainRole'                => $this->filterDbBool($row['IsMainRole']),
                 'isSinglePosition'          => $this->filterDbBool($row['IsSinglePosition']),
+                'shouldAlwaysBeFilled'      => $this->filterDbBool($row['ShouldAlwaysBeFilled']),
                 'isActive'                  => $this->filterDbBool($row['IsActive']),
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'                 => $this->filterDbId($row['CreatedBy']),
@@ -725,73 +652,106 @@ ORDER BY `BirthDate`";
         return $role;
     }
 
+    public function getDefaultAssociatedRoles($associationKind)
+    {
+        $kindsSpecifications = $this->config['association_kinds'];
+        $defaultRoles = [];
+        foreach ($kindsSpecifications as $kind => $spec) {
+            if (isset($spec['default_roles'])) {
+                $defaultRoles[$kind] = $spec['default_roles'];
+            }
+        }
+        return $defaultRoles[$associationKind];
+    }
+
     /**
      * @return mixed[]
      */
-    public function getAssignments($includeLoosePersons = false)
+    public function getAssignmentPersonAssociations($includeLoosePersons = false)
     {
 
         if (!is_null($this->assignmentsCache)) {
             return $this->assignmentsCache;
         }
-        $entities = $this->getUnlinkedAssignments();
+        $assignments = $this->getUnlinkedAssignments();
         $persons = $this->getUnlinkedPersons();
         $associations = $this->getUnlinkedAssociations();
-        foreach ($entities as $entityId => $entity) {
-            if  (isset($persons[$entity['personId']])) {
-                $entity['person'] = $persons[$entity['personId']];
-                $persons[$entity['personId']]['found'] = true;
+        $entities = [];
+        foreach ($assignments as $assignmentId => $assignment) {
+            $entity = [
+                'assignmentId'      => $assignmentId,
+                'assignment'        => $assignment,
+                'associationId'     => null,
+                'association'       => null,
+                'personId'          => null,
+                'person'            => null,
+
+            ];
+            if  (isset($persons[$assignment['personId']])) {
+                $entity['person'] = $persons[$assignment['personId']];
+                $persons[$assignment['personId']]['found'] = true;
             }
-            if  (isset($associations[$entity['associationId']])) {
-                $entity['association'] = $associations[$entity['associationId']];
-                $associations[$entity['associationId']]['found'] = true;
+            if  (isset($associations[$assignment['associationId']])) {
+                $entity['association'] = $associations[$assignment['associationId']];
+                $associations[$assignment['associationId']]['found'] = true;
             }
+            $entities[] = $entity;
         }
 
         if ($includeLoosePersons) {
-            foreach ($persons as $personId => $person) {
-                if (!isset($person['found']) && $person['isActive']) {
-                    $entities[] = [
-                        'assignmentId'          => null,
-                        'roleId'                => null,
-                        'roleTitle'             => null,
-                        'associationId'         => null,
-                        'association'           => null,
-                        'isMainRole'            => null,
-                        'isSinglePosition'      => null,
-                        'sort'                  => null,
-                        'isActive'              => null,
-                        'personId'              => $personId,
-                        'person'                => $person,
-                        'startDate'             => null,
-                        'endDate'               => null,
-                        'createdOn'             => null,
-                        'createdBy'             => null,
-                        'updatedOn'             => null,
-                        'updatedBy'             => null,
-                    ];
-                }
-            }
             foreach ($associations as $associationId => $association) {
                 if (!isset($association['found']) && $association['isActive']) {
                     $entities[] = [
-                        'assignmentId'          => null,
-                        'roleId'                => null,
-                        'roleTitle'             => null,
+                        'assignmentId' => null,
+                        'assignment' => [
+                            'assignmentId'          => null,
+                            'roleId'                => null,
+                            'roleTitle'             => null,
+                            'associationId'         => null,
+                            'association'           => null,
+                            'isMainRole'            => null,
+                            'isSinglePosition'      => null,
+                            'sort'                  => null,
+                            'isActive'              => null,
+                            'startDate'             => null,
+                            'endDate'               => null,
+                            'createdOn'             => null,
+                            'createdBy'             => null,
+                            'updatedOn'             => null,
+                            'updatedBy'             => null,
+                        ],
                         'associationId'         => $associationId,
                         'association'           => $association,
-                        'isMainRole'            => null,
-                        'isSinglePosition'      => null,
-                        'sort'                  => null,
-                        'isActive'              => null,
                         'personId'              => null,
                         'person'                => null,
-                        'startDate'             => null,
-                        'endDate'               => null,
-                        'createdOn'             => null,
-                        'createdBy'             => null,
-                        'updatedOn'             => null,
-                        'updatedBy'             => null,
+                    ];
+                }
+            }
+            foreach ($persons as $personId => $person) {
+                if (!isset($person['found']) && $person['isActive']) {
+                    $entities[] = [
+                        'assignmentId' => null,
+                        'assignment' => [
+                            'assignmentId'          => null,
+                            'roleId'                => null,
+                            'roleTitle'             => null,
+                            'associationId'         => null,
+                            'association'           => null,
+                            'isMainRole'            => null,
+                            'isSinglePosition'      => null,
+                            'sort'                  => null,
+                            'isActive'              => null,
+                            'startDate'             => null,
+                            'endDate'               => null,
+                            'createdOn'             => null,
+                            'createdBy'             => null,
+                            'updatedOn'             => null,
+                            'updatedBy'             => null,
+                        ],
+                        'personId'              => $personId,
+                        'person'                => $person,
+                        'associationId'         => null,
+                        'association'           => null,
                     ];
                 }
             }
@@ -802,7 +762,7 @@ ORDER BY `BirthDate`";
 
     protected function getUnlinkedAssignments()
     {
-        $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`Personid`,
+        $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`PersonId`,
 a.`StartDate`, a.`EndDate`, a.`CreatedOn`, a.`CreatedBy`, a.`UpdatedOn`, a.`UpdatedBy`,
 r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`, r.`IsActive`
 FROM `sch_assignments` a
@@ -822,7 +782,7 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
                 'isSinglePosition'      => $this->filterDbBool($row['IsSinglePosition']),
                 'sort'                  => $this->filterDbInt($row['Sort']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),
-                'personId'              => $this->filterDbDate($row['PersonId']),
+                'personId'              => $this->filterDbId($row['PersonId']),
                 'person'                => null,
                 'startDate'             => $this->filterDbInt($row['StartDate']),
                 'endDate'               => $this->filterDbInt($row['EndDate']),
@@ -848,49 +808,6 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
         }
 
         return $assignment;
-    }
-
-    /**
-     * @return string[]
-     */
-    public function getPersonAdminTags()
-    {
-        $sql = "SELECT DISTINCT AdminTags FROM `a_data_person`";
-        $resultsTags = $this->fetchSome(null, $sql, null);
-
-        $return = array();
-        foreach ($resultsTags as $row) {
-            if (is_null($row['AdminTags']) || $row['AdminTags'] == '') {
-                continue;
-            }
-            $values = explode("|", strtolower($row['AdminTags']));
-            foreach ($values as $value) {
-                $value = trim($value);
-                if (!in_array($value, $return)) {
-                    $return[$value] =  $value;
-                }
-            }
-        }
-        return $return;
-    }
-
-    /**
-     * Generates a name for the living situation entity
-     * @param int $id
-     * @return string
-     */
-    public function getLivingSituationName($id)
-    {
-        $situation = $this->getLivingSituation($id);
-
-        $person = $this->getPerson($situation['personId']);
-        $text = $person['fullFriendlyName'] . ' - ' . $person['filiationName'];
-        //tack a year on to the end of our situation name
-        $yearRange = $this::getYearRange($situation['startDate'], $situation['endDate']);
-        if (!is_null($yearRange)) {
-            $text.= $yearRange;
-        }
-        return $text;
     }
 
     public function getAllPersonPhoneNumbers($includeInactive = false)
@@ -1086,190 +1003,6 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
         return $return;
     }
 
-    public function getRolesList($showAll, $showHistory)
-    {
-        $in = $this->getAssociatedScopesForInStatement('Territory', true);
-        $sqlTerritoryAssignments = "SELECT a.`AssignmentId`,a.`RoleId`, a.`PersID`, a.`StartDate`,
-a.`EndDate`, r.RoleTitle, g.GebID, g.GebName, p.PersName, p.PersVorname, p.PersTod, p.PersUrsprLand
-FROM `a_data_role_assignment` a
-LEFT JOIN a_data_role r ON a.`RoleId` = r.RoleId
-LEFT JOIN a_data_gebiet g ON r.ScopeId = g.GebID AND (r.Scope IN $in)
-LEFT JOIN a_data_person p ON a.`PersID` = p.PersID
-WHERE (r.Scope IN $in)
-ORDER BY g.`Sort`, r.`Sort`";
-        $resultsTerritoryAssignments = $this->fetchSome ( null, $sqlTerritoryAssignments, null );
-        $territoryAssignments = array();
-        foreach ($resultsTerritoryAssignments as $row) {
-            $territoryAssignments[] = array(
-                'assignmentId'     => $this->filterDbId($row['AssignmentId']),
-                'roleId'           => $this->filterDbId($row['RoleId']),
-                'startDate'        => $this->filterDbDate($row['StartDate']),
-                'endDate'          => $this->filterDbDate($row['EndDate']),
-                'roleTitle'        => $row['RoleTitle'],
-                'territoryId'      => $this->filterDbId($row['GebID']),
-                'territoryName'    => $row['GebName'],
-                'personId'         => $this->filterDbId($row['PersID']),
-                'personLastName'   => $row['PersName'],
-                'personFirstName'  => $row['PersVorname'],
-                'personDeathDate'  => $this->filterDbDate($row['PersTod']),
-                'personCountry'    => $row['PersUrsprLand'],
-            );
-        }
-
-        if ($showAll) {
-            $dateWhere = "";
-            $generationDateWhere = "";
-            if (!$showHistory) {
-                $dateWhere = "AND ((ISNULL(a.StartDate) AND (a.EndDate > CURDATE() OR ISNULL(a.EndDate))) OR (a.StartDate <= CURDATE() AND (ISNULL(a.EndDate) OR a.EndDate > CURDATE()))) ";
-                $generationDateWhere = "AND ((ISNULL(ga.StartDate) AND (ISNULL(ga.EndDate) OR ga.EndDate > CURDATE()) ) OR (ga.StartDate <= CURDATE() AND (ISNULL(ga.EndDate) OR ga.EndDate > CURDATE())))";
-            }
-            $in = $this->getAssociatedScopesForInStatement('Filiation', true);
-            $sqlFiliationAssignments = "SELECT a.`AssignmentId`, a.`PersID`, a.`StartDate`, a.`EndDate`, r.RoleId,
-r.RoleTitle, f.FilID, f.FilName, f.Country, g.GebID, g.GebName, p.PersName, p.PersVorname, p.PersTod, p.PersUrsprLand
-FROM a_data_filiale f
-LEFT JOIN a_data_role r ON r.Scope IN $in AND r.ScopeId = f.FilID
-LEFT JOIN `a_data_role_assignment` a ON a.`RoleId` = r.RoleId $dateWhere
-LEFT JOIN a_data_gebiet g ON f.GebID = g.GebID
-LEFT JOIN a_data_person p ON a.`PersID` = p.PersID
-WHERE (f.Active = 1 OR f.Active IS NULL)
-ORDER BY g.`Sort`, f.FilName, r.`Sort`";
-            $resultsFiliationAssignments = $this->fetchSome ( null, $sqlFiliationAssignments, null );
-
-            $filiationAssignments = array();
-            foreach ($resultsFiliationAssignments as $row) {
-                $filiationAssignments[] = array(
-                    'assignmentId'     => $this->filterDbId($row['AssignmentId']),
-                    'roleId'           => $this->filterDbId($row['RoleId']),
-                    'startDate'        => $this->filterDbDate($row['StartDate']),
-                    'endDate'          => $this->filterDbDate($row['EndDate']),
-                    'roleTitle'        => $row['RoleTitle'],
-                    'territoryId'      => $this->filterDbId($row['GebID']),
-                    'territoryName'    => $row['GebName'],
-                    'filiationId'      => $this->filterDbId($row['FilID']),
-                    'filiationName'    => $row['FilName'],
-                    'country'          => $row['Country'],
-                    'personId'         => $this->filterDbId($row['PersID']),
-                    'personLastName'   => $row['PersName'],
-                    'personFirstName'  => $row['PersVorname'],
-                    'personDeathDate'  => $this->filterDbDate($row['PersTod']),
-                    'personCountry'    => $row['PersUrsprLand'],
-                );
-            }
-
-            $sqlCourseAssignments = "SELECT k.`KursID`, k.`KursName`, k.`GenID`, g.`GenName`,
-r.RoleId as LeaderRoleId, lp.PersID AS LeaderPersID, lp.PersName AS LeaderPersName, lp.PersVorname AS LeaderPersVorname,
-lp.PersTod AS LeaderPersTod, lp.PersUrsprLand AS LeaderPersUrsprLand,
-a.`AssignmentId` AS LeaderAssignmentID, a.StartDate AS LeaderStartDate, a.EndDate AS LeaderEndDate,
-gr.RoleId as GenerationRoleId, ga.AssignmentId AS GenerationAssignmentID, ga.StartDate AS GenerationStartDate, ga.EndDate AS GenerationEndDate,
-gp.PersID AS GenerationPersID, gp.PersName AS GenerationPersName, gp.PersVorname AS GenerationPersVorname,
-gp.PersTod AS GenerationPersTod, gp.PersUrsprLand AS GenerationPersUrsprLand, IF(ISNULL(g.`GenID`),999,g.`GenID`) AS GenSort
-FROM `a_data_kurs` k
-LEFT JOIN `a_data_generation` g ON k.`GenID` = g.`GenID`
-LEFT JOIN `a_data_role` r ON r.`Scope` = 'Course' AND r.`RoleTitle` = 'Course Leader' AND k.`KursID` = r.`ScopeId`
-LEFT JOIN `a_data_role_assignment` a ON a.`RoleId` = r.`RoleId` $dateWhere
-LEFT JOIN `a_data_person` lp ON a.`PersID` = lp.PersID
-LEFT JOIN `a_data_role` gr ON gr.`Scope` = 'Generation' AND gr.`RoleTitle` = 'Generation Representative' AND k.`GenID` = gr.`ScopeId`
-LEFT JOIN `a_data_role_assignment` ga ON ga.`RoleId` = gr.`RoleId` $generationDateWhere
-LEFT JOIN `a_data_person` gp ON ga.`PersID` = gp.PersID
-WHERE (k.`KursID` <> 999)
-ORDER BY GenSort, k.`KursID`";
-            $resultsCourseAssignments = $this->fetchSome ( null, $sqlCourseAssignments, null );
-
-            $courseAssignments = array();
-            foreach ($resultsCourseAssignments as $row) {
-                $courseAssignments[] = array(
-                    'courseId'                 => $this->filterDbId($row['KursID']),
-                    'courseName'               => $row['KursName'],
-                    'generationId'             => $this->filterDbId($row['GenID']),
-                    'generationName'           => $row['GenName'],
-                    'generationSort'           => $this->filterDbInt($row['GenSort']),
-                    'leaderId'                 => $this->filterDbId($row['LeaderPersID']),
-                    'leaderRoleId'             => $this->filterDbId($row['LeaderRoleId']),
-                    'leaderAssignmentId'       => $this->filterDbId($row['LeaderAssignmentID']),
-                    'leaderStartDate'          => $this->filterDbDate($row['GenerationStartDate']),
-                    'leaderEndDate'            => $this->filterDbDate($row['GenerationEndDate']),
-                    'leaderLastName'           => $row['LeaderPersName'],
-                    'leaderFirstName'          => $row['LeaderPersVorname'],
-                    'leaderDeathDate'          => $this->filterDbDate($row['LeaderPersTod']),
-                    'leaderCountry'            => $row['LeaderPersUrsprLand'],
-                    'generationRepId'          => $this->filterDbId($row['GenerationPersID']),
-                    'generationRepRoleId'      => $this->filterDbId($row['GenerationRoleId']),
-                    'generationRepAssignmentID'=> $this->filterDbId($row['GenerationAssignmentID']),
-                    'generationRepStartDate'   => $this->filterDbDate($row['GenerationStartDate']),
-                    'generationRepEndDate'     => $this->filterDbDate($row['GenerationEndDate']),
-                    'generationRepLastName'    => $row['GenerationPersName'],
-                    'generationRepFirstName'   => $row['GenerationPersVorname'],
-                    'generationRepDeathDate'   => $this->filterDbDate($row['GenerationPersTod']),
-                    'generationRepCountry'     => $row['GenerationPersUrsprLand'],
-                );
-            }
-        } else {
-            $filiationAssignments = null;
-            $courseAssignments = null;
-        }
-        return array(
-            'territoryAssignments' => $territoryAssignments,
-            'filiationAssignments' => $filiationAssignments,
-            'courseAssignments' => $courseAssignments
-        );
-    }
-
-    /**
-     * Get a simple list of roles in the database for use to fill form dropdowns
-     *
-     * @return array
-     */
-    public function getSimpleRoleList()
-    {
-        if ($this->simpleRoleListCache) {
-            return $this->simpleRoleListCache;
-        }
-        $inFiliation = $this->getAssociatedScopesForInStatement('Filiation', true);
-        $inTerritory = $this->getAssociatedScopesForInStatement('Territory', true);
-        $sqlRoles = "SELECT r.`RoleId`,r.`RoleTitle`,r.`Scope`,r.`ScopeId`,r.`SinglePosition`,r.`Sort`, t.GebName AS ScopeName
-FROM `a_data_role` r
-INNER JOIN `a_data_gebiet` t ON (r.`Scope` IN $inTerritory) AND r.`ScopeId` = t.GebID
-UNION
-SELECT r.`RoleId`,r.`RoleTitle`,r.`Scope`,r.`ScopeId`,r.`SinglePosition`,r.`Sort`, k.KursName AS ScopeName
-FROM `a_data_role` r
-INNER JOIN `a_data_kurs` k ON r.`Scope` = 'Course' AND r.`ScopeId` = k.KursID
-UNION
-SELECT r.`RoleId`,r.`RoleTitle`,r.`Scope`,r.`ScopeId`,r.`SinglePosition`,r.`Sort`, gen.GenName AS ScopeName
-FROM `a_data_role` r
-INNER JOIN `a_data_generation` gen ON r.`Scope` = 'Generation' AND r.`ScopeId` = gen.GenID
-UNION
-SELECT r.`RoleId`,r.`RoleTitle`,r.`Scope`,r.`ScopeId`,r.`SinglePosition`,r.`Sort`, fil.FilName AS ScopeName
-FROM `a_data_role` r
-INNER JOIN `a_data_filiale` fil ON r.`Scope` IN $inFiliation AND r.`ScopeId` = fil.FilID
-ORDER BY Sort, Scope, ScopeId";
-        $resultsRoles = $this->fetchSome ( null, $sqlRoles, null );
-        // process results
-        $roles = array ();
-        foreach ( $resultsRoles as $role ) {
-            if (key_exists ( $role ['ScopeId'] . $role ['Scope'], $roles )) {
-                array_push ( $roles [$role ['ScopeId'] . $role ['Scope']] ["roleTitles"], array (
-                    "roleTitle" => $role ['RoleTitle'],
-                    "roleId" => $role ['RoleId']
-                ) );
-            } else {
-                $roles [$role ['ScopeId'] . $role ['Scope']] = array (
-                    "scopeId" => $role ['ScopeId'],
-                    "label" => $role ['ScopeName'],
-                    "category" => $role ['Scope'],
-                    "sort" => $role ['Sort'],
-                    "roleTitles" => array (
-                        array (
-                            "roleTitle" => $role ['RoleTitle'],
-                            "roleId" => $role ['RoleId']
-                        )
-                    )
-                );
-            }
-        }
-        $this->simpleRoleListCache = $roles;
-        return $roles;
-    }
-
     /**
      *
      * @param int|string $id
@@ -1292,159 +1025,10 @@ ORDER BY Sort, Scope, ScopeId";
         return $return;
     }
 
-    public function getMainRoles()
-    {
-        if ($this->mainRolesCache) {
-            return $this->mainRolesCache;
-        }
-        $roles = $this->getRoles();
-        $return = array();
-        foreach ($roles as $role) {
-            if ($role['isMainRole']) {
-                $return[$role['scope'].$role['scopeId']] = $role;
-            }
-        }
-        $this->mainRolesCache = $return;
-        return $return;
-    }
-
-    /**
-     * Get the main role associated with the entity whose id is passed
-     * @param int $id
-     * @param string $simpleScope
-     */
-    public function getMainRole($id, $simpleScope)
-    {
-        if (!id) {
-            throw new \InvalidArgumentException('Invalid id provided.');
-        }
-        $roles = $this->getMainRoles();
-        $in = $this->getAssociatedScopesForInStatement($simpleScope);
-        foreach ($in as $scope) {
-            if (isset($roles[$scope.$id])) {
-                return $roles[$scope.$id];
-            }
-        }
-        return null;
-    }
-
-    public function getChanges()
-    {
-        $sql = "SELECT ChangeID, ChangedTable, ChangedColumn, ChangedIDValue, NewValue, OldValue,
-UpdateDateTime, IpAddress, user_id
-FROM a_data_changes
-ORDER BY UpdateDateTime DESC
-LIMIT 200";
-        $resultsChanges = $this->fetchSome ( null, $sql, null );
-
-        $tz = new \DateTimeZone('UTC');
-        $results = array();
-        foreach ($resultsChanges as $row) {
-            $user = $row['user_id'] ? $this->getUserTable()->getUser($row['user_id']) : null;
-            $thisRow = array(
-                'changeId' => $row['ChangeID'],
-                'table' => $row['ChangedTable'],
-                'column' => $row['ChangedColumn'],
-                'newValue' => $row['NewValue'],
-                'oldValue' => $row['OldValue'],
-                'updateDateTime' => new \DateTime($row['UpdateDateTime'], $tz),
-                'ipAddress' => $row['IpAddress'],
-                'user' => $user,
-            );
-            $matchedEntity = true; //assume we'll find a known entity
-            switch ($row['ChangedTable']) {
-                case 'a_data_filiale':
-                    $thisRow['scope'] = 'filiation';
-                    $thisRow['object'] = $this->getSimpleFiliation($row['ChangedIDValue']);
-                    //@todo what if its been deleted
-                    break;
-                case 'a_data_haus':
-                    $thisRow['scope'] = 'house';
-                    $thisRow['object'] = $this->getSimpleHouse($row['ChangedIDValue']);
-                    //@todo what if its been deleted
-                    break;
-                case 'a_data_role_assignment':
-                    $assignment = $this->getAssignment($row['ChangedIDValue']);
-                    $thisRow['scope'] = 'assignment';
-                    if ($assignment) {
-                       $thisRow['object'] = $assignment;
-                    } else {
-                        $thisRow['object'] = [
-                            'assignmentId' => $row['ChangedIDValue'],
-                            'assignmentName' => 'Assignment ID: ' .$row['ChangedIDValue'],
-                            'noLink' => true,
-                        ];
-                    }
-                    break;
-                case 'a_data_person':
-                    $thisRow['scope'] = 'person';
-                    $person = $this->getPerson($row['ChangedIDValue']);
-                    if ($person) {
-                       $thisRow['object'] = $person;
-                    } else {
-                        $thisRow['object'] = [
-                            'personId' => $row['ChangedIDValue'],
-                            'personFullName' => 'Person ID: '.$row['ChangedIDValue'],
-                            'noLink' => true,
-                        ];
-                    }
-                    break;
-                case 'a_data_kurs':
-                    $thisRow['scope'] = 'course';
-                    $course = $this->getSimpleCourse($row['ChangedIDValue']);
-                    if ($course) {
-                       $thisRow['object'] = $course;
-                    } else {
-                        $thisRow['object'] = [
-                            'courseId' => $row['ChangedIDValue'],
-                            'courseName' => 'Course ID: '.$row['ChangedIDValue'],
-                            'noLink' => true,
-                        ];
-                    }
-                    break;
-                case 'a_data_person_living':
-                    $thisRow['scope'] = 'living-situation';
-                    $livingSituation = $this->getLivingSituation($row['ChangedIDValue']);
-                    if ($livingSituation) {
-                        $livingSituation['livingSituationName'] = $this->getLivingSituationName($row['ChangedIDValue']);
-                       $thisRow['object'] = $livingSituation;
-                    } else {
-                        $thisRow['object'] = [
-                            'livingSituationId' => $row['ChangedIDValue'],
-                            'livingSituationName' => 'Living ID:'.$row['ChangedIDValue'],
-                            'noLink' => true,
-                        ];
-                    }
-                    break;
-                default:
-                    $matchedEntity = false;
-                    $thisRow['id'] = $row['ChangedIDValue'];
-                    continue;
-            }
-            if ($matchedEntity) {
-                $results[] = $thisRow;
-            }
-        }
-        return $results;
-    }
-
     public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         return $this->getPersonProblems($minimumSeverity);
-        array_merge($this->getPersonProblems($minimumSeverity), $this->getCourseProblems($minimumSeverity));
-    }
-
-    public function getCourseProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
-    {
-        $courses = $this->getCourses();
-
-        $problems = [];
-        foreach ($courses as $courseId => $course) {
-            if ($course) {
-                $problems[] = new PersonProblem(PersonProblem::PERSON_NO_EMAIL, $course);
-            }
-        }
-        return $problems;
+        return array_merge($this->getPersonProblems($minimumSeverity));//, $this->getCourseProblems($minimumSeverity));
     }
 
     public function getPersonProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
@@ -1465,5 +1049,13 @@ LIMIT 200";
             }
         }
         return $problems;
+    }
+
+    /**
+     * @return TableGatewayInterface
+     */
+    public function getRoleTableGateway()
+    {
+        return new TableGateway('sch_roles', $this->adapter);
     }
 }

@@ -13,6 +13,7 @@ if ($env == 'development') {
 $modules = [
     'MaglMarkdown',
     'TwbBundle',
+    'ZfSnapGeoip',
     'ZfcBase',
     'ZfcUser',
 	'BjyAuthorize',

@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "fa4bfda9ac5229441bbfba3ec3cd17cf",
-    "content-hash": "0236c5e05daad67148d94965a36a303e",
+    "hash": "d373b851631528b0fa90ec46d98d7a3b",
+    "content-hash": "4bb0ebc47185432ff1020c6f01979837",
     "packages": [
         {
             "name": "bjyoungblood/bjy-authorize",
@@ -655,12 +655,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/jroedel/zf2-juser.git",
-                "reference": "255318182d002845ec26c2145bb5902d9652166a"
+                "reference": "919dbe8350965b31bcfc61af2992cc6e1b45b295"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/jroedel/zf2-juser/zipball/255318182d002845ec26c2145bb5902d9652166a",
-                "reference": "255318182d002845ec26c2145bb5902d9652166a",
+                "url": "https://api.github.com/repos/jroedel/zf2-juser/zipball/919dbe8350965b31bcfc61af2992cc6e1b45b295",
+                "reference": "919dbe8350965b31bcfc61af2992cc6e1b45b295",
                 "shasum": ""
             },
             "require": {
@@ -693,7 +693,7 @@
                 "source": "https://github.com/jroedel/zf2-juser/tree/master",
                 "issues": "https://github.com/jroedel/zf2-juser/issues"
             },
-            "time": "2016-12-07 22:12:02"
+            "time": "2017-01-07 20:10:14"
         },
         {
             "name": "kriswallsmith/assetic",
@@ -3629,16 +3629,16 @@
         },
         {
             "name": "voku/portable-utf8",
-            "version": "3.1.9",
+            "version": "3.1.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/voku/portable-utf8.git",
-                "reference": "820a447596f9f2ec310266e40fc8269cb938a762"
+                "reference": "3084a79bb7a304917526cce40486ed72b2b56de4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/voku/portable-utf8/zipball/820a447596f9f2ec310266e40fc8269cb938a762",
-                "reference": "820a447596f9f2ec310266e40fc8269cb938a762",
+                "url": "https://api.github.com/repos/voku/portable-utf8/zipball/3084a79bb7a304917526cce40486ed72b2b56de4",
+                "reference": "3084a79bb7a304917526cce40486ed72b2b56de4",
                 "shasum": ""
             },
             "require": {
@@ -3695,7 +3695,7 @@
                 "utf-8",
                 "utf8"
             ],
-            "time": "2016-12-27 12:05:56"
+            "time": "2017-01-12 09:40:01"
         },
         {
             "name": "webmozart/assert",
@@ -4353,16 +4353,16 @@
         },
         {
             "name": "zendframework/zend-diactoros",
-            "version": "1.3.7",
+            "version": "1.3.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zendframework/zend-diactoros.git",
-                "reference": "969ff423d3f201da3ff718a5831bb999bb0669b0"
+                "reference": "d9c1fd7c4b024179d49faf367da544b4eef7cfe8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zendframework/zend-diactoros/zipball/969ff423d3f201da3ff718a5831bb999bb0669b0",
-                "reference": "969ff423d3f201da3ff718a5831bb999bb0669b0",
+                "url": "https://api.github.com/repos/zendframework/zend-diactoros/zipball/d9c1fd7c4b024179d49faf367da544b4eef7cfe8",
+                "reference": "d9c1fd7c4b024179d49faf367da544b4eef7cfe8",
                 "shasum": ""
             },
             "require": {
@@ -4374,7 +4374,7 @@
             },
             "require-dev": {
                 "phpunit/phpunit": "^4.6 || ^5.5",
-                "squizlabs/php_codesniffer": "^2.3.1"
+                "zendframework/zend-coding-standard": "~1.0.0"
             },
             "type": "library",
             "extra": {
@@ -4399,7 +4399,7 @@
                 "psr",
                 "psr-7"
             ],
-            "time": "2016-10-11 13:25:21"
+            "time": "2017-01-05 21:44:28"
         },
         {
             "name": "zendframework/zend-dom",
@@ -4600,16 +4600,16 @@
         },
         {
             "name": "zendframework/zend-file",
-            "version": "2.7.0",
+            "version": "2.7.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zendframework/zend-file.git",
-                "reference": "8936999f244011525671db8d6e35a2f2232d5060"
+                "reference": "888fd4852432ee61ffd48a66b6812387b4f83c02"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zendframework/zend-file/zipball/8936999f244011525671db8d6e35a2f2232d5060",
-                "reference": "8936999f244011525671db8d6e35a2f2232d5060",
+                "url": "https://api.github.com/repos/zendframework/zend-file/zipball/888fd4852432ee61ffd48a66b6812387b4f83c02",
+                "reference": "888fd4852432ee61ffd48a66b6812387b4f83c02",
                 "shasum": ""
             },
             "require": {
@@ -4619,6 +4619,7 @@
             "require-dev": {
                 "fabpot/php-cs-fixer": "1.7.*",
                 "phpunit/phpunit": "~4.0",
+                "zendframework/zend-coding-standard": "~1.0.0",
                 "zendframework/zend-filter": "^2.6.1",
                 "zendframework/zend-i18n": "^2.6",
                 "zendframework/zend-progressbar": "^2.5.2",
@@ -4652,7 +4653,7 @@
                 "file",
                 "zf2"
             ],
-            "time": "2016-04-28 19:21:43"
+            "time": "2017-01-11 17:07:45"
         },
         {
             "name": "zendframework/zend-filter",

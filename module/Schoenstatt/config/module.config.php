@@ -15,10 +15,12 @@ return [
         'factories' => [
             'Schoenstatt\Model\SchoenstattTable' => 'Schoenstatt\Service\SchoenstattTableFactory',
             'Schoenstatt\Form\PersonForm'        => 'Schoenstatt\Service\PersonFormFactory',
+            'Schoenstatt\Form\AssignmentForm'    => 'Schoenstatt\Service\AssignmentFormFactory',
             'Schoenstatt\Form\AssociationForm'   => 'Schoenstatt\Service\AssociationFormFactory',
             'Schoenstatt\Form\RoleForm'          => 'Schoenstatt\Service\RoleFormFactory',
             'Schoenstatt\Config'                 => 'Schoenstatt\Service\ConfigServiceFactory',
             'Schoenstatt\Form\ImportFatherForm'  => 'Schoenstatt\Service\ImportFatherFormFactory',
+            'Schoenstatt\AssociationKindsValueOptions' => 'Schoenstatt\Service\AssociationKindsValueOptionsFactory'
         ],
     ],
     'view_manager' => [
@@ -27,12 +29,11 @@ return [
         ],
     ],
     'view_helpers' => [
-        'factories' => [
+        'factories' => [ //@todo Can we rely on the SionModel FormatEntity?
             'formatEntity'          => 'Schoenstatt\Service\FormatEntityFactory',
         ],
         'invokables' => [
             'clipboardButton'		=> 'Schoenstatt\View\Helper\ClipboardButton',
-            'editPencil'		    => 'Schoenstatt\View\Helper\EditPencil',
         	'formatPerson'          => 'Schoenstatt\View\Helper\FormatPerson',
             'languageChooser'       => 'Schoenstatt\View\Helper\LanguageChooser',
         ],
@@ -47,32 +48,114 @@ return [
                         'singlePosition' => true,
                         'sort' => 100,
                         'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'First councilor',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
                     ],
                     [
                         'roleTitle' => 'Councilor',
                         'singlePosition' => false,
                         'sort' => 100,
-                        'mainRole' => true,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
                     ],
                 ],
             ],
             'sch-national-federation' => [
                 'label' => 'Schoenstatt national federation',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'General superior',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Councilor',
+                        'singlePosition' => false,
+                        'sort' => 100,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
             'sch-diocesan-movement' => [
                 'label' => 'Schoenstatt diocesan movement',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Diocesan coordinator',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Committee member',
+                        'singlePosition' => false,
+                        'sort' => 100,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
             'sch-national-movement' => [
                 'label' => 'Schoenstatt national movement',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Movement director',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Presidium president',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Coordinating Sister',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
             'sch-movement-international-structure' => [
                 'label' => 'Schoenstatt movement international structure',
+                'default_roles' => [],
             ],
             'sch-other' => [
                 'label' => 'Other Schoenstatt entity',
+                'default_roles' => [],
             ],
             'legal-entity' => [
                 'label' => 'Legal entity',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'President',
+                        'singlePosition' => true,
+                        'sort' => 100,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 100,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
         ],
         'post_place_line_format' => ':zip :cityState',
@@ -163,6 +246,16 @@ return [
                             'defaults' => [
                                 'controller' => 'Schoenstatt\Controller\Admin',
                                 'action'     => 'importFather',
+                            ],
+                        ],
+                    ],
+                    'view-changes' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/view-changes',
+                            'defaults' => [
+                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'action'     => 'viewChanges',
                             ],
                         ],
                     ],
@@ -792,6 +885,7 @@ return [
                     'associationId'             => 'AssociationId',
                     'isMainRole'                => 'IsMainRole',
                     'isSinglePosition'          => 'IsSinglePosition',
+                    'shouldAlwaysBeFilled'      => 'ShouldAlwaysBeFilled',
                     'sort'                      => 'Sort',
                     'isActive'                  => 'IsActive',
                     'updatedOn'                 => 'UpdatedOn',
@@ -832,7 +926,7 @@ return [
                 'update_columns' => [
                     'assignmentId'              => 'AssignmentId',
                     'roleId'                    => 'RoleId',
-                    'personId'                  => 'Personid',
+                    'personId'                  => 'PersonId',
                     'startDate'                 => 'StartDate',
                     'endDate'                   => 'EndDate',
                     'isActive'                  => 'IsActive',
@@ -1060,6 +1154,7 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'admin', 'roles' => ['sch_user']],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
+                ['route' => 'admin/view-changes', 'roles' => ['sch_administrator']],
                 ['route' => 'assignments', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/search', 'roles' => ['sch_user', 'sch_basic']],

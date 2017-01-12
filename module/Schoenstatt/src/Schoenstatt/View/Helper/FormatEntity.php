@@ -7,25 +7,19 @@ use Zend\View\Helper\AbstractHelper;
 
 class FormatEntity extends AbstractHelper
 {
-    public $associationLabels = [];
+    protected $associationTypeLabels = [];
 
     /**
      *
      * @param mixed[] $config The 'schoenstatt' config key
      */
-    public function __construct($config)
+    public function __construct($associationTypeLabels)
     {
-        $associationLabels = [];
-        foreach ($config['association_kinds'] as $key => $value) {
-            if (is_array($value) && key_exists('label', $value)) {
-                $associationLabels[$key] = $value['label'];
-            }
-        }
-        $this->associationLabels = $associationLabels;
+        $this->associationTypeLabels = $associationTypeLabels;
     }
 
     /**
-     *
+     * @todo Can we delete this?
      * @param array $person
      * @param array $options
      *
@@ -52,8 +46,8 @@ class FormatEntity extends AbstractHelper
                     }
                     $finalMarkup .= '</a>';
 
-                    if ($showLabelOption && isset($this->associationLabels[$data['kind']])) {
-                        $finalMarkup .= '&nbsp;'.$this->view->label($this->associationLabels[$data['kind']],
+                    if ($showLabelOption && isset($this->associationTypeLabels[$data['kind']])) {
+                        $finalMarkup .= '&nbsp;'.$this->view->label($this->associationTypeLabels[$data['kind']],
                             'label-info');
                     }
                     if ($editPencilOption) {

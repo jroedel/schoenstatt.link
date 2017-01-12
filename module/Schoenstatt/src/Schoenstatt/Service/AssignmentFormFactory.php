@@ -5,14 +5,14 @@ use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
-use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
+use Schoenstatt\Form\AssignmentForm;
 
 /**
  * Factory responsible of prepping the AssociationForm
  *
  * @author Jeff Roedel <webmaster@schoenstatt.link>
  */
-class AssociationFormFactory implements FactoryInterface
+class AssignmentFormFactory implements FactoryInterface
 {
     /**
      * {@inheritDoc}
@@ -28,18 +28,12 @@ class AssociationFormFactory implements FactoryInterface
 
 		$associations = $table->getAssociationValueOptions($translator);
 
-		$kinds = $serviceLocator->get('Schoenstatt\AssociationKindsValueOptions');
+		$persons = $table->getPersonValueOptions();
 
-		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
+		$form = new AssignmentForm();
 
-		/** @var FormElementManagerV2Polyfill $formManager */
-		$formManager = $serviceLocator->get('FormElementManager');
-		/** @var \Schoenstatt\Form\AssociationForm $form */
-		$form = $formManager->get('Schoenstatt\Form\AssociationForm', [], true);
-
-		$form->get('parent')->setValueOptions($associations);
-		$form->get('kind')->setValueOptions($kinds);
-		$form->get('country')->setValueOptions($countryNames);
+		$form->get('associationId')->setValueOptions($associations);
+		$form->get('personId')->setValueOptions($persons);
 		return $form;
     }
 }

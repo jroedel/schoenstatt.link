@@ -15,6 +15,7 @@ echo $this->form()->openTag($form);
 //don't include
 echo $this->partial('fields-partial', array(
     'form' => $form,
+    'rolesJson' => $this->rolesJson,
 ));
 echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();

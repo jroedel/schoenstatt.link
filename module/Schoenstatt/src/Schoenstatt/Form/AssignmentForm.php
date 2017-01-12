@@ -26,6 +26,9 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
 		        'unselected_value' => '',
 		        'value_options' => [],
 		    ],
+		    'attributes' => [
+		        'required' => true,
+		    ],
 		]);
 		$this->add([
 		    'name' => 'roleId',
@@ -34,7 +37,24 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
 		        'label' => 'Role',
 		        'empty_option' => '',
 		        'unselected_value' => '',
+    			'disable_inarray_validator' => true,
 		        'value_options' => [],
+		    ],
+		    'attributes' => [
+		        'required' => true,
+		    ],
+		]);
+		$this->add([
+		    'name' => 'personId',
+		    'type' => 'Select',
+		    'options' => [
+		        'label' => 'Person',
+		        'empty_option' => '',
+		        'unselected_value' => '',
+		        'value_options' => [],
+		    ],
+		    'attributes' => [
+		        'required' => true,
 		    ],
 		]);
 		$this->add([
@@ -91,14 +111,21 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
 	{
 		return [
     		'associationId' => [
-    		    'required' => false,
+    		    'required' => true,
     		    'filters' => [
     		        ['name' => 'ToInt'],
     		        ['name' => 'ToNull'],
     		    ],
     		],
     		'roleId' => [
-    		    'required' => false,
+    		    'required' => true,
+    		    'filters' => [
+    		        ['name' => 'ToInt'],
+    		        ['name' => 'ToNull'],
+    		    ],
+    		],
+    		'personId' => [
+    		    'required' => true,
     		    'filters' => [
     		        ['name' => 'ToInt'],
     		        ['name' => 'ToNull'],

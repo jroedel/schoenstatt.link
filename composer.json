@@ -21,6 +21,7 @@
         "tijsverkoyen/css-to-inline-styles": "^2.2",
         "neilime/zf2-twb-bundle": "^3.0",
         "neilime/zf2-assets-bundle": "^3.7",
+        "snapshotpl/zf-snap-geoip": "2.*",
         "maglnet/magl-markdown": "~1.1",
         "thadafinser/zfc-datagrid": "^1.3",
         "phpoffice/phpexcel": "^1.8",

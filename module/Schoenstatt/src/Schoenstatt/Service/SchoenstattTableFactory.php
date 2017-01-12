@@ -21,12 +21,14 @@ class SchoenstattTableFactory implements FactoryInterface
     {
         $dbAdapter = $serviceLocator->get('Zend\Db\Adapter\Adapter');
 
+        $config = $serviceLocator->get ( 'Config' );
+
 		/** @var  User $userService **/
 		$userService = $serviceLocator->get('zfcuser_user_service');
 		$user = $userService->getAuthService()->getIdentity();
 		$actingUserId = $user ? $user->id : null;
 
-		$table = new SchoenstattTable($dbAdapter, $serviceLocator, $actingUserId);
+		$table = new SchoenstattTable($dbAdapter, $serviceLocator, $actingUserId, $config['schoenstatt']);
 		return $table;
     }
 }

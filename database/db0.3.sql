@@ -40,3 +40,6 @@ ALTER TABLE `sch_visits`
   INSERT INTO `user_role` (`parent`, `role_id`, `is_default`, `create_datetime`, `create_by`) VALUES ('sch_moderator', 'sch_general_moderator', '0', '2017-01-07 00:00:00', '5');
   INSERT INTO `user_role` (`parent`, `role_id`, `is_default`, `create_datetime`, `create_by`) VALUES ('sch_general_moderator', 'sch_administrator', '0', '2017-01-07 00:00:00', '5');
   
+  ALTER TABLE `sch_roles` ADD `ShouldAlwaysBeFilled` BOOLEAN NOT NULL DEFAULT FALSE AFTER `IsSinglePosition`;
+  
+  

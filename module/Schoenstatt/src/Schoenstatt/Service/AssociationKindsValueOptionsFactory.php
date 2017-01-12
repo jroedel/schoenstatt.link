@@ -3,14 +3,13 @@ namespace Schoenstatt\Service;
 
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
-use Schoenstatt\View\Helper\FormatEntity;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class FormatEntityFactory implements FactoryInterface
+class AssociationKindsValueOptionsFactory implements FactoryInterface
 {
     /**
      * {@inheritDoc}
@@ -19,10 +18,14 @@ class FormatEntityFactory implements FactoryInterface
      */
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
-        $parentLocator = $serviceLocator->getServiceLocator();
-        $valueOptions = $parentLocator->get('Schoenstatt\AssociationKindsValueOptions');
+        $config = $serviceLocator->get('Config')['schoenstatt'];
 
-        $viewHelper = new FormatEntity($valueOptions);
-        return $viewHelper;
+        $associationTypeLabels = [];
+        foreach ($config['association_kinds'] as $key => $value) {
+            if (is_array($value) && key_exists('label', $value)) {
+                $associationTypeLabels[$key] = $value['label'];
+            }
+        }
+        return $associationTypeLabels;
     }
 }

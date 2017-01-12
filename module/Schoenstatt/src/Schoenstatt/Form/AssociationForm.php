@@ -12,8 +12,8 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 	public function __construct()
 	{
 		parent::__construct('edit_association');
-
 	}
+
 	public function init()
 	{
 		$this->add([
@@ -613,7 +613,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		        'required' => false,
 		    ],
 		    'kind' => [
-		        'required' => false,
+		        'required' => true,
 		    ],
 		    'country' => [
 		        'required' => false,

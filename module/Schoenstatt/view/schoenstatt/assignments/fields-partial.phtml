@@ -4,7 +4,36 @@ echo $this->formHidden($form->get('assignmentId'));
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('associationId'));
 echo $this->formRow($form->get('roleId'));
+echo $this->formRow($form->get('personId'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('startDate'));
 echo $this->formRow($form->get('endDate'));
 echo $this->formRow($form->get('security'));
+
+$rolesJson = $this->rolesJson;
+$script = <<<JS
+$(function() {
+    var \$associationId = $("select[name='associationId']");
+    var roles = $rolesJson;
+    var \$roleSelect = $("select[name='roleId']");
+    \$associationId.change(function() {
+        if (\$associationId.val() !== '') {
+            newOptions = roles[\$associationId.val()];
+            if(\$roleSelect.prop) {
+              var options = \$roleSelect.prop('options');
+            }
+            else {
+              var options = \$roleSelect.attr('options');
+            }
+            $('option', \$roleSelect).remove();
+
+            $.each(newOptions, function(val, text) {
+                options[options.length] = new Option(text, val);
+            });
+        }
+    })
+});
+JS;
+$this->inlineScript()->captureStart();
+echo $this->jshrink($script);
+$this->inlineScript()->captureEnd();

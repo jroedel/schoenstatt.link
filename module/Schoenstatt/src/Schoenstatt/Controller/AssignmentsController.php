@@ -17,7 +17,8 @@ use Patres\Mailing\Mailer;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
-use Schoenstatt\Form\AssociationForm;
+use Schoenstatt\Form\AssignmentForm;
+use Zend\Json\Json;
 
 class AssignmentsController extends AbstractActionController
 {
@@ -35,7 +36,7 @@ class AssignmentsController extends AbstractActionController
         $entities = null;
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $entities = $table->getAssignments(true);
+        $entities = $table->getAssignmentPersonAssociations(true);
         if ($form->isValid()) {
             $data = $form->getData();
             if (!empty($data)) {
@@ -55,6 +56,7 @@ class AssignmentsController extends AbstractActionController
 
     public function showAction()
     {
+        return $this->redirect()->toRoute('assignments');
         $id = (Int)$this->params()->fromRoute('assignment_id');
         //var_dump($id);
         if (!$id) {
@@ -86,9 +88,8 @@ class AssignmentsController extends AbstractActionController
         $sm = $this->getServiceLocator ();
         /** @var SchoenstattTable $table **/
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
-        var_dump($table->getJavascriptRoleTitleValueOptions());
-        /** @var AssociationForm $form */
-        $form = $sm->get('Schoenstatt\Form\AssociationForm');
+        $rolesJson = Json::encode($table->getJavascriptRoleTitleValueOptions());
+        $form = $sm->get('Schoenstatt\Form\AssignmentForm');
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
@@ -108,6 +109,7 @@ class AssignmentsController extends AbstractActionController
         }
         return array (
             'form' => $form,
+            'rolesJson' => $rolesJson,
         );
     }
 

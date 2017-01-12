@@ -19,6 +19,7 @@ use SionModel\Service\ProblemService;
 use Schoenstatt\Form\PersonForm;
 use Zend\Http\Client;
 use Zend\Json\Json;
+use Schoenstatt\Model\SchoenstattTable;
 
 class AdminController extends AbstractActionController
 {
@@ -31,7 +32,7 @@ class AdminController extends AbstractActionController
 //             'admin/review-phone-numbers' => "Review phone numbers",
 //             'roles'                 => "Manage Roles",
 //             'admin/view-searches'   => "View Searches",
-//             'admin/view-changes'    => "View Changes",
+            'admin/view-changes'    => "View Changes",
             'admin/import-father'   => "Import Schoenstatt Father",
             'samuser'               => "User Management",
 //             'admin/moderate'        => "Review Suggestions",
@@ -268,58 +269,21 @@ class AdminController extends AbstractActionController
         ]);
     }
 
-    public function viewSearchesAction()
-    {
-        $sm = $this->getServiceLocator();
-        /** @var \Patres\Model\PatresTable $table */
-        $table = $sm->get('Patres\Model\PatresTable');
-        $sql = "SELECT s . * , u.display_name, f.FilName, f.Country, k.KursName, g.GenName, h.HausName, c.LandName_en, geb.GebName
-FROM  `a_data_searches` s
-INNER JOIN user u ON u.user_id = s.search_user
-LEFT JOIN a_data_filiale f ON f.FilID = s.search_filiation
-LEFT JOIN a_data_kurs k ON k.KursID = s.search_course
-LEFT JOIN a_data_generation g ON g.GenID = s.search_generation
-LEFT JOIN a_data_haus h ON h.HausID = s.search_house
-LEFT JOIN a_data_land c ON c.LandID = s.search_country
-LEFT JOIN a_data_gebiet geb ON geb.GebID = s.search_territory
-ORDER BY s.search_id DESC
-LIMIT 150";
-        $results = $table->fetchSome(null, $sql, null, true);
-
-        return new ViewModel([
-                'searches' => $results,
-        ]);
-    }
-
     /**
-     * @todo Pass a lookup table that tells which columns can be replaced with which link entities
-     * example 'noviceMaster' => 'person', 'novitiateFiliation' => 'filiation'
      *
      * @return \Zend\View\Model\ViewModel
      */
     public function viewChangesAction()
     {
         $sm = $this->getServiceLocator();
-        /** @var \Patres\Model\PatresTable $table */
-        $table = $sm->get('Patres\Model\PatresTable');
+        /** @var SchoenstattTable $table */
+        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
         $results = $table->getChanges();
 
-        return new ViewModel([
+        $view = new ViewModel([
             'changes' => $results,
         ]);
-    }
-
-    public function fixFlagsAction()
-    {
-        $sm = $this->getServiceLocator();
-        /** @var \Patres\Model\PatresTable $table */
-        $table = $sm->get('Patres\Model\PatresTable');
-        $request = $this->getRequest();
-        $simulate = !$request->isPost();
-        $changes = $table->fixPersonCountries($simulate);
-        return new ViewModel([
-            'simulated' => $simulate,
-            'changes' => $changes,
-        ]);
+        $view->setTemplate('sionmodel/view-changes');
+        return $view;
     }
 }

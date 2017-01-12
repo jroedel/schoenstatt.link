@@ -27,35 +27,6 @@ class AssociationsController extends AbstractActionController
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
         $associations = $table->getAssociations();
-//         $associations = [
-//             1 => [
-//                 'associationId'             => 1,
-//                 'name'                      => 'Schoenstatt Fathers',
-//                 'parent'                    => null,
-//                 'heirarchyLevel'            => 1,
-//                 'kind'                      => 'schoenstatt-institute',
-//                 'isNameTranslateable'       => true,
-//                 'isActive'                  => true,
-//             ],
-//             2 => [
-//                 'associationId'             => 2,
-//                 'name'                      => 'Schoenstatt Movement of USA',
-//                 'parent'                    => null,
-//                 'heirarchyLevel'            => 1,
-//                 'kind'                      => 'Kind',
-//                 'isNameTranslateable'       => true,
-//                 'isActive'                  => true,
-//             ],
-//             3 => [
-//                 'associationId'             => 3,
-//                 'name'                      => 'Schoenstatt Movement of Austin',
-//                 'parent'                    => 2,
-//                 'heirarchyLevel'            => 2,
-//                 'kind'                      => 'sch-diocesan-movement',
-//                 'isNameTranslateable'       => true,
-//                 'isActive'                  => true,
-//             ],
-//         ];
         return new ViewModel([
             'entities'      => $associations,
         ]);
@@ -164,19 +135,14 @@ class AssociationsController extends AbstractActionController
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
-                try {
-                    if (!($newId = $table->createEntity('association', $data))) {
-                        $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                    } else {
-                        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully created.' );
-                        $this->redirect ()->toRoute ( 'associations/association', array('association_id' => $newId) );
-                    }
-                } catch (\Exception $e) {
-                    //var_dump($e);
+                if (!($newId = $table->createEntity('association', $data))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                } else {
+                    $table->createAssociatedRoles($newId, $data['kind']);
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully created.' );
+                    $this->redirect ()->toRoute ( 'associations/association', array('association_id' => $newId) );
                 }
             } else {
-                //var_dump($form);
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }

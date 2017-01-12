@@ -16,9 +16,9 @@ return [
         // navigation with name default
         'default' => [
             [
-                'label' => 'Associations',
-                'route' => 'associations',
-                'resource' => 'route/associations',
+                'label' => 'Assignments',
+                'route' => 'assignments',
+                'resource' => 'route/assignments',
             ],
             [
                 'label' => 'Admin',
