@@ -78,12 +78,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     public function getPersonValueOptions($includeInactive = false, $onlyPriests = true)
     {
         $persons = $this->getPersons();
-        $result = [''=>''];
+        $result = [];
         foreach ($persons as $per) {
             if ($includeInactive || $per['isActive']) { //put it in
                 $result[$per['personId']] = $per['fullName'];
             }
         }
+        asort($result);
         return $result;
     }
 
@@ -181,6 +182,15 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
 `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_associations` WHERE 1";
 
         $results = $this->fetchSome(null, $sql, null);
+        $sort = [];
+        foreach($results as $k=>$v) {
+            $sort['Kind'][$k] = $v['Kind'];
+            $sort['AssociationName'][$k] = $v['AssociationName'];
+        }
+        # sort by event_type desc and then title asc
+        array_multisort($sort['Kind'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
+
+
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['AssociationId']);
@@ -388,11 +398,10 @@ ORDER BY `BirthDate`";
         //sort list beforehand to not mess up the array key
         $sort = array();
         foreach($results as $k=>$v) {
-            $sort['Country'][$k] = $v['Country'];
             $sort['LastName'][$k] = $v['LastName'];
         }
         # sort by event_type desc and then title asc
-        array_multisort($sort['Country'], SORT_ASC, $sort['LastName'], SORT_ASC, $results);
+        array_multisort($sort['LastName'], SORT_ASC, $results);
 
         $entities = [];
         $filter = new ToNull();
@@ -667,15 +676,12 @@ ORDER BY `BirthDate`";
     /**
      * @return mixed[]
      */
-    public function getAssignmentPersonAssociations($includeLoosePersons = false)
+    public function getAssignmentPersonAssociations()
     {
+        $assignments    = $this->getUnlinkedAssignments();
+        $associations   = $this->getUnlinkedAssociations();
+        $persons        = $this->getUnlinkedPersons();
 
-        if (!is_null($this->assignmentsCache)) {
-            return $this->assignmentsCache;
-        }
-        $assignments = $this->getUnlinkedAssignments();
-        $persons = $this->getUnlinkedPersons();
-        $associations = $this->getUnlinkedAssociations();
         $entities = [];
         foreach ($assignments as $assignmentId => $assignment) {
             $entity = [
@@ -685,86 +691,52 @@ ORDER BY `BirthDate`";
                 'association'       => null,
                 'personId'          => null,
                 'person'            => null,
-
             ];
-            if  (isset($persons[$assignment['personId']])) {
+            if  (isset($assignment['personId']) && isset($persons[$assignment['personId']])) {
                 $entity['person'] = $persons[$assignment['personId']];
                 $persons[$assignment['personId']]['found'] = true;
             }
-            if  (isset($associations[$assignment['associationId']])) {
+            if  (isset($assignment['associationId']) && isset($associations[$assignment['associationId']])) {
                 $entity['association'] = $associations[$assignment['associationId']];
                 $associations[$assignment['associationId']]['found'] = true;
             }
             $entities[] = $entity;
         }
 
-        if ($includeLoosePersons) {
-            foreach ($associations as $associationId => $association) {
-                if (!isset($association['found']) && $association['isActive']) {
-                    $entities[] = [
-                        'assignmentId' => null,
-                        'assignment' => [
-                            'assignmentId'          => null,
-                            'roleId'                => null,
-                            'roleTitle'             => null,
-                            'associationId'         => null,
-                            'association'           => null,
-                            'isMainRole'            => null,
-                            'isSinglePosition'      => null,
-                            'sort'                  => null,
-                            'isActive'              => null,
-                            'startDate'             => null,
-                            'endDate'               => null,
-                            'createdOn'             => null,
-                            'createdBy'             => null,
-                            'updatedOn'             => null,
-                            'updatedBy'             => null,
-                        ],
-                        'associationId'         => $associationId,
-                        'association'           => $association,
-                        'personId'              => null,
-                        'person'                => null,
-                    ];
-                }
-            }
-            foreach ($persons as $personId => $person) {
-                if (!isset($person['found']) && $person['isActive']) {
-                    $entities[] = [
-                        'assignmentId' => null,
-                        'assignment' => [
-                            'assignmentId'          => null,
-                            'roleId'                => null,
-                            'roleTitle'             => null,
-                            'associationId'         => null,
-                            'association'           => null,
-                            'isMainRole'            => null,
-                            'isSinglePosition'      => null,
-                            'sort'                  => null,
-                            'isActive'              => null,
-                            'startDate'             => null,
-                            'endDate'               => null,
-                            'createdOn'             => null,
-                            'createdBy'             => null,
-                            'updatedOn'             => null,
-                            'updatedBy'             => null,
-                        ],
-                        'personId'              => $personId,
-                        'person'                => $person,
-                        'associationId'         => null,
-                        'association'           => null,
-                    ];
-                }
+        foreach ($associations as $associationId => $association) {
+            if (!isset($association['found']) && $association['isActive']) {
+                $entities[] = [
+                    'assignmentId'          => null,
+                    'assignment'            => null,
+                    'associationId'         => $associationId,
+                    'association'           => $association,
+                    'personId'              => null,
+                    'person'                => null,
+                ];
             }
         }
 
-        return $this->assignmentsCache = $entities;
+        foreach ($persons as $personId => $person) {
+            if (!isset($person['found']) && $person['isActive']) {
+                $entities[] = [
+                    'assignmentId'          => null,
+                    'assignment'            => null,
+                    'personId'              => $personId,
+                    'person'                => $person,
+                    'associationId'         => null,
+                    'association'           => null,
+                ];
+            }
+        }
+        return $entities;
     }
 
     protected function getUnlinkedAssignments()
     {
         $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`PersonId`,
 a.`StartDate`, a.`EndDate`, a.`CreatedOn`, a.`CreatedBy`, a.`UpdatedOn`, a.`UpdatedBy`,
-r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`, r.`IsActive`
+r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`, r.`IsActive`,
+r.`ShouldAlwaysBeFilled`
 FROM `sch_assignments` a
 INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
 
@@ -774,18 +746,19 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
             $id = $this->filterDbId($row['AssignmentId']);
             $entities[$id] = [
                 'assignmentId'          => $id,
-                'roleId'                => $this->filterDbString($row['RoleId']),
+                'roleId'                => $this->filterDbId($row['RoleId']),
                 'roleTitle'             => $this->filterDbString($row['RoleTitle']),
                 'associationId'         => $this->filterDbId($row['AssociationId']),
                 'association'           => null,
                 'isMainRole'            => $this->filterDbBool($row['IsMainRole']),
                 'isSinglePosition'      => $this->filterDbBool($row['IsSinglePosition']),
+                'shouldAlwaysBeFilled'  => $this->filterDbBool($row['ShouldAlwaysBeFilled']),
                 'sort'                  => $this->filterDbInt($row['Sort']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'personId'              => $this->filterDbId($row['PersonId']),
                 'person'                => null,
-                'startDate'             => $this->filterDbInt($row['StartDate']),
-                'endDate'               => $this->filterDbInt($row['EndDate']),
+                'startDate'             => $this->filterDbDate($row['StartDate']),
+                'endDate'               => $this->filterDbDate($row['EndDate']),
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
                 'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
