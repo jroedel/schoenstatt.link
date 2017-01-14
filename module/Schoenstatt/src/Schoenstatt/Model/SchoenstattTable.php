@@ -939,8 +939,8 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
             }
             if (isset($query['dataSource']) && !is_null($query['dataSource']) &&
                 isset($query['dataSourceId']) && !is_null($query['dataSourceId']) &&
-                $query['dataSource'] != $person['dataSource'] &&
-                $query['dataSourceId'] != $person['dataSourceId'])
+                ($query['dataSource'] != $person['dataSource'] ||
+                $query['dataSourceId'] != $person['dataSourceId']))
             {
                 continue;
             }
