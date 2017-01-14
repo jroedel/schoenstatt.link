@@ -36,13 +36,12 @@ class AdminController extends AbstractActionController
             'admin/import-father'   => "Import Schoenstatt Father",
             'samuser'               => "User Management",
 //             'admin/moderate'        => "Review Suggestions",
-//             'admin/fix-flags'       => "Fix Flag Problems",
             'jtranslate'            => "Manage Translations",
 //             'admin/data-problems'   => "Data problems",
         ];
         $badges = [];
         $sm = $this->getServiceLocator();
-        /** @var \Patres\Model\PatresTable $table */
+        /** @var SchoenstattTable $table */
 //         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
 
         /** @var TranslationsTable $translations */
@@ -50,8 +49,6 @@ class AdminController extends AbstractActionController
 
 //         $suggestionCount = $table->getSuggestionCount();
 //         $badges['admin/moderate'] = $suggestionCount ? ' '.$suggestionCount : " 0";
-//         $countries = $table->fixPersonCountries(true);
-//         $badges['admin/fix-flags'] = !is_null($countries) ? ' '.count($countries) : " 0"; //circumvent TwbBundle problem
         $badges['jtranslate'] = (string) $translations->getOutstandingTranslationCount();
 
         return new ViewModel([
@@ -75,7 +72,8 @@ class AdminController extends AbstractActionController
                 $personData = $this->getPersonInfo($personId);
                 $personData['dataSource'] = 'patres-sion';
                 $personData['dataSourceId'] = $personId;
-                if (0 !== count($table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId])))
+                unset($personData['personId']); //to make sure that we don't try setting that as the primary key
+                if (0 !== count($table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true)))
                 {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Person already exists in the database.' );
                 } else {
@@ -84,7 +82,6 @@ class AdminController extends AbstractActionController
                     $form = $sm->get('Schoenstatt\Form\ImportFatherForm');
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully imported.' );
                 }
-//                 $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
@@ -121,6 +118,8 @@ class AdminController extends AbstractActionController
             throw new \Exception('Request for information on father \''.$id.'\' failed. No information returned.');
         }
         $person = $data['data'];
+        $person['personTags'] = 'priest';
+        $person['lifeCommunity'] = 1;
         //validate
         $inputFilter = $this->getPersonInputFilter();
         $inputFilter->setData($person);

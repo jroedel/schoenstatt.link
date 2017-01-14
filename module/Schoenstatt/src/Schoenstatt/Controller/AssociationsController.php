@@ -193,6 +193,7 @@ class AssociationsController extends AbstractActionController
 
     public function importAction()
     {
+        return; //disable to prevent duplicate records being inserted
         $toImport = [
             ['name' => 'Schoenstatt Movement of Argentina', 'country' => 'AR', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
             ['name' => 'Schoenstatt Movement of Australia', 'country' => 'AU', 'publicNotes' => null, 'kind' => 'sch-national-movement',],

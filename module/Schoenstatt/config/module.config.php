@@ -20,7 +20,8 @@ return [
             'Schoenstatt\Form\RoleForm'          => 'Schoenstatt\Service\RoleFormFactory',
             'Schoenstatt\Config'                 => 'Schoenstatt\Service\ConfigServiceFactory',
             'Schoenstatt\Form\ImportFatherForm'  => 'Schoenstatt\Service\ImportFatherFormFactory',
-            'Schoenstatt\AssociationKindsValueOptions' => 'Schoenstatt\Service\AssociationKindsValueOptionsFactory'
+            'Schoenstatt\AssociationKindsValueOptions' => 'Schoenstatt\Service\AssociationKindsValueOptionsFactory',
+            'Schoenstatt\PersonTagsValueOptions' => 'Schoenstatt\Service\PersonTagsValueOptionsFactory',
         ],
     ],
     'view_manager' => [
@@ -29,7 +30,7 @@ return [
         ],
     ],
     'view_helpers' => [
-        'factories' => [ //@todo Can we rely on the SionModel FormatEntity?
+        'factories' => [
             'formatEntity'          => 'Schoenstatt\Service\FormatEntityFactory',
         ],
         'invokables' => [
@@ -39,6 +40,43 @@ return [
         ],
     ],
     'schoenstatt' => [
+        'person_tags' => [ // they will appear in the value options in this order, they will be applied according to the sort order
+            'bishop' => [
+                'title' => 'Bish.',
+                'label' => 'Bishop',
+                'sort'  => 30,
+            ],
+            'monsignor' => [
+                'title' => 'Msgr.',
+                'label' => 'Monsignor',
+                'sort'  => 40,
+            ],
+            'priest' => [
+                'title' => 'Fr.',
+                'label' => 'Priest',
+                'sort'  => 50,
+            ],
+            'deacon' => [
+                'title' => 'D.',
+                'label' => 'Deacon',
+                'sort'  => 60,
+            ],
+            'sister' => [
+                'title' => 'Sr.',
+                'label' => 'Sister',
+                'sort'  => 70,
+            ],
+            'doctor' => [
+                'title' => 'Dr.',
+                'label' => 'Doctor',
+                'sort'  => 60,
+            ],
+            'professor' => [
+                'title' => 'Prof.',
+                'label' => 'Professor',
+                'sort'  => 20,
+            ],
+        ],
         'association_kinds' => [
             'sch-institute' => [
                 'label' => 'Schoenstatt institute',
@@ -46,21 +84,21 @@ return [
                     [
                         'roleTitle' => 'General superior',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 1,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => true,
                     ],
                     [
                         'roleTitle' => 'First councilor',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 2,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => true,
                     ],
                     [
                         'roleTitle' => 'Councilor',
                         'singlePosition' => false,
-                        'sort' => 100,
+                        'sort' => 3,
                         'mainRole' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
@@ -72,14 +110,14 @@ return [
                     [
                         'roleTitle' => 'General superior',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 10,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => true,
                     ],
                     [
                         'roleTitle' => 'Councilor',
                         'singlePosition' => false,
-                        'sort' => 100,
+                        'sort' => 15,
                         'mainRole' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
@@ -91,14 +129,14 @@ return [
                     [
                         'roleTitle' => 'Diocesan coordinator',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 50,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => true,
                     ],
                     [
                         'roleTitle' => 'Committee member',
                         'singlePosition' => false,
-                        'sort' => 100,
+                        'sort' => 55,
                         'mainRole' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
@@ -110,21 +148,21 @@ return [
                     [
                         'roleTitle' => 'Movement director',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 20,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => true,
                     ],
                     [
                         'roleTitle' => 'Presidium president',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 21,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => false,
                     ],
                     [
                         'roleTitle' => 'Coordinating Sister',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 22,
                         'mainRole' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
@@ -144,14 +182,14 @@ return [
                     [
                         'roleTitle' => 'President',
                         'singlePosition' => true,
-                        'sort' => 100,
+                        'sort' => 80,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => false,
                     ],
                     [
                         'roleTitle' => 'Member',
                         'singlePosition' => false,
-                        'sort' => 100,
+                        'sort' => 85,
                         'mainRole' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
@@ -595,7 +633,6 @@ return [
 //                 'scope' => 'Person',
                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
                 'required_columns_for_creation' => [ //required for creation
-        	        'lastName',
         	        'firstName',
         	    ],
 //                 'moderate_route' => 'persons/person/moderate',
@@ -663,7 +700,6 @@ return [
                     'firstName'                 => 'personalInfo',
                     'lastNameWithoutAccents'    => 'personalInfo',
                     'firstNameWithoutAccents'   => 'personalInfo',
-                    'religiousStatus'           => 'personalInfo',
                     'lifeCommunity'             => 'personalInfo',
                     'manualTitle'               => 'personalInfo',
                     'automaticTitle'            => 'personalInfo',
@@ -678,7 +714,7 @@ return [
                     'firstName'                 => 'FirstName',
                     'lastNameWithoutAccents'    => 'LastNameWithoutAccents',
                     'firstNameWithoutAccents'   => 'FirstNameWithoutAccents',
-                    'religiousStatus'           => 'ReligiousStatus',
+                    'personTags'                => 'PersonTags',
                     'lifeCommunity'             => 'LifeCommunity',
                     'manualTitle'               => 'Title',
                     'automaticTitle'            => 'TitleAutomatic',
@@ -693,8 +729,6 @@ return [
                     'personalInfoUpdatedBy'     => 'PersonalInfoUpdatedBy',
 
                     'adminTags'                 => 'AdminTags',
-                    'birthCity'                 => 'BirthCity',
-                    'nationalities'             => 'Nationalities',
                     'adminNotes'                => 'AdminNotes',
                     'adminNotesUpdatedOn'       => 'AdminNotesUpdatedOn',
                     'adminNotesUpdatedBy'       => 'AdminNotesUpdatedBy',

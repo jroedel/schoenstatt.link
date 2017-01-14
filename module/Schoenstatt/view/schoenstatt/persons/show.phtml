@@ -176,16 +176,6 @@ $this->headTitle($pageTitle);
 
 <div class="row"> <!-- private info panel row -->
 <div class="col-md-6"> <!-- private facts column -->
-<!-- Nationalities, birth city -->
-<p><strong><?php echo $this->translate('Nationality'); ?>:</strong>
-<?php
-if (is_array($entity['nationalities'])) {
-$printNats = [];
-foreach ($entity['nationalities'] as $nat) {
-    $printNats[] = $this->countryName($nat, true, CountryName::COUNTRY_NAME_COMMON);
-}}
-echo implode(', ', $printNats);
-?></p>
 <?php if (!empty($entity['adminTags'])) :?>
 <p><strong><?php echo $this->translate('Admin tags'); ?>:</strong> <?php
 $adminTagFormat = '<span class="label label-default">%s</span>';

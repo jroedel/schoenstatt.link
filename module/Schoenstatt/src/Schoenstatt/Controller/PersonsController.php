@@ -80,7 +80,7 @@ class PersonsController extends AbstractActionController
             $mobileDetect->isiOS() ? 'ios' : 'default'; //android, ios, default
         $this->addUserNamesToUrlList($person, $deviceType); //$person is ByRef
 
-//         $table->registerVisit(SchoenstattTable::ENTITY_PERSON, $person['personId']);
+        $table->registerVisit('person', $person['personId']);
 //         var_dump($person['urls']);
 //         var_dump($person);
         return new ViewModel(array(
@@ -221,19 +221,14 @@ class PersonsController extends AbstractActionController
             }
             if ($form->isValid()) {
                 $data = $form->getData();
-                try {
-                    $result = $table->suggestEntity('person', $id, $data);
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Thanks for the suggestions! You will receive an email upon response.' );
-                    //send an email to admin
-                    $suggestion = $table->getLastSuggestion();
-                    /** @var Mailer $mailer **/
-                    $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
-                    $mailer->sendNewSuggestionNotice($suggestion);
-                    $this->redirect()->toRoute ( 'persons/person', ['person_id' => $id] );
-                } catch (\Exception $e) {
-                    //@todo this message should be logged
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.');
-                }
+                $result = $table->suggestEntity('person', $id, $data);
+                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Thanks for the suggestions! You will receive an email upon response.' );
+                //send an email to admin
+                $suggestion = $table->getLastSuggestion();
+                /** @var Mailer $mailer **/
+                $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
+                $mailer->sendNewSuggestionNotice($suggestion);
+                $this->redirect()->toRoute ( 'persons/person', ['person_id' => $id] );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
@@ -284,26 +279,18 @@ class PersonsController extends AbstractActionController
                 $form->setData($data);
                 if ($form->isValid()) {
                     $data = $form->getData();
-                    try {
-                        $result = $table->updateEntity('person', $id, $data);
-                        $table->updateSuggestion($data);
+                    $result = $table->updateEntity('person', $id, $data);
+                    $table->updateSuggestion($data);
 
-                        //send an email to user
-                        /** @var Mailer $mailer **/
-                        $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
-                        $suggestion = $table->getSuggestion($data['suggestionId']);
-                        $mailer->sendReviewedSuggestionNotice($suggestion);
+                    //send an email to user
+                    /** @var Mailer $mailer **/
+                    $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
+                    $suggestion = $table->getSuggestion($data['suggestionId']);
+                    $mailer->sendReviewedSuggestionNotice($suggestion);
 
-                        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
-                        $this->redirect()->toRoute ( 'admin/moderate');
-                    } catch (\Exception $e) {
-                        //@todo this message should be logged
-//                         var_dump($e);
-//                         var_dump($form);
-                        $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                    }
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
+                    $this->redirect()->toRoute ( 'admin/moderate');
                 } else {
-//                         var_dump($form);
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 }
             }
@@ -344,7 +331,7 @@ class PersonsController extends AbstractActionController
                     $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
                 }
             } else {
-                print_r(array_keys($form->getInputFilter()->getInvalidInput()));
+//                 print_r(array_keys($form->getInputFilter()->getInvalidInput()));
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }

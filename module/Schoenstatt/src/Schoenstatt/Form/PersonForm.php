@@ -391,27 +391,30 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	    ],
     	]);
     	$this->add([
-    	    'name' => 'manualTitle',
+    	    'name' => 'personTags',
     	    'type' => 'Select',
     	    'options' => [
-    	        'label' => 'Title',
+    	        'label' => 'Person tags',
     	        'required' => false,
     	        'empty_option' => '',
-    	        'disable_inarray_validator' => true,
     	        'unselected_value' => '',
-    	        'value_options' => [ //@todo move this to config
-    	            SchoenstattTable::TITLE_BROTHER => SchoenstattTable::TITLE_BROTHER,
-    	            SchoenstattTable::TITLE_DEACON => SchoenstattTable::TITLE_DEACON,
-    	            SchoenstattTable::TITLE_PRIEST => SchoenstattTable::TITLE_PRIEST,
-    	            SchoenstattTable::TITLE_MONSIGNOR => SchoenstattTable::TITLE_MONSIGNOR,
-    	            SchoenstattTable::TITLE_BISHOP => SchoenstattTable::TITLE_BISHOP,
-    	            SchoenstattTable::TITLE_SISTER => SchoenstattTable::TITLE_SISTER,
-    	            SchoenstattTable::TITLE_DOCTOR => SchoenstattTable::TITLE_DOCTOR,
-    	            SchoenstattTable::TITLE_PROFESSOR => SchoenstattTable::TITLE_PROFESSOR,
-    	        ],
+    	        'disable_inarray_validator' => true,
+    	        'value_options' => [],
     	    ],
     	    'attributes' => [
-    	        'maxlength' => '30',
+    	        'multiple' => true,
+    	    ],
+    	]);
+    	$this->add([
+    	    'name' => 'manualTitle',
+    	    'type' => 'Text',
+    	    'options' => [
+    	        'label' => 'Manual title',
+    	        'required' => true,
+    	    ],
+    	    'attributes' => [
+    	        'placeholder' => 'ex. Fr. Prof.',
+    	        'maxlength' => '50',
     	    ],
     	]);
     	$this->add([
@@ -515,28 +518,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 /**
  * Private info
  * [
-        'nationalities', 'birthCity', 'sionInfoGroups',
         'adminNotes', 'adminTags'
     ],
  */
-
-		$this->add([
-		    'name' => 'nationalities',
-		    'type' => 'Select',
-		    'options' => [
-		        'label' => 'Nationality',
-		        'empty_option' => '',
-		        'unselected_value' => '',
-		        'value_options' => [],// $this->customValueOptions['country'],
-		    ],
-		    'attributes' => [
-		        'required' => false,
-		        'multiple' => true,
-		    ],
-		]);
-
-
-
 
 		$this->add([//http://www.codingdrama.com/bootstrap-markdown/
 		    'name' => 'adminNotes',
@@ -924,16 +908,38 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ],
 	            ],
 			],
-		    'manualTitle' => [
-				'required' => false,
-                'filters' => [
-		            ['name' => 'ToNull',
-		                'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-		            ],
-                ],
-			],
+    	    'personTags' => [
+    	        'required' => false,
+    	        'filters' => [
+    	            ['name' => 'StripTags'],
+    	            ['name' => 'StripNewlines'],
+    	            ['name' => 'StringTrim'],
+                    ['name' => 'StringToLower'],
+                    ['name' => 'SionModel\Filter\SortArray'],
+    	        ],
+    	    ],
+        	'manualTitle' => [
+        	    'required' => false,
+        	    'filters' => [
+        	        ['name' => 'StripTags'],
+        	        ['name' => 'StripNewlines'],
+        	        ['name' => 'StringTrim'],
+        	        ['name' => 'ToNull',
+        	            'options' => [
+        	                'type' => \Zend\Filter\ToNull::TYPE_STRING,
+        	            ]
+        	        ],
+        	    ],
+        	    'validators' => [
+        	        [
+        	            'name' => 'StringLength',
+        	            'options' => [
+        	                'encoding' => 'UTF-8',
+        	                'max' => 50,
+        	            ],
+        	        ],
+        	    ],
+        	],
 		    'automaticTitle' => [
 				'required' => false,
 			],
@@ -990,9 +996,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 /**
  * Private info input filter
  */
-		    'nationalities' => [
-				'required' => false,
-		    ],
 		    'lifeCommunity' => [
 		        'required' => false,
 		    ],

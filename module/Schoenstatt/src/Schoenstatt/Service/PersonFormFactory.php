@@ -29,6 +29,7 @@ class PersonFormFactory implements FactoryInterface
 
 		$lifeCommunities = $table->getAssociationValueOptions($translator, false, true);
 
+		$personTags = $serviceLocator->get ( 'Schoenstatt\PersonTagsValueOptions' );
 // 		$adminTags = $table->getPersonAdminTags();
 
 		/** @var FormElementManagerV2Polyfill $formManager */
@@ -39,7 +40,7 @@ class PersonFormFactory implements FactoryInterface
 		$form->get('country')->setValueOptions($countryNames);
 		$form->get('lifeCommunity')->setValueOptions($lifeCommunities);
 		$form->get('postCountry')->setValueOptions($countryNames);
-		$form->get('nationalities')->setValueOptions($countryNames);
+		$form->get('personTags')->setValueOptions($personTags);
 // 		$form->get('adminTags')->setValueOptions($adminTags);
 		return $form;
     }

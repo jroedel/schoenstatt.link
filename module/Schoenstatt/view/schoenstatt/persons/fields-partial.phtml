@@ -1,10 +1,12 @@
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/selectize.min.js"));
 $form = $this->form;
 $jsScript = '';
-
     echo $this->formRow($form->get('firstName'));
     echo $this->formRow($form->get('lastName'));
     echo $this->formRow($form->get('lifeCommunity'));
+    echo $this->formRow($form->get('personTags'));
     $showTitle = $form->get('automaticTitle')->getValue() == 0;
     $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>
     <div class="form-group">
@@ -156,16 +158,12 @@ $dayElement->setValueOptions([
     <h2><?php echo $this->translate('Private Info');?></h2>
     <?php
  $this->formSelect()->setTranslatorEnabled(false);
-    echo $this->formRow($form->get('nationalities'));
- $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('adminNotes'));
     echo $this->formRow($form->get('adminTags'));
     echo $this->formRow($form->get('security'));
     $jsScript .= <<<JS
-$("select[name='nationalities[]']").selectize({
-    create: false,
-    maxItems: 3,
-    sortField: 'text'
+$("select[name='personTags[]']").selectize({
+    create: true
 });
 $("select[name='adminTags[]']").selectize({
     create: true,

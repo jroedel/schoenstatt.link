@@ -16,7 +16,8 @@ class FormatPerson extends AbstractHelper
      * @param array $options
      *
      * available options:
-     *  'display' => $this::FRIENDLY_FIRST_FIRST, (see class consts)
+     *  'nameFormat' => $this::FRIENDLY_FIRST_FIRST, (see class consts)
+     *  'showTitle' => true,
      *  'flag' => true,
      *  'link' => true,
      *  'editPencil' => false,
@@ -25,22 +26,24 @@ class FormatPerson extends AbstractHelper
     {
     	//if there's not enough info we won't do anything
     	if (!$person['personId'] || $person['personId']=='' || (!isset($person['firstName']) && !isset($person['lastName']) &&
-    	   !is_null($person['firstName']) && !is_null($person['lastName']))) {
+            is_null($person['firstName']) && is_null($person['lastName']))
+	    ) {
     		return '';
     	}
 
     	//set defaults
-    	if (isset($options['display'])) {
-    	    if ($options['display'] === $this::FULL_LAST_FIRST ||
-    	        $options['display'] === $this::FULL_FIRST_FIRST)
+    	if (isset($options['nameFormat'])) {
+    	    if ($options['nameFormat'] === $this::FULL_LAST_FIRST ||
+    	        $options['nameFormat'] === $this::FULL_FIRST_FIRST)
     	    {
-    	        $displayOption = $options['display'];
+    	        $displayOption = $options['nameFormat'];
     	    } else {
                 $displayOption = $this::FULL_LAST_FIRST;
     	    }
     	} else {
     	    $displayOption = $this::FULL_LAST_FIRST;
     	}
+    	$showTitle = isset($options['showTitle']) ? (bool)$options['showTitle'] : true;
     	$countryOption = isset($options['flag']) ? (bool)$options['flag'] : true;
     	$linkOption = isset($options['link']) ? (bool)$options['link'] : true;
     	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
@@ -51,13 +54,22 @@ class FormatPerson extends AbstractHelper
     		$finalMarkup .= $this->view->flag($person['country'])."&nbsp;";
     	}
 
+    	if ($showTitle && $person['title']) {
+    	    $person['firstName'] = $this->view->translate($person['title']).' '.$person['firstName'];
+    	}
+
+    	$nameText = $person['firstName'];
     	switch ($displayOption) {
     	    case $this::FULL_FIRST_FIRST:
-        	    $nameText = $person['fullName'];
-        	    break;
+    	        if ($person['lastName']) {
+        	       $nameText .= ', '.$person['lastName'];
+    	        }
+    	    break;
     	    default: //case $this::FULL_LAST_FIRST:
-        	    $nameText = $person['lastName'].', '.$person['firstName'];
-        	    break;
+    	        if ($person['lastName']) {
+        	       $nameText = $person['lastName'].', '.$nameText;
+    	        }
+    	    break;
     	}
 
     	if ($linkOption) {

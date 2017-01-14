@@ -611,6 +611,14 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		    'parent' => [
 		        'required' => false,
+                'filters' => [
+                    ['name' => 'ToInt'],
+		            ['name' => 'ToNull',
+		                'options' => [
+                            'type' => ToNull::TYPE_INTEGER,
+                        ],
+		            ],
+                ],
 		    ],
 		    'kind' => [
 		        'required' => true,

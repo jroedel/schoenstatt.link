@@ -81,7 +81,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         $result = [];
         foreach ($persons as $per) {
             if ($includeInactive || $per['isActive']) { //put it in
-                $result[$per['personId']] = $per['fullName'];
+                $result[$per['personId']] = $per['lastName'].', '.$per['firstName'];
             }
         }
         asort($result);
@@ -376,10 +376,10 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     protected function getUnlinkedPersons()
     {
         $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`,
-`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `ReligiousStatus`, `LifeCommunity`,
+`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `PersonTags`, `LifeCommunity`,
 `Title`, `TitleAutomatic`, `Country`, `BirthDate`, `NameDay`, `DeathDate`,
 `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
-`PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`, `Nationalities`,
+`PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`,
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `Email`, `Email2`,
 `EmailsUpdatedOn`, `EmailsUpdatedBy`, `CellPhone`, `CellPhoneHasWhatsApp`,
 `Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`, `Phone3Label`,
@@ -424,12 +424,6 @@ ORDER BY `BirthDate`";
                 $interval = $today->diff($birthDate);
                 $age = $interval->y;
             }
-            $nationalities = $this->filterDbArray($row['Nationalities']);
-            foreach ($nationalities as $key => $value) {
-                if (2 !== strlen($value)) {
-                    unset($nationalities[$key]);
-                }
-            }
 
             //process URLs
             $unprocessedUrls = [
@@ -443,12 +437,24 @@ ORDER BY `BirthDate`";
             $isLiving = is_null($deathDate);
             //             $category = null;
             //             $condition = null;
-            $title = null;
+            $personTags = $this->filterDbArray($row['PersonTags']);
 
+            $title = null;
             $automaticTitle = $this->filterDbBool($row['TitleAutomatic']);
             $manualTitle = $this->filterDbString($row['Title']);
             if (!$automaticTitle) {
                 $title = $manualTitle;
+            } else {
+                $personTagConfig = $this->config['person_tags'];
+                $titles = [];
+                foreach ($personTagConfig as $tag => $tagConfig) {
+                    if (in_array($tag, $personTags) ) {
+                        $titles[] = $tagConfig['title'];
+                    }
+                }
+                if (!empty($titles)) {
+                    $title = implode(' ', $titles);
+                }
             }
 
             $lastName = $this->filterDbString($row['LastName']);
@@ -501,10 +507,9 @@ ORDER BY `BirthDate`";
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'                 => $this->filterDbId($row['CreatedBy']),
 
-
                 /**
                  * Personal fields
-            */
+                */
                 'lastName'                  => $lastName,
                 'firstName'                 => $firstName,
                 'fullName'                  => $firstName.' '.$lastName,
@@ -513,12 +518,10 @@ ORDER BY `BirthDate`";
                 'firstNameWithoutAccents'   => $this->filterDbString($row['FirstNameWithoutAccents']),
                 'lastNameWithoutAccents'    => $this->filterDbString($row['LastNameWithoutAccents']),
                 'fullFriendlyName'          => $fullName,
+                'personTags'                => $personTags,
                 'automaticTitle'            => $automaticTitle,
                 'country'                   => $this->filterDbString($row['Country']),
-                //                 'category'                  => $category,
-                'religiousStatus'           => $this->filterDbString($row['ReligiousStatus']),
                 'lifeCommunity'             => $this->filterDbId($row['LifeCommunity']),
-                //                 'condition'                 => $condition,
                 'manualTitle'               => $manualTitle,
                 'primaryLocale'             => 'en_US', //@todo add this column
 
@@ -535,7 +538,7 @@ ORDER BY `BirthDate`";
                 'personalInfoUpdatedBy'     => $this->filterDbDate($row['PersonalInfoUpdatedBy']),
                 /**
                  * Contact fields
-            */
+                */
                 'email'                     => $this->filterEmailString($row['Email']),
                 'email2'                    => $this->filterEmailString($row['Email2']),
                 'emailsUpdatedOn'           => $this->filterDbDate($row['EmailsUpdatedOn']),
@@ -581,9 +584,7 @@ ORDER BY `BirthDate`";
 
                 /**
                  * Private info
-            */
-            //                 'birthCity'                 => $this->filterDbString($row['BirthCity']),
-                'nationalities'             => $nationalities,
+                */
                 'dataSource'                => $this->filterDbString($row['DataSource']),
                 'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
                 'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
@@ -811,11 +812,6 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
      */
     protected function preprocessPerson($data)
     {
-        if (isset($data['nationalities'])) {
-            $data['nationality1'] = isset($data['nationalities'][0]) ? $data['nationalities'][0] : null;
-            $data['nationality2'] = isset($data['nationalities'][1]) ? $data['nationalities'][1] : null;
-            $data['nationality3'] = isset($data['nationalities'][2]) ? $data['nationalities'][2] : null;
-        }
         if (isset($data['automaticTitle']) && $data['automaticTitle'] === true) {
             $data['title'] = null;
         }
