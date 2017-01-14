@@ -15,6 +15,7 @@ if ($areResults) :?>
     <thead>
     <tr>
     <th><?php echo $this->translate('Association');?></th>
+    <th><?php echo $this->translate('Role');?></th>
     <th><?php echo $this->translate('Person');?></th>
     <th><?php echo $this->translate('Email');?></th>
     <th><?php echo $this->translate('Cell phone');?></th>
@@ -25,8 +26,9 @@ if ($areResults) :?>
 foreach ($this->entities as $entity) :?>
 <tr>
     <td><?php if ($entity['association']) {
-        echo $this->formatEntity('association', $entity['association']);
+        echo $this->formatEntity('association', $entity['association'], ['showLabel' => false]);
     }?></td>
+    <td><?php echo $this->escapeHtml($entity['assignment']['roleTitle']);?></td>
     <td><?php echo $this->formatEntity('person', $entity['person']);?></td>
     <td><?php echo $this->email($entity['person']['email']);?></td>
     <td><?php echo $this->telephone($entity['person']['cellPhone']);?></td>

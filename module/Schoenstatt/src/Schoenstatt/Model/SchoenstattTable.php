@@ -389,7 +389,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
 `PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`,
 `DataSource`, `DataSourceId`, `DataSourceUpdatedOn`,
 `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_persons` WHERE 1
-ORDER BY `BirthDate`";
+ORDER BY `LastName`, `FirstName`";
         $results = $this->fetchSome(null, $sqlPers, null);
         if (is_null($results) || 0 == count($results)) {
             return null;
@@ -448,6 +448,9 @@ ORDER BY `BirthDate`";
                 $personTagConfig = $this->config['person_tags'];
                 $titles = [];
                 foreach ($personTagConfig as $tag => $tagConfig) {
+                    if (!isset($tagConfig['title'])) { //exclude tags without titles
+                        continue;
+                    }
                     if (in_array($tag, $personTags) ) {
                         $titles[] = $tagConfig['title'];
                     }
@@ -683,15 +686,20 @@ ORDER BY `BirthDate`";
         $associations   = $this->getUnlinkedAssociations();
         $persons        = $this->getUnlinkedPersons();
 
+        $associationKindSpecifications =
+            isset($this->config['association_kinds']) ? $this->config['association_kinds'] : [];
+
         $entities = [];
         foreach ($assignments as $assignmentId => $assignment) {
             $entity = [
-                'assignmentId'      => $assignmentId,
-                'assignment'        => $assignment,
                 'associationId'     => null,
                 'association'       => null,
+                'assignmentId'      => $assignmentId,
+                'assignment'        => $assignment,
                 'personId'          => null,
                 'person'            => null,
+                'associationSort'   => '9999',
+                'sort'              => $this->strPad($assignment['sort'], 4, '0', STR_PAD_LEFT).'ZZZZ',
             ];
             if  (isset($assignment['personId']) && isset($persons[$assignment['personId']])) {
                 $entity['person'] = $persons[$assignment['personId']];
@@ -707,12 +715,16 @@ ORDER BY `BirthDate`";
         foreach ($associations as $associationId => $association) {
             if (!isset($association['found']) && $association['isActive']) {
                 $entities[] = [
-                    'assignmentId'          => null,
-                    'assignment'            => null,
                     'associationId'         => $associationId,
                     'association'           => $association,
+                    'assignmentId'          => null,
+                    'assignment'            => null,
                     'personId'              => null,
                     'person'                => null,
+                    'associationSort'       => (isset($associationKindSpecifications[$association['kind']]['sort']) ?
+                        $this->strPad($associationKindSpecifications[$association['kind']]['sort'], 4, '0', STR_PAD_LEFT) : '9999').
+                        $association['name'],
+                    'sort'                  =>  '9999ZZZZ',
                 ];
             }
         }
@@ -720,15 +732,24 @@ ORDER BY `BirthDate`";
         foreach ($persons as $personId => $person) {
             if (!isset($person['found']) && $person['isActive']) {
                 $entities[] = [
-                    'assignmentId'          => null,
-                    'assignment'            => null,
-                    'personId'              => $personId,
-                    'person'                => $person,
-                    'associationId'         => null,
-                    'association'           => null,
+                    'associationId'     => null,
+                    'association'       => null,
+                    'assignmentId'      => null,
+                    'assignment'        => null,
+                    'personId'          => $personId,
+                    'person'            => $person,
+                    'associationSort'   => '9999',
+                    'sort'              => '9999'.strtoupper(substr($person['lastName'].$person['firstName'], 0, 4)),
                 ];
             }
         }
+        $sort = [];
+        foreach($entities as $k=>$v) {
+            $sort['associationSort'][$k] = $v['associationSort'];
+            $sort['sort'][$k] = $v['sort'];
+        }
+        # sort by event_type desc and then title asc
+        array_multisort($sort['associationSort'], SORT_ASC, $sort['sort'], SORT_ASC, $entities);
         return $entities;
     }
 
@@ -739,7 +760,8 @@ a.`StartDate`, a.`EndDate`, a.`CreatedOn`, a.`CreatedBy`, a.`UpdatedOn`, a.`Upda
 r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`, r.`IsActive`,
 r.`ShouldAlwaysBeFilled`
 FROM `sch_assignments` a
-INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1";
+INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1
+ORDER BY `AssociationId`, `Sort`";
 
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];

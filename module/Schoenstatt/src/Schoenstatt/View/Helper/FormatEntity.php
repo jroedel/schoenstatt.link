@@ -1,11 +1,7 @@
 <?php
-// Application/View/Helper/FormatEntity.php
-
 namespace Schoenstatt\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
-
-class FormatEntity extends AbstractHelper
+class FormatEntity extends \SionModel\View\Helper\FormatEntity
 {
     protected $associationTypeLabels = [];
 
@@ -13,9 +9,10 @@ class FormatEntity extends AbstractHelper
      *
      * @param mixed[] $config The 'schoenstatt' config key
      */
-    public function __construct($associationTypeLabels)
+    public function __construct($entityService, $associationTypeLabels)
     {
         $this->associationTypeLabels = $associationTypeLabels;
+        parent::__construct($entityService);
     }
 
     /**
@@ -24,7 +21,7 @@ class FormatEntity extends AbstractHelper
      * @param array $options
      *
      */
-    public function __invoke($entityType, $data, $options = [])
+    public function __invoke($entityType, $data, array $options = [])
     {
     	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
         $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : true;
@@ -64,7 +61,7 @@ class FormatEntity extends AbstractHelper
                 return $finalMarkup;
                 break;
             default:
-                throw new \InvalidArgumentException('Unsupported entity passed to FormatEntity');
+                return parent::__invoke($entityType, $data, $options);
             break;
         }
     }

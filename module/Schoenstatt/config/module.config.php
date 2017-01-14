@@ -76,10 +76,20 @@ return [
                 'label' => 'Professor',
                 'sort'  => 20,
             ],
+            'couple' => [
+                'label' => 'Married couple',
+                'sort'  => 90,
+            ],
         ],
         'association_kinds' => [
+            'sch-movement-international-structure' => [
+                'sort'  => 100,
+                'label' => 'Schoenstatt movement international structure',
+                'default_roles' => [],
+            ],
             'sch-institute' => [
                 'label' => 'Schoenstatt institute',
+                'sort'  => 200,
                 'default_roles' => [
                     [
                         'roleTitle' => 'General superior',
@@ -104,46 +114,9 @@ return [
                     ],
                 ],
             ],
-            'sch-national-federation' => [
-                'label' => 'Schoenstatt national federation',
-                'default_roles' => [
-                    [
-                        'roleTitle' => 'General superior',
-                        'singlePosition' => true,
-                        'sort' => 10,
-                        'mainRole' => true,
-                        'shouldAlwaysBeFilled' => true,
-                    ],
-                    [
-                        'roleTitle' => 'Councilor',
-                        'singlePosition' => false,
-                        'sort' => 15,
-                        'mainRole' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                ],
-            ],
-            'sch-diocesan-movement' => [
-                'label' => 'Schoenstatt diocesan movement',
-                'default_roles' => [
-                    [
-                        'roleTitle' => 'Diocesan coordinator',
-                        'singlePosition' => true,
-                        'sort' => 50,
-                        'mainRole' => true,
-                        'shouldAlwaysBeFilled' => true,
-                    ],
-                    [
-                        'roleTitle' => 'Committee member',
-                        'singlePosition' => false,
-                        'sort' => 55,
-                        'mainRole' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                ],
-            ],
             'sch-national-movement' => [
                 'label' => 'Schoenstatt national movement',
+                'sort'  => 300,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Movement director',
@@ -168,16 +141,54 @@ return [
                     ],
                 ],
             ],
-            'sch-movement-international-structure' => [
-                'label' => 'Schoenstatt movement international structure',
-                'default_roles' => [],
+            'sch-national-federation' => [
+                'label' => 'Schoenstatt national federation',
+                'sort'  => 400,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'General superior',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Councilor',
+                        'singlePosition' => false,
+                        'sort' => 15,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'sch-diocesan-movement' => [
+                'label' => 'Schoenstatt diocesan movement',
+                'sort'  => 500,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Diocesan coordinator',
+                        'singlePosition' => true,
+                        'sort' => 50,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Committee member',
+                        'singlePosition' => false,
+                        'sort' => 55,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
             'sch-other' => [
                 'label' => 'Other Schoenstatt entity',
+                'sort'  => 600,
                 'default_roles' => [],
             ],
             'legal-entity' => [
                 'label' => 'Legal entity',
+                'sort'  => 700,
                 'default_roles' => [
                     [
                         'roleTitle' => 'President',
@@ -640,6 +651,12 @@ return [
                 'show_route' => 'fathers/father',
                 'show_route_key' => 'person_id',
                 'show_route_key_field' => 'personId',
+                'show_route' => 'fathers/father',
+                'show_route_key' => 'person_id',
+                'show_route_key_field' => 'personId',
+                'edit_route' => 'persons/person/edit',
+                'edit_route_key' => 'person_id',
+                'edit_route_key_field' => 'personId',
                 'text_columns' => [
 //         	        'adminNotes',
 //         	        'publicNotes',
@@ -797,6 +814,9 @@ return [
                 'show_route' => 'associations/association',
                 'show_route_key' => 'association_id',
                 'show_route_key_field' => 'associationId',
+                'edit_route' => 'associations/association/edit',
+                'edit_route_key' => 'association_id',
+                'edit_route_key_field' => 'associationId',
                 'text_columns' => [
 //         	        'adminNotes',
 //         	        'publicNotes',
@@ -916,6 +936,9 @@ return [
                 'show_route' => 'roles/role',
                 'show_route_key' => 'role_id',
                 'show_route_key_field' => 'roleId',
+                'edit_route' => 'roles/role/edit',
+                'edit_route_key' => 'role_id',
+                'edit_route_key_field' => 'roleId',
                 'text_columns' => [
                 ],
                 'date_columns' => [
@@ -958,6 +981,9 @@ return [
                 'show_route' => 'assignments/assignment',
                 'show_route_key' => 'assignment_id',
                 'show_route_key_field' => 'assignmentId',
+                'edit_route' => 'assignments/assignment/edit',
+                'edit_route_key' => 'assignment_id',
+                'edit_route_key_field' => 'assignmentId',
                 'text_columns' => [
                 ],
                 'date_columns' => [
@@ -999,6 +1025,9 @@ return [
                 'show_route' => 'publications/publication',
                 'show_route_key' => 'publication_id',
                 'show_route_key_field' => 'publicationId',
+                'edit_route' => 'publications/publication/edit',
+                'edit_route_key' => 'publication_id',
+                'edit_route_key_field' => 'publicationId',
                 'text_columns' => [
                 ],
                 'date_columns' => [

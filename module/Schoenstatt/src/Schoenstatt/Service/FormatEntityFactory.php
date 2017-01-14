@@ -22,7 +22,8 @@ class FormatEntityFactory implements FactoryInterface
         $parentLocator = $serviceLocator->getServiceLocator();
         $valueOptions = $parentLocator->get('Schoenstatt\AssociationKindsValueOptions');
 
-        $viewHelper = new FormatEntity($valueOptions);
+        $entityService = $parentLocator->get('SionModel\Service\EntitiesService');
+        $viewHelper = new FormatEntity($entityService, $valueOptions);
         return $viewHelper;
     }
 }
