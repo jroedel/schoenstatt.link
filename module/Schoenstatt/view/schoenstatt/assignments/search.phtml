@@ -28,7 +28,9 @@ foreach ($this->entities as $entity) :?>
     <td><?php if ($entity['association']) {
         echo $this->formatEntity('association', $entity['association'], ['showLabel' => false]);
     }?></td>
-    <td><?php echo $this->escapeHtml($entity['assignment']['roleTitle']);?></td>
+    <td><?php if ($entity['assignment']) {
+        echo $this->formatEntity('assignment', $entity['assignment'], ['displayAsLink' => false,]);
+    }?></td>
     <td><?php echo $this->formatEntity('person', $entity['person']);?></td>
     <td><?php echo $this->email($entity['person']['email']);?></td>
     <td><?php echo $this->telephone($entity['person']['cellPhone']);?></td>

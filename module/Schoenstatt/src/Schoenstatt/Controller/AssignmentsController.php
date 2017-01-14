@@ -113,115 +113,111 @@ class AssignmentsController extends AbstractActionController
         );
     }
 
+    /**
+     * @todo Doesn't work yet!
+     */
     public function editAction()
     {
-        $id = (Int)$this->params()->fromRoute('person_id');
-        $entity = $this->params()->fromRoute('entity');
-        $routeName = $this->getEvent()->getRouteMatch()->getMatchedRouteName();
+        $id = (Int)$this->params()->fromRoute('assignment_id');
         if (!$id) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Person not found.');
-            return $this->redirect()->toRoute('home');
+            ->addMessage('Assignment not found.');
+            return $this->redirect()->toRoute('assignments');
         }
         $sm = $this->getServiceLocator();
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $person = $table->getPerson($id);
-        if (!$person) {
+        $entity = $table->getAssignment($id);
+        if (!$entity) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Person not found.');
-            return $this->redirect()->toRoute('home');
+            ->addMessage('Assignment not found.');
+            return $this->redirect()->toRoute('assignments');
         }
 
-        /** @var PersonForm $form */
-        $form = $sm->get('Schoenstatt\Form\PersonForm');
+        /** @var AssignmentForm $form */
+        $form = $sm->get('Schoenstatt\Form\AssignmentForm');
+        $form->get('associationId')->setAttribute('disabled', true);
+        $form->get('personId')->setAttribute('disabled', true);
+        $availableRoles = $table->getJavascriptRoleTitleValueOptions()[$entity['associationId']];
+        $form->get('roleId')->setValueOptions($availableRoles);
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
+            $form->setValidationGroup('assignmentId', 'roleId', 'startDate', 'endDate', 'security');
             $form->setData($data);
-            if ($data ['personId'] != $id) { // make sure the user is trying to update the right event
+            if ($data['assignmentId'] != $id) { // make sure the user is trying to update the right event
                 $this->flashMessenger()
-                    ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-                    ->addMessage('Person not found.');
-                return $this->redirect()->toRoute('home');
+                ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+                ->addMessage('Assignment not found.');
+                return $this->redirect()->toRoute('assignments');
             }
             if ($form->isValid()) {
                 $data = $form->getData();
-                $result = $table->updateEntity('person', $id, $data);
-                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
-                $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
+                $result = $table->updateEntity('assignment', $id, $data);
+                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Assignment successfully updated.' );
+                $this->redirect()->toRoute ( 'assignments');///assignment', array('assignment_id' => $id) );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         } else {
-            $form->setData($person);
+            $form->setData($entity);
         }
         return array (
-            'action' => $routeName,
             'form' => $form,
-            'person' => $person,
-            'personId' => $person['personId'],
-            'personName' => $person['fullName'],
             'entity' => $entity,
         );
     }
 
-    public function suggestContactInfoAction()
+    public function suggestAction()
     {
-        $id = ( int ) $this->params ()->fromRoute ( 'person_id' );
+        $id = ( int ) $this->params ()->fromRoute ( 'assignment_id' );
         $sm = $this->getServiceLocator ();
         /** @var SchoenstattTable $table **/
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
         if (! $id) {
-            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Course not found.' );
-            return $this->redirect ()->toRoute ( 'home');
+            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Assignment not found.' );
+            return $this->redirect ()->toRoute ( 'assignments');
         }
-        $person = $table->getPerson( $id );
-        if (! $person) {
-            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Person not found.' );
-            return $this->redirect ()->toRoute ( 'home');
+        $assignment = $table->getAssignment( $id );
+        if (! $assignment) {
+            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Assignment not found.' );
+            return $this->redirect ()->toRoute ( 'assignments');
         }
-        /** @var PersonForm $form **/
-        $form = $sm->get('Schoenstatt\Form\PersonForm');
+        /** @var AssignmentForm $form **/
+        $form = $sm->get('Schoenstatt\Form\AssignmentForm');
         $form->prepareForSuggestion($sm);
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
-            $form->setValidationGroup($this->entityFieldMap['suggestContactInfo']['validationFields']);
             $form->setData($data);
-            if ($data ['personId'] != $id) { // make sure the user is trying to update the right event
+            if ($data ['assignmentId'] != $id) { // make sure the user is trying to update the right event
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 return [
-                    'person' => $person,
+                    'assignment' => $assignment,
                     'form' => $form,
                 ];
             }
             if ($form->isValid()) {
                 $data = $form->getData();
-                try {
-                    $result = $table->suggestEntity('person', $id, $data);
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Thanks for the suggestions! You will receive an email upon response.' );
-                    //send an email to admin
-                    $suggestion = $table->getLastSuggestion();
-                    /** @var Mailer $mailer **/
-                    $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
-                    $mailer->sendNewSuggestionNotice($suggestion);
-                    $this->redirect()->toRoute ( 'persons/person', ['person_id' => $id] );
-                } catch (\Exception $e) {
-                    //@todo this message should be logged
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.');
-                }
+                $result = $table->suggestEntity('assignment', $id, $data);
+                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Thanks for the suggestions! You will receive an email upon response.' );
+                //send an email to admin
+                $suggestion = $table->getLastSuggestion();
+                /** @var Mailer $mailer **/
+                $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
+                $mailer->sendNewSuggestionNotice($suggestion);
+                $this->redirect()->toRoute ( 'assignments/assignment', ['assignment_id' => $id] );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         } else {
-            $form->setData($person);
+            $form->setData($assignment);
         }
         return [
-            'person' => $person,
+            'entity' => $assignment,
             'form' => $form,
         ];
     }
@@ -235,15 +231,15 @@ class AssignmentsController extends AbstractActionController
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
         $oldData = null;
-        $person = $table->getSuggestionData( $suggestionId, $oldData); //$oldData is a byRef return
-        $id = $person['personId'];
-        if (! $person) {
-            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Person not found.' );
-            return $this->redirect ()->toRoute ( 'home' );
+        $assignment = $table->getSuggestionData( $suggestionId, $oldData); //$oldData is a byRef return
+        $id = $assignment['assignmentId'];
+        if (! $assignment) {
+            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Assignment not found.' );
+            return $this->redirect ()->toRoute ( 'assignments' );
         }
 
-        /** @var \Schoenstatt\Form\EditCourseForm $form **/
-        $form = $sm->get('Schoenstatt\Form\PersonForm');
+        /** @var \Schoenstatt\Form\AssignmentForm $form **/
+        $form = $sm->get('Schoenstatt\Form\AssignmentForm');
         $form->prepareForModeration($oldData);
         $request = $this->getRequest();
         if ($request->isPost ()) {
@@ -260,46 +256,31 @@ class AssignmentsController extends AbstractActionController
                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Suggestion denied.' );
                 $this->redirect()->toRoute ( 'admin/moderate');
             } else {
-                $form->setValidationGroup($this->entityFieldMap['moderateContactInfo']['validationFields']);
                 $form->setData($data);
                 if ($form->isValid()) {
                     $data = $form->getData();
-                    try {
-                        $result = $table->updateEntity('person', $id, $data);
-                        $table->updateSuggestion($data);
+                    $result = $table->updateEntity('assignment', $id, $data);
+                    $table->updateSuggestion($data);
 
-                        //send an email to user
-                        /** @var Mailer $mailer **/
-                        $mailer = $sm->get('Schoenstatt\Mailing\Mailer');
-                        $suggestion = $table->getSuggestion($data['suggestionId']);
-                        $mailer->sendReviewedSuggestionNotice($suggestion);
+                    //send an email to user
+                    /** @var Mailer $mailer **/
+                    $mailer = $sm->get('SionModel\Mailing\Mailer');
+                    $suggestion = $table->getSuggestion($data['suggestionId']);
+                    $mailer->sendReviewedSuggestionNotice($suggestion);
 
-                        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
-                        $this->redirect()->toRoute ( 'admin/moderate');
-                    } catch (\Exception $e) {
-                        //@todo this message should be logged
-//                         var_dump($e);
-//                         var_dump($form);
-                        $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                    }
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Assignment successfully updated.' );
+                    $this->redirect()->toRoute ( 'admin/moderate');
                 } else {
-//                         var_dump($form);
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 }
             }
         } else {
-            $form->setData($person);
+            $form->setData($assignment);
         }
 
-        $view = new ViewModel([
-            'action' => 'persons/person/moderate',
-            'entity' => 'contactInfo',
-            'person' => $person,
-            'personId' => $person['personId'],
-            'personName' => $person['fullName'],
+        return new ViewModel([
+            'entity' => $assignment,
             'form' => $form,
         ]);
-        $view->setTemplate('schoenstatt/persons/edit');
-        return $view;
     }
 }

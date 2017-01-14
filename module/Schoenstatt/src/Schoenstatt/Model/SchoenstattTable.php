@@ -81,7 +81,14 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         $result = [];
         foreach ($persons as $per) {
             if ($includeInactive || $per['isActive']) { //put it in
-                $result[$per['personId']] = $per['lastName'].', '.$per['firstName'];
+                if ($per['title']) {
+                    $per['firstName'] = $per['title'].' '.$per['firstName'];
+                }
+                if ($per['lastName']) {
+                    $result[$per['personId']] = $per['lastName'].', '.$per['firstName'];
+                } else {
+                    $result[$per['personId']] = $per['firstName'];
+                }
             }
         }
         asort($result);
@@ -698,15 +705,23 @@ ORDER BY `LastName`, `FirstName`";
                 'assignment'        => $assignment,
                 'personId'          => null,
                 'person'            => null,
-                'associationSort'   => '9999',
-                'sort'              => $this->strPad($assignment['sort'], 4, '0', STR_PAD_LEFT).'ZZZZ',
+                'associationSort'   => '9999ZZZZ',
+                'sort'              => $this->strPad($assignment['sort'], 4, '0', STR_PAD_LEFT),
             ];
             if  (isset($assignment['personId']) && isset($persons[$assignment['personId']])) {
-                $entity['person'] = $persons[$assignment['personId']];
+                $person = $persons[$assignment['personId']];
+                $entity['person'] = $person;
                 $persons[$assignment['personId']]['found'] = true;
+                $entity['sort'] .= strtoupper(substr($person['lastName'].$person['firstName'], 0, 4));
+            } else {
+                $entity['sort'] .= 'ZZZZ';
             }
             if  (isset($assignment['associationId']) && isset($associations[$assignment['associationId']])) {
-                $entity['association'] = $associations[$assignment['associationId']];
+                $association = $associations[$assignment['associationId']];
+                $entity['association'] = $association;
+                $entity['associationSort'] = (isset($associationKindSpecifications[$association['kind']]['sort']) ?
+                    $this->strPad($associationKindSpecifications[$association['kind']]['sort'], 4, '0', STR_PAD_LEFT) : '9999').
+                    $association['name'];
                 $associations[$assignment['associationId']]['found'] = true;
             }
             $entities[] = $entity;
@@ -738,7 +753,7 @@ ORDER BY `LastName`, `FirstName`";
                     'assignment'        => null,
                     'personId'          => $personId,
                     'person'            => $person,
-                    'associationSort'   => '9999',
+                    'associationSort'   => '9999ZZZZ',
                     'sort'              => '9999'.strtoupper(substr($person['lastName'].$person['firstName'], 0, 4)),
                 ];
             }
@@ -751,6 +766,24 @@ ORDER BY `LastName`, `FirstName`";
         # sort by event_type desc and then title asc
         array_multisort($sort['associationSort'], SORT_ASC, $sort['sort'], SORT_ASC, $entities);
         return $entities;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public function getAssignments()
+    {
+        if (!is_null($this->assignmentsCache)) {
+            return $this->assignmentsCache;
+        }
+        $entities = $this->getUnlinkedAssignments();
+//         foreach ($entities as $key => $role) {
+//             if ($role['associationId'] && isset($associations[$role['associationId']])) {
+//                 $entities[$key]['association'] = $associations[$role['associationId']];
+//             }
+//         }
+
+        return $this->assignmentsCache = $entities;
     }
 
     protected function getUnlinkedAssignments()
