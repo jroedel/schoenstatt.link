@@ -566,6 +566,16 @@ return [
                             ],
                         ],
                     ],
+                    'import' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/import',
+                            'defaults' => [
+                                'controller' => 'Schoenstatt\Controller\Associations',
+                                'action'     => 'import',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ],
@@ -800,6 +810,7 @@ return [
                     'name'                      => 'AssociationName',
                     'parent'                    => 'Parent',
                     'kind'                      => 'Kind',
+                    'country'                   => 'Country',
                     'foundationDate'            => 'FoundationDate',
                     'suppressionDate'           => 'SuppressionDate',
                     'isLifeCommunity'           => 'IsLifeCommunity',
@@ -1168,6 +1179,7 @@ return [
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'associations/create', 'roles' => ['sch_general_moderator']],
+                ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/association/edit', 'roles' => ['sch_general_moderator']],
                 ['route' => 'associations/association/moderate', 'roles' => ['sch_general_moderator']],
                 ['route' => 'roles', 'roles' => ['sch_moderator']],
