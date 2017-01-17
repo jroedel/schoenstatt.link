@@ -82,10 +82,12 @@ return [
             ],
             'mr' => [
                 'label' => 'Mr.',
+                'title' => 'Mr.',
                 'sort'  => 10,
             ],
             'ms' => [
                 'label' => 'Ms.',
+                'title' => 'Ms.',
                 'sort'  => 10,
             ],
         ],
