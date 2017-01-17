@@ -10,6 +10,9 @@ if ($this->isAllowed('route/persons/create')) :?>
 if ($this->isAllowed('route/associations/create')) :?>
 |&nbsp;<a href="<?php echo $this->url('associations/create')?>"><?php echo $this->translate('Add association');?></a>
 <?php endif;
+if ($this->isAllowed('route/roles/create')) :?>
+|&nbsp;<a href="<?php echo $this->url('roles/create')?>"><?php echo $this->translate('Add role');?></a>
+<?php endif;
 if ($areResults) :?>
 <table class="table">
     <thead>

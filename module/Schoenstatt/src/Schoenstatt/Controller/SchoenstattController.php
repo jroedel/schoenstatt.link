@@ -21,6 +21,7 @@ class SchoenstattController extends AbstractActionController
         if (!$this->zfcUserAuthentication()->hasIdentity()) {
             return $this->redirect()->toRoute('zfcuser/login');
         }
+        return $this->redirect()->toRoute('assignments');
 
         $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $table */

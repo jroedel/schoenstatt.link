@@ -80,12 +80,28 @@ return [
                 'label' => 'Married couple',
                 'sort'  => 90,
             ],
+            'mr' => [
+                'label' => 'Mr.',
+                'sort'  => 10,
+            ],
+            'ms' => [
+                'label' => 'Ms.',
+                'sort'  => 10,
+            ],
         ],
         'association_kinds' => [
             'sch-movement-international-structure' => [
                 'sort'  => 100,
                 'label' => 'Schoenstatt movement international structure',
-                'default_roles' => [],
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 90,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
             'sch-institute' => [
                 'label' => 'Schoenstatt institute',
@@ -109,6 +125,19 @@ return [
                         'roleTitle' => 'Councilor',
                         'singlePosition' => false,
                         'sort' => 3,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'sch-federation-international-structure' => [
+                'sort'  => 200,
+                'label' => 'Federation international structure',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 90,
                         'mainRole' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
