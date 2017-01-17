@@ -6,7 +6,9 @@ $this->headTitle($headText); ?>
 $form->setAttribute('action', $this->url('admin/import-father'));
  $form->prepare();
  echo $this->form()->openTag($form);
+$this->formSelect()->setTranslatorEnabled(false);
  echo $this->formRow($form->get('personId'));
+$this->formSelect()->setTranslatorEnabled(true);
  echo $this->formRow($form->get('security'));
  echo $this->formSubmit($form->get('submit'));
  echo $this->form()->closeTag();

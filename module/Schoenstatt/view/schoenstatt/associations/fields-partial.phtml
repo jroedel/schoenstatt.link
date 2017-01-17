@@ -49,12 +49,14 @@ echo $this->formRow($form->get('post1Street1'));
 echo $this->formRow($form->get('post1Street2'));
 echo $this->formRow($form->get('post1CityState'));
 echo $this->formRow($form->get('post1Zip'));
+$this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('post1Country'));
 echo $this->formRow($form->get('post2Street1'));
 echo $this->formRow($form->get('post2Street2'));
 echo $this->formRow($form->get('post2CityState'));
 echo $this->formRow($form->get('post2Zip'));
 echo $this->formRow($form->get('post2Country'));
+$this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('contactNotes'));
 echo $this->formRow($form->get('security'));
 $jsScript .= <<<JS

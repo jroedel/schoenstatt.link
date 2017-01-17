@@ -51,7 +51,9 @@ echo $this->formRow($form->get('postStreet1'));
 echo $this->formRow($form->get('postStreet2'));
 echo $this->formRow($form->get('postCityState'));
 echo $this->formRow($form->get('postZip'));
+$this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('postCountry'));
+$this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('contactNotes'));
 $jsScript .= <<<JS
 $("select[name='phone1Label']").selectize({
