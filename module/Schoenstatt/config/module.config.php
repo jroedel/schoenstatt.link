@@ -212,14 +212,41 @@ return [
                     ],
                 ],
             ],
+            'sch-league-branch' => [
+                'label' => 'Schoenstatt league branch',
+                'sort'  => 600,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Branch leader',
+                        'singlePosition' => true,
+                        'sort' => 5,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Branch moderator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
             'sch-other' => [
                 'label' => 'Other Schoenstatt entity',
-                'sort'  => 600,
+                'sort'  => 700,
                 'default_roles' => [],
             ],
             'legal-entity' => [
                 'label' => 'Legal entity',
-                'sort'  => 700,
+                'sort'  => 800,
                 'default_roles' => [
                     [
                         'roleTitle' => 'President',
@@ -675,7 +702,6 @@ return [
 //                 'scope' => 'Person',
                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
                 'required_columns_for_creation' => [ //required for creation
-        	        'firstName',
         	    ],
 //                 'moderate_route' => 'persons/person/moderate',
                 'moderate_route_entity_key' => 'person_id',

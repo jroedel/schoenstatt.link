@@ -7,7 +7,6 @@ use SionModel\Validator\Skype;
 use Zend\Uri\Uri;
 use Zend\Filter\ToNull;
 use SionModel\Form\SionForm;
-use Schoenstatt\Model\SchoenstattTable;
 
 class PersonForm extends SionForm implements InputFilterProviderInterface
 {
@@ -358,7 +357,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    'type' => 'Text',
 		    'options' => [
 		        'label' => 'First name',
-		        'required' => true,
+		        'required' => false,
 		    ],
 		    'attributes' => [
 		        'placeholder' => 'ex. John Andrew',
@@ -370,7 +369,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	    'type' => 'Text',
     	    'options' => [
     	        'label' => 'Last name',
-    	        'required' => true,
+    	        'required' => false,
     	    ],
     	    'attributes' => [
     	        'placeholder' => 'ex. Smith Johnson',

@@ -171,7 +171,7 @@ class PersonsController extends AbstractActionController
                 $data = $form->getData();
                 $result = $table->updateEntity('person', $id, $data);
                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully updated.' );
-                $this->redirect()->toRoute ( 'persons/person', array('person_id' => $id) );
+                $this->redirect()->toRoute ( 'persons/person', ['person_id' => $id] );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
@@ -324,6 +324,12 @@ class PersonsController extends AbstractActionController
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
+                if (!$data['firstName'] && !$data['lastName']) {
+                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Either a first name or a last name is required.' );
+                    return [
+                        'form' => $form,
+                    ];
+                }
                 if (!($newId = $table->createEntity('person', $data))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
@@ -335,8 +341,8 @@ class PersonsController extends AbstractActionController
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }
-        return array (
+        return [
             'form' => $form,
-        );
+        ];
     }
 }

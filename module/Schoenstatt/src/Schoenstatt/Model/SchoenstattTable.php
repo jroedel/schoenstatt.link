@@ -104,10 +104,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
      */
     public function getAssociationValueOptions($translator = null, $includeInactive = false, $includeNonLifeLongMembership = true)
     {
-        $sql = "SELECT `AssociationId`, `AssociationName`, `IsNameTranslateable` FROM `sch_associations`";
+        $sql = "SELECT `AssociationId`, `AssociationName`, `IsNameTranslateable`, `IsLifeCommunity` FROM `sch_associations`";
         $results = $this->fetchSome(null, $sql, null);
         $valueOptions = [];
         foreach ($results as $row) {
+            if (!$includeNonLifeLongMembership && !$this->filterDbBool($row['IsLifeCommunity'])) {
+                continue;
+            }
             if ($translator instanceof TranslatorInterface && $this->filterDbBool($row['IsNameTranslateable'])) {
                 $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName']);
             } else {
@@ -453,6 +456,14 @@ ORDER BY `LastName`, `FirstName`";
                 $title = $manualTitle;
             } else {
                 $personTagConfig = $this->config['person_tags'];
+                //sort tag config according to sort order
+                $sort = [];
+                foreach($personTagConfig as $k=>$v) {
+                    $sort['sort'][$k] = $v['sort'];
+                }
+                # sort by event_type desc and then title asc
+                array_multisort($sort['sort'], SORT_ASC, $personTagConfig);
+
                 $titles = [];
                 foreach ($personTagConfig as $tag => $tagConfig) {
                     if (!isset($tagConfig['title'])) { //exclude tags without titles
