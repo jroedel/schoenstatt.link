@@ -46,7 +46,7 @@ class FormatPerson extends AbstractHelper
     	$showTitle = isset($options['showTitle']) ? (bool)$options['showTitle'] : true;
     	$countryOption = isset($options['flag']) ? (bool)$options['flag'] : true;
     	$linkOption = isset($options['link']) ? (bool)$options['link'] : true;
-    	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
+    	$editPencilOption = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : true;
     	$showLabels = isset($options['showLabels']) ? (bool)$options['showLabels'] : false;
 
     	$finalMarkup = '';

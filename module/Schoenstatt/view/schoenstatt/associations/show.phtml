@@ -23,6 +23,7 @@ $this->headTitle($entity['name']);?>
 	</div>
     <div class="panel-body">
     	<div class="row">
+    	<!-- Here goes the logo -->
     	<div class="col-md-7">
             <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
             if (!is_null($entity['email'])) { //@todo add checks for validated
@@ -83,37 +84,58 @@ $this->headTitle($entity['name']);?>
                 echo $this->dateFormat($entity['suppressionDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
             ?></p>
 		<?php endif;?>
+		<?php if (!is_null($entity['country'])) :?>
+      		<p><strong><?php echo $this->translate('Country');?>:</strong> <?php
+                echo $this->countryName($entity['country'], true);
+            ?></p>
+		<?php endif;?>
 	</div> <!-- info 1 column -->
 
     <div class="col-md-6">
-      <h4 class="text-center"><strong><?php echo $this->translate('Association representatives');?></strong></h4>
-    <?php foreach ($entity['roles'] as $role) : ?>
-    <p>
-    	<?php if ($role['assignmentPersonId']) :?>
-    		<?php echo $this->formatPersonName($role['assignmentFirstName'], $role['assignmentLastName'], null,
-    	    $role['assignmentPersonId'], $role['assignmentCountry']);
-            echo ' '.$this->shortDateRange($role['assignmentStartDate'], $role['assignmentEndDate']);
-    		if ($this->isAllowed('route/roles/assignment/edit')) : ?>
-        		<a href="<?php
-        		echo $this->url('roles/assignment/edit', array('assignment_id' => $role['assignmentId'],
-                    'action' => 'edit'));?>">
-    			<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a>
-    		<?php endif;?>
-    	<?php endif;?>
-    </p>
-    <?php endforeach;?>
-    <?php if (isset($entity['roles'][0]) && $entity['roles'][0]['roleId'] && $this->isAllowed('route/roles/create')): ?>
-        <p><a class="btn btn-default btn-sm" href="<?php
-            echo $this->url('roles/create', [],
-                array('query' => array('roleId' => $entity['roles'][0]['roleId'])));?>">
-            <span class="glyphicon glyphicon-plus">&nbsp;</span><?php echo $this->translate('Add generation representative')?></a>
-        </p>
-    <?php endif;?>
+		<?php if ($entity['publicNotes']) : ?>
+			<p class="text-center"><strong><?php echo $this->translate('Additional Info');?></strong></p>
+			<?php echo $this->markdown($entity['publicNotes']);
+		endif;?>
 	</div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->
 </div> <!-- course info 1 panel -->
 </div><!-- info 1 column -->
 </div> <!-- Info row -->
+
+<div class="row">
+<div class="col-md-12">
+<div class="panel panel-default" id="assignmentsPanel">
+    <div class="panel-heading">
+    	<h3 class="panel-title"><?php echo $this->translate('Contact persons'); ?></h3>
+	</div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+    	<p></p>
+      <!-- <h4 class="text-center"><strong><?php echo $this->translate('Association representatives');?></strong></h4> -->
+    	<?php echo $this->partial('assignments-table-partial', [
+    		'assignments' 	=> $entity['assignments'],
+    		'showActive' 	=> true,
+    		'showInactive' 	=> false,
+    	]);?>
+    <!-- 
+    <?php //if (isset($entity['roles'][0]) && $entity['roles'][0]['roleId'] && $this->isAllowed('route/roles/create')): ?>
+        <p><a class="btn btn-default btn-sm" href="<?php
+            //echo $this->url('roles/create', [],
+            //    array('query' => array('roleId' => $entity['roles'][0]['roleId'])));?>">
+            <span class="glyphicon glyphicon-plus">&nbsp;</span><?php //echo $this->translate('Add generation representative')?></a>
+        </p>
+    <?php //endif;?> -->
+	</div> <!-- assignments 1 column -->
+    <div class="col-md-6">
+    	<?php echo $this->partial('assignments-table-partial', [
+    		'assignments' 	=> $entity['assignments'],
+    		'showActive' 	=> false,
+    		'showInactive' 	=> true,
+    		'headerText'	=> $this->translate('Past contacts'),
+    	]);?>
+    </div>
+	</div></div>
+</div></div></div>
 
 <div class="row"><div class="col-md-12">
 <?php if ($this->isAllowed('route/associations/association/edit')):?>

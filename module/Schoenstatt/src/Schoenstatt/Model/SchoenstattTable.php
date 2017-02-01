@@ -172,8 +172,29 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         if (!is_null($this->associationsCache)) {
             return $this->associationsCache;
         }
-        $entities = $this->getUnlinkedAssociations();
-        return $this->associationsCache = $entities;
+        $associations = $this->getUnlinkedAssociations();
+        $roles = $this->getUnlinkedRoles();
+        $assignments = $this->getUnlinkedAssignments();
+        $persons = $this->getUnlinkedPersons();
+
+        //map roles to associations
+        foreach ($roles as $roleId => $role) {
+        	if (isset($associations[$role['associationId']])) {
+        		$associations[$role['associationId']]['roles'][$roleId] = $role;
+        	}
+        }
+        
+        //map assignments to associations
+        foreach ($assignments as $assignmentId => $assignment) {
+        	if (isset($associations[$assignment['associationId']])) {
+        		$associations[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
+        		if (isset($persons[$associations[$assignment['associationId']]['assignments'][$assignmentId]['personId']])) {
+        			$associations[$assignment['associationId']]['assignments'][$assignmentId]['person'] = 
+        				$persons[$associations[$assignment['associationId']]['assignments'][$assignmentId]['personId']];
+        		}
+        	}
+        }
+        return $this->associationsCache = $associations;
     }
 
     protected function getUnlinkedAssociations()
@@ -247,6 +268,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 'heirarchyLevel'        => 1, //@todo find a way to do this
 
                 'roles'                 => [],
+            	'assignments'			=> [],
 /**
  * Contact fields
 */
