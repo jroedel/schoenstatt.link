@@ -42,6 +42,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
     const TITLE_PROFESSOR = 'Prof.';
 
     const PROBLEM_PERSON_NO_EMAIL = 'person-no-email';
+    const PROBLEM_ASSOCIATION_NO_MAIN_ROLE = 'association-no-main-role';
+    const PROBLEM_ASSOCIATION_MULTIPLE_MAIN_ROLE = 'association-multi-main-role';
 
     /**
      * Schoenstatt config
@@ -1283,7 +1285,6 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
     public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
-        return $this->getPersonProblems($minimumSeverity);
         return array_merge($this->getPersonProblems($minimumSeverity), $this->getAssociationProblems($minimumSeverity));
     }
 
@@ -1293,11 +1294,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
         $problems = [];
         foreach ($persons as $personId => $person) {
-            if (is_null($person['email']) &&
-                ($person['condition'] == self::CONDITION_PRIEST ||
-                    $person['condition'] == self::CONDITION_DEACON ||
-                    $person['condition'] == self::CONDITION_STUDENT) &&
-                $person['age'] < 70) {
+            if (is_null($person['email'])) {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_PERSON_NO_EMAIL)
                     ->setData($person);
@@ -1309,24 +1306,32 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
     public function getAssociationProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
     {
-        //@todo detect associations that have more than one MainRole
-        
-//         $persons = $this->getPersons();
-    
-//         $problems = [];
-//         foreach ($persons as $personId => $person) {
-//             if (is_null($person['email']) &&
-//                     ($person['condition'] == self::CONDITION_PRIEST ||
-//                             $person['condition'] == self::CONDITION_DEACON ||
-//                             $person['condition'] == self::CONDITION_STUDENT) &&
-//                     $person['age'] < 70) {
-//                         $obj = clone $this->entityProblemPrototype;
-//                         $obj->setProblem(self::PROBLEM_PERSON_NO_EMAIL)
-//                         ->setData($person);
-//                         $problems[] = $obj;
-//                     }
-//         }
-//         return $problems;
+        $associations = $this->getAssociations();
+        $problems = [];
+        foreach ($associations as $associationId => $association) {
+            if (!$association['isActive']) {
+                continue;
+            }
+            $mainRoleCount = 0;
+            foreach ($association['roles'] as $role) {
+                if ($role['isActive'] && $role['isMainRole']) {
+                    $mainRoleCount++;
+                }
+            }
+            if ($mainRoleCount === 0 && $association['kind'] == 'sch-national-movement') {
+                $obj = clone $this->entityProblemPrototype;
+                $obj->setProblem(self::PROBLEM_ASSOCIATION_NO_MAIN_ROLE)
+                    ->setData($association);
+                $problems[] = $obj;
+            }
+            if ($mainRoleCount > 1) {
+                $obj = clone $this->entityProblemPrototype;
+                $obj->setProblem(self::PROBLEM_ASSOCIATION_MULTIPLE_MAIN_ROLE)
+                    ->setData($association);
+                $problems[] = $obj;
+            }
+        }
+        return $problems;
     }
     /**
      * @return TableGatewayInterface

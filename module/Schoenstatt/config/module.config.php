@@ -1,5 +1,7 @@
 <?php
 
+use SionModel\Problem\EntityProblem;
+
 return [
     'controllers' => [
         'invokables' => [
@@ -346,6 +348,16 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'data-problems' => [
+                        'type'    => 'Zend\Mvc\Router\Http\Literal',
+                        'options' => [
+                            'route'    => '/data-problems',
+                            'defaults' => [
+                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'action'     => 'dataProblems',
+                            ],
+                        ],
+                    ],
                     'import-father' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -353,16 +365,6 @@ return [
                             'defaults' => [
                                 'controller' => 'Schoenstatt\Controller\Admin',
                                 'action'     => 'importFather',
-                            ],
-                        ],
-                    ],
-                    'view-changes' => [
-                        'type'    => 'Literal',
-                        'options' => [
-                            'route'    => '/view-changes',
-                            'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Admin',
-                                'action'     => 'viewChanges',
                             ],
                         ],
                     ],
@@ -690,6 +692,32 @@ return [
     'sion_model' => [
 		'changes_table' => 'sch_changes',
         'visits_table' => 'sch_visits',
+        'visits_model' => 'Schoenstatt\Model\SchoenstattTable',
+        'problem_providers' => [
+            'Schoenstatt\Model\SchoenstattTable',
+        ],
+        'problem_specifications' => [
+            'person-no-email' => [
+                'entity'            => 'person',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'No email associated with person',
+            ],
+            'person-invalid-phone-number' => [
+                'entity'            => 'person',
+                'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,
+                'text'              => 'Invalid phone number associated with person',
+            ],
+            'association-no-main-role' => [
+                'entity'            => 'association',
+                'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,
+                'text'              => 'No main role specified for national association',
+            ],
+            'association-multi-main-role' => [
+                'entity'            => 'association',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'Multiple main roles specified for association',
+            ],
+        ],
         'entities' => [
             'person' => [
                 'table_name' => 'sch_persons',
@@ -1285,7 +1313,6 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'admin', 'roles' => ['sch_user']],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
-                ['route' => 'admin/view-changes', 'roles' => ['sch_administrator']],
                 ['route' => 'assignments', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment/edit', 'roles' => ['sch_general_moderator']],

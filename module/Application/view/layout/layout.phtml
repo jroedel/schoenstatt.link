@@ -52,9 +52,10 @@ echo $this->doctype(); ?>
     				<ul class="nav navbar-nav pull-right">
     					<?php $username = $this->zfcUserDisplayName();
     					if (0 != strcmp($this->routeName(), 'assignments/search') &&
+    					    0 != strcmp($this->routeName(), 'assignments') &&
     					    0 != strcmp($this->routeName(), 'home')
     					    && $username) :?>
-    					<li class="hidden-sm">
+    					<li class="">
     						<form class="navbar-form"
     							action="<?php echo $this->url('assignments/search') ?>" method="get"
     							role="search">

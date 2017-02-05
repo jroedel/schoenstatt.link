@@ -15,7 +15,6 @@ use Patres\Form\ModerateGenericForm;
 use JTranslate\Model\TranslationsTable;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Patres\Mailing\Mailer;
-use SionModel\Service\ProblemService;
 use Schoenstatt\Form\PersonForm;
 use Zend\Http\Client;
 use Zend\Json\Json;
@@ -32,12 +31,12 @@ class AdminController extends AbstractActionController
 //             'admin/review-phone-numbers' => "Review phone numbers",
 //             'roles'                 => "Manage Roles",
 //             'admin/view-searches'   => "View Searches",
-            'admin/view-changes'    => "View Changes",
+            'sion-model/view-changes'    => "View Changes",
             'admin/import-father'   => "Import Schoenstatt Father",
             'samuser'               => "User Management",
 //             'admin/moderate'        => "Review Suggestions",
             'jtranslate'            => "Manage Translations",
-//             'admin/data-problems'   => "Data problems",
+            'sion-model/data-problems'   => "Data problems",
         ];
         $badges = [];
         $sm = $this->getServiceLocator();
@@ -50,6 +49,11 @@ class AdminController extends AbstractActionController
 //         $suggestionCount = $table->getSuggestionCount();
 //         $badges['admin/moderate'] = $suggestionCount ? ' '.$suggestionCount : " 0";
         $badges['jtranslate'] = (string) $translations->getOutstandingTranslationCount();
+        
+        /** @var ProblemService $problemService */
+        $problemService = $sm->get('SionModel\Service\ProblemService');
+        $problems = $problemService->getCurrentProblems();
+        $badges['sion-model/data-problems'] = count($problems);
 
         return new ViewModel([
             'pages' => $pages,
@@ -140,24 +144,6 @@ class AdminController extends AbstractActionController
             $this->personInputFilter = $form->getInputFilter();
         }
         return clone $this->personInputFilter;
-    }
-
-    /**
-     * @todo Add a way to count the amount of errors
-     *
-     * @return \Zend\View\Model\ViewModel
-     */
-    public function dataProblemsAction()
-    {
-        $sm = $this->getServiceLocator();
-        /** @var ProblemService $table */
-        $table = $sm->get('SionModel\Service\ProblemService');
-
-        $problems = $table->getCurrentProblems();
-
-        return new ViewModel([
-            'problems' => $problems,
-        ]);
     }
 
     public function testEmailsAction()
@@ -266,23 +252,5 @@ class AdminController extends AbstractActionController
             'form' => $form,
             'continueModeration' => $continueModeration
         ]);
-    }
-
-    /**
-     *
-     * @return \Zend\View\Model\ViewModel
-     */
-    public function viewChangesAction()
-    {
-        $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $results = $table->getChanges();
-
-        $view = new ViewModel([
-            'changes' => $results,
-        ]);
-        $view->setTemplate('sionmodel/view-changes');
-        return $view;
     }
 }
