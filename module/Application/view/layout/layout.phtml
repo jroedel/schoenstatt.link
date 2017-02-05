@@ -20,8 +20,9 @@ echo $this->doctype(); ?>
 
         <!-- Scripts -->
         <?php echo $this->headScript()
-            ->prependFile($this->basePath('js/bootstrap.min.js'))
-            ->prependFile($this->basePath('js/jquery.min.js'))
+            ->prependFile($this->basePath() . '/'. $this->asset('js/basic.js'))
+//             ->prependFile($this->basePath('js/bootstrap.min.js'))
+//             ->prependFile($this->basePath('js/jquery.min.js'))
             ->prependFile($this->basePath('js/respond.min.js'), 'text/javascript', array('conditional' => 'lt IE 9',))
             ->prependFile($this->basePath('js/html5shiv.min.js'),   'text/javascript', array('conditional' => 'lt IE 9',))
         ; ?>
@@ -117,6 +118,15 @@ echo $this->doctype(); ?>
                 <p></p>
             </footer>
         </div> <!-- /container -->
-        <?php echo $this->inlineScript() ?>
+<?php
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+  $('[data-toggle="tooltip"]').tooltip();
+})
+JS;
+ $this->inlineScript()->captureEnd();
+
+ echo $this->inlineScript(); ?>
     </body>
 </html>

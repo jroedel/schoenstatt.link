@@ -1,10 +1,10 @@
 <?php
 $entity = $this->entity;
+$name = $entity['isNameTranslateable'] ? $this->translate($entity['name']) : $entity['name'];
 $this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle($entity['name']);?>
-<h1><?php echo $this->escapeHtml($this->entity['name']);?></h1>
+$this->headTitle($name);?>
+<h1><?php echo $this->escapeHtml($name);?></h1>
 <div class="row">
-
 <div class="col-md-9">
 <div class="panel panel-default" id="contactInfoPanel">
     <div class="panel-heading">
@@ -56,6 +56,10 @@ $this->headTitle($entity['name']);?>
                 //@todo use diffForHumans view helper
         	    $phoneUpdated = Carbon::instance($entity['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
+        	<?php endif;
+        	if (!is_null($entity['contactNotes'])) :?>
+        		<p><strong><?php echo $this->translate('Notes');?>:</strong></p>
+        		<div id="contactNotes"><?php echo $this->markdown($entity['contactNotes']);?></div>
         	<?php endif;?>
         	<!--
         	Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
@@ -110,21 +114,12 @@ $this->headTitle($entity['name']);?>
 	</div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-    	<p></p>
-      <!-- <h4 class="text-center"><strong><?php echo $this->translate('Association representatives');?></strong></h4> -->
+    	<p>&nbsp;</p>
     	<?php echo $this->partial('assignments-table-partial', [
     		'assignments' 	=> $entity['assignments'],
     		'showActive' 	=> true,
     		'showInactive' 	=> false,
     	]);?>
-    <!-- 
-    <?php //if (isset($entity['roles'][0]) && $entity['roles'][0]['roleId'] && $this->isAllowed('route/roles/create')): ?>
-        <p><a class="btn btn-default btn-sm" href="<?php
-            //echo $this->url('roles/create', [],
-            //    array('query' => array('roleId' => $entity['roles'][0]['roleId'])));?>">
-            <span class="glyphicon glyphicon-plus">&nbsp;</span><?php //echo $this->translate('Add generation representative')?></a>
-        </p>
-    <?php //endif;?> -->
 	</div> <!-- assignments 1 column -->
     <div class="col-md-6">
     	<?php echo $this->partial('assignments-table-partial', [
@@ -133,12 +128,46 @@ $this->headTitle($entity['name']);?>
     		'showInactive' 	=> true,
     		'headerText'	=> $this->translate('Past contacts'),
     	]);?>
+    </div> <!-- assignments 2 column -->
+	</div></div>
+</div></div></div>
+
+<!-- Left side roles, right side Admin notes -->
+<div class="row">
+<div class="col-md-12">
+<div class="panel panel-default" id="adminPanel">
+    <div class="panel-heading">
+    	<h3 class="panel-title"><?php echo $this->translate('Admin info'); ?></h3>
+	</div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+    <?php if (!empty($entity['roles'])): ?>
+    <ul class="list-group">
+    	<?php foreach ($entity['roles'] as $roleId => $role) :?>
+    		<li class="list-group-item"><?php echo $this->formatEntity('role', $role);?></li>
+        <?php endforeach;?>
+	</ul>
+	<?php endif;
+	if ($this->isAllowed('route/roles/create')): ?>
+        <p><a class="btn btn-default btn-sm" href="<?php
+            echo $this->url('roles/create', [],
+                ['query' => ['associationId' => $entity['associationId']]]);?>">
+            <span class="glyphicon glyphicon-plus">&nbsp;</span><?php echo $this->translate('Add role')?></a>
+        </p>
+    <?php endif;?>
+	</div> 
+    <div class="col-md-6"><!-- Admin notes column -->
+		<?php if ($entity['adminNotes']):?>
+    		<p><strong><?php echo $this->translate('Admin notes');?>:</strong></p>
+    		<div><?php echo $this->markdown($entity['adminNotes']);?></div>
+		<?php endif;?>
     </div>
 	</div></div>
 </div></div></div>
 
+<!-- @todo Add photos at the bottom -->
 <div class="row"><div class="col-md-12">
-<?php if ($this->isAllowed('route/associations/association/edit')):?>
+<?php if ($this->isAllowed('route/associations/association/edit')): ?>
       <a class="btn btn-primary" href="<?php echo $this->url('associations/association/edit',
           ['association_id' => $entity['associationId']]);?>"><?php
     echo $this->translate("Edit details")?></a>

@@ -112,7 +112,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 continue;
             }
             if ($translator instanceof TranslatorInterface && $this->filterDbBool($row['IsNameTranslateable'])) {
-                $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName']);
+                $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName'], __NAMESPACE__);
             } else {
                 $valueOptions[$row['AssociationId']] = $row['AssociationName'];
             }
@@ -123,18 +123,19 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
 
     /**
      * Gets a simple key => value array of the role titles
+     * Must return even inactive role titles in case someone tries to edit an inactive one
      * @param TranslatorInterface $translator
      * @return mixed[]
      */
     public function getRoleTitleValueOptions()
     {
-        $sql = "SELECT DISTINCT `RoleTitle` FROM `sch_roles` WHERE (`IsActive` = 1)";
+        $sql = "SELECT DISTINCT `RoleTitle` FROM `sch_roles` ORDER BY `RoleTitle`";
         $results = $this->fetchSome(null, $sql, null);
         $valueOptions = [];
         foreach ($results as $row) {
             $valueOptions[$row['RoleTitle']] = $row['RoleTitle'];
         }
-        asort($valueOptions);
+//         asort($valueOptions);
         return $valueOptions;
     }
 
@@ -194,6 +195,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
         		}
         	}
         }
+        
         return $this->associationsCache = $associations;
     }
 
@@ -642,6 +644,7 @@ ORDER BY `LastName`, `FirstName`";
     }
 
     /**
+     * Get all roles linked to their corresponding associations
      * @return mixed[]
      */
     public function getRoles()
@@ -661,11 +664,17 @@ ORDER BY `LastName`, `FirstName`";
         return $this->rolesCache = $entities;
     }
 
+    /**
+     * Get role entities unlinked from their Association relations.
+     * Entities come presorted by associationId, isActive, isMainRole, sort
+     * @return NULL[][]|DateTime[][]|number[][]|boolean[][]|string[][]|mixed[][]
+     */
     protected function getUnlinkedRoles()
     {
         $sql = "SELECT `RoleId`, `RoleTitle`, `AssociationId`,
 `IsMainRole`, `IsSinglePosition`, `ShouldAlwaysBeFilled`, `Sort`, `IsActive`, `UpdatedOn`,
-`UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_roles` WHERE 1";
+`UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_roles` WHERE 1
+ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
@@ -690,7 +699,7 @@ ORDER BY `LastName`, `FirstName`";
         return $entities;
     }
     /**
-     *
+     * Get a role entity by id
      * @param int $id
      * @return mixed[]
      */
@@ -827,7 +836,7 @@ r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`
 r.`ShouldAlwaysBeFilled`
 FROM `sch_assignments` a
 INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1
-ORDER BY `AssociationId`, `Sort`";
+ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];

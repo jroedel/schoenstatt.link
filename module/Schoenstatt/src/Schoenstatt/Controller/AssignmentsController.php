@@ -100,7 +100,7 @@ class AssignmentsController extends AbstractActionController
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Assignment successfully created.' );
-                    $this->redirect ()->toRoute ( 'assignments/assignment', array('assignment_id' => $newId) );
+                    $this->redirect ()->toRoute ( 'assignments/assignment', ['assignment_id' => $newId] );
                 }
             } else {
 //                 print_r(array_keys($form->getInputFilter()->getInvalidInput()));
@@ -157,7 +157,7 @@ class AssignmentsController extends AbstractActionController
                 $data = $form->getData();
                 $result = $table->updateEntity('assignment', $id, $data);
                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Assignment successfully updated.' );
-                $this->redirect()->toRoute ( 'assignments');///assignment', array('assignment_id' => $id) );
+                $this->redirect()->toRoute ( 'assignments');///assignment', ['assignment_id' => $id] );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
@@ -246,11 +246,11 @@ class AssignmentsController extends AbstractActionController
             $data = $request->getPost ()->toArray ();
             $data['suggestionId'] = $suggestionId;
             if (isset($data['deny'])) { //don't worry about validating the form. We're just throwing it out anyways
-                $updateData = array(
+                $updateData = [
                     'suggestionId' => $suggestionId,
                     'deny' => true,
                     'suggestionResponse' => $data['suggestionResponse'] != '' ? $data['suggestionResponse'] : null //@todo validate this
-                );
+                ];
                 $table->updateSuggestion($updateData);
 
                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Suggestion denied.' );

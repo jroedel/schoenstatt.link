@@ -47,10 +47,10 @@ class PersonsController extends AbstractActionController
         if (is_array($persons) && empty($persons)) {
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
-        return new ViewModel(array(
+        return new ViewModel([
             'persons'       => $persons,
             'form'          => $form,
-        ));
+        ]);
     }
 
     public function showAction()
@@ -83,11 +83,11 @@ class PersonsController extends AbstractActionController
         $table->registerVisit('person', $person['personId']);
 //         var_dump($person['urls']);
 //         var_dump($person);
-        return new ViewModel(array(
+        return new ViewModel([
             'person'        => $person,
             'deviceType'    => $deviceType,
 //             'suggestForm'   => $sm->get('Schoenstatt\Form\SuggestForm'),
-        ));
+        ]);
     }
 
     /**
@@ -265,11 +265,11 @@ class PersonsController extends AbstractActionController
             $data = $request->getPost ()->toArray ();
             $data['suggestionId'] = $suggestionId;
             if (isset($data['deny'])) { //don't worry about validating the form. We're just throwing it out anyways
-                $updateData = array(
+                $updateData = [
                     'suggestionId' => $suggestionId,
                     'deny' => true,
                     'suggestionResponse' => $data['suggestionResponse'] != '' ? $data['suggestionResponse'] : null //@todo validate this
-                );
+                ];
                 $table->updateSuggestion($updateData);
 
                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Suggestion denied.' );
@@ -334,7 +334,7 @@ class PersonsController extends AbstractActionController
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully created.' );
-                    $this->redirect ()->toRoute ( 'persons/person', array('person_id' => $newId) );
+                    $this->redirect ()->toRoute ( 'persons/person', ['person_id' => $newId] );
                 }
             } else {
 //                 print_r(array_keys($form->getInputFilter()->getInvalidInput()));

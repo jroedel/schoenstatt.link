@@ -1,6 +1,6 @@
 <?php
 $form = $this->form;
-$form->setAttribute('action', $this->url('persons/search'));
+$form->setAttribute('action', $this->url('assignments/search'));
 $form->prepare();?>
 <div class="row" style="margin-bottom: 30px;
 <?php if ($this->centerOnPage) {
@@ -16,40 +16,20 @@ $form->prepare();?>
                       </button>
                   </span>
               </div>
-            <!-- <div class="row">
-            	<div class="col-md-12">
-                    <a data-toggle="collapse" data-target="#options" aria-expanded="false" aria-controls="options"><?php
-                        echo $this->translate("Advanced options"); ?></a>
-                    <?php if ($this->isAllowed('route/advanced-search')):?>
-                        &nbsp;&nbsp;<a href="<?php echo $this->url('advanced-search'); ?>"><?php
-                        echo $this->translate("Advanced search"); ?></a>
-              		<?php endif;?>
-            	</div>
-            	<div id="options" class= "collapse row">
-                    <div class="checkbox col-md-4">
-                    	<?php echo $this->formCheckbox($form->get('showPhotos')); ?>
-                    </div>
-                    <?php if ($this->isAllowed('ex_members')):?>
-                    	<div class="checkbox col-md-4">
-                    		<?php echo $this->formCheckbox($form->get('exMembers')); ?>
-                    	</div>
-                    <?php endif;?>
-                </div>
-            </div> -->
             <?php echo $this->form()->closeTag();?>
           </div>
       </div>
 </div>
-<?php $this->inlineScript()->captureStart();
-echo <<<JS
-$(document).ready(function(){
-    $("form").submit(function(){
-        $("input, select").each(function(index, obj){
-            if($(obj).val() == "" || $(obj).val() == "false") {
-                $(obj).remove();
-            }
-        });
-    });
-});
-JS;
-$this->inlineScript()->captureEnd();?>
+ <?php //$this->inlineScript()->captureStart();
+// echo <<<JS
+// $(document).ready(function(){
+//     $("form").submit(function(){
+//         $("input, select").each(function(index, obj){
+//             if($(obj).val() == "" || $(obj).val() == "false") {
+//                 $(obj).remove();
+//             }
+//         });
+//     });
+// });
+// JS;
+// $this->inlineScript()->captureEnd();?>

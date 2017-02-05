@@ -7,6 +7,7 @@ use Zend\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Form\RoleForm;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
+use Zend\Filter\FilterChain;
 
 class RolesController extends AbstractActionController
 {
@@ -27,6 +28,9 @@ class RolesController extends AbstractActionController
         $sm = $this->getServiceLocator ();
         /** @var SchoenstattTable $table **/
         $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
+        $queryFilter = new FilterChain();
+        $queryFilter->attachByName('ToInt', [], 500)
+            ->attachByName('ToNull', [], 1000);
 
         /** @var RoleForm $form */
         $form = $sm->get('Schoenstatt\Form\RoleForm');
@@ -40,12 +44,15 @@ class RolesController extends AbstractActionController
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Role successfully created.' );
-//                     $this->redirect ()->toRoute ( 'roles/role', array('role_id' => $newId) );
+                    $this->redirect ()->toRoute ( 'associations/association', ['association_id' => $data['associationId']] );
                 }
             } else {
-                print_r(array_keys($form->getInputFilter()->getInvalidInput()));
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
+        } else if (!is_null($associationId = $queryFilter->filter($this->params ()->fromQuery ( 'associationId' ))) &&
+            key_exists($associationId, $form->get('associationId')->getValueOptions())
+        ) {
+            $form->get('associationId')->setValue($associationId);
         }
         return [
             'form' => $form,
@@ -88,7 +95,7 @@ class RolesController extends AbstractActionController
                 $data = $form->getData();
                 $result = $table->updateEntity('role', $id, $data);
                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Role successfully updated.' );
-                $this->redirect()->toRoute ( 'roles' );
+                    $this->redirect ()->toRoute ( 'associations/association', ['association_id' => $data['associationId']] );
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }

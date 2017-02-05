@@ -965,7 +965,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		    'contactNotes' => [
 				'required' => false,
                 'filters' => [
-                    ['name' => 'HtmlEntities'],
+                    ['name' => 'StripTags'],
 		            ['name' => 'ToNull',
 		                'options' => [
                             'type' => ToNull::TYPE_STRING,

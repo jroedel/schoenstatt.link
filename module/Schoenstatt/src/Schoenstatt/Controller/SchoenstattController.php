@@ -21,14 +21,15 @@ class SchoenstattController extends AbstractActionController
         if (!$this->zfcUserAuthentication()->hasIdentity()) {
             return $this->redirect()->toRoute('zfcuser/login');
         }
-        return $this->redirect()->toRoute('assignments');
-
+        
         $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $generalPresidium = $table->getAssociation(71);
         $form = new SearchForm();
         return new ViewModel([
             'form' => $form,
+            'generalPresidium' => $generalPresidium,
         ]);
     }
 }

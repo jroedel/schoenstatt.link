@@ -57,7 +57,7 @@ class AssociationsController extends AbstractActionController
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
         $association = $table->getAssociation($id);
 
-//         $table->registerVisit(PatresTable::ENTITY_GENERATION, $id);
+        $table->registerVisit('association', $id);
 
         return new ViewModel([
             'entity'        => $association,
@@ -99,27 +99,19 @@ class AssociationsController extends AbstractActionController
             }
             if ($form->isValid()) {
                 $data = $form->getData();
-                try {
-                    $result = $table->updateEntity('association', $id, $data);
-
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully updated.' );
-//                     $this->redirect()->toRoute ( 'associations/association', array('association_id' => $association['associationId']) );
-                } catch (\Exception $e) {
-                    //@todo this message should be logged
-                    var_dump($e);
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.');
-                }
+                $result = $table->updateEntity('association', $id, $data);
+                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully updated.' );
+                $this->redirect()->toRoute ( 'associations/association', ['association_id' => $association['associationId']] );
             } else {
-                    var_dump('invalidform');
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         } else {
             $form->setData($association);
         }
-        return array (
+        return [
             'form' => $form,
             'entity' => $association,
-        );
+        ];
     }
 
     public function createAction()
@@ -141,7 +133,7 @@ class AssociationsController extends AbstractActionController
                 } else {
                     $table->createAssociatedRoles($newId, $data['kind']);
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully created.' );
-                    $this->redirect ()->toRoute ( 'associations/association', array('association_id' => $newId) );
+                    $this->redirect ()->toRoute ( 'associations/association', ['association_id' => $newId] );
                 }
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );

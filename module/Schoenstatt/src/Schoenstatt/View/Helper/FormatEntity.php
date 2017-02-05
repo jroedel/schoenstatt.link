@@ -58,6 +58,14 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
                 if ($editPencilOption) {
                     $finalMarkup .= $this->view->editPencil('role', $data['roleId']);
                 }
+                if ($showLabelOption) {
+                    if ($data['isMainRole']) {
+                        $finalMarkup .= '&nbsp;' . $this->view->label('Main role', 'label-primary');
+                    }
+                    if (!$data['isActive']) {
+                        $finalMarkup .= '&nbsp;' . $this->view->label('Inactive', 'label-warning');
+                    }
+                }
                 return $finalMarkup;
                 break;
             default:
