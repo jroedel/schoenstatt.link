@@ -112,7 +112,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 continue;
             }
             if ($translator instanceof TranslatorInterface && $this->filterDbBool($row['IsNameTranslateable'])) {
-                $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName'], __NAMESPACE__);
+                $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName'], 'Schoenstatt');
             } else {
                 $valueOptions[$row['AssociationId']] = $row['AssociationName'];
             }
@@ -753,6 +753,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             if  (isset($assignment['personId']) && isset($persons[$assignment['personId']])) {
                 $person = $persons[$assignment['personId']];
                 $entity['person'] = $person;
+                $entity['personId'] = $person['personId'];
                 $persons[$assignment['personId']]['found'] = true;
                 $entity['sort'] .= strtoupper(substr($person['lastName'].$person['firstName'], 0, 4));
             } else {
@@ -761,6 +762,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             if  (isset($assignment['associationId']) && isset($associations[$assignment['associationId']])) {
                 $association = $associations[$assignment['associationId']];
                 $entity['association'] = $association;
+                $entity['associationId'] = $assignment['associationId'];
                 $entity['associationSort'] = (isset($associationKindSpecifications[$association['kind']]['sort']) ?
                     $this->strPad($associationKindSpecifications[$association['kind']]['sort'], 4, '0', STR_PAD_LEFT) : '9999').
                     $association['name'];
@@ -881,6 +883,194 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $assignment;
     }
 
+    /**
+     * Criteria keys are: search(text), country(text),
+     *     roleTitle(string), associationKind(string),
+     *     onlyMainRoles(bool=false, allows associations without a main role to be returned), 
+     *     includeInactive(bool=false, when false, won't return any inactive associations or assignments), 
+     *     onlyAssignments(bool=false),
+     *     <<<<entitiesToReturn(array=['association', 'association'])>>>>> NOT SURE ABOUT THIS ONE
+     * The 'search' query key will search (case-insensitive) the following fields:
+     *     
+     * @param array $query
+     */
+    public function searchEntities($query, $registerSearch = true)
+    {
+        $onlyMainRoles = isset($query['onlyMainRoles']) && is_bool($query['onlyMainRoles']) ? $query['onlyMainRoles'] : false;
+        $includeInactive = isset($query['includeInactive']) && is_bool($query['includeInactive']) ? $query['includeInactive'] : false;
+        $onlyAssignments = isset($query['onlyAssignments']) && is_bool($query['onlyAssignments']) ? $query['onlyAssignments'] : false;
+//         $entitiesToReturn = isset($query['entitiesToReturn']) && is_array($query['entitiesToReturn']) ? $query['entitiesToReturn'] : ['association', 'association'];
+
+//         $returnAssignments = in_array('assignment', $entitiesToReturn);
+//         $returnPersons = in_array('person', $entitiesToReturn);
+//         $returnAssociations = in_array('association', $entitiesToReturn);
+        
+        $filter = new ToAscii();
+        if (isset($query['search'])) {
+            $query['search'] = $filter->filter($query['search']);
+        }
+    
+        $assignments = $this->getAssignmentPersonAssociations();
+        if (is_null($assignments)) {
+            return [];
+        }
+/*
+ * Returning assignments: This is easy since it's the most specific. If any criterion doesn't
+ *  match, we'll reject the assignment and see if we can match the row as a person or association.
+ * 
+ * Returning associations: We happen to know that assignments come in order by assignmentId. When we 
+ *  find an association that didn't match as an assignment (and wasn't already entered as another 
+ *  assignment), we'll cache it until the association changes. At that point we know we can shift it
+ *  onto the return array. 
+ *  
+ * Returning person: I don't know that this is necessary. I can't think of a use case right now.
+ *  
+ * Note: The concept of returning an association or a person without an assignment only comes into play
+ *  when we use a criterion that can only apply to a person/association (like onlyMainRoles)
+ */
+        $return = [];
+        $personsReturned = [];
+        $associationsReturned = [];
+        $queuedAssociationId = null;
+        $queuedAssociation = null;
+        foreach ($assignments as $assignment) {
+//first we process the queuedAssociations
+            if (!is_null($queuedAssociationId) && $queuedAssociationId !== $assignment['associationId']) {
+                $associationsReturned[] = $queuedAssociationId;
+                $return[] = $queuedAssociation;
+                $queuedAssociationId = null;
+                $queuedAssociation = null;
+            }
+            
+//first we apply the criteria that are cut and dry
+            if (!$includeInactive && isset($assignment['association']) && !empty($assignment['association']) &&
+                !$assignment['association']['isActive']
+            ) {
+                continue;
+            }
+            //@todo we still need to include tag and country searches
+            if (isset($query['search']) && $query['search'] && !is_null($query['search']) &&
+                false === stripos($assignment['association']['name'], $query['search']) &&
+                false === stripos($assignment['assignment']['roleTitle'], $query['search']) &&
+                false === stripos($assignment['person']['searchName'], $query['search'])
+            ) {
+                continue;
+            }
+            if (isset($query['associationKind']) && !is_null($query['associationKind']) &&
+                is_array($assignment['association']) && !empty($assignment['association']) && 
+                $query['associationKind'] != $assignment['association']['kind']
+            ) {
+                continue;
+            }
+//check assignment part, if not, we'll strip it and see if we can find another match as a person/association
+//so far there are two criteria that can cause this: onlyMainRoles, and includeInactive=false
+            //get rid of non-main roles
+            if ($onlyMainRoles && is_array($assignment['assignment']) && !empty($assignment['assignment']) &&
+                !$assignment['assignment']['isMainRole']
+            ) {
+                if (!in_array($assignment['associationId'], $associationsReturned) &&
+                    $queuedAssociationId !== $assignment['associationId'] && !$onlyAssignments
+                ) {
+                    //this record is now disputed. Maybe we'll strip out the assignment and person data and return the association
+                    $queuedAssociationId = $assignment['associationId'];
+                    $queuedAssociation = [
+                        'associationId'     => $assignment['associationId'],
+                        'association'       => $assignment['association'],
+                        'assignmentId'      => null,
+                        'assignment'        => null,
+                        'personId'          => null,
+                        'person'            => null,
+                        'associationSort'   => $assignment['associationSort'],
+                        'sort'              => '9999ZZZZ',
+                    ];
+                }
+                continue;
+            }
+
+            if (!$includeInactive && isset($assignment['assignment']) && !empty($assignment['assignment']) &&
+                !$assignment['assignment']['isActive'] 
+            ) {
+                if (!in_array($assignment['associationId'], $associationsReturned) &&
+                    $queuedAssociationId !== $assignment['associationId'] && !$onlyAssignments
+                ) {
+                    //this record is now disputed. Maybe we'll strip out the assignment and person data and return the association
+                    $queuedAssociationId = $assignment['associationId'];
+                    $queuedAssociation = [
+                        'associationId'     => $assignment['associationId'],
+                        'association'       => $assignment['association'],
+                        'assignmentId'      => null,
+                        'assignment'        => null,
+                        'personId'          => null,
+                        'person'            => null,
+                        'associationSort'   => $assignment['associationSort'],
+                        'sort'              => '9999ZZZZ',
+                    ];
+                }
+                continue;
+            }
+            
+//save info about what we've returned
+            if (isset($assignment['person']) && !empty($assignment['person'])) {
+                $personsReturned[] = $assignment['personId'];
+            }
+            if (isset($assignment['association']) && !empty($assignment['association'])) {
+                $associationsReturned[] = $assignment['associationId'];
+            }
+            $queuedAssociationId = null;
+            $queuedAssociation = null;
+            $return[] = $assignment;
+        }
+    
+        return $return;
+    }
+    
+    /**
+     * Get the list of main roles of national movements.
+     * A list of assignments are returned, but keyed by the associationId.
+     * This provides compatibility with the assignments-table-partial, while giving the 
+     * ability to print the list of all active national movements.
+     * @return mixed[]
+     */
+    public function getNationalMovementsLeaders()
+    {
+        $nationalLeadersResults = $this->searchEntities([
+            'associationKind' => 'sch-national-movement',
+            'onlyMainRoles' => true,
+        ]);
+        
+        $nationalLeaders = [];
+        foreach ($nationalLeadersResults as $assignment) {
+            if (!is_null($assignment['assignment'])) {
+                $nationalLeader = $assignment['assignment'];
+                $nationalLeader['person'] = $assignment['person'];
+                $nationalLeader['association'] = $assignment['association'];
+            } else {
+                $nationalLeader = [
+                    'assignmentId'          => null,
+                    'roleId'                => null,
+                    'roleTitle'             => null,
+                    'associationId'         => $assignment['associationId'],
+                    'association'           => $assignment['association'],
+                    'isMainRole'            => null,
+                    'isSinglePosition'      => null,
+                    'shouldAlwaysBeFilled'  => null,
+                    'sort'                  => null,
+                    'isActive'              => true,
+                    'personId'              => null,
+                    'person'                => null,
+                    'startDate'             => null,
+                    'endDate'               => null,
+                    'createdOn'             => null,
+                    'createdBy'             => null,
+                    'updatedOn'             => null,
+                    'updatedBy'             => null,
+                ];
+            }
+            $nationalLeaders[$nationalLeader['associationId']] = $nationalLeader;
+        }
+        return $nationalLeaders;
+    }
+    
     public function getAllPersonPhoneNumbers($includeInactive = false)
     {
         $persons = $this->getPersons();
@@ -1094,7 +1284,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         return $this->getPersonProblems($minimumSeverity);
-        return array_merge($this->getPersonProblems($minimumSeverity));//, $this->getCourseProblems($minimumSeverity));
+        return array_merge($this->getPersonProblems($minimumSeverity), $this->getAssociationProblems($minimumSeverity));
     }
 
     public function getPersonProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
@@ -1117,6 +1307,27 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $problems;
     }
 
+    public function getAssociationProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
+    {
+        //@todo detect associations that have more than one MainRole
+        
+//         $persons = $this->getPersons();
+    
+//         $problems = [];
+//         foreach ($persons as $personId => $person) {
+//             if (is_null($person['email']) &&
+//                     ($person['condition'] == self::CONDITION_PRIEST ||
+//                             $person['condition'] == self::CONDITION_DEACON ||
+//                             $person['condition'] == self::CONDITION_STUDENT) &&
+//                     $person['age'] < 70) {
+//                         $obj = clone $this->entityProblemPrototype;
+//                         $obj->setProblem(self::PROBLEM_PERSON_NO_EMAIL)
+//                         ->setData($person);
+//                         $problems[] = $obj;
+//                     }
+//         }
+//         return $problems;
+    }
     /**
      * @return TableGatewayInterface
      */

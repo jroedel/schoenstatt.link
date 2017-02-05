@@ -81,8 +81,6 @@ class PersonsController extends AbstractActionController
         $this->addUserNamesToUrlList($person, $deviceType); //$person is ByRef
 
         $table->registerVisit('person', $person['personId']);
-//         var_dump($person['urls']);
-//         var_dump($person);
         return new ViewModel([
             'person'        => $person,
             'deviceType'    => $deviceType,

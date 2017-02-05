@@ -16,7 +16,12 @@ return [
         // navigation with name default
         'default' => [
             [
-                'label' => 'Assignments',
+                'label' => 'Associations',
+                'route' => 'associations',
+                'resource' => 'route/associations',
+            ],
+            [
+                'label' => 'All contact info',
                 'route' => 'assignments',
                 'resource' => 'route/assignments',
             ],

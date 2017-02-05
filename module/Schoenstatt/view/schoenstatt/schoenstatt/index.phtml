@@ -6,3 +6,13 @@ echo $this->partial('schoenstatt/associations/assignments-table-partial', [
     'headerText'  => $this->translate($this->generalPresidium['name']),
     'columns'       => ['role', 'person', 'email', 'telephone'],
 ]);
+
+echo $this->partial('schoenstatt/associations/assignments-table-partial', [
+    'assignments' => $this->nationalLeaders,
+    'wrapInPanel' => true,
+    'headerText'  => 'National movements',
+    'columns'       => ['association', 'person', 'email', 'telephone'],
+    'associationFormatOptions' => [
+        'showLabel' => false,
+    ],
+]);

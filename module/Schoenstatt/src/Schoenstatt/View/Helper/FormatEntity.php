@@ -32,12 +32,11 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
                 break;
             case 'association':
                 if (!is_null($data['associationId'])) {
-
-                    $finalMarkup = str_repeat('&nbsp;', $data['heirarchyLevel'] -1).str_repeat('↪', $data['heirarchyLevel'] -1);
+                    $finalMarkup = '';//str_repeat('&nbsp;', $data['heirarchyLevel'] -1).str_repeat('↪', $data['heirarchyLevel'] -1);
     				$finalMarkup .= '<a href="'. $this->view->url('associations/association',
 				        ['association_id' => $data['associationId']]).'">';
 					if ($data['isNameTranslateable']) {
-					   $finalMarkup .= $this->view->translate($data['name']);
+					   $finalMarkup .= $this->view->translate($data['name'], 'Schoenstatt');
 					} else {
 					   $finalMarkup .= $data['name'];
                     }

@@ -12,7 +12,6 @@ namespace Schoenstatt\Controller;
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
-use Schoenstatt\Form\PersonForm;
 use Patres\Mailing\Mailer;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
@@ -34,15 +33,12 @@ class AssignmentsController extends AbstractActionController
         $form = new SearchForm();
         $form->setData($params);
         $entities = null;
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $entities = $table->getAssignmentPersonAssociations(true);
         if ($form->isValid()) {
             $data = $form->getData();
             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
-//                 $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-//                 $persons = $table->searchPersons($data);
+                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $entities = $table->searchEntities($data);
             }
         }
         if (is_array($entities) && empty($entities)) {

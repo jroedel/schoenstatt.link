@@ -13,26 +13,6 @@ class SearchForm extends Form implements InputFilterProviderInterface
 		$this->setAttribute('method', 'GET');
 
 		$this->add(array(
-		    'name' => 'course',
-		    'type' => 'Hidden',
-		));
-		$this->add(array(
-		    'name' => 'territory',
-		    'type' => 'Hidden',
-		));
-		$this->add(array(
-		    'name' => 'filiation',
-		    'type' => 'Hidden',
-		));
-		$this->add(array(
-		    'name' => 'generation',
-		    'type' => 'Hidden',
-		));
-		$this->add(array(
-		    'name' => 'house',
-		    'type' => 'Hidden',
-		));
-		$this->add(array(
 		    'name' => 'search',
 		    'type' => 'Text',
 		    'options' => array(
@@ -43,22 +23,6 @@ class SearchForm extends Form implements InputFilterProviderInterface
 		        'class' => 'input-lg',
 		        'placeholder' => 'Search'
 		    ),
-		));
-		$this->add(array(
-		    'name' => 'deceased',
-		    'type' => 'Checkbox',
-			'options' => array(
-				'label' => 'Show Deceased',
-		        'unchecked_value' => 'false',
-			    'checked_value' => 'true',
-			    'use_hidden_element' => false,
-			),
-		    'attributes' => array(
-		        'value'           => 'false',
-		    ),
-            'filters' => array(
-                array('name' => 'Boolean'),
-            ),
 		));
 		$this->add(array(
 			'name' => 'showPhotos',
@@ -99,12 +63,6 @@ class SearchForm extends Form implements InputFilterProviderInterface
                 'filters' => array(
                     array('name' => 'Boolean'),
                 ),
-		    ),
-		    'deceased' => array(
-		        'required' => false,
-		        'filters' => array(
-		            array('name' => 'Boolean'),
-		        ),
 		    ),
 		    'exMembers' => array(
 		        'required' => false,
