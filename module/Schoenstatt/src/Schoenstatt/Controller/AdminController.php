@@ -27,27 +27,19 @@ class AdminController extends AbstractActionController
     public function indexAction()
     {
         $pages = [
-            'persons/create'        => "Add new person",
-//             'admin/review-phone-numbers' => "Review phone numbers",
-//             'roles'                 => "Manage Roles",
-//             'admin/view-searches'   => "View Searches",
-            'sion-model/view-changes'    => "View Changes",
-            'admin/import-father'   => "Import Schoenstatt Father",
-            'samuser'               => "User Management",
-//             'admin/moderate'        => "Review Suggestions",
-            'jtranslate'            => "Manage Translations",
-            'sion-model/data-problems'   => "Data problems",
+            'persons/create'            => "Add new person",
+            'sion-model/view-changes'   => "View Changes",
+            'admin/import-father'       => "Import Schoenstatt Father",
+            'juser'                     => "User Management",
+            'jtranslate'                => "Manage Translations",
+            'sion-model/data-problems'  => "Data problems",
         ];
         $badges = [];
         $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-//         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
 
         /** @var TranslationsTable $translations */
         $translations = $sm->get('JTranslate\Model\TranslationsTable');
 
-//         $suggestionCount = $table->getSuggestionCount();
-//         $badges['admin/moderate'] = $suggestionCount ? ' '.$suggestionCount : " 0";
         $badges['jtranslate'] = (string) $translations->getOutstandingTranslationCount();
         
         /** @var ProblemService $problemService */

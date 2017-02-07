@@ -6,7 +6,7 @@ return [
         // in the ACL. like roles, they can be hierarchical
         'resource_providers' => [
             'BjyAuthorize\Provider\Resource\Config' => [
-//                 'patres_details'    => [], //admin columns of fathers
+                'personal_information' => [], //admin columns of fathers
             ],
         ],
 
@@ -33,9 +33,7 @@ return [
                 ['route' => 'schoenstatt', 'roles' => ['guest', 'sch_user', 'sch_basic']],
                 ['route' => 'home', 'roles' => ['guest', 'sch_user']],
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
-                ['route' => 'sion-model/view-changes', 'roles' => ['sch_administrator']],
-                ['route' => 'contacts', 'roles' => ['sch_user']],
-                ['route' => 'schoenstatt', 'roles' => ['sch_user']],
+                ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
                 ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
             ],

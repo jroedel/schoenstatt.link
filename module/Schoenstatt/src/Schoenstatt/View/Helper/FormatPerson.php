@@ -74,7 +74,7 @@ class FormatPerson extends AbstractHelper
 
     	if ($linkOption) {
         	$linkFormat = '<a href="%s">%s</a>';
-        	$url = $this->view->url('persons/person', array('person_id' => $person['personId']));
+        	$url = $this->view->url('persons/person', ['person_id' => $person['personId']]);
         	$finalMarkup .= sprintf($linkFormat, $url, $this->view->escapeHtml($nameText));
     	} else {
     	    $finalMarkup .= $this->view->escapeHtml($nameText);

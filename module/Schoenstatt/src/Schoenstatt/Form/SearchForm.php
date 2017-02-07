@@ -12,71 +12,71 @@ class SearchForm extends Form implements InputFilterProviderInterface
 		parent::__construct('search');
 		$this->setAttribute('method', 'GET');
 
-		$this->add(array(
+		$this->add([
 		    'name' => 'search',
 		    'type' => 'Text',
-		    'options' => array(
+		    'options' => [
 		        'label' => '',
-		    ),
-		    'attributes' => array(
+		    ],
+		    'attributes' => [
 		        'required' => false,
 		        'class' => 'input-lg',
 		        'placeholder' => 'Search'
-		    ),
-		));
-		$this->add(array(
+		    ],
+		]);
+		$this->add([
 			'name' => 'showPhotos',
 			'type' => 'Checkbox',
-			'options' => array(
+			'options' => [
 		        'required' => false,
 				'label' => 'Show Photos',
 		        'unchecked_value' => 'false',
 			    'checked_value' => 'true',
 			    'use_hidden_element' => false,
-			),
-		    'attributes' => array(
+			],
+		    'attributes' => [
 		        'value'           => 'false',
-		    ),
-		));
-		$this->add(array(
+		    ],
+		]);
+		$this->add([
 			'name' => 'exMembers',
 			'type' => 'Checkbox',
-			'options' => array(
+			'options' => [
 		        'required' => false,
 				'label' => 'Show Ex-members',
 		        'unchecked_value' => 'false',
 			    'checked_value' => 'true',
 			    'use_hidden_element' => false,
-			),
-		    'attributes' => array(
+			],
+		    'attributes' => [
 		        'value'           => 'false',
-		    ),
-		));
+		    ],
+		]);
 	}
 
 	public function getInputFilterSpecification()
 	{
-		return array(
-		    'showPhotos' => array(
+		return [
+		    'showPhotos' => [
 		        'required' => false,
-		        'validators' => array(),
-                'filters' => array(
-                    array('name' => 'Boolean'),
-                ),
-		    ),
-		    'exMembers' => array(
+		        'validators' => [],
+                'filters' => [
+                    ['name' => 'Boolean'],
+                ],
+		    ],
+		    'exMembers' => [
 		        'required' => false,
-		        'filters' => array(
-		            array('name' => 'Boolean'),
-		        ),
-		    ),
-		    'search' => array(
+		        'filters' => [
+		            ['name' => 'Boolean'],
+		        ],
+		    ],
+		    'search' => [
 		        'required' => false,
-		        'filters' => array(
-		            array('name' => 'ToNull'),
-// 		            array('name' => 'SionModel\Filter\ToAscii'),
-		        ),
-		    ),
-		);
+		        'filters' => [
+		            ['name' => 'ToNull'],
+// 		            ['name' => 'SionModel\Filter\ToAscii'],
+		        ],
+		    ],
+		];
 	}
 }

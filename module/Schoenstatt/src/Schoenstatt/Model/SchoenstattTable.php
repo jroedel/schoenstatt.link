@@ -11,8 +11,9 @@ use Zend\I18n\Translator\TranslatorInterface;
 use Zend\Db\Adapter\AdapterInterface;
 use Zend\Db\TableGateway\TableGatewayInterface;
 use Zend\Db\TableGateway\TableGateway;
+use JUser\Model\PersonValueOptionsProviderInterface;
 
-class SchoenstattTable extends SionTable implements ProblemProviderInterface
+class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface
 {
     const DEFAULT_PLACE_FORMAT = ':zip :cityState';
 
@@ -77,7 +78,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
      * Gets a simple key => value array of the generation
      * @param bool $includeInactive
      */
-    public function getPersonValueOptions($includeInactive = false, $onlyPriests = true)
+    public function getPersonValueOptions($includeInactive = false)
     {
         $persons = $this->getPersons();
         $result = [];
@@ -269,8 +270,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface
                 'isNameTranslateable'   => $this->filterDbBool($row['IsNameTranslateable']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
-                'heirarchyLevel'        => 1, //@todo find a way to do this
-
+                'heirarchyLevel'        => 1, //@todo I don't think I need this after all
+                'resource_id'           => 'association_'.$id,
                 'roles'                 => [],
             	'assignments'			=> [],
 /**
@@ -432,7 +433,7 @@ ORDER BY `LastName`, `FirstName`";
         }
 
         //sort list beforehand to not mess up the array key
-        $sort = array();
+        $sort = [];
         foreach($results as $k=>$v) {
             $sort['LastName'][$k] = $v['LastName'];
         }
@@ -549,6 +550,8 @@ ORDER BY `LastName`, `FirstName`";
                 'isActive'                  => $isLiving, //@todo make a new `active` column
                 'title'                     => $title, //this is a calculated field, not for updating
                 'assignments'               => [],
+                'aclRoles'                  => [],
+                'resource_id'               => 'person_'.$id,
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
@@ -869,6 +872,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         return $entities;
     }
+    
     /**
      *
      * @param int $id
@@ -1128,7 +1132,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     public function getPersonRoleTitles($personId)
     {
         $assignments = $this->getAssignments();
-        $return = array();
+        $return = [];
         foreach ($assignments as $assignmentId => $assignment) {
             if ($assignment['personId'] == $personId) {
                 if (!in_array($assignment['roleTitle'], $return)) {
@@ -1142,142 +1146,6 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                         }
                     }
                 }
-            }
-        }
-        return $return;
-    }
-
-    /**
-     * Criteria keys are: search(text), exMembers(bool=true), deceased(bool=true),
-     *     category(array[string]), status(array[string])
-     * @param array $query
-     */
-    public function searchPersons($query, $registerSearch = true, $bypassRequiredParams = false)
-    {
-        $oneOfRequiredParams = ['search', 'category', 'roleTitle', 'country'];
-        //get rid of unnecessary parameters
-        $realParamCount = 0;
-        foreach ($query as $key => $value) {
-            if (is_null($value) || $value === '') {
-                unset($query[$key]);
-            } elseif (in_array($key, $oneOfRequiredParams)) {
-                $realParamCount++;
-            }
-        }
-        if ($realParamCount == 0 && !$bypassRequiredParams) {
-            return null;
-        }
-        if (isset($query['category']) && !is_null($query['category'])) {
-            if (is_string($query['category'])) {
-                $query['category'] = array($query['category']);
-            }
-            if (!is_array($query['category'])) {
-                unset($query['category']);
-            }
-        }
-        if (isset($query['category']) && !is_null($query['category'])) {
-            if (is_string($query['category'])) {
-                $query['category'] = array($query['category']);
-            }
-            if (!is_array($query['category'])) {
-                unset($query['category']);
-            }
-        }
-        $statusAcceptNull = true;
-        if (isset($query['status']) && !is_null($query['status'])) {
-            if (is_string($query['status'])) {
-                $query['status'] = array($query['status']);
-            }
-            if (!is_array($query['status'])) {
-                unset($query['status']);
-            } else {
-                $statusAcceptNull == in_array('none', $query['status']);
-            }
-        }
-        $filter = new ToAscii();
-        if (isset($query['search'])) {
-            $query['search'] = $filter->filter($query['search']);
-        }
-
-        $persons = $this->getPersons();
-        if (is_null($persons)) {
-            return [];
-        }
-        $return = [];
-        foreach ($persons as $personId => $person) {
-            if (isset($query['search']) && $query['search'] && !is_null($query['search']) &&
-               false === stripos($person['searchName'], $query['search']))
-            {
-                continue;
-            }
-            if (isset($query['personName']) && !is_null($query['personName']) &&
-                false === stripos($person['searchName'], $query['personName'])) {
-                continue;
-            }
-            //@todo I'm not actually checking the value here I think?
-            if (isset($query['deceased']) && false === $query['deceased'] && !is_null($person['deathDate'])) {
-                continue;
-            }
-            if (isset($query['country']) && !is_null($query['country']) && $query['country'] != $person['country']) {
-                continue;
-            }
-            if (isset($query['category']) && !is_null($query['category']) &&
-                !in_array($person['category'], $query['category']))
-            {
-                continue;
-            }
-            if (isset($query['dataSource']) && !is_null($query['dataSource']) &&
-                isset($query['dataSourceId']) && !is_null($query['dataSourceId']) &&
-                ($query['dataSource'] != $person['dataSource'] ||
-                $query['dataSourceId'] != $person['dataSourceId']))
-            {
-                continue;
-            }
-//             if (isset($query['roleTitle']) && !is_null($query['roleTitle']) &&
-//                 !in_array($query['roleTitle'], $person['roleTitles']))
-//             {
-//                 continue;
-//             }
-            $return[$personId] = $person;
-        }
-
-        //add search to counter
-        //@todo fix
-//         if ($registerSearch && false) {
-//             $date = new \DateTime(null, new \DateTimeZone('UTC'));
-//             $params = array('search_ip' => $_SERVER['REMOTE_ADDR'],
-//                 'search_user' => $this->actingUserId,
-//                 'search_datetime' => $date->format('Y-m-d H:i:s'),
-//                 'search_results' => count($return),
-//                 'search_query' => isset($query['search']) ? $query['search'] : null,
-//                 'search_filiation' => isset($query['filiation']) ? $query['filiation'] : null,
-//                 'search_course' => isset($query['course']) ? $query['course'] : null,
-//                 'search_generation' => isset($query['generation']) ? $query['generation'] : null,
-//                 'search_house' => isset($query['house']) ? $query['house'] : null,
-//                 'search_country' => isset($query['country']) ? $query['country'] : null,
-//                 'search_territory' => isset($query['territory']) ? $query['territory'] : null);
-//             $this->getSearchTableGateway()->insert($params);
-//         }
-        return $return;
-    }
-
-    /**
-     *
-     * @param int|string $id
-     * @param string $simpleScope
-     * @throws \InvalidArgumentException
-     */
-    public function getAssociatedRoles($id, $simpleScope)
-    {
-        if (!$id) {
-            throw new \InvalidArgumentException('Invalid id provided.');
-        }
-        $in = $this->getAssociatedScopesForInStatement($simpleScope);
-        $roles = $this->getRoles();
-        $return = array();
-        foreach ($roles as $role) {
-            if ($role['scopeId'] == $id && in_array($role['scope'], $in)) {
-                $return[] = $role;
             }
         }
         return $return;
@@ -1333,6 +1201,15 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         return $problems;
     }
+    
+    public function getResources()
+    {
+        $return = [];
+        $persons = $this->getPersons();
+        $associations = $this->getAssociations();
+        
+    }
+    
     /**
      * @return TableGatewayInterface
      */

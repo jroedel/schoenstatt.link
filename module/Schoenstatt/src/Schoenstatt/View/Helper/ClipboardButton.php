@@ -8,7 +8,7 @@ use Zend\Math\Rand;
 
 class ClipboardButton extends AbstractHelper
 {
-    protected $buttonIds = array();
+    protected $buttonIds = [];
     protected $scriptIncluded = false;
 	public function __construct()
 	{
@@ -28,10 +28,10 @@ class ClipboardButton extends AbstractHelper
         $randVal = Rand::getInteger(10000, 99999);
         $textareaId = 'clipboard'.$randVal;
         $buttonId = 'button'.$randVal;
-        $this->buttonIds[] = array(
+        $this->buttonIds[] = [
             'textarea'  => $textareaId,
             'button'    => $buttonId,
-        );
+        ];
 
         $return = "<div class=\"form-group\" style=\"display: none;\">
 	<label for=\"$textareaId\">$label</label>

@@ -1,6 +1,7 @@
 <?php
 return [
     'juser' => [
+        'person_provider' => 'Schoenstatt\Model\SchoenstattTable',
     ],
     'zfcuser' => [
         'zend_db_adapter' => 'Zend\Db\Adapter\Adapter',
