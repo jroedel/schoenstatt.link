@@ -31,7 +31,7 @@ return [
             */
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['guest', 'sch_user', 'sch_basic']],
-                ['route' => 'home', 'roles' => ['guest', 'sch_user']],
+                ['route' => 'home', 'roles' => ['guest', 'sch_user', 'sch_basic']],
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
                 ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],

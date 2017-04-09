@@ -12,8 +12,11 @@ use Zend\Db\Adapter\AdapterInterface;
 use Zend\Db\TableGateway\TableGatewayInterface;
 use Zend\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
+use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
+use Zend\Permissions\Acl\Resource\GenericResource;
+use Zend\Permissions\Acl\Assertion\AssertionAggregate;
 
-class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface
+class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface, ResourceProviderInterface
 {
     const DEFAULT_PLACE_FORMAT = ':zip :cityState';
 
@@ -271,7 +274,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
                 'heirarchyLevel'        => 1, //@todo I don't think I need this after all
-                'resource_id'           => 'association_'.$id,
+                'resourceId'           => 'association_'.$id,
                 'roles'                 => [],
             	'assignments'			=> [],
 /**
@@ -347,16 +350,18 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         return $association;
     }
 
-
     /**
      * Inserts new roles for a newly created entity
      * Returns the number of roles inserted
-     * @param string $associationId
+     * @param int $associationId
      * @param string $kind
      * @return int
      */
     public function createAssociatedRoles($associationId, $kind)
     {
+        if (!isset($associationId) || (!is_int($associationId) && !is_numeric($associationId))) {
+            throw new \InvalidArgumentException('Invalid argument passed to createAssociatedRoles.');
+        }
         $associatedRoles = $this->getDefaultAssociatedRoles($kind);
 
         $i=0;
@@ -374,7 +379,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'isActive'                  => true,
             ];
 
-            $this->getRoleTableGateway()->insert($params);
+            $this->createEntity('role', $params);
             $i++;
         }
         return $i;
@@ -551,7 +556,7 @@ ORDER BY `LastName`, `FirstName`";
                 'title'                     => $title, //this is a calculated field, not for updating
                 'assignments'               => [],
                 'aclRoles'                  => [],
-                'resource_id'               => 'person_'.$id,
+                'resourceId'                => 'person_'.$id,
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
@@ -719,6 +724,11 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $role;
     }
 
+    /**
+     * Return an array of default roles associated with a kind of association
+     * @param string $associationKind
+     * @return mixed[]
+     */
     public function getDefaultAssociatedRoles($associationKind)
     {
         $kindsSpecifications = $this->config['association_kinds'];
@@ -727,6 +737,9 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             if (isset($spec['default_roles'])) {
                 $defaultRoles[$kind] = $spec['default_roles'];
             }
+        }
+        if (!key_exists($associationKind, $defaultRoles)) {
+            return [];
         }
         return $defaultRoles[$associationKind];
     }
@@ -1076,6 +1089,98 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         return $nationalLeaders;
     }
+
+    /**
+     * Criteria keys are: search(text), exMembers(bool=true), deceased(bool=true),
+     *     category(array[string]), status(array[string])
+     * @param array $query
+     */
+    public function searchPersons($query, $registerSearch = true, $bypassRequiredParams = false)
+    {
+        $oneOfRequiredParams = ['search', 'category', 'roleTitle', 'country'];
+        //get rid of unnecessary parameters
+        $realParamCount = 0;
+        foreach ($query as $key => $value) {
+            if (is_null($value) || $value === '') {
+                unset($query[$key]);
+            } elseif (in_array($key, $oneOfRequiredParams)) {
+                $realParamCount++;
+            }
+        }
+        if ($realParamCount == 0 && !$bypassRequiredParams) {
+            return null;
+        }
+        if (isset($query['category']) && !is_null($query['category'])) {
+            if (is_string($query['category'])) {
+                $query['category'] = array($query['category']);
+            }
+            if (!is_array($query['category'])) {
+                unset($query['category']);
+            }
+        }
+        if (isset($query['category']) && !is_null($query['category'])) {
+            if (is_string($query['category'])) {
+                $query['category'] = array($query['category']);
+            }
+            if (!is_array($query['category'])) {
+                unset($query['category']);
+            }
+        }
+        $statusAcceptNull = true;
+        if (isset($query['status']) && !is_null($query['status'])) {
+            if (is_string($query['status'])) {
+                $query['status'] = array($query['status']);
+            }
+            if (!is_array($query['status'])) {
+                unset($query['status']);
+            } else {
+                $statusAcceptNull == in_array('none', $query['status']);
+            }
+        }
+        $filter = new ToAscii();
+        if (isset($query['search'])) {
+            $query['search'] = $filter->filter($query['search']);
+        }
+
+        $persons = $this->getPersons();
+        if (is_null($persons)) {
+            return [];
+        }
+        $return = [];
+        foreach ($persons as $personId => $person) {
+            if (isset($query['search']) && $query['search'] && !is_null($query['search']) &&
+               false === stripos($person['searchName'], $query['search']))
+            {
+                continue;
+            }
+            if (isset($query['personName']) && !is_null($query['personName']) &&
+                false === stripos($person['searchName'], $query['personName'])) {
+                continue;
+            }
+            //@todo I'm not actually checking the value here I think?
+            if (isset($query['deceased']) && false === $query['deceased'] && !is_null($person['deathDate'])) {
+                continue;
+            }
+            if (isset($query['country']) && !is_null($query['country']) && $query['country'] != $person['country']) {
+                continue;
+            }
+            if (isset($query['category']) && !is_null($query['category']) &&
+                !in_array($person['category'], $query['category']))
+            {
+                continue;
+            }
+            if (isset($query['dataSource']) && !is_null($query['dataSource']) &&
+                isset($query['dataSourceId']) && !is_null($query['dataSourceId']) &&
+                ($query['dataSource'] != $person['dataSource'] ||
+                $query['dataSourceId'] != $person['dataSourceId']))
+            {
+                continue;
+            }
+            $return[$personId] = $person;
+        }
+
+        return $return;
+    }
     
     public function getAllPersonPhoneNumbers($includeInactive = false)
     {
@@ -1172,6 +1277,11 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $problems;
     }
 
+    public function autoFixProblems($simulate = true)
+    {
+        return [];
+    }
+    
     public function getAssociationProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
     {
         $associations = $this->getAssociations();
@@ -1207,7 +1317,53 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $return = [];
         $persons = $this->getPersons();
         $associations = $this->getAssociations();
+        foreach ($persons as $personId => $person) {
+            $return[] = new GenericResource($person['resourceId']);
+        }
+        foreach ($associations as $associationId => $association) {
+            $return[] = new GenericResource($association['resourceId']);
+        }
+        return $return;
+    }
+    
+    /**
+     * @return \Zend\Permissions\Acl\Assertion\AssertionAggregate
+     */
+    public function getRules()
+    {
+        $persons = $this->getPersons();
+        $associations = $this->getAssociations();
         
+
+        //transform to object BjyAuthorize will understand
+        $allow = [];
+        foreach ($result as $key => $rule)
+        {
+            $allow[$person['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
+        }
+        
+        foreach ($associations as $associationId => $association) {
+            $allow[$association['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
+        }
+        
+        return $this->formatRulesArray($allow);
+    }
+    
+    /**
+     * Takes an array in format [$resourceId => $roles(array)] and transforms 
+     * it to [$roles(array), $resourceId].
+     * Everything is wrapped in an array and keyed by 'allow'.
+     * 
+     * @param array $allow
+     */
+    protected function formatRulesArray($allow)
+    {
+        $return = [];
+        foreach ($allow as $resourceId => $roles) {
+            $return[] = [$roles, $resourceId];
+        }
+        var_dump(['allow' => $return]);
+        return ['allow' => $return];
     }
     
     /**

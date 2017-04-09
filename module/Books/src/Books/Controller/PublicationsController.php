@@ -3,138 +3,149 @@ namespace Books\Controller;
 
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Zend\View\Model\ViewModel;
-use Zend\Mvc\Controller\AbstractActionController;
 use Books\Form\PublicationForm;
 use SionModel\Mailing\Mailer;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Books\Model\BooksTable;
+use Books\Model\PublicationsTable;
+use SionModel\Controller\SionController;
 
-class PublicationsController extends AbstractActionController
+class PublicationsController extends SionController
 {
-    public function indexAction()
+    public function __construct()
     {
-        $sm = $this->getServiceLocator();
-        /** @var \Books\Model\BooksTable $table */
-        $table = $sm->get('Books\Model\BooksTable');
+        parent::__construct('publication');
+    }
 
-        $entities = $table->importPublications();
-        return new ViewModel([
+    /**
+     * Import records from the old tables into the new publications table.
+     * First, the new records will be simulated and presented to the user
+     * If the user accepts, and POSTs the order to import, they will be
+     * imported.
+     *
+     */
+    public function importAction()
+    {
+        /** @var PublicationsTable $table */
+        $table = $this->getSionTable();
+        $entities = $table->importPublications();//false);
+        $view = new ViewModel([
             'entities' => $entities,
         ]);
+        $view->setTemplate('books/publications/index');
+        return $view;
     }
+//     public function showAction()
+//     {
+//         $id = (Int)$this->params()->fromRoute('publication_id');
+//         if (!$id) {
+//             $this->flashMessenger()
+//             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+//             ->addMessage('Publication not found.');
+//             return $this->redirect()->toRoute('home');
+//         }
+//         $sm = $this->getServiceLocator();
+//         /** @var \Books\Model\PublicationsTable $table */
+//         $table = $sm->get('Books\Model\PublicationsTable');
+//         $publication = $table->getPublication($id);
+//         if (!$publication) {
+//             $this->flashMessenger()
+//             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+//             ->addMessage('Publication not found.');
+//             return $this->redirect()->toRoute('home');
+//         }
 
-    public function showAction()
-    {
-        $id = (Int)$this->params()->fromRoute('publication_id');
-        if (!$id) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Publication not found.');
-            return $this->redirect()->toRoute('home');
-        }
-        $sm = $this->getServiceLocator();
-        /** @var \Books\Model\BooksTable $table */
-        $table = $sm->get('Books\Model\BooksTable');
-        $publication = $table->getPublication($id);
-        if (!$publication) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Publication not found.');
-            return $this->redirect()->toRoute('home');
-        }
+// //         $table->registerVisit(publication, $publication['publicationId']);
+//         return new ViewModel([
+//             'publication'        => $publication,
+// //             'suggestForm'   => $sm->get('Books\Form\SuggestForm'),
+//         ]);
+//     }
 
-//         $table->registerVisit(publication, $publication['publicationId']);
-        return new ViewModel([
-            'publication'        => $publication,
-//             'suggestForm'   => $sm->get('Books\Form\SuggestForm'),
-        ]);
-    }
+//     public function createAction()
+//     {
+//         $sm = $this->getServiceLocator ();
+//         /** @var PublicationsTable $table **/
+//         $table = $sm->get ( 'Books\Model\PublicationsTable' );
 
-    public function createAction()
-    {
-        $sm = $this->getServiceLocator ();
-        /** @var BooksTable $table **/
-        $table = $sm->get ( 'Books\Model\BooksTable' );
+//         /** @var PublicationForm $form */
+//         $form = $sm->get('Books\Form\PublicationForm');
+//         $request = $this->getRequest();
+//         if ($request->isPost ()) {
+//             $data = $request->getPost ()->toArray ();
+//             $form->setData($data);
+//             if ($form->isValid()) {
+//                 $data = $form->getData();
+//                 if (!($newId = $table->createEntity('publication', $data))) {
+//                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+//                 } else {
+//                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Publication successfully created.' );
+//                     $this->redirect ()->toRoute ( 'publications/publication', array('publication_id' => $newId) );
+//                 }
+//             } else {
+// //                 print_r(array_keys($form->getInputFilter()->getInvalidInput()));
+//                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+//             }
+//         }
+//         return array (
+//             'form' => $form,
+//         );
+//     }
 
-        /** @var PublicationForm $form */
-        $form = $sm->get('Books\Form\PublicationForm');
-        $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
-            $form->setData($data);
-            if ($form->isValid()) {
-                $data = $form->getData();
-                if (!($newId = $table->createEntity('publication', $data))) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                } else {
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Publication successfully created.' );
-                    $this->redirect ()->toRoute ( 'publications/publication', array('publication_id' => $newId) );
-                }
-            } else {
-//                 print_r(array_keys($form->getInputFilter()->getInvalidInput()));
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-            }
-        }
-        return array (
-            'form' => $form,
-        );
-    }
+//     public function editAction()
+//     {
+//         $id = (Int)$this->params()->fromRoute('publication_id');
+//         if (!$id) {
+//             $this->flashMessenger()
+//             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+//             ->addMessage('Publication not found.');
+//             return $this->redirect()->toRoute('home');
+//         }
+//         $sm = $this->getServiceLocator();
+//         /** @var \Books\Model\PublicationsTable $table */
+//         $table = $sm->get('Books\Model\PublicationsTable');
+//         $publication = $table->getPublication($id);
+//         if (!$publication) {
+//             $this->flashMessenger()
+//             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+//             ->addMessage('Publication not found.');
+//             return $this->redirect()->toRoute('home');
+//         }
 
-    public function editAction()
-    {
-        $id = (Int)$this->params()->fromRoute('publication_id');
-        if (!$id) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Publication not found.');
-            return $this->redirect()->toRoute('home');
-        }
-        $sm = $this->getServiceLocator();
-        /** @var \Books\Model\BooksTable $table */
-        $table = $sm->get('Books\Model\BooksTable');
-        $publication = $table->getPublication($id);
-        if (!$publication) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Publication not found.');
-            return $this->redirect()->toRoute('home');
-        }
-
-        /** @var PublicationForm $form */
-        $form = $sm->get('Books\Form\PublicationForm');
-        $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
-            $form->setData($data);
-            if ($data ['publicationId'] != $id) { // make sure the user is trying to update the right event
-                $this->flashMessenger()
-                    ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-                    ->addMessage('Publication not found.');
-                return $this->redirect()->toRoute('home');
-            }
-            if ($form->isValid()) {
-                $data = $form->getData();
-                $result = $table->updateEntity('publication', $id, $data);
-                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Publication successfully updated.' );
-                $this->redirect()->toRoute ( 'publications/publication', array('publication_id' => $id) );
-            } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-            }
-        } else {
-            $form->setData($publication);
-        }
-        return array (
-            'form' => $form,
-            'entity' => $entity,
-        );
-    }
+//         /** @var PublicationForm $form */
+//         $form = $sm->get('Books\Form\PublicationForm');
+//         $request = $this->getRequest();
+//         if ($request->isPost ()) {
+//             $data = $request->getPost ()->toArray ();
+//             $form->setData($data);
+//             if ($data ['publicationId'] != $id) { // make sure the user is trying to update the right event
+//                 $this->flashMessenger()
+//                     ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+//                     ->addMessage('Publication not found.');
+//                 return $this->redirect()->toRoute('home');
+//             }
+//             if ($form->isValid()) {
+//                 $data = $form->getData();
+//                 $result = $table->updateEntity('publication', $id, $data);
+//                 $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Publication successfully updated.' );
+//                 $this->redirect()->toRoute ( 'publications/publication', array('publication_id' => $id) );
+//             } else {
+//                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+//             }
+//         } else {
+//             $form->setData($publication);
+//         }
+//         return array (
+//             'form' => $form,
+//             'entity' => $entity,
+//         );
+//     }
 
     public function suggestAction()
     {
         $id = ( int ) $this->params ()->fromRoute ( 'publication_id' );
         $sm = $this->getServiceLocator ();
-        /** @var BooksTable $table **/
-        $table = $sm->get ( 'Books\Model\BooksTable' );
+        /** @var PublicationsTable $table **/
+        $table = $sm->get ( 'Books\Model\PublicationsTable' );
 
         if (! $id) {
             $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )->addMessage ( 'Publication not found.' );
@@ -186,8 +197,8 @@ class PublicationsController extends AbstractActionController
         $suggestionId = ( int ) $this->params ()->fromRoute ( 'suggestion_id' );
 
         $sm = $this->getServiceLocator();
-        /** @var BooksTable $table **/
-        $table = $sm->get ( 'Books\Model\BooksTable' );
+        /** @var PublicationsTable $table **/
+        $table = $sm->get ( 'Books\Model\PublicationsTable' );
 
         $oldData = null;
         $publication = $table->getSuggestionData( $suggestionId, $oldData); //$oldData is a byRef return

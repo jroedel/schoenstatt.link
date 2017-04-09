@@ -8,7 +8,7 @@
 $toolsOrNot = [];
 $env = getenv('APP_ENV') ?: 'production';
 if ($env == 'development') {
-    $toolsOrNot[] = 'ZendDeveloperTools';
+//     $toolsOrNot[] = 'ZendDeveloperTools';
 }
 $modules = [
     'MaglMarkdown',

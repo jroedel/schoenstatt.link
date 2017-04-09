@@ -3,14 +3,14 @@ namespace Books\Service;
 
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
-use Books\Model\BooksTable;
+use Books\Model\PublicationsTable;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
  *
  * @author Jeff Roedel <webmaster@schoenstatt.link>
  */
-class BooksTableFactory implements FactoryInterface
+class PublicationsTableFactory implements FactoryInterface
 {
     /**
      * {@inheritDoc}
@@ -27,7 +27,7 @@ class BooksTableFactory implements FactoryInterface
 		$user = $userService->getAuthService()->getIdentity();
 		$actingUserId = $user ? $user->id : null;
 
-		$table = new BooksTable($dbAdapter, $serviceLocator, $actingUserId);
+		$table = new PublicationsTable($dbAdapter, $serviceLocator, $actingUserId);
 		return $table;
     }
 }

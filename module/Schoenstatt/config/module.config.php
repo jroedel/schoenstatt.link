@@ -41,6 +41,20 @@ return [
             'languageChooser'       => 'Schoenstatt\View\Helper\LanguageChooser',
         ],
     ],
+
+    'bjyauthorize' => [
+            // Resource providers to be used to load all available resources into Zend\Permissions\Acl\Acl
+            // Keys are the provider service names, values are the options to be passed to the provider
+            'resource_providers'    => [
+                'Schoenstatt\Model\SchoenstattTable' => [],
+            ],
+
+            // Rule providers to be used to load all available rules into Zend\Permissions\Acl\Acl
+            // Keys are the provider service names, values are the options to be passed to the provider
+            'rule_providers'        => [
+                'Schoenstatt\Model\SchoenstattTable' => [],
+            ],
+    ],
     'schoenstatt' => [
         'person_tags' => [ // they will appear in the value options in this order, they will be applied according to the sort order
             'bishop' => [
@@ -723,7 +737,7 @@ return [
                 'table_name' => 'sch_persons',
                 'table_key' => 'PersonId',
                 'entity_key_field' => 'personId',
-                'update_reference_data_function' => 'getPerson',
+                'get_object_function' => 'getPerson',
                 'name_field' => 'fullName',
                 'report_changes' => true,
                 'has_dedicated_suggest_form' => false,
@@ -884,7 +898,7 @@ return [
                 'table_name' => 'sch_associations',
                 'table_key' => 'AssociationId',
                 'entity_key_field' => 'associationId',
-                'update_reference_data_function' => 'getAssociation',
+                'get_object_function' => 'getAssociation',
                 'name_field' => 'associationName',
                 'report_changes' => true,
                 'has_dedicated_suggest_form' => false,
@@ -1006,7 +1020,7 @@ return [
                 'table_name' => 'sch_roles',
                 'table_key' => 'RoleId',
                 'entity_key_field' => 'roleId',
-                'update_reference_data_function' => 'getRole',
+                'get_object_function' => 'getRole',
                 'name_field' => 'roleTitle',
                 'has_dedicated_suggest_form' => false,
                 'report_changes' => true,
@@ -1051,7 +1065,7 @@ return [
                 'table_name' => 'sch_assignments',
                 'table_key' => 'AssignmentId',
                 'entity_key_field' => 'roleId',
-                'update_reference_data_function' => 'getAssignment',
+                'get_object_function' => 'getAssignment',
                 'name_field' => 'roleTitle',
                 'report_changes' => true,
                 'has_dedicated_suggest_form' => false,
@@ -1092,93 +1106,6 @@ return [
                     'createdBy'                 => 'CreatedBy',
         	    ],
             ],
-            'publication' => [
-                'table_name' => 'lib_publications',
-                'table_key' => 'PublicationId',
-                'entity_key_field' => 'publicationId',
-                'update_reference_data_function' => 'getPublication',
-                'name_field' => 'name',
-                'has_dedicated_suggest_form' => false,
-                'report_changes' => true,
-                // 'scope' => 'Publication',
-                // 'database_bound_data_preprocessor' => 'preprocessPublication', //this will separate the nationality array
-                'required_columns_for_creation' => [ //required for creation
-                    'name',
-                ],
-                // 'moderate_route' => 'publications/publication/moderate',
-                // 'moderate_route_entity_key' => 'publication_id',
-                'show_route' => 'publications/publication',
-                'show_route_key' => 'publication_id',
-                'show_route_key_field' => 'publicationId',
-                'edit_route' => 'publications/publication/edit',
-                'edit_route_key' => 'publication_id',
-                'edit_route_key_field' => 'publicationId',
-                'text_columns' => [
-                ],
-                'date_columns' => [
-                    'updatedOn',
-                    'createdOn',
-                ],
-                'many_to_one_update_columns' => [
-                ],
-                'update_columns' => [
-                    'publicationId'             => 'PublicationId',
-                    'title'                     => 'PublicationTitle',
-                    'authorPerson1'             => 'AuthorPerson1',
-                    'authorPerson2'             => 'AuthorPerson2',
-                    'authorPerson3'             => 'AuthorPerson3',
-                    'authors'                   => 'Authors',
-                    'bookEdition'               => 'BookEdition',
-                    'inLanuage'                 => 'InLanuage',
-                    'description'               => 'Description',
-                    'isbn'                      => 'Isbn',
-                    'illustrator'               => 'Illustrator',
-                    'translator'                => 'Translator',
-                    'numberOfPages'             => 'NumberOfPages',
-                    'copyrightYear'             => 'CopyrightYear',
-                    'publisher'                 => 'Publisher',
-                    'publishingPlace'           => 'PublishingPlace',
-                    'datePublished'             => 'DatePublished',
-                    'publishingStatus'          => 'PublishingStatus',
-                    'bookFormatType'            => 'BookFormatType',
-                    'genre'                     => 'Genre',
-                    'url'                       => 'Url',
-                    'textId'                    => 'TextId',
-                    'mainPublication'           => 'MainPublication', //mainEntity
-                    'quality'                   => 'Quality',
-                    'qualityNotes'              => 'QualityNotes',
-                    'volumeNumber'              => 'VolumeNumber',
-                    'containedIn'               => 'ContainedIn',
-                    'containedInIsbn'           => 'ContainedInIsbn',
-                    'keywords'                  => 'Keywords',
-
-                    'isAccessableForFree'       => 'IsAccessableForFree',
-                    'isInternalForPatres'       => 'IsInternalForPatres',
-                    'isScientificWork'          => 'IsScientificWork',
-                    'isAwaitingMerge'           => 'IsAwaitingMerge',
-                    'hasBeenMerged'             => 'HasBeenMerged',
-                    'publicNotes'               => 'PublicNotes',
-                    'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',
-                    'publicNotesUpdatedBy'      => 'PublicNotesUpdatedBy',
-                    'adminTags'                 => 'AdminTags',
-                    'adminNotes'                => 'AdminNotes', //store source info here
-                    'adminNotesUpdatedOn'       => 'AdminNotesUpdatedOn',
-                    'adminNotesUpdatedBy'       => 'AdminNotesUpdatedBy',
-                    'updatedOn'                 => 'UpdatedOn',
-                    'updatedBy'                 => 'UpdatedBy',
-                    'createdOn'                 => 'CreatedOn',
-                    'createdBy'                 => 'CreatedBy',
-
-                    'dataSource'                => 'DataSource',
-                    'dataSourceId'              => 'DataSourceId',
-                    'dataSourceUpdatedOn'       => 'DataSourceUpdatedOn',
-                    'jkPeriod'                  => 'JkPeriod', //Should be passed to the JkEvent table
-                    'jkEventId'                 => 'JkEventId',
-                    'location'                  => 'Location',
-                    'jkCategory'                => 'JkCategory', //DEPRECATED
-                ],
-            ],
-
         ],
     ],
     'asset_manager' => [
