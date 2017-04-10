@@ -13,15 +13,78 @@ class PublicationsTable extends SionTable
     protected $publicationsCache;
 
     /**
-     * @todo test this
-     * @return mixed[]
+     * @var mixed $unlinkedPublicationsCache
      */
+    protected $unlinkedPublicationsCache;
+
+    public function getAuthorsValueOptions()
+    {
+        $sql = "SELECT DISTINCT `Authors`
+FROM `sch_publications`
+WHERE (`Authors` NOT LIKE '%;%')
+ORDER BY `Authors`";
+        $results = $this->fetchSome(null, $sql, null);
+        $authors = null;
+        foreach ($results as $row) {
+            $author = $this->filterDbString($row['Authors']);
+            if (!is_null($author)) {
+                $authors[$author] = $author;
+            }
+        }
+        return $authors;
+    }
+
+    public function getPublishersValueOptions()
+    {
+        $sql = "SELECT DISTINCT `Publisher`
+FROM `sch_publications`
+ORDER BY `Publisher`";
+        $results = $this->fetchSome(null, $sql, null);
+        $authors = null;
+        foreach ($results as $row) {
+            $publisher = $this->filterDbString($row['Publisher']);
+            if (!is_null($publisher)) {
+                $authors[$publisher] = $publisher;
+            }
+        }
+        return $authors;
+    }
+
+    public function getKeywordsValueOptions()
+    {
+        $publications = $this->getUnlinkedPublications();
+        $valueOptions = [];
+        foreach ($publications as $publication) {
+            foreach ($publication['keywords'] as $keyword) {
+                if (!key_exists($keyword, $valueOptions)) {
+                    $valueOptions[$keyword] = $keyword;
+                }
+            }
+        }
+        return $valueOptions;
+    }
+
     public function getPublications()
     {
-        if (!is_null($cache = $this->getPublicationsCache())) {
+        if (!is_null($cache = $this->getUnlinkedPublicationsCache())) {
             return $cache;
         }
 
+        $entities = $this->getUnlinkedPublications();
+
+        $this->setUnlinkedPublicationsCache($entities);
+        return $entities;
+    }
+
+    /**
+     * @todo test this
+     * @return mixed[]
+     */
+    public function getUnlinkedPublications()
+    {
+        if (!is_null($cache = $this->getUnlinkedPublicationsCache())) {
+            return $cache;
+        }
         $sql = "SELECT `PublicationId`, `Title`, `ResourceId`, `AuthorPerson1`, `AuthorPerson2`,
 `AuthorPerson3`, `Authors`, `BookEdition`, `InLanguage`, `Description`, `Isbn`, `Translator`,
 `Illustrator`, `NumberOfPages`, `CopyrightYear`, `Publisher`, `PublishingPlace`, `DatePublished`,
@@ -32,8 +95,9 @@ class PublicationsTable extends SionTable
 `DataSourceId`, `DataSourceUpdatedOn`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
 `CreatedOn`, `CreatedBy`
-FROM `sch_publications` WHERE 1";
-
+FROM `sch_publications`
+WHERE 1
+ORDER BY `Authors`, `Title`";
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
         foreach ($results as $row) {
@@ -71,7 +135,7 @@ FROM `sch_publications` WHERE 1";
                 'cntainedIn' 				=> $this->filterDbString($row['ContainedIn']),
                 'containedInIsbn' 			=> $this->filterDbString($row['ContainedInIsbn']),
                 'genre' 					=> $this->filterDbString($row['Genre']),
-                'keywords' 					=> $this->filterDbArray($row['Keywords']),
+                'keywords' 					=> $this->filterDbArray($row['PublicTags']),
                 'adminTags'					=> $this->filterDbArray($row['AdminTags']),
                 'isAccessableForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
                 'isInternalForPatres'       => $this->filterDbBool($row['IsInternalForPatres']),
@@ -105,8 +169,28 @@ FROM `sch_publications` WHERE 1";
             ];
         }
 
-        $this->setPublicationsCache($entities);
+        $this->setUnlinkedPublicationsCache($entities);
         return $entities;
+    }
+
+    /**
+    * Get the unlinkedPublicationsCache value
+    * @return mixed
+    */
+    public function getUnlinkedPublicationsCache()
+    {
+        return $this->unlinkedPublicationsCache;
+    }
+
+    /**
+    *
+    * @param mixed $unlinkedPublicationsCache
+    * @return self
+    */
+    public function setUnlinkedPublicationsCache($unlinkedPublicationsCache)
+    {
+        $this->unlinkedPublicationsCache = $unlinkedPublicationsCache;
+        return $this;
     }
 
     /**

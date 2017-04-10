@@ -1,0 +1,18 @@
+<?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
+$headText = 'Create new publication';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$this->formSelect()->setTranslatorEnabled(false);
+$form->setAttribute('action', $this->url('publications/create'));
+ $form->prepare();
+ echo $this->form()->openTag($form);
+ echo $this->partial('fields-partial', [
+     'form' => $form,
+ ]);
+ echo $this->formSubmit($form->get('submit'));
+ echo $this->form()->closeTag();
+?>

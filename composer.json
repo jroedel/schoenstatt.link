@@ -11,7 +11,6 @@
         "php": ">=5.5",
         "zendframework/zendframework": "~2.5",
         "jroedel/zf2-jtranslate": "@dev",
-        "jroedel/locale": "dev-master@dev",
         "nesbot/carbon": "^1.21",
         "giggsey/libphonenumber-for-php": "^7.7",
         "neitanod/forceutf8": "^2.0",
@@ -31,7 +30,9 @@
         "zendframework/zend-crypt": "^2.4.0 || ^3.1.0",
         "bjyoungblood/bjy-authorize": "^1.4.0",
     	"goalio/goalio-rememberme": "1.*",
-        "zf-commons/zfc-user": "1.0.0"
+        "zf-commons/zfc-user": "1.0.0",
+        "jroedel/locale": "dev-master@dev",
+        "matriphe/iso-639": "^1.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

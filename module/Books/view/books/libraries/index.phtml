@@ -1,0 +1,12 @@
+<?php
+$headText = 'Libraries';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<ul class="list-group">
+<?php foreach ($this->objects as $libraryId => $library) :?>
+  <li class="list-group-item">
+    <span class="badge"><?php echo count($library['books'])?></span>
+    <?php echo $this->formatEntity('library', $library);?>
+  </li>
+<?php endforeach;?>
+</ul>

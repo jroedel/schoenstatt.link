@@ -1,0 +1,37 @@
+<?php
+/**
+ * @param mixed[] $entities
+ * @param string $name
+ */
+if (isset($this->entities) && !is_null($this->entities) && !empty($this->entities)):?>
+<table class="table">
+<tr>
+	<th>#</th>
+    <th><?php echo $this->translate("Author");?></th>
+    <th><?php echo $this->translate("Title");?></th>
+    <th><?php echo $this->translate("Edition");?></th>
+    <th><?php echo $this->translate("Due on");?></th>
+</tr>
+<?php  foreach($this->entities as $book) : ?>
+    <tr<?php if (!$book['isAvailable']) {
+        echo ' class="danger"';
+    }?>>
+    	<td><?php echo $this->escapeHtml($book['callNumber']);?></td>
+    	<td><?php echo $this->escapeHtml($book['author']);?></td>
+    	<?php if (0 && !is_null($book['file_type'])) :?>
+        	<td><a href="<?php echo $book['url']; //echo $this->url('library/book', ['book_id' => $book['book_id']));?>" target="_blank">
+        	<?php echo $book['title'];?></a>
+        	<?php echo '('.$book['file_type'].', '.number_format($book['file_size']/1048576, 1, '.','').'MB)';?></td>
+    	<?php else: ?>
+    		<td><?php echo $this->escapeHtml($book['title']);?></td>
+    	<?php endif;?>
+    	<td><?php echo $this->escapeHtml($book['edition']);?></td>
+    	<td><?php if (!is_null($book['currentCheckout'])) {
+    	    echo $this->formatEntity('checkout', $book['currentCheckout']);
+    	}?></td>
+    <?php endforeach; ?>
+    </tr>
+</table>
+<?php else:?>
+<p><?php echo $this->translate('No results found.');?></p>
+<?php endif;?>

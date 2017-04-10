@@ -1,0 +1,751 @@
+<?php
+namespace Books\Form;
+
+use SionModel\Form\SionForm;
+
+class PublicationForm extends SionForm
+{
+    public function __construct()
+    {
+        parent::__construct('publication');
+
+        $this->add([
+            'name' => 'title',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Title',
+                'required' => true,
+            ],
+            'attributes' => [
+                'maxlength' => '300',
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'authors',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Author(s)',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'bookEdition',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Edition',
+                'required' => false,
+            ],
+            'attributes' => [
+                'maxlength' => '50',
+            ],
+        ]);
+        $this->add([
+            'name' => 'inLanguage',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Language',
+                'required' => true,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => [],
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'description',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Description',
+                'required' => false,
+            ],
+            'attributes' => [
+                'rows' => 8,
+            ],
+        ]);
+        $this->add([
+            'name' => 'isbn',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'ISBN',
+                'required' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. 9780030426599',
+                'maxlength' => '30',
+            ],
+        ]);
+        $this->add([
+            'name' => 'numberOfPages',
+            'type' => 'Number',
+            'options' => [
+                'label' => 'Number of pages',
+                'required' => false,
+            ],
+            'attributes' => [
+                'min'         => 0,
+                'max'         => 6000,
+                'step'        => 1,
+                'inclusive'   => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'copyrightYear',
+            'type' => 'Number',
+            'options' => [
+                'label' => 'Copyright year',
+                'required' => false,
+            ],
+            'attributes' => [
+                'min'         => 1800,
+                'max'         => 2025,
+                'step'        => 1,
+                'inclusive'   => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'publisher',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Publisher',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+                'value_options' => [],
+            ],
+        ]);
+        $this->add([
+            'name' => 'publishingPlace',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Publishing place',
+                'required' => true,
+            ],
+            'attributes' => [
+                'placeholder' => 'Madrid, Spain',
+                'maxlength' => '200',
+            ],
+        ]);
+        $this->add([
+            'name' => 'bookFormatType',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Book format',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => [],
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'url1',
+            'type' => 'Url',
+            'options' => [
+                'label' => 'URL 1',
+                'required' => false,
+                'uriHandler' => 'Zend\Uri\Http',
+                'allowRelative' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. https://www.facebook.com/john.smith.34',
+            ],
+        ]);
+        $this->add([
+            'name' => 'url1Label',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'URL 1 Label',
+                'required' => false,
+                'empty_option' => '',
+                'disable_inarray_validator' => true,
+                'unselected_value' => '',
+            ],
+        ]);
+        $this->add([
+            'name' => 'url2',
+            'type' => 'Url',
+            'options' => [
+                'label' => 'URL 2',
+                'required' => false,
+                'uriHandler' => 'Zend\Uri\Http',
+                'allowRelative' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. https://www.facebook.com/john.smith.34',
+            ],
+        ]);
+        $this->add([
+            'name' => 'url2Label',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'URL 2 Label',
+                'required' => false,
+                'disable_inarray_validator' => true,
+                'empty_option' => '',
+                'unselected_value' => '',
+            ],
+        ]);
+        $this->add([
+            'name' => 'url3',
+            'type' => 'Url',
+            'options' => [
+                'label' => 'URL 3',
+                'required' => false,
+                'uriHandler' => 'Zend\Uri\Http',
+                'allowRelative' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. https://www.facebook.com/john.smith.34',
+            ],
+        ]);
+        $this->add([
+            'name' => 'url3Label',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'URL 3 Label',
+                'required' => false,
+                'disable_inarray_validator' => true,
+                'empty_option' => '',
+                'unselected_value' => '',
+            ],
+        ]);
+        $this->add([
+            'name' => 'volumeNumber',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Volume number',
+                'required' => false,
+            ],
+            'attributes' => [
+                'maxlength' => '25',
+            ],
+        ]);
+        $this->add([
+            'name' => 'containedIn',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Contained in',
+                'required' => true,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. Revista Vínculo 2014-10',
+                'maxlength' => '255',
+            ],
+        ]);
+        $this->add([
+            'name' => 'containedInIsbn',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Contained in ISBN',
+                'required' => false,
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. 9780030426599',
+                'maxlength' => '30',
+            ],
+        ]);
+        $this->add([
+            'name' => 'keywords',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Keywords',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+                'value_options' => [],
+            ],
+            'attributes' => [
+                'required' => false,
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'isAccessableForFree',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Accessable for free?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+        $this->add([
+            'name' => 'isInternalForPatres',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Internal for Schoenstatt Fathers?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+        $this->add([
+            'name' => 'isScientificWork',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Scientific work?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+
+        $this->add([//http://www.codingdrama.com/bootstrap-markdown/
+            'name' => 'publicNotes',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Public notes',
+                'required' => false,
+            ],
+            'attributes' => [
+                'required' => false,
+                'data-provide' => 'markdown',
+                'data-parser' => 'CommonMark',
+                'rows' => 8,
+            ],
+            'filters' => [
+                ['name' => 'StripTags'],
+            ],
+        ]);
+
+        $this->add([//http://www.codingdrama.com/bootstrap-markdown/
+            'name' => 'adminNotes',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Admin notes',
+                'required' => false,
+            ],
+            'attributes' => [
+                'required' => false,
+                'data-provide' => 'markdown',
+                'data-parser' => 'CommonMark',
+                'rows' => 8,
+            ],
+            'filters' => [
+                ['name' => 'StripTags'],
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'adminTags',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Admin tags',
+                'empty_option' => '',
+                'placeholder' => 'Select tags or type new ones...',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+                'value_options' => [],
+            ],
+            'attributes' => [
+                'required' => false,
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'submit',
+            'type' => 'Submit',
+            'attributes' => [
+                'value' => 'Submit',
+                'id' => 'submit',
+                'class' => 'btn-primary'
+            ],
+        ]);
+    }
+
+    public function getInputFilterSpecification()
+    {
+        return [
+            'title' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 300,
+                        ],
+                    ],
+                ],
+            ],
+            'authors' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 500,
+                        ],
+                    ],
+                ],
+            ],
+            'inLanguage' => [
+                'required' => false,
+            ],
+            'bookEdition' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 50,
+                        ],
+                    ],
+                ],
+            ],
+            'description' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 3000,
+                        ],
+                    ],
+                ],
+            ],
+            'isbn' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 30,
+                        ],
+                    ],
+                ],
+            ],
+            'numberOfPages' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToInt'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                        ],
+                    ],
+                ],
+            ],
+            'copyrightYear' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToInt'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                        ]
+                    ],
+                ],
+            ],
+            'publisher' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 255,
+                        ],
+                    ],
+                ],
+            ],
+            'publishingPlace' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 255,
+                        ],
+                    ],
+                ],
+            ],
+            'bookFormatType' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+            ],
+            'url1' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'url1Label' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'url2' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'url2Label' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'url3' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'url3Label' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+
+            'volumeNumber' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 25,
+                        ],
+                    ],
+                ],
+            ],
+            'containedIn' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 255,
+                        ],
+                    ],
+                ],
+            ],
+            'containedInIsbn' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 30,
+                        ],
+                    ],
+                ],
+            ],
+            'keywords' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'SionModel\Filter\SortArray'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 255,
+                        ],
+                    ],
+                ],
+            ],
+            'isAccessableForFree' => [
+                'required' => false,
+            ],
+            'isInternalForPatres' => [
+                'required' => false,
+            ],
+            'isScientificWork' => [
+                'required' => false,
+            ],
+            'adminNotes' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'adminTags' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StringToLower'],
+                    ['name' => 'SionModel\Filter\SortArray'],
+                ],
+            ],
+        ];
+    }
+}

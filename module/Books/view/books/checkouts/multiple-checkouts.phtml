@@ -1,0 +1,37 @@
+<?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
+$headText = 'Book checkout';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$form->setAttribute('action', $this->url('libraries/library/checkout', ['library_id' => $this->libraryId]));
+$form->prepare();
+echo $this->form()->openTag($form);
+$this->formSelect()->setTranslatorEnabled(false);
+echo $this->formRow($form->get('bookIds'));
+echo $this->formRow($form->get('personId'));
+echo $this->formRow($form->get('adminNotes'));
+echo $this->formRow($form->get('security'));
+echo $this->formSubmit($form->get('submit'));
+echo $this->form()->closeTag();
+
+$jsScript = <<<JS
+    $("select[name='bookIds[]']").selectize({
+        create: false,
+        sortField: 'text'
+    });
+    $("select[name='personId']").selectize({
+        create: false
+    });
+JS;
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();

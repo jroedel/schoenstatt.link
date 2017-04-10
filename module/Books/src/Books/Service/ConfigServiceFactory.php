@@ -1,11 +1,11 @@
 <?php
-namespace Schoenstatt\Service;
+namespace Books\Service;
 
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
 /**
- * Factory responsible of retrieving an array containing the Schoenstatt configuration
+ * Factory responsible of retrieving an array containing the Books configuration
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
@@ -20,8 +20,8 @@ class ConfigServiceFactory implements FactoryInterface
     {
         $config = $serviceLocator->get('Config');
 
-        if (isset($config['schoenstatt'])) {
-            return $config['schoenstatt'];
+        if (isset($config['books'])) {
+            return $config['books'];
         }
         return [];
     }

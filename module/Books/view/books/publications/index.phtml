@@ -1,16 +1,16 @@
 <table class="table">
 <tr>
-    <th>#</th>
     <th><?php echo $this->translate("Author");?></th>
     <th><?php echo $this->translate("Title");?></th>
     <th><?php echo $this->translate("Edition");?></th>
 </tr>
-<?php foreach($this->entities as $entity) : ?>
+<?php foreach($this->objects as $entityId => $entity) :
+    if ($entity['inLanguage'] != 'en') continue;?>
 <tr>
-	<td></td>
 	<td><?php echo $entity['authors'];?></td>
 	<td><?php echo $entity['title'];?></td>
-	<td><?php echo $entity['bookEdition'];?></td>
+	<td><?php echo $entity['bookEdition'];
+	   echo $this->editPencil('publication', $entityId);?></td>
 	<!-- <td><?php echo $entity['updated_at'];?></td> -->
 <?php endforeach; ?>
     </tr>

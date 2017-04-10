@@ -534,9 +534,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		        'data-parser' => 'CommonMark',
 		        'rows' => 8,
 		    ],
-		    'filters' => [
-		        ['name' => 'StripTags'],
-		    ],
 		]);
 
 		$this->add([

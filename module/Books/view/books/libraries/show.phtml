@@ -1,0 +1,25 @@
+<?php $this->headTitle()->setTranslatorEnabled(false);
+$this->headTitle($this->entity['name']);
+echo $this->partial('library/library/search-bar', [
+    'form' => $this->form,
+    'action'    => $this->url('libraries/library', ['library_id' => $this->entityId]),
+]);?>
+<h1><?php echo $this->escapeHtml($this->entity['name']);?></h1>
+<a class="btn btn-primary" href="<?php echo $this->url('libraries/library/checkout',
+        ['library_id' => $entityId]);?>"><?php echo $this->escapeHtml($this->translate('Checkout books'));?></a>
+<?php if (!empty($this->entity['categoryStatistics']) && is_null($this->books)):?>
+    <ul class="list-group">
+    <?php foreach ($this->entity['categoryStatistics'] as $category => $count) : ?>
+      <li class="list-group-item">
+        <span class="badge"><?php echo $this->escapeHtml($count);?></span>
+        <a href="<?php echo $this->url('libraries/library', ['library_id' => $this->entityId],
+                ['query' => ['category' => $category]]);?>"><?php
+            echo $this->escapeHtml($category);?></a>
+      </li>
+      <?php endforeach;?>
+    </ul>
+<?php else:
+    echo $this->partial('library/library/book-list', [
+        'entities'  => $this->books,
+    ]);
+endif;?>

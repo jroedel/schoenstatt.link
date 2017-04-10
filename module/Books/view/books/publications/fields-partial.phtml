@@ -1,0 +1,81 @@
+<?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
+$form = $this->form;
+echo $this->formRow($form->get('title'));
+$this->formSelect()->setTranslatorEnabled(false);
+echo $this->formRow($form->get('authors'));
+echo $this->formRow($form->get('inLanguage'));
+echo $this->formRow($form->get('description'));
+echo $this->formRow($form->get('volumeNumber'));
+echo $this->formRow($form->get('containedIn'));
+echo $this->formRow($form->get('containedInIsbn'));
+echo $this->formRow($form->get('isbn'));
+echo $this->formRow($form->get('copyrightYear'));
+echo $this->formRow($form->get('publisher'));
+echo $this->formRow($form->get('publishingPlace'));
+$this->formSelect()->setTranslatorEnabled(true);
+echo $this->formRow($form->get('bookFormatType'));
+echo $this->formRow($form->get('numberOfPages'));
+echo $this->formRow($form->get('url1'));
+echo $this->formRow($form->get('url1Label'));
+echo $this->formRow($form->get('url2'));
+echo $this->formRow($form->get('url2Label'));
+echo $this->formRow($form->get('url3'));
+echo $this->formRow($form->get('url3Label'));
+echo $this->formRow($form->get('keywords'));
+echo $this->formRow($form->get('isAccessableForFree'));
+echo $this->formRow($form->get('isScientificWork'));
+if ($this->isAllowed('lib_patres')) {
+    echo $this->formRow($form->get('isInternalForPatres'));
+}?>
+<div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
+<?php
+echo $this->formRow($form->get('publicNotes'));
+echo $this->formRow($form->get('adminNotes'));
+echo $this->formRow($form->get('adminTags'));
+echo $this->formRow($form->get('security'));
+
+$jsScript = <<<JS
+$("select[name='authors[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='inLanguage']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='publisher']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='keywords[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='adminTags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+JS;
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();
+
+?>
