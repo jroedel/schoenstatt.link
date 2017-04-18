@@ -1,17 +1,7 @@
-<table class="table">
-<tr>
-    <th><?php echo $this->translate("Author");?></th>
-    <th><?php echo $this->translate("Title");?></th>
-    <th><?php echo $this->translate("Edition");?></th>
-</tr>
-<?php foreach($this->objects as $entityId => $entity) :
-    if ($entity['inLanguage'] != 'en') continue;?>
-<tr>
-	<td><?php echo $entity['authors'];?></td>
-	<td><?php echo $entity['title'];?></td>
-	<td><?php echo $entity['bookEdition'];
-	   echo $this->editPencil('publication', $entityId);?></td>
-	<!-- <td><?php echo $entity['updated_at'];?></td> -->
-<?php endforeach; ?>
-    </tr>
-</table>
+<?php
+echo $this->partial('search-bar', [
+    'form' => $this->form,
+]);
+echo $this->partial('book-list', [
+    'objects' => $this->objects,
+]);?>

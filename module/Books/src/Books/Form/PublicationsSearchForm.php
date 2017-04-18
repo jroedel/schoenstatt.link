@@ -1,0 +1,97 @@
+<?php
+namespace Books\Form;
+
+use Zend\Form\Form;
+use Zend\InputFilter\InputFilterProviderInterface;
+
+class PublicationsSearchForm extends Form implements InputFilterProviderInterface
+{
+	public function __construct($name = null)
+	{
+		// we want to ignore the name passed
+		parent::__construct('search_publications');
+		$this->setAttribute('method', 'GET');
+
+		$this->add([
+		    'name' => 'search',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => '',
+		    ],
+		    'attributes' => [
+		        'required' => false,
+		        'class' => 'input-lg search-query',
+		        'placeholder' => 'Search',
+		        'size' => 50,
+		    ],
+		]);
+		$this->add([
+		    'name' => 'showEditionsSeparately',
+		    'type' => 'Checkbox',
+		    'options' => [
+		        'label' => 'Show editions separately?',
+		        'checked_value' => '1',
+		        'unchecked_value' => '0',
+		        'use_hidden_element' => true,
+		    ],
+		    'attributes' => [
+		        'value'   => '0',
+		    ],
+		]);
+		$this->add([
+		    'name' => 'language',
+		    'type' => 'Select',
+		    'options' => [
+		        'label' => 'Languages',
+		        'required' => false,
+		        'empty_option' => '',
+		        'unselected_value' => '',
+		        'disable_inarray_validator' => true,
+		        'multiple'    => true,
+		        'value_options' => [],
+		    ],
+		]);
+
+		$this->add([
+			'name' => 'submit',
+			'type' => 'Submit',
+			'attributes' => [
+				'value' => 'Search',
+				'id' => 'submit',
+				'class' => 'btn-primary'
+			],
+		]);
+	}
+
+	public function getInputFilterSpecification()
+	{
+		return [
+		    'search' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StringTrim'],
+		            ['name' => 'ToNull'],
+		        ],
+		        'validators' => [
+		            [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'min' => 3,
+                            'encoding' => 'UTF-8',
+                        ],
+	                ],
+		        ],
+		    ],
+		    'showEditionsSeparately' => [
+		        'required' => false,
+		    ],
+		    'language' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StringToLower'],
+		            ['name' => 'SionModel\Filter\SortArray'],
+		        ],
+		    ],
+		];
+	}
+}

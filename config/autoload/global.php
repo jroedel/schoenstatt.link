@@ -26,6 +26,11 @@ return [
                 'resource' => 'route/assignments',
             ],
             [
+                'label' => 'Publications',
+                'route' => 'publications',
+                'resource' => 'route/publications',
+            ],
+            [
                 'label' => 'Admin',
                 'route' => 'admin',
                 'resource' => 'route/admin',

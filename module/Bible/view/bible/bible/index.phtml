@@ -1,0 +1,13 @@
+<h1>Translations</h1>
+<p><a href="<?php echo $this->url('bible/translation', array('translation' => 'nab'))?>">English Bible</a> /
+<a href="<?php echo $this->url('bible/translation', array('translation' => 'bnt'))?>">New Testament in Greek</a> /
+<a href="<?php echo $this->url('bible/translation', array('translation' => 'lba'))?>">Biblia en español</a></p>
+<h1><?php echo $this->translAbbrev[$this->translation];?></h1>
+<?php foreach ($this->books as $book) :?>
+<h2><?php echo $this->bookAbbrev[$book['book_id']];?></h2>
+<p><?php for ($chapter = 1; $chapter < $book['LastChapter']; $chapter++) : ?>
+<a href="<?php echo $this->url('bible/text', array('translation' => $this->translation, 'book' => $book['book_id'], 'chapter' => $chapter));?>">
+<?php echo $chapter;?></a>
+<?php endfor;?></p>
+
+<?php endforeach;?>

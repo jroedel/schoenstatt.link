@@ -2,8 +2,9 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
+use Zend\InputFilter\InputFilterProviderInterface;
 
-class CheckinForm extends SionForm
+class CheckinForm extends SionForm implements InputFilterProviderInterface
 {
     public function __construct()
     {

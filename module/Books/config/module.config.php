@@ -81,6 +81,15 @@ return [
                             ],
                         ],
                     ],
+                    'search' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/search',
+                            'defaults' => [
+                                'action'     => 'search',
+                            ],
+                        ],
+                    ],
                     'publication' => [
                         'type'    => 'Segment',
                         'options' => [

@@ -1,0 +1,127 @@
+<div class="row">
+<div class="col-md-12">
+<div class="panel panel-default" id="infoPanel">
+    <div class="panel-heading">
+    	<div class="row">
+    	<div class="col-xs-6">
+        	<h3 class="panel-title"><?php echo $this->translate('Territory Info'); ?></h3>
+        </div>
+
+        <div class="col-xs-6">
+            <?php if ($this->isAllowed('route/territories/territory/edit')): ?>
+                <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
+                    echo $this->url('territories/territory/edit', array('territory_id' => $entity['territoryId']));?>">
+                    <?php echo $this->translate('Edit territory')?></a>
+                </span>
+            <?php elseif (false)://@todo $this->isAllowed('route/territories/territory/suggest')):?>
+                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
+                    echo $this->url('courses/course/suggest', array('territory_id' => $entity['territoryId']));?>">
+                    <?php echo $this->translate('Suggest change')?></a>
+                </span>
+            <?php endif;?>
+        </div>
+        </div>
+	</div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+        <?php if (!is_null($entity['parentTerritory'])) : ?>
+        	<p><strong><?php echo $this->translate('Parent territory');?>: </strong><?php
+            echo $this->formatEntity('territory', $entity['parentTerritory']);
+        ?></p>
+		<?php endif;?>
+		<p><strong><?php echo $this->translate('Celebration date');?>: </strong><?php
+		if (!is_null($entity['celebrationDate'])) {
+            echo $this->dateFormat($entity['celebrationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        }?></p>
+        <?php if (!is_null($entity['canonicalErection'])) : ?>
+        	<p><strong><?php echo $this->translate('Canonical erection');?>:</strong><?php
+            echo $this->dateFormat($entity['canonicalErection'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        ?></p>
+		<?php endif;?>
+        <?php if (!is_null($entity['canonicalSuppression'])) : ?>
+        	<p><strong><?php echo $this->translate('Canonical suppression');?>:</strong><?php
+            echo $this->dateFormat($entity['canonicalSuppression'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        ?></p>
+		<?php endif;?>
+		<?php if (!empty($entity['childTerritories'])) :?>
+        <hr>
+            <h4 class="text-center"><strong><?php echo $this->translate('Associated territories');?></strong></h4>
+            <?php foreach ($entity['childTerritories'] as $territory) :
+                if ($territory['isActive'] || $this->isAllowed('patres_details')):?>
+                	<p><?php echo $this->formatEntity('territory', $territory, [
+                	    'displayInactiveLabel' => true
+                	]);?></p><?php
+                endif;
+            endforeach;
+        endif;?>
+	</div> <!-- info 1 column -->
+
+    <div class="col-md-6">
+      <h4 class="text-center"><strong><?php echo $this->translate('Superiors');?></strong></h4>
+    <?php foreach ($entity['assignments'] as $assignment) : ?>
+    <p>
+    	<?php if ($assignment['isMainRole'] && $assignment['person']) :?>
+    		<?php echo $this->formatEntity('person', $assignment['person'], ['displayEditPencil' => false]);
+            echo ' '.$this->shortDateRange($assignment['startDate'], $assignment['endDate']);
+    		if ($this->isAllowed('route/assignments/assignment/edit')) : ?>
+        		<a href="<?php
+        		echo $this->url('assignments/assignment/edit', ['assignment_id' => $assignment['assignmentId'],
+                    'action' => 'edit']);?>">
+    			<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a>
+    		<?php endif;?>
+    	<?php endif;?>
+    </p>
+    <?php endforeach;?>
+    <?php if (!is_null($entity['mainRole']) && $this->isAllowed('route/assignments/create')): ?>
+        <p><a class="btn btn-default btn-sm" href="<?php
+            echo $this->url('assignments/create', [],
+                ['query' => ['roleId' => $entity['mainRole']['roleId']]]);?>">
+            <span class="glyphicon glyphicon-plus">&nbsp;</span><?php echo $this->translate('Add assignment')?></a>
+        </p>
+    <?php endif;?>
+	</div> <!-- info 2 column -->
+    </div></div> <!-- contact info panel body -->
+</div> <!-- course info 1 panel -->
+</div><!-- info 1 column -->
+</div> <!-- Info row -->
+
+<?php if (count($entity['idealLanguages']) > 0) {
+    echo $this->partial('patres/patres/multi-language-text-box', [
+        'title'             => $this->translate('Ideal Statement'),
+        'textLanguageKeys'  => $entity['idealLanguages'],
+        'entity'            => $entity,
+        'id'                => $entity['territoryId'],
+    ]);
+}?>
+
+<table class="table">
+<thead><tr>
+	<th><?php echo $this->escapeHtml($this->translate('Filiation'));?></th>
+	<th><?php echo $this->escapeHtml($this->translate('Rector'));?></th>
+	<th><?php echo $this->escapeHtml($this->translate('Main house'));?></th>
+	<th><?php echo $this->escapeHtml($this->translate('Members'));?></th>
+</tr></thead>
+<?php foreach ($this->entity['filiations'] as $filiation) : ?><tr>
+	<td><?php echo $this->formatEntity('filiation', $filiation, [
+	    'displayInactiveLabel' => true,
+	]);?></td>
+	<td><?php if ($filiation['mainPerson']) {
+	    echo $this->formatEntity('person', $filiation['mainPerson']);
+	}?></td>
+	<td><?php if ($filiation['mainHouseId']) {
+	    echo $this->formatEntity('house', $filiation['mainHouse']);
+	    $houseCount = 0;
+	    foreach ($filiation['houses'] as $house) {
+	        if ($house['isActive']) {
+	            ++$houseCount;
+	        }
+	    }
+	    if ($houseCount === 2) {
+	        echo ' '.$this->escapeHtml($this->translate('(+1 house)'));
+	    } elseif ($houseCount > 2) {
+	        echo ' '.$this->escapeHtml(sprintf($this->translate('(+%s houses)'), $houseCount-1));
+	    }
+	}?></td>
+	<td><?php echo $filiation['statistics']['livingMembers'];?></td>
+</tr><?php endforeach; ?>
+</table>

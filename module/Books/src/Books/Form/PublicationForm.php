@@ -2,8 +2,9 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
+use Zend\InputFilter\InputFilterProviderInterface;
 
-class PublicationForm extends SionForm
+class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
     public function __construct()
     {
@@ -91,7 +92,7 @@ class PublicationForm extends SionForm
             'attributes' => [
                 'min'         => 0,
                 'max'         => 6000,
-                'step'        => 1,
+                'step'        => 'any',
                 'inclusive'   => true,
             ],
         ]);
@@ -373,6 +374,7 @@ class PublicationForm extends SionForm
 
     public function getInputFilterSpecification()
     {
+//         $this->getInputFilter()->get('numberOfPages')->setValidatorChain(new ValidatorChain());
         return [
             'title' => [
                 'required' => false,
@@ -489,6 +491,8 @@ class PublicationForm extends SionForm
             ],
             'numberOfPages' => [
                 'required' => false,
+//                 'allow_empty' => true,
+//                 'continue_if_empty' => true,
                 'filters' => [
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
@@ -705,18 +709,8 @@ class PublicationForm extends SionForm
             'keywords' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringToLower'],
                     ['name' => 'SionModel\Filter\SortArray'],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 255,
-                        ],
-                    ],
                 ],
             ],
             'isAccessableForFree' => [

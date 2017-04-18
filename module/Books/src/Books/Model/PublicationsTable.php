@@ -64,6 +64,71 @@ ORDER BY `Publisher`";
         return $valueOptions;
     }
 
+
+    /**
+     * Search for books. Returns a list of publications. The query parameters are:
+     * search(string), maxResults(int), displaySubEditions(bool), searchSubEditions(bool),
+     * author(string|int|array[or], language(string|array)
+     * @param mixed[] $query
+     * @return mixed[]
+     */
+    public function searchBooks($query)
+    {
+        $filter = new ToAscii();
+        if (isset($query['search']) && !is_null($query['search'])) {
+            $query['search'] = $filter->filter($query['search']);
+        }
+
+        $entities = $this->getPublications();
+        $results = [];
+        $count = 0;
+        foreach ($entities as $publicationId => $publication) {
+            //isAvailable
+            if (isset($query['isAvailable']) && is_bool($query['isAvailable']) &&
+                $query['isAvailable'] != $publication['isAvailable']
+            ) {
+                continue;
+            }
+
+            if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_array($query['libraryId']) &&
+                !in_array($publication['libraryId'], $query['libraryId'])
+            ) {
+                continue;
+            }
+
+            //category
+            if (isset($query['category']) && !is_null($query['category']) && is_string($query['category']) &&
+                $query['category'] != $publication['category']
+            ) {
+                continue;
+            }
+            if (isset($query['category']) && !is_null($query['category']) && is_array($query['category']) &&
+            !in_array($publication['category'], $query['category'])
+            ) {
+                continue;
+            }
+
+            if (isset($query['search']) && !is_null($query['search']) &&
+                false === stripos($filter->filter($publication['author']), $query['search']) &&
+                false === stripos($filter->filter($publication['title']), $query['search']) &&
+                false === stripos($filter->filter($publication['callNumber']), $query['search']) &&
+                false === stripos($filter->filter($publication['category']), $query['search']) &&
+                !(!isset($query['libraryId']) && //@todo test this
+                    false === stripos($filter->filter($publication['library']['name']), $query['search']))
+            ) {
+                continue;
+            }
+            $count++;
+            if (isset($query['maxResults']) && is_numeric($query['maxResults']) &&
+                $count > $query['maxResults']
+            ) {
+                break;
+            }
+            $results[$publicationId] = $publication;
+        }
+        return $results;
+    }
+
     public function getPublications()
     {
         if (!is_null($cache = $this->getUnlinkedPublicationsCache())) {
