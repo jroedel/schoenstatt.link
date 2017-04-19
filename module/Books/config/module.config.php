@@ -47,6 +47,14 @@ return [
             'Books\Form\CreateCheckoutForm' => 'Books\Service\CheckoutFormFactory',
             'Books\Form\CheckinForm'        => 'Books\Service\CheckinFormFactory',
             'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
+            'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
+        ],
+    ],
+    'view_helpers' => [
+        'factories' => [
+        ],
+        'invokables' => [
+            'formatPublication'             => 'Books\View\Helper\FormatPublication',
         ],
     ],
 
@@ -535,6 +543,7 @@ return [
                 'sion_model_class'               		=> 'Books\Model\PublicationsTable',
                 'get_object_function' 					=> 'getPublication',
                 'get_objects_function'               	=> 'getPublications',
+                'format_view_helper'                    => 'formatPublication',
                 'required_columns_for_creation' 		=> [
                     'title'
                 ],

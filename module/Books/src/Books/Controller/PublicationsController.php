@@ -34,23 +34,22 @@ class PublicationsController extends SionController
 
         if ($form->isValid()) {
             $notAllowed = [];
-            //             if (!$this->isAllowed('book_teo', 'read')) {
-            //                 $notAllowed[] = '\'DigitaSión Teo\'';
-            //                 $notAllowed[] = '\'DigitaSión Fil\'';
-            //             }
-            //             if (!$this->isAllowed('book_sch', 'read')) {
-            //                 $notAllowed[] = '\'DigitaSión Sch\'';
-            //             }
+//             if (!$this->isAllowed('book_teo', 'read')) {
+//                 $notAllowed[] = '\'DigitaSión Teo\'';
+//                 $notAllowed[] = '\'DigitaSión Fil\'';
+//             }
+//             if (!$this->isAllowed('book_sch', 'read')) {
+//                 $notAllowed[] = '\'DigitaSión Sch\'';
+//             }
             $data = $form->getData();
 
             if (!empty($data)) {
                 $sm = $this->getServiceLocator();
-                /** @var LibraryTable $table */
-                $table = $sm->get('Library\Model\LibraryTable');
-                //                 $data['notAllowed'] = $notAllowed;
-                $data['maxResults'] = 200;
-                $entities = $table->searchBooks($data);
-                $libraries = $this->transformBookQueryIntoLibraries($entities);
+                /** @var PublicationsTable $table */
+                $table = $sm->get('Books\Model\PublicationsTable');
+//                 $data['notAllowed'] = $notAllowed;
+                $data['maxResults'] = 300;
+                $entities = $table->searchPublications($data);
             }
         }
 
@@ -59,7 +58,7 @@ class PublicationsController extends SionController
         }
 
         return new ViewModel([
-            'entities'  => $libraries,
+            'entities'  => $entities,
             'form'      => $form,
         ]);
     }

@@ -401,23 +401,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'authors' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
-                        'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 500,
-                        ],
-                    ],
+                    ['name' => 'SionModel\Filter\TrimStringArray'],
                 ],
             ],
             'inLanguage' => [

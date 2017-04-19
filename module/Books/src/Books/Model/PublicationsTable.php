@@ -2,6 +2,7 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
+use SionModel\Filter\ToAscii;
 
 class PublicationsTable extends SionTable
 {
@@ -72,49 +73,61 @@ ORDER BY `Publisher`";
      * @param mixed[] $query
      * @return mixed[]
      */
-    public function searchBooks($query)
+    public function searchPublications($query)
     {
         $filter = new ToAscii();
         if (isset($query['search']) && !is_null($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
         }
 
+        $searchSubEditions = isset($query['searchSubEditions']) && is_bool($query['searchSubEditions']) ?
+            $query['searchSubEditions'] : false;
+        $displaySubEditions = isset($query['displaySubEditions']) && is_bool($query['displaySubEditions']) ?
+            $query['displaySubEditions'] : false;
+
         $entities = $this->getPublications();
+        $subEditions = [];
         $results = [];
         $count = 0;
         foreach ($entities as $publicationId => $publication) {
             //isAvailable
-            if (isset($query['isAvailable']) && is_bool($query['isAvailable']) &&
-                $query['isAvailable'] != $publication['isAvailable']
-            ) {
+            if (!$searchSubEditions && $publication['isSubEdition']) {
                 continue;
             }
 
-            if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_array($query['libraryId']) &&
-                !in_array($publication['libraryId'], $query['libraryId'])
-            ) {
-                continue;
-            }
+//             if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_array($query['libraryId']) &&
+//                 !in_array($publication['libraryId'], $query['libraryId'])
+//             ) {
+//                 continue;
+//             }
 
-            //category
-            if (isset($query['category']) && !is_null($query['category']) && is_string($query['category']) &&
-                $query['category'] != $publication['category']
+            //keywords
+            if (isset($query['keywords']) && !is_null($query['keywords']) && is_string($query['keywords']) &&
+                !in_array($query['keywords'], $publication['keywords'])
             ) {
                 continue;
             }
-            if (isset($query['category']) && !is_null($query['category']) && is_array($query['category']) &&
-            !in_array($publication['category'], $query['category'])
+            if (isset($query['keywords']) && !is_null($query['keywords']) && is_array($query['keywords'])
             ) {
-                continue;
+                $found = false;
+                foreach ($query['keywords'] as $searchKeyword) {
+                    if (in_array($searchKeyword, $publication['keywords'])) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    continue;
+                }
             }
 
             if (isset($query['search']) && !is_null($query['search']) &&
-                false === stripos($filter->filter($publication['author']), $query['search']) &&
+                false === stripos($filter->filter($publication['authors']), $query['search']) &&
                 false === stripos($filter->filter($publication['title']), $query['search']) &&
-                false === stripos($filter->filter($publication['callNumber']), $query['search']) &&
-                false === stripos($filter->filter($publication['category']), $query['search']) &&
-                !(!isset($query['libraryId']) && //@todo test this
-                    false === stripos($filter->filter($publication['library']['name']), $query['search']))
+                false === stripos($filter->filter($publication['bookEdition']), $query['search']) &&
+                false === stripos($filter->filter($publication['description']), $query['search']) &&
+                false === stripos($filter->filter($publication['publisher']), $query['search']) &&
+                false === stripos($filter->filter($publication['volumeNumber']), $query['search'])
             ) {
                 continue;
             }
@@ -124,7 +137,23 @@ ORDER BY `Publisher`";
             ) {
                 break;
             }
-            $results[$publicationId] = $publication;
+            if ($displaySubEditions || !$publication['isSubEdition']) {
+                $results[$publicationId] = $publication;
+            } else {
+                $subEditions[$publicationId] = $publication;
+            }
+        }
+        //add the subEdition or the mainEdition depending on $displaySubEditions
+        foreach ($subEditions as $publicationId => $publication) {
+            if (!is_null($publication['mainPublicationId']) &&
+                key_exists($publication['mainPublicationId'], $entities)
+            ) {
+                if (!$displaySubEditions && !key_exists($publication['mainPublicationId'], $results)) {
+                    $results[$publication['mainPublicationId']] = $entities[$publication['mainPublicationId']];
+                } elseif ($displaySubEditions) {
+                    $results[$publicationId] = $publication;
+                }
+            }
         }
         return $results;
     }
@@ -142,7 +171,6 @@ ORDER BY `Publisher`";
     }
 
     /**
-     * @todo test this
      * @return mixed[]
      */
     public function getUnlinkedPublications()
@@ -161,7 +189,6 @@ ORDER BY `Publisher`";
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
 `CreatedOn`, `CreatedBy`
 FROM `sch_publications`
-WHERE 1
 ORDER BY `Authors`, `Title`";
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
@@ -174,6 +201,7 @@ ORDER BY `Authors`, `Title`";
                 ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
             ];
             $urls = $this::processUrls($unprocessedUrls);
+            $mainPublicationId = $this->filterDbId($row['MainPublicationId']);
             $entities[$id] = [
                 'publicationId'             => $id,
                 'title' 					=> $this->filterDbString($row['Title']),
@@ -195,7 +223,7 @@ ORDER BY `Authors`, `Title`";
                 'datePublished' 			=> $this->filterDbDate($row['DatePublished']),
                 'publishingStatus' 			=> $this->filterDbString($row['PublishingStatus']),
                 'bookFormatType'			=> $this->filterDbString($row['BookFormatType']),
-                'mainPublicationId' 		=> $this->filterDbId($row['MainPublicationId']),
+                'mainPublicationId' 		=> $mainPublicationId,
                 'volumeNumber' 				=> $this->filterDbString($row['VolumeNumber']),
                 'cntainedIn' 				=> $this->filterDbString($row['ContainedIn']),
                 'containedInIsbn' 			=> $this->filterDbString($row['ContainedInIsbn']),
@@ -231,6 +259,9 @@ ORDER BY `Authors`, `Title`";
                 'createdBy'                 => $this->filterDbId($row['CreatedBy']),
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
+
+                'isSubEdition'              => !is_null($mainPublicationId),
+                'mainPublication'           => null,
             ];
         }
 

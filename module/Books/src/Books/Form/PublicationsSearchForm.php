@@ -39,7 +39,7 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
 		    ],
 		]);
 		$this->add([
-		    'name' => 'language',
+		    'name' => 'inLanguage',
 		    'type' => 'Select',
 		    'options' => [
 		        'label' => 'Languages',
@@ -47,8 +47,10 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
 		        'empty_option' => '',
 		        'unselected_value' => '',
 		        'disable_inarray_validator' => true,
-		        'multiple'    => true,
 		        'value_options' => [],
+		    ],
+		    'attributes' => [
+		        'multiple'    => true,
 		    ],
 		]);
 
@@ -85,7 +87,7 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
 		    'showEditionsSeparately' => [
 		        'required' => false,
 		    ],
-		    'language' => [
+		    'inLanguage' => [
 		        'required' => false,
 		        'filters' => [
 		            ['name' => 'StringToLower'],

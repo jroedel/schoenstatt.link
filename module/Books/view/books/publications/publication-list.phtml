@@ -1,0 +1,46 @@
+<?php
+/**
+ * @var $objects mixed[]
+ * @var $columns string[]
+ */
+if (!isset($this->columns)) {
+    throw new \InvalidArgumentException('Please pass a list of columns to the publication-list partial');
+}
+$columnNames = [
+    'authors'   => 'Authors',
+    'title'     => 'Title',
+    'edition'   => 'Edition',
+];
+?>
+<table class="table">
+<tr><?php foreach ($this->columns as $key => $column) :
+    if (!key_exists($column, $columnNames)) {
+        unset($column[$key]);
+        continue;
+    }?>
+    <th><?php echo $this->translate($columnNames[$column]);?></th>
+<?php endforeach;?>
+</tr>
+<?php foreach($this->objects as $entityId => $entity) :?>
+<tr><?php foreach ($this->columns as $column) :
+switch ($column) {
+    case 'authors':?>
+		<td><?php echo $this->formatEntity('publication', $entity, [
+		    'display' => 'authors',
+		]);?></td>
+    	<?php break;
+    case 'title':?>
+		<td><?php echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => true]);?></td>
+    	<?php break;
+    case 'edition':?>
+		<td><?php echo $this->escapeHtml($entity['bookEdition']);
+		echo $this->editPencil('publication', $entityId);?></td>
+    	<?php break;
+
+    default:
+        ;
+    break;
+}
+endforeach;
+endforeach; ?></tr>
+</table>

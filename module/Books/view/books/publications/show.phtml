@@ -3,4 +3,4 @@ $entity = $this->entity;
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($entity['name']);?>
 <h1><?php echo $this->escapeHtml($this->entity['name']);?></h1>
-<?php echo $this->partial('book-info', ['object' => $this->entity]);?>
+<?php echo $this->partial('publication-info', ['object' => $this->entity]);?>

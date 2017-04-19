@@ -1,6 +1,8 @@
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
 $form = $this->form;
-$form->setAttribute('action', $this->url('search'));
+$form->setAttribute('action', $this->url('publications/search'));
 $form->prepare();?>
 <div class="row" style="margin-bottom: 30px;
 <?php if ($this->centerOnPage) {
@@ -30,7 +32,7 @@ $form->prepare();?>
                     	<?php echo $this->formCheckbox($form->get('showEditionsSeparately')); ?>
                     </div>
                     <div class="checkbox col-md-4">
-                    	<?php echo $this->formSelect($form->get('language')); ?>
+                    	<?php echo $this->formSelect($form->get('inLanguage')); ?>
                     </div>
                     <?php
 //                     echo $this->formHidden($form->get('course'));
@@ -54,6 +56,9 @@ $(document).ready(function(){
             }
         });
     });
+});
+$("select[name='inLanguage[]']").selectize({
+    sortField: 'text'
 });
 JS;
 $this->inlineScript()->captureEnd();?>
