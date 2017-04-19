@@ -12,6 +12,8 @@ use Books\Form\PublicationsSearchForm;
 
 class PublicationsController extends SionController
 {
+    const MAX_SEARCH_RESULTS = 300;
+
     public function __construct()
     {
         parent::__construct('publication');
@@ -28,7 +30,7 @@ class PublicationsController extends SionController
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
-        $form = new PublicationsSearchForm();
+        $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
         $form->setData($params);
         $entities = null;
 
@@ -48,8 +50,11 @@ class PublicationsController extends SionController
                 /** @var PublicationsTable $table */
                 $table = $sm->get('Books\Model\PublicationsTable');
 //                 $data['notAllowed'] = $notAllowed;
-                $data['maxResults'] = 300;
+                $data['maxResults'] = self::MAX_SEARCH_RESULTS;
                 $entities = $table->searchPublications($data);
+                if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {
+                    $this->nowMessenger()->addMessage("More than the max number of publications match your search. Only the first 300 results shown.", NowMessenger::NAMESPACE_INFO);
+                }
             }
         }
 

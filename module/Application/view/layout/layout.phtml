@@ -24,7 +24,7 @@ echo $this->doctype(); ?>
 //             ->prependFile($this->basePath('js/bootstrap.min.js'))
 //             ->prependFile($this->basePath('js/jquery.min.js'))
             ->prependFile($this->basePath('js/respond.min.js'), 'text/javascript', array('conditional' => 'lt IE 9',))
-            ->prependFile($this->basePath('js/html5shiv.min.js'),   'text/javascript', array('conditional' => 'lt IE 9',))
+            ->prependFile($this->basePath('js/html5shiv.min.js'), 'text/javascript', array('conditional' => 'lt IE 9',))
         ; ?>
 
     </head>
@@ -51,13 +51,22 @@ echo $this->doctype(); ?>
                     ?>
     				<ul class="nav navbar-nav pull-right">
     					<?php $username = $this->zfcUserDisplayName();
-    					if (0 != strcmp($this->routeName(), 'assignments/search') &&
-    					    0 != strcmp($this->routeName(), 'assignments') &&
-    					    0 != strcmp($this->routeName(), 'home')
-    					    && $username) :?>
+    					$routeName = $this->routeName();
+    					if (0 != strcmp($routeName, 'assignments/search') &&
+					        0 != strcmp($routeName, 'assignments') &&
+					        0 != strcmp($routeName, 'publications/search') &&
+					        0 != strcmp($routeName, 'publications') &&
+					        0 != strcmp($routeName, 'home')
+    					    && $username
+				        ) :
+				        if (!strpos($routeName, 'publication')) {
+				            $searchUrl = $this->url('publications/search');
+    					} else {
+    					    $searchUrl = $this->url('assignments/search');
+    					}?>
     					<li class="">
     						<form class="navbar-form"
-    							action="<?php echo $this->url('assignments/search') ?>" method="get"
+    							action="<?php echo $searchUrl; ?>" method="get"
     							role="search">
     							<div class="input-group">
     								<input type="text" class="form-control" name="search"

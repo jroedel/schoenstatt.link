@@ -69,7 +69,7 @@ ORDER BY `Publisher`";
     /**
      * Search for books. Returns a list of publications. The query parameters are:
      * search(string), maxResults(int), displaySubEditions(bool), searchSubEditions(bool),
-     * author(string|int|array[or], language(string|array)
+     * author(string|int|array[or], inLanguage(string|array[or])
      * @param mixed[] $query
      * @return mixed[]
      */
@@ -95,12 +95,17 @@ ORDER BY `Publisher`";
                 continue;
             }
 
-//             if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_array($query['libraryId']) &&
-//                 !in_array($publication['libraryId'], $query['libraryId'])
-//             ) {
-//                 continue;
-//             }
-
+            //language
+            if (isset($query['inLanguage']) && !is_null($query['inLanguage']) && is_string($query['inLanguage']) &&
+                $query['inLanguage'] != $publication['inLanguage']
+            ) {
+                continue;
+            }
+            if (isset($query['inLanguage']) && !is_null($query['inLanguage']) && is_array($query['inLanguage']) &&
+                !in_array($publication['inLanguage'], $query['inLanguage'])
+            ) {
+                continue;
+            }
             //keywords
             if (isset($query['keywords']) && !is_null($query['keywords']) && is_string($query['keywords']) &&
                 !in_array($query['keywords'], $publication['keywords'])

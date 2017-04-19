@@ -51,6 +51,7 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
 		    ],
 		    'attributes' => [
 		        'multiple'    => true,
+		        'placeholder' => 'Languages',
 		    ],
 		]);
 

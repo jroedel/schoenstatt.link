@@ -128,10 +128,6 @@ $this->headTitle($pageTitle);
 </div> <!-- community info column -->
 
 <div class="col-md-6"> <!-- dates column -->
-    <p><strong><?php echo $this->translate('Birthday'); ?>: </strong> <?php
-    if (is_object($entity['birthDate'])) {
-        echo $this->dateFormat($entity['birthDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-    }?></p>
     <?php if (is_object($entity['deathDate'])): ?>
         <p><strong><?php echo $this->translate('Passed away on'); ?>:</strong> <?php
         echo $this->dateFormat($entity['deathDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
@@ -176,6 +172,10 @@ $this->headTitle($pageTitle);
 
 <div class="row"> <!-- private info panel row -->
 <div class="col-md-6"> <!-- private facts column -->
+    <p><strong><?php echo $this->translate('Birthday'); ?>: </strong> <?php
+    if (is_object($entity['birthDate'])) {
+        echo $this->dateFormat($entity['birthDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    }?></p>
 <?php if (!empty($entity['adminTags'])) :?>
 <p><strong><?php echo $this->translate('Admin tags'); ?>:</strong> <?php
 $adminTagFormat = '<span class="label label-default">%s</span>';

@@ -4,4 +4,7 @@ echo $this->partial('search-bar', [
 ]);
 echo $this->partial('publication-list', [
     'objects' => $this->objects,
+    'columns' => [
+        'authors', 'title', 'edition',
+    ],
 ]);?>

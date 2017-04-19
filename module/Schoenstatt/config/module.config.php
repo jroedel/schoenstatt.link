@@ -704,9 +704,6 @@ return [
         ],
     ],
     'sion_model' => [
-		'changes_table' => 'sch_changes',
-        'visits_table' => 'sch_visits',
-        'visits_model' => 'Schoenstatt\Model\SchoenstattTable',
         'problem_providers' => [
             'Schoenstatt\Model\SchoenstattTable',
         ],
