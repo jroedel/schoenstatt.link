@@ -1235,7 +1235,6 @@ return [
     'bjyauthorize' => [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'admin', 'roles' => ['sch_user']],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'assignments', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],

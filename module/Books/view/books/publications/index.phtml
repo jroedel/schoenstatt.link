@@ -2,6 +2,9 @@
 echo $this->partial('search-bar', [
     'form' => $this->form,
 ]);
+if ($this->isAllowed('route/publications/create')):?>
+<p><a class="btn btn-primary pull-right" href="<?php echo $this->url('publications/create');?>"><?php echo $this->translate('Add publication');?></a>
+<?php endif;
 echo $this->partial('publication-list', [
     'objects' => $this->objects,
     'columns' => [
