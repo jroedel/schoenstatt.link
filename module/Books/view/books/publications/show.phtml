@@ -1,6 +1,6 @@
 <?php
-$entity = $this->entity;
+$object = $this->entity;
 $this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle($entity['name']);?>
-<h1><?php echo $this->escapeHtml($this->entity['name']);?></h1>
+$this->headTitle($object['title']);?>
+<h1><?php echo $this->escapeHtml($this->entity['title']);?></h1>
 <?php echo $this->partial('publication-info', ['object' => $this->entity]);?>

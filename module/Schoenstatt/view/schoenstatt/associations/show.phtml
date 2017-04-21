@@ -1,6 +1,6 @@
 <?php
-$entity = $this->entity;
-$name = $entity['isNameTranslateable'] ? $this->translate($entity['name']) : $entity['name'];
+$object = $this->entity;
+$name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($name);?>
 <h1><?php echo $this->escapeHtml($name);?></h1>
@@ -14,9 +14,9 @@ $this->headTitle($name);?>
         </h3>
         </div>
         <div class="col-xs-5">
-        	<?php if (!is_null($entity['contactInfoUpdatedOn'])) :?>
+        	<?php if (!is_null($object['contactInfoUpdatedOn'])) :?>
         		<span class="pull-right"><small><?php echo sprintf($this->translate('Updated %s'),
-        		    $this->diffForHumans($entity['contactInfoUpdatedOn']));?></small></span>
+        		    $this->diffForHumans($object['contactInfoUpdatedOn']));?></small></span>
         	<?php endif;?>
         </div>
         </div>
@@ -26,16 +26,16 @@ $this->headTitle($name);?>
     	<!-- Here goes the logo -->
     	<div class="col-md-7">
             <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
-            if (!is_null($entity['email'])) { //@todo add checks for validated
-                echo $this->email($entity['email']);
-                if (!is_null($entity['email2'])) {
-                    echo ', '.$this->email($entity['email2']);
+            if (!is_null($object['email'])) { //@todo add checks for validated
+                echo $this->email($object['email']);
+                if (!is_null($object['email2'])) {
+                    echo ', '.$this->email($object['email2']);
                 }
             }?></p>
             <div class="row">
             <div class="col-md-12">
             	<div class="row"><div class="col-md-12">
-            	<?php foreach ($entity['urls'] as $urlRow) :?>
+            	<?php foreach ($object['urls'] as $urlRow) :?>
             	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
             	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
             	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
@@ -46,20 +46,20 @@ $this->headTitle($name);?>
             </div> <!-- Links row -->
         </div>
         <div class="col-md-5">
-            <?php foreach ($entity['phones'] as $phoneRow) : ?>
+            <?php foreach ($object['phones'] as $phoneRow) : ?>
                 <p><strong><?php echo $this->translate($phoneRow['label']); ?>:</strong>
 				<span><?php echo $this->telephone($phoneRow['number'],
 						isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
 						$this->isAllowed('route/persons/person/edit-contact-info'));?></span></p>
             <?php endforeach;
-            if (!is_null($entity['phonesUpdatedOn'])) :  //@todo add a question mark here with text
+            if (!is_null($object['phonesUpdatedOn'])) :  //@todo add a question mark here with text
                 //@todo use diffForHumans view helper
-        	    $phoneUpdated = Carbon::instance($entity['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
+        	    $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
         	<?php endif;
-        	if (!is_null($entity['contactNotes'])) :?>
+        	if (!is_null($object['contactNotes'])) :?>
         		<p><strong><?php echo $this->translate('Notes');?>:</strong></p>
-        		<div id="contactNotes"><?php echo $this->markdown($entity['contactNotes']);?></div>
+        		<div id="contactNotes"><?php echo $this->markdown($object['contactNotes']);?></div>
         	<?php endif;?>
         	<!--
         	Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
@@ -80,25 +80,25 @@ $this->headTitle($name);?>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
         <p><strong><?php echo $this->translate('Foundation date');?>:</strong>
-        <?php if (!is_null($entity['foundationDate'])) {
-        echo $this->dateFormat($entity['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+        <?php if (!is_null($object['foundationDate'])) {
+        echo $this->dateFormat($object['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
         }?></p>
-		<?php if (!is_null($entity['suppressionDate'])) :?>
+		<?php if (!is_null($object['suppressionDate'])) :?>
       		<p><strong><?php echo $this->translate('Suppression date');?>:</strong> <?php
-                echo $this->dateFormat($entity['suppressionDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+                echo $this->dateFormat($object['suppressionDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
             ?></p>
 		<?php endif;?>
-		<?php if (!is_null($entity['country'])) :?>
+		<?php if (!is_null($object['country'])) :?>
       		<p><strong><?php echo $this->translate('Country');?>:</strong> <?php
-                echo $this->countryName($entity['country'], true);
+                echo $this->countryName($object['country'], true);
             ?></p>
 		<?php endif;?>
 	</div> <!-- info 1 column -->
 
     <div class="col-md-6">
-		<?php if ($entity['publicNotes']) : ?>
+		<?php if ($object['publicNotes']) : ?>
 			<p class="text-center"><strong><?php echo $this->translate('Additional Info');?></strong></p>
-			<?php echo $this->markdown($entity['publicNotes']);
+			<?php echo $this->markdown($object['publicNotes']);
 		endif;?>
 	</div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->
@@ -116,14 +116,14 @@ $this->headTitle($name);?>
     <div class="col-md-6">
     	<p>&nbsp;</p>
     	<?php echo $this->partial('assignments-table-partial', [
-    		'assignments' 	=> $entity['assignments'],
+    		'assignments' 	=> $object['assignments'],
     		'showActive' 	=> true,
     		'showInactive' 	=> false,
     	]);?>
 	</div> <!-- assignments 1 column -->
     <div class="col-md-6">
     	<?php echo $this->partial('assignments-table-partial', [
-    		'assignments' 	=> $entity['assignments'],
+    		'assignments' 	=> $object['assignments'],
     		'showActive' 	=> false,
     		'showInactive' 	=> true,
     		'headerText'	=> $this->translate('Past contacts'),
@@ -141,9 +141,9 @@ $this->headTitle($name);?>
 	</div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-    <?php if (!empty($entity['roles'])): ?>
+    <?php if (!empty($object['roles'])): ?>
     <ul class="list-group">
-    	<?php foreach ($entity['roles'] as $roleId => $role) :?>
+    	<?php foreach ($object['roles'] as $roleId => $role) :?>
     		<li class="list-group-item"><?php echo $this->formatEntity('role', $role);?></li>
         <?php endforeach;?>
 	</ul>
@@ -151,15 +151,15 @@ $this->headTitle($name);?>
 	if ($this->isAllowed('route/roles/create')): ?>
         <p><a class="btn btn-default btn-sm" href="<?php
             echo $this->url('roles/create', [],
-                ['query' => ['associationId' => $entity['associationId']]]);?>">
+                ['query' => ['associationId' => $object['associationId']]]);?>">
             <span class="glyphicon glyphicon-plus">&nbsp;</span><?php echo $this->translate('Add role')?></a>
         </p>
     <?php endif;?>
 	</div> 
     <div class="col-md-6"><!-- Admin notes column -->
-		<?php if ($entity['adminNotes']):?>
+		<?php if ($object['adminNotes']):?>
     		<p><strong><?php echo $this->translate('Admin notes');?>:</strong></p>
-    		<div><?php echo $this->markdown($entity['adminNotes']);?></div>
+    		<div><?php echo $this->markdown($object['adminNotes']);?></div>
 		<?php endif;?>
     </div>
 	</div></div>
@@ -169,7 +169,7 @@ $this->headTitle($name);?>
 <div class="row"><div class="col-md-12">
 <?php if ($this->isAllowed('route/associations/association/edit')): ?>
       <a class="btn btn-primary" href="<?php echo $this->url('associations/association/edit',
-          ['association_id' => $entity['associationId']]);?>"><?php
+          ['association_id' => $object['associationId']]);?>"><?php
     echo $this->translate("Edit details")?></a>
 <?php endif;?>
 </div></div>

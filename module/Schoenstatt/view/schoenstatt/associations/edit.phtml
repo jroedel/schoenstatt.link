@@ -2,7 +2,7 @@
 $this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
 $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
-$entity = $this->entity;
+$object = $this->entity;
 $headText = 'Edit Association';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>

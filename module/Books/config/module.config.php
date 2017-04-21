@@ -55,6 +55,7 @@ return [
         ],
         'invokables' => [
             'formatPublication'             => 'Books\View\Helper\FormatPublication',
+            'formatField'                   => 'Books\View\Helper\FormatField',
         ],
     ],
 

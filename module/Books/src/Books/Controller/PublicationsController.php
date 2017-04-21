@@ -12,7 +12,7 @@ use Books\Form\PublicationsSearchForm;
 
 class PublicationsController extends SionController
 {
-    const MAX_SEARCH_RESULTS = 300;
+    const MAX_SEARCH_RESULTS = 1000;
 
     public function __construct()
     {
