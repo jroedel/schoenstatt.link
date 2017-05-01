@@ -29,5 +29,19 @@ return [
 		'person_provider' => 'Schoenstatt\Model\SchoenstattTable',
 
         'route_permission_checking_enabled' => true,
+
+        'cache_config' => [
+            'adapter' => [
+                'name' => 'filesystem',
+                'options' => [
+                    'dirLevel' => 2,
+                    'cacheDir' => 'cache/data',
+                    'dirPermission' => 0755,
+                    'filePermission' => 0666,
+                    'namespaceSeparator' => '-db-'
+                ],
+            ],
+            'plugins' => ['serializer'],//   - See more at: https://arjunphp.com/zend-framework-2-cache-example/#sthash.1P0kgSma.dpuf
+        ],
 	],
 ];

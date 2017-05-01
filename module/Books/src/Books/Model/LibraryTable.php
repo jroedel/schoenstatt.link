@@ -140,7 +140,9 @@ class LibraryTable extends SionTable
      */
     public function getBooks()
     {
-        if (!is_null($cache = $this->getBooksCache())) {
+        $libraryId = $this->getLibraryId();
+        $cacheKey = is_null($libraryId) ? 'books' : 'books-'.$libraryId;
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $entities = $this->getUnlinkedBooks();
@@ -163,13 +165,19 @@ class LibraryTable extends SionTable
                 $entities[$checkout['bookId']]['currentCheckout'] = $checkout;
             }
         }
-        $this->setBooksCache($entities);
+        $this->cacheEntityObjects($cacheKey, $entities, ['book', 'checkout', 'library']);
         return $entities;
     }
 
     protected function getUnlinkedBooks()
     {
-        if (!is_null($libraryId = $this->getLibraryId())) {
+        $libraryId = $this->getLibraryId();
+        $cacheKey = is_null($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        if (!is_null($libraryId)) {
             $sql = "SELECT book_id, library_id, author, title, edition, call_number,
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by
 FROM lib_books
@@ -212,6 +220,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
                 'library'       => null,
             ];
         }
+        $this->cacheEntityObjects($cacheKey, $entities, ['book']);
         return $entities;
     }
 
@@ -243,7 +252,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
      */
     public function getLibraries()
     {
-        if (!is_null($cache = $this->getLibrariesCache())) {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('libraries'))) {
             return $cache;
         }
 
@@ -264,13 +273,13 @@ ORDER BY library_id, call_number, category, lang, author, title";
             }
         }
 
-        $this->setLibrariesCache($entities);
+        $this->cacheEntityObjects('libraries', $entities, ['library', 'book']);
         return $entities;
     }
 
     public function getUnlinkedLibraries()
     {
-        if (!is_null($cache = $this->getUnlinkedLibrariesCache())) {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {
             return $cache;
         }
         $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberHelpText`,
@@ -303,7 +312,7 @@ ORDER BY `FiliationId`, `LibraryName`";
                 'categoryStatistics'    => [],
             ];
         }
-        $this->setUnlinkedLibrariesCache($entities);
+        $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
         return $entities;
     }
 
@@ -345,7 +354,7 @@ ORDER BY `FiliationId`, `LibraryName`";
      */
     public function getCheckouts()
     {
-        if (!is_null($cache = $this->getCheckoutsCache())) {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('checkouts'))) {
             return $cache;
         }
 
@@ -364,13 +373,13 @@ ORDER BY `FiliationId`, `LibraryName`";
             }
         }
 
-        $this->setCheckoutsCache($entities);
+        $this->cacheEntityObjects('checkouts', $entities, ['checkout', 'book', 'library']);
         return $entities;
     }
 
     protected function getUnlinkedCheckouts()
     {
-        if (!is_null($cache = $this->getUnlinkedCheckoutsCache())) {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-checkouts'))) {
             return $cache;
         }
 
@@ -425,7 +434,7 @@ ORDER BY DueOn;";
             ];
         }
 
-        $this->setUnlinkedCheckoutsCache($entities);
+        $this->cacheEntityObjects('unlinked-checkouts', $entities, ['checkout']);
         return $entities;
     }
 
@@ -461,7 +470,6 @@ ORDER BY DueOn;";
         return $data;
     }
 
-
     /**
      *
      * @param int $id
@@ -476,43 +484,6 @@ ORDER BY DueOn;";
         }
 
         return $entity;
-    }
-
-    /**
-     * @return null|array
-     */
-    protected function getBooksCache()
-    {
-        return $this->booksCache;
-    }
-
-    /**
-     * @param array $books
-     */
-    protected function setBooksCache($books)
-    {
-        $this->booksCache = $books;
-        return $this;
-    }
-
-    /**
-    * Get the unlinkedLibrariesCache value
-    * @return mixed[]
-    */
-    public function getUnlinkedLibrariesCache()
-    {
-        return $this->unlinkedLibrariesCache;
-    }
-
-    /**
-    *
-    * @param mixed[] $unlinkedLibrariesCache
-    * @return self
-    */
-    public function setUnlinkedLibrariesCache($unlinkedLibrariesCache)
-    {
-        $this->unlinkedLibrariesCache = $unlinkedLibrariesCache;
-        return $this;
     }
 
     /**
@@ -531,23 +502,6 @@ ORDER BY DueOn;";
     }
 
     /**
-     * @return null|array
-     */
-    protected function getLibrariesCache()
-    {
-        return $this->librariesCache;
-    }
-
-    /**
-     * @param array $librariess
-     */
-    protected function setLibrariesCache($libraries)
-    {
-        $this->librariesCache = $libraries;
-        return $this;
-    }
-
-    /**
      *
      * @param int $id
      * @return mixed[]
@@ -561,43 +515,6 @@ ORDER BY DueOn;";
         }
 
         return $entity;
-    }
-
-    /**
-     * @return null|array
-     */
-    protected function getCheckoutsCache()
-    {
-        return $this->checkoutsCache;
-    }
-
-    /**
-     * @param array $checkouts
-     */
-    protected function setCheckoutsCache($checkouts)
-    {
-        $this->checkoutsCache = $checkouts;
-        return $this;
-    }
-
-    /**
-    * Get the unlinkedCheckoutsCache value
-    * @return mixed[]
-    */
-    public function getUnlinkedCheckoutsCache()
-    {
-        return $this->unlinkedCheckoutsCache;
-    }
-
-    /**
-    *
-    * @param mixed[] $unlinkedCheckoutsCache
-    * @return self
-    */
-    public function setUnlinkedCheckoutsCache($unlinkedCheckoutsCache)
-    {
-        $this->unlinkedCheckoutsCache = $unlinkedCheckoutsCache;
-        return $this;
     }
 
     /**

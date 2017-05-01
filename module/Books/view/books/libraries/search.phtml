@@ -3,7 +3,7 @@ $title = "Library Search";
 $this->headTitle($title);
 ?>
 <h3><?php echo $this->escapeHtml($this->translate($title));?></h3>
-<?php echo $this->partial('library/library/search-bar', ['form' => $this->form]);?>
+<?php echo $this->partial('books/library/search-bar', ['form' => $this->form]);?>
 <?php if (!is_null($this->entities) && 0 !== count($this->entities)) :?>
 <div class="row">
 <div class="col-md-2 bs-docs-sidebar hidden-phone">
@@ -24,7 +24,7 @@ $this->headTitle($title);
 <?php foreach ($this->entities as $libraryId => $library): ?>
 <div id="<?php echo $output = $this->escapeHtmlAttr($library['name']);?>">
     <h1><?php echo $this->escapeHtml($library['name']);?></h1>
-	<?php echo $this->partial('library/library/book-list', [
+	<?php echo $this->partial('books/library/book-list', [
 	    'entities' => $library['books'],
 	]);?>
 </div>

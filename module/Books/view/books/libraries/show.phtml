@@ -1,6 +1,6 @@
 <?php $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($this->entity['name']);
-echo $this->partial('library/library/search-bar', [
+echo $this->partial('books/library/search-bar', [
     'form' => $this->form,
     'action'    => $this->url('libraries/library', ['library_id' => $this->entityId]),
 ]);?>
@@ -19,7 +19,7 @@ echo $this->partial('library/library/search-bar', [
       <?php endforeach;?>
     </ul>
 <?php else:
-    echo $this->partial('library/library/book-list', [
+    echo $this->partial('books/library/book-list', [
         'entities'  => $this->books,
     ]);
 endif;?>

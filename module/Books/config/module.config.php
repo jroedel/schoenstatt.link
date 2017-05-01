@@ -151,7 +151,7 @@ return [
                 'options' => [
                     'route'    => '/books',
                     'defaults' => [
-                        'controller' => 'Library\Controller\Books',
+                        'controller' => 'Books\Controller\Books',
                     ],
                 ],
                 'may_terminate' => false,
@@ -196,7 +196,7 @@ return [
                 'options' => [
                     'route'    => '/libraries',
                     'defaults' => [
-                        'controller' => 'Library\Controller\Libraries',
+                        'controller' => 'Books\Controller\Libraries',
                         'action'     => 'index',
                     ],
                 ],
@@ -239,7 +239,7 @@ return [
                                     'route'    => '/checkout',
                                     'defaults' => [
                                         'action'     => 'create',
-                                        'controller' => 'Library\Controller\Checkouts',
+                                        'controller' => 'Books\Controller\Checkouts',
                                     ],
                                 ],
                             ],
@@ -249,7 +249,7 @@ return [
                                     'route'    => '/checkin',
                                     'defaults' => [
                                         'action'     => 'checkin',
-                                        'controller' => 'Library\Controller\Checkouts',
+                                        'controller' => 'Books\Controller\Checkouts',
                                     ],
                                 ],
                             ],
@@ -287,7 +287,7 @@ return [
                         'options' => [
                             'route'    => '/borrowers',
                             'defaults' => [
-                                'controller'=> 'Library\Controller\Borrowers',
+                                'controller'=> 'Books\Controller\Borrowers',
                                 'action'    => 'index',
                             ],
                         ],
@@ -312,7 +312,7 @@ return [
                         'options' => [
                             'route'    => '/checkouts',
                             'defaults' => [
-                                'controller'=> 'Library\Controller\Checkouts',
+                                'controller'=> 'Books\Controller\Checkouts',
                                 'action'    => 'index',
                             ],
                         ],
@@ -363,7 +363,7 @@ return [
     'sion_model' => [
         'entities' => [
             'library' => [
-                'sion_model_class'                  => 'Library\Model\LibraryTable',
+                'sion_model_class'                  => 'Books\Model\LibraryTable',
                 'table_name'                        => 'lib_libraries',
                 'table_key'                         => 'LibraryId',
                 'entity_key_field'                  => 'libraryId',
@@ -407,7 +407,7 @@ return [
                 ],
             ],
             'book' => [
-                'sion_model_class'                  => 'Library\Model\LibraryTable',
+                'sion_model_class'                  => 'Books\Model\LibraryTable',
                 'table_name'                        => 'lib_books',
                 'table_key'                         => 'book_id',
                 'entity_key_field'                  => 'bookId',
@@ -465,7 +465,7 @@ return [
                 'table_name' 							=> 'lib_checkouts',
                 'table_key' 							=> 'CheckoutId',
                 'entity_key_field'               		=> 'checkoutId',
-                'sion_model_class'               		=> 'Library\Model\LibraryTable',
+                'sion_model_class'               		=> 'Books\Model\LibraryTable',
                 'get_object_function' 					=> 'getCheckout',
                 'get_objects_function'               	=> 'getCheckouts',
                 'required_columns_for_creation' 		=> [
@@ -489,12 +489,12 @@ return [
                 'show_route' 							=> 'checkouts/checkout',
                 'show_route_key' 						=> 'checkout_id',
                 'show_route_key_field' 					=> 'checkoutId',
-                //                 'edit_action_form'               		=> 'Library\Form\EditCheckoutForm',
+                //                 'edit_action_form'               		=> 'Books\Form\EditCheckoutForm',
                 //                 'edit_action_template'               	=> 'project/events/edit',
                 //                 'edit_route'               				=> 'events/event/edit',
                 //                 'edit_route_key'               			=> 'event_id',
                 //                 'edit_route_key_field'           		=> 'eventId',
-                'create_action_form'              		=> 'Library\Form\CreateCheckoutForm',
+                'create_action_form'              		=> 'Books\Form\CreateCheckoutForm',
                 'create_action_valid_data_handler'		=> 'createCheckouts',
                 'create_action_redirect_route'         	=> 'borrowers/borrower',
                 'create_action_redirect_route_key'    	=> 'person_id',

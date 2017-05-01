@@ -190,18 +190,18 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         		$associations[$role['associationId']]['roles'][$roleId] = $role;
         	}
         }
-        
+
         //map assignments to associations
         foreach ($assignments as $assignmentId => $assignment) {
         	if (isset($associations[$assignment['associationId']])) {
         		$associations[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
         		if (isset($persons[$associations[$assignment['associationId']]['assignments'][$assignmentId]['personId']])) {
-        			$associations[$assignment['associationId']]['assignments'][$assignmentId]['person'] = 
+        			$associations[$assignment['associationId']]['assignments'][$assignmentId]['person'] =
         				$persons[$associations[$assignment['associationId']]['assignments'][$assignmentId]['personId']];
         		}
         	}
         }
-        
+
         return $this->associationsCache = $associations;
     }
 
@@ -885,7 +885,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         return $entities;
     }
-    
+
     /**
      *
      * @param int $id
@@ -905,12 +905,12 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     /**
      * Criteria keys are: search(text), country(text),
      *     roleTitle(string), associationKind(string),
-     *     onlyMainRoles(bool=false, allows associations without a main role to be returned), 
-     *     includeInactive(bool=false, when false, won't return any inactive associations or assignments), 
+     *     onlyMainRoles(bool=false, allows associations without a main role to be returned),
+     *     includeInactive(bool=false, when false, won't return any inactive associations or assignments),
      *     onlyAssignments(bool=false),
      *     <<<<entitiesToReturn(array=['association', 'association'])>>>>> NOT SURE ABOUT THIS ONE
      * The 'search' query key will search (case-insensitive) the following fields:
-     *     
+     *
      * @param array $query
      */
     public function searchEntities($query, $registerSearch = true)
@@ -923,12 +923,12 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 //         $returnAssignments = in_array('assignment', $entitiesToReturn);
 //         $returnPersons = in_array('person', $entitiesToReturn);
 //         $returnAssociations = in_array('association', $entitiesToReturn);
-        
+
         $filter = new ToAscii();
         if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
         }
-    
+
         $assignments = $this->getAssignmentPersonAssociations();
         if (is_null($assignments)) {
             return [];
@@ -936,14 +936,14 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 /*
  * Returning assignments: This is easy since it's the most specific. If any criterion doesn't
  *  match, we'll reject the assignment and see if we can match the row as a person or association.
- * 
- * Returning associations: We happen to know that assignments come in order by assignmentId. When we 
- *  find an association that didn't match as an assignment (and wasn't already entered as another 
+ *
+ * Returning associations: We happen to know that assignments come in order by assignmentId. When we
+ *  find an association that didn't match as an assignment (and wasn't already entered as another
  *  assignment), we'll cache it until the association changes. At that point we know we can shift it
- *  onto the return array. 
- *  
+ *  onto the return array.
+ *
  * Returning person: I don't know that this is necessary. I can't think of a use case right now.
- *  
+ *
  * Note: The concept of returning an association or a person without an assignment only comes into play
  *  when we use a criterion that can only apply to a person/association (like onlyMainRoles)
  */
@@ -960,7 +960,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 $queuedAssociationId = null;
                 $queuedAssociation = null;
             }
-            
+
 //first we apply the criteria that are cut and dry
             if (!$includeInactive && isset($assignment['association']) && !empty($assignment['association']) &&
                 !$assignment['association']['isActive']
@@ -976,7 +976,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 continue;
             }
             if (isset($query['associationKind']) && !is_null($query['associationKind']) &&
-                is_array($assignment['association']) && !empty($assignment['association']) && 
+                is_array($assignment['association']) && !empty($assignment['association']) &&
                 $query['associationKind'] != $assignment['association']['kind']
             ) {
                 continue;
@@ -1007,7 +1007,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
 
             if (!$includeInactive && isset($assignment['assignment']) && !empty($assignment['assignment']) &&
-                !$assignment['assignment']['isActive'] 
+                !$assignment['assignment']['isActive']
             ) {
                 if (!in_array($assignment['associationId'], $associationsReturned) &&
                     $queuedAssociationId !== $assignment['associationId'] && !$onlyAssignments
@@ -1027,7 +1027,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 }
                 continue;
             }
-            
+
 //save info about what we've returned
             if (isset($assignment['person']) && !empty($assignment['person'])) {
                 $personsReturned[] = $assignment['personId'];
@@ -1039,14 +1039,14 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $queuedAssociation = null;
             $return[] = $assignment;
         }
-    
+
         return $return;
     }
-    
+
     /**
      * Get the list of main roles of national movements.
      * A list of assignments are returned, but keyed by the associationId.
-     * This provides compatibility with the assignments-table-partial, while giving the 
+     * This provides compatibility with the assignments-table-partial, while giving the
      * ability to print the list of all active national movements.
      * @return mixed[]
      */
@@ -1056,7 +1056,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             'associationKind' => 'sch-national-movement',
             'onlyMainRoles' => true,
         ]);
-        
+
         $nationalLeaders = [];
         foreach ($nationalLeadersResults as $assignment) {
             if (!is_null($assignment['assignment'])) {
@@ -1181,7 +1181,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
         return $return;
     }
-    
+
     public function getAllPersonPhoneNumbers($includeInactive = false)
     {
         $persons = $this->getPersons();
@@ -1281,7 +1281,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     {
         return [];
     }
-    
+
     public function getAssociationProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
     {
         $associations = $this->getAssociations();
@@ -1311,7 +1311,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         return $problems;
     }
-    
+
     public function getResources()
     {
         $return = [];
@@ -1325,7 +1325,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         return $return;
     }
-    
+
     /**
      * @return \Zend\Permissions\Acl\Assertion\AssertionAggregate
      */
@@ -1333,7 +1333,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     {
         $persons = $this->getPersons();
         $associations = $this->getAssociations();
-        
+
 
         //transform to object BjyAuthorize will understand
         $allow = [];
@@ -1341,19 +1341,19 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         {
             $allow[$person['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
         }
-        
+
         foreach ($associations as $associationId => $association) {
             $allow[$association['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
         }
-        
+
         return $this->formatRulesArray($allow);
     }
-    
+
     /**
-     * Takes an array in format [$resourceId => $roles(array)] and transforms 
+     * Takes an array in format [$resourceId => $roles(array)] and transforms
      * it to [$roles(array), $resourceId].
      * Everything is wrapped in an array and keyed by 'allow'.
-     * 
+     *
      * @param array $allow
      */
     protected function formatRulesArray($allow)
@@ -1365,7 +1365,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         var_dump(['allow' => $return]);
         return ['allow' => $return];
     }
-    
+
     /**
      * @return TableGatewayInterface
      */
