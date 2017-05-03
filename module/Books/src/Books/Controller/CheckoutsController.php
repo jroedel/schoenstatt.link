@@ -63,7 +63,7 @@ class CheckoutsController extends SionController
 
         //get the checkouts
         /** @var LibraryTable $table */
-        $table = $sm->get('Library\Model\LibraryTable');
+        $table = $sm->get('Books\Model\LibraryTable');
         $entities = $table->getCheckoutsForLibrary($id);
         $library = $table->getLibrary($id);
 
@@ -89,7 +89,7 @@ class CheckoutsController extends SionController
         }
 
         $sm = $this->getServiceLocator();
-        $form = $sm->get('Library\Form\CheckinForm');
+        $form = $sm->get('Books\Form\CheckinForm');
 
         $request = $this->getRequest();
         if ($request->isPost ()) {

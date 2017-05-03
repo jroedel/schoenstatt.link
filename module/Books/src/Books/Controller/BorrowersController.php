@@ -22,7 +22,7 @@ class BorrowersController extends AbstractActionController
 
         //get the checkouts
         /** @var LibraryTable $table */
-        $table = $sm->get('Library\Model\LibraryTable');
+        $table = $sm->get('Books\Model\LibraryTable');
         $entities = $table->getCheckoutsForPerson($id);
 
         //@todo factor this out

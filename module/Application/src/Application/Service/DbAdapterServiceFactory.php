@@ -23,14 +23,14 @@ class DbAdapterServiceFactory implements FactoryInterface
         $dbParams = $config['db'];
 
         $env = getenv('APP_ENV') ?: 'production';
-        if ($env == 'development') {
+        if ($env != 'production') {
             $adapter = new \BjyProfiler\Db\Adapter\ProfilingAdapter($dbParams);
 
             if (php_sapi_name() == 'cli') {
-                $logger = new Zend\Log\Logger();
+                $logger = new \Zend\Log\Logger();
                 // write queries profiling info to stdout in CLI mode
                 $writer = new Zend\Log\Writer\Stream('php://output');
-                $logger->addWriter($writer, Zend\Log\Logger::DEBUG);
+                $logger->addWriter($writer, \Zend\Log\Logger::DEBUG);
                 $adapter->setProfiler(new \BjyProfiler\Db\Profiler\LoggingProfiler($logger));
             } else {
                 $adapter->setProfiler(new \BjyProfiler\Db\Profiler\Profiler());
@@ -42,7 +42,7 @@ class DbAdapterServiceFactory implements FactoryInterface
             }
             $adapter->injectProfilingStatementPrototype($options);
         } else {
-            $adapter = new Zend\Db\Adapter\Adapter([
+            $adapter = new \Zend\Db\Adapter\Adapter([
                 'driver'    => 'pdo',
                 'dsn'       => 'mysql:dbname='.$dbParams['database'].';host='.$dbParams['hostname'],
                 'database'  => $dbParams['database'],

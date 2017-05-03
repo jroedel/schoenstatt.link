@@ -76,7 +76,7 @@ class LibrariesController extends SionController
             if (!empty($data)) {
                 $sm = $this->getServiceLocator();
                 /** @var LibraryTable $table */
-                $table = $sm->get('Library\Model\LibraryTable');
+                $table = $sm->get('Books\Model\LibraryTable');
 //                 $data['notAllowed'] = $notAllowed;
                 $data['maxResults'] = 200;
                 $books = $table->searchBooks($data);

@@ -30,18 +30,13 @@ return [
 
         'route_permission_checking_enabled' => true,
 
-        'cache_config' => [
+        'persistent_cache_config' => [
             'adapter' => [
-                'name' => 'filesystem',
+                'name' => 'apc',
                 'options' => [
-                    'dirLevel' => 2,
-                    'cacheDir' => 'cache/data',
-                    'dirPermission' => 0755,
-                    'filePermission' => 0666,
-                    'namespaceSeparator' => '-db-'
+                    'ttl' => 60*60*24*5, //5 days
                 ],
             ],
-            'plugins' => ['serializer'],//   - See more at: https://arjunphp.com/zend-framework-2-cache-example/#sthash.1P0kgSma.dpuf
         ],
 	],
 ];

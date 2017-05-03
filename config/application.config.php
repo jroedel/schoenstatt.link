@@ -7,7 +7,7 @@
  */
 $toolsOrNot = [];
 $env = getenv('APP_ENV') ?: 'production';
-$inDevelopment = $env == 'development';
+$inDevelopment = $env != 'production';
 if ($inDevelopment) {
     $toolsOrNot[] = 'ZendDeveloperTools';
 }
@@ -71,7 +71,7 @@ return array(
         'module_map_cache_key' => 'sch_module_map',
 
         // The path in which to cache merged configuration.
-        'cache_dir' => 'cache/config',
+        'cache_dir' => 'data/config',
 
         // Whether or not to enable modules dependency checking.
         // Enabled by default, prevents usage of modules that depend on other modules

@@ -18,20 +18,6 @@ class LibraryTable extends SionTable
 
     protected $config;
 
-    protected $booksCache;
-
-    protected $librariesCache;
-
-    protected $checkoutsCache;
-    /**
-     * @var mixed[] $unlinkedCheckoutsCache
-     */
-    protected $unlinkedCheckoutsCache;
-
-    /**
-     * @var mixed[] $unlinkedLibrariesCache
-     */
-    protected $unlinkedLibrariesCache;
     /**
      * @var int $libraryId
      */
