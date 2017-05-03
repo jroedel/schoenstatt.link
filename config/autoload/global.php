@@ -37,4 +37,9 @@ return [
             ],
         ],
     ],
+    'service_manager' => [
+        'factories' => [
+            'Zend\Db\Adapter\Adapter' => 'Application\Service\DbAdapterServiceFactory',
+        ],
+    ],
 ];

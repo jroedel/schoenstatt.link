@@ -32,7 +32,7 @@ return [
 
         'persistent_cache_config' => [
             'adapter' => [
-                'name' => 'apc',
+                'name' => 'apcu',
                 'options' => [
                     'ttl' => 60*60*24*5, //5 days
                 ],

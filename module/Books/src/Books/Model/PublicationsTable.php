@@ -11,13 +11,6 @@ class PublicationsTable extends SionTable
     const BOOK_FORMAT_TYPE_AUDIOBOOKFORMAT  = 'AudiobookFormat';
     const BOOK_FORMAT_TYPE_EBOOK            = 'EBook';
 
-    protected $publicationsCache;
-
-    /**
-     * @var mixed $unlinkedPublicationsCache
-     */
-    protected $unlinkedPublicationsCache;
-
     public function getAuthorsValueOptions()
     {
         $sql = "SELECT DISTINCT `Authors`
@@ -165,13 +158,13 @@ ORDER BY `Publisher`";
 
     public function getPublications()
     {
-        if (!is_null($cache = $this->getUnlinkedPublicationsCache())) {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('publications'))) {
             return $cache;
         }
 
         $entities = $this->getUnlinkedPublications();
 
-        $this->setUnlinkedPublicationsCache($entities);
+        $this->cacheEntityObjects('publications', $entities, ['publication']);
         return $entities;
     }
 
@@ -180,7 +173,7 @@ ORDER BY `Publisher`";
      */
     public function getUnlinkedPublications()
     {
-        if (!is_null($cache = $this->getUnlinkedPublicationsCache())) {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-publications'))) {
             return $cache;
         }
         $sql = "SELECT `PublicationId`, `Title`, `ResourceId`, `AuthorPerson1`, `AuthorPerson2`,
@@ -270,45 +263,8 @@ ORDER BY `Authors`, `Title`";
             ];
         }
 
-        $this->setUnlinkedPublicationsCache($entities);
+        $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
         return $entities;
-    }
-
-    /**
-    * Get the unlinkedPublicationsCache value
-    * @return mixed
-    */
-    public function getUnlinkedPublicationsCache()
-    {
-        return $this->unlinkedPublicationsCache;
-    }
-
-    /**
-    *
-    * @param mixed $unlinkedPublicationsCache
-    * @return self
-    */
-    public function setUnlinkedPublicationsCache($unlinkedPublicationsCache)
-    {
-        $this->unlinkedPublicationsCache = $unlinkedPublicationsCache;
-        return $this;
-    }
-
-    /**
-     * @return null|array
-     */
-    protected function getPublicationsCache()
-    {
-        return $this->publicationsCache;
-    }
-
-    /**
-     * @param array $publications
-     */
-    protected function setPublicationsCache($publications)
-    {
-        $this->publicationsCache = $publications;
-        return $this;
     }
 
     /**
