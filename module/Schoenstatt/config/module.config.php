@@ -937,6 +937,8 @@ return [
                 'table_key'                             => 'AssociationId',
                 'entity_key_field'                      => 'associationId',
                 'get_object_function'                   => 'getAssociation',
+                'sion_model_class'               		=> 'Schoenstatt\Model\SchoenstattTable',
+                'get_objects_function'               	=> 'getAssociations',
                 'name_field'                            => 'associationName',
                 'report_changes'                        => true,
                 'has_dedicated_suggest_form'            => false,

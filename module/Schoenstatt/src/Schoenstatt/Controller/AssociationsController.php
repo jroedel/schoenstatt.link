@@ -12,14 +12,19 @@ namespace Schoenstatt\Controller;
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 
 use Zend\View\Model\ViewModel;
-use Zend\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\AssociationForm;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Zend\View\Model\JsonModel;
+use SionModel\Controller\SionController;
 
-class AssociationsController extends AbstractActionController
+class AssociationsController extends SionController
 {
+    public function __construct()
+    {
+        parent::__construct('association');
+    }
+
     public function indexAction()
     {
         //heirarchize the array
@@ -142,45 +147,6 @@ class AssociationsController extends AbstractActionController
         return [
             'form' => $form,
         ];
-    }
-
-    /**
-     * @todo check resource-level permissions
-     */
-    public function deleteAction()
-    {
-        $request = $this->getRequest ();
-        $sm = $this->getServiceLocator ();
-        /** @var PatresTable $table */
-        $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
-        $id = ( int ) $this->params ()->fromRoute ( 'living_situation_id' );
-        $livingSituation = $table->getLivingSituation($id);
-        if (is_null($livingSituation)) {
-            $this->getResponse()->setStatusCode(401);
-            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_ERROR )
-            ->addMessage ( 'The living situation you\'re trying to delete doesn\'t exists. ' );
-            $this->redirect()->toUrl($this->url()->fromRoute('home'));
-        }
-        $form = new DeleteLivingSituationForm();
-        if ( $request->isPost ()) {
-            $data = $request->getPost();
-            $form->setData($data);
-            if ($form->isValid() && $form->getData()['livingSituationId'] == $id) {
-                $result = $table->deleteLivingSituation($id);
-                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-                ->addMessage ( 'Living situation successfully deleted. '.$result );
-                $this->redirect()->toUrl($this->url()->fromRoute('fathers/father',
-                    ['person_id' => $livingSituation['personId']]));
-            }
-        } else {
-            $form->setData($livingSituation);
-        }
-
-        return new ViewModel ([
-            'form' => $form,
-            'livingSituation' => $livingSituation,
-            'livingSituationId' => $id,
-        ] );
     }
 
     public function importAction()

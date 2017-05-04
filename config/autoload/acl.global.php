@@ -35,6 +35,7 @@ return [
                 ['route' => 'admin', 'roles' => ['sch_user']],
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
                 ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
+                ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['sch_administrator']],
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
                 ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
             ],
