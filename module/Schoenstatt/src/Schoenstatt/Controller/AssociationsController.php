@@ -11,7 +11,6 @@ namespace Schoenstatt\Controller;
 
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 
-use Zend\View\Model\ViewModel;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\AssociationForm;
 use JTranslate\Controller\Plugin\NowMessenger;
@@ -25,19 +24,6 @@ class AssociationsController extends SionController
         parent::__construct('association');
     }
 
-    public function indexAction()
-    {
-        //heirarchize the array
-
-        $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $associations = $table->getAssociations();
-        return new ViewModel([
-            'entities'      => $associations,
-        ]);
-    }
-
     /**
      * @todo this
      * @param mixed[] $associations
@@ -49,25 +35,20 @@ class AssociationsController extends SionController
 
     public function showAction()
     {
-        $id = (Int)$this->params()->fromRoute('association_id');
-        //var_dump($id);
-        if (!$id) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Association not found.');
-            return $this->redirect()->toRoute('associations');
+        $view = parent::showAction();
+        //set nationalOrganizations
+        $association = $view->getVariable('entity');
+        if ($association['kind'] == 'sch-national-movement' && !is_null($association['country'])) {
+            $table = $this->getSionTable();
+            $nationalOrganizations = $table->getNationalAssociations($association['country']);
+            if (key_exists($association['associationId'], $nationalOrganizations)) {
+                unset($nationalOrganizations[$association['associationId']]);
+            }
+            $association['nationalOrganizations'] = $nationalOrganizations;
+            $view->setVariable('entity', $association);
         }
-        $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $association = $table->getAssociation($id);
 
-        $table->registerVisit('association', $id);
-
-        return new ViewModel([
-            'entity'        => $association,
-//             'suggestForm'   => $sm->get('SionModel\Form\SuggestForm'),
-        ]);
+        return $view;
     }
 
     public function editAction()

@@ -176,38 +176,43 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
      */
     public function getAssociations()
     {
-        if (!is_null($this->associationsCache)) {
-            return $this->associationsCache;
+        if (!is_null($cache = $this->fetchCachedEntityObjects('associations'))) {
+            return $cache;
         }
-        $associations = $this->getUnlinkedAssociations();
+        $entities = $this->getUnlinkedAssociations();
         $roles = $this->getUnlinkedRoles();
         $assignments = $this->getUnlinkedAssignments();
         $persons = $this->getUnlinkedPersons();
 
+        //@todo replace these two mappings with the automatic one from patres
         //map roles to associations
-        foreach ($roles as $roleId => $role) {
-        	if (isset($associations[$role['associationId']])) {
-        		$associations[$role['associationId']]['roles'][$roleId] = $role;
-        	}
-        }
+        $this->connectEntityRolesAndAssignments('association', $entities);
+//         foreach ($roles as $roleId => $role) {
+//         	if (isset($entities[$role['associationId']])) {
+//         		$entities[$role['associationId']]['roles'][$roleId] = $role;
+//         	}
+//         }
 
-        //map assignments to associations
-        foreach ($assignments as $assignmentId => $assignment) {
-        	if (isset($associations[$assignment['associationId']])) {
-        		$associations[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
-        		if (isset($persons[$associations[$assignment['associationId']]['assignments'][$assignmentId]['personId']])) {
-        			$associations[$assignment['associationId']]['assignments'][$assignmentId]['person'] =
-        				$persons[$associations[$assignment['associationId']]['assignments'][$assignmentId]['personId']];
-        		}
-        	}
-        }
+//         //map assignments to associations
+//         foreach ($assignments as $assignmentId => $assignment) {
+//         	if (isset($entities[$assignment['associationId']])) {
+//         		$entities[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
+//         		if (isset($persons[$entities[$assignment['associationId']]['assignments'][$assignmentId]['personId']])) {
+//         			$entities[$assignment['associationId']]['assignments'][$assignmentId]['person'] =
+//         				$persons[$entities[$assignment['associationId']]['assignments'][$assignmentId]['personId']];
+//         		}
+//         	}
+//         }
 
-        return $this->associationsCache = $associations;
+        $this->cacheEntityObjects('associations', $entities, ['association', 'person', 'role', 'assignment']);
+        return $entities;
     }
 
     protected function getUnlinkedAssociations()
     {
-
+        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-associations'))) {
+            return $cache;
+        }
         $sql = "SELECT `AssociationId`, `AssociationName`, `Parent`, `Kind`,
 `Country`, `FoundationDate`, `SuppressionDate`, `IsLifeCommunity`, `IsNameTranslateable`,
 `IsActive`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`, `AdminTags`,
@@ -274,9 +279,12 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
                 'heirarchyLevel'        => 1, //@todo I don't think I need this after all
-                'resourceId'           => 'association_'.$id,
+                'resourceId'            => 'association_'.$id,
                 'roles'                 => [],
             	'assignments'			=> [],
+                'mainRole'              => null,
+                'mainAssignment'        => null,
+                'mainPerson'            => null,
 /**
  * Contact fields
 */
@@ -332,6 +340,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             ];
         }
+        $this->cacheEntityObjects('unlinked-association', $entities, ['association']);
         return $entities;
     }
     /**
@@ -348,6 +357,17 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         }
 
         return $association;
+    }
+
+    public function getNationalAssociations($country)
+    {
+        $entities = $this->getAssociations();
+        foreach ($entities as $entityId => $entity) {
+            if ($entity['country'] != $country) {
+                unset($entities[$entityId]);
+            }
+        }
+        return $entities;
     }
 
     /**
@@ -835,8 +855,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      */
     public function getAssignments()
     {
-        if (!is_null($this->assignmentsCache)) {
-            return $this->assignmentsCache;
+        if (!is_null($cache = $this->fetchCachedEntityObjects('assignments'))) {
+            return $cache;
         }
         $entities = $this->getUnlinkedAssignments();
 //         foreach ($entities as $key => $role) {
@@ -845,11 +865,15 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 //             }
 //         }
 
-        return $this->assignmentsCache = $entities;
+        $this->cacheEntityObjects('assignments', $entities, ['assignment']);
+        return $entities;
     }
 
     protected function getUnlinkedAssignments()
     {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-assignments'))) {
+            return $cache;
+        }
         $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`PersonId`,
 a.`StartDate`, a.`EndDate`, a.`CreatedOn`, a.`CreatedBy`, a.`UpdatedOn`, a.`UpdatedBy`,
 r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`, r.`IsActive`,
@@ -883,6 +907,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             ];
         }
+        $this->cacheEntityObjects('unlinked-assignments', $entities);
         return $entities;
     }
 
@@ -1254,6 +1279,42 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
         return $return;
+    }
+
+    protected function connectEntityRolesAndAssignments($entity, &$entities)
+    {
+        $assignments = $this->getUnlinkedAssignments();
+        $roles = $this->getUnlinkedRoles();
+        $persons = $this->getUnlinkedPersons();
+
+        //set assignments
+        foreach ($assignments as $assignmentId => $assignment) {
+            if (key_exists($assignment['associationId'], $entities) &&
+                key_exists($assignment['personId'], $persons)
+            ) {
+                $assignment['person'] = $persons[$assignment['personId']];
+                $entities[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
+                if ($assignment['isMainRole'] && $assignment['isActive'] &&
+                    $persons[$assignment['personId']]['isActive']
+                ) {
+                    $entities[$assignment['associationId']]['mainAssignment'] = $assignment;
+                    $entities[$assignment['associationId']]['mainPerson'] = $persons[$assignment['personId']];
+                }
+            }
+        }
+
+        //set roles
+        foreach ($roles as $roleId => $role) {
+            if (key_exists($role['associationId'], $entities)) {
+                $entities[$role['associationId']]['roles'][$roleId] = $role;
+                if ($role['isMainRole'] && $role['isActive'] &&
+                    key_exists('mainRole', $entities[$role['associationId']])
+                ) {
+                    $entities[$role['associationId']]['mainRole'] = $role;
+                }
+            }
+        }
+        return 0;
     }
 
     public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)

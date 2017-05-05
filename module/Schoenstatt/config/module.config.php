@@ -34,6 +34,7 @@ return [
     'view_helpers' => [
         'factories' => [
             'formatEntity'          => 'Schoenstatt\Service\FormatEntityFactory',
+            'formatAssociation'     => 'Schoenstatt\Service\FormatAssociationFactory',
         ],
         'invokables' => [
             'clipboardButton'		=> 'Schoenstatt\View\Helper\ClipboardButton',

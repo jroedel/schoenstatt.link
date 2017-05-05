@@ -1,4 +1,6 @@
 <?php
+use Schoenstatt\Model\SchoenstattTable;
+
 $object = $this->entity;
 $name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
 $this->headTitle()->setTranslatorEnabled(false);
@@ -132,6 +134,22 @@ $this->headTitle($name);?>
 	</div></div>
 </div></div></div>
 
+<?php
+if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganizations'])):?>
+<div class="panel panel-default">
+<!-- Default panel contents -->
+<div class="panel-heading"><?php echo $this->translate('National organizations');?></div>
+<?php if (0 === count($object['nationalOrganizations'])) :?>
+    <div class="panel-body"><p><?php echo sprintf($this->translate('No other national organizations are registered in %s.'),
+            $this->countryName($object['country']));?></p></div>
+<?php else :
+    echo $this->partial('associations-table', [
+        'objects' => $object['nationalOrganizations'],
+    ]);
+endif;?>
+</div>
+<?php endif;?>
+
 <!-- Left side roles, right side Admin notes -->
 <div class="row">
 <div class="col-md-12">
@@ -155,7 +173,7 @@ $this->headTitle($name);?>
             <span class="glyphicon glyphicon-plus">&nbsp;</span><?php echo $this->translate('Add role')?></a>
         </p>
     <?php endif;?>
-	</div> 
+	</div>
     <div class="col-md-6"><!-- Admin notes column -->
 		<?php if ($object['adminNotes']):?>
     		<p><strong><?php echo $this->translate('Admin notes');?>:</strong></p>

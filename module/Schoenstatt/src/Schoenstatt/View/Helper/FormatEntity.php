@@ -31,26 +31,7 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
                 return $this->view->formatPerson($data, $options);
                 break;
             case 'association':
-                if (!is_null($data['associationId'])) {
-                    $finalMarkup = '';//str_repeat('&nbsp;', $data['heirarchyLevel'] -1).str_repeat('↪', $data['heirarchyLevel'] -1);
-    				$finalMarkup .= '<a href="'. $this->view->url('associations/association',
-				        ['association_id' => $data['associationId']]).'">';
-					if ($data['isNameTranslateable']) {
-					   $finalMarkup .= $this->view->translate($data['name'], 'Schoenstatt');
-					} else {
-					   $finalMarkup .= $data['name'];
-                    }
-                    $finalMarkup .= '</a>';
-
-                    if ($showLabelOption && isset($this->associationTypeLabels[$data['kind']])) {
-                        $finalMarkup .= '&nbsp;'.$this->view->label($this->associationTypeLabels[$data['kind']],
-                            'label-info');
-                    }
-                    if ($editPencilOption) {
-                        $finalMarkup .= $this->view->editPencil('association', $data['associationId']);
-                    }
-                }
-                return $finalMarkup;
+                return $this->view->formatAssociation($data, $options);
                 break;
             case 'role':
                 $finalMarkup = $this->view->escapeHtml($this->view->translate($data['roleTitle']));

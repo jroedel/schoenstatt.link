@@ -1,26 +1,8 @@
 <p><?php if ($this->isAllowed('route/associations/create')):?>
 <a href="<?php echo $this->url('associations/create');?>"><?php
     echo $this->translate('Create new association');?></a><?php
-endif;?></p>
-<div class="table-responsive">
-	<table class="table">
-		<tr>
-			<th><?php echo $this->translate("Association");?></th>
-			<th><?php echo $this->translate("Email");?></th>
-			<th><?php echo $this->translate("Phone");?></th>
-			<th><?php echo $this->translate("Website");?></th>
-		</tr>
-		<?php foreach ($this->entities as $entity): ?>
-		<tr>
-			<td><?php echo $this->formatEntity('association', $entity);?>
-			</td>
-			<td><?php echo $this->escapeHtml('');?>
-			</td>
-			<td><?php echo $this->escapeHtml('');?>
-			</td>
-			<td><?php echo $this->escapeHtml('');?>
-			</td>
-			<?php endforeach; ?>
-		</tr>
-	</table>
-</div>
+endif;
+
+echo $this->partial('associations-table', [
+    'objects' => $this->objects
+]);
