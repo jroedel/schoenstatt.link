@@ -234,7 +234,6 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         # sort by event_type desc and then title asc
         array_multisort($sort['Kind'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
 
-
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['AssociationId']);
@@ -266,6 +265,37 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 ];
             }
 
+            //abstract address elements
+            $post1Street1   = $this->filterDbString($row['Post1Street1']);
+            $post1Street2   = $this->filterDbString($row['Post1Street2']);
+            $post1CityState = $this->filterDbString($row['Post1CityState']);
+            $post1Zip       = $this->filterDbString($row['Post1Zip']);
+            $post1Country   = $this->filterDbString($row['Post1Country']);
+            $post2Street1   =  $this->filterDbString($row['Post2Street1']);
+            $post2Street2   = $this->filterDbString($row['Post2Street2']);
+            $post2CityState = $this->filterDbString($row['Post2CityState']);
+            $post2Zip       = $this->filterDbString($row['Post2Zip']);
+            $post2Country   = $this->filterDbString($row['Post2Country']);
+
+            $postAddresses = [];
+            if (!is_null($post1Street1) || !is_null($post1Street2) || !is_null($post1CityState)) {
+                $postAddresses[] = [
+                    'street1'   => $post1Street1,
+                    'street2'   => $post1Street2,
+                    'cityState' => $post1CityState,
+                    'zip'       => $post1Zip,
+                    'country'   => $post1Country,
+                ];
+            }
+            if (!is_null($post2Street1) || !is_null($post2Street2) || !is_null($post2CityState)) {
+                $postAddresses[] = [
+                    'street1'   => $post2Street1,
+                    'street2'   => $post2Street1,
+                    'cityState' => $post2CityState,
+                    'zip'       => $post2Zip,
+                    'country'   => $post2Country,
+                ];
+            }
             $entities[$id] = [
                 'associationId'         => $id,
                 'name'                  => $this->filterDbString($row['AssociationName']),
@@ -278,7 +308,6 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'isNameTranslateable'   => $this->filterDbBool($row['IsNameTranslateable']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
-                'heirarchyLevel'        => 1, //@todo I don't think I need this after all
                 'resourceId'            => 'association_'.$id,
                 'roles'                 => [],
             	'assignments'			=> [],
@@ -311,16 +340,17 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
                 'twitterUser'               => $this->filterDbString($row['TwitterUser']),
                 'instagramUser'             => $this->filterDbString($row['InstagramUser']),
-                'post1Street1'              => $this->filterDbString($row['Post1Street1']),
-                'post1Street2'              => $this->filterDbString($row['Post1Street2']),
-                'post1CityState'            => $this->filterDbString($row['Post1CityState']),
-                'post1Zip'                  => $this->filterDbString($row['Post1Zip']),
-                'post1Country'              => $this->filterDbString($row['Post1Country']),
-                'post2Street1'              => $this->filterDbString($row['Post2Street1']),
-                'post2Street2'              => $this->filterDbString($row['Post2Street2']),
-                'post2CityState'            => $this->filterDbString($row['Post2CityState']),
-                'post2Zip'                  => $this->filterDbString($row['Post2Zip']),
-                'post2Country'              => $this->filterDbString($row['Post2Country']),
+                'postAddresses'             => $postAddresses,
+                'post1Street1'              => $post1Street1,
+                'post1Street2'              => $post1Street2,
+                'post1CityState'            => $post1CityState,
+                'post1Zip'                  => $post1Zip,
+                'post1Country'              => $post1Country,
+                'post2Street1'              => $post2Street1,
+                'post2Street2'              => $post2Street2,
+                'post2CityState'            => $post2CityState,
+                'post2Zip'                  => $post2Zip,
+                'post2Country'              => $post2Country,
                 'contactNotes'              => $this->filterDbString($row['ContactNotes']),
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),

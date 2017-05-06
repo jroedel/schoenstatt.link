@@ -4,8 +4,10 @@ echo $this->formHidden($form->get('assignmentId'));
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('associationId'));
 echo $this->formRow($form->get('personId'));
-$this->formSelect()->setTranslatorEnabled(true);
-echo $this->formRow($form->get('roleId'));
+$this->formSelect()->setTranslatorEnabled(true);?>
+<p><?php echo $this->translate('New person?')?> <a target="_blank" href="<?php
+echo $this->url('persons/create');?>"><?php echo $this->translate('Add new person'); ?></a>
+<?php echo $this->formRow($form->get('roleId'));
 echo $this->formRow($form->get('startDate'));
 echo $this->formRow($form->get('endDate'));
 echo $this->formRow($form->get('security'));

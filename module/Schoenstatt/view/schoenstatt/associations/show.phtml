@@ -41,7 +41,7 @@ $this->headTitle($name);?>
             	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
             	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
             	</a>&nbsp;
-            	<?php endforeach; //@todo add email modified date?>
+            	<?php endforeach;?>
             	</div></div> <!-- Websites row and column -->
             </div> <!-- Links column -->
             </div> <!-- Links row -->
@@ -58,6 +58,19 @@ $this->headTitle($name);?>
         	    $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
         	<?php endif;
+        	$addressLabel = null;
+        	if (count($object['postAddresses']) > 1) {
+        	    $addressLabel = 'Postal addresses';
+        	} elseif (count($object['postAddresses']) == 1) {
+    	        $addressLabel = 'Postal address';
+    	    }
+    	    if (!is_null($addressLabel)) :?>
+    	    <p><strong><?php echo $this->translate($addressLabel)?>:</strong></p>
+    	    <?php
+    	    endif;
+        	foreach ($object['postAddresses'] as $address) {
+        	    echo $this->address($address);
+        	}
         	if (!is_null($object['contactNotes'])) :?>
         		<p><strong><?php echo $this->translate('Notes');?>:</strong></p>
         		<div id="contactNotes"><?php echo $this->markdown($object['contactNotes']);?></div>
@@ -134,7 +147,7 @@ $this->headTitle($name);?>
         </div>
         <div class="col-xs-6">
             <?php if ($this->isAllowed('route/assignments/create')):
-                $params = [];
+                $queryOptions= [];
                 if (!is_null($entity['mainRole'])) {
                     $queryOptions = ['query' => ['roleId' => $entity['mainRole']['roleId']]];
                 }?>

@@ -23,15 +23,6 @@ class AssociationsController extends SionController
         parent::__construct('association');
     }
 
-    /**
-     * @todo this
-     * @param mixed[] $associations
-     */
-    protected function heirarchizeAssociations($associations)
-    {
-
-    }
-
     public function showAction()
     {
         $view = parent::showAction();
