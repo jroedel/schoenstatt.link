@@ -12,7 +12,6 @@ namespace Schoenstatt\Controller;
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 
 use Schoenstatt\Model\SchoenstattTable;
-use Schoenstatt\Form\AssociationForm;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Zend\View\Model\JsonModel;
 use SionModel\Controller\SionController;
@@ -51,83 +50,41 @@ class AssociationsController extends SionController
         return $view;
     }
 
-    public function editAction()
-    {
-        $id = (Int)$this->params()->fromRoute('association_id');
-        //var_dump($id);
-        if (!$id) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Association not found.');
-            return $this->redirect()->toRoute('associations');
-        }
-        $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $association = $table->getAssociation($id);
-        if (!$association) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Association not found.');
-            return $this->redirect()->toRoute('associations');
-        }
-
-        $form = $sm->get('Schoenstatt\Form\AssociationForm');
-        $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
-            $form->setData($data);
-            if ($data ['associationId'] != $id) { // make sure the user is trying to update the right event
-                $this->flashMessenger()
-                ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-                ->addMessage('Association not found.');
-                return $this->redirect()->toRoute('associations');
-            }
-            if ($form->isValid()) {
-                $data = $form->getData();
-                $result = $table->updateEntity('association', $id, $data);
-                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully updated.' );
-                $this->redirect()->toRoute ( 'associations/association', ['association_id' => $association['associationId']] );
-            } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-            }
-        } else {
-            $form->setData($association);
-        }
-        return [
-            'form' => $form,
-            'entity' => $association,
-        ];
-    }
-
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::createAction()
+     */
     public function createAction()
     {
-        $sm = $this->getServiceLocator ();
-        /** @var SchoenstattTable $table **/
-        $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
-
-        /** @var AssociationForm $form */
-        $form = $sm->get('Schoenstatt\Form\AssociationForm');
-        $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
-            $form->setData($data);
-            if ($form->isValid()) {
-                $data = $form->getData();
-                if (!($newId = $table->createEntity('association', $data))) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                } else {
-                    $table->createAssociatedRoles($newId, $data['kind']);
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Association successfully created.' );
-                    $this->redirect ()->toRoute ( 'associations/association', ['association_id' => $newId] );
-                }
-            } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+        $view = parent::createAction();
+        //check if we were passed a valid country param and set it in the form
+        $countryParam = $this->params()->fromQuery('country');
+        if (!$this->getRequest()->isPost() && !is_null($countryParam) &&
+            is_string($countryParam) && strlen($countryParam) == 2
+        ) {
+            $form = $view->getVariable('form');
+            $countries = $form->get('country')->getValueOptions();
+            if  (key_exists($countryParam, $countries)) {
+                $form->get('country')->setValue($countryParam);
+                $view->setVariable('form', $form);
             }
         }
-        return [
-            'form' => $form,
-        ];
+        return $view;
+    }
+
+    public function createAssociation($data)
+    {
+        $entity = $this->getEntity();
+        $table = $this->getSionTable();
+        if (!($newId = $table->createEntity($entity, $data))) {
+            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+        } else {
+            //This is the most important:
+            $table->createAssociatedRoles($newId, $data['kind']);
+            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
+            ->addMessage ( ucwords($entity).' successfully created.' );
+            $this->redirectAfterCreate((int) $newId);
+        }
     }
 
     public function importAction()

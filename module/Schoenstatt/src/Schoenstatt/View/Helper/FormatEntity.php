@@ -16,7 +16,7 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
     }
 
     /**
-     * @todo Can we delete this?
+     * @todo Can we delete this? YES!!!
      * @param array $person
      * @param array $options
      *

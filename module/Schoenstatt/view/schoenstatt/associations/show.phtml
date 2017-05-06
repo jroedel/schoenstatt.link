@@ -1,11 +1,10 @@
 <?php
-use Schoenstatt\Model\SchoenstattTable;
-
 $object = $this->entity;
 $name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($name);?>
 <h1><?php echo $this->escapeHtml($name);?></h1>
+<p><?php echo $this->formatEntity('association', $object, ['display' => 'kind']);?></p>
 <div class="row">
 <div class="col-md-9">
 <div class="panel panel-default" id="contactInfoPanel">
@@ -77,7 +76,24 @@ $this->headTitle($name);?>
 <div class="col-md-12">
 <div class="panel panel-default" id="infoPanel">
     <div class="panel-heading">
-    	<h3 class="panel-title"><?php echo $this->translate('Association Info'); ?></h3>
+    	<div class="row">
+    	<div class="col-xs-6">
+        	<h3 class="panel-title"><?php echo $this->translate('Association Info'); ?></h3>
+        </div>
+        <div class="col-xs-6">
+            <?php if ($this->isAllowed('route/associations/association/edit')): ?>
+                <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
+                    echo $this->url('associations/association/edit', array('association_id' => $entity['associationId']));?>">
+                    <?php echo $this->translate('Edit association');?></a>
+                </span>
+            <?php elseif ($this->isAllowed('route/associations/association/suggest')):?>
+                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
+                    echo $this->url('associations/association/suggest', array('association_id' => $entity['associationId']));?>">
+                    <?php echo $this->translate('Suggest change');?></a>
+                </span>
+            <?php endif;?>
+        </div>
+        </div>
 	</div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
@@ -112,7 +128,23 @@ $this->headTitle($name);?>
 <div class="col-md-12">
 <div class="panel panel-default" id="assignmentsPanel">
     <div class="panel-heading">
-    	<h3 class="panel-title"><?php echo $this->translate('Contact persons'); ?></h3>
+    	<div class="row">
+    	<div class="col-xs-6">
+        	<h3 class="panel-title"><?php echo $this->translate('Contact persons'); ?></h3>
+        </div>
+        <div class="col-xs-6">
+            <?php if ($this->isAllowed('route/assignments/create')):
+                $params = [];
+                if (!is_null($entity['mainRole'])) {
+                    $queryOptions = ['query' => ['roleId' => $entity['mainRole']['roleId']]];
+                }?>
+                <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
+                    echo $this->url('assignments/create', [], $queryOptions);?>">
+                    <?php echo $this->translate('Add assignment');?></a>
+                </span>
+            <?php endif;?>
+        </div>
+        </div>
 	</div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
@@ -138,7 +170,22 @@ $this->headTitle($name);?>
 if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganizations'])):?>
 <div class="panel panel-default">
 <!-- Default panel contents -->
-<div class="panel-heading"><?php echo $this->translate('National organizations');?></div>
+<div class="panel-heading">
+    	<div class="row">
+    	<div class="col-xs-6">
+        	<h3 class="panel-title"><?php echo $this->translate('National organizations'); ?></h3>
+        </div>
+        <div class="col-xs-6">
+            <?php if ($this->isAllowed('route/associations/create')):
+                    $queryOptions = ['query' => ['country' => $entity['country']]];?>
+                <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
+                    echo $this->url('associations/create', [], $queryOptions);?>">
+                    <?php echo $this->translate('Add national association');?></a>
+                </span>
+            <?php endif;?>
+        </div>
+        </div>
+</div>
 <?php if (0 === count($object['nationalOrganizations'])) :?>
     <div class="panel-body"><p><?php echo sprintf($this->translate('No other national organizations are registered in %s.'),
             $this->countryName($object['country']));?></p></div>
