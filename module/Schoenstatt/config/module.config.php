@@ -2,6 +2,47 @@
 
 use SionModel\Problem\EntityProblem;
 
+$leagueRoles = [
+    [
+        'roleTitle' => 'Branch leader',
+        'singlePosition' => true,
+        'sort' => 5,
+        'mainRole' => true,
+        'shouldAlwaysBeFilled' => true,
+    ],
+    [
+        'roleTitle' => 'Branch moderator',
+        'singlePosition' => false,
+        'sort' => 10,
+        'mainRole' => false,
+        'shouldAlwaysBeFilled' => false,
+    ],
+    [
+        'roleTitle' => 'Member',
+        'singlePosition' => false,
+        'sort' => 70,
+        'mainRole' => false,
+        'shouldAlwaysBeFilled' => false,
+    ],
+];
+
+$federationRoles = [
+    [
+        'roleTitle' => 'General superior',
+        'singlePosition' => true,
+        'sort' => 10,
+        'mainRole' => true,
+        'shouldAlwaysBeFilled' => true,
+    ],
+    [
+        'roleTitle' => 'Councilor',
+        'singlePosition' => false,
+        'sort' => 15,
+        'mainRole' => false,
+        'shouldAlwaysBeFilled' => false,
+    ],
+];
+
 return [
     'controllers' => [
         'invokables' => [
@@ -191,23 +232,33 @@ return [
             ],
             'sch-national-federation' => [
                 'label' => 'Schoenstatt national federation',
+                'sort'  => 499,
+                'default_roles' => $federationRoles,
+            ],
+            'sch-national-priests-federation' => [
+                'label' => 'Schoenstatt national priests\' federation',
                 'sort'  => 400,
-                'default_roles' => [
-                    [
-                        'roleTitle' => 'General superior',
-                        'singlePosition' => true,
-                        'sort' => 10,
-                        'mainRole' => true,
-                        'shouldAlwaysBeFilled' => true,
-                    ],
-                    [
-                        'roleTitle' => 'Councilor',
-                        'singlePosition' => false,
-                        'sort' => 15,
-                        'mainRole' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                ],
+                'default_roles' => $federationRoles,
+            ],
+            'sch-national-family-federation' => [
+                'label' => 'Schoenstatt national family federation',
+                'sort'  => 410,
+                'default_roles' => $federationRoles,
+            ],
+            'sch-national-mens-federation' => [
+                'label' => 'Schoenstatt national men\'s federation',
+                'sort'  => 420,
+                'default_roles' => $federationRoles,
+            ],
+            'sch-national-mothers-federation' => [
+                'label' => 'Schoenstatt national mothers\' federation',
+                'sort'  => 430,
+                'default_roles' => $federationRoles,
+            ],
+            'sch-national-womens-federation' => [
+                'label' => 'Schoenstatt national women\'s federation',
+                'sort'  => 440,
+                'default_roles' => $federationRoles,
             ],
             'sch-diocesan-movement' => [
                 'label' => 'Schoenstatt diocesan movement',
@@ -231,34 +282,42 @@ return [
             ],
             'sch-league-branch' => [
                 'label' => 'Schoenstatt league branch',
-                'sort'  => 600,
-                'default_roles' => [
-                    [
-                        'roleTitle' => 'Branch leader',
-                        'singlePosition' => true,
-                        'sort' => 5,
-                        'mainRole' => true,
-                        'shouldAlwaysBeFilled' => true,
-                    ],
-                    [
-                        'roleTitle' => 'Branch moderator',
-                        'singlePosition' => false,
-                        'sort' => 10,
-                        'mainRole' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                    [
-                        'roleTitle' => 'Member',
-                        'singlePosition' => false,
-                        'sort' => 70,
-                        'mainRole' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                ],
+                'sort'  => 699,
+                'default_roles' => $leagueRoles,
             ],
+            'sch-family-league-branch' => [
+                'label' => 'Schoenstatt family league branch',
+                'sort'  => 610,
+                'default_roles' => $leagueRoles,
+            ],
+            'sch-mens-league-branch' => [
+                'label' => 'Schoenstatt men\'s league branch',
+                'sort'  => 620,
+                'default_roles' => $leagueRoles,
+            ],
+            'sch-womens-league-branch' => [
+                'label' => 'Schoenstatt women\'s league branch',
+                'sort'  => 630,
+                'default_roles' => $leagueRoles,
+            ],
+            'sch-young-men-league-branch' => [
+                'label' => 'Schoenstatt young men\'s league branch',
+                'sort'  => 640,
+                'default_roles' => $leagueRoles,
+            ],
+            'sch-young-women-league-branch' => [
+                'label' => 'Schoenstatt young women\'s league branch',
+                'sort'  => 650,
+                'default_roles' => $leagueRoles,
+            ],
+            //@todo add virgen peregrina
+            //@todo pastoral de santuario
+            //@todo liga apostolica
+            //@todo madrugadores
+            //@todo forjadores
             'sch-school' => [
                 'label' => 'Schoenstatt school',
-                'sort'  => 650,
+                'sort'  => 700,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Principal',
@@ -297,14 +356,48 @@ return [
                     ],
                 ],
             ],
+            'sch-website' => [
+                'label' => 'Schoenstatt website',
+                'sort'  => 720,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Movement contact',
+                        'singlePosition' => false,
+                        'sort' => 80,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'sch-magazine' => [
+                'label' => 'Schoenstatt magazine',
+                'sort'  => 740,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Movement contact',
+                        'singlePosition' => false,
+                        'sort' => 80,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
             'sch-other' => [
                 'label' => 'Other Schoenstatt entity',
-                'sort'  => 700,
-                'default_roles' => [],
+                'sort'  => 800,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Movement contact',
+                        'singlePosition' => false,
+                        'sort' => 80,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
             ],
             'legal-entity' => [
                 'label' => 'Legal entity',
-                'sort'  => 800,
+                'sort'  => 900,
                 'default_roles' => [
                     [
                         'roleTitle' => 'President',
