@@ -18,6 +18,13 @@ $leagueRoles = [
         'shouldAlwaysBeFilled' => false,
     ],
     [
+        'roleTitle' => 'Assistant moderator',
+        'singlePosition' => false,
+        'sort' => 20,
+        'mainRole' => false,
+        'shouldAlwaysBeFilled' => false,
+    ],
+    [
         'roleTitle' => 'Member',
         'singlePosition' => false,
         'sort' => 70,
@@ -123,6 +130,11 @@ return [
                 'title' => 'Sr.',
                 'label' => 'Sister',
                 'sort'  => 70,
+            ],
+            'frau' => [
+                'title' => 'Frau',
+                'label' => 'Frau',
+                'sort'  => 10,
             ],
             'doctor' => [
                 'title' => 'Dr.',

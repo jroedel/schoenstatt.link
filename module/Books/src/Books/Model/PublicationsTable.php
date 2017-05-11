@@ -228,7 +228,7 @@ ORDER BY `Authors`, `Title`";
                 'genre' 					=> $this->filterDbString($row['Genre']),
                 'keywords' 					=> $this->filterDbArray($row['PublicTags']),
                 'adminTags'					=> $this->filterDbArray($row['AdminTags']),
-                'isAccessableForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
+                'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
                 'isInternalForPatres'       => $this->filterDbBool($row['IsInternalForPatres']),
                 'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
                 'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
@@ -397,7 +397,7 @@ ORDER BY `Authors`, `Title`";
 //                 'containedInIsbn'           => $this->filterDbString($row['ISBN_ZeitschriftNr']),
                 'keywords'                  => $keywords,
 
-                'isAccessableForFree'       => false,
+                'isAccessibleForFree'       => false,
                 'isInternalForPatres'       => false,
                 'isScientificWork'          => $isScientific,
                 'isAwaitingMerge'           => true, //these should depend on the imported records already in db
@@ -529,7 +529,7 @@ WHERE 1";
                 'containedInIsbn'           => null,
                 'keywords'                  => null,// $keywords,
 
-                'isAccessableForFree'       => false,
+                'isAccessibleForFree'       => false,
                 'isInternalForPatres'       => $isInternal,
                 'isScientificWork'          => $isScientific,
                 'isAwaitingMerge'           => true, //these should depend on the imported records already in db

@@ -270,10 +270,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'isAccessableForFree',
+            'name' => 'isAccessibleForFree',
             'type' => 'Checkbox',
             'options' => [
-                'label' => 'Accessable for free?',
+                'label' => 'Accessible for free?',
                 'checked_value' => '1',
                 'unchecked_value' => '0',
                 'use_hidden_element' => true,
@@ -377,7 +377,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
 //         $this->getInputFilter()->get('numberOfPages')->setValidatorChain(new ValidatorChain());
         return [
             'title' => [
-                'required' => false,
+                'required' => true,
                 'filters' => [
                     ['name' => 'StripTags'],
                     ['name' => 'StripNewlines'],
@@ -697,14 +697,23 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\SortArray'],
                 ],
             ],
-            'isAccessableForFree' => [
+            'isAccessibleForFree' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
             ],
             'isInternalForPatres' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
             ],
             'isScientificWork' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
             ],
             'adminNotes' => [
                 'required' => false,

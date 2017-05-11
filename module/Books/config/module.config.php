@@ -622,7 +622,7 @@ return [
                     'containedInIsbn'           => 'ContainedInIsbn',
                     'keywords'                  => 'PublicTags',
 
-                    'isAccessableForFree'       => 'IsAccessableForFree',
+                    'isAccessibleForFree'       => 'IsAccessableForFree',
                     'isInternalForPatres'       => 'IsInternalForPatres',
                     'isScientificWork'          => 'IsScientificWork',
                     'isAwaitingMerge'           => 'IsAwaitingMerge',
@@ -659,6 +659,7 @@ return [
                'book',
                'book_teo',
                'book_sch',
+               'pub_patres',
            ],
            //'Event\Model\EventTable' => 'Event\Model\EventTable'
          ],
@@ -689,7 +690,8 @@ return [
                     //approve permissions
 //                     [['lib_moderator'], 'book', 'approve'],
 //                     [['lib_teo_moderator'], 'book_teo', 'approve'],
-//                     [['lib_sch_moderator'], 'book_sch', 'approve'],
+        //                     [['lib_sch_moderator'], 'book_sch', 'approve'],
+                    [['pub_patres'], 'pub_patres'],
                     //delete permissions
                     [['pub_general_moderator'], 'book', 'delete'],
                     [['pub_general_moderator'], 'book_teo', 'delete'],

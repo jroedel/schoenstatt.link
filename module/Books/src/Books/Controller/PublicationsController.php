@@ -19,12 +19,26 @@ class PublicationsController extends SionController
         parent::__construct('publication');
     }
 
+    public function createAction()
+    {
+        $request = $this->getRequest();
+        if ($request->isPost ()) {
+            var_dump($request->getPost ()->toArray ());
+        }
+        return parent::createAction();
+    }
+
     public function indexAction()
     {
         $view = parent::indexAction();
         $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
         $view->setVariable('form', $form);
         return $view;
+    }
+
+    public function createHandler($data)
+    {
+        var_dump($data);
     }
 
     public function searchAction()
