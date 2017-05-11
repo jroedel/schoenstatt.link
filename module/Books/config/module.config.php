@@ -597,7 +597,7 @@ return [
                     'authorPerson3'             => 'AuthorPerson3',
                     'authors'                   => 'Authors',
                     'bookEdition'               => 'BookEdition',
-                    'inLanuage'                 => 'InLanguage',
+                    'inLanguage'                => 'InLanguage',
                     'description'               => 'Description',
                     'isbn'                      => 'Isbn',
                     'illustrator'               => 'Illustrator',

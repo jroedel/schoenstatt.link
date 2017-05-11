@@ -30,6 +30,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
+                'disable_inarray_validator' => true,
             ],
             'attributes' => [
                 'maxlength' => '500',
