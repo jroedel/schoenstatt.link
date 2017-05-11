@@ -121,6 +121,15 @@ return [
                                     ],
                                 ],
                             ],
+                            'delete' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/delete',
+                                    'defaults' => [
+                                        'action'     => 'delete',
+                                    ],
+                                ],
+                            ],
                             'suggest' => [
                                 'type'    => 'Literal',
                                 'options' => [
@@ -559,6 +568,7 @@ return [
                 'report_changes'               			=> true,
                 'index_route'               			=> 'publications',
 //                 'index_template'               			=> 'project/events/index',
+                'default_route_key'                     => 'publication_id',
 //                 'show_action_template'               	=> 'project/events/show',
                 'show_route' 							=> 'publications/publication',
                 'show_route_key' 						=> 'publication_id',
@@ -584,10 +594,10 @@ return [
 //                 'moderate_route_entity_key' 			=> 'event_id',
                 'has_dedicated_suggest_form' 			=> false,
 //                 'suggest_form'               			=> 'Project\Form\SuggestEventForm',
-                'enable_delete_action' 					=> false,
+                'enable_delete_action' 					=> true,
 //                 'delete_action_acl_resource' 			=> 'event_:id',
 //                 'delete_action_acl_permission' 			=> 'delete_event',
-//                 'delete_action_redirect_route' 			=> 'events',
+                'delete_action_redirect_route' 			=> 'publications',
                 'update_columns' => [
                     'publicationId'             => 'PublicationId',
                     'title'                     => 'Title',
