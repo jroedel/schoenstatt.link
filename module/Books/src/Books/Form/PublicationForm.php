@@ -96,6 +96,18 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'translatedFromPublicationId',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Translated from',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => false,
+                'value_options' => [],
+            ],
+        ]);
+        $this->add([
             'name' => 'numberOfPages',
             'type' => 'Number',
             'options' => [
@@ -344,7 +356,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'use_hidden_element' => true,
             ],
             'attributes' => [
-                'value'   => '1',
+                'value'   => '0',
             ],
         ]);
         $this->add([
@@ -357,7 +369,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'use_hidden_element' => true,
             ],
             'attributes' => [
-                'value'   => '1',
+                'value'   => '0',
             ],
         ]);
         $this->add([
@@ -370,7 +382,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'use_hidden_element' => true,
             ],
             'attributes' => [
-                'value'   => '1',
+                'value'   => '0',
             ],
         ]);
 

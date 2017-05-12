@@ -31,10 +31,12 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
 		$keywords = $table->getKeywordsValueOptions();
 // 		$adminTags = $table->getPersonAdminTags();
         $editions = $table->getEditionValueOptions(true);
+        $allEditions = $table->getEditionValueOptions(false);
 
         $form = new PublicationForm();
         $form->get('inLanguage')->setValueOptions($languages);
         $form->get('mainPublicationId')->setValueOptions($editions);
+        $form->get('translatedFromPublicationId')->setValueOptions($allEditions);
 		$form->get('authors')->setValueOptions($authors);
 		$form->get('keywords')->setValueOptions($keywords);
 		$form->get('publisher')->setValueOptions($publishers);

@@ -582,7 +582,7 @@ return [
                 'edit_route_key'               			=> 'publication_id',
                 'edit_route_key_field'           		=> 'publicationId',
                 'create_action_form'              		=> 'Books\Form\PublicationForm',
-//                 'create_action_valid_data_handler'		=> 'createEvent',
+                'create_action_valid_data_handler'		=> 'createPublication',
                 'create_action_redirect_route'         	=> 'publications/publication',
                 'create_action_redirect_route_key'    	=> 'publication_id',
                 'create_action_redirect_route_key_field'=> 'publicationId',
@@ -630,6 +630,7 @@ return [
                     'url3'                      => 'Url3',
                     'url3Label'                 => 'Url3Label',
                     'mainPublicationId'         => 'MainPublicationId', //mainEntity
+                    'translatedFromPublicationId'=> 'TranslatedFromPublicationId',
                     'volumeNumber'              => 'VolumeNumber',
                     'containedIn'               => 'ContainedIn',
                     'containedInIsbn'           => 'ContainedInIsbn',

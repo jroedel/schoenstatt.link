@@ -9,6 +9,7 @@ echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('inLanguage'));
 echo $this->formRow($form->get('description'));
 echo $this->formRow($form->get('mainPublicationId'));
+echo $this->formRow($form->get('translatedFromPublicationId'));
 echo $this->formRow($form->get('volumeNumber'));
 echo $this->formRow($form->get('isbn'));
 echo $this->formRow($form->get('hasNoISBN'));
@@ -52,6 +53,10 @@ $("select[name='inLanguage']").selectize({
     sortField: 'text'
 });
 $("select[name='mainPublicationId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='translatedFromPublicationId']").selectize({
     create: false,
     sortField: 'text'
 });

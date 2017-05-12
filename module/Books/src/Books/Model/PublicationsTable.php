@@ -175,6 +175,21 @@ ORDER BY `Publisher`";
 
         $entities = $this->getUnlinkedPublications();
 
+        foreach ($entities  as $entityId => $entityObject) {
+            if (!is_null($entityObject['mainPublicationId']) &&
+                $entityObject['mainPublicationId'] != $entityId &&
+                key_exists($entityObject['mainPublicationId'], $entities)
+            ) {
+                $entities[$entityId]['mainPublication'] = $entities[$entityObject['mainPublicationId']];
+            }
+            if (!is_null($entityObject['translatedFromPublicationId']) &&
+                $entityObject['translatedFromPublicationId'] != $entityId &&
+                key_exists($entityObject['translatedFromPublicationId'], $entities)
+            ) {
+                $entities[$entityId]['translatedFromPublication'] = $entities[$entityObject['translatedFromPublicationId']];
+            }
+        }
+
         $this->cacheEntityObjects('publications', $entities, ['publication']);
         return $entities;
     }
@@ -197,7 +212,7 @@ ORDER BY `Publisher`";
 `JkEventId`, `Url1`, `Url1Label`, `Url2`, `Url2Label`, `Url3`, `Url3Label`, `DataSource`,
 `DataSourceId`, `DataSourceUpdatedOn`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
-`CreatedOn`, `CreatedBy`
+`CreatedOn`, `CreatedBy`, `TranslatedFromPublicationId`
 FROM `sch_publications`
 ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
         $results = $this->fetchSome(null, $sql, null);
@@ -234,6 +249,7 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
                 'publishingStatus' 			=> $this->filterDbString($row['PublishingStatus']),
                 'bookFormatType'			=> $this->filterDbString($row['BookFormatType']),
                 'mainPublicationId' 		=> $mainPublicationId,
+                'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
                 'volumeNumber' 				=> $this->filterDbString($row['VolumeNumber']),
                 'cntainedIn' 				=> $this->filterDbString($row['ContainedIn']),
                 'containedInIsbn' 			=> $this->filterDbString($row['ContainedInIsbn']),
@@ -278,6 +294,7 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
 
                 'isSubEdition'              => !is_null($mainPublicationId),
                 'mainPublication'           => null,
+                'translatedFromPublication' => null,
             ];
         }
 
