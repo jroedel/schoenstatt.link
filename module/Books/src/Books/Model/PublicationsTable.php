@@ -181,7 +181,8 @@ ORDER BY `Publisher`";
 `Illustrator`, `NumberOfPages`, `CopyrightYear`, `Publisher`, `PublishingPlace`, `DatePublished`,
 `PublishingStatus`, `BookFormatType`, `MainPublicationId`, `VolumeNumber`, `ContainedIn`,
 `ContainedInIsbn`, `Genre`, `PublicTags`, `AdminTags`, `IsAccessableForFree`, `IsInternalForPatres`,
-`IsScientificWork`, `IsAwaitingMerge`, `HasBeenMerged`, `JkQuality`, `JkQualityNotes`, `JkPeriod`,
+`IsScientificWork`, `IsAwaitingMerge`, `HasBeenMerged`, `HasNoISBN`, `IsRevisedWithBookInHand`,
+`PublishDataAsJsonLd`, `IsFormallyPublished`, `JkQuality`, `JkQualityNotes`, `JkPeriod`,
 `JkEventId`, `Url1`, `Url1Label`, `Url2`, `Url2Label`, `Url3`, `Url3Label`, `DataSource`,
 `DataSourceId`, `DataSourceUpdatedOn`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
@@ -232,6 +233,12 @@ ORDER BY `Authors`, `Title`";
                 'isInternalForPatres'       => $this->filterDbBool($row['IsInternalForPatres']),
                 'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
                 'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
+
+                'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
+                'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
+                'publishDataAsJsonLd'       => $this->filterDbBool($row['PublishDataAsJsonLd']),
+                'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
+
                 'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
                 'jkQuality' 				=> $this->filterDbString($row['JkQuality']),
                 'jkQualityNotes' 			=> $this->filterDbString($row['JkQualityNotes']),

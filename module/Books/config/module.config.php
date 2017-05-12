@@ -639,6 +639,12 @@ return [
                     'isInternalForPatres'       => 'IsInternalForPatres',
                     'isScientificWork'          => 'IsScientificWork',
                     'isAwaitingMerge'           => 'IsAwaitingMerge',
+
+                    'hasNoISBN'                 => 'HasNoISBN',
+                    'isRevisedWithBookInHand'   => 'IsRevisedWithBookInHand',
+                    'publishDataAsJsonLd'       => 'PublishDataAsJsonLd',
+                    'isFormallyPublished'       => 'IsFormallyPublished',
+
                     'hasBeenMerged'             => 'HasBeenMerged',
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',

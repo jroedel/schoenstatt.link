@@ -309,6 +309,58 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'value'   => '0',
             ],
         ]);
+        $this->add([
+            'name' => 'hasNoISBN',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Publication has no ISBN?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+        $this->add([
+            'name' => 'isRevisedWithBookInHand',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Data has been revised with book in hand?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '1',
+            ],
+        ]);
+        $this->add([
+            'name' => 'publishDataAsJsonLd',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Publish data in search engines?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '1',
+            ],
+        ]);
+        $this->add([
+            'name' => 'isFormallyPublished',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Is formally published?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '1',
+            ],
+        ]);
 
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
@@ -711,6 +763,30 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
             'isScientificWork' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'hasNoISBN' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'isRevisedWithBookInHand' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'publishDataAsJsonLd' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'isFormallyPublished' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']

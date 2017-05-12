@@ -11,6 +11,7 @@ echo $this->formRow($form->get('volumeNumber'));
 echo $this->formRow($form->get('containedIn'));
 echo $this->formRow($form->get('containedInIsbn'));
 echo $this->formRow($form->get('isbn'));
+echo $this->formRow($form->get('hasNoISBN'));
 echo $this->formRow($form->get('copyrightYear'));
 echo $this->formRow($form->get('publisher'));
 echo $this->formRow($form->get('publishingPlace'));
@@ -24,9 +25,12 @@ echo $this->formRow($form->get('url2Label'));
 echo $this->formRow($form->get('url3'));
 echo $this->formRow($form->get('url3Label'));
 echo $this->formRow($form->get('keywords'));
+echo $this->formRow($form->get('isFormallyPublished'));
 echo $this->formRow($form->get('isAccessibleForFree'));
 echo $this->formRow($form->get('isScientificWork'));
-if ($this->isAllowed('pub_patres')) { //@todo make optional for the form, maybe through proprocessor
+echo $this->formRow($form->get('isRevisedWithBookInHand'));
+echo $this->formRow($form->get('publishDataAsJsonLd'));
+if ($this->isAllowed('pub_patres')) {
     echo $this->formRow($form->get('isInternalForPatres'));
 }?>
 <div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
