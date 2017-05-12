@@ -7,17 +7,17 @@ $object = $this->object;
 <div class="row">
 <div class="col-md-3">
 <?php if (file_exists(sprintf('public/fathers/photos/%s.jpg', $object['publicationId']))) : ?>
-	<img src="<?php echo $this->basePath() . sprintf("/fathers/photos/%s.jpg", $object['publicationId']); ?>"
-	height="200px" alt="<?php echo $this->escapeHtmlAttr($object['title']);?>">
+    <img src="<?php echo $this->basePath() . sprintf("/fathers/photos/%s.jpg", $object['publicationId']); ?>"
+    height="200px" alt="<?php echo $this->escapeHtmlAttr($object['title']);?>">
 <?php endif;?>
 <p class="align-center"><?php //echo $this->escapeHtml(ucwords($object['condition']));?></p>
 </div>
 <div class="col-md-9">
 <div class="panel panel-default" id="infoPanel">
     <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-6">
-        	<h3 class="panel-title"><?php echo $this->escapeHtml($this->translate('Publication Info')); ?></h3>
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title"><?php echo $this->escapeHtml($this->translate('Publication Info')); ?></h3>
         </div>
 
         <div class="col-xs-6">
@@ -34,45 +34,49 @@ $object = $this->object;
             <?php endif;?>
         </div>
         </div>
-	</div>
+    </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-      	<p><strong><?php echo $this->translate('Author(s)');?></strong></p>
-      	<?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);?>
-		<?php if (!empty($object['childTerritories'])) :?>
+          <p><strong><?php echo $this->translate('Author(s)');?></strong></p>
+          <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);?>
+        <?php if (!empty($object['childTerritories'])) :?>
         <hr>
             <h4 class="text-center"><strong><?php echo $this->translate('Associated territories');?></strong></h4>
             <?php foreach ($object['childTerritories'] as $territory) :
                 if ($territory['isActive'] || $this->isAllowed('patres_details')):?>
-                	<p><?php echo $this->formatEntity('territory', $territory, [
-                	    'displayInactiveLabel' => true
-                	]);?></p><?php
+                    <p><?php echo $this->formatEntity('territory', $territory, [
+                        'displayInactiveLabel' => true
+                    ]);?></p><?php
                 endif;
             endforeach;
         endif;?>
-	</div> <!-- info 1 column -->
+    </div> <!-- info 1 column -->
 
     <div class="col-md-6">
       <!-- <p><strong><?php echo $this->translate('Superiors');?></strong></p> -->
-		<?php echo $this->formatField('Language', $object['inLanguage']);
-		echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Translator', $object['translator'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Illustrator', $object['illustrator'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Publishing status', $object['publishingStatus'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Book format', $object['bookFormatType'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Volume number', $object['volumeNumber'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Contained in', $object['cntainedIn'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Contained in ISBN', $object['containedInIsbn'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Genre', $object['genre'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true]);
-		echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'displayOnlyWithPermission' => 'route/publications/publication/edit']);
-		?>
-	</div> <!-- info 2 column -->
+        <?php echo $this->formatField('Language', $object['inLanguage']);
+        echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Translator', $object['translator'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Illustrator', $object['illustrator'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Publishing status', $object['publishingStatus'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Book format', $object['bookFormatType'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Volume number', $object['volumeNumber'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Contained in', $object['cntainedIn'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Contained in ISBN', $object['containedInIsbn'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Genre', $object['genre'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true,
+            'displayOnlyWithPermission' => 'route/publications/publication/edit']);
+        foreach ($object['urls'] as $urlObject) :
+            ?><p><?php echo $this->formatPublicationUrlObject($urlObject);?></p><?php
+        endforeach;
+        ?>
+    </div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->
 </div> <!-- course info 1 panel -->
 </div> <!-- info 1 column -->
@@ -94,11 +98,11 @@ $object = $this->object;
 <div class="panel panel-default" id="notesPanel">
     <div class="panel-heading">
         <h3 class="panel-title"><?php echo $this->translate('Notes'); ?></h3>
-	</div>
+    </div>
     <div class="panel-body">
     <div><?php echo $this->markdown($object['publicNotes']);?>
     </div>
-	</div> <!-- notes panel body -->
+    </div> <!-- notes panel body -->
 </div> <!-- notes panel -->
 </div> <!-- notes column 12 -->
 </div> <!-- notes row -->
@@ -110,11 +114,11 @@ $object = $this->object;
 <div class="panel panel-default" id="adminNotesPanel">
     <div class="panel-heading">
         <h3 class="panel-title"><?php echo $this->translate('Admin notes'); ?></h3>
-	</div>
+    </div>
     <div class="panel-body">
     <div><?php echo $this->markdown($object['adminNotes']);?>
     </div>
-	</div> <!-- notes panel body -->
+    </div> <!-- notes panel body -->
 </div> <!-- notes panel -->
 </div> <!-- notes column 12 -->
 </div> <!-- notes row -->

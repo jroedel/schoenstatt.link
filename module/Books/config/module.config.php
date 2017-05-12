@@ -7,6 +7,7 @@ return [
             'EBook'             => 'EBook',
             'Hardcover'         => 'Hardcover',
             'Paperback'         => 'Paperback',
+            'GraphicNovel'      => 'GraphicNovel',
         ],
         'language_value_options' => [
             'en' => 'English',
@@ -20,10 +21,11 @@ return [
             'gr' => 'Greek',
         ],
         'url_label_value_options' => [
-            'download'  => 'Download',
-            'amazon'    => 'Purchase',
-            'borrow'    => 'Borrow',
-            'wikipedia' => 'Wikipedia',
+            'Download'  => 'Download',
+            'Purchase'  => 'Purchase',
+            'Borrow'    => 'Borrow',
+            'Wikipedia' => 'Wikipedia',
+            'Information'=> 'Information',
         ],
     ],
     'controllers' => [
@@ -55,6 +57,7 @@ return [
         ],
         'invokables' => [
             'formatPublication'             => 'Books\View\Helper\FormatPublication',
+            'formatPublicationUrlObject'    => 'Books\View\Helper\FormatPublicationUrlObject',
             'formatField'                   => 'Books\View\Helper\FormatField',
         ],
     ],
