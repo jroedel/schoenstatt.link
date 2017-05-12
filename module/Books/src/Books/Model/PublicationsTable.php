@@ -58,6 +58,17 @@ ORDER BY `Publisher`";
         return $valueOptions;
     }
 
+    public function getEditionValueOptions($onlyMainEditions = false)
+    {
+        $entities = $this->getUnlinkedPublications();
+        $return = [];
+        foreach ($entities as $entityId => $entityObject) {
+            $return[$entityId] = $entityObject['title'].
+                (!is_null($entityObject['bookEdition']) ? '"'.$entityObject.'"' : '');
+        }
+        return $return;
+    }
+
 
     /**
      * Search for books. Returns a list of publications. The query parameters are:
@@ -188,7 +199,7 @@ ORDER BY `Publisher`";
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
 `CreatedOn`, `CreatedBy`
 FROM `sch_publications`
-ORDER BY `Authors`, `Title`";
+ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
         foreach ($results as $row) {

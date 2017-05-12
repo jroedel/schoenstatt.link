@@ -84,6 +84,18 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'mainPublicationId',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Main publication (use for outdated editions)',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => false,
+                'value_options' => [],
+            ],
+        ]);
+        $this->add([
             'name' => 'numberOfPages',
             'type' => 'Number',
             'options' => [
@@ -500,6 +512,16 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 3000,
+                        ],
+                    ],
+                ],
+            ],
+            'mainPublicationId' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],

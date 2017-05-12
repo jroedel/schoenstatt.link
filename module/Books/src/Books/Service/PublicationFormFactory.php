@@ -30,9 +30,11 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
 		$urlLabels = $config['url_label_value_options'];
 		$keywords = $table->getKeywordsValueOptions();
 // 		$adminTags = $table->getPersonAdminTags();
+        $editions = $table->getEditionValueOptions(true);
 
-		$form = new PublicationForm();
-		$form->get('inLanguage')->setValueOptions($languages);
+        $form = new PublicationForm();
+        $form->get('inLanguage')->setValueOptions($languages);
+        $form->get('mainPublicationId')->setValueOptions($editions);
 		$form->get('authors')->setValueOptions($authors);
 		$form->get('keywords')->setValueOptions($keywords);
 		$form->get('publisher')->setValueOptions($publishers);

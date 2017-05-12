@@ -5,25 +5,21 @@ $form = $this->form;
 echo $this->formRow($form->get('title'));
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('authors'));
+echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('inLanguage'));
 echo $this->formRow($form->get('description'));
+echo $this->formRow($form->get('mainPublicationId'));
 echo $this->formRow($form->get('volumeNumber'));
-echo $this->formRow($form->get('containedIn'));
-echo $this->formRow($form->get('containedInIsbn'));
 echo $this->formRow($form->get('isbn'));
 echo $this->formRow($form->get('hasNoISBN'));
+echo $this->formRow($form->get('containedIn'));
+echo $this->formRow($form->get('containedInIsbn'));
 echo $this->formRow($form->get('copyrightYear'));
 echo $this->formRow($form->get('publisher'));
 echo $this->formRow($form->get('publishingPlace'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('bookFormatType'));
 echo $this->formRow($form->get('numberOfPages'));
-echo $this->formRow($form->get('url1'));
-echo $this->formRow($form->get('url1Label'));
-echo $this->formRow($form->get('url2'));
-echo $this->formRow($form->get('url2Label'));
-echo $this->formRow($form->get('url3'));
-echo $this->formRow($form->get('url3Label'));
 echo $this->formRow($form->get('keywords'));
 echo $this->formRow($form->get('isFormallyPublished'));
 echo $this->formRow($form->get('isAccessibleForFree'));
@@ -36,6 +32,12 @@ if ($this->isAllowed('pub_patres')) {
 <div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php
 echo $this->formRow($form->get('publicNotes'));
+echo $this->formRow($form->get('url1'));
+echo $this->formRow($form->get('url1Label'));
+echo $this->formRow($form->get('url2'));
+echo $this->formRow($form->get('url2Label'));
+echo $this->formRow($form->get('url3'));
+echo $this->formRow($form->get('url3Label'));
 echo $this->formRow($form->get('adminNotes'));
 echo $this->formRow($form->get('adminTags'));
 echo $this->formRow($form->get('security'));
@@ -46,6 +48,10 @@ $("select[name='authors[]']").selectize({
     sortField: 'text'
 });
 $("select[name='inLanguage']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='mainPublicationId']").selectize({
     create: false,
     sortField: 'text'
 });
