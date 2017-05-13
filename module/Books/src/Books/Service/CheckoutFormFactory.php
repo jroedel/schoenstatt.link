@@ -6,7 +6,6 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 use Books\Model\LibraryTable;
 use Books\Form\CheckoutForm;
 use Zend\Mvc\Application;
-use Patres\Model\PatresTable;
 
 /**
  * @author Jeff Roedel <webmaster@schoenstatt.link>
@@ -32,10 +31,7 @@ class CheckoutFormFactory implements FactoryInterface
 		$books = $table->getLibraryBookValueOptions(['libraryId' => $libraryId, 'isAvailable' => true]);
 		$form->get('bookIds')->setValueOptions($books);
 
-		//@todo factor PatresTable out
-		/** @var PatresTable $patresTable **/
-		$patresTable = $serviceLocator->get ( 'Patres\Model\PatresTable' );
-        $persons = $patresTable->getPersonValueOptions();
+		$persons = $serviceLocator->get ( 'Schoenstatt\FathersValueOptions' );
         $form->get('personId')->setValueOptions($persons);
 
 		return $form;
