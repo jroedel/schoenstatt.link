@@ -12,6 +12,8 @@ return [
 		/**
 		 * This is the service name of a SionTable instance to call the getChanges() method
 		 */
+        'changes_model' => 'Schoenstatt\Model\SchoenstattTable',
+        'changes_show_all' => true,
 		'visits_model' => 'Schoenstatt\Model\SchoenstattTable',
 
 //        'post_place_line_format' => ':zip :cityState',

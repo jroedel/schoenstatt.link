@@ -30,24 +30,31 @@ class FormatAssociation extends AbstractHelper
     	$displayAsLink = isset($options['displayAsLink']) ? (bool)$options['displayAsLink'] : $display=='name';
         $finalMarkup = '';
 
-        switch ($display) {
-            case 'name':
-                if ($data['isNameTranslateable']) {
-                    $text = $this->view->translate($data['name'], 'Schoenstatt');
-                } else {
-                    $text = $data['name'];
-                }
+        if (isset($data['isDeleted']) && $data['isDeleted']) {
+            $text = $data['associationName'];
+            $displayAsLink = false;
+            $editPencilOption = false;
+            $showLabelOption = false;
+        } else {
+            switch ($display) {
+                case 'name':
+                    if ($data['isNameTranslateable']) {
+                        $text = $this->view->translate($data['name'], 'Schoenstatt');
+                    } else {
+                        $text = $data['name'];
+                    }
+                    break;
+                case 'kind':
+                    if (key_exists($data['kind'], $this->associationTypeLabels)) {
+                        $text = $this->associationTypeLabels[$data['kind']];
+                    } else {
+                        $text =  $data['kind'];
+                    }
+                    break;
+                default:
+                    throw new \InvalidArgumentException("Invalid display parameter: $display");
                 break;
-            case 'kind':
-                if (key_exists($data['kind'], $this->associationTypeLabels)) {
-                    $text = $this->associationTypeLabels[$data['kind']];
-                } else {
-                    $text =  $data['kind'];
-                }
-                break;
-            default:
-                throw new \InvalidArgumentException("Invalid display parameter: $display");
-            break;
+            }
         }
         $text = $this->view->escapeHtml($text);
 

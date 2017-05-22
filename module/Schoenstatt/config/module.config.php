@@ -203,7 +203,7 @@ return [
                     ],
                 ],
             ],
-            'sch-federation-international-structure' => [
+            'sch-federation-international-structure' => [ //@todo finish this
                 'sort'  => 200,
                 'label' => 'Federation international structure',
                 'default_roles' => [
@@ -273,6 +273,26 @@ return [
                 'sort'  => 440,
                 'default_roles' => $federationRoles,
             ],
+            'sch-national-apostolate' => [
+                'sort'  => 490,
+                'label' => 'Schoenstatt national apostolate',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Coordinator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
             'sch-diocesan-movement' => [
                 'label' => 'Schoenstatt diocesan movement',
                 'sort'  => 500,
@@ -283,6 +303,13 @@ return [
                         'sort' => 50,
                         'mainRole' => true,
                         'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Coordination assistant',
+                        'singlePosition' => false,
+                        'sort' => 54,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
                     ],
                     [
                         'roleTitle' => 'Committee member',
@@ -303,6 +330,11 @@ return [
                 'sort'  => 610,
                 'default_roles' => $leagueRoles,
             ],
+            'sch-mothers-league-branch' => [
+                'label' => 'Schoenstatt mother\'s league branch',
+                'sort'  => 615,
+                'default_roles' => $leagueRoles,
+            ],
             'sch-mens-league-branch' => [
                 'label' => 'Schoenstatt men\'s league branch',
                 'sort'  => 620,
@@ -313,21 +345,134 @@ return [
                 'sort'  => 630,
                 'default_roles' => $leagueRoles,
             ],
-            'sch-young-men-league-branch' => [
+            'sch-young-mens-league-branch' => [
                 'label' => 'Schoenstatt young men\'s league branch',
                 'sort'  => 640,
                 'default_roles' => $leagueRoles,
             ],
-            'sch-young-women-league-branch' => [
+            'sch-young-womens-league-branch' => [
                 'label' => 'Schoenstatt young women\'s league branch',
                 'sort'  => 650,
                 'default_roles' => $leagueRoles,
             ],
-            //@todo add virgen peregrina
-            //@todo pastoral de santuario
-            //@todo liga apostolica
-            //@todo madrugadores
-            //@todo forjadores
+            'sch-professionals-branch' => [
+                'label' => 'Schoenstatt professionals league branch',
+                'sort'  => 660,
+                'default_roles' => $leagueRoles,
+            ],
+            'sch-madrugadores-branch' => [
+                'label' => 'Schoenstatt madrugadores branch',
+                'sort'  => 670,
+                'default_roles' => $leagueRoles,
+            ],
+            'sch-diocesan-pilgrim-movement' => [
+                'sort'  => 675,
+                'label' => 'Diocesan pilgrim\'s movement',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Coordinator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Moderator',
+                        'singlePosition' => true,
+                        'sort' => 15,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'sch-diocesan-pilgrim-mother' => [
+                'sort'  => 680,
+                'label' => 'Diocesan Pilgrim Mother organization',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Coordinator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Moderator',
+                        'singlePosition' => true,
+                        'sort' => 15,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'sch-shrine-ministry' => [
+                'sort'  => 690,
+                'label' => 'Schoenstatt shrine ministry',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Coordinator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Moderator',
+                        'singlePosition' => false,
+                        'sort' => 15,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'sch-diocesan-apostolate' => [
+                'sort'  => 695,
+                'label' => 'Schoenstatt diocesan apostolate',
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Coordinator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Moderator',
+                        'singlePosition' => false,
+                        'sort' => 15,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
             'sch-school' => [
                 'label' => 'Schoenstatt school',
                 'sort'  => 700,
@@ -816,6 +961,15 @@ return [
                                     ],
                                 ],
                             ],
+                            'create-dioceses' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/create-dioceses',
+                                    'defaults' => [
+                                        'action'     => 'createDioceses',
+                                    ],
+                                ],
+                            ],
                             'delete' => [
                                 'type'    => 'Literal',
                                 'options' => [
@@ -1058,32 +1212,32 @@ return [
                     'kind',
                 ],
                 'index_route'                           => 'associations',
-                'index_template'                           => 'project/events/index',
+                'index_template'                        => 'project/events/index',
                 'default_route_key'                     => 'association_id',
                 'show_route'                            => 'associations/association',
                 'show_route_key'                        => 'association_id',
                 'show_route_key_field'                  => 'associationId',
-                'edit_action_form'                       => 'Schoenstatt\Form\AssociationForm',
+                'edit_action_form'                      => 'Schoenstatt\Form\AssociationForm',
 //                 'edit_action_template'                   => 'project/events/edit',
                 'edit_route'                            => 'associations/association/edit',
                 'edit_route_key'                        => 'association_id',
                 'edit_route_key_field'                  => 'associationId',
-                'create_action_form'                      => 'Schoenstatt\Form\AssociationForm',
-                'create_action_valid_data_handler'        => 'createAssociation',
-                'create_action_redirect_route'             => 'associations/association',
-                'create_action_redirect_route_key'        => 'association_id',
+                'create_action_form'                    => 'Schoenstatt\Form\AssociationForm',
+                'create_action_valid_data_handler'      => 'createAssociation',
+                'create_action_redirect_route'          => 'associations/association',
+                'create_action_redirect_route_key'      => 'association_id',
                 'create_action_redirect_route_key_field'=> 'associationId',
 //                 'create_action_template'                   => 'project/events/create',
-                'enable_delete_action'                     => true,
+                'enable_delete_action'                  => true,
 //                 'delete_action_acl_resource'             => 'event_:id',
 //                 'delete_action_acl_permission'             => 'delete_event',
-                'delete_action_redirect_route'             => 'associations',
+                'delete_action_redirect_route'          => 'associations',
 //                 'touch_default_field'                   => 'eventId',
 //                 'touch_field_route_key'                   => 'event_id',
 //                 'touch_json_route'                       => 'events/event/touch',
 //                 'touch_json_route_key'                    => 'event_id',
 //                 'database_bound_data_preprocessor'         => 'preprocessEvent',
-//                 'database_bound_data_postprocessor'     => 'postprocessEvent',
+                'database_bound_data_postprocessor'     => 'associationPostprocessor',
 //                 'moderate_route'                         => 'events/event/moderate',
 //                 'moderate_route_entity_key'             => 'event_id',
 //                 'has_dedicated_suggest_form'             => false,
@@ -1420,6 +1574,7 @@ return [
                 ['route' => 'associations/association/edit', 'roles' => ['sch_general_moderator']],
                 ['route' => 'associations/association/moderate', 'roles' => ['sch_general_moderator']],
                 ['route' => 'associations/association/delete', 'roles' => ['sch_administrator']],
+                ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_administrator']],
 
                 ['route' => 'roles', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/create', 'roles' => ['sch_moderator']],

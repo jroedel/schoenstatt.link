@@ -50,6 +50,24 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     const PROBLEM_ASSOCIATION_MULTIPLE_MAIN_ROLE = 'association-multi-main-role';
 
     /**
+     * This will be used upon creation of diocesan movements to autocreate league branches
+     * @var array
+     */
+    const ADD_LEAGUE_KINDS = [
+        'addShrineMinistry' => 'sch-shrine-ministry',
+        'addPilgrimMovement' => 'sch-diocesan-pilgrim-movement',
+        'addPilgrimMother' => 'sch-diocesan-pilgrim-mother',
+        'addProfessionalsBranch' => 'sch-professionals-branch',
+        'addMadrugadores' => 'sch-madrugadores-branch',
+        'addWomensYouthBranch' => 'sch-young-womens-league-branch',
+        'addMensYouthBranch' => 'sch-young-mens-league-branch',
+        'addWomensBranch' => 'sch-womens-league-branch',
+        'addMothersBranch' => 'sch-mothers-league-branch',
+        'addMensBranch' => 'sch-mens-league-branch',
+        'addFamilyBranch' => 'sch-family-league-branch',
+    ];
+
+    /**
      * Schoenstatt config
      * @var mixed[]
      */
@@ -387,6 +405,38 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         }
 
         return $association;
+    }
+
+    /**
+     * Create association generation roles upon generation creation
+     * @param mixed[] $data
+     * @param mixed[] $newData
+     * @param string $entityAction
+     * @return number
+     */
+    protected function associationPostprocessor($data, $newData, $entityAction)
+    {
+        //if we're creating a diocesan movement, check if auto-creation of any league branches were requested
+        if ($entityAction === SionTable::ENTITY_ACTION_CREATE)
+        {
+            if (!isset($newData['associationId']) || is_null($newData['associationId'])) {
+                throw new \Exception('There was an unexpectedly no associationId on a new association');
+            }
+            $this->createAssociatedRoles($newData['associationId'], $newData['kind']);
+            if ($newData['kind'] == 'sch-diocesan-movement') {
+                foreach ($data as $key => $value) {
+                    if (key_exists($key, self::ADD_LEAGUE_KINDS) && $value) {
+                        $branchData = [
+                            'name' => $newData['name'],
+                            'kind' => self::ADD_LEAGUE_KINDS[$key],
+                            'country' => $newData['country'],
+                            'parent' => $newData['associationId'],
+                        ];
+                        $this->createEntity('association', $branchData);
+                    }
+                }
+            }
+        }
     }
 
     public function getNationalAssociations($country)

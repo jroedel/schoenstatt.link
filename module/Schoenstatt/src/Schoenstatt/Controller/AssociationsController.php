@@ -15,9 +15,11 @@ use Schoenstatt\Model\SchoenstattTable;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Zend\View\Model\JsonModel;
 use SionModel\Controller\SionController;
+use Zend\View\Model\ViewModel;
 
 class AssociationsController extends SionController
 {
+
     public function __construct()
     {
         parent::__construct('association');
@@ -63,19 +65,48 @@ class AssociationsController extends SionController
         return $view;
     }
 
-    public function createAssociation($data)
+    public function createDiocesesAction()
     {
-        $entity = $this->getEntity();
-        $table = $this->getSionTable();
-        if (!($newId = $table->createEntity($entity, $data))) {
-            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-        } else {
-            //This is the most important:
-            $table->createAssociatedRoles($newId, $data['kind']);
-            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-            ->addMessage ( ucwords($entity).' successfully created.' );
-            $this->redirectAfterCreate((int) $newId);
+        //get entity
+
+        //make sure it's a national or regional movement, this action doesn't apply to any other associations
+
+        //validate the form
+
+        //insert the diocese and associated branches
+
+        //for now just insert the info I want :D
+        $request = $this->getRequest();
+        if ($request->isPost()) {
+            $chileNationalMovement = 8;
+            $data = $this->getChileInfo();
+            foreach ($data as $diocesanInfo) {
+                $newDioceseId = $this->createDiocesanMovement($chileNationalMovement, $diocesanInfo);
+            }
         }
+        return new ViewModel([
+
+        ]);
+    }
+
+    /**
+     * Create a new diocese associated with the national movement and selected
+     * @param int $parentMovementId
+     * @param mixed[] $data
+     */
+    public function createDiocesanMovement($parentMovementId, $data)
+    {
+        /** @var SchoenstattTable $table */
+        $table = $this->getSionTable();
+        $parentData = $table->getAssociation($parentMovementId);
+        if ($parentData['kind'] != 'sch-national-movement') {
+            throw new \Exception('Parent movement should be a national movement.');
+        }
+        $data['kind'] = 'sch-diocesan-movement';
+        $data['parent'] = $parentMovementId;
+        $data['country'] = $parentData['country'];
+        $newId = $table->createEntity('association', $data);
+        return $newId;
     }
 
     public function importAction()
@@ -118,5 +149,544 @@ class AssociationsController extends SionController
             $table->createAssociatedRoles($newId, $data['kind']);
         }
         return new JsonModel(['imported' => $toImport]);
+    }
+
+    protected function getChileInfo()
+    {
+//         return [[
+//             'name' => 'Test3',
+//             'addShrineMinistry' => false,
+//             'addPilgrimMovement' => false,
+//             'addPilgrimMother' => true,
+//             'addProfessionalsBranch' => false,
+//             'addMadrugadores' => false,
+//             'addWomensYouthBranch' => false,
+//             'addMensYouthBranch' => false,
+//             'addWomensBranch' => false,
+//             'addMothersBranch' => true,
+//             'addMensBranch' => false,
+//             'addFamilyBranch' => true,
+//         ]];
+        $data = [
+            [
+                'name' => 'Aconcagua',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Agua Santa',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Angol',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Antofagasta',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => true,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Arica',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Bellavista',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => true,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => true,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => true,
+                'addMothersBranch' => true,
+                'addMensBranch' => true,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Calama',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Campanario',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => true,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => true,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => true,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Chillán',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Colina',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Concepción',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => true,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Copiapó',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Coronel',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Coyhaique',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Curicó',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Iquique',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'La Serena',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Linares',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Los Ángeles',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Los Pinos',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Maipo',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Maipú',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Melipilla',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Monte Schoenstatt',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => true,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => true,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Nuevo Belén',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => true,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Osorno',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Providencia',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => true,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Puerto Montt',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Punta Arenas',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Quillota',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Rancagua',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => true,
+                'addMothersBranch' => true,
+                'addMensBranch' => true,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'San Fernando',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Talca',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Temuco',
+                'addShrineMinistry' => true,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => true,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => true,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Valdivia',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => false,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => true,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Vallenar',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+            [
+                'name' => 'Villa Alemana',
+                'addShrineMinistry' => false,
+                'addPilgrimMovement' => false,
+                'addPilgrimMother' => true,
+                'addProfessionalsBranch' => false,
+                'addMadrugadores' => false,
+                'addWomensYouthBranch' => false,
+                'addMensYouthBranch' => false,
+                'addWomensBranch' => false,
+                'addMothersBranch' => false,
+                'addMensBranch' => false,
+                'addFamilyBranch' => true,
+            ],
+        ];
+        return $data;
     }
 }

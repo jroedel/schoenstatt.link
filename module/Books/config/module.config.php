@@ -730,9 +730,10 @@ return [
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_general_moderator']],
                 ['route' => 'home', 'roles' => ['lib_user']],
                 ['route' => 'libraries', 'roles' => ['lib_user']],
+                //@todo define library-based ACL
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/checkin', 'roles' => ['lib_administrator']],
+                ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
+                ['route' => 'libraries/library/checkin', 'roles' => ['lib_administrator']], //@todo open to moderators
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/import', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_administrator']],
