@@ -1223,7 +1223,7 @@ return [
                 'edit_route_key'                        => 'association_id',
                 'edit_route_key_field'                  => 'associationId',
                 'create_action_form'                    => 'Schoenstatt\Form\AssociationForm',
-                'create_action_valid_data_handler'      => 'createAssociation',
+//                 'create_action_valid_data_handler'      => 'createAssociation',
                 'create_action_redirect_route'          => 'associations/association',
                 'create_action_redirect_route_key'      => 'association_id',
                 'create_action_redirect_route_key_field'=> 'associationId',
