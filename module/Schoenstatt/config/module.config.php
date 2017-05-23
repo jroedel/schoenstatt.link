@@ -1541,6 +1541,11 @@ return [
                     'js/selectize.min.js',
                     'js/fathers-father-edit.js',
                 ],
+                'js/selectize-validation-pack.js' => [
+                    'js/jquery-ui.min.js',
+                    'js/jquery.validate.min.js',
+                    'js/selectize.min.js',
+                ],
                 'js/living-situation-edit.js' => [
                     'js/jquery-ui.min.js',
                     'js/jquery.validate.min.js',
@@ -1574,6 +1579,12 @@ return [
                 ],
             ],
             'js/markdown-form-pt.js' => [
+                'cache'     => 'AssetManager\\Cache\\FilePathCache',
+                'options' => [
+                    'dir' => 'public', // path/to/cache
+                ],
+            ],
+            'js/selectize-validation-pack.js' => [
                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
                 'options' => [
                     'dir' => 'public', // path/to/cache

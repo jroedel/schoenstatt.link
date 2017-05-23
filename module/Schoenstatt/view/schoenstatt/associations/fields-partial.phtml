@@ -1,6 +1,5 @@
 <?php
 $form = $this->form;
-$jsScript = '';
 echo $this->formHidden($form->get('associationId'));?>
 <div class="form-group ">
     <?php echo $this->formLabel($form->get('name'));
@@ -61,7 +60,7 @@ echo $this->formRow($form->get('post2Country'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('contactNotes'));
 echo $this->formRow($form->get('security'));
-$jsScript .= <<<JS
+$jsScript = <<<JS
 $("select[name='phone1Label']").selectize({
     create: true,
     sortField: 'text'
@@ -86,5 +85,12 @@ $("select[name='url3Label']").selectize({
     create: true,
     sortField: 'text'
 });
-
 JS;
+
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();
