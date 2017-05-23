@@ -20,14 +20,10 @@ class PersonFormFactory implements FactoryInterface
     {
         /** @var \Schoenstatt\Model\SchoenstattTable $table **/
 		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
-		/** @var \Zend\I18n\Translator\Translator $translator */
-		$translator = $serviceLocator->get ( 'translator' );
-
-		$valueOptions = [];
 
 		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
 
-		$lifeCommunities = $table->getAssociationValueOptions($translator, false, false);
+		$lifeCommunities = $table->getAssociationValueOptions(false, false);
 
 		$personTags = $serviceLocator->get ( 'Schoenstatt\PersonTagsValueOptions' );
 // 		$adminTags = $table->getPersonAdminTags();

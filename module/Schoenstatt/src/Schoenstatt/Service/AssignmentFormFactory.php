@@ -23,10 +23,8 @@ class AssignmentFormFactory implements FactoryInterface
     {
         /** @var SchoenstattTable $table **/
 		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
-		/** @var \Zend\I18n\Translator\Translator $translator */
-		$translator = $serviceLocator->get ( 'translator' );
 
-		$associations = $table->getAssociationValueOptions($translator);
+		$associations = $table->getAssociationValueOptions();
 
 		$persons = $table->getPersonValueOptions();
 

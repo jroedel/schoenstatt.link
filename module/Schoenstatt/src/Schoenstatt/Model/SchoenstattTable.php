@@ -96,6 +96,34 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 
     protected $countryNameTranslations;
 
+    /**
+    * @var string $locale
+    */
+    protected $locale;
+
+    /**
+    * Get the locale value
+    * @return string
+    */
+    public function getLocale()
+    {
+        if (is_null($this->locale)) {
+            $this->locale = \Locale::getDefault();
+        }
+        return $this->locale;
+    }
+
+    /**
+    *
+    * @param string $locale
+    * @return self
+    */
+    public function setLocale($locale)
+    {
+        $this->locale = $locale;
+        return $this;
+    }
+
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $schoenstattConfig)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
@@ -118,7 +146,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
      */
     public function getPersonValueOptions($includeInactive = false)
     {
-        $persons = $this->getPersons();
+        $persons = $this->getUnlinkedPersons();
         $result = [];
         foreach ($persons as $per) {
             if ($includeInactive || $per['isActive']) { //put it in
@@ -143,19 +171,18 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
      * @param string $includeNonLifeLongMembership
      * @return unknown[]
      */
-    public function getAssociationValueOptions($translator = null, $includeInactive = false, $includeNonLifeLongMembership = true)
+    public function getAssociationValueOptions($includeInactive = false, $includeNonLifeLongMembership = true)
     {
-        $sql = "SELECT `AssociationId`, `AssociationName`, `IsNameTranslateable`, `IsLifeCommunity` FROM `sch_associations`";
-        $results = $this->fetchSome(null, $sql, null);
+        $entities = $this->getUnlinkedAssociations();
         $valueOptions = [];
-        foreach ($results as $row) {
-            if (!$includeNonLifeLongMembership && !$this->filterDbBool($row['IsLifeCommunity'])) {
+        foreach ($entities as $entityId => $object) {
+            if (!$includeNonLifeLongMembership && !$this->filterDbBool($object['isLifeCommunity'])) {
                 continue;
             }
-            if ($translator instanceof TranslatorInterface && $this->filterDbBool($row['IsNameTranslateable'])) {
-                $valueOptions[$row['AssociationId']] = $translator->translate($row['AssociationName'], 'Schoenstatt');
+            if (!is_null($object['formattedName'])) {
+                $valueOptions[$entityId] = $object['formattedName'];
             } else {
-                $valueOptions[$row['AssociationId']] = $row['AssociationName'];
+                $valueOptions[$entityId] = $object['name'];
             }
         }
         asort($valueOptions);
@@ -211,7 +238,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
      */
     public function getAssociations()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('associations'))) {
+        $cacheKey = 'associations-'.$this->getLocale();
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $entities = $this->getUnlinkedAssociations();
@@ -239,13 +267,14 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 //         	}
 //         }
 
-        $this->cacheEntityObjects('associations', $entities, ['association', 'person', 'role', 'assignment']);
+        $this->cacheEntityObjects($cacheKey, $entities, ['association', 'person', 'role', 'assignment']);
         return $entities;
     }
 
     protected function getUnlinkedAssociations()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-associations'))) {
+        $cacheKey = 'unlinked-associations-'.$this->getLocale();
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $associationKindConfig = $this->config['association_kinds'];
@@ -279,7 +308,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
         $areCountryTranslationsReady = !is_null($this->countryNameTranslations);
-        $locale = \Locale::getDefault();
+        $locale = $this->getLocale();
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['AssociationId']);
@@ -455,7 +484,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             ];
         }
-        $this->cacheEntityObjects('unlinked-association', $entities, ['association']);
+        $this->cacheEntityObjects($cacheKey, $entities, ['association']);
         return $entities;
     }
     /**

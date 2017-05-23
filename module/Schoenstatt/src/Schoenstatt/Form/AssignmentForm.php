@@ -13,11 +13,6 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
 		parent::__construct('edit_assignment');
 
 		$this->add([
-		    'name' => 'assignmentId',
-		    'type' => 'Hidden',
-		]);
-
-		$this->add([
 		    'name' => 'associationId',
 		    'type' => 'Select',
 		    'options' => [

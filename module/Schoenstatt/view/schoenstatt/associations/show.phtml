@@ -152,8 +152,14 @@ $this->headTitle($name);?>
         <div class="col-xs-6">
             <?php if ($this->isAllowed('route/assignments/create')):
                 $queryOptions= [];
+                $newRoleId = null;
                 if (!is_null($entity['mainRole'])) {
-                    $queryOptions = ['query' => ['roleId' => $entity['mainRole']['roleId']]];
+                    $newRoleId = $entity['mainRole']['roleId'];
+                } elseif (!empty($entity['roles'])) {
+                    $newRoleId = current($entity['roles'])['roleId'];
+                }
+                if (!is_null($newRoleId)) {
+                    $queryOptions = ['query' => ['roleId' => $newRoleId]];
                 }?>
                 <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
                     echo $this->url('assignments/create', [], $queryOptions);?>">

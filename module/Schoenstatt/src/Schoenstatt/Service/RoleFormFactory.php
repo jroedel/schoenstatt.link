@@ -26,7 +26,7 @@ class RoleFormFactory implements FactoryInterface
 		/** @var \Zend\I18n\Translator\Translator $translator */
 		$translator = $serviceLocator->get ( 'translator' );
 
-		$associations = $table->getAssociationValueOptions($translator);
+		$associations = $table->getAssociationValueOptions();
 		$roleTitles = $table->getRoleTitleValueOptions($translator);
 
 		/** @var FormElementManagerV2Polyfill $formManager */
