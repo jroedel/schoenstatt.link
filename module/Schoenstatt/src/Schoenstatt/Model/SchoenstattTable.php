@@ -365,10 +365,10 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                     } else if ($isTranslatorReady) {
                         $token = $this->translator->translate($token, 'Schoenstatt');
                     }
-                }
-                if (!key_exists('translated_name_format', $associationKindConfig[$kind])) {
-                    $associationKindConfig[$kind]['translated_name_format'] =
+                    if (!key_exists('translated_name_format', $associationKindConfig[$kind])) {
+                        $associationKindConfig[$kind]['translated_name_format'] =
                         $this->translator->translate($associationKindConfig[$kind]['name_format'], 'Schoenstatt');
+                    }
                 }
                 $formattedName = sprintf($associationKindConfig[$kind]['translated_name_format'], $token);
             } else { //no name format

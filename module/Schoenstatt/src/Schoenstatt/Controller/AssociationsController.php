@@ -109,6 +109,7 @@ class AssociationsController extends SionController
 
     public function importAction()
     {
+        return;
         /** @var SchoenstattTable $table */
         $table = $this->getSionTable();
         /** @var CountriesInfo $countryInfo */
