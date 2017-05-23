@@ -247,25 +247,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         $assignments = $this->getUnlinkedAssignments();
         $persons = $this->getUnlinkedPersons();
 
-        //@todo replace these two mappings with the automatic one from patres
-        //map roles to associations
         $this->connectEntityRolesAndAssignments('association', $entities);
-//         foreach ($roles as $roleId => $role) {
-//         	if (isset($entities[$role['associationId']])) {
-//         		$entities[$role['associationId']]['roles'][$roleId] = $role;
-//         	}
-//         }
-
-//         //map assignments to associations
-//         foreach ($assignments as $assignmentId => $assignment) {
-//         	if (isset($entities[$assignment['associationId']])) {
-//         		$entities[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
-//         		if (isset($persons[$entities[$assignment['associationId']]['assignments'][$assignmentId]['personId']])) {
-//         			$entities[$assignment['associationId']]['assignments'][$assignmentId]['person'] =
-//         				$persons[$entities[$assignment['associationId']]['assignments'][$assignmentId]['personId']];
-//         		}
-//         	}
-//         }
 
         $this->cacheEntityObjects($cacheKey, $entities, ['association', 'person', 'role', 'assignment']);
         return $entities;

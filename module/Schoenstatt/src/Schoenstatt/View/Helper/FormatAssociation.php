@@ -37,7 +37,7 @@ class FormatAssociation extends AbstractHelper
             $showLabelOption = false;
         } else {
             switch ($display) {
-                case 'name':
+                case self::DISPLAY_NAME:
                     if ($data['formattedName']) {
                         $text = $data['formattedName'];
                     } else if ($data['isNameTranslateable']) {
@@ -46,12 +46,13 @@ class FormatAssociation extends AbstractHelper
                         $text = $data['name'];
                     }
                     break;
-                case 'kind':
+                case self::DISPLAY_KIND:
                     if (key_exists($data['kind'], $this->associationTypeLabels)) {
                         $text = $this->associationTypeLabels[$data['kind']];
                     } else {
-                        $text =  $data['kind'];
+                        $text = $data['kind'];
                     }
+                    $text = $this->view->translate($text);
                     break;
                 default:
                     throw new \InvalidArgumentException("Invalid display parameter: $display");
