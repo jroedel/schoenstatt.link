@@ -6,6 +6,8 @@ echo $this->formHidden($form->get('associationId'));?>
     <?php echo $this->formLabel($form->get('name'));
     echo $this->formElement($form->get('name'));
     echo $this->formElementErrors($form->get('name'));
+    echo $this->formElement($form->get('overrideNameFormat'));
+    echo $this->formElementErrors($form->get('overrideNameFormat')).'<br>';
     echo $this->formElement($form->get('isNameTranslateable'));
     echo $this->formElementErrors($form->get('isNameTranslateable')).'<br>';
     echo $this->formElement($form->get('isLifeCommunity'));

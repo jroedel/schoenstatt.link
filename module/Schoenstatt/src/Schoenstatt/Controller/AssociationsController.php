@@ -9,13 +9,11 @@
 
 namespace Schoenstatt\Controller;
 
-use Zend\Mvc\Controller\Plugin\FlashMessenger;
-
 use Schoenstatt\Model\SchoenstattTable;
-use JTranslate\Controller\Plugin\NowMessenger;
 use Zend\View\Model\JsonModel;
 use SionModel\Controller\SionController;
 use Zend\View\Model\ViewModel;
+use JTranslate\Model\CountriesInfo;
 
 class AssociationsController extends SionController
 {
@@ -69,7 +67,7 @@ class AssociationsController extends SionController
     {
         //get entity
 
-        //make sure it's a national or regional movement, this action doesn't apply to any other associations
+        //make sure it's a national or sch-regional-organization, this action doesn't apply to any other associations
 
         //validate the form
 
@@ -99,7 +97,7 @@ class AssociationsController extends SionController
         /** @var SchoenstattTable $table */
         $table = $this->getSionTable();
         $parentData = $table->getAssociation($parentMovementId);
-        if ($parentData['kind'] != 'sch-national-movement') {
+        if ($parentData['kind'] != 'sch-national-movement' && $parentData['kind'] != 'sch-regional-organization') {
             throw new \Exception('Parent movement should be a national movement.');
         }
         $data['kind'] = 'sch-diocesan-movement';
@@ -111,6 +109,26 @@ class AssociationsController extends SionController
 
     public function importAction()
     {
+        /** @var SchoenstattTable $table */
+        $table = $this->getSionTable();
+        /** @var CountriesInfo $countryInfo */
+        $countryInfo = $this->getServiceLocator()->get('CountriesInfo');
+        $countryNames = $countryInfo->getCountryNames();
+        $entities = $table->getAssociations();
+        $return = [];
+        foreach ($entities as $associationId => $association) {
+            if ($association['kind'] == 'sch-national-movement' && $association['country'] &&
+                key_exists($association['country'], $countryNames)
+            ) {
+                $newName = $countryNames[$association['country']];
+                $data = [
+                    'name' => $newName
+                ];
+                $return[$associationId] = $newName;
+                $table->updateEntity('association', $associationId, $data);
+            }
+        }
+        return new JsonModel(['updated' => $return]);
         return; //disable to prevent duplicate records being inserted
         $toImport = [
             ['name' => 'Schoenstatt Movement of Argentina', 'country' => 'AR', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],

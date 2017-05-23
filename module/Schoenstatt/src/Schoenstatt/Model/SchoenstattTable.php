@@ -89,10 +89,27 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 
     protected $rolesCache;
 
+    /**
+     * @var TranslatorInterface $translator
+     */
+    protected $translator;
+
+    protected $countryNameTranslations;
+
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $schoenstattConfig)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $schoenstattConfig;
+        $this->translator = $serviceLocator->get('translator');
+
+        if (!$this->countryNameTranslations = $this->fetchCachedEntityObjects('country-name-translations')) {
+            if ($serviceLocator->has('CountriesInfo')) {
+                /** @var \JTranslate\Model\CountriesInfo $countriesInfo */
+                $countriesInfo = $serviceLocator->get('CountriesInfo');
+                $this->countryNameTranslations = $countriesInfo->getCountryNameTranslations();
+                $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
+            }
+        }
     }
 
     /**
@@ -231,7 +248,9 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-associations'))) {
             return $cache;
         }
-        $sql = "SELECT `AssociationId`, `AssociationName`, `Parent`, `Kind`,
+        $associationKindConfig = $this->config['association_kinds'];
+
+        $sql = "SELECT `AssociationId`, `AssociationName`, `Parent`, `Kind`, `OverrideNameFormat`,
 `Country`, `FoundationDate`, `SuppressionDate`, `IsLifeCommunity`, `IsNameTranslateable`,
 `IsActive`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`, `AdminTags`,
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `Email`, `Email2`,
@@ -246,12 +265,21 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         $results = $this->fetchSome(null, $sql, null);
         $sort = [];
         foreach($results as $k=>$v) {
-            $sort['Kind'][$k] = $v['Kind'];
+            if (!key_exists($v['Kind'], $associationKindConfig)) {
+                unset($results[$k]);
+                continue;
+            }
+            $kindSort = $associationKindConfig[$v['Kind']]['sort'];
+            $results[$k]['AssociationSort'] = $kindSort;
+            $sort['KindSort'][$k] = $kindSort;
             $sort['AssociationName'][$k] = $v['AssociationName'];
         }
         # sort by event_type desc and then title asc
-        array_multisort($sort['Kind'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
+        array_multisort($sort['KindSort'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
 
+        $isTranslatorReady = $this->translator instanceof TranslatorInterface;
+        $areCountryTranslationsReady = !is_null($this->countryNameTranslations);
+        $locale = \Locale::getDefault();
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['AssociationId']);
@@ -289,7 +317,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             $post1CityState = $this->filterDbString($row['Post1CityState']);
             $post1Zip       = $this->filterDbString($row['Post1Zip']);
             $post1Country   = $this->filterDbString($row['Post1Country']);
-            $post2Street1   =  $this->filterDbString($row['Post2Street1']);
+            $post2Street1   = $this->filterDbString($row['Post2Street1']);
             $post2Street2   = $this->filterDbString($row['Post2Street2']);
             $post2CityState = $this->filterDbString($row['Post2CityState']);
             $post2Zip       = $this->filterDbString($row['Post2Zip']);
@@ -314,16 +342,55 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                     'country'   => $post2Country,
                 ];
             }
+
+            $name = $this->filterDbString($row['AssociationName']);
+            $kind = $this->filterDbString($row['Kind']);
+            $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
+            $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
+            $formattedName = null;
+            if (key_exists($kind, $associationKindConfig) &&
+                key_exists('name_format', $associationKindConfig[$kind]) &&
+                is_string($associationKindConfig[$kind]['name_format'])
+            ) {
+                $token = $name;
+                if (key_exists('should_translate_name_parameter', $associationKindConfig[$kind]) &&
+                    $associationKindConfig[$kind]['should_translate_name_parameter']
+                ) {
+                    if ($areCountryTranslationsReady &&
+                        key_exists($token, $this->countryNameTranslations) &&
+                        key_exists($locale, $this->countryNameTranslations[$token]) &&
+                        !is_null($this->countryNameTranslations[$token][$locale])
+                    ) {
+                        $token = $this->countryNameTranslations[$token][$locale];
+                    } else if ($isTranslatorReady) {
+                        $token = $this->translator->translate($token, 'Schoenstatt');
+                    }
+                }
+                if (!key_exists('translated_name_format', $associationKindConfig[$kind])) {
+                    $associationKindConfig[$kind]['translated_name_format'] =
+                        $this->translator->translate($associationKindConfig[$kind]['name_format'], 'Schoenstatt');
+                }
+                $formattedName = sprintf($associationKindConfig[$kind]['translated_name_format'], $token);
+            } else { //no name format
+                if ($isNameTranslateable && $isTranslatorReady) {
+                    $formattedName = $this->translator->translate($name, 'Schoenstatt');
+                } else {
+                    $formattedName = $name;
+                }
+            }
+
             $entities[$id] = [
                 'associationId'         => $id,
-                'name'                  => $this->filterDbString($row['AssociationName']),
+                'name'                  => $name,
+                'overrideNameFormat'    => $overrideNameFormat,
+                'formattedName'         => $formattedName,
                 'parent'                => $this->filterDbId($row['Parent']),
-                'kind'                  => $this->filterDbString($row['Kind']),
+                'kind'                  => $kind,
                 'country'               => $this->filterDbString($row['Country']),
                 'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
                 'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
                 'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
-                'isNameTranslateable'   => $this->filterDbBool($row['IsNameTranslateable']),
+                'isNameTranslateable'   => $isNameTranslateable,
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
                 'resourceId'            => 'association_'.$id,

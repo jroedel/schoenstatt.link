@@ -39,6 +39,19 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		]);
 		$this->add([
+		    'name' => 'overrideNameFormat',
+		    'type' => 'Checkbox',
+		    'options' => [
+		        'label' => 'Override name format?',
+		        'checked_value' => '1',
+		        'unchecked_value' => '0',
+		        'use_hidden_element' => true,
+		    ],
+		    'attributes' => [
+		        'value'   => '1',
+		    ],
+		]);
+		$this->add([
 			'name' => 'parent',
 			'type' => 'Select',
 			'options' => [
@@ -605,9 +618,18 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
 	            ],
-			],
+		    ],
+		    'overrideNameFormat' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
+		    ],
 		    'isNameTranslateable' => [
 		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
 		    ],
 		    'parent' => [
 		        'required' => false,

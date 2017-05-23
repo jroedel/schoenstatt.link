@@ -204,7 +204,7 @@ return [
                 ],
             ],
             'sch-federation-international-structure' => [ //@todo finish this
-                'sort'  => 200,
+                'sort'  => 250,
                 'label' => 'Federation international structure',
                 'default_roles' => [
                     [
@@ -219,6 +219,8 @@ return [
             'sch-national-movement' => [
                 'label' => 'Schoenstatt national movement',
                 'sort'  => 300,
+                'name_format' => 'Schoenstatt Movement of %s',
+                'should_translate_name_parameter' => true,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Movement director',
@@ -243,6 +245,28 @@ return [
                     ],
                 ],
             ],
+            'sch-regional-organization' => [
+                'label' => 'Schoenstatt regional organization',
+                'sort'  => 350,
+                'name_format' => 'Schoenstatt Movement of %s',
+                'should_translate_name_parameter' => true,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Regional movement director',
+                        'singlePosition' => true,
+                        'sort' => 20,
+                        'mainRole' => true,
+                        'shouldAlwaysBeFilled' => true,
+                    ],
+                    [
+                        'roleTitle' => 'Regional movement sister',
+                        'singlePosition' => false,
+                        'sort' => 40,
+                        'mainRole' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
             'sch-national-federation' => [
                 'label' => 'Schoenstatt national federation',
                 'sort'  => 499,
@@ -250,26 +274,36 @@ return [
             ],
             'sch-national-priests-federation' => [
                 'label' => 'Schoenstatt national priests\' federation',
+                'name_format' => 'Priests\' federation of %s',
+                'should_translate_name_parameter' => true,
                 'sort'  => 400,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-family-federation' => [
                 'label' => 'Schoenstatt national family federation',
+                'name_format' => 'Family federation of %s',
+                'should_translate_name_parameter' => true,
                 'sort'  => 410,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-mens-federation' => [
                 'label' => 'Schoenstatt national men\'s federation',
+                'name_format' => 'Men\'s federation of %s',
+                'should_translate_name_parameter' => true,
                 'sort'  => 420,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-mothers-federation' => [
                 'label' => 'Schoenstatt national mothers\' federation',
+                'name_format' => 'Mother\'s federation of %s',
+                'should_translate_name_parameter' => true,
                 'sort'  => 430,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-womens-federation' => [
                 'label' => 'Schoenstatt national women\'s federation',
+                'name_format' => 'Women\'s federation of %s',
+                'should_translate_name_parameter' => true,
                 'sort'  => 440,
                 'default_roles' => $federationRoles,
             ],
@@ -295,6 +329,8 @@ return [
             ],
             'sch-diocesan-movement' => [
                 'label' => 'Schoenstatt diocesan movement',
+                'name_format' => 'Schoenstatt Movement of %s',
+                'should_translate_name_parameter' => false, //don't translate diocese names, in general
                 'sort'  => 500,
                 'default_roles' => [
                     [
@@ -327,47 +363,65 @@ return [
             ],
             'sch-family-league-branch' => [
                 'label' => 'Schoenstatt family league branch',
+                'name_format' => 'Family league of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 610,
                 'default_roles' => $leagueRoles,
             ],
             'sch-mothers-league-branch' => [
                 'label' => 'Schoenstatt mother\'s league branch',
+                'name_format' => 'Mothers\' league of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 615,
                 'default_roles' => $leagueRoles,
             ],
             'sch-mens-league-branch' => [
                 'label' => 'Schoenstatt men\'s league branch',
+                'name_format' => 'Men\'s league of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 620,
                 'default_roles' => $leagueRoles,
             ],
             'sch-womens-league-branch' => [
                 'label' => 'Schoenstatt women\'s league branch',
+                'name_format' => 'Women\'s league of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 630,
                 'default_roles' => $leagueRoles,
             ],
             'sch-young-mens-league-branch' => [
-                'label' => 'Schoenstatt young men\'s league branch',
+                'label' => 'Schoenstatt young men\'s branch',
+                'name_format' => 'Men\'s youth of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 640,
                 'default_roles' => $leagueRoles,
             ],
             'sch-young-womens-league-branch' => [
-                'label' => 'Schoenstatt young women\'s league branch',
+                'label' => 'Schoenstatt young women\'s branch',
+                'name_format' => 'Women\'s youth of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 650,
                 'default_roles' => $leagueRoles,
             ],
             'sch-professionals-branch' => [
                 'label' => 'Schoenstatt professionals league branch',
+                'name_format' => 'Professional\'s branch of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 660,
                 'default_roles' => $leagueRoles,
             ],
             'sch-madrugadores-branch' => [
                 'label' => 'Schoenstatt madrugadores branch',
+                'name_format' => 'Madrugadores of %s',
+                'should_translate_name_parameter' => false,
                 'sort'  => 670,
                 'default_roles' => $leagueRoles,
             ],
             'sch-diocesan-pilgrim-movement' => [
                 'sort'  => 675,
                 'label' => 'Diocesan pilgrim\'s movement',
+                'name_format' => 'Pilgrim movement of %s',
+                'should_translate_name_parameter' => false,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -395,6 +449,8 @@ return [
             'sch-diocesan-pilgrim-mother' => [
                 'sort'  => 680,
                 'label' => 'Diocesan Pilgrim Mother organization',
+                'name_format' => 'Diocesan pilgrim mother of %s',
+                'should_translate_name_parameter' => false,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -422,6 +478,8 @@ return [
             'sch-shrine-ministry' => [
                 'sort'  => 690,
                 'label' => 'Schoenstatt shrine ministry',
+                'name_format' => 'Shrine ministry of %s',
+                'should_translate_name_parameter' => false,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -1275,6 +1333,7 @@ return [
                 'update_columns' => [
                     'associationId'             => 'AssociationId',
                     'name'                      => 'AssociationName',
+                    'overrideNameFormat'        => 'OverrideNameFormat',
                     'parent'                    => 'Parent',
                     'kind'                      => 'Kind',
                     'country'                   => 'Country',

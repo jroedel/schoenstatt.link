@@ -38,7 +38,9 @@ class FormatAssociation extends AbstractHelper
         } else {
             switch ($display) {
                 case 'name':
-                    if ($data['isNameTranslateable']) {
+                    if ($data['formattedName']) {
+                        $text = $data['formattedName'];
+                    } else if ($data['isNameTranslateable']) {
                         $text = $this->view->translate($data['name'], 'Schoenstatt');
                     } else {
                         $text = $data['name'];

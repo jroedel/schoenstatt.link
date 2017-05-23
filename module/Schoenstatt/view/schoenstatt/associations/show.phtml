@@ -1,6 +1,10 @@
 <?php
 $object = $this->entity;
-$name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
+if (!is_null($object['formattedName'])) {
+    $name = $object['formattedName'];
+} else {
+    $name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
+}
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($name);?>
 <h1><?php echo $this->escapeHtml($name);?></h1>
