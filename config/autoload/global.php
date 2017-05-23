@@ -22,8 +22,8 @@ return [
             ],
             [
                 'label' => 'All contact info',
-                'route' => 'assignments',
-                'resource' => 'route/assignments',
+                'route' => 'assignments/search',
+                'resource' => 'route/assignments/search',
             ],
             [
                 'label' => 'Publications',

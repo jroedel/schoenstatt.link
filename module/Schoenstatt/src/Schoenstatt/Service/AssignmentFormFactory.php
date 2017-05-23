@@ -27,9 +27,9 @@ class AssignmentFormFactory implements FactoryInterface
 		$associations = $table->getAssociationValueOptions();
 
 		$persons = $table->getPersonValueOptions();
+		$roleTitlesValueOptions = $table->getJavascriptRoleTitleValueOptions();
 
-		$form = new AssignmentForm();
-
+		$form = new AssignmentForm($roleTitlesValueOptions);
 		$form->get('associationId')->setValueOptions($associations);
 		$form->get('personId')->setValueOptions($persons);
 		return $form;

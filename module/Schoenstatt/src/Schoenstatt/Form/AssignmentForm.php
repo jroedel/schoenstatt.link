@@ -4,13 +4,23 @@ namespace Schoenstatt\Form;
 use Zend\Form\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
+use Zend\Json\Json;
 
 class AssignmentForm extends SionForm implements InputFilterProviderInterface
 {
-	public function __construct($name = null)
+    /**
+    * @var string[] $roleTitlesValueOptions;
+    */
+    protected $roleTitlesValueOptions;
+
+    protected $isPreparedForEdit = false;
+
+    public function __construct($roleTitlesValueOptions)
 	{
 		// we want to ignore the name passed
-		parent::__construct('edit_assignment');
+		parent::__construct('create_assignment');
+
+		$this->roleTitlesValueOptions = $roleTitlesValueOptions;
 
 		$this->add([
 		    'name' => 'associationId',
@@ -139,5 +149,50 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
     		    ],
     		],
 		];
+	}
+
+	public function prepareforEdit()
+	{
+	    $this->setName('edit_assignment');
+	    $this->get('associationId')->setAttribute('disabled', true);
+	    $this->get('roleId')->setAttribute('disabled', true);
+	    $this->get('personId')->setAttribute('disabled', true);
+	    $this->setValidationGroup('startDate', 'endDate', 'security');
+	    $this->isPreparedForEdit = true;
+	}
+
+	public function setData($data)
+	{
+	    if (key_exists('associationId', $data) &&
+            key_exists($data['associationId'], $this->roleTitlesValueOptions)
+        ) {
+            $this->get('roleId')->setValueOptions($this->roleTitlesValueOptions[$data['associationId']]);
+        }
+	    return parent::setData($data);
+	}
+
+	/**
+	 * Get the roleTitlesValueOptions value
+	 * @return string[]
+	 */
+	public function getRoleTitleValueOptions()
+	{
+	    return $this->roleTitlesValueOptions;
+	}
+
+	/**
+	 *
+	 * @param string[] $roleTitlesValueOptions;
+	 * @return self
+	 */
+	public function setRoleTitleValueOptions($roleTitlesValueOptions)
+	{
+	    $this->roleTitlesValueOptions = $roleTitlesValueOptions;
+	    return $this;
+	}
+
+	public function getRolesJson()
+	{
+	    return Json::encode($this->roleTitlesValueOptions);
 	}
 }

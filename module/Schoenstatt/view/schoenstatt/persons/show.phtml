@@ -1,7 +1,6 @@
 <?php
 use JTranslate\View\Helper\CountryName;
 use Carbon\Carbon;
-use Patres\Model\PatresTable;
 
 $object = $this->person;
 $pageTitle = '';
@@ -122,20 +121,18 @@ $this->headTitle($pageTitle);
 <div class="row"> <!-- personal info panel row -->
 <div class="col-md-6"> <!-- community info column (free and official) -->
 <p><strong><?php echo $this->translate('Home country'); ?>:</strong> <?php echo $this->countryName($object['country'], true, CountryName::COUNTRY_NAME_OFFICIAL);?></p>
-
-<hr>
-<?php //@todo add in public and admin notes of the living situation?>
 </div> <!-- community info column -->
 
 <div class="col-md-6"> <!-- dates column -->
     <?php if (is_object($object['deathDate'])): ?>
         <p><strong><?php echo $this->translate('Passed away on'); ?>:</strong> <?php
         echo $this->dateFormat($object['deathDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+    <?php endif;
+    if ($object['nameDay']) : ?>
+    <p><strong><?php echo $this->translate('Nameday'); ?>: </strong>
+        <?php echo $this->dayFormat($object['nameDay']);?>
+    </p>
     <?php endif;?>
-    <p><strong><?php echo $this->translate('Nameday'); ?>: </strong> <?php
-    if ($object['nameDay']) {
-        echo $this->dayFormat($object['nameDay']);
-    }?></p>
 </div> <!-- dates column -->
 </div> <!-- personal info panel row -->
 
