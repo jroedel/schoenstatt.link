@@ -21,7 +21,7 @@ class SchoenstattController extends AbstractActionController
         if (!$this->zfcUserAuthentication()->hasIdentity()) {
             return $this->redirect()->toRoute('zfcuser/login');
         }
-        
+
         $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
@@ -29,6 +29,7 @@ class SchoenstattController extends AbstractActionController
         $generalPresidium = $table->getAssociation(71);
         $nationalLeaders = $table->getNationalMovementsLeaders();
         $form = new SearchForm();
+
         return new ViewModel([
             'form' => $form,
             'generalPresidium' => $generalPresidium,
