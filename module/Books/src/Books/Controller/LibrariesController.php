@@ -106,6 +106,51 @@ class LibrariesController extends SionController
         return $entities;
     }
 
+    public function importBooksAction()
+    {
+        $columnNames = [
+            'ID'        => 'withinLibrarylId',
+            'Título'    => 'title',
+            'Autor'     => 'author',
+            'Lomo'      => 'callNumber',
+            'Categoría' => 'category',
+            'Subtítulo' => 'publicNotes',
+            'Editorial' => 'title',
+            'Ciudad'    => 'title',
+            'Año'       => 'title',
+            'ISBN'      => 'title',
+            'Páginas'   => 'pages',
+            'Idioma'    => 'language',
+            'Info'      => 'title',
+            'Categorías'=> 'title',
+            'Orden'     => 'title',
+
+            //             'bookId'        => $id,
+        //             'author'        => $author,
+        //             'title'         => $title,
+        //             'edition'       => $this->filterDbString($row['edition']),
+        //             'callNumber'    => $this->filterDbString($row['call_number']),
+        //             'category'      => $this->filterDbString($row['category']),
+        //             'pages'         => $this->filterDbInt($row['pages']),
+        //             'language'      => $this->filterDbString($row['lang']),
+        //             'withinLibrarylId'=> $this->filterDbId($row['original_id']),
+        //             'libraryId'     => $this->filterDbId($row['library_id']),
+        //             'publicationId' => $this->filterDbId($row['publication_id']),
+        //             'updatedOn'     => $this->filterDbDate($row['updated_at']),
+        //             'updatedBy'     => $this->filterDbId($row['updated_by']),
+        //             'createdOn'     => $this->filterDbDate($row['created_at']),
+        //             'createdBy'     => $this->filterDbId($row['created_by']),
+        ];
+        $file = file("data/books.txt");
+        $rows = array();
+        foreach ($file as $line) {
+            $row = str_getcsv($line, '|');
+            $rows[] = $add;
+            if (!isset($add[1]))
+                var_dump(current($rows));
+        }
+    }
+
     public function importAction()
     {
         //import file

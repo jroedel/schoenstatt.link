@@ -40,7 +40,7 @@ class LibraryTable extends SionTable
         $books = $this->searchBooks($query);
         $return = [];
         foreach ($books as $bookId => $book) {
-            $return[(string)$bookId] = (string)$bookId.'-'.$book['author'].' '.$book['title'];
+            $return[(string)$book['withinLibrarylId']] = (string)$bookId.'-'.$book['author'].' '.$book['title'];
         }
         return $return;
     }
@@ -191,7 +191,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
                 'category'      => $this->filterDbString($row['category']),
                 'pages'         => $this->filterDbInt($row['pages']),
                 'language'      => $this->filterDbString($row['lang']),
-                'originalId'    => $this->filterDbId($row['original_id']),
+                'withinLibrarylId'=> $this->filterDbId($row['original_id']),
                 'libraryId'     => $this->filterDbId($row['library_id']),
                 'publicationId' => $this->filterDbId($row['publication_id']),
                 'updatedOn'     => $this->filterDbDate($row['updated_at']),

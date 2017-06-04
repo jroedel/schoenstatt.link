@@ -15,7 +15,7 @@ echo $this->formHidden($form->get('associationId'));?>
     echo $this->formElementErrors($form->get('isActive'));?>
 </div>
 <?php
-echo $this->formRow($form->get('parent'));
+echo $this->formRow($form->get('parentId'));
 echo $this->formRow($form->get('kind'));
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('country'));

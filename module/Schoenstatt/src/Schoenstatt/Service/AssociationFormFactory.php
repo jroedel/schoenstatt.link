@@ -35,7 +35,7 @@ class AssociationFormFactory implements FactoryInterface
 		/** @var \Schoenstatt\Form\AssociationForm $form */
 		$form = $formManager->get('Schoenstatt\Form\AssociationForm', [], true);
 
-		$form->get('parent')->setValueOptions($associations);
+		$form->get('parentId')->setValueOptions($associations);
 		$form->get('kind')->setValueOptions($kinds);
 		$form->get('country')->setValueOptions($countryNames);
 		$form->get('post1Country')->setValueOptions($countryNames);

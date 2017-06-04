@@ -48,11 +48,11 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		        'use_hidden_element' => true,
 		    ],
 		    'attributes' => [
-		        'value'   => '1',
+		        'value'   => '0',
 		    ],
 		]);
 		$this->add([
-			'name' => 'parent',
+			'name' => 'parentId',
 			'type' => 'Select',
 			'options' => [
 				'label' => 'Parent organization (for sorting purposes)',
@@ -631,7 +631,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		            ['name' => 'SionModel\Filter\ToBit']
 		        ],
 		    ],
-		    'parent' => [
+		    'parentId' => [
 		        'required' => false,
                 'filters' => [
                     ['name' => 'ToInt'],

@@ -128,6 +128,11 @@ $this->headTitle($name);?>
                 echo $this->countryName($object['country'], true);
             ?></p>
 		<?php endif;?>
+		<?php if (!is_null($object['parent'])) :?>
+      		<p><strong><?php echo $this->translate('Parent organization');?>:</strong> <?php
+                echo $this->formatEntity('association', $object['parent']);
+            ?></p>
+		<?php endif;?>
 	</div> <!-- info 1 column -->
 
     <div class="col-md-6">
@@ -194,20 +199,20 @@ if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganiz
 <div class="panel panel-default">
 <!-- Default panel contents -->
 <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-6">
-        	<h3 class="panel-title"><?php echo $this->translate('National organizations'); ?></h3>
-        </div>
-        <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/associations/create')):
-                    $queryOptions = ['query' => ['country' => $entity['country']]];?>
-                <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
-                    echo $this->url('associations/create', [], $queryOptions);?>">
-                    <?php echo $this->translate('Add national association');?></a>
-                </span>
-            <?php endif;?>
-        </div>
-        </div>
+	<div class="row">
+	<div class="col-xs-6">
+    	<h3 class="panel-title"><?php echo $this->translate('National organizations'); ?></h3>
+    </div>
+    <div class="col-xs-6">
+        <?php if ($this->isAllowed('route/associations/create')):
+                $queryOptions = ['query' => ['country' => $entity['country']]];?>
+            <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
+                echo $this->url('associations/create', [], $queryOptions);?>">
+                <?php echo $this->translate('Add national association');?></a>
+            </span>
+        <?php endif;?>
+    </div>
+    </div>
 </div>
 <?php if (0 === count($object['nationalOrganizations'])) :?>
     <div class="panel-body"><p><?php echo sprintf($this->translate('No other national organizations are registered in %s.'),
@@ -218,7 +223,38 @@ if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganiz
     ]);
 endif;?>
 </div>
+
+<?php elseif (!empty($object['childAssociations'])): //if we're not national, check if we have children?>
+<div class="panel panel-default">
+<!-- Default panel contents -->
+<div class="panel-heading">
+	<div class="row">
+	<div class="col-xs-6">
+    	<h3 class="panel-title"><?php echo $this->translate('Associated organizations'); ?></h3>
+    </div>
+    <div class="col-xs-6">
+    <?php if ($this->isAllowed('route/associations/create')):
+    $queryOptions = ['parentId' => $object['associationId']];
+    if (!is_null($object['country'])) {
+        $queryOptions['country'] = $object['country'];
+    }
+    if (!$object['overrideNameFormat']) {
+        $queryOptions['name'] = $object['name'];
+    }?>
+        <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
+            echo $this->url('associations/create', [], ['query' => $queryOptions]);?>">
+            <?php echo $this->translate('Add associated association');?></a>
+        </span>
+    <?php endif;?>
+    </div>
+    </div>
+</div>
+    <?php echo $this->partial('associations-table', [
+        'objects' => $object['childAssociations'],
+    ]);?>
+</div>
 <?php endif;?>
+
 
 <!-- Left side roles, right side Admin notes -->
 <div class="row">
@@ -230,9 +266,13 @@ endif;?>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
     <?php if (!empty($object['roles'])): ?>
+    <p><?php echo $this->translate('Association roles');?></p>
     <ul class="list-group">
     	<?php foreach ($object['roles'] as $roleId => $role) :?>
-    		<li class="list-group-item"><?php echo $this->formatEntity('role', $role);?></li>
+    		<li class="list-group-item"><?php echo $this->formatEntity('role', $role);?>
+    		<a target="_blank" href="<?php
+                echo $this->url('assignments/create', [], ['query' => ['roleId' => $role['roleId']]]);?>">
+                <span class="glyphicon glyphicon-plus">&nbsp;</span></a></li>
         <?php endforeach;?>
 	</ul>
 	<?php endif;

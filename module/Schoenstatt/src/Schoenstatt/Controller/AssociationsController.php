@@ -14,6 +14,7 @@ use Zend\View\Model\JsonModel;
 use SionModel\Controller\SionController;
 use Zend\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
+use Zend\Filter\StripTags;
 
 class AssociationsController extends SionController
 {
@@ -50,13 +51,30 @@ class AssociationsController extends SionController
         $view = parent::createAction();
         //check if we were passed a valid country param and set it in the form
         $countryParam = $this->params()->fromQuery('country');
-        if (!$this->getRequest()->isPost() && !is_null($countryParam) &&
-            is_string($countryParam) && strlen($countryParam) == 2
+        $parentParam = $this->params()->fromQuery('parentId');
+        $nameParam = $this->params()->fromQuery('name');
+        if (!$this->getRequest()->isPost() && ((!is_null($countryParam) &&
+            is_string($countryParam) && strlen($countryParam) == 2) ||
+                !is_null($parentParam) || !is_null($nameParam))
         ) {
             $form = $view->getVariable('form');
+            $haveSetSomething = false;
             $countries = $form->get('country')->getValueOptions();
-            if  (key_exists($countryParam, $countries)) {
+            if  (!is_null($countryParam) && key_exists($countryParam, $countries)) {
                 $form->get('country')->setValue($countryParam);
+                $haveSetSomething = true;
+            }
+            $parents = $form->get('parentId')->getValueOptions();
+            if  (!is_null($parentParam) && key_exists($parentParam, $parents)) {
+                $form->get('parentId')->setValue($parentParam);
+                $haveSetSomething = true;
+            }
+            if  (!is_null($nameParam)) {
+                $filter = new StripTags();
+                $form->get('name')->setValue($filter->filter($nameParam));
+                $haveSetSomething = true;
+            }
+            if ($haveSetSomething) {
                 $view->setVariable('form', $form);
             }
         }
@@ -101,7 +119,7 @@ class AssociationsController extends SionController
             throw new \Exception('Parent movement should be a national movement.');
         }
         $data['kind'] = 'sch-diocesan-movement';
-        $data['parent'] = $parentMovementId;
+        $data['parentId'] = $parentMovementId;
         $data['country'] = $parentData['country'];
         $newId = $table->createEntity('association', $data);
         return $newId;

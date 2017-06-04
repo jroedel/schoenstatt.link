@@ -243,9 +243,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             return $cache;
         }
         $entities = $this->getUnlinkedAssociations();
-        $roles = $this->getUnlinkedRoles();
-        $assignments = $this->getUnlinkedAssignments();
-        $persons = $this->getUnlinkedPersons();
+
+        foreach ($entities as $entityId => $entity) {
+            if (!is_null($entity['parentId']) && key_exists($entity['parentId'], $entities)) {
+                $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
+                $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];
+            }
+        }
 
         $this->connectEntityRolesAndAssignments('association', $entities);
 
@@ -395,7 +399,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'name'                  => $name,
                 'overrideNameFormat'    => $overrideNameFormat,
                 'formattedName'         => $formattedName,
-                'parent'                => $this->filterDbId($row['Parent']),
+                'parentId'              => $this->filterDbId($row['Parent']),
                 'kind'                  => $kind,
                 'country'               => $this->filterDbString($row['Country']),
                 'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
@@ -410,6 +414,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'mainRole'              => null,
                 'mainAssignment'        => null,
                 'mainPerson'            => null,
+                'childAssociations'     => [],
+                'parent'                => null,
 /**
  * Contact fields
 */
@@ -508,7 +514,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                             'name' => $newData['name'],
                             'kind' => self::ADD_LEAGUE_KINDS[$key],
                             'country' => $newData['country'],
-                            'parent' => $newData['associationId'],
+                            'parentId' => $newData['associationId'],
                         ];
                         $this->createEntity('association', $branchData);
                     }

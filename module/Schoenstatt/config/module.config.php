@@ -1334,7 +1334,7 @@ return [
                     'associationId'             => 'AssociationId',
                     'name'                      => 'AssociationName',
                     'overrideNameFormat'        => 'OverrideNameFormat',
-                    'parent'                    => 'Parent',
+                    'parentId'                    => 'Parent',
                     'kind'                      => 'Kind',
                     'country'                   => 'Country',
                     'foundationDate'            => 'FoundationDate',
