@@ -838,6 +838,15 @@ return [
                                     ],
                                 ],
                             ],
+                            'delete' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/delete',
+                                    'defaults' => [
+                                        'action'     => 'delete',
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -913,6 +922,15 @@ return [
                                     ],
                                 ],
                             ],
+                            'delete' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/delete',
+                                    'defaults' => [
+                                        'action'     => 'delete',
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -956,7 +974,15 @@ return [
                                     'route'    => '/edit',
                                     'defaults' => [
                                         'action'     => 'edit',
-                                        'entity'    => 'role'
+                                    ],
+                                ],
+                            ],
+                            'delete' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/delete',
+                                    'defaults' => [
+                                        'action'     => 'delete',
                                     ],
                                 ],
                             ],
@@ -1654,7 +1680,9 @@ return [
                 ['route' => 'persons/search', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'persons/create', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/edit', 'roles' => ['sch_moderator']],
+                ['route' => 'persons/person/suggest', 'roles' => ['sch_user']],
                 ['route' => 'persons/person/moderate', 'roles' => ['sch_moderator']],
+                ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
@@ -1662,6 +1690,7 @@ return [
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/association/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/association/moderate', 'roles' => ['sch_moderator']],
+                ['route' => 'associations/association/suggest', 'roles' => ['sch_user']],
                 ['route' => 'associations/association/delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_general_moderator']],
 

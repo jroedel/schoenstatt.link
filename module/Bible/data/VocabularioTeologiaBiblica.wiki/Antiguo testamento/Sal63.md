@@ -1,0 +1,40 @@
+# El Antiguo Testamento
+## SALMOS
+### SALMO 63
+
+1.  Salmo de David. Cuando estaba en el
+desierto de Judá. 
+2.  Oh Dios, tú eres mi Dios, yo te busco
+ardientemente; 
+mi alma tiene sed de ti, 
+por ti suspira mi carne 
+como tierra sedienta, reseca y sin agua. 
+3.  Sí, yo te contemplé en el
+Santuario 
+para ver tu poder y tu gloria. 
+4.  Porque tu amor vale más que
+la vida, 
+mis labios te alabarán. 
+5.  Así te bendeciré mientras
+viva 
+y alzaré mis manos en tu Nombre. 
+6.  Mi alma quedará saciada 
+como con un manjar delicioso, 
+y mi boca te alabará 
+con júbilo en los labios. 
+7.  Mientras me acuerdo de ti en
+mi lecho 
+y en las horas de la noche medito en ti, 
+8.  veo que has sido mi ayuda 
+y soy feliz a la sombra de tus alas. 
+9.  Mi alma está unida a ti, 
+tu mano me sostiene, 
+10.  Que caigan en lo más profundo de la tierra
+
+los que buscan mi perdición; 
+11.  que sean pasados al filo de la espada 
+y arrojados como presa a los chacales. 
+12.  Pero el rey se alegrará en
+Dios; 
+y los que juran por él se gloriarán, 
+cuando se haga callar a los traidores.
