@@ -450,7 +450,7 @@ return [
             'sch-diocesan-pilgrim-mother' => [
                 'sort'  => 680,
                 'label' => 'Diocesan Pilgrim Mother organization',
-                'name_format' => 'Diocesan pilgrim mother of %s',
+                'name_format' => 'Diocesan Pilgrim Mother of %s',
                 'should_translate_name_parameter' => false,
                 'default_roles' => [
                     [
@@ -1644,26 +1644,26 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'assignments/assignment/edit', 'roles' => ['sch_general_moderator']],
+                ['route' => 'assignments/assignment/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'assignments/assignment/delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'assignments/search', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'assignments/create', 'roles' => ['sch_general_moderator']],
+                ['route' => 'assignments/create', 'roles' => ['sch_moderator']],
 
                 ['route' => 'persons', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'persons/person', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'persons/search', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'persons/create', 'roles' => ['sch_general_moderator']],
-                ['route' => 'persons/person/edit', 'roles' => ['sch_general_moderator']],
+                ['route' => 'persons/create', 'roles' => ['sch_moderator']],
+                ['route' => 'persons/person/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/moderate', 'roles' => ['sch_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'associations/create', 'roles' => ['sch_general_moderator']],
+                ['route' => 'associations/create', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
-                ['route' => 'associations/association/edit', 'roles' => ['sch_general_moderator']],
-                ['route' => 'associations/association/moderate', 'roles' => ['sch_general_moderator']],
-                ['route' => 'associations/association/delete', 'roles' => ['sch_administrator']],
-                ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_administrator']],
+                ['route' => 'associations/association/edit', 'roles' => ['sch_moderator']],
+                ['route' => 'associations/association/moderate', 'roles' => ['sch_moderator']],
+                ['route' => 'associations/association/delete', 'roles' => ['sch_general_moderator']],
+                ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'roles', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/create', 'roles' => ['sch_moderator']],

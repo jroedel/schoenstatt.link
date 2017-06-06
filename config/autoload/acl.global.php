@@ -32,7 +32,7 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['guest', 'sch_user', 'sch_basic']],
                 ['route' => 'home', 'roles' => ['guest', 'sch_user', 'sch_basic', 'pub_user']],
-                ['route' => 'admin', 'roles' => ['sch_user']],
+                ['route' => 'admin', 'roles' => ['sch_moderator']],
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
                 ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
                 ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['sch_administrator']],
