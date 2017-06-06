@@ -363,7 +363,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
             $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
             $formattedName = null;
-            if (key_exists($kind, $associationKindConfig) &&
+            if (!$overrideNameFormat && key_exists($kind, $associationKindConfig) &&
                 key_exists('name_format', $associationKindConfig[$kind]) &&
                 is_string($associationKindConfig[$kind]['name_format'])
             ) {

@@ -32,11 +32,12 @@ $form->prepare();?>
                     	<?php echo $this->formCheckbox($form->get('showEditionsSeparately')); ?>
                     </div>
                     <div class="checkbox col-md-4">
-                    	<div class="pull-right"><?php echo $this->formLabel($form->get('inLanguage')); ?></div>
+                    	<div class="pull-right"><?php
+                        $this->formSelect()->setTranslatorEnabled(false);
+                        echo $this->formLabel($form->get('inLanguage')); ?></div>
                     </div>
                     <div class="checkbox col-md-4">
                     	<?php
-                        $this->formSelect()->setTranslatorEnabled(false);
                         echo $this->formSelect($form->get('inLanguage'));
                         $this->formSelect()->setTranslatorEnabled(true);
                     	?>

@@ -5,7 +5,9 @@ $form = $this->form;
 $jsScript = '';
     echo $this->formRow($form->get('firstName'));
     echo $this->formRow($form->get('lastName'));
+    $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('lifeCommunity'));
+    $this->formSelect()->setTranslatorEnabled(true);
     echo $this->formRow($form->get('personTags'));
     $showTitle = $form->get('automaticTitle')->getValue() == 0;
     $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>

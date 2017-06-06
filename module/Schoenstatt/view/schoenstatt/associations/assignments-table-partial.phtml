@@ -35,7 +35,7 @@ if ($assignment['person'] &&
 		$count++;
 	}
 }
-if ($count>0):
+if ($count > 0):
     if ($wrapInPanel):?>
     <div class="panel panel-default">
         <!-- Default panel contents -->
@@ -47,9 +47,9 @@ if ($count>0):
         </div>-->
     <?php endif;
 	if (isset($this->headerText) && !$wrapInPanel):?>
-	<p class="text-center"><strong><u><?php echo $this->escapeHtml($this->headerText);?></u></strong></p>
-	<?php endif;?>
-    <table class="table">
+		<p class="text-center"><strong><u><?php echo $this->escapeHtml($this->headerText);?></u></strong></p>
+	<?php endif;
+?><table class="table">
     <thead><tr>
     <?php foreach ($columns as $column) {
         if (key_exists($column, $columnHeaders)) {

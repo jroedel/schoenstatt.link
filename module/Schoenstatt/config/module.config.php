@@ -1421,6 +1421,7 @@ return [
                 'get_object_function' => 'getRole',
                 'name_field' => 'roleTitle',
                 'has_dedicated_suggest_form' => false,
+                'name_field_is_translateable' => true,
                 'report_changes' => true,
 //                 'scope' => 'Person',
 //                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array
