@@ -35,7 +35,11 @@ $form->prepare();?>
                     	<div class="pull-right"><?php echo $this->formLabel($form->get('inLanguage')); ?></div>
                     </div>
                     <div class="checkbox col-md-4">
-                    	<?php echo $this->formSelect($form->get('inLanguage')); ?>
+                    	<?php
+                        $this->formSelect()->setTranslatorEnabled(false);
+                        echo $this->formSelect($form->get('inLanguage'));
+                        $this->formSelect()->setTranslatorEnabled(true);
+                    	?>
                     </div>
                     <?php
 //                     echo $this->formHidden($form->get('course'));
