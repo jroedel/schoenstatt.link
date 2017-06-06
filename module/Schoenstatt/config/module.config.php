@@ -1,5 +1,4 @@
 <?php
-
 use SionModel\Problem\EntityProblem;
 
 $leagueRoles = [
