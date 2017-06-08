@@ -1118,6 +1118,7 @@ return [
             'person' => [
                 'table_name' => 'sch_persons',
                 'table_key' => 'PersonId',
+                'sion_model_class' => 'Schoenstatt\Model\SchoenstattTable',
                 'entity_key_field' => 'personId',
                 'get_object_function' => 'getPerson',
                 'name_field' => 'fullName',
@@ -1422,6 +1423,7 @@ return [
                 'name_field' => 'roleTitle',
                 'has_dedicated_suggest_form' => false,
                 'name_field_is_translateable' => true,
+                'sion_model_class' => 'Schoenstatt\Model\SchoenstattTable',
                 'report_changes' => true,
 //                 'scope' => 'Person',
 //                 'database_bound_data_preprocessor' => 'preprocessPerson', //this will separate the nationality array

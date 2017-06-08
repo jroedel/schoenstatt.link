@@ -64,7 +64,7 @@ ORDER BY `Publisher`";
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
             $return[$entityId] = $entityObject['title'].
-                (!is_null($entityObject['bookEdition']) ? '"'.$entityObject.'"' : '');
+                (!is_null($entityObject['bookEdition']) ? '"'.$entityObject['bookEdition'].'"' : '');
         }
         return $return;
     }

@@ -15,6 +15,8 @@ use JUser\Model\PersonValueOptionsProviderInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
 use Zend\Permissions\Acl\Assertion\AssertionAggregate;
+use Zend\Db\Sql\Select;
+use Zend\Db\Sql\Expression;
 
 class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface, ResourceProviderInterface
 {
@@ -1535,6 +1537,30 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
         return $problems;
+    }
+
+
+    public function getTranslationChangesCountPerMonth()
+    {
+//         $predicate = new Where();
+        $gateway = $this->getTableGateway('trans_translations');
+        $select = new Select('trans_translations');
+        $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+        $select->group(['TheMonth', 'TheYear']);
+//         $select->where($predicate->in('ChangedEntity', $tableEntities));
+        $select->order('TheYear, TheMonth');
+        $resultsChanges = $gateway->selectWith($select);
+        $months = [];
+        foreach ($resultsChanges as $row) {
+            if (is_numeric($row['TheMonth']) && $row['TheMonth'] > 0  && $row['TheMonth'] <= 12 &&
+                    is_numeric($row['TheYear']) && $row['TheYear'] >= 2015 && $row['TheYear'] <= 2050 &&
+                    is_numeric($row['Count'])
+                    ) {
+                        $key = (string)($row['TheYear'] * 100 + $row['TheMonth']);
+                        $months[$key] = $this->filterDbInt($row['Count']);
+                    }
+        }
+        return $months;
     }
 
     public function getResources()
