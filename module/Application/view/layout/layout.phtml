@@ -90,7 +90,8 @@ echo $this->doctype(); ?>
 					        0 != strcmp($routeName, 'assignments') &&
 					        0 != strcmp($routeName, 'publications/search') &&
 					        0 != strcmp($routeName, 'publications') &&
-					        0 != strcmp($routeName, 'home')
+					        0 != strcmp($routeName, 'home') &&
+			                0 != strcmp($routeName, 'welcome')
 				        ) :
 					        if (false === strpos($routeName, 'publication')) {
 					            $searchUrl = $this->url('assignments/search');
