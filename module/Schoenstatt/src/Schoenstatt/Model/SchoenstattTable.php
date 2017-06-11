@@ -1052,25 +1052,30 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['AssignmentId']);
+            $startDate = $this->filterDbDate($row['StartDate']);
+            $endDate = $this->filterDbDate($row['EndDate']);
+            $isActive = $this::areWeWithinDateRange($startDate, $endDate);
             $entities[$id] = [
                 'assignmentId'          => $id,
                 'roleId'                => $this->filterDbId($row['RoleId']),
                 'roleTitle'             => $this->filterDbString($row['RoleTitle']),
                 'associationId'         => $this->filterDbId($row['AssociationId']),
-                'association'           => null,
+                'startDate'             => $startDate,
+                'endDate'               => $endDate,
                 'isMainRole'            => $this->filterDbBool($row['IsMainRole']),
                 'isSinglePosition'      => $this->filterDbBool($row['IsSinglePosition']),
                 'shouldAlwaysBeFilled'  => $this->filterDbBool($row['ShouldAlwaysBeFilled']),
                 'sort'                  => $this->filterDbInt($row['Sort']),
-                'isActive'              => $this->filterDbBool($row['IsActive']),
+                'roleIsActive'          => $this->filterDbBool($row['IsActive']),
                 'personId'              => $this->filterDbId($row['PersonId']),
-                'person'                => null,
-                'startDate'             => $this->filterDbDate($row['StartDate']),
-                'endDate'               => $this->filterDbDate($row['EndDate']),
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
                 'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+
+                'isActive'              => $isActive,
+                'association'           => null,
+                'person'                => null,
             ];
         }
         $this->cacheEntityObjects('unlinked-assignments', $entities);

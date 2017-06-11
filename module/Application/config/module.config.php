@@ -64,16 +64,16 @@ return [
             'navigation' => 'Zend\Navigation\Service\DefaultNavigationFactory'
         ],
     ],
-    'translator' => [
-        'locale' => 'en_US',
-        'translation_file_patterns' => [
-            [
-                'type'     => 'gettext',
-                'base_dir' => __DIR__ . '/../language',
-                'pattern'  => '%s.mo',
-            ],
-        ],
-    ],
+//     'translator' => [
+//         'locale' => 'en_US',
+//         'translation_file_patterns' => [
+//             [
+//                 'type'     => 'gettext',
+//                 'base_dir' => __DIR__ . '/../language',
+//                 'pattern'  => '%s.mo',
+//             ],
+//         ],
+//     ],
     'controllers' => [
         'invokables' => [
             'Application\Controller\Index' => Controller\IndexController::class
