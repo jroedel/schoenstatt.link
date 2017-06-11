@@ -15,6 +15,7 @@ return array(
     'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!' => 'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!',
     'Schoenstatt Link' => 'Schoenstatt Link',
     'Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt\'s web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!' => 'Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt\'s web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!',
+    'Search contacts' => 'Search contacts',
     'Sign in' => 'Sign in',
     'translation edits' => 'translation edits',
     'We need your help!' => 'We need your help!',

@@ -93,27 +93,36 @@ echo $this->doctype(); ?>
 					        0 != strcmp($routeName, 'home') &&
 			                0 != strcmp($routeName, 'welcome')
 				        ) :
-					        if (false === strpos($routeName, 'publication')) {
+				            $shouldAddSearch = false;
+					        if (false === strpos($routeName, 'publication') &&
+				                $this->isAllowed('route/assignments/search')
+			                ) {
 					            $searchUrl = $this->url('assignments/search');
-					        } else {
+					            $placeholder = 'Search contacts';
+					            $shouldAddSearch = true;
+			                } elseif ($this->isAllowed('route/publications/search')) {
 					            $searchUrl = $this->url('publications/search');
-    					    }?>
-    					<li class="">
-    						<form class="navbar-form"
-    							action="<?php echo $searchUrl; ?>" method="get"
-    							role="search">
-    							<div class="input-group">
-    								<input type="text" class="form-control" name="search"
-    									placeholder="<?php echo $this->translate("Search", 'Application');?>">
-        							<span class="input-group-btn">
-        								<button class="btn btn-info" type="submit">
-        									<i class="glyphicon glyphicon-search"></i>
-        								</button>
-        							</span>
-    							</div>
-    						</form>
-    					</li>
-    					<?php endif;?>
+					            $placeholder = 'Search publications';
+					            $shouldAddSearch = true;
+    					    }
+					       if ($shouldAddSearch):?>
+        					<li class="">
+        						<form class="navbar-form"
+        							action="<?php echo $searchUrl; ?>" method="get"
+        							role="search">
+        							<div class="input-group">
+        								<input type="text" class="form-control" name="search"
+        									placeholder="<?php echo $this->translate($placeholder, 'Application');?>">
+            							<span class="input-group-btn">
+            								<button class="btn btn-info" type="submit">
+            									<i class="glyphicon glyphicon-search"></i>
+            								</button>
+            							</span>
+        							</div>
+        						</form>
+        					</li>
+    						<?php endif;
+    					endif;?>
     					<li><a href="<?php echo $this->url('zfcuser/logout');?>"><?php
     					echo $this->translate("Logout", 'Application');?></a></li>
     				</ul>
