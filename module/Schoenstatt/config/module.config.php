@@ -106,6 +106,7 @@ return [
             ],
     ],
     'schoenstatt' => [
+        'general_presidium_id' => 71,
         'person_tags' => [ // they will appear in the value options in this order, they will be applied according to the sort order
             'bishop' => [
                 'title' => 'Bish.',

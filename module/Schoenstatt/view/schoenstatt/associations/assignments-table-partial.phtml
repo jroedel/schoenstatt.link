@@ -7,7 +7,7 @@
  * @param bool $wrapInPanel = false
  * @param array $columns = [role, person] (role, person, email, telephone,
  *      association[requires each assignment to have an 'assignment' key])
- * @param string $header
+ * @param string $header MUST be pre-escaped
  * @param array $associationFormatOptions = []
  * @param array $personFormatOptions = []
  */
@@ -40,14 +40,14 @@ if ($count > 0):
     <div class="panel panel-default">
         <!-- Default panel contents -->
         <?php if (isset($this->headerText)):?>
-        	<div class="panel-heading"><?php echo $this->escapeHtml($this->headerText);?></div>
+        	<div class="panel-heading"><?php echo $this->headerText;?></div>
         <?php endif;?>
         <!--<div class="panel-body">
          <p>...</p>
         </div>-->
     <?php endif;
 	if (isset($this->headerText) && !$wrapInPanel):?>
-		<p class="text-center"><strong><u><?php echo $this->escapeHtml($this->headerText);?></u></strong></p>
+		<p class="text-center"><strong><u><?php echo $this->headerText;?></u></strong></p>
 	<?php endif;
 ?><table class="table">
     <thead><tr>

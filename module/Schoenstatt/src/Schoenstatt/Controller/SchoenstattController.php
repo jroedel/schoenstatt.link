@@ -25,15 +25,22 @@ class SchoenstattController extends AbstractActionController
         $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        //@todo get this from config or something
-        $generalPresidium = $table->getAssociation(71);
+
+
+        $config = $sm->get('Schoenstatt\Config');
+        if (!isset($config['general_presidium_id']) || !is_numeric($config['general_presidium_id'])) {
+            throw new \Exception('Please set the "general_presidium_id" configuration.');
+        }
+        $generalPresidiumId = $config['general_presidium_id'];
+        $generalPresidium = $table->getAssociation($generalPresidiumId);
         $nationalLeaders = $table->getNationalMovementsLeaders();
         $form = new SearchForm();
 
         return new ViewModel([
-            'form' => $form,
-            'generalPresidium' => $generalPresidium,
-            'nationalLeaders' => $nationalLeaders,
+            'form'              => $form,
+            'generalPresidiumId'=> $generalPresidiumId,
+            'generalPresidium'  => $generalPresidium,
+            'nationalLeaders'   => $nationalLeaders,
         ]);
     }
 }

@@ -5,7 +5,9 @@ echo $this->partial('schoenstatt/associations/assignments-table-partial', [
     'wrapInPanel' => true,
     'showActive' => true,
     'showInactive' => false,
-    'headerText'  => $this->translate($this->generalPresidium['name']),
+    'headerText'  => '<a href="'.$this->url('associations/association',
+        ['association_id' => $this->generalPresidiumId]).'">'.
+        $this->translate($this->generalPresidium['name']).'</a>',
     'columns'       => ['role', 'person', 'email', 'telephone'],
 ]);
 
