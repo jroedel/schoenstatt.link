@@ -1477,7 +1477,7 @@ return [
                     'personId',
                 ],
                 'name_field'               				=> 'roleTitle',
-                'name_field_is_translateable'           => false,
+                'name_field_is_translateable'           => true,
 //                 'country_field'               			=> 'country',
                 'text_columns'               			=> [],
 //                 'many_to_one_update_columns'     		=> [
