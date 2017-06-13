@@ -13,11 +13,6 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
 		parent::__construct('edit_role');
 
 		$this->add([
-		    'name' => 'roleId',
-		    'type' => 'Hidden',
-		]);
-
-		$this->add([
 		    'name' => 'associationId',
 		    'type' => 'Select',
 		    'options' => [
@@ -80,6 +75,20 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
 		        'checked_value' => '1',
 		        'unchecked_value' => '0',
 		        'use_hidden_element' => true,
+		    ],
+		]);
+
+		$this->add([
+		    'name' => 'isMainContact',
+		    'type' => 'Checkbox',
+		    'options' => [
+		        'label' => 'Is main contact for the association?',
+		        'checked_value' => '1',
+		        'unchecked_value' => '0',
+		        'use_hidden_element' => true,
+		    ],
+		    'attributes' => [
+		        'value'   => '0',
 		    ],
 		]);
 
@@ -163,12 +172,27 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
     		],
     	    'isSinglePosition' => [
     	        'required' => false,
+    	        'filters' => [
+    	            ['name' => 'SionModel\Filter\ToBit']
+    	        ],
     	    ],
     		'isMainRole' => [
     		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'SionModel\Filter\ToBit']
+    		    ],
     		],
+		    'isMainContact' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
+		    ],
     		'isActive' => [
     		    'required' => false,
+    		    'filters' => [
+    		        ['name' => 'SionModel\Filter\ToBit']
+    		    ],
     		],
 		];
 	}

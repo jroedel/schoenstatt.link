@@ -20,7 +20,9 @@ class FormatAssociationFactory implements FactoryInterface
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
         $parentLocator = $serviceLocator->getServiceLocator();
-        $valueOptions = $parentLocator->get('Schoenstatt\AssociationKindsValueOptions');
+        /** @var AssociationKindsService $kindsService */
+        $kindsService = $parentLocator->get('Schoenstatt\AssociationKindsService');
+        $valueOptions= $kindsService->getValueOptions();
 
         $viewHelper = new FormatAssociation($valueOptions);
         return $viewHelper;

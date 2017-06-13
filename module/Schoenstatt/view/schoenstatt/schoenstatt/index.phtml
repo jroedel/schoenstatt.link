@@ -1,6 +1,6 @@
 <?php
 echo $this->partial('search-bar', ['form' => $form, 'centerOnPage' => false]);
-echo $this->partial('schoenstatt/associations/assignments-table-partial', [
+echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
     'assignments' => $this->generalPresidium['assignments'],
     'wrapInPanel' => true,
     'showActive' => true,
@@ -11,7 +11,7 @@ echo $this->partial('schoenstatt/associations/assignments-table-partial', [
     'columns'       => ['role', 'person', 'email', 'telephone'],
 ]);
 
-echo $this->partial('schoenstatt/associations/assignments-table-partial', [
+echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
     'assignments' => $this->nationalLeaders,
     'wrapInPanel' => true,
     'showActive' => true,

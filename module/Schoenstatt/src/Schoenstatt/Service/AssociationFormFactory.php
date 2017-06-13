@@ -6,6 +6,7 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
+use Schoenstatt\Service\AssociationKindsService;
 
 /**
  * Factory responsible of prepping the AssociationForm
@@ -26,7 +27,9 @@ class AssociationFormFactory implements FactoryInterface
 
 		$associations = $table->getAssociationValueOptions();
 
-		$kinds = $serviceLocator->get('Schoenstatt\AssociationKindsValueOptions');
+		/** @var AssociationKindsService $kindsService */
+		$kindsService = $serviceLocator->get('Schoenstatt\AssociationKindsService');
+		$kinds = $kindsService->getValueOptions();
 
 		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
 

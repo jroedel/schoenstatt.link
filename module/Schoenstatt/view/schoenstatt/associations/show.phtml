@@ -177,14 +177,14 @@ $this->headTitle($name);?>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
     	<p>&nbsp;</p>
-    	<?php echo $this->partial('assignments-table-partial', [
+    	<?php echo $this->partial('schoenstatt/assignments/assignments-table-partial', [
     		'assignments' 	=> $object['assignments'],
     		'showActive' 	=> true,
     		'showInactive' 	=> false,
     	]);?>
 	</div> <!-- assignments 1 column -->
     <div class="col-md-6">
-    	<?php echo $this->partial('assignments-table-partial', [
+    	<?php echo $this->partial('schoenstatt/assignments/assignments-table-partial', [
     		'assignments' 	=> $object['assignments'],
     		'showActive' 	=> false,
     		'showInactive' 	=> true,

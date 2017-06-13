@@ -30,6 +30,7 @@ class AssociationsController extends SionController
         //set nationalOrganizations
         $association = $view->getVariable('entity');
         if ($association['kind'] == 'sch-national-movement' && !is_null($association['country'])) {
+            /** @var SchoenstattTable $table */
             $table = $this->getSionTable();
             $nationalOrganizations = $table->getNationalAssociations($association['country']);
             if (key_exists($association['associationId'], $nationalOrganizations)) {

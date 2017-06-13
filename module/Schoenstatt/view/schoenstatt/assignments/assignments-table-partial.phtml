@@ -48,8 +48,9 @@ if ($count > 0):
     <?php endif;
 	if (isset($this->headerText) && !$wrapInPanel):?>
 		<p class="text-center"><strong><u><?php echo $this->headerText;?></u></strong></p>
-	<?php endif;
-?><table class="table">
+	<?php endif;?>
+<div id="assignments" class="table-responsive panel-body">
+	<table class="table sortable">
     <thead><tr>
     <?php foreach ($columns as $column) {
         if (key_exists($column, $columnHeaders)) {
@@ -107,6 +108,7 @@ if ($count > 0):
     	<?php endif;
 	endforeach;?>
     </tbody></table>
+</div>
     <?php if ($wrapInPanel):?>
     </div>
     <?php endif;

@@ -14,6 +14,7 @@ use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
 use SionModel\Controller\SionController;
+use Schoenstatt\Form\AdvancedSearchForm;
 
 class AssignmentsController extends SionController
 {
@@ -47,6 +48,40 @@ class AssignmentsController extends SionController
         }
         return new ViewModel([
             'entities'       => $entities,
+            'form'          => $form,
+        ]);
+    }
+
+    /**
+     * @return \Zend\View\Model\ViewModel
+     */
+    public function advancedSearchAction()
+    {
+        $sm = $this->getServiceLocator();
+        //make sure we get clean parameters
+        $params = $this->params()->fromQuery();
+        /** @var AdvancedSearchForm $form */
+        $form = $sm->get('Schoenstatt\Form\AdvancedSearchForm');
+        //Check if user is allowed to search ex-members
+        //         if (!$this->isAllowed('ex_members')) {
+        //             $form->get('category')->unsetValueOption('ex-member');
+        //         }
+        $form->setData($params);
+        $entities = null;
+        //         $showPhotos = false;
+        if ($form->isValid()) {
+            $data = $form->getData();
+            //             $showPhotos = $data['showPhotos'];
+            //             unset($data['showPhotos']);
+            if (!empty($data)) {
+                /** @var SchoenstattTable $table */
+                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $entities = $table->searchEntities($data);
+            }
+        }
+        return new ViewModel([
+            'objects'      => $entities,
+            //             'showPhotos'    => $showPhotos,
             'form'          => $form,
         ]);
     }
