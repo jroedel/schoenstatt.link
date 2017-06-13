@@ -25,9 +25,10 @@ class FormatPerson extends AbstractHelper
     public function __invoke($person, $options = [])
     {
     	//if there's not enough info we won't do anything
-    	if (!$person['personId'] || $person['personId']=='' || (!isset($person['firstName']) && !isset($person['lastName']) &&
-            is_null($person['firstName']) && is_null($person['lastName']))
+    	if (!$person['personId'] || $person['personId']=='' || (!isset($person['firstName']) && !isset($person['lastName'])) ||
+            (is_null($person['firstName']) && is_null($person['lastName']))
 	    ) {
+	        //@todo let the deleted name come through on the View Changes page
     		return '';
     	}
 

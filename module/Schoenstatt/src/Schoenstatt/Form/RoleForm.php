@@ -131,13 +131,6 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
 	public function getInputFilterSpecification()
 	{
 		return [
-    		'roleId' => [
-    		    'required' => false,
-    		    'filters' => [
-    		        ['name' => 'ToInt'],
-    		        ['name' => 'ToNull'],
-    		    ],
-    		],
 		    'roleTitle' => [
 		        'required' => false,
 		        'filters' => [

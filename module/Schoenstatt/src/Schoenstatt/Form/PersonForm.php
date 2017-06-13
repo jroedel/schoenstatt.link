@@ -555,19 +555,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 /**
  * Common elements
  */
-        $this->add([
-		    'name' => 'personId',
-		    'type' => 'Hidden',
-		]);
-		$this->add([
-			'name' => 'security',
-			'type' => 'csrf',
-		    'options' => [
-                'csrf_options' => [
-                     'timeout' => 600,
-                ],
-	        ],
-		]);
 		$this->add([
 			'name' => 'submit',
 			'type' => 'Submit',
@@ -576,6 +563,16 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 				'id' => 'submit',
 				'class' => 'btn-primary'
 			],
+		]);
+		$this->add([
+		    'name' => 'delete',
+		    'type' => 'Button',
+		    'attributes' => [
+		        'value' => 'Delete',
+		        'class' => 'btn-danger',
+		        'data-toggle' => 'modal',
+		        'data-target' => '.bs-example-modal-sm'
+		    ],
 		]);
 	}
 
@@ -1085,16 +1082,6 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\SortArray'],
                 ],
 		    ],
-
-/**
- * Common columns
- */
-		    'personId'  => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'ToInt'],
-                ],
-			],
 		];
 		return $this->filterSpec;
 	}

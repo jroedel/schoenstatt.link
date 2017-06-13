@@ -6,9 +6,10 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
+use Schoenstatt\Form\RoleForm;
 
 /**
- * Factory responsible of prepping the AssociationForm
+ * Factory responsible of prepping the RoleForm
  *
  * @author Jeff Roedel <webmaster@schoenstatt.link>
  */
@@ -31,7 +32,7 @@ class RoleFormFactory implements FactoryInterface
 
 		/** @var FormElementManagerV2Polyfill $formManager */
 		$formManager = $serviceLocator->get('FormElementManager');
-		/** @var \Schoenstatt\Form\AssociationForm $form */
+		/** @var RoleForm $form */
 		$form = $formManager->get('Schoenstatt\Form\RoleForm', [], true);
 
 		$form->get('associationId')->setValueOptions($associations);

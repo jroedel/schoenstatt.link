@@ -1,110 +1,12 @@
 <?php
 namespace Schoenstatt\Controller;
 
-use Zend\Mvc\Controller\Plugin\FlashMessenger;
-use Zend\View\Model\ViewModel;
-use Zend\Mvc\Controller\AbstractActionController;
-use Schoenstatt\Form\RoleForm;
-use JTranslate\Controller\Plugin\NowMessenger;
-use Schoenstatt\Model\SchoenstattTable;
-use Zend\Filter\FilterChain;
+use SionModel\Controller\SionController;
 
-class RolesController extends AbstractActionController
+class RolesController extends SionController
 {
-    public function indexAction()
+    public function __construct()
     {
-        $sm = $this->getServiceLocator();
-        /** @var \Schoenstatt\Model\SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $entities = $table->getRoles();
-
-        return new ViewModel([
-            'entities' => $entities,
-        ]);
-    }
-
-    public function createAction()
-    {
-        $sm = $this->getServiceLocator ();
-        /** @var SchoenstattTable $table **/
-        $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
-        $queryFilter = new FilterChain();
-        $queryFilter->attachByName('ToInt', [], 500)
-            ->attachByName('ToNull', [], 1000);
-
-        /** @var RoleForm $form */
-        $form = $sm->get('Schoenstatt\Form\RoleForm');
-        $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
-            $form->setData($data);
-            if ($form->isValid()) {
-                $data = $form->getData();
-                if (!($newId = $table->createEntity('role', $data))) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-                } else {
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Role successfully created.' );
-                    $this->redirect ()->toRoute ( 'associations/association', ['association_id' => $data['associationId']] );
-                }
-            } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-            }
-        } else if (!is_null($associationId = $queryFilter->filter($this->params ()->fromQuery ( 'associationId' ))) &&
-            key_exists($associationId, $form->get('associationId')->getValueOptions())
-        ) {
-            $form->get('associationId')->setValue($associationId);
-        }
-        return [
-            'form' => $form,
-        ];
-    }
-
-    public function editAction()
-    {
-        $id = (Int)$this->params()->fromRoute('role_id');
-        if (!$id) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Role not found.');
-            return $this->redirect()->toRoute('roles');
-        }
-        $sm = $this->getServiceLocator();
-        /** @var \Schoenstatt\Model\SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $entity = $table->getRole($id);
-        if (!$entity) {
-            $this->flashMessenger()
-            ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Role not found.');
-            return $this->redirect()->toRoute('roles');
-        }
-
-        /** @var RoleForm $form */
-        $form = $sm->get('Schoenstatt\Form\RoleForm');
-        $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
-            $form->setData($data);
-            if ($data ['roleId'] != $id) { // make sure the user is trying to update the right event
-                $this->flashMessenger()
-                    ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-                    ->addMessage('Role not found.');
-                return $this->redirect()->toRoute('roles');
-            }
-            if ($form->isValid()) {
-                $data = $form->getData();
-                $result = $table->updateEntity('role', $id, $data);
-                $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Role successfully updated.' );
-                    $this->redirect ()->toRoute ( 'associations/association', ['association_id' => $data['associationId']] );
-            } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-            }
-        } else {
-            $form->setData($entity);
-        }
-        return [
-            'form' => $form,
-            'entity' => $entity,
-        ];
+        parent::__construct('role');
     }
 }

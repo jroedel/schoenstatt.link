@@ -748,7 +748,7 @@ ORDER BY `LastName`, `FirstName`";
                 'createdBy'                 => $this->filterDbId($row['CreatedBy']),
 
                 'isLiving'                  => $isLiving,
-                'isActive'                  => $isLiving, //@todo make a new `active` column
+                'isActive'                  => $isLiving,
                 'title'                     => $title, //this is a calculated field, not for updating
                 'assignments'               => [],
                 'aclRoles'                  => [],
@@ -761,7 +761,7 @@ ORDER BY `LastName`, `FirstName`";
                 'lastName'                  => $lastName,
                 'firstName'                 => $firstName,
                 'fullName'                  => $firstName.' '.$lastName,
-                'searchName'                => $firstName.' '.$lastName,
+                'searchName'                => $firstName.' '.$lastName, //@todo remove accents
 //                 'searchName'                => $row['SearchName'],
                 'firstNameWithoutAccents'   => $this->filterDbString($row['FirstNameWithoutAccents']),
                 'lastNameWithoutAccents'    => $this->filterDbString($row['LastNameWithoutAccents']),
@@ -1283,34 +1283,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
         $nationalLeaders = [];
         foreach ($nationalLeadersResults as $assignment) {
-            if (!is_null($assignment['assignment'])) {
-                $nationalLeader = $assignment['assignment'];
-                $nationalLeader['person'] = $assignment['person'];
-                $nationalLeader['association'] = $assignment['association'];
-            } else {
-                $nationalLeader = [
-                    'assignmentId'          => null,
-                    'roleId'                => null,
-                    'roleTitle'             => null,
-                    'associationId'         => $assignment['associationId'],
-                    'association'           => $assignment['association'],
-                    'isMainRole'            => null,
-                    'isMainContact'         => null,
-                    'isSinglePosition'      => null,
-                    'shouldAlwaysBeFilled'  => null,
-                    'sort'                  => null,
-                    'isActive'              => true,
-                    'personId'              => null,
-                    'person'                => null,
-                    'startDate'             => null,
-                    'endDate'               => null,
-                    'createdOn'             => null,
-                    'createdBy'             => null,
-                    'updatedOn'             => null,
-                    'updatedBy'             => null,
-                ];
-            }
-            $nationalLeaders[$nationalLeader['associationId']] = $nationalLeader;
+            $nationalLeaders[$assignment['associationId']] = $assignment;
         }
         return $nationalLeaders;
     }
