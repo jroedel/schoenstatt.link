@@ -1,9 +1,7 @@
 $(document).ready(function(){
-    $categorySelect = $("#categorySelect").selectize({
-        create: false
-    });
-    $statusSelect = $("#statusSelect").selectize({
-        create: false
+    $roleTitleSelect = $("#roleTitleSelect").selectize({
+        create: false,
+        sortField: 'text'
     });
     $("form").submit(function(){
         $("input, select").each(function(index, obj){
@@ -21,7 +19,5 @@ $(document).ready(function(){
                 return this.defaultValue;
             });
         });
-        $categorySelect[0].selectize.setValue(['bishop', 'priest', 'deacon', 'student', 'novice']);
-        $statusSelect[0].selectize.setValue(['intern', 'extern', 'intern-exempt', 'extern-exempt', 'associated', 'collaborator', 'none']);
     });
 });

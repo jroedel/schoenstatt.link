@@ -22,19 +22,14 @@ class AdvancedSearchFormFactory implements FactoryInterface
         /** @var SchoenstattTable $table **/
 		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
 		$form = new AdvancedSearchForm();
-// 		$generations = $table->getGenerationValueOptions();
-// 		$filiations = $table->getFiliationValueOptions(false, false);
-// 		$courses = $table->getCourseValueOptions();
-// 		$houses = $table->getHouseValueOptions(false);
-// 		$territories = $table->getTerritoryValueOptions();
 		$roleTitles = $table->getRoleTitleValueOptions();
-// 		$form->get('generation')->setValueOptions($generations);
-// 		$form->get('course')->setValueOptions($courses);
-// 		$form->get('homeTerritory')->setValueOptions($territories);
-// 		$form->get('responsibleTerritory')->setValueOptions($territories);
+
+		/** @var AssociationKindsService $kindsService */
+		$kindsService = $serviceLocator->get('Schoenstatt\AssociationKindsService');
+		$kinds = $kindsService->getValueOptions();
+
 		$form->get('roleTitle')->setValueOptions($roleTitles);
-// 		$form->get('filiation')->setValueOptions($filiations);
-// 		$form->get('house')->setValueOptions($houses);
+		$form->get('associationKind')->setValueOptions($kinds);
 
 		//retrieve country names
 		$viewHelperManager = $serviceLocator->get('ViewHelperManager');

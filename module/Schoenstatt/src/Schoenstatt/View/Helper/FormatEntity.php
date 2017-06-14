@@ -42,6 +42,9 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
                     if ($data['isMainRole']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Main role', 'label-primary');
                     }
+                    if ($data['isMainContact']) {
+                        $finalMarkup .= '&nbsp;' . $this->view->label('Main contact', 'label-info');
+                    }
                     if (!$data['isActive']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Inactive', 'label-warning');
                     }

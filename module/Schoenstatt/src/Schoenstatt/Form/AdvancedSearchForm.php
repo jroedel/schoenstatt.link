@@ -13,6 +13,16 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 		$this->setAttribute('method', 'GET');
 
 		$this->add([
+		    'name' => 'associationKind',
+		    'type' => 'Select',
+		    'options' => [
+		        'label' => 'Association type',
+		        'empty_option' => '',
+		        'unselected_value' => '',
+		        'column-size' => 'md-4'
+		    ],
+		]);
+		$this->add([
 		    'name' => 'associationCountry',
 		    'type' => 'Select',
 			'options' => [
@@ -22,7 +32,7 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 		        'column-size' => 'md-4'
 			],
 		]);
-		$this->add([ //@todo Allow multiple roles
+		$this->add([
 		    'name' => 'roleTitle',
 		    'type' => 'Select',
 			'options' => [
@@ -31,6 +41,10 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 		        'unselected_value' => '',
 		        'column-size' => 'md-4'
 			],
+		    'attributes' => [
+		        'multiple' => true,
+		        'id' => 'roleTitleSelect',
+		    ],
 		]);
 		$this->add([
 		    'name' => 'onlyMainRoles',
@@ -45,6 +59,18 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 		        'value'   => '1',
 		    ],
 		]);
+		$this->add([
+		    'name' => 'search',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Multi-search',
+		        'column-size' => 'md-4'
+		    ],
+		    'attributes' => [
+		        'min' => 3,
+		    ],
+		]);
+
 		$this->add([
 		    'name' => 'personName',
 		    'type' => 'Text',
@@ -107,40 +133,24 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 		    'roleTitle' => [
 		        'required' => false,
 		    ],
-		    'category' => [
-		        'required' => false,
-		    ],
-		    'status' => [
+		    'associationKind' => [
 		        'required' => false,
 		    ],
 		    'personName' => [
 		        'required' => false,
 		        'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
 		        ],
 		    ],
-		    'isWorkingPriest' => [
+		    'search' => [
 		        'required' => false,
-		    ],
-		    'is75PlusMember' => [
-		        'required' => false,
-		    ],
-		    'wasWorkingPriest10Yearsago' => [
-		        'required' => false,
-		    ],
-		    'willBeWorkingPriestIn10Years' => [
-		        'required' => false,
-		    ],
-		    'isDeceasedMember' => [
-		        'required' => false,
-		    ],
-		    'isStudent' => [
-		        'required' => false,
-		    ],
-		    'includeChildTerritories' => [
-		        'required' => false,
+		        'filters' => [
+		            ['name' => 'StripTags'],
+		            ['name' => 'StripNewlines'],
+		            ['name' => 'StringTrim'],
+		        ],
 		    ],
 		];
 	}

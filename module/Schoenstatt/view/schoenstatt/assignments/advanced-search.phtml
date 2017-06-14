@@ -9,15 +9,12 @@ echo $this->form()->openTag($form);?>
 
 <div class="row">
 <?php
-echo $this->formRow($form->get('personName'));
+echo $this->formRow($form->get('search'));
+echo $this->formRow($form->get('associationKind'));
 echo $this->formRow($form->get('associationCountry'));
-$this->formSelect()->setTranslatorEnabled(true); //we want roleTitle and sionInfo translated
+$this->formSelect()->setTranslatorEnabled(true); //we want roleTitle translated
 echo $this->formRow($form->get('roleTitle'));
-if ($this->isAllowed('mass_email')) {
-//     echo $this->formRow($form->get('sionInfoGroups'));
-}
-// echo $this->formRow($form->get('category'));
-// echo $this->formRow($form->get('status'));?>
+?>
 </div>
 <div class="form-group ">
 <?php

@@ -2,7 +2,6 @@
 namespace Schoenstatt\Model;
 
 use SionModel\Filter\MixedCase;
-use SionModel\Db\Model\SionTable;
 
 class AssociationKind
 {
@@ -18,6 +17,12 @@ class AssociationKind
      * @var string
      */
     public $label;
+
+    /**
+     * Label translated into the current default locale
+     * @var string
+     */
+    public $translatedLabel;
     /**
      * Number used to sort in a list of mixed association kinds
      * @var number

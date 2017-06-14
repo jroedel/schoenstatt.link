@@ -21,11 +21,17 @@ class AssociationKindsService
             if (!is_array($spec) || !is_string($kind)) {
                 unset($associationKindSpecifications[$kind]);
             }
+            if (!key_exists('label', $spec) || !is_string($spec['label'])) {
+                throw new \Exception('All association kind specs must contain a label.');
+            }
             if (key_exists('name_format', $spec) &&
                 is_string($spec['name_format'])
             ) {
                 $spec['translated_name_format'] =
                     $this->translator->translate($spec['name_format'], 'Schoenstatt');
+            }
+            if (!key_exists('translated_label', $spec)) {
+                $spec['translated_label'] = $this->translator->translate($spec['label'], 'Schoenstatt');
             }
             $this->associationKinds[$kind] = new AssociationKind($kind, $spec);
         }
@@ -48,8 +54,9 @@ class AssociationKindsService
     {
         $valueOptions = [];
         foreach ($this->associationKinds as $kind => $spec) {
-            $valueOptions[$kind] = $spec->label;
+            $valueOptions[$kind] = $spec->translatedLabel;
         }
+        asort($valueOptions);
         return $valueOptions;
     }
 }

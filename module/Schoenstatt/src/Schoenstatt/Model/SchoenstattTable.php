@@ -1151,28 +1151,41 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      *
      * @param array $query
      */
-    public function searchEntities($query, $registerSearch = true)
+    public function searchEntities($query, $options = [])
     {
         $onlyMainRoles = isset($query['onlyMainRoles']) && is_bool($query['onlyMainRoles']) ? $query['onlyMainRoles'] : false;
         $includeInactive = isset($query['includeInactive']) && is_bool($query['includeInactive']) ? $query['includeInactive'] : false;
         $onlyAssignments = isset($query['onlyAssignments']) && is_bool($query['onlyAssignments']) ? $query['onlyAssignments'] : false;
-//         $entitiesToReturn = isset($query['entitiesToReturn']) && is_array($query['entitiesToReturn']) ? $query['entitiesToReturn'] : ['association', 'association'];
 
-//         $returnAssignments = in_array('assignment', $entitiesToReturn);
-//         $returnPersons = in_array('person', $entitiesToReturn);
-//         $returnAssociations = in_array('association', $entitiesToReturn);
+        $bypassRequiredParams = isset($options['bypassRequiredParams']) ? (bool)$options['bypassRequiredParams'] : false;
 
+        $oneOfRequiredParams = ['search', 'associationKind', 'associationCountry',
+            'personName', 'roleTitle'
+        ];
         //get rid of unnecesary parameters
+        $realParamCount = 0;
         foreach ($query as $key => $value) {
             if (is_null($value) || $value === '') {
                 unset($query[$key]);
+            } elseif (in_array($key, $oneOfRequiredParams)) {
+                $realParamCount++;
             }
+        }
+        if ($realParamCount == 0 && !$bypassRequiredParams) {
+            return null;
         }
 
         $filter = new ToAscii();
         if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
         }
+
+        //roleTitle param should be an array
+        if (isset($query['roleTitle']) && is_string($query['roleTitle'])) {
+            $query['roleTitle'] = [$query['roleTitle']];
+        }
+
+//         var_dump($query);
 
         $assignments = $this->getAssignmentPersonAssociations();
         if (is_null($assignments)) {
@@ -1229,6 +1242,12 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
             if (isset($query['associationCountry']) && !is_null($assignment['association']) &&
                 $query['associationCountry'] != $assignment['association']['country']
+            ) {
+                continue;
+            }
+
+            if (isset($query['roleTitle']) && is_array($query['roleTitle']) &&
+                !in_array($assignment['roleTitle'], $query['roleTitle'])
             ) {
                 continue;
             }
