@@ -13,6 +13,13 @@ class LibraryTable extends SionTable
     const CHECKOUT_STATUS_RETURNED = 'returned';
     const CHECKOUT_STATUS_OVERDUE = 'overdue';
 
+    const BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE = 'id-author-title';
+    const BOOK_VALUE_OPTIONS_LABEL_ID = 'id';
+
+    const BOOK_VALUE_OPTIONS_LABEL_OPTIONS = [
+        self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE,
+        self::BOOK_VALUE_OPTIONS_LABEL_ID
+    ];
     /** @var UserTable $userTable */
     protected $userTable;
 
@@ -35,12 +42,28 @@ class LibraryTable extends SionTable
      * @param array $query
      * @return string[]
      */
-    public function getLibraryBookValueOptions(array $query)
+    public function getLibraryBookValueOptions(array $query, $options = [])
     {
+        $labelOption = self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE;
+        if (key_exists('labelOption', $options) &&
+            in_array($options['labelOption'], self::BOOK_VALUE_OPTIONS_LABEL_OPTIONS)
+        ) {
+            $labelOption = $options['labelOption'];
+        }
+
         $books = $this->searchBooks($query);
         $return = [];
         foreach ($books as $bookId => $book) {
-            $return[(string)$book['withinLibrarylId']] = (string)$bookId.'-'.$book['author'].' '.$book['title'];
+            $withinLibraryId = (string)$book['withinLibrarylId'];
+            switch ($labelOption) {
+                case self::BOOK_VALUE_OPTIONS_LABEL_ID:
+                    $return[$bookId] = $withinLibraryId;
+                    break;
+                case self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE:
+                default:
+                    $return[$bookId] = $withinLibraryId.'-'.$book['author'].' '.$book['title'];
+                    break;
+            }
         }
         return $return;
     }

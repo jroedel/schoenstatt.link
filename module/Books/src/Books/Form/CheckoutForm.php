@@ -21,6 +21,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 'value_options' => [],
             ],
             'attributes' => [
+                'tabindex' => 1,
                 'multiple'  => true,
                 'required' => true,
             ],
@@ -37,9 +38,12 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
 //                 'disable_inarray_validator' => true,
                 'value_options' => [],
             ],
+            'attributes' => [
+                'tabindex' => 2,
+            ],
         ]);
 
-        $this->add([//http://www.codingdrama.com/bootstrap-markdown/
+        $this->add([
             'name' => 'adminNotes',
             'type' => 'Textarea',
             'options' => [
@@ -48,9 +52,8 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
             ],
             'attributes' => [
                 'required' => false,
-                'data-provide' => 'markdown',
-                'data-parser' => 'CommonMark',
-                'rows' => 8,
+                'rows' => 3,
+                'tabindex' => 3,
             ],
             'filters' => [
                 ['name' => 'StripTags'],
@@ -62,7 +65,8 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
             'attributes' => [
                 'value' => 'Submit',
                 'id' => 'submit',
-                'class' => 'btn-primary'
+                'class' => 'btn-primary',
+                'tabindex' => 4,
             ],
         ]);
     }

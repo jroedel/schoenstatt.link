@@ -1,8 +1,6 @@
 <?php
-$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
 $this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
 $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
 $headText = 'Book checkout';
 $this->headTitle($headText); ?>
@@ -20,13 +18,15 @@ echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();
 
 $jsScript = <<<JS
-    $("select[name='bookIds[]']").selectize({
-        create: false,
-        sortField: 'text'
-    });
     $("select[name='personId']").selectize({
         create: false
     });
+    $("select[name='bookIds[]']").selectize({
+        create: false,
+        sortField: 'text',
+        openOnFocus: false
+    });
+    $("input[tabindex='1']").focus();
 JS;
 $this->inlineScript()->captureStart();
 echo <<<JS
