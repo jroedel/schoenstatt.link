@@ -8,6 +8,32 @@ foreach ($untranslatedMonths as $value) {
     $months[] = '"'.$this->translate($value, 'default').'"';
 }
 ?>
+<script type='application/ld+json'>
+{
+  "@context": "http://www.schema.org",
+  "@type": "Organization",
+  "name": "Schoenstatt Data Initiative",
+  "url": "https://schoenstatt.link",
+  "logo": "https://schoenstatt.link/favicon-310.png",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Las Nalcas Norte 7678",
+    "addressLocality": "La Florida",
+    "addressRegion": "Santiago",
+    "addressCountry": "Chile"
+  },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "-33.52568",
+    "longitude": "-70.54934"
+  },
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "telephone": "+1-414-215-0318",
+    "contactType": "Webmaster"
+  }
+}
+ </script>
 <div class="jumbotron">
   <div class="container">
   	<div class="row">

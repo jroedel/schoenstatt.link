@@ -793,7 +793,7 @@ return [
     'router' => [
         'routes' => [
             'admin' => [
-                'type'    => 'Literal',
+                'type'    => 'Segment',
                 'options' => [
                     'route'    => '/admin',
                     'defaults' => [
