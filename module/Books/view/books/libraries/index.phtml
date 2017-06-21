@@ -1,6 +1,9 @@
 <?php
 $headText = 'Libraries';
-$this->headTitle($headText); ?>
+$this->headTitle($headText);
+
+//@todo add schema for the Schoenstatt Library system
+//@see http://pending.3-2f.schemaorgae.appspot.com/LibrarySystem?>
 <h1><?php echo $this->translate($headText);?></h1>
 <ul class="list-group">
 <?php foreach ($this->objects as $libraryId => $library) :?>

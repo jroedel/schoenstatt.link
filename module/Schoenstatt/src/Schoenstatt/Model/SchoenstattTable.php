@@ -597,16 +597,25 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
      */
     public function getPersons()
     {
-        if ($this->personsCache) {
-            return $this->personsCache;
+        if ($cache = $this->fetchCachedEntityObjects('persons')) {
+            return $cache;
         }
         $entities = $this->getUnlinkedPersons();
+//         $this->connectEntityRolesAndAssignments('person', $entities);
 
-        return $this->personsCache = $entities;
+        //Calculate if the person has any active assignments and set the hasActiveAssignment flag
+//         foreach ($entities as $personId => $person) {
+
+//         }
+        $this->cacheEntityObjects('persons', $entities, ['person', 'assignent']);
+        return $entities;
     }
 
     protected function getUnlinkedPersons()
     {
+        if ($cache = $this->fetchCachedEntityObjects('unlinked-persons')) {
+            return $cache;
+        }
         $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`,
 `LastNameWithoutAccents`, `FirstNameWithoutAccents`, `PersonTags`, `LifeCommunity`,
 `Title`, `TitleAutomatic`, `Country`, `BirthDate`, `NameDay`, `DeathDate`,
@@ -750,6 +759,7 @@ ORDER BY `LastName`, `FirstName`";
                 'isLiving'                  => $isLiving,
                 'isActive'                  => $isLiving,
                 'title'                     => $title, //this is a calculated field, not for updating
+                'hasActiveAssignment'       => true, //assume so until proved otherwise
                 'assignments'               => [],
                 'aclRoles'                  => [],
                 'resourceId'                => 'person_'.$id,
@@ -843,6 +853,7 @@ ORDER BY `LastName`, `FirstName`";
 
             ];
         }
+        $this->cacheEntityObjects('unlinked-persons', $entities, ['person']);
         return $entities;
     }
 
@@ -852,9 +863,9 @@ ORDER BY `LastName`, `FirstName`";
      */
     public function getRoles()
     {
-
-        if (!is_null($this->rolesCache)) {
-            return $this->rolesCache;
+        $cacheKey = 'roles-'.$this->getLocale();
+        if ($cache = $this->fetchCachedEntityObjects($cacheKey)) {
+            return $cache;
         }
         $entities = $this->getUnlinkedRoles();
         $associations = $this->getUnlinkedAssociations();
@@ -866,7 +877,8 @@ ORDER BY `LastName`, `FirstName`";
             }
         }
 
-        return $this->rolesCache = $entities;
+        $this->cacheEntityObjects($cacheKey, $entities, ['role', 'association']);
+        return $entities;
     }
 
     /**
@@ -876,6 +888,10 @@ ORDER BY `LastName`, `FirstName`";
      */
     protected function getUnlinkedRoles()
     {
+        $cacheKey = 'unlinked-roles-'.$this->getLocale();
+        if ($cache = $this->fetchCachedEntityObjects($cacheKey)) {
+            return $cache;
+        }
         $sql = "SELECT `RoleId`, `RoleTitle`, `AssociationId`,
 `IsMainRole`, `IsMainContact`, `IsSinglePosition`, `ShouldAlwaysBeFilled`, `Sort`, `IsActive`, `UpdatedOn`,
 `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_roles` WHERE 1
@@ -911,6 +927,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 'association'               => null,
             ];
         }
+        $this->cacheEntityObjects($cacheKey, $entities, ['role']);
         return $entities;
     }
     /**
@@ -951,6 +968,10 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      */
     public function getAssignmentPersonAssociations()
     {
+        $cacheKey = 'assignment-person-associations'.$this->getLocale();
+        if ($cache = $this->fetchCachedEntityObjects($cacheKey)) {
+            return $cache;
+        }
         /*
          * New plan: We'll use getAssignments as a base, and then:
          * 1. reimplement sorting
@@ -998,6 +1019,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         # sort by event_type desc and then title asc
         array_multisort($sort['associationSort'], SORT_ASC, $sort['personSort'], SORT_ASC, $entities);
+        $this->cacheEntityObjects($cacheKey, $entities, ['assignment', 'role', 'association', 'person']);
         return $entities;
     }
 
@@ -1027,6 +1049,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 'updatedOn'             => null,
                 'updatedBy'             => null,
                 'formattedRoleTitle'    => null,
+
                 'association'           => null,
                 'person'                => null,
 
@@ -1043,7 +1066,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      */
     public function getAssignments()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('assignments'))) {
+        $cacheKey = 'assignments'.$this->getLocale();
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $entities       = $this->getUnlinkedAssignments();
@@ -1146,16 +1170,31 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      *     onlyMainRoles(bool=false, allows associations without a main role to be returned),
      *     includeInactive(bool=false, when false, won't return any inactive associations or assignments),
      *     onlyAssignments(bool=false),
-     *     <<<<entitiesToReturn(array=['association', 'association'])>>>>> NOT SURE ABOUT THIS ONE
+     *     showPeopleWithoutActiveAssignment(bool=false)
      * The 'search' query key will search (case-insensitive) the following fields:
      *
      * @param array $query
+
+     * @todo we still need to include tag, country searches
+     * @todo make sure that we normalize (remove accented things from
+     *   fields search for with the 'search' criterion
      */
     public function searchEntities($query, $options = [])
     {
+        /*
+         * How do I do this?
+         * * I normally assume everyone is inocent until I find them guilty of not complying with
+         *   the search criteria
+         * * I should probably do a calculation at the beginning of acceptingOnlyPersons,
+         *   acceptingOnlyAssociations
+         *
+         * * acceptingMerePersons: !associationKind && !associationCountry && !roleTitle
+         * * acceptingMereAssociations: !roleTitle
+         */
         $onlyMainRoles = isset($query['onlyMainRoles']) && is_bool($query['onlyMainRoles']) ? $query['onlyMainRoles'] : false;
         $includeInactive = isset($query['includeInactive']) && is_bool($query['includeInactive']) ? $query['includeInactive'] : false;
-        $onlyAssignments = isset($query['onlyAssignments']) && is_bool($query['onlyAssignments']) ? $query['onlyAssignments'] : false;
+        $onlyAssignments = (isset($query['onlyAssignments']) && is_bool($query['onlyAssignments']) ? $query['onlyAssignments'] : false) || $onlyMainRoles;
+        $showPeopleWithoutActiveAssignment = isset($query['showPeopleWithoutActiveAssignment']) && is_bool($query['showPeopleWithoutActiveAssignment']) ? $query['showPeopleWithoutActiveAssignment'] : false;
 
         $bypassRequiredParams = isset($options['bypassRequiredParams']) ? (bool)$options['bypassRequiredParams'] : false;
 
@@ -1183,7 +1222,20 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         //roleTitle param should be an array
         if (isset($query['roleTitle']) && is_string($query['roleTitle'])) {
             $query['roleTitle'] = [$query['roleTitle']];
+        } elseif (isset($query['roleTitle']) && !is_array($query['roleTitle'])) {
+            throw new \InvalidArgumentException('Role title query param should be a string or an array.');
         }
+
+        $searchSearchField = isset($query['search']) && !is_null($query['search']) && is_string($query['search']);
+        $searchAssociationKind = isset($query['associationKind']) && is_string($query['associationKind']);
+        $searchAssociationCountry = isset($query['associationCountry']) && is_string($query['associationCountry']);
+        $searchRoleTitle = isset($query['roleTitle']) && is_array($query['roleTitle']);
+        $searchPersonName = isset($query['personName']) && !is_null($query['personName']) && is_string($query['personName']);
+
+        $acceptingMerePersons = !$onlyAssignments && !$searchAssociationCountry && !$searchAssociationKind
+            && !$searchRoleTitle;
+
+        $acceptingMereAssociations = !$onlyAssignments && !$searchPersonName && !$searchRoleTitle;
 
 //         var_dump($query);
 
@@ -1205,85 +1257,198 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
  * Note: The concept of returning an association or a person without an assignment only comes into play
  *  when we use a criterion that can only apply to a person/association (like onlyMainRoles)
  */
-        $return = [];
+        /**
+         * The list of final results
+         * @var array $results
+         */
+        $results = [];
+        /**
+         * A list of personIds already added to the final results
+         * @var array $personsReturned
+         */
         $personsReturned = [];
+        /**
+         * A list of associationIds already added to the final results
+         * @var array $associationsReturned
+         */
         $associationsReturned = [];
-        $queuedAssociationId = null;
-        $queuedAssociation = null;
+        /**
+         * A list of association candidates to check at the end of the main loop
+         * and add them to the search results if they haven't already been checked
+         * off in the associationsReturned list
+         * @var array $maybeAssociations
+         */
+        $maybeAssociations = [];
+        /**
+         * Analogous to maybeAssociations
+         * @var array $maybePersons
+         */
+        $maybePersons = [];
+        /**
+         * A flag, reset every loop, which signals that an assignment criterion has failed
+         * @var string $hasAssignmentFailed
+         */
+        $hasAssignmentFailed = false;
+        /**
+         * Similar to $hasAssignmentFailed
+         * @var string $hasPersonFailed
+         */
+        $hasPersonFailed = false;
+        /**
+         * Similar to $hasAssignmentFailed
+         * @var string $hasAssociationFailed
+         */
+        $hasAssociationFailed = false;
+
         foreach ($assignments as $assignment) {
-//first we process the queuedAssociations
-            if (!is_null($queuedAssociationId) && $queuedAssociationId !== $assignment['associationId']) {
-                $associationsReturned[] = $queuedAssociationId;
-                $return[] = $queuedAssociation;
-                $queuedAssociationId = null;
-                $queuedAssociation = null;
-            }
+            $hasAssignmentFailed = false;
+            $hasPersonFailed = false;
+            $hasAssociationFailed = false;
+            //This a special type of test for when a criterion is enough to oust a mere person/association, but not a full assignment
+            $hasMerePersonFailed = false;
+            $hasMereAssociationFailed = false;
 
-//first we apply the criteria that are cut and dry
-            if (!$includeInactive && isset($assignment['association']) && !empty($assignment['association']) &&
-                !$assignment['association']['isActive']
-            ) {
-                continue;
-            }
-            //@todo we still need to include tag, country searches
-            if (isset($query['search']) && $query['search'] && !is_null($query['search']) &&
-                    false === stripos($assignment['association']['name'], $query['search']) &&
-                    false === stripos($assignment['association']['formattedName'], $query['search']) &&
-                    false === stripos($assignment['roleTitle'], $query['search']) &&
-                    false === stripos($assignment['formattedRoleTitle'], $query['search']) &&
-                false === stripos($assignment['person']['searchName'], $query['search'])
-            ) {
-                continue;
-            }
-            if (isset($query['associationKind']) && !is_null($assignment['association']) &&
-                $query['associationKind'] != $assignment['association']['kind']
-            ) {
-                continue;
-            }
-            if (isset($query['associationCountry']) && !is_null($assignment['association']) &&
-                $query['associationCountry'] != $assignment['association']['country']
+            $isFullAssignment = !is_null($assignment['assignmentId']);
+            $isMerePerson = is_null($assignment['assignmentId']) && !is_null($assignment['person']);
+            $isMereAssociation = is_null($assignment['assignmentId']) && !is_null($assignment['association']);
+
+            //0. Categorical criteria: just continue
+
+            //0.1 search field criteria
+            if ($searchSearchField &&
+                (is_null($assignment['association']) ||
+                    (false === stripos($assignment['association']['name'], $query['search']) &&
+                     false === stripos($assignment['association']['formattedName'], $query['search']))) &&
+                (is_null($assignment['roleTitle']) || false === stripos($assignment['roleTitle'], $query['search'])) &&
+                (is_null($assignment['formattedRoleTitle']) || false === stripos($assignment['formattedRoleTitle'], $query['search'])) &&
+                (is_null($assignment['person']) || (false === stripos($assignment['person']['searchName'], $query['search'])))
             ) {
                 continue;
             }
 
-            if (isset($query['roleTitle']) && is_array($query['roleTitle']) &&
+            //1. AssignmentCriteria
+
+            //1.1 isActive
+            if ($isFullAssignment && !$includeInactive && !$assignment['isActive']
+            ) {
+                $hasAssignmentFailed = true;
+            }
+
+            //1.2 roleTitle
+            if ($searchRoleTitle &&
                 !in_array($assignment['roleTitle'], $query['roleTitle'])
             ) {
+                $hasAssignmentFailed = true;
+            }
+
+            //1.3 mainRole
+            if (($onlyMainRoles && !$assignment['isMainRole'])) {
+                $hasAssignmentFailed = true;
+            }
+
+            //if we're only looking for full assignments, and it's failed, continue
+            if ($onlyAssignments && $hasAssignmentFailed) {
                 continue;
             }
-//check assignment part, if not, we'll strip it and see if we can find another match as a person/association
-//so far there are two criteria that can cause this: onlyMainRoles, and includeInactive=false
-            //get rid of non-main roles
-            if (($onlyMainRoles && !$assignment['isMainRole']) || (!$includeInactive && !$assignment['isActive'])) {
-                if (!in_array($assignment['associationId'], $associationsReturned) &&
-                    $queuedAssociationId !== $assignment['associationId'] && !$onlyAssignments
-                ) {
-                    //this record is now disputed. Maybe we'll strip out the assignment and person data and return the association
-                    $queuedAssociationId = $assignment['associationId']; //@todo what does this do if we just continue after?
-                    $queuedAssociation = $this->getAssignmentPrototype();
-                    $queuedAssociation['associationId'] = $assignment['associationId'];
-                    $queuedAssociation['association'] = $assignment['association'];
-                    $queuedAssociation['associationSort'] = $assignment['associationSort'];
 
-                    //@todo I think we also need to queue the person
+            //2. AssociationCriteria
+
+            //2.1 isActive
+            if (!$isMerePerson && !$includeInactive && isset($assignment['association']) && !empty($assignment['association']) &&
+                !$assignment['association']['isActive']
+            ) {
+                $hasAssociationFailed = true;
+            }
+            //2.2 association kind
+            if ($searchAssociationKind &&
+                $query['associationKind'] != $assignment['association']['kind']
+            ) {
+                $hasAssociationFailed = true;
+            }
+            //2.3 association country
+            if ($searchAssociationCountry &&
+                $query['associationCountry'] != $assignment['association']['country']
+            ) {
+                $hasAssociationFailed = true;
+            }
+            //2.4 search field criteria
+            if (!$isMerePerson && $searchSearchField &&
+                false === stripos($assignment['association']['name'], $query['search']) &&
+                false === stripos($assignment['association']['formattedName'], $query['search'])
+            ) {
+                $hasMereAssociationFailed = true;
+            }
+
+            //3. Person criteria
+
+            //3.1 hasActiveAssignment
+            if (!$isMereAssociation && !$showPeopleWithoutActiveAssignment &&
+                !$assignment['person']['hasActiveAssignment']
+            ) {
+                $hasPersonFailed = true;
+            }
+
+            //3.1 Person name
+            if (!$isMereAssociation && $searchPersonName &&
+                false === stripos($assignment['person']['searchName'], $query['personName'])
+            ) {
+                $hasPersonFailed = true;
+            }
+
+            //3.2 search field criteria
+            if (!$isMereAssociation && $searchSearchField &&
+                false === stripos($assignment['person']['searchName'], $query['search'])
+            ) {
+                $hasMerePersonFailed = true;
+            }
+
+            //save info about what we've returned
+            if (!$hasAssignmentFailed && !$hasAssociationFailed && !$hasPersonFailed) {
+                if (!is_null($assignment['personId'])) {
+                    $personsReturned[] = $assignment['personId'];
                 }
-                //@todo I think we should not continue here
-                continue;
+                if (!is_null($assignment['associationId'])) {
+                    $associationsReturned[] = $assignment['associationId'];
+                }
+                $results[] = $assignment;
+            } else {
+                if ($acceptingMereAssociations && $hasAssignmentFailed &&
+                    !$isMerePerson && !$hasAssociationFailed && !$hasMereAssociationFailed
+                ) {
+                    $association = $this->getAssignmentPrototype();
+                    $association['associationId'] = $assignment['associationId'];
+                    $association['association'] = $assignment['association'];
+                    $association['associationSort'] = $assignment['associationSort'];
+                    $maybeAssociations[] = $association;
+                }
+                if ($acceptingMerePersons && $hasAssignmentFailed &&
+                    !$isMereAssociation && !$hasPersonFailed && !$hasMerePersonFailed
+                ) {
+                    $person = $this->getAssignmentPrototype();
+                    $person['personId'] = $assignment['personId'];
+                    $person['person'] = $assignment['person'];
+                    $person['personSort'] = $assignment['personSort'];
+                    $maybePersons[] = $person;
+                }
             }
-
-//save info about what we've returned
-            if (isset($assignment['person']) && !empty($assignment['person'])) {
-                $personsReturned[] = $assignment['personId'];
-            }
-            if (isset($assignment['association']) && !empty($assignment['association'])) {
-                $associationsReturned[] = $assignment['associationId'];
-            }
-            $queuedAssociationId = null;
-            $queuedAssociation = null;
-            $return[] = $assignment;
         }
 
-        return $return;
+        //check which maybeAssociations to add
+        foreach ($maybeAssociations as $assignment) {
+            if (!in_array($assignment['associationId'], $associationsReturned)) {
+                $results[] = $assignment;
+                $associationsReturned[] = $assignment['associationId'];
+            }
+        }
+        //check which maybePersons to add
+        foreach ($maybeAssociations as $assignment) {
+            if (!in_array($assignment['personId'], $personsReturned)) {
+                $results[] = $assignment;
+                $personsReturned[] = $assignment['personId'];
+            }
+        }
+
+        return $results;
     }
 
     /**
@@ -1434,7 +1599,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     }
 
     /**
-     * Gets a list of commonly used countries
+     * Gets a list of all used countries in the database
      */
     public function getCountries()
     {
@@ -1460,7 +1625,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
     /**
      * Gets a list of role titles including the aliases for each of
      * the titles he holds
-     * @todo this function could be optimized by using a binary tree or somethings
+     * @todo this function could be optimized by using a binary tree or something
      * @param int $personId
      */
     public function getPersonRoleTitles($personId)
@@ -1485,6 +1650,12 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         return $return;
     }
 
+    /**
+     * Connect the corresponding roles and assignments to a given list of entities
+     * @param string $entity
+     * @param mixed[] $entities
+     * @return number
+     */
     protected function connectEntityRolesAndAssignments($entity, &$entities)
     {
         $assignments = $this->getUnlinkedAssignments();

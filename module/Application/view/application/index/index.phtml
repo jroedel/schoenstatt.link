@@ -7,32 +7,55 @@ $months = [];
 foreach ($untranslatedMonths as $value) {
     $months[] = '"'.$this->translate($value, 'default').'"';
 }
+
+// @todo add search to google https://developers.google.com/search/docs/data-types/sitelinks-searchbox
 ?>
 <script type='application/ld+json'>
+[{
+  "@context": "http://schema.org",
+  "@type": "WebSite",
+  "name": "Schoenstatt Link",
+  "alternateName": "Schoenstatt Data Initiative",
+  "url": "https://schoenstatt.link"
+},
 {
   "@context": "http://www.schema.org",
   "@type": "Organization",
   "name": "Schoenstatt Data Initiative",
   "url": "https://schoenstatt.link",
   "logo": "https://schoenstatt.link/favicon-310.png",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "Las Nalcas Norte 7678",
-    "addressLocality": "La Florida",
-    "addressRegion": "Santiago",
-    "addressCountry": "Chile"
-  },
-  "geo": {
-    "@type": "GeoCoordinates",
-    "latitude": "-33.52568",
-    "longitude": "-70.54934"
+  "sameAs": [
+    "https://www.facebook.com/SchoenstattDataInitiative/",
+    "https://twitter.com/SchoenstattData"
+  ],
+  "location": {
+    "@type": "Place",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Las Nalcas Norte 7678",
+      "addressLocality": "La Florida",
+      "addressRegion": "Santiago",
+      "addressCountry": "Chile"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "-33.52568",
+      "longitude": "-70.54934"
+    }
   },
   "contactPoint": {
     "@type": "ContactPoint",
     "telephone": "+1-414-215-0318",
-    "contactType": "Webmaster"
+    "email": "webmaster@schoenstatt.link",
+    "contactType": "tech support",
+    "availableLanguage": [
+    	"en",
+        "es",
+        "de",
+        "pt"
+	]
   }
-}
+}]
  </script>
 <div class="jumbotron">
   <div class="container">

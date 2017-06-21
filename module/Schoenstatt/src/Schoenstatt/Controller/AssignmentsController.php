@@ -37,11 +37,11 @@ class AssignmentsController extends SionController
         $entities = null;
         if ($form->isValid()) {
             $data = $form->getData();
-            if (!empty($data)) {
+//             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
                 $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
-                $entities = $table->searchEntities($data);
-            }
+                $entities = $table->searchEntities($data, ['bypassRequiredParams' => true]);
+//             }
         }
         if (is_array($entities) && empty($entities)) {
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);

@@ -30,8 +30,7 @@ $columnHeaders = [
 //count assignments to print
 $count = 0;
 foreach ($assignments as $assignment) {
-if ($assignment['person'] &&
-	(($assignment['isActive'] && $showActive) || (!$assignment['isActive'] && $showInactive))) {
+if (($assignment['isActive'] && $showActive) || (!$assignment['isActive'] && $showInactive)) {
 		$count++;
 	}
 }
