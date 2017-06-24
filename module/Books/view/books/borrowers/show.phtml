@@ -3,6 +3,6 @@ $headText = $this->person['fullFriendlyName'];
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText); ?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
-<?php echo $this->partial('library/checkouts/checkout-list', [
+<?php echo $this->partial('books/checkouts/checkout-list', [
     'entities' => $this->entities,
 ]);?>

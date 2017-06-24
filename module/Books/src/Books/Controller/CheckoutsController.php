@@ -28,25 +28,52 @@ class CheckoutsController extends SionController
     /**
      * This function will be called by the SionController::createAction and passed
      * prevalidated data from CheckoutForm
+     * Foreach book:
+     *  1. Check each book to make sure it exists, and if one or more aren't available, warn user
+     *  2. If it's checked out, check it in first
+     *  3. If it's still not available, don't do anything.
      * @param mixed[] $data
      */
     public function createCheckouts($data)
     {
         $table = $this->getSionTable();
+        $bookLookup = $table->getActiveLibraryBookLookup();
+        $badValues = [];
+        foreach ($data['bookIds'] as $value) {
+            if (!key_exists($value, $bookLookup)) {
+                $badValues[] = $value;
+                continue;
+            }
+        }
+        if (!empty($badValues)) {
+            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+                ->addMessage ('The following book id\'s are invalid: '.implode(', ', $badValues).' Please try again.');
+            return;
+        }
+
+        //first check-in each of the books we're about to checkout
+        $table->checkinBooks($data['bookIds']);
+
         foreach ($data['bookIds'] as $bookId) {
             $currentBook = $data;
-            $currentBook['bookId'] = $bookId;
+            $currentBook['bookId'] = $bookLookup[$bookId];
             if (!$newId = $table->createEntity('checkout', $currentBook))
             {
-                throw new \Exception('There was a problem checking out one of the books. Please try again.');
+                $badValues[] = $bookId;
             }
+        }
+        if (!empty($badValues)) {
+            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+            ->addMessage (sprintf("There was a problem checking out one of the books: (%s) Any other books have been checked out. Please try again.",
+                implode(', ', $badValues)));
+            return;
         }
 
         //if all went well redirect to the borrower's page
         $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
             ->addMessage ('Books successfully checked out.' );
         $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
-        $this->redirect()->toRoute('libraries/library', ['library_id' => $id]);
+        $this->redirect()->toRoute('borrowers/borrower', ['person_id' => $data['personId']]);
     }
 
     public function libraryAction()

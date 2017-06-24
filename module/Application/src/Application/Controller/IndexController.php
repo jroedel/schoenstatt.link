@@ -24,6 +24,11 @@ class IndexController extends AbstractActionController
         ]);
     }
 
+    public function developersAction()
+    {
+        return new ViewModel([]);
+    }
+
     public function get6MonthsChanges()
     {
         $sm = $this->serviceLocator;

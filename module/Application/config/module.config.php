@@ -13,12 +13,22 @@ return [
     'router' => [
         'routes' => [
             'welcome' => [
-                'type' => 'Zend\Mvc\Router\Http\Literal',
+                'type' => 'Literal',
                 'options' => [
                     'route'    => '/welcome',
                     'defaults' => [
                         'controller' => 'Application\Controller\Index',
                         'action'     => 'index',
+                    ],
+                ],
+            ],
+            'developers' => [
+                'type' => 'Literal',
+                'options' => [
+                    'route'    => '/developers',
+                    'defaults' => [
+                        'controller' => 'Application\Controller\Index',
+                        'action'     => 'developers',
                     ],
                 ],
             ],
@@ -155,6 +165,7 @@ return [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
+                ['route' => 'developers', 'roles' => ['guest', 'user']],
             ],
         ],
     ],

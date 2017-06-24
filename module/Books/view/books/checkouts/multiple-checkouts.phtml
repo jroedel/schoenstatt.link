@@ -21,12 +21,7 @@ $jsScript = <<<JS
     $("select[name='personId']").selectize({
         create: false
     });
-    $("select[name='bookIds[]']").selectize({
-        create: false,
-        sortField: 'text',
-        openOnFocus: false
-    });
-    $("input[tabindex='1']").focus();
+    $("textarea[tabindex='1']").focus();
 JS;
 $this->inlineScript()->captureStart();
 echo <<<JS

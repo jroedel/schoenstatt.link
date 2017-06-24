@@ -3,6 +3,7 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
+use Zend\Validator\NotEmpty;
 
 class CheckoutForm extends SionForm implements InputFilterProviderInterface
 {
@@ -12,18 +13,15 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
 
         $this->add([
             'name' => 'bookIds',
-            'type' => 'Select',
+            'type' => 'Textarea',
             'options' => [
                 'label' => 'Book Ids',
-                'empty_option' => '',
-                'unselected_value' => '',
-//                 'disable_inarray_validator' => true,
-                'value_options' => [],
+                'help-block' => 'One barcode per line'
             ],
             'attributes' => [
-                'tabindex' => 1,
-                'multiple'  => true,
                 'required' => true,
+                'tabindex' => 1,
+                'rows' => 8,
             ],
         ]);
 
@@ -35,7 +33,6 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 'required' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
-//                 'disable_inarray_validator' => true,
                 'value_options' => [],
             ],
             'attributes' => [
@@ -75,14 +72,15 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
     {
         return [
             'bookIds' => [
-                'required' => false,
+                'required' => true,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => 'Books\Filter\BookList'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'Zend\Validator\NotEmpty',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => NotEmpty::EMPTY_ARRAY
                         ],
                     ],
                 ],

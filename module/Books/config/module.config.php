@@ -294,77 +294,77 @@ return [
                             ],
                         ],
                     ],
-                    'borrowers' => [
-                        'type' => 'Literal',
+                ],
+            ],
+            'borrowers' => [
+                'type' => 'Literal',
+                'options' => [
+                    'route'    => '/borrowers',
+                    'defaults' => [
+                        'controller'=> 'Books\Controller\Borrowers',
+                        'action'    => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'borrower' => [
+                        'type'    => 'Segment',
                         'options' => [
-                            'route'    => '/borrowers',
+                            'route'    => '/:person_id',
+                            'constraints' => [
+                                'person_id' => '[0-9]{1,5}',
+                            ],
                             'defaults' => [
-                                'controller'=> 'Books\Controller\Borrowers',
-                                'action'    => 'index',
+                                'action'     => 'show',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'checkouts' => [
+                'type' => 'Literal',
+                'options' => [
+                    'route'    => '/checkouts',
+                    'defaults' => [
+                        'controller'=> 'Books\Controller\Checkouts',
+                        'action'    => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'checkout' => [
+                        'type'    => 'Segment',
+                        'options' => [
+                            'route'    => '/:checkout_id',
+                            'constraints' => [
+                                'book_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
                             ],
                         ],
                         'may_terminate' => true,
                         'child_routes' => [
-                            'borrower' => [
-                                'type'    => 'Segment',
+                            'edit' => [
+                                'type'    => 'Literal',
                                 'options' => [
-                                    'route'    => '/:person_id',
-                                    'constraints' => [
-                                        'person_id' => '[0-9]{1,5}',
-                                    ],
+                                    'route'    => '/edit',
                                     'defaults' => [
-                                        'action'     => 'show',
+                                        'action'     => 'edit',
                                     ],
                                 ],
                             ],
                         ],
                     ],
-                    'checkouts' => [
-                        'type' => 'Literal',
+                    'library' => [
+                        'type'    => 'Segment',
                         'options' => [
-                            'route'    => '/checkouts',
+                            'route'    => '/library/:library_id',
+                            'constraints' => [
+                                'library_id' => '[0-9]{1,5}',
+                            ],
                             'defaults' => [
-                                'controller'=> 'Books\Controller\Checkouts',
-                                'action'    => 'index',
-                            ],
-                        ],
-                        'may_terminate' => true,
-                        'child_routes' => [
-                            'checkout' => [
-                                'type'    => 'Segment',
-                                'options' => [
-                                    'route'    => '/:checkout_id',
-                                    'constraints' => [
-                                        'book_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'show',
-                                    ],
-                                ],
-                                'may_terminate' => true,
-                                'child_routes' => [
-                                    'edit' => [
-                                        'type'    => 'Literal',
-                                        'options' => [
-                                            'route'    => '/edit',
-                                            'defaults' => [
-                                                'action'     => 'edit',
-                                            ],
-                                        ],
-                                    ],
-                                ],
-                            ],
-                            'library' => [
-                                'type'    => 'Segment',
-                                'options' => [
-                                    'route'    => '/library/:library_id',
-                                    'constraints' => [
-                                        'library_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'library',
-                                    ],
-                                ],
+                                'action'     => 'library',
                             ],
                         ],
                     ],
@@ -507,40 +507,40 @@ return [
                 ],
                 'name_field'               				=> 'dueOn',
                 'name_field_is_translateable'           => false,
-                //                 'country_field'               			=> 'country',
-                //                 'text_columns'               			=> [],
-                //                 'many_to_one_update_columns'     		=> [
-                    //                     'email'	=> 'contactInfo',
-                    //                     'cell'	=> 'contactInfo',
-                    //                 ],
+//                 'country_field'               			=> 'country',
+//                 'text_columns'               			=> [],
+//                 'many_to_one_update_columns'     		=> [
+    //                     'email'	=> 'contactInfo',
+    //                     'cell'	=> 'contactInfo',
+    //                 ],
                 'report_changes'               			=> false,
-                //                 'index_route'               			=> 'events',
-                //                 'index_template'               			=> 'project/events/index',
-                //                 'show_action_template'               	=> 'books/checkouts/show',
+//                 'index_route'               			=> 'events',
+//                 'index_template'               			=> 'project/events/index',
+//                 'show_action_template'               	=> 'books/checkouts/show',
                 'show_route' 							=> 'checkouts/checkout',
                 'show_route_key' 						=> 'checkout_id',
                 'show_route_key_field' 					=> 'checkoutId',
-                //                 'edit_action_form'               		=> 'Books\Form\EditCheckoutForm',
-                //                 'edit_action_template'               	=> 'project/events/edit',
-                //                 'edit_route'               				=> 'events/event/edit',
-                //                 'edit_route_key'               			=> 'event_id',
-                //                 'edit_route_key_field'           		=> 'eventId',
+//                 'edit_action_form'               		=> 'Books\Form\EditCheckoutForm',
+//                 'edit_action_template'               	=> 'project/events/edit',
+//                 'edit_route'               				=> 'events/event/edit',
+//                 'edit_route_key'               			=> 'event_id',
+//                 'edit_route_key_field'           		=> 'eventId',
                 'create_action_form'              		=> 'Books\Form\CreateCheckoutForm',
                 'create_action_valid_data_handler'		=> 'createCheckouts',
                 'create_action_redirect_route'         	=> 'borrowers/borrower',
                 'create_action_redirect_route_key'    	=> 'person_id',
                 'create_action_redirect_route_key_field'=> 'personId',
                 'create_action_template'           		=> 'books/checkouts/multiple-checkouts',
-                //                 'touch_default_field'               	=> 'eventId',
-                //                 'touch_field_route_key'           		=> 'event_id',
-                //                 'touch_json_route'               		=> 'events/event/touch',
-                //                 'touch_json_route_key'            		=> 'event_id',
+//                 'touch_default_field'               	=> 'eventId',
+//                 'touch_field_route_key'           		=> 'event_id',
+//                 'touch_json_route'               		=> 'events/event/touch',
+//                 'touch_json_route_key'            		=> 'event_id',
                 'database_bound_data_preprocessor' 		=> 'preprocessCheckout',
-                //                 'database_bound_data_postprocessor' 	=> 'postprocessEvent',
-                //                 'moderate_route' 						=> 'events/event/moderate',
-                //                 'moderate_route_entity_key' 			=> 'event_id',
+//                 'database_bound_data_postprocessor' 	=> 'postprocessEvent',
+//                 'moderate_route' 						=> 'events/event/moderate',
+//                 'moderate_route_entity_key' 			=> 'event_id',
                 'has_dedicated_suggest_form' 			=> false,
-                //                 'suggest_form'               			=> 'Project\Form\SuggestEventForm',
+//                 'suggest_form'               			=> 'Project\Form\SuggestEventForm',
                 'enable_delete_action' 					=> true,
                 'delete_action_acl_resource' 			=> 'checkout_:id',
                 'delete_action_acl_permission' 			=> 'delete_checkout',
@@ -757,8 +757,8 @@ return [
                 ['route' => 'libraries/import', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/checkouts/library', 'roles' => ['lib_administrator']],
-                ['route' => 'libraries/borrowers', 'roles' => ['lib_administrator']],
-                ['route' => 'libraries/borrowers/borrower', 'roles' => ['lib_administrator']],
+                ['route' => 'borrowers', 'roles' => ['lib_administrator']],
+                ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'books/book', 'roles' => ['lib_teo_viewer', 'lib_sch_viewer', 'lib_administrator']],
             ],
         ],

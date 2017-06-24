@@ -188,13 +188,15 @@ class LibraryTable extends SionTable
 
         if (!is_null($libraryId)) {
             $sql = "SELECT book_id, library_id, author, title, edition, call_number,
-category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by
+category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
+inactivation_reason, is_active
 FROM lib_books
 ORDER BY library_id, call_number, category, lang, author, title";
             $results = $this->fetchSome(null, $sql, ['library_id' => $libraryId]);
         } else {
             $sql = "SELECT book_id, library_id, author, title, edition, call_number,
-category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by
+category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
+inactivation_reason, is_active
 FROM lib_books
 ORDER BY library_id, call_number, category, lang, author, title";
             $results = $this->fetchSome(null, $sql, null);
@@ -205,6 +207,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
             $author = $this->filterDbString($row['author']);
             $title = $this->filterDbString($row['title']);
             $name = $author . ($author ? ' - ' : '') . $title;
+            $isActive = $this->filterDbBool($row['is_active']);
             $entities[$id] = [
                 'bookId'        => $id,
                 'author'        => $author,
@@ -217,13 +220,15 @@ ORDER BY library_id, call_number, category, lang, author, title";
                 'withinLibrarylId'=> $this->filterDbId($row['original_id']),
                 'libraryId'     => $this->filterDbId($row['library_id']),
                 'publicationId' => $this->filterDbId($row['publication_id']),
+                'isActive'      => $isActive,
+                'inactivationReason' => $this->filterDbString($row['inactivation_reason']),
                 'updatedOn'     => $this->filterDbDate($row['updated_at']),
                 'updatedBy'     => $this->filterDbId($row['updated_by']),
                 'createdOn'     => $this->filterDbDate($row['created_at']),
                 'createdBy'     => $this->filterDbId($row['created_by']),
 
                 'name'          => $name,
-                'isAvailable'   => true, //available unless proved otherwise
+                'isAvailable'   => $isActive, //available unless proved otherwise
                 'isCheckedOut'  => false, //until proved otherwise
                 'currentCheckout'=> null,
                 'library'       => null,
@@ -231,6 +236,23 @@ ORDER BY library_id, call_number, category, lang, author, title";
         }
         $this->cacheEntityObjects($cacheKey, $entities, ['book']);
         return $entities;
+    }
+
+
+    /**
+     * Return a lookup associated array keyed by the library's id, mapped to the bookId
+     * @return number[]
+     */
+    public function getActiveLibraryBookLookup()
+    {
+        $entities = $this->getUnlinkedBooks();
+        $bookLookup = [];
+        foreach ($entities as $bookId => $book) {
+            if ($book['isActive'] && !is_null($book['withinLibrarylId'])) {
+                $bookLookup[$book['withinLibrarylId']] = $bookId;
+            }
+        }
+        return $bookLookup;
     }
 
     public function checkinBooks($bookIds)

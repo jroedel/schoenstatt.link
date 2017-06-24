@@ -29,9 +29,9 @@ class CheckoutFormFactory implements FactoryInterface
 
 		$form = new CheckoutForm();
 		//Don't require the book to be available, we'll just close the old checkout and check it out again
-		$books = $table->getLibraryBookValueOptions(['libraryId' => $libraryId],// 'isAvailable' => true],
-	        ['labelOption' => LibraryTable::BOOK_VALUE_OPTIONS_LABEL_ID]);
-		$form->get('bookIds')->setValueOptions($books);
+// 		$books = $table->getLibraryBookValueOptions(['libraryId' => $libraryId],// 'isAvailable' => true],
+// 	        ['labelOption' => LibraryTable::BOOK_VALUE_OPTIONS_LABEL_ID]);
+// 		$form->get('bookIds')->setValueOptions($books);
 
 		$persons = $serviceLocator->get ( 'Schoenstatt\FathersValueOptions' );
         $form->get('personId')->setValueOptions($persons);
