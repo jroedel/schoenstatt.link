@@ -178,6 +178,10 @@ class LibraryTable extends SionTable
         return $entities;
     }
 
+    /**
+     * @todo add an optional $libraryId param for when we're not in a library route
+     * @return mixed|NULL|boolean[][]|NULL[][]|unknown[][]|string[][]|\SionModel\Db\Model\NULL[][]|number[][]|DateTime[][]
+     */
     protected function getUnlinkedBooks()
     {
         $libraryId = $this->getLibraryId();
@@ -243,12 +247,20 @@ ORDER BY library_id, call_number, category, lang, author, title";
      * Return a lookup associated array keyed by the library's id, mapped to the bookId
      * @return number[]
      */
-    public function getActiveLibraryBookLookup()
+    public function getActiveLibraryBookLookup($libraryId = null)
     {
+        if (is_null($libraryId)) {
+            $libraryId = $this->getLibraryId();
+        }
+        if (is_null($libraryId)) {
+            throw new \InvalidArgumentException('There must by a libraryId set to get the active library book lookup list.');
+        }
         $entities = $this->getUnlinkedBooks();
         $bookLookup = [];
         foreach ($entities as $bookId => $book) {
-            if ($book['isActive'] && !is_null($book['withinLibrarylId'])) {
+            if ($book['libraryId'] == $libraryId && $book['isActive'] &&
+                !is_null($book['withinLibrarylId'])
+            ) {
                 $bookLookup[$book['withinLibrarylId']] = $bookId;
             }
         }
