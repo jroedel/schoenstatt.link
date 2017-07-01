@@ -5,6 +5,7 @@ use SionModel\Controller\SionController;
 use Books\Form\SearchForm;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
+use Books\Model\LibraryTable;
 
 class LibrariesController extends SionController
 {
@@ -94,6 +95,16 @@ class LibrariesController extends SionController
         ]);
     }
 
+    public function bookListAction()
+    {
+        /** @var LibraryTable $table */
+        $table = $this->getSionTable();
+        $books = $table->getBooks();
+        return new ViewModel([
+            'objects' => $books,
+        ]);
+    }
+
     public function transformBookQueryIntoLibraries($books)
     {
         $entities = [];
@@ -106,6 +117,10 @@ class LibrariesController extends SionController
         return $entities;
     }
 
+    /**
+     * MVC Action to receive user data including an excel to import, worksheet to import from,
+     * column mapping. Also, displays import confirmation to the user who should confirm
+     */
     public function importBooksAction()
     {
         $columnNames = [

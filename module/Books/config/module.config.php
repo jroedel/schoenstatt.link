@@ -39,6 +39,7 @@ return [
             'Books\Controller\Books'        => 'Books\Controller\BooksController',
             'Books\Controller\Checkouts'    => 'Books\Controller\CheckoutsController',
             'Books\Controller\Borrowers'    => 'Books\Controller\BorrowersController',
+            'Books\Controller\LibraryImports'=>'Books\Controller\LibraryImportsController',
         ],
     ],
     'service_manager' => [
@@ -50,6 +51,7 @@ return [
             'Books\Form\CheckinForm'        => 'Books\Service\CheckinFormFactory',
             'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
+            'Books\Form\CreateImportForm'   => 'Books\Service\ImportFormFactory',
         ],
     ],
     'view_helpers' => [
@@ -283,6 +285,15 @@ return [
                                     ],
                                 ],
                             ],
+                            'book-list' => [
+                                'type' => 'Literal',
+                                'options' => [
+                                    'route'    => '/book-list',
+                                    'defaults' => [
+                                        'action'     => 'bookList',
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                     'create' => [
@@ -316,6 +327,72 @@ return [
                             ],
                             'defaults' => [
                                 'action'     => 'show',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'library-imports' => [
+                'type' => 'Literal',
+                'options' => [
+                    'route'    => '/library-imports',
+                    'defaults' => [
+                        'controller'=> 'Books\Controller\LibraryImports',
+                    ],
+                ],
+                'may_terminate' => false,
+                'child_routes' => [
+                    'library' => [ //We will never show all imports at once, just per-library
+                        'type'    => 'Segment',
+                        'options' => [
+                            'route'    => '/:library_id',
+                            'constraints' => [
+                                'library_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'index',
+                            ],
+                        ],
+                    ],
+                    'create' => [ //We will never show all imports at once, just per-library
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/create',
+                            'defaults' => [
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
+                    'library-import' => [
+                        'type'    => 'Segment',
+                        'options' => [
+                            'route'    => '/:import_id',
+                            'constraints' => [
+                                'import_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'edit' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/edit',
+                                    'defaults' => [
+                                        'action'     => 'edit',
+                                    ],
+                                ],
+                            ],
+                            'cancel' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/cancel',
+                                    'defaults' => [
+                                        'action'     => 'cancel',
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -435,6 +512,81 @@ return [
                     'updatedBy'             => 'UpdatedBy',
                     'createdOn'             => 'CreatedOn',
                     'createdBy'             => 'CreatedBy',
+                ],
+            ],
+            'library-import' => [
+                'name'                                      => 'library-import',
+                'table_name'                                => 'lib_imports',
+                'table_key'                                 => 'ImportId',
+                'entity_key_field'                          => 'importId',
+                'sion_model_class'                          => 'Books\Model\LibraryTable',
+                'get_object_function'                       => 'getImport',
+                'get_objects_function'                      => 'getImports',
+//                 'format_view_helper'                        => 'formatEvent',
+                'required_columns_for_creation'             => [
+                    'name',
+                    'libraryId',
+                    'filePath',
+                ],
+                'name_field'                                => 'name',
+                'name_field_is_translateable'               => false,
+//                 'country_field'                             => 'country',
+//                 'text_columns'                              => [],
+//                 'many_to_one_update_columns'                => [
+//                     'email'    => 'contactInfo',
+//                     'cell'    => 'contactInfo',
+//                 ],
+                'report_changes'                            => true,
+                'index_route'                               => 'imports',
+//                 'index_template'                            => 'project/events/index',
+                'default_route_key'                         => 'import_id',
+//                 'show_action_template'                      => 'project/events/show',
+                'show_route'                                => 'imports/import',
+                'show_route_key'                            => 'import_id',
+                'show_route_key_field'                      => 'importId',
+                'edit_action_form'                          => 'Books\Form\EditImportForm',
+//                 'edit_action_template'                      => 'project/events/edit',
+                'edit_route'                                => 'imports/import',
+                'edit_route_key'                            => 'import_id',
+                'edit_route_key_field'                      => 'importId',
+                'create_action_form'                        => 'Books\Form\CreateImportForm',
+//                 'create_action_valid_data_handler'          => 'createEvent',
+                'create_action_redirect_route'              => 'imports/import',
+                'create_action_redirect_route_key'          => 'import_id',
+                'create_action_redirect_route_key_field'    => 'importId',
+//                 'create_action_template'                    => 'project/events/create',
+//                 'touch_default_field'                       => 'eventId',
+//                 'touch_route_key'                           => 'event_id',
+//                 'touch_field_route_key'                     => 'event_id',
+//                 'touch_json_route'                          => 'events/event/touch',
+//                 'touch_json_route_key'                      => 'event_id',
+//                 'database_bound_data_preprocessor'          => 'preprocessEvent',
+//                 'database_bound_data_postprocessor'         => 'postprocessEvent',
+//                 'moderate_route'                            => 'events/event/moderate',
+//                 'moderate_route_entity_key'                 => 'event_id',
+                'has_dedicated_suggest_form'                => false,
+                //                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                      => false,
+//                 'delete_action_acl_resource'                => 'event_:id',
+//                 'delete_action_acl_permission'              => 'delete_event',
+//                 'delete_action_redirect_route'              => 'events',
+                'update_columns'                            => [
+                    'importId'                  => 'ImportId',
+                    'name'                      => 'Name',
+                    'libraryId'                 => 'LibraryId',
+                    'status'                    => 'Status',
+                    'description'               => 'Description',
+                    'columnMappingSerialized'   => 'ColumnMapping',
+                    'worksheet'                 => 'Worksheet',
+                    'filePath'                  => 'FilePath',
+                    'isCompleteImport'          => 'IsCompleteImport',
+                    'booksUpdated'              => 'BooksUpdated',
+                    'booksCreated'              => 'BooksCreated',
+                    'booksDeleted'              => 'BooksDeleted',
+                    'createdOn'                 => 'CreatedOn',
+                    'createdBy'                 => 'CreatedBy',
+                    'updatedOn'                 => 'UpdatedOn',
+                    'updatedBy'                 => 'UpdatedBy',
                 ],
             ],
             'book' => [
@@ -751,6 +903,7 @@ return [
                 ['route' => 'libraries', 'roles' => ['lib_user']],
                 //@todo define library-based ACL
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_administrator']], //@todo open to moderators
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator']],
@@ -760,6 +913,13 @@ return [
                 ['route' => 'borrowers', 'roles' => ['lib_administrator']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'books/book', 'roles' => ['lib_teo_viewer', 'lib_sch_viewer', 'lib_administrator']],
+
+                ['route' => 'library-imports/create', 'roles' => ['lib_administrator']],
+                ['route' => 'library-imports/library', 'roles' => ['lib_administrator']],
+                ['route' => 'library-imports/library-import', 'roles' => ['lib_administrator']],
+                ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_administrator']],
+                ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_administrator']],
+
             ],
         ],
     ],

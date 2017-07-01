@@ -1,0 +1,14 @@
+<?php
+$headText = 'Begin new import';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$this->formSelect()->setTranslatorEnabled(false);
+$form->setAttribute('action', $this->url('library-imports/create'));
+ $form->prepare();
+ echo $this->form()->openTag($form);
+ echo $this->partial('fields-partial', [
+     'form' => $form,
+ ]);
+ echo $this->form()->closeTag();
+?>

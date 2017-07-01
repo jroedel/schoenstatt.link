@@ -1,0 +1,16 @@
+<div class="table-responsive">
+<table>
+<tr>
+<th><?php echo $this->translate('Barcode');?></th>
+<th><?php echo $this->translate('Call number');?></th>
+<th><?php echo $this->translate('Author');?></th>
+</tr>
+<?php foreach ($this->objects as $bookId => $book) : ?>
+<tr>
+	<td><?php echo $this->escapeHtml($book['withinLibrarylId']);?></td>
+	<td><?php echo $this->escapeHtml($book['callNumber']);?></td>
+	<td><?php echo $this->escapeHtml($book['author']);?></td>
+</tr>
+<?php endforeach;?>
+</table>
+</div>

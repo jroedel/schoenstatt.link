@@ -37,6 +37,16 @@ class LibraryTable extends SionTable
         $this->config = $libraryConfig;
     }
 
+    public function getLibraryValueOptions()
+    {
+        $libraries = $this->getUnlinkedLibraries();
+        $valueOptions = [];
+        foreach ($libraries as $libraryId => $library) {
+            $valueOptions[$libraryId] = $library['name'];
+        }
+        return $valueOptions;
+    }
+
     /**
      * Get a list of available books from a given library to pass to the CheckoutForm
      * @param array $query
@@ -195,8 +205,9 @@ class LibraryTable extends SionTable
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
 inactivation_reason, is_active
 FROM lib_books
+WHERE (library_id = ?)
 ORDER BY library_id, call_number, category, lang, author, title";
-            $results = $this->fetchSome(null, $sql, ['library_id' => $libraryId]);
+            $results = $this->fetchSome(null, $sql, [$libraryId]);
         } else {
             $sql = "SELECT book_id, library_id, author, title, edition, call_number,
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
@@ -357,6 +368,86 @@ ORDER BY `FiliationId`, `LibraryName`";
         }
         $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
         return $entities;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public function getLibraryImports()
+    {
+        if (!is_null($libraryId = $this->getLibraryId())) {
+            $cacheKey = 'library-imports-'.$libraryId;
+        } else {
+            $cacheKey = 'library-imports';
+        }
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        if (is_null($libraryId)) {
+            $sql = "SELECT ImportId, ImportName, LibraryId, Description, Status,
+ColumnMapping, Worksheet, FilePath, IsCompleteImport, BooksUpdated, BooksCreated, BooksDeleted,
+UpdatedOn, UpdatedBy, CreatedOn, CreatedBy
+FROM lib_imports
+ORDER BY CreatedOn DESC";
+            $results = $this->fetchSome(null, $sql, null);
+        } else {
+            $sql = "SELECT ImportId, ImportName, LibraryId, Description, Status,
+ColumnMapping, Worksheet, FilePath, IsCompleteImport, BooksUpdated, BooksCreated, BooksDeleted,
+UpdatedOn, UpdatedBy, CreatedOn, CreatedBy
+FROM lib_imports
+WHERE (LibraryId = ?)
+ORDER BY CreatedOn DESC";
+            $results = $this->fetchSome(null, $sql, [$libraryId]);
+        }
+
+        $entities = [];
+        foreach ($results as $row) {
+            $id = $this->filterDbId($row['ImportId']);
+            $columnMappingSerialized = $this->filterDbString($row['ColumnMapping']);
+            $filePath = $this->filterDbString($row['FilePath']);
+            $fileAvailable = file_exists($filePath);
+            $entities[$id] = [
+                'importId'                  => $id,
+                'name'                      => $this->filterDbString($row['Name']),
+                'libraryId'                 => $this->filterDbId($row['LibraryId']),
+                'status'                    => $this->filterDbString($row['Status']),
+                'description'               => $this->filterDbString($row['Description']),
+                'columnMappingSerialized'   => $columnMappingSerialized,
+                'worksheet'                 => $this->filterDbString($row['Worksheet']),
+                'filePath'                  => $filePath,
+                'isCompleteImport'          => $this->filterDbBool($row['IsCompleteImport']),
+                'booksUpdated'              => $this->filterDbInt($row['BooksUpdated']),
+                'booksCreated'              => $this->filterDbInt($row['BooksCreated']),
+                'booksDeleted'              => $this->filterDbInt($row['BooksDeleted']),
+                'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
+                'createdBy'                 => $this->filterDbId($row['CreatedBy']),
+                'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
+                'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
+
+                'columnMapping'             => unserialize($columnMappingSerialized),
+                'fileAvailable'             => $fileAvailable,
+            ];
+        }
+
+        $this->cacheEntityObjects($cacheKey, $entities, ['library-import']);
+        return $entities;
+    }
+
+    /**
+     *
+     * @param int $id
+     * @return mixed[]
+     */
+    public function getLibraryImport($id)
+    {
+        $entities = $this->getLibraryImports();
+
+        if (!isset($entities[$id]) || !($entity = $entities[$id])) {
+            return null;
+        }
+
+        return $entity;
     }
 
     /**
