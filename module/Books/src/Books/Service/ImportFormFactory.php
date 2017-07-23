@@ -17,12 +17,10 @@ class ImportFormFactory implements FactoryInterface
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
         /** @var LibraryTable $table **/
-		$table = $serviceLocator->get ( 'Books\Model\LibraryTable' );
+// 		$table = $serviceLocator->get ( 'Books\Model\LibraryTable' );
 
-		$libraries = $table->getLibraryValueOptions();
+// 		$libraries = $table->getLibraryValueOptions();
         $form = new ImportForm();
-        //@todo filter out the libraries the user doesn't have access to edit
-        $form->get('libraryId')->setValueOptions($libraries);
 		return $form;
     }
 

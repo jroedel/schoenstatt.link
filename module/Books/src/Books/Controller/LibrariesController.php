@@ -124,7 +124,7 @@ class LibrariesController extends SionController
     public function importBooksAction()
     {
         $columnNames = [
-            'ID'        => 'withinLibrarylId',
+            'ID'        => 'withinLibraryId',
             'Título'    => 'title',
             'Autor'     => 'author',
             'Lomo'      => 'callNumber',
@@ -148,7 +148,7 @@ class LibrariesController extends SionController
         //             'category'      => $this->filterDbString($row['category']),
         //             'pages'         => $this->filterDbInt($row['pages']),
         //             'language'      => $this->filterDbString($row['lang']),
-        //             'withinLibrarylId'=> $this->filterDbId($row['original_id']),
+        //             'withinLibraryId'=> $this->filterDbId($row['original_id']),
         //             'libraryId'     => $this->filterDbId($row['library_id']),
         //             'publicationId' => $this->filterDbId($row['publication_id']),
         //             'updatedOn'     => $this->filterDbDate($row['updated_at']),

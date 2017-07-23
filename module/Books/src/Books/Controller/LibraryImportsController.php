@@ -2,61 +2,262 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Validator\File\Size;
+use Books\Form\ImportForm;
 
 class LibraryImportsController extends SionController
 {
+    /**
+    * @var int $libraryId
+    */
+    protected $libraryId;
+
+    /**
+    * Get the libraryId value
+    * @return int
+    */
+    public function getLibraryId()
+    {
+        if (is_null($this->libraryId)) {
+            $this->libraryId = $this->params()->fromRoute('library_id');
+        }
+        return $this->libraryId;
+    }
+
+    /**
+    *
+    * @param int $libraryId
+    * @return self
+    */
+    public function setLibraryId($libraryId)
+    {
+        $this->libraryId = $libraryId;
+        return $this;
+    }
+
     public function __construct()
     {
         return parent::__construct('library-import');
     }
 
-//     public function createAction()
-//     {
-//         //load a libraryid from query
+    public function createAction()
+    {
+        $view = parent::createAction();
+        $libraryId = $this->getLibraryId();
+        $view->setVariable('libraryId', $libraryId);
+        /** @var ImportForm $form */
+        $form = $view->getVariable('form');
+        $form->get('submit')->setValue('Simulate import');
+        $view->setVariable('form', $form);
+        return $view;
+    }
 
+    public function getPostDataForCreateAction()
+    {
+        $data = $this->getRequest()->getPost()->toArray();
+        $data['libraryId'] = $this->getLibraryId();
+        return $data;
+    }
 
-//         $form = new ProfileForm();
-//         $request = $this->getRequest();
-//         if ($request->isPost()) {
+    public function createEntityPostFormValidation($data, $form)
+    {
+        $data['columnMapping'] = $this->getColegioMayorLibraryFieldsMap();
+        return parent::createEntityPostFormValidation($data, $form);
+    }
 
-//             /** @var \Books\Model\LibraryTable $table */
-//             $table = $this->getSionTable();
-//             $profile = $this->getServiceLocator()->get('Books\Form\CreateImportForm');
-//             $form->setInputFilter($profile->getInputFilter());
+    private function getColegioMayorLibraryFieldsMap()
+    {
+        return [
+            'author'            => 'Autor',
+            'title'             => 'Titulo',
+            'callNumber'        => 'Lomo',
+            'category'          => 'Categoría',
+            'pages'             => 'Páginas',
+            'language'          => 'Idioma',
+            'withinLibraryId'   => 'ID',
+            'copyrightYear'     => 'Año',
+            'publisher'         => 'Editorial',
+            'publishingPlace'   => 'Ciudad',
+            'isbn'              => 'ISBN',
+        ];
+    }
 
-//             $data    = array_merge_recursive(
-//                 $request->getPost()->toArray(),
-//                 $request->getFiles()->toArray()
-//             );
+    public function editAction()
+    {
+        $object = $this->getEntityObject($this->getEntityIdParam('edit'));
+        $this->setLibraryId($object['libraryId']);
+        $view = parent::editAction();
 
-//             //set data post and file ...
-//             $form->setData($data);
+        //first thing is to figure out if it has already been imported
 
-//             if ($form->isValid()) {
+        /** @var ImportForm $form */
+        $form = $view->getVariable('form');
+        $request = $this->getRequest();
+        //@todo change this line to $object['columnMapping']
+        $fieldsMap = $this->getColegioMayorLibraryFieldsMap();
+        $errorMessage = null;
+        if (file_exists($object['filePath']) &&
+            !is_null($object['worksheet'])
+        ) {
+            $shouldSimulate = !$request->isPost() || is_null($request->getPost('import'));
+            $objects = $this->importSpreadsheetFile($object['filePath'], $object['worksheet'], $fieldsMap, $shouldSimulate, $object['isCompleteImport']);
+        } else {
+            $errorMessage = 'File not found.';
+        }
+        //do stats on the objects
+        $stats = [
+            'create'    => 0,
+            'update'    => 0,
+            'delete'    => 0,
+            'error'     => 0,
+        ];
+        foreach ($objects as $object) {
+            ++$stats[$object['action']];
+        }
+        return $view->setVariables([
+            'transactions'  => $objects,
+            'fields'        => $fieldsMap,
+            'simulate'      => true,
+            'statistics'    => $stats,
+            'errorMessage'  => $errorMessage,
+        ], false);
+    }
 
-//                 $size = new Size(array('max'=>2000000)); //minimum bytes filesize
+    public function redirectAfterEdit($id)
+    {
+        //don't redirect
+    }
 
-//                 $adapter = new \Zend\File\Transfer\Adapter\Http();
-//                 $adapter->setValidators(array($size), $File['name']);
-//                 if (!$adapter->isValid()){
-//                     $dataError = $adapter->getMessages();
-//                     $error = array();
-//                     foreach($dataError as $key=>$row)
-//                     {
-//                         $error[] = $row;
-//                     }
-//                     $form->setMessages(array('fileupload'=>$error ));
-//                 } else {
-//                     $adapter->setDestination(dirname(__DIR__).'/assets');
-//                     if ($adapter->receive($File['name'])) {
-//                         $profile->exchangeArray($form->getData());
-//                         echo 'Profile Name '.$profile->profilename.' upload '.$profile->fileupload;
-//                     }
-//                 }
-//             }
-//         }
+    public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, $simulate = true, $deleteMissingRowsFromDatabase = false)
+    {
+        $availableFields = [
+            'author',
+            'title',
+            'edition',
+            'callNumber',
+            'category',
+            'pages',
+            'language',
+            'withinLibraryId',
+            'publicationId',
+            'isActive',
+            'inactivationReason',
+            'updatedOn',
+            'updatedBy',
+            'createdOn',
+            'createdBy',
+        ];
+        $requiredFields = [
+            'withinLibraryId',
+            'callNumber',
+            'author',
+            'title',
+        ];
+        $objPHPExcel = \PHPExcel_IOFactory::load($fileName);
+        $sheet = $objPHPExcel->getSheetByName($sheetName);
+        $highRow = $sheet->getHighestDataRow();
+        $highColumn = $sheet->getHighestDataColumn();
 
-//         return array('form' => $form);
-//     }
+        if ($highColumn == 'A' || $highRow == 1) {
+            throw new \Exception('No data contained in the spreadsheet.');
+        }
+
+        //first, get the first row which should contain the column headers
+        // and make sure we have all the required headers
+        $rowHeaders = $sheet->rangeToArray('A1:'.$highColumn.'1')[0];
+
+        $fieldIndices = [];
+        foreach ($rowHeaders as $key => $value) {
+            if (in_array($value, $fieldsMap)) {
+                foreach ($fieldsMap as $bookField => $columnName) {
+                    if ($columnName == $value) {
+                        $fieldIndices[$bookField] = $key;
+                    }
+                }
+            }
+        }
+
+        //check if we got all the required fields mapped
+        $missingRequiredFields = [];
+        foreach ($requiredFields as $value) {
+            if (!key_exists($value, $fieldIndices)) {
+                $missingRequiredFields[] = $value;
+            }
+        }
+        if (!empty($missingRequiredFields)) {
+            throw new \Exception('Missing required fields for the excel file: '.implode(', ', $missingRequiredFields));
+        }
+
+        $rows = $sheet->rangeToArray('A2:'.$highColumn.$highRow);
+        /** @var \Books\Model\LibraryTable $table */
+        $table = $this->getSionTable();
+        $libraryId = $this->getLibraryId();
+        if (is_null($libraryId)) {
+            throw new \Exception('This function should only be called in the context of a particular library.');
+        }
+        $table->setLibraryId($libraryId);
+        $bookLookup = $table->getActiveLibraryBookLookup();
+        $transactions = [];
+        $bookIdsBeingUpdated = [];
+        foreach ($rows as $rowNumber => $rowColumns) {
+            $withinLibraryId = (int)$rowColumns[$fieldIndices['withinLibraryId']];
+            $params = [
+                'libraryId' => $libraryId
+            ];
+            //add the fields to the param list
+            foreach ($fieldIndices as $bookField => $columnIndex) {
+                $params[$bookField] = $rowColumns[$columnIndex];
+            }
+
+            //determine the action to take on the row
+            if (!key_exists('title', $params) || is_null($params['title'])
+                || is_null($withinLibraryId) || !is_numeric($withinLibraryId)
+            ) {
+                $params['action'] = 'error';
+            } else if (key_exists($withinLibraryId, $bookLookup)) {
+                $params['action'] = 'update';
+                $params['bookId'] = $bookLookup[$withinLibraryId];
+                $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];
+            } else {
+                $params['action'] = 'create';
+            }
+            $transactions[] = $params;
+        }
+
+        //delete missing rows from the database if asked for
+        if ($deleteMissingRowsFromDatabase) {
+            $books = $table->getBooks();
+            foreach ($bookLookup as $withinLibraryId => $bookId) {
+                if (!in_array($bookId, $bookIdsBeingUpdated)) {
+                    $transaction = $books[$bookId];
+                    $transaction['action'] = 'delete';
+                    $transactions[] = $transaction;
+                }
+            }
+        }
+
+        if (!$simulate) {
+            $this->persistImportTransactions($transactions);
+        }
+
+        return $transactions;
+    }
+
+    protected function persistImportTransactions(array &$transactions)
+    {
+        /** @var \Books\Model\LibraryTable $table */
+        $table = $this->getSionTable();
+        foreach ($transactions as $key => $transaction) {
+            switch ($transaction['action']) {
+                case 'update':
+                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction);
+                    break;
+                case 'create':
+                    $transactions[$key]['result'] = $table->createEntity('book', $transaction);
+                    break;
+                case 'delete':
+                    $transactions[$key]['result'] = $table->deleteEntity('book', $transaction['bookId']);
+                    break;
+            }
+        }
+    }
 }

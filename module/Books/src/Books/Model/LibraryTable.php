@@ -64,7 +64,7 @@ class LibraryTable extends SionTable
         $books = $this->searchBooks($query);
         $return = [];
         foreach ($books as $bookId => $book) {
-            $withinLibraryId = (string)$book['withinLibrarylId'];
+            $withinLibraryId = (string)$book['withinLibraryId'];
             switch ($labelOption) {
                 case self::BOOK_VALUE_OPTIONS_LABEL_ID:
                     $return[$bookId] = $withinLibraryId;
@@ -203,7 +203,10 @@ class LibraryTable extends SionTable
         if (!is_null($libraryId)) {
             $sql = "SELECT book_id, library_id, author, title, edition, call_number,
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
-inactivation_reason, is_active
+inactivation_reason, is_active,
+isbn, copyright_year, publisher, publisher_place, public_tags, admin_tags,
+public_notes, public_notes_updated_at, public_notes_updated_by, admin_notes, admin_notes_updated_at,
+admin_notes_updated_by
 FROM lib_books
 WHERE (library_id = ?)
 ORDER BY library_id, call_number, category, lang, author, title";
@@ -211,7 +214,9 @@ ORDER BY library_id, call_number, category, lang, author, title";
         } else {
             $sql = "SELECT book_id, library_id, author, title, edition, call_number,
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
-inactivation_reason, is_active
+inactivation_reason, is_active, isbn, copyright_year, publisher, publisher_place, public_tags,
+admin_tags, public_notes, public_notes_updated_at, public_notes_updated_by, admin_notes,
+admin_notes_updated_at, admin_notes_updated_by
 FROM lib_books
 ORDER BY library_id, call_number, category, lang, author, title";
             $results = $this->fetchSome(null, $sql, null);
@@ -224,29 +229,42 @@ ORDER BY library_id, call_number, category, lang, author, title";
             $name = $author . ($author ? ' - ' : '') . $title;
             $isActive = $this->filterDbBool($row['is_active']);
             $entities[$id] = [
-                'bookId'        => $id,
-                'author'        => $author,
-                'title'         => $title,
-                'edition'       => $this->filterDbString($row['edition']),
-                'callNumber'    => $this->filterDbString($row['call_number']),
-                'category'      => $this->filterDbString($row['category']),
-                'pages'         => $this->filterDbInt($row['pages']),
-                'language'      => $this->filterDbString($row['lang']),
-                'withinLibrarylId'=> $this->filterDbId($row['original_id']),
-                'libraryId'     => $this->filterDbId($row['library_id']),
-                'publicationId' => $this->filterDbId($row['publication_id']),
-                'isActive'      => $isActive,
-                'inactivationReason' => $this->filterDbString($row['inactivation_reason']),
-                'updatedOn'     => $this->filterDbDate($row['updated_at']),
-                'updatedBy'     => $this->filterDbId($row['updated_by']),
-                'createdOn'     => $this->filterDbDate($row['created_at']),
-                'createdBy'     => $this->filterDbId($row['created_by']),
+                'bookId'                => $id,
+                'author'                => $author,
+                'title'                 => $title,
+                'edition'               => $this->filterDbString($row['edition']),
+                'callNumber'            => $this->filterDbString($row['call_number']),
+                'category'              => $this->filterDbString($row['category']),
+                'pages'                 => $this->filterDbInt($row['pages']),
+                'language'              => $this->filterDbString($row['lang']),
+                'withinLibraryId'       => $this->filterDbId($row['original_id']),
+                'libraryId'             => $this->filterDbId($row['library_id']),
+                'publicationId'         => $this->filterDbId($row['publication_id']),
+                'isActive'              => $isActive,
+                'inactivationReason'    => $this->filterDbString($row['inactivation_reason']),
+                'updatedOn'             => $this->filterDbDate($row['updated_at']),
+                'updatedBy'             => $this->filterDbId($row['updated_by']),
+                'createdOn'             => $this->filterDbDate($row['created_at']),
+                'createdBy'             => $this->filterDbId($row['created_by']),
 
-                'name'          => $name,
-                'isAvailable'   => $isActive, //available unless proved otherwise
-                'isCheckedOut'  => false, //until proved otherwise
-                'currentCheckout'=> null,
-                'library'       => null,
+                'copyrightYear'         => $this->filterDbInt($row['copyright_year']),
+                'publisher'             => $this->filterDbString($row['publisher']),
+                'publishingPlace'       => $this->filterDbString($row['publisher_place']),
+                'isbn'                  => $this->filterDbString($row['isbn']),
+                'keywords'              => $this->filterDbArray($row['public_tags']),
+                'publicNotes'           => $this->filterDbString($row['public_notes']),
+                'publicNotesUpdatedOn'  => $this->filterDbDate($row['public_notes_updated_at']),
+                'publicNotesUpdatedBy'  => $this->filterDbId($row['public_notes_updated_by']),
+                'adminTags'             => $this->filterDbArray($row['admin_tags']),
+                'adminNotes'            => $this->filterDbString($row['admin_notes']), //store source info here
+                'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
+                'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
+
+                'name'                  => $name,
+                'isAvailable'           => $isActive, //available unless proved otherwise
+                'isCheckedOut'          => false, //until proved otherwise
+                'currentCheckout'       => null,
+                'library'               => null,
             ];
         }
         $this->cacheEntityObjects($cacheKey, $entities, ['book']);
@@ -270,9 +288,9 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $bookLookup = [];
         foreach ($entities as $bookId => $book) {
             if ($book['libraryId'] == $libraryId && $book['isActive'] &&
-                !is_null($book['withinLibrarylId'])
+                !is_null($book['withinLibraryId'])
             ) {
-                $bookLookup[$book['withinLibrarylId']] = $bookId;
+                $bookLookup[$book['withinLibraryId']] = $bookId;
             }
         }
         return $bookLookup;
@@ -409,7 +427,7 @@ ORDER BY CreatedOn DESC";
             $fileAvailable = file_exists($filePath);
             $entities[$id] = [
                 'importId'                  => $id,
-                'name'                      => $this->filterDbString($row['Name']),
+                'name'                      => $this->filterDbString($row['ImportName']),
                 'libraryId'                 => $this->filterDbId($row['LibraryId']),
                 'status'                    => $this->filterDbString($row['Status']),
                 'description'               => $this->filterDbString($row['Description']),
@@ -448,6 +466,16 @@ ORDER BY CreatedOn DESC";
         }
 
         return $entity;
+    }
+
+    protected function preprocessLibraryImport($data, $entityData, $action)
+    {
+        if (!is_null($data['columnMapping'])) {
+            $data['columnMappingSerialized'] = serialize($data['columnMapping']);
+        } else {
+            $data['columnMappingSerialized'] = null;
+        }
+        return $data;
     }
 
     /**

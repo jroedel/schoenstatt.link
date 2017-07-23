@@ -23,13 +23,10 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
         ]);
         $this->add([
             'name' => 'libraryId',
-            'type' => 'Select',
+            'type' => 'Hidden',
             'options' => [
                 'label' => 'Library',
                 'required' => true,
-                'empty_option' => '',
-                'unselected_value' => '',
-                'value_options' => [],
             ],
         ]);
 
@@ -91,6 +88,14 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                 'value' => 'Submit',
                 'id' => 'submit',
                 'class' => 'btn-primary'
+            ],
+        ]);
+        $this->add([
+            'name' => 'import',
+            'type' => 'Submit',
+            'attributes' => [
+                'value' => 'Import data',
+                'class' => 'btn-warning'
             ],
         ]);
     }

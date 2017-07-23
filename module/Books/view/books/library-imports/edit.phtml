@@ -10,5 +10,53 @@ $form->setAttribute('action', $this->url('library-imports/library-import/edit',
  echo $this->partial('fields-partial', [
      'form' => $form,
  ]);
+ echo $this->formRow($form->get('import'));
  echo $this->form()->closeTag();
-?>
+ ?>
+<?php if ($this->simulate):?>
+<p><em>All changes are only simulated.</em>
+<?php endif;?>
+<p><strong>Records updated:</strong> <?php echo $this->escapeHtml($this->statistics['update']);?>&#9;
+<strong>Records created:</strong> <?php echo $this->escapeHtml($this->statistics['create']);?>&#9;
+<strong>Records deleted:</strong> <?php echo $this->escapeHtml($this->statistics['delete']);?>&#9;
+<strong>Records with errors:</strong> <?php echo $this->escapeHtml($this->statistics['error']);?>&#9;
+<table class="table">
+<thead>
+<tr>
+<?php $fields = $this->fields;
+foreach ($fields as $field => $column): ?>
+	<th><?php echo $this->escapeHtml($field);?></th>
+<?php endforeach;?>
+</tr>
+</thead>
+<tbody>
+<?php
+$transactions = $this->transactions;
+foreach ($transactions as $transaction) :
+switch ($transaction['action']) {
+    case 'error':
+        $trClass = 'warning';
+        break;
+    case 'create':
+        $trClass = 'success';
+        break;
+    case 'update':
+        $trClass = 'info';
+        break;
+    case 'delete':
+        $trClass = 'danger';
+        break;
+    default:
+        $trClass = 'warning';
+        break;
+}?>
+<tr class="<?php echo $trClass;?>">
+	<?php foreach ($fields as $field => $column) :?>
+	<td><?php if (key_exists($field, $transaction)) {
+	   echo $this->escapeHtml($transaction[$field]);
+    }?></td>
+	<?php endforeach;?>
+</tr>
+<?php endforeach;?>
+</tbody>
+</table>
