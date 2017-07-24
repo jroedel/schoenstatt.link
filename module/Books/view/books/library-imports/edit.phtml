@@ -4,18 +4,24 @@ $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
 $form->setAttribute('action', $this->url('library-imports/library-import/edit',
-		['import_id' => $this->entityId]));
- $form->prepare();
- echo $this->form()->openTag($form);
- echo $this->partial('fields-partial', [
-     'form' => $form,
- ]);
- echo $this->formRow($form->get('import'));
- echo $this->form()->closeTag();
- ?>
+    ['import_id' => $this->entityId]));
+$form->prepare();
+echo $this->form()->openTag($form);
+echo $this->partial('fields-partial', [
+    'form' => $form,
+]);
+if (!$this->isImported) {
+    echo $this->formRow($form->get('import'));
+}
+echo $this->form()->closeTag();
+if ($this->isImported && !isset($this->transactions)) {
+    echo $this->partial('import-stats', ['entity' => $this->entity]);
+}?>
 <?php if ($this->simulate):?>
-<p><em>All changes are only simulated.</em>
+<p><em>All changes are only simulated.</em></p>
 <?php endif;?>
+
+<?php if (isset($this->transactions)):?>
 <p><strong>Records updated:</strong> <?php echo $this->escapeHtml($this->statistics['update']);?>&#9;
 <strong>Records created:</strong> <?php echo $this->escapeHtml($this->statistics['create']);?>&#9;
 <strong>Records deleted:</strong> <?php echo $this->escapeHtml($this->statistics['delete']);?>&#9;
@@ -60,3 +66,4 @@ switch ($transaction['action']) {
 <?php endforeach;?>
 </tbody>
 </table>
+<?php endif;?>

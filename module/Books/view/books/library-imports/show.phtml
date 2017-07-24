@@ -1,0 +1,20 @@
+<?php
+$object = $this->entity;
+$headText = 'Import details';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<p><strong><?php echo $this->translate('Import name');?>:</strong> <?php echo $this->escapeHtml($object['name']);?></p>
+<p><strong><?php echo $this->translate('Description');?>:</strong> <?php echo $this->escapeHtml($object['description']);?></p>
+<p><strong><?php echo $this->translate('File path');?>:</strong> <?php echo $this->escapeHtml($object['filePath']);?></p>
+<p><strong><?php echo $this->translate('Worksheet');?>:</strong> <?php echo $this->escapeHtml($object['worksheet']);?></p>
+
+<p><strong><?php echo $this->translate('Complete import');?>:</strong> <?php
+    echo $object['isCompleteImport'] ? $this->translate('Yes') : $this->translate('No');?></p>
+
+<p><strong><?php echo $this->translate('Import started');?>:</strong> <?php echo $this->dateFormat($object['createdOn'], \IntlDateFormatter::FULL, \IntlDateFormatter::LONG);?></p>
+<p><strong><?php echo $this->translate('Last updated');?>:</strong> <?php echo $this->dateFormat($object['updatedOn'], \IntlDateFormatter::FULL, \IntlDateFormatter::LONG);?></p>
+
+<?php echo $this->partial('import-stats', ['entity' => $object]);?>
+
+<a class="btn btn-primary" href="<?php echo $this->url('libraries/library/admin', ['library_id' => $object['libraryId']]);?>"><?php
+echo $this->translate('Return to library');?></a>

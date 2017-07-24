@@ -3,3 +3,39 @@ $headText = sprintf($this->translate('Administrate %s'), $this->entity['name']);
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText); ?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
+<?php $this->badge()->setTranslatorEnabled(false); ?>
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+<div class="list-group">
+<?php foreach ($this->pages as $route => $values) :
+    if ($this->isAllowed('route/'.$route)) :
+        $routeParameters = [];
+        if (key_exists('route_parameters', $values) && is_array($values['route_parameters'])) {
+            $routeParameters = $values['route_parameters'];
+            foreach ($routeParameters as $paramKey => $param) {
+                if (false !== stripos($param, ':libraryId')) {
+                    $routeParameters[$paramKey] = str_replace(':libraryId', $this->entityId, $param);
+                }
+            }
+        }
+    ?>
+	<a href="<?php echo $this->url($route, $routeParameters);?>" class="list-group-item"><?php
+        if (key_exists('badges', $values) && is_array($values['badges'])) :
+        foreach ($values['badges'] as $badge => $value) :
+            if ($badge == 'info' || $badge == 'warning' || $badge == 'danger' || $badge == 'success') {
+                $badge = 'alert-'.$badge;
+            } else {
+                $badge = '';
+            }?>
+    	<span class="badge <?php echo $badge?>"><?php echo $this->escapeHtml($value); ?></span><?php
+        endforeach;
+        endif;?>
+    <h4 class="list-group-item-heading"><?php echo $this->escapeHtml($this->translate($values['label']));?></h4>
+    <?php if (key_exists('description', $values) && !is_null($values['description'])):?>
+    <p class="list-group-item-text"><?php echo $this->escapeHtml($this->translate($values['description']));?></p>
+	<?php endif;?></a>
+	<?php endif;
+endforeach;?>
+</div>
+</div>
+</div>

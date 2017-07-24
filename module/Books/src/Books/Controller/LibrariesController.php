@@ -6,6 +6,8 @@ use Books\Form\SearchForm;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Model\LibraryTable;
+use SionModel\Problem\EntityProblem;
+use SionModel\Service\ProblemService;
 
 class LibrariesController extends SionController
 {
@@ -53,7 +55,80 @@ class LibrariesController extends SionController
 
     public function adminAction()
     {
-        return $this->showAction();
+        $view = $this->showAction();
+        $sm = $this->getServiceLocator();
+        $config = $sm->get('Books\Config');
+        $pages = $config['admin_pages'];
+        /** @var LibraryTable $table */
+        $table = $sm->get('Books\Model\LibraryTable');
+
+        /** @var TranslationsTable $translations */
+        $translations = $sm->get('JTranslate\Model\TranslationsTable');
+
+        if (key_exists('admin/moderate', $pages)) {
+//             $suggestionCount = $table->getSuggestionCount();
+//             $pages['admin/moderate']['badges'] = [$suggestionCount ? ' '.$suggestionCount : " 0"];
+        }
+
+        if (key_exists('jtranslate', $pages)) {
+            $pages['jtranslate']['badges'] = [(string) $translations->getOutstandingTranslationCount()];
+        }
+
+        if (key_exists('admin/website-status', $pages)) {
+            $pages['admin/website-status']['badges'] = [count($this->getKnownIssues())];
+        }
+
+        if (key_exists('sion-model/data-problems', $pages)) {
+            $problemCounts = $this->getProblemCounts();
+            $pages['sion-model/data-problems']['badges'] = $problemCounts;
+        }
+
+        if (key_exists('library-imports/library', $pages)) {
+            $importCount = $table->getLibraryImports();
+            $pages['library-imports/library']['badges'] = [count($importCount)];
+        }
+
+        if (key_exists('sion-model/auto-fix-data-problems', $pages)) {
+            /** @var ProblemService $problemService */
+            $problemService = $sm->get('SionModel\Service\ProblemService');
+            $problems = $problemService->getCurrentProblems();
+            $autoFixProblems = $problemService->autoFixProblems();
+            $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
+        }
+        $view->setVariables([
+            'pages' => $pages,
+        ]);
+        return $view;
+    }
+
+    /**
+     * Query data problems from the ProblemService and count them according to severity
+     * @return number[]
+     */
+    protected function getProblemCounts()
+    {
+        $sm = $this->getServiceLocator();
+        /** @var ProblemService $problemService */
+        $problemService = $sm->get('SionModel\Service\ProblemService');
+        $problems = $problemService->getCurrentProblems();
+        $problemCounts = [
+            EntityProblem::SEVERITY_ERROR => 0,
+            EntityProblem::SEVERITY_WARNING => 0,
+            EntityProblem::SEVERITY_INFO => 0,
+        ];
+        foreach ($problems as $problem) {
+            $severity = $problem->getSeverity();
+            if (key_exists($severity, $problemCounts)) {
+                $problemCounts[$severity]++;
+            }
+        }
+
+        foreach ($problemCounts as $severity => $value) {
+            if ($value === 0) {
+                unset ($problemCounts[$severity]);
+            }
+        }
+        return $problemCounts;
     }
 
     public function searchAction()

@@ -3,6 +3,7 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use Books\Form\ImportForm;
+use Books\Model\LibraryTable;
 
 class LibraryImportsController extends SionController
 {
@@ -37,6 +38,13 @@ class LibraryImportsController extends SionController
     public function __construct()
     {
         return parent::__construct('library-import');
+    }
+
+    public function indexAction()
+    {
+        $view = parent::indexAction();
+        $view->setVariable('libraryId', $this->getLibraryId());
+        return $view;
     }
 
     public function createAction()
@@ -83,14 +91,26 @@ class LibraryImportsController extends SionController
 
     public function editAction()
     {
-        $object = $this->getEntityObject($this->getEntityIdParam('edit'));
+        $importId = $this->getEntityIdParam('edit');
+        $object = $this->getEntityObject($importId);
         $this->setLibraryId($object['libraryId']);
         $view = parent::editAction();
-
-        //first thing is to figure out if it has already been imported
-
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
+        //first thing is to figure out if it has already been imported
+        if (!is_null($object['booksCreated']) || !is_null($object['booksUpdated']) || !is_null($object['booksDeleted']))
+        {
+            $form->get('filePath')->setAttribute('disabled', true);
+            $form->get('worksheet')->setAttribute('disabled', true);
+            $form->get('isCompleteImport')->setAttribute('disabled', true);
+            $form->get('submit')->setValue('Save');
+            return $view->setVariable('isImported', true);
+        } else {
+            $form->get('submit')->setValue('Save and simulate');
+        }
+
+        //get the object again, just in case it was recently updated in the editAction
+        $object = $this->getEntityObject($importId);
         $request = $this->getRequest();
         //@todo change this line to $object['columnMapping']
         $fieldsMap = $this->getColegioMayorLibraryFieldsMap();
@@ -113,10 +133,23 @@ class LibraryImportsController extends SionController
         foreach ($objects as $object) {
             ++$stats[$object['action']];
         }
+
+        if (!$shouldSimulate) { //update the stats
+            $params = [
+                'booksUpdated' => $stats['update'],
+                'booksCreated' => $stats['create'],
+                'booksDeleted' => $stats['delete'],
+            ];
+            /** @var LibraryTable $table */
+            $table = $this->getSionTable();
+            $table->updateEntity('library-import', $importId, $params);
+        }
+
         return $view->setVariables([
+            'isImported'    => !$shouldSimulate,
             'transactions'  => $objects,
             'fields'        => $fieldsMap,
-            'simulate'      => true,
+            'simulate'      => $shouldSimulate,
             'statistics'    => $stats,
             'errorMessage'  => $errorMessage,
         ], false);

@@ -51,7 +51,6 @@ return [
             'Books\Form\CheckinForm'        => 'Books\Service\CheckinFormFactory',
             'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
-            'Books\Form\CreateImportForm'   => 'Books\Service\ImportFormFactory',
         ],
     ],
     'view_helpers' => [
@@ -63,7 +62,90 @@ return [
             'formatField'                   => 'Books\View\Helper\FormatField',
         ],
     ],
-
+    'books' => [
+        'admin_pages' => [
+            'books/create'            => [
+                'label' => "Add new book",
+                'description' => 'Add a book to the database.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
+            'checkouts/library'=> [
+                'label' => "Review checkouts",
+                'description' => 'List and review checkouts for this library.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
+//             'libraries/popular-books'=> [
+//                 'label' => "Popular books",
+//                 'description' => 'View list of most popular books.',
+//             ],
+//             'admin/view-searches'       => [
+//                 'label' => "View Searches",
+//                 'description' => '',
+//             ],
+            'library-imports/library' => [
+                'label' => "Book imports",
+                'description' => 'View past book imports and import new books.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
+            'sion-model/view-changes'   => [
+                'label' => "View changes",
+                'description' => 'View the recent changes made to the database.',
+            ],
+            'juser'                     => [
+                'label' => "User management",
+                'description' => 'Add new users, modify permissions, or reset passwords.',
+            ],
+            'admin/moderate'            => [
+                'label' => "Review suggestions",
+                'description' => 'Moderate user data suggestions.',
+            ],
+            'jtranslate'                => [
+                'label' => "Manage translations",
+                'description' => 'Update database translations',
+            ],
+            'sion-model/data-problems'  => [
+                'label' => "Data problems",
+                'description' => 'Review potential problems with the data in the database.',
+            ],
+            'sion-model/auto-fix-data-problems' => [
+                'label' => "Auto-fix data problems",
+                'description' => 'Try to automatically fix some of the data problems.',
+            ],
+//             'admin/website-status'      => [
+//                 'label' => "Website status",
+//                 'description' => 'Known issues or upcoming plans.',
+//             ],
+//             'admin/export-fathers'      => [
+//                 'label' => "Export fathers",
+//                 'description' => '',
+//             ],
+        ],
+    ],
+    'known_issues' => [ //possible keys: description, completed
+//             'Assignment changes' => [
+//                 'description' => 'Assignment names aren\'t appearing correctly in the "View Changes" page.',
+//             ],
+    ],
+    'upcoming_features' => [ //possible keys: description, completed
+        'Automatic repeat-translations' => [
+            'description' => 'When we insert a new phrase to be translated, we should make sure check for the same phrase in a different domain, and insert the translations as well.',
+        ],
+        'Automated data issue tracking system' => [
+            'description' => 'In order to qualitatively improve data completeness, we would identify high, medium and low importance issues regarding data records to more systematically track down missing information for the database.',
+        ],
+        'New email verification system' => [
+            'description' => 'Of the personal contact information, the most important is the user\'s email address. Verification data is out-of-date, and should be updated.',
+        ],
+        'Photo upload system' => [
+            'description' => 'The usefulness of this site for the average father could be greatly improved by adding user-uploaded photo capabilities. This applies especially for photos of course life.'
+        ],
+    ],
     'router' => [
         'routes' => [
             'publications' => [
@@ -195,9 +277,12 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Literal',
+                        'type'    => 'Segment',
                         'options' => [
-                            'route'    => '/create',
+                            'route'    => '/create/:library_id',
+                            'constraints' => [
+                                'library_id' => '[0-9]{1,3}',
+                            ],
                             'defaults' => [
                                 'action'     => 'create',
                             ],
@@ -345,7 +430,7 @@ return [
                     'library' => [ //We will never show all imports at once, just per-library
                         'type'    => 'Segment',
                         'options' => [
-                            'route'    => '/:library_id',
+                            'route'    => '/library/:library_id',
                             'constraints' => [
                                 'library_id' => '[0-9]{1,5}',
                             ],
@@ -353,6 +438,7 @@ return [
                                 'action'     => 'index',
                             ],
                         ],
+                        'may_terminate' => true,
                         'child_routes' => [
                             'create' => [ //We will never show all imports at once, just per-library
                                 'type'    => 'Literal',
@@ -539,19 +625,19 @@ return [
 //                     'cell'    => 'contactInfo',
 //                 ],
                 'report_changes'                            => true,
-                'index_route'                               => 'imports',
+                'index_route'                               => 'library-imports/library',
 //                 'index_template'                            => 'project/events/index',
                 'default_route_key'                         => 'import_id',
 //                 'show_action_template'                      => 'project/events/show',
-                'show_route'                                => 'imports/import',
+                'show_route'                                => 'library-imports/library-import',
                 'show_route_key'                            => 'import_id',
                 'show_route_key_field'                      => 'importId',
                 'edit_action_form'                          => 'Books\Form\ImportForm',
 //                 'edit_action_template'                      => 'project/events/edit',
-                'edit_route'                                => 'imports/import',
+                'edit_route'                                => 'library-imports/library-import',
                 'edit_route_key'                            => 'import_id',
                 'edit_route_key_field'                      => 'importId',
-                'create_action_form'                        => 'Books\Form\CreateImportForm',
+                'create_action_form'                        => 'Books\Form\ImportForm',
 //                 'create_action_valid_data_handler'          => 'createEvent',
                 'create_action_redirect_route'              => 'library-imports/library-import/edit',
                 'create_action_redirect_route_key'          => 'import_id',
@@ -562,7 +648,7 @@ return [
 //                 'touch_field_route_key'                     => 'event_id',
 //                 'touch_json_route'                          => 'events/event/touch',
 //                 'touch_json_route_key'                      => 'event_id',
-//                 'database_bound_data_preprocessor'          => 'preprocessEvent',
+                'database_bound_data_preprocessor'          => 'preprocessLibraryImport',
 //                 'database_bound_data_postprocessor'         => 'postprocessEvent',
 //                 'moderate_route'                            => 'events/event/moderate',
 //                 'moderate_route_entity_key'                 => 'event_id',
