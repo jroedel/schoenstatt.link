@@ -1,3 +1,4 @@
+# submitted 2017-07-23
 CREATE TABLE lib_imports (
 	ImportId INT NOT NULL AUTO_INCREMENT,
 	ImportName varchar(100) NOT NULL,
@@ -16,7 +17,7 @@ CREATE TABLE lib_imports (
 	CreatedOn DATETIME DEFAULT NULL NULL,
 	CreatedBy INT DEFAULT NULL NULL,
     PRIMARY KEY (ImportId),
-	CONSTRAINT lib_imports_lib_libraries_FK FOREIGN KEY (LibraryId) REFERENCES `schoenstatt.link`.lib_libraries(LibraryId) ON DELETE CASCADE
+	CONSTRAINT lib_imports_lib_libraries_FK FOREIGN KEY (LibraryId) REFERENCES lib_libraries(LibraryId) ON DELETE CASCADE
 )
 ENGINE=InnoDB
 DEFAULT CHARSET=utf8

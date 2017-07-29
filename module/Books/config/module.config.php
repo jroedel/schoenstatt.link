@@ -27,42 +27,6 @@ return [
             'Wikipedia' => 'Wikipedia',
             'Information'=> 'Information',
         ],
-    ],
-    'controllers' => [
-        'factories' => [
-            'Books\Controller\Library'      => 'Books\Service\LibraryControllerFactory',
-        ],
-        'invokables' => [
-            'Books\Controller\Publications' => 'Books\Controller\PublicationsController',
-            'Books\Controller\Library'      => 'Books\Controller\LibraryController',
-            'Books\Controller\Libraries'    => 'Books\Controller\LibrariesController',
-            'Books\Controller\Books'        => 'Books\Controller\BooksController',
-            'Books\Controller\Checkouts'    => 'Books\Controller\CheckoutsController',
-            'Books\Controller\Borrowers'    => 'Books\Controller\BorrowersController',
-            'Books\Controller\LibraryImports'=>'Books\Controller\LibraryImportsController',
-        ],
-    ],
-    'service_manager' => [
-        'factories' => [
-            'Books\Config'                  => 'Books\Service\ConfigServiceFactory',
-            'Books\Model\PublicationsTable' => 'Books\Service\PublicationsTableFactory',
-            'Books\Model\LibraryTable'      => 'Books\Service\LibraryTableServiceFactory',
-            'Books\Form\CreateCheckoutForm' => 'Books\Service\CheckoutFormFactory',
-            'Books\Form\CheckinForm'        => 'Books\Service\CheckinFormFactory',
-            'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
-            'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
-        ],
-    ],
-    'view_helpers' => [
-        'factories' => [
-        ],
-        'invokables' => [
-            'formatPublication'             => 'Books\View\Helper\FormatPublication',
-            'formatPublicationUrlObject'    => 'Books\View\Helper\FormatPublicationUrlObject',
-            'formatField'                   => 'Books\View\Helper\FormatField',
-        ],
-    ],
-    'books' => [
         'admin_pages' => [
             'books/create'            => [
                 'label' => "Add new book",
@@ -125,6 +89,40 @@ return [
 //                 'label' => "Export fathers",
 //                 'description' => '',
 //             ],
+        ],
+    ],
+    'controllers' => [
+        'factories' => [
+            'Books\Controller\Library'      => 'Books\Service\LibraryControllerFactory',
+        ],
+        'invokables' => [
+            'Books\Controller\Publications' => 'Books\Controller\PublicationsController',
+            'Books\Controller\Library'      => 'Books\Controller\LibraryController',
+            'Books\Controller\Libraries'    => 'Books\Controller\LibrariesController',
+            'Books\Controller\Books'        => 'Books\Controller\BooksController',
+            'Books\Controller\Checkouts'    => 'Books\Controller\CheckoutsController',
+            'Books\Controller\Borrowers'    => 'Books\Controller\BorrowersController',
+            'Books\Controller\LibraryImports'=>'Books\Controller\LibraryImportsController',
+        ],
+    ],
+    'service_manager' => [
+        'factories' => [
+            'Books\Config'                  => 'Books\Service\ConfigServiceFactory',
+            'Books\Model\PublicationsTable' => 'Books\Service\PublicationsTableFactory',
+            'Books\Model\LibraryTable'      => 'Books\Service\LibraryTableServiceFactory',
+            'Books\Form\CreateCheckoutForm' => 'Books\Service\CheckoutFormFactory',
+            'Books\Form\CheckinForm'        => 'Books\Service\CheckinFormFactory',
+            'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
+            'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
+        ],
+    ],
+    'view_helpers' => [
+        'factories' => [
+        ],
+        'invokables' => [
+            'formatPublication'             => 'Books\View\Helper\FormatPublication',
+            'formatPublicationUrlObject'    => 'Books\View\Helper\FormatPublicationUrlObject',
+            'formatField'                   => 'Books\View\Helper\FormatField',
         ],
     ],
     'known_issues' => [ //possible keys: description, completed

@@ -470,10 +470,12 @@ ORDER BY CreatedOn DESC";
 
     protected function preprocessLibraryImport($data, $entityData, $action)
     {
-        if (!is_null($data['columnMapping'])) {
-            $data['columnMappingSerialized'] = serialize($data['columnMapping']);
-        } else {
-            $data['columnMappingSerialized'] = null;
+        if (isset($data['columnMapping'])) {
+            if (!is_null($data['columnMapping'])) {
+                $data['columnMappingSerialized'] = serialize($data['columnMapping']);
+            } else {
+                $data['columnMappingSerialized'] = null;
+            }
         }
         return $data;
     }

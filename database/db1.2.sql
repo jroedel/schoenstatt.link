@@ -1,13 +1,14 @@
-ALTER TABLE `schoenstatt.link`.lib_books MODIFY COLUMN pages varchar(5) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD isbn varchar(30) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD copyright_year INT DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD publisher varchar(255) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD publisher_place varchar(255) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD public_tags varchar(255) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD admin_tags varchar(255) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD public_notes varchar(255) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD public_notes_updated_at DATETIME DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD public_notes_updated_by INT DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD admin_notes varchar(255) DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD admin_notes_updated_at DATETIME DEFAULT NULL NULL ;
-ALTER TABLE `schoenstatt.link`.lib_books ADD admin_notes_updated_by INT DEFAULT NULL NULL ;
+# submitted 2017-07-23
+ALTER TABLE lib_books MODIFY COLUMN pages varchar(5) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD isbn varchar(30) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD copyright_year INT DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD publisher varchar(255) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD publisher_place varchar(255) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD public_tags varchar(255) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD admin_tags varchar(255) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD public_notes varchar(255) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD public_notes_updated_at DATETIME DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD public_notes_updated_by INT DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD admin_notes varchar(255) DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD admin_notes_updated_at DATETIME DEFAULT NULL NULL ;
+ALTER TABLE lib_books ADD admin_notes_updated_by INT DEFAULT NULL NULL ;
