@@ -668,7 +668,7 @@ return [
                     'isCompleteImport'          => 'IsCompleteImport',
                     'booksUpdated'              => 'BooksUpdated',
                     'booksCreated'              => 'BooksCreated',
-                    'booksDeleted'              => 'BooksDeleted',
+                    'booksInactivated'              => 'BooksDeleted',
                     'createdOn'                 => 'CreatedOn',
                     'createdBy'                 => 'CreatedBy',
                     'updatedOn'                 => 'UpdatedOn',

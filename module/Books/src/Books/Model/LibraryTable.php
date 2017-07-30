@@ -437,7 +437,7 @@ ORDER BY CreatedOn DESC";
                 'isCompleteImport'          => $this->filterDbBool($row['IsCompleteImport']),
                 'booksUpdated'              => $this->filterDbInt($row['BooksUpdated']),
                 'booksCreated'              => $this->filterDbInt($row['BooksCreated']),
-                'booksDeleted'              => $this->filterDbInt($row['BooksDeleted']),
+                'booksInactivated'              => $this->filterDbInt($row['BooksDeleted']),
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'                 => $this->filterDbId($row['CreatedBy']),
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),

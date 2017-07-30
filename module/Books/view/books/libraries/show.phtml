@@ -7,6 +7,8 @@ echo $this->partial('books/library/search-bar', [
 <h1><?php echo $this->escapeHtml($this->entity['name']);?></h1>
 <a class="btn btn-primary" href="<?php echo $this->url('libraries/library/checkout',
         ['library_id' => $entityId]);?>"><?php echo $this->escapeHtml($this->translate('Checkout books'));?></a>
+<a class="btn btn-default pull-right" href="<?php echo $this->url('libraries/library/admin',
+        ['library_id' => $entityId]);?>"><?php echo $this->escapeHtml($this->translate('Admin menu'));?></a>
 <?php if (!empty($this->entity['categoryStatistics']) && is_null($this->books)):?>
     <ul class="list-group">
     <?php foreach ($this->entity['categoryStatistics'] as $category => $count) : ?>

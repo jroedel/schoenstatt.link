@@ -28,7 +28,7 @@ foreach ($objects as $object) :?>
 	<td><?php echo $this->dateFormat($object['updatedOn'], \IntlDateFormatter::MEDIUM, \IntlDateFormatter::MEDIUM);?></td>
 	<td><?php echo $this->escapeHtml($object['booksCreated']);?></td>
 	<td><?php echo $this->escapeHtml($object['booksUpdated']);?></td>
-	<td><?php echo $this->escapeHtml($object['booksDeleted']);?></td>
+	<td><?php echo $this->escapeHtml($object['booksInactivated']);?></td>
 </tr>
 <?php endforeach;?>
 </tbody>

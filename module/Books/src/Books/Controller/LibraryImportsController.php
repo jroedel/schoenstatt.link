@@ -86,6 +86,7 @@ class LibraryImportsController extends SionController
             'publisher'         => 'Editorial',
             'publishingPlace'   => 'Ciudad',
             'isbn'              => 'ISBN',
+            'publicationId'     => 'PubID',
         ];
     }
 
@@ -98,7 +99,7 @@ class LibraryImportsController extends SionController
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
         //first thing is to figure out if it has already been imported
-        if (!is_null($object['booksCreated']) || !is_null($object['booksUpdated']) || !is_null($object['booksDeleted']))
+        if (!is_null($object['booksCreated']) || !is_null($object['booksUpdated']) || !is_null($object['booksInactivated']))
         {
             $form->get('filePath')->setAttribute('disabled', true);
             $form->get('worksheet')->setAttribute('disabled', true);
@@ -127,7 +128,7 @@ class LibraryImportsController extends SionController
         $stats = [
             'create'    => 0,
             'update'    => 0,
-            'delete'    => 0,
+            'inactivate'=> 0,
             'error'     => 0,
         ];
         foreach ($objects as $object) {
@@ -138,7 +139,7 @@ class LibraryImportsController extends SionController
             $params = [
                 'booksUpdated' => $stats['update'],
                 'booksCreated' => $stats['create'],
-                'booksDeleted' => $stats['delete'],
+                'booksInactivated' => $stats['inactivate'],
             ];
             /** @var LibraryTable $table */
             $table = $this->getSionTable();
@@ -157,12 +158,24 @@ class LibraryImportsController extends SionController
 
     public function redirectAfterEdit($id)
     {
-        //don't redirect
+        //don't redirect after edit
     }
 
+    /**
+     * Read an excel file and import the records into the database
+     * @param string $fileName
+     * @param string $sheetName
+     * @param string[] $fieldsMap
+     * @param bool $simulate
+     * @param bool $deleteMissingRowsFromDatabase
+     * @throws \Exception
+     * @return array[]|string[][]|boolean[][]|unknown[][]|number[][]|\Books\Model\number[][]
+     */
     public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, $simulate = true, $deleteMissingRowsFromDatabase = false)
     {
+        //@todo verify the fieldsMap against this list
         $availableFields = [
+            'publicationId',
             'author',
             'title',
             'edition',
@@ -230,6 +243,7 @@ class LibraryImportsController extends SionController
         $table->setLibraryId($libraryId);
         $bookLookup = $table->getActiveLibraryBookLookup();
         $transactions = [];
+        $publications = null;
         $bookIdsBeingUpdated = [];
         foreach ($rows as $rowNumber => $rowColumns) {
             $withinLibraryId = (int)$rowColumns[$fieldIndices['withinLibraryId']];
@@ -241,11 +255,49 @@ class LibraryImportsController extends SionController
                 $params[$bookField] = $rowColumns[$columnIndex];
             }
 
+            if (key_exists('publicationId', $fieldIndices) && is_numeric($params['publicationId'])) {
+                //lazy load the publications list
+                if (is_null($publications)) {
+                    /** @var \Books\Model\PublicationsTable $publicationsTable */
+                    $publicationsTable = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
+                    $publications = $publicationsTable->getUnlinkedPublications();
+                }
+                $publicationId = (int)$params['publicationId'];
+                if (key_exists($publicationId, $publications)) {
+                    $params['title'] = $publications[$publicationId]['title'];
+                    if (!is_null($publications[$publicationId]['authors'])) {
+                        $params['author'] = $publications[$publicationId]['authors'];
+                    }
+                    if (!is_null($publications[$publicationId]['copyrightYear'])) {
+                        $params['copyrightYear'] = $publications[$publicationId]['copyrightYear'];
+                    }
+                    if (!is_null($publications[$publicationId]['publisher'])) {
+                        $params['publisher'] = $publications[$publicationId]['publisher'];
+                    }
+                    if (!is_null($publications[$publicationId]['publishingPlace'])) {
+                        $params['publishingPlace'] = $publications[$publicationId]['publishingPlace'];
+                    }
+                    if (!is_null($publications[$publicationId]['numberOfPages'])) {
+                        $params['pages'] = $publications[$publicationId]['numberOfPages'];
+                    }
+                    if (!is_null($publications[$publicationId]['inLanguage'])) {
+                        $params['language'] = $publications[$publicationId]['inLanguage'];
+                    }
+                    if (!is_null($publications[$publicationId]['isbn'])) {
+                        $params['isbn'] = $publications[$publicationId]['isbn'];
+                    }
+                }
+            }
+
             //determine the action to take on the row
             if (!key_exists('title', $params) || is_null($params['title'])
                 || is_null($withinLibraryId) || !is_numeric($withinLibraryId)
             ) {
                 $params['action'] = 'error';
+                if (is_numeric($withinLibraryId)) {
+                    //make sure we don't delete this book, because there was an import error
+                    $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];
+                }
             } else if (key_exists($withinLibraryId, $bookLookup)) {
                 $params['action'] = 'update';
                 $params['bookId'] = $bookLookup[$withinLibraryId];
@@ -256,14 +308,18 @@ class LibraryImportsController extends SionController
             $transactions[] = $params;
         }
 
-        //delete missing rows from the database if asked for
+        //delete missing rows from the database if asked to do so
         if ($deleteMissingRowsFromDatabase) {
             $books = $table->getBooks();
             foreach ($bookLookup as $withinLibraryId => $bookId) {
                 if (!in_array($bookId, $bookIdsBeingUpdated)) {
-                    $transaction = $books[$bookId];
-                    $transaction['action'] = 'delete';
-                    $transactions[] = $transaction;
+                    $params = [
+                        'action'            => 'inactivate',
+                        'bookId'            => $bookId,
+                        'isActive'          => false,
+                        'inactivationReason'=> 'Mass book import',
+                    ];
+                    $transactions[] = $params;
                 }
             }
         }
@@ -287,8 +343,8 @@ class LibraryImportsController extends SionController
                 case 'create':
                     $transactions[$key]['result'] = $table->createEntity('book', $transaction);
                     break;
-                case 'delete':
-                    $transactions[$key]['result'] = $table->deleteEntity('book', $transaction['bookId']);
+                case 'inactivate':
+                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction);
                     break;
             }
         }
