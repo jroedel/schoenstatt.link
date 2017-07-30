@@ -161,20 +161,9 @@ class LibraryImportsController extends SionController
         //don't redirect after edit
     }
 
-    /**
-     * Read an excel file and import the records into the database
-     * @param string $fileName
-     * @param string $sheetName
-     * @param string[] $fieldsMap
-     * @param bool $simulate
-     * @param bool $deleteMissingRowsFromDatabase
-     * @throws \Exception
-     * @return array[]|string[][]|boolean[][]|unknown[][]|number[][]|\Books\Model\number[][]
-     */
-    public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, $simulate = true, $deleteMissingRowsFromDatabase = false)
+    protected function getBookFields()
     {
-        //@todo verify the fieldsMap against this list
-        $availableFields = [
+        return [
             'publicationId',
             'author',
             'title',
@@ -191,13 +180,34 @@ class LibraryImportsController extends SionController
             'updatedBy',
             'createdOn',
             'createdBy',
+
+            'copyrightYear',
+            'publisher',
+            'publishingPlace',
+            'isbn',
+            'keywords',
+            'publicNotes',
+            'publicNotesUpdatedOn',
+            'publicNotesUpdatedBy',
+            'adminTags',
+            'adminNotes',
+            'adminNotesUpdatedOn',
+            'adminNotesUpdatedBy',
         ];
-        $requiredFields = [
-            'withinLibraryId',
-            'callNumber',
-            'author',
-            'title',
-        ];
+    }
+    /**
+     * Read an excel file and import the records into the database
+     * @param string $fileName
+     * @param string $sheetName
+     * @param string[] $fieldsMap
+     * @param bool $simulate
+     * @param bool $deleteMissingRowsFromDatabase
+     * @throws \Exception
+     * @return array[]|string[][]|boolean[][]|unknown[][]|number[][]|\Books\Model\number[][]
+     */
+    public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, $simulate = true, $deleteMissingRowsFromDatabase = false)
+    {
+        $bookFields = $this->getBookFields();
         $objPHPExcel = \PHPExcel_IOFactory::load($fileName);
         $sheet = $objPHPExcel->getSheetByName($sheetName);
         $highRow = $sheet->getHighestDataRow();
@@ -215,7 +225,7 @@ class LibraryImportsController extends SionController
         foreach ($rowHeaders as $key => $value) {
             if (in_array($value, $fieldsMap)) {
                 foreach ($fieldsMap as $bookField => $columnName) {
-                    if ($columnName == $value) {
+                    if ($columnName == $value && in_array($bookField, $bookFields)) {
                         $fieldIndices[$bookField] = $key;
                     }
                 }
@@ -254,6 +264,8 @@ class LibraryImportsController extends SionController
             foreach ($fieldIndices as $bookField => $columnIndex) {
                 $params[$bookField] = $rowColumns[$columnIndex];
             }
+            //make sure we get an int not a float
+            $params['withinLibraryId'] = $withinLibraryId;
 
             if (key_exists('publicationId', $fieldIndices) && is_numeric($params['publicationId'])) {
                 //lazy load the publications list
@@ -264,6 +276,7 @@ class LibraryImportsController extends SionController
                 }
                 $publicationId = (int)$params['publicationId'];
                 if (key_exists($publicationId, $publications)) {
+                    //fill in info from the publication to the books table
                     $params['title'] = $publications[$publicationId]['title'];
                     if (!is_null($publications[$publicationId]['authors'])) {
                         $params['author'] = $publications[$publicationId]['authors'];
@@ -331,6 +344,10 @@ class LibraryImportsController extends SionController
         return $transactions;
     }
 
+    /**
+     * Persist import changes to the database
+     * @param array $transactions
+     */
     protected function persistImportTransactions(array &$transactions)
     {
         /** @var \Books\Model\LibraryTable $table */
@@ -338,13 +355,13 @@ class LibraryImportsController extends SionController
         foreach ($transactions as $key => $transaction) {
             switch ($transaction['action']) {
                 case 'update':
-                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction);
+                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
                     break;
                 case 'create':
-                    $transactions[$key]['result'] = $table->createEntity('book', $transaction);
+                    $transactions[$key]['result'] = $table->createEntity('book', $transaction, false);
                     break;
                 case 'inactivate':
-                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction);
+                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
                     break;
             }
         }
