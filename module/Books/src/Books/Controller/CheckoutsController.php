@@ -37,8 +37,9 @@ class CheckoutsController extends SionController
      */
     public function createCheckouts($data)
     {
+        /** @var LibraryTable $table */
         $table = $this->getSionTable();
-        $bookLookup = $table->getActiveLibraryBookLookup();
+        $bookLookup = $table->getLibraryBookLookup();
         $badValues = [];
         foreach ($data['bookIds'] as $value) {
             if (!key_exists($value, $bookLookup)) {
@@ -125,7 +126,6 @@ class CheckoutsController extends SionController
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
-                var_dump($data);
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
                 if (!($return = $table->checkinBooks($id, $data['bookIds']))) {
