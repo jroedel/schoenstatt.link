@@ -42,6 +42,13 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/checkin'=> [
+                'label' => "Check-in books",
+                'description' => 'Check books back into the library.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
 //             'libraries/popular-books'=> [
 //                 'label' => "Popular books",
 //                 'description' => 'View list of most popular books.',
@@ -50,7 +57,7 @@ return [
 //                 'label' => "View Searches",
 //                 'description' => '',
 //             ],
-            'library-imports/library' => [
+            'library-imports/library'   => [
                 'label' => "Book imports",
                 'description' => 'View past book imports and import new books.',
                 'route_parameters' => [
@@ -61,18 +68,18 @@ return [
                 'label' => "View changes",
                 'description' => 'View the recent changes made to the database.',
             ],
-            'juser'                     => [
-                'label' => "User management",
-                'description' => 'Add new users, modify permissions, or reset passwords.',
-            ],
-            'admin/moderate'            => [
-                'label' => "Review suggestions",
-                'description' => 'Moderate user data suggestions.',
-            ],
-            'jtranslate'                => [
-                'label' => "Manage translations",
-                'description' => 'Update database translations',
-            ],
+//             'juser'                     => [
+//                 'label' => "User management",
+//                 'description' => 'Add new users, modify permissions, or reset passwords.',
+//             ],
+//             'admin/moderate'            => [
+//                 'label' => "Review suggestions",
+//                 'description' => 'Moderate user data suggestions.',
+//             ],
+//             'jtranslate'                => [
+//                 'label' => "Manage translations",
+//                 'description' => 'Update database translations',
+//             ],
             'sion-model/data-problems'  => [
                 'label' => "Data problems",
                 'description' => 'Review potential problems with the data in the database.',
@@ -111,7 +118,6 @@ return [
             'Books\Model\PublicationsTable' => 'Books\Service\PublicationsTableFactory',
             'Books\Model\LibraryTable'      => 'Books\Service\LibraryTableServiceFactory',
             'Books\Form\CreateCheckoutForm' => 'Books\Service\CheckoutFormFactory',
-            'Books\Form\CheckinForm'        => 'Books\Service\CheckinFormFactory',
             'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
         ],

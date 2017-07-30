@@ -87,6 +87,8 @@ class LibraryImportsController extends SionController
             'publishingPlace'   => 'Ciudad',
             'isbn'              => 'ISBN',
             'publicationId'     => 'PubID',
+            'keywords'          => 'Categorías',
+            'edition'           => 'Edition',
         ];
     }
 
@@ -180,7 +182,6 @@ class LibraryImportsController extends SionController
             'updatedBy',
             'createdOn',
             'createdBy',
-
             'copyrightYear',
             'publisher',
             'publishingPlace',
@@ -251,7 +252,7 @@ class LibraryImportsController extends SionController
             throw new \Exception('This function should only be called in the context of a particular library.');
         }
         $table->setLibraryId($libraryId);
-        $bookLookup = $table->getActiveLibraryBookLookup();
+        $bookLookup = $table->getLibraryBookLookup();
         $transactions = [];
         $publications = null;
         $bookIdsBeingUpdated = [];

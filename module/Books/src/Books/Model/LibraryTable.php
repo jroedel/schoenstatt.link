@@ -276,7 +276,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
      * Return a lookup associated array keyed by the library's id, mapped to the bookId
      * @return number[]
      */
-    public function getActiveLibraryBookLookup($libraryId = null)
+    public function getLibraryBookLookup($libraryId = null)
     {
         if (is_null($libraryId)) {
             $libraryId = $this->getLibraryId();
@@ -296,16 +296,32 @@ ORDER BY library_id, call_number, category, lang, author, title";
         return $bookLookup;
     }
 
-    public function checkinBooks($bookIds)
+    /**
+     * Returns the bookId's passed to the function. If requested, a book that wasn't checked
+     * out will be first checked out and then back in.
+     * @param array $bookIds
+     * @return boolean
+     */
+    public function checkinBooks($libraryId, array $withinLibraryIds, $createCheckoutsForBooksWithNoCheckouts = true)
     {
         $checkouts = $this->getUnlinkedCheckouts();
+        $library = $this->getLibrary($libraryId);
 
         $tz = new \DateTimeZone('UTC');
         $today = new \DateTime(null, $tz);
 
+        $bookLookup = $this->getLibraryBookLookup($libraryId);
+        $booksToCheckin = [];
+        foreach ($withinLibraryIds as $withinLibraryId) {
+            if (key_exists($withinLibraryIds, $bookLookup)) {
+                $booksToCheckin[$bookLookup[$withinLibraryId]] = false;
+            }
+        }
+
+        //Check in all the outstanding checkouts
         foreach ($checkouts as $checkoutId => $checkout) {
             if ($checkout['status'] != self::CHECKOUT_STATUS_RETURNED &&
-                in_array($checkout['bookId'], $bookIds)
+                key_exists($checkout['bookId'], $booksToCheckin)
             ) {
                 $data = [
                     'checkedInOn'           => $today,
@@ -313,9 +329,36 @@ ORDER BY library_id, call_number, category, lang, author, title";
                     'checkedInIp'           => $_SERVER['REMOTE_ADDR'], //@todo there should be a better way to do this
 //                     'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
                 ];
-                (string)$this->updateEntity('checkout', $checkoutId, $data);
+                //don't refresh the cache
+                (string)$this->updateEntity('checkout', $checkoutId, $data, [], false);
+                $booksToCheckin[$checkout['bookId']] = true;
             }
         }
+
+        //If any books are left, create new checkout records for them
+        if ($createCheckoutsForBooksWithNoCheckouts) {
+            foreach ($booksToCheckin as $bookId => $alreadyCheckedIn) {
+                if (!$alreadyCheckedIn) {
+                    $data = [
+                        'personId'              => $library['defaultCheckoutPerson'],
+                        'bookId'                => $bookId,
+                        'checkedOutOn'          => $today,
+                        'checkedOutBy'          => $this->getActingUserId(),
+                        'checkedOutIp'          => $_SERVER['REMOTE_ADDR'],
+//                         'checkedOutUserAgent'   => $this->filterDbString($row['CheckedOutUserAgent']),
+                        'dueOn'                 => $today,
+
+                        'checkedInOn'           => $today,
+                        'checkedInBy'           => $this->getActingUserId(),
+                        'checkedInIp'           => $_SERVER['REMOTE_ADDR'], //@todo there should be a better way to do this
+//                     'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
+                    ];
+                    (string)$this->createEntity('checkout', $data, false);
+                    $booksToCheckin[$checkout['bookId']] = true;
+                }
+            }
+        }
+
         return true;
     }
 
@@ -380,7 +423,10 @@ ORDER BY `FiliationId`, `LibraryName`";
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
 
-                'books'                 => [], //to be filled in in getLibraries()
+                'defaultCheckoutPerson' => 604, //@todo make a new column for this
+                'defaultCollection'     => null, //@todo make a new column for this
+
+                'books'                 => [], //to be filled in, in getLibraries()
                 'categoryStatistics'    => [],
             ];
         }

@@ -3,6 +3,7 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
+use Zend\Validator\NotEmpty;
 
 class CheckinForm extends SionForm implements InputFilterProviderInterface
 {
@@ -12,16 +13,11 @@ class CheckinForm extends SionForm implements InputFilterProviderInterface
 
         $this->add([
             'name' => 'bookIds',
-            'type' => 'Select',
+            'type' => 'Textarea',
             'options' => [
                 'label' => 'Book Ids to check in',
-                'empty_option' => '',
-                'unselected_value' => '',
-//                 'disable_inarray_validator' => true,
-                'value_options' => [],
             ],
             'attributes' => [
-                'multiple'  => true,
                 'required' => true,
             ],
         ]);
@@ -43,12 +39,13 @@ class CheckinForm extends SionForm implements InputFilterProviderInterface
             'bookIds' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => 'Books\Filter\BookList'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'Zend\Validator\NotEmpty',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => NotEmpty::EMPTY_ARRAY
                         ],
                     ],
                 ],

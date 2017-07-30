@@ -6,6 +6,7 @@ use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Books\Model\LibraryTable;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
+use Books\Form\CheckinForm;
 
 class CheckoutsController extends SionController
 {
@@ -116,7 +117,7 @@ class CheckoutsController extends SionController
         }
 
         $sm = $this->getServiceLocator();
-        $form = $sm->get('Books\Form\CheckinForm');
+        $form = new CheckinForm();
 
         $request = $this->getRequest();
         if ($request->isPost ()) {
@@ -124,8 +125,10 @@ class CheckoutsController extends SionController
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
+                var_dump($data);
+                /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-                if (!($return = $table->checkinBooks($data['bookIds']))) {
+                if (!($return = $table->checkinBooks($id, $data['bookIds']))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
