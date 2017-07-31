@@ -37,6 +37,7 @@ class CheckoutsController extends SionController
      */
     public function createCheckouts($data)
     {
+        $id = $this->getLibraryId();
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
         $bookLookup = $table->getLibraryBookLookup();
@@ -54,7 +55,7 @@ class CheckoutsController extends SionController
         }
 
         //first check-in each of the books we're about to checkout
-        $table->checkinBooks($data['bookIds']);
+        $table->checkinBooks($id, $data['bookIds'], false);
 
         foreach ($data['bookIds'] as $bookId) {
             $currentBook = $data;
@@ -81,12 +82,7 @@ class CheckoutsController extends SionController
     public function libraryAction()
     {
         //get the parameter
-        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
-        if (!$id) {
-            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Library not found.');
-            $this->redirect ()->toRoute ( 'libraries');
-        }
+        $id = $this->getLibraryId();
 
         $sm = $this->getServiceLocator();
 
@@ -110,12 +106,7 @@ class CheckoutsController extends SionController
     public function checkinAction()
     {
         //get the parameter
-        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
-        if (!$id) {
-            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage('Library not found.');
-            $this->redirect ()->toRoute ( 'libraries');
-        }
+        $id = $this->getLibraryId();
 
         $sm = $this->getServiceLocator();
         $form = new CheckinForm();
@@ -143,5 +134,16 @@ class CheckoutsController extends SionController
             'libraryId' => $id,
             'form'      => $form,
         ]);
+    }
+
+    protected function getLibraryId()
+    {
+        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
+        if (!$id) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+            ->addMessage('Library not found.');
+            $this->redirect ()->toRoute ( 'libraries');
+        }
+        return $id;
     }
 }
