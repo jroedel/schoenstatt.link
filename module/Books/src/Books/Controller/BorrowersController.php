@@ -7,6 +7,11 @@ use Zend\View\Model\ViewModel;
 
 class BorrowersController extends AbstractActionController
 {
+    /**
+     * @todo start using the person table to look up person information. The same person
+     *      should be able to be used as an author, movement role, or a borrower
+     * @return \Zend\View\Model\ViewModel
+     */
     public function showAction()
     {
         //get the parameter

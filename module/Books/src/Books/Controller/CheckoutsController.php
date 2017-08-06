@@ -54,6 +54,9 @@ class CheckoutsController extends SionController
             return;
         }
 
+        //@todo first we should make sure the person exists, and if not create him
+
+        //@todo move the checkout process to LibraryTable
         //first check-in each of the books we're about to checkout
         $table->checkinBooks($id, $data['bookIds'], false);
 

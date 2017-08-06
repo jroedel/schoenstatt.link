@@ -201,7 +201,7 @@ class LibraryTable extends SionTable
         }
 
         if (!is_null($libraryId)) {
-            $sql = "SELECT book_id, library_id, author, title, edition, call_number,
+            $sql = "SELECT book_id, library_id, collection_id, author, title, edition, call_number,
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
 inactivation_reason, is_active,
 isbn, copyright_year, publisher, publisher_place, public_tags, admin_tags,
@@ -212,7 +212,7 @@ WHERE (library_id = ?)
 ORDER BY library_id, call_number, category, lang, author, title";
             $results = $this->fetchSome(null, $sql, [$libraryId]);
         } else {
-            $sql = "SELECT book_id, library_id, author, title, edition, call_number,
+            $sql = "SELECT book_id, library_id, collection_id, author, title, edition, call_number,
 category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
 inactivation_reason, is_active, isbn, copyright_year, publisher, publisher_place, public_tags,
 admin_tags, public_notes, public_notes_updated_at, public_notes_updated_by, admin_notes,
@@ -230,6 +230,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
             $isActive = $this->filterDbBool($row['is_active']);
             $entities[$id] = [
                 'bookId'                => $id,
+                'collectionId'          => $this->filterDbId($row['collection_id']),
                 'author'                => $author,
                 'title'                 => $title,
                 'edition'               => $this->filterDbString($row['edition']),
@@ -388,7 +389,20 @@ ORDER BY library_id, call_number, category, lang, author, title";
             }
         }
 
-        $this->cacheEntityObjects('libraries', $entities, ['library', 'book']);
+        //check if the books are checked out
+        $checkouts = $this->getUnlinkedCheckouts();
+        foreach ($checkouts as $checkoutId => $checkout) {
+            if (is_null($checkout['checkedInOn']) && key_exists($checkout['bookId'], $books) &&
+                key_exists($checkout['bookId'], $entities[$books[$checkout['bookId']]['libraryId']]['books'])
+            ) { //book is checked out
+                $bookEntry = &$entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']];
+                $bookEntry['isAvailable'] = false;
+                $bookEntry['checkedOut'] = true;
+                $bookEntry['currentCheckout'] = $checkout;
+            }
+        }
+
+        $this->cacheEntityObjects('libraries', $entities, ['library', 'book', 'checkout']);
         return $entities;
     }
 
@@ -431,6 +445,29 @@ ORDER BY `FiliationId`, `LibraryName`";
             ];
         }
         $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
+        return $entities;
+    }
+
+    public function getLibraryBooksStatuses($libraryId = null)
+    {
+        if (is_null($libraryId)) {
+            $libraryId = $this->getLibraryId();
+        }
+        if (is_null($libraryId) || !is_numeric($libraryId)) {
+            throw new \InvalidArgumentException('getLibraryBooksStatuses requires an active libraryId');
+        }
+        $library = $this->getLibrary($libraryId);
+        $entities = [];
+        foreach ($library['books'] as $entityId => $entity) {
+            $currentCheckout = $entity['currentCheckout'];
+            $entities[$entity['withinLibraryId']] = [
+                'title'     => $entity['title'],
+                'author'    => $entity['author'],
+                'isCheckedOut' => !is_null($currentCheckout),
+                'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null, //@todo give the person's name
+                'checkedOutOn' => !is_null($currentCheckout) ? $currentCheckout['checkedOutOn'] : null, //@todo convert to Json date format
+            ];
+        }
         return $entities;
     }
 

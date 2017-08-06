@@ -2,6 +2,22 @@
 $headText = 'Begin new import';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
+<p>Importing a file has the following requirements:</p>
+<ol>
+<li>The file to import must be of format xls or xlsx.</li>
+<li>Given a specified excel file and worksheet, the first row (A) must contain the column names.</li>
+<li>Each line of the worksheet must contain the withinLibraryId value, as well as a title.
+	The only exception is that a row with a publicationId need not have a title defined.</li>
+</ol>
+<p>Currently the column mappings are unconfigurable but are mapped as follows:</p>
+<dl class="dl-horizontal">
+<?php $map = $this->fieldsMap;
+ksort($map);
+foreach ($map as $field => $column) :?>
+    <dt><?php echo $this->escapeHtml($field);?></dt>
+    <dd><?php echo $this->escapeHtml($column);?></dd>
+<?php endforeach;?>
+</dl>
 <?php $form = $this->form;
 $this->formSelect()->setTranslatorEnabled(false);
 $form->setAttribute('action', $this->url('library-imports/library/create', ['library_id' => $this->libraryId]));

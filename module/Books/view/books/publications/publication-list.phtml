@@ -1,4 +1,6 @@
 <?php
+use Books\View\Helper\FormatPublication;
+
 /**
  * @var $objects mixed[]
  * @var $columns string[]
@@ -33,8 +35,7 @@ switch ($column) {
 		<td><?php echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => true]);?></td>
     	<?php break;
     case 'edition':?>
-		<td><?php echo $this->escapeHtml($entity['bookEdition']);
-		echo $this->editPencil('publication', $entityId);?></td>
+		<td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>
     	<?php break;
 
     default:

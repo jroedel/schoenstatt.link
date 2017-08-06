@@ -8,6 +8,7 @@ use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Model\LibraryTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Service\ProblemService;
+use Zend\View\Model\JsonModel;
 
 class LibrariesController extends SionController
 {
@@ -51,6 +52,16 @@ class LibrariesController extends SionController
         $view->setVariable('form', $form);
 
         return $view;
+    }
+
+    public function getBookListJsonAction()
+    {
+        $sm = $this->getServiceLocator();
+        /** @var LibraryTable $table */
+        $table = $sm->get('Books\Model\LibraryTable');
+        $table->setLibraryId($this->getEntityIdParam('show'));
+        $books = $table->getLibraryBooksStatuses();
+        return new JsonModel(['books' => $books]);
     }
 
     public function adminAction()

@@ -7,6 +7,7 @@ class FormatPublication extends AbstractHelper
 {
     const DISPLAY_TITLE = 'title';
     const DISPLAY_AUTHORS = 'authors';
+    const DISPLAY_EDITION = 'edition';
 
     /**
      *
@@ -29,7 +30,8 @@ class FormatPublication extends AbstractHelper
     	//set defaults
     	if (isset($options['display'])) {
     	    if ($options['display'] === self::DISPLAY_AUTHORS ||
-	            $options['display'] === self::DISPLAY_TITLE)
+	            $options['display'] === self::DISPLAY_TITLE ||
+	            $options['display'] === self::DISPLAY_EDITION)
     	    {
     	        $displayOption = $options['display'];
     	    } else {
@@ -43,21 +45,48 @@ class FormatPublication extends AbstractHelper
     	$showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
 
     	$finalMarkup = '';
+    	$escapeMainText = true;
     	switch ($displayOption) {
-    	    case 'authors': //@todo make it work when we have real authors
+    	    case self::DISPLAY_AUTHORS: //@todo make it work when we have real authors
     	        $mainText = $object['authors'];
     	       break;
-    	    case 'title':
+    	    case self::DISPLAY_TITLE:
     	        $mainText = $object['title'];
     	        break;
+    	    case self::DISPLAY_EDITION:
+    	        $mainText = '';
+    	        $escapeMainText = false;
+    	        if (!is_null($object['bookEdition'])) {
+    	            $mainText .= sprintf("<strong>%s</strong>", $this->view->escapeHtml($object['bookEdition']));
+    	        }
+    	        if (!is_null($object['copyrightYear'])) {
+    	            if (strlen($mainText) > 0) {
+    	                $mainText .= ', ';
+    	            }
+    	            $mainText .= $this->view->escapeHtml($object['copyrightYear']);
+    	        }
+    	        if (!is_null($object['publishingPlace'])) {
+    	            if (strlen($mainText) > 0) {
+    	                $mainText .= ' ';
+    	            }
+    	            $mainText .= $this->view->escapeHtml($object['publishingPlace']);
+    	        }
     	}
 
     	if ($linkOption) {
         	$linkFormat = '<a href="%s">%s</a>';
         	$url = $this->view->url('publications/publication', array('publication_id' => $object['publicationId']));
-        	$finalMarkup .= sprintf($linkFormat, $url, $this->view->escapeHtml($mainText));
+        	if ($escapeMainText) {
+        	   $finalMarkup .= sprintf($linkFormat, $url, $this->view->escapeHtml($mainText));
+        	} else {
+        	    $finalMarkup .= sprintf($linkFormat, $url, $mainText);
+        	}
     	} else {
-    	    $finalMarkup .= $this->view->escapeHtml($mainText);
+    	    if ($escapeMainText) {
+    	       $finalMarkup .= $this->view->escapeHtml($mainText);
+    	    } else {
+    	        $finalMarkup .= $mainText;
+    	    }
     	}
     	if ($showLanguageLabel) {
     	    if (!is_null($object['inLanguage'])) {

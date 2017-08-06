@@ -18,10 +18,21 @@ echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();
 
 $jsScript = <<<JS
-    $("select[name='personId']").selectize({
-        create: false
-    });
-    $("textarea[tabindex='1']").focus();
+var books;
+var currentlyDisplayedBooks = [];
+$("select[name='personId']").selectize({
+    create: false
+});
+$("textarea[tabindex='1']").focus();
+$("textarea[name='bookIds']").bind('input propertychange', function() {
+
+  text = $("textarea[name='bookIds']").val();
+  var patt = /\d{5}/gm;
+  var res = patt.exec(text);
+  console.log(res);
+  var res = patt.exec(text);
+  console.log(res);
+});
 JS;
 $this->inlineScript()->captureStart();
 echo <<<JS

@@ -56,6 +56,7 @@ class LibraryImportsController extends SionController
         $form = $view->getVariable('form');
         $form->get('submit')->setValue('Simulate import');
         $view->setVariable('form', $form);
+        $view->setVariable('fieldsMap', $this->getColegioMayorLibraryFieldsMap());
         return $view;
     }
 
