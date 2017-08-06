@@ -96,8 +96,9 @@ class CheckoutsController extends SionController
         $library = $table->getLibrary($id);
 
         /** @var PatresTable $table */
-        $patresTable = $sm->get('Patres\Model\PatresTable');
-        $persons = $patresTable->getPersons();
+//         $patresTable = $sm->get('Schoenstatt\FathersValueOptions');
+//         $persons = $patresTable->getPersons();
+        $persons = $sm->get('Schoenstatt\FathersValueOptions');
 
         return new ViewModel([
             'library'   => $library,
@@ -127,7 +128,7 @@ class CheckoutsController extends SionController
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
                         ->addMessage ('Books successfully checked in.' );
-                    $this->redirect ()->toRoute ('libraries/library', ['library_id' => $id]);
+                    $this->redirect ()->toRoute ('checkouts/library', ['library_id' => $id]);
                 }
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );

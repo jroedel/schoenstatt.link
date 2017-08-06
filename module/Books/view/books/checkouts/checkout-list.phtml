@@ -1,5 +1,6 @@
 <?php
 use Books\Model\LibraryTable;
+$persons = $this->persons && is_array($this->persons) ? $this->persons : [];
 
 /**
  * @param $entities mixed[]
@@ -10,6 +11,7 @@ use Books\Model\LibraryTable;
 	<th><?php echo $this->translate('Library');?></th>
 	<th><?php echo $this->translate('Book');?></th>
 	<th><?php echo $this->translate('Checked out on');?></th>
+	<th><?php echo $this->translate('Checked out by');?></th>
 	<th><?php echo $this->translate('Due on');?></th>
 	<th><?php echo $this->translate('Checked in on');?></th>
 </tr></thead>
@@ -27,6 +29,9 @@ use Books\Model\LibraryTable;
 	<td><?php echo $this->formatEntity('library', $entity['book']['library']);?></td>
 	<td><?php echo $this->formatEntity('book', $entity['book']);?></td>
 	<td><?php echo $this->dateFormat($entity['checkedOutOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></td>
+	<td><?php if (key_exists($entity['personId'], $this->persons)) {
+	   echo $this->persons[$entity['personId']];
+	}?></td>
 	<td><?php if ($entity['dueOn']) {
 	   echo $this->dateFormat($entity['dueOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
     }?></td>

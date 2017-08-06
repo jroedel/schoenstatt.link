@@ -16,9 +16,11 @@ class CheckinForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Textarea',
             'options' => [
                 'label' => 'Book Ids to check in',
+                'help-block' => 'One barcode per line'
             ],
             'attributes' => [
                 'required' => true,
+                'tabindex' => 1,
             ],
         ]);
 

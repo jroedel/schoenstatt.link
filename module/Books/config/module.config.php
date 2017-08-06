@@ -1116,23 +1116,25 @@ return [
                 ['route' => 'libraries', 'roles' => ['lib_user']],
                 //@todo define library-based ACL
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator']],
+                ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
-                ['route' => 'libraries/library/checkin', 'roles' => ['lib_administrator']], //@todo open to moderators
-                ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator']],
-                ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/import', 'roles' => ['lib_administrator']],
-                ['route' => 'libraries/checkouts', 'roles' => ['lib_administrator']],
-                ['route' => 'libraries/checkouts/library', 'roles' => ['lib_administrator']],
-                ['route' => 'borrowers', 'roles' => ['lib_administrator']],
+                ['route' => 'libraries/library/checkin', 'roles' => ['lib_administrator', 'lib_library_administrator']], //@todo open to moderators
+                ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator', 'lib_library_administrator']],
+                ['route' => 'libraries/import', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'libraries/checkouts', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'libraries/checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'borrowers', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'books/book', 'roles' => ['lib_teo_viewer', 'lib_sch_viewer', 'lib_administrator']],
 
-                ['route' => 'library-imports/library', 'roles' => ['lib_administrator']],
-                ['route' => 'library-imports/library-import', 'roles' => ['lib_administrator']],
-                ['route' => 'library-imports/library/create', 'roles' => ['lib_administrator']],
-                ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_administrator']],
-                ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_administrator']],
+                ['route' => 'checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+
+                ['route' => 'library-imports/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'library-imports/library-import', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'library-imports/library/create', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_administrator', 'lib_library_administrator']],
 
             ],
         ],

@@ -314,7 +314,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $bookLookup = $this->getLibraryBookLookup($libraryId);
         $booksToCheckin = [];
         foreach ($withinLibraryIds as $withinLibraryId) {
-            if (key_exists($withinLibraryIds, $bookLookup)) {
+            if (key_exists($withinLibraryId, $bookLookup)) {
                 $booksToCheckin[$bookLookup[$withinLibraryId]] = false;
             }
         }
