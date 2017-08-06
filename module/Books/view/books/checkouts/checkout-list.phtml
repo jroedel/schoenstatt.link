@@ -1,6 +1,6 @@
 <?php
 use Books\Model\LibraryTable;
-$persons = $this->persons && is_array($this->persons) ? $this->persons : [];
+$persons = $this->persons && is_array($this->persons) ? $this->persons : null;
 
 /**
  * @param $entities mixed[]
@@ -11,7 +11,9 @@ $persons = $this->persons && is_array($this->persons) ? $this->persons : [];
 	<th><?php echo $this->translate('Library');?></th>
 	<th><?php echo $this->translate('Book');?></th>
 	<th><?php echo $this->translate('Checked out on');?></th>
+<?php if (!is_null($persons)):?>
 	<th><?php echo $this->translate('Checked out by');?></th>
+<?php endif;?>
 	<th><?php echo $this->translate('Due on');?></th>
 	<th><?php echo $this->translate('Checked in on');?></th>
 </tr></thead>
@@ -29,9 +31,11 @@ $persons = $this->persons && is_array($this->persons) ? $this->persons : [];
 	<td><?php echo $this->formatEntity('library', $entity['book']['library']);?></td>
 	<td><?php echo $this->formatEntity('book', $entity['book']);?></td>
 	<td><?php echo $this->dateFormat($entity['checkedOutOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></td>
-	<td><?php if (key_exists($entity['personId'], $this->persons)) {
+<?php if (!is_null($persons)):?>
+	<td><?php if (key_exists($entity['personId'], $persons)) {
 	   echo $this->persons[$entity['personId']];
 	}?></td>
+<?php endif;?>
 	<td><?php if ($entity['dueOn']) {
 	   echo $this->dateFormat($entity['dueOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
     }?></td>

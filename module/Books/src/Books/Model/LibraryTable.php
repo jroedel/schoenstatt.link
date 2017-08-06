@@ -389,6 +389,10 @@ ORDER BY library_id, call_number, category, lang, author, title";
             }
         }
 
+        foreach ($entities as $entityId => $entity) {
+            ksort($entities[$entityId]['categoryStatistics']);
+        }
+
         //check if the books are checked out
         $checkouts = $this->getUnlinkedCheckouts();
         foreach ($checkouts as $checkoutId => $checkout) {
@@ -635,7 +639,7 @@ CheckedOutIp, CheckedOutUserAgent, DueOn, TimesRenewed, LastRenewedOn, CheckedIn
 CheckedInBy, CheckedInIp, CheckedInUserAgent, AdminNotes, AdminNotesUpdatedOn,
 AdminNotesUpdatedBy, UpdatedOn, UpdatedBy
 FROM lib_checkouts
-ORDER BY DueOn;";
+ORDER BY CheckedInOn, CheckedOutOn DESC;";
 
         $results = $this->fetchSome(null, $sql, null);
 
