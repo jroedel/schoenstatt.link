@@ -1114,13 +1114,13 @@ return [
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_general_moderator']],
                 ['route' => 'home', 'roles' => ['lib_user']],
                 ['route' => 'libraries', 'roles' => ['lib_user']],
-                //@todo define library-based ACL
+                //@todo define library-specific ACL
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
-                ['route' => 'libraries/library/checkin', 'roles' => ['lib_administrator', 'lib_library_administrator']], //@todo open to moderators
+                ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_administrator']], //@todo open to moderators
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator', 'lib_library_administrator']],
+                ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/import', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],

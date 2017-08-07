@@ -466,10 +466,10 @@ ORDER BY `FiliationId`, `LibraryName`";
             $currentCheckout = $entity['currentCheckout'];
             $entities[$entity['withinLibraryId']] = [
                 'title'     => $entity['title'],
-                'author'    => $entity['author'],
-                'isCheckedOut' => !is_null($currentCheckout),
+//                 'author'    => $entity['author'],
+//                 'isCheckedOut' => !is_null($currentCheckout),
                 'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null, //@todo give the person's name
-                'checkedOutOn' => !is_null($currentCheckout) ? $currentCheckout['checkedOutOn'] : null, //@todo convert to Json date format
+//                 'checkedOutOn' => !is_null($currentCheckout) ? $currentCheckout['checkedOutOn'] : null,
             ];
         }
         return $entities;
