@@ -1139,6 +1139,34 @@ return [
             ],
         ],
     ],
+    'asset_manager' => [
+        'resolver_configs' => [
+            'collections' => [
+                'js/checkout.js' => [
+                    'js/multiple-checkouts.js',
+                    'js/selectize.min.js',
+                ],
+            ],
+            'paths' => [
+                'Books' => __DIR__ . '/../public',
+            ],
+        ],
+        'caching' => [
+            'js/checkout.js' => [
+                'cache'     => 'AssetManager\\Cache\\FilePathCache',
+                'options' => [
+                    'dir' => 'public', // path/to/cache
+                ],
+            ],
+        ],
+//         'filters' => [
+//             'js/checkout.js' => [
+//                 [
+//                     'filter' => 'SionModel\\Filter\\JShrinkFilter',
+//                 ],
+//             ],
+//         ],
+    ],
     'view_manager' => [
         'template_path_stack' => [
             'library' => __DIR__ . '/../view',
