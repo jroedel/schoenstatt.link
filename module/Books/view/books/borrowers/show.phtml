@@ -1,8 +1,59 @@
+<div class="alert alert-warning" role="alert" id="timer" style="display: none;"></div>
 <?php
+/**
+ * @todo this page should receive a redirect query parameter used to show which page to redirect to (if any)
+ */
 $headText = $this->person['fullFriendlyName'];
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText); ?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
 <?php echo $this->partial('books/checkouts/checkout-list', [
     'entities' => $this->entities,
-]);?>
+]);
+$jsScript= <<<JS
+var count = 15;
+var redirect = "/libraries/3";
+var timerTextTranslations = {
+    "en": "This page will redirect in {0} seconds.",
+    "es": "Esta página será redireccionada en {0} segundos.",
+};
+var lang = $('html')[0].lang;
+var timerText;
+if (timerTextTranslations.hasOwnProperty(lang)) {
+    timerText = timerTextTranslations[lang];
+} else {
+    timerText = timerTextTranslations['en'];
+}
+\$timer = $("#timer");
+// First, checks if it isn't implemented yet.
+if (!String.prototype.format) {
+  String.prototype.format = function() {
+    var args = arguments;
+    return this.replace(/{(\d+)}/g, function(match, number) {
+      return typeof args[number] != 'undefined'
+        ? args[number]
+        : match
+      ;
+    });
+  };
+}
+countDown();
+
+function countDown() {
+    if(count > 0){
+        count--;
+        \$timer.show();
+        \$timer.html(timerText.format(count));
+        setTimeout("countDown()", 1000);
+    }else{
+        window.location.href = redirect;
+    }
+}
+JS;
+
+$this->inlineScript()->captureStart();
+echo $jsScript;
+$this->inlineScript()->captureEnd();
+
+?>
+

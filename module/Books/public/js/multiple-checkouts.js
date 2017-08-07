@@ -1,7 +1,7 @@
 $(function () {
 var books;
 var currentlyDisplayedBooks = [];
-$("textarea[tabindex='1']").focus();
+$("textarea[name='bookIds']").focus();
 $.getJSON("book-list-json", function(result, status){
     if (status === 'success' && result.hasOwnProperty('books') && result.books !== null && typeof result.books === 'object') {
       books = result.books;
