@@ -17,3 +17,16 @@ echo $this->formRow($form->get('adminNotes'));
 echo $this->formRow($form->get('security'));
 echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();
+
+$jsScript = <<<JS
+$("select[name='personId']").selectize({
+    create: false
+});
+JS;
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();

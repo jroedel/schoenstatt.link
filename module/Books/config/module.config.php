@@ -1146,6 +1146,9 @@ return [
                     'js/multiple-checkouts.js',
                     'js/selectize.min.js',
                 ],
+                'js/checkin.js' => [
+                    'js/multiple-checkouts.js',
+                ],
             ],
             'paths' => [
                 'Books' => __DIR__ . '/../public',
@@ -1153,6 +1156,12 @@ return [
         ],
         'caching' => [
             'js/checkout.js' => [
+                'cache'     => 'AssetManager\\Cache\\FilePathCache',
+                'options' => [
+                    'dir' => 'public', // path/to/cache
+                ],
+            ],
+            'js/checkin.js' => [
                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
                 'options' => [
                     'dir' => 'public', // path/to/cache
