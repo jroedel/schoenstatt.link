@@ -62,17 +62,13 @@ class AssignmentsController extends SionController
         $params = $this->params()->fromQuery();
         /** @var AdvancedSearchForm $form */
         $form = $sm->get('Schoenstatt\Form\AdvancedSearchForm');
-        //Check if user is allowed to search ex-members
-        //         if (!$this->isAllowed('ex_members')) {
-        //             $form->get('category')->unsetValueOption('ex-member');
-        //         }
         $form->setData($params);
         $entities = null;
         //         $showPhotos = false;
         if ($form->isValid()) {
             $data = $form->getData();
-            //             $showPhotos = $data['showPhotos'];
-            //             unset($data['showPhotos']);
+//             $showPhotos = $data['showPhotos'];
+//             unset($data['showPhotos']);
             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
                 $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
@@ -81,7 +77,7 @@ class AssignmentsController extends SionController
         }
         return new ViewModel([
             'objects'      => $entities,
-            //             'showPhotos'    => $showPhotos,
+//             'showPhotos'    => $showPhotos,
             'form'          => $form,
         ]);
     }
@@ -89,15 +85,19 @@ class AssignmentsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
+        $form = null;
 
         if ($this->getRequest()->isGet()) {
             $queryRoleId = $this->params()->fromQuery('roleId');
+            $queryPersonId = $this->params()->fromQuery('personId');
+            if (!is_null($queryRoleId) || !is_null($queryPersonId)) {
+                /** @var \Schoenstatt\Form\AssignmentForm $form */
+                $form = $view->getVariable('form');
+            }
             if (!is_null($queryRoleId)) {
                 //verify the query param
                 $queryAssociationId = null;
                 $queryAssociationRoles = null;
-                /** @var \Schoenstatt\Form\AssignmentForm $form */
-                $form = $view->getVariable('form');
                 $roleTitleValueOptions = $form->getRoleTitleValueOptions();
                 foreach ($roleTitleValueOptions as $associationId => $roles) {
                     if (key_exists($queryRoleId, $roles)) { //we found our role
@@ -112,8 +112,13 @@ class AssignmentsController extends SionController
                         $form->get('associationId')->setValue($queryAssociationId);
                         $form->get('roleId')->setValueOptions($queryAssociationRoles);
                         $form->get('roleId')->setValue($queryRoleId);
-                        $view->setVariable('form', $form);
                     }
+                }
+            }
+            if (!is_null($queryPersonId)) {
+                $personElement = $form->get('personId');
+                if (key_exists($queryPersonId, $personElement->getValueOptions())) {
+                    $personElement->setValue($queryPersonId);
                 }
             }
         }

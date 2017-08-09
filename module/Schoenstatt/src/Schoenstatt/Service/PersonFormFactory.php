@@ -3,6 +3,7 @@ namespace Schoenstatt\Service;
 
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
 
 /**
  * Factory responsible of priming the PatresTable service

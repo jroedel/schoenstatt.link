@@ -1,0 +1,57 @@
+<?php
+use Zend\Json\Json;
+
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/checkout.js"));
+$headText = 'Book Checkout';
+$this->headTitle($headText); ?>
+<style>input,select {display: block; padding: 0; margin: 0; width: 100%;}
+td {margin: 0; padding: 0;}</style>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$form->setAttribute('action', $this->url('libraries/library/mass-checkout', ['library_id' => $this->libraryId]));
+$form->prepare();
+echo $this->form()->openTag($form);
+$checkouts = $form->get('checkout');
+$firstCheckout = $checkouts->getTargetElement();
+$this->formSelect()->setTranslatorEnabled(false);?>
+<table class="table">
+<thead>
+<tr>
+	<th><?php echo $this->formLabel($firstCheckout->get('checkedOutOn'));?></th>
+	<th><?php echo $this->formLabel($firstCheckout->get('personId'));?></th>
+	<th><?php echo $this->formLabel($firstCheckout->get('bookIds'));?></th>
+</tr>
+</thead>
+<tbody>
+<?php
+foreach ($checkouts as $fieldset) :?>
+<tr>
+	<td><?php echo $this->formText($fieldset->get('checkedOutOn'));?></td>
+	<td><?php echo $this->formSelect($fieldset->get('personId'));?></td>
+	<td><?php echo $this->formText($fieldset->get('bookIds'));?></td>
+</tr>
+<?php endforeach;?>
+</tbody>
+</table>
+<ul id="book-list" class="list-unstyled"></ul>
+<?php echo $this->formRow($form->get('security'));
+echo $this->formSubmit($form->get('submit'));
+echo $this->form()->closeTag();
+$personValueOptions = Json::encode($this->personValueOptions);
+//@todo fill the selectize options of personId dynamically in javascript.
+$jsScript = <<<JS
+$("select[name*='personId']").selectize({
+	valueField: 'id',
+	labelField: 'name',
+	searchField: 'name',
+	options: $personValueOptions,
+    create: false
+});
+JS;
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();

@@ -587,13 +587,21 @@ ORDER BY CreatedOn DESC";
     /**
      * Get an array of checkouts for a given libraryId
      * @param int $libraryId
+     * @param string $subset
      */
-    public function getCheckoutsForLibrary($libraryId)
+    public function getCheckoutsForLibrary($libraryId, $subset = 'all')
     {
         $checkouts = $this->getCheckouts();
         $entities = [];
+        $tz = new \DateTimeZone('UTC');
+        $now = new \DateTime(null, $tz);
         foreach ($checkouts as $checkoutId => $checkout) {
-            if ($checkout['book']['libraryId'] == $libraryId) {
+            if ($checkout['book']['libraryId'] == $libraryId &&
+                ($subset == 'all' || ($subset == 'current' &&
+                is_null($checkout['checkedInOn'])) ||
+                ($subset == 'overdue' && is_null($checkout['checkedInOn'])
+                    && is_object($checkout['dueOn']) && $now > $checkout['dueOn'])
+            )) {
                 $entities[$checkoutId] = $checkout;
             }
         }

@@ -35,9 +35,16 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'checkouts/library'=> [
+            'checkouts/library/current'=> [
                 'label' => "Review checkouts",
-                'description' => 'List and review checkouts for this library.',
+                'description' => 'List and review current checkouts for this library.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
+            'checkouts/library/overdue'=> [
+                'label' => "Review overdue books",
+                'description' => 'List and review overdue checkouts for this library.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
@@ -114,12 +121,14 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            'Books\Config'                  => 'Books\Service\ConfigServiceFactory',
-            'Books\Model\PublicationsTable' => 'Books\Service\PublicationsTableFactory',
-            'Books\Model\LibraryTable'      => 'Books\Service\LibraryTableServiceFactory',
-            'Books\Form\CreateCheckoutForm' => 'Books\Service\CheckoutFormFactory',
-            'Books\Form\PublicationForm'    => 'Books\Service\PublicationFormFactory',
+            'Books\Config'                      => 'Books\Service\ConfigServiceFactory',
+            'Books\Model\PublicationsTable'     => 'Books\Service\PublicationsTableFactory',
+            'Books\Model\LibraryTable'          => 'Books\Service\LibraryTableServiceFactory',
+            'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
+            'Books\Form\CheckoutFieldset'       => 'Books\Service\MassCheckoutFieldsetFactory',
+            'Books\Form\PublicationForm'        => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
+            'Books\FathersObjects'              => 'Books\Service\FathersObjectsFactory',
         ],
     ],
     'view_helpers' => [
@@ -356,6 +365,16 @@ return [
                                     ],
                                 ],
                             ],
+                            'mass-checkout' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/mass-checkout',
+                                    'defaults' => [
+                                        'action'     => 'massCheckout',
+                                        'controller' => 'Books\Controller\Checkouts',
+                                    ],
+                                ],
+                            ],
                             'admin' => [
                                 'type'    => 'Literal',
                                 'options' => [
@@ -539,10 +558,33 @@ return [
                         'options' => [
                             'route'    => '/library/:library_id',
                             'constraints' => [
-                                'library_id' => '[0-9]{1,5}',
+                                'library_id'    => '[0-9]{1,5}',
+                                'subset'        => '(all|current|overdue)',
                             ],
                             'defaults' => [
-                                'action'     => 'library',
+                                'action'    => 'library',
+                                'subset'    => 'all',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'current' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/current',
+                                    'defaults' => [
+                                        'subset'     => 'current',
+                                    ],
+                                ],
+                            ],
+                            'overdue' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/overdue',
+                                    'defaults' => [
+                                        'subset'     => 'overdue',
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -1119,6 +1161,7 @@ return [
                 ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_administrator']], //@todo open to moderators
+                ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_administrator']], //@todo open to moderators
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/import', 'roles' => ['lib_administrator', 'lib_library_administrator']],
@@ -1129,6 +1172,8 @@ return [
                 ['route' => 'books/book', 'roles' => ['lib_teo_viewer', 'lib_sch_viewer', 'lib_administrator']],
 
                 ['route' => 'checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'checkouts/library/overdue', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'checkouts/library/current', 'roles' => ['lib_administrator', 'lib_library_administrator']],
 
                 ['route' => 'library-imports/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'library-imports/library-import', 'roles' => ['lib_administrator', 'lib_library_administrator']],

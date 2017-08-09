@@ -245,4 +245,9 @@ echo implode(' ', $formattedAdminTags);?>
     href="<?php echo $this->url('persons/person/edit', array('person_id' => $object['personId']));?>"><?php
     echo $this->translate("Edit details")?></a>
 <?php endif;?>
+<?php if ($this->isAllowed('route/assignments/create')):?>
+      <a target="_blank" class="btn btn-default"
+    href="<?php echo $this->url('assignments/create', [], ['query' => ['personId' => $object['personId']]]);?>"><?php
+    echo $this->translate("Add assignment")?></a>
+<?php endif;?>
 </div></div>

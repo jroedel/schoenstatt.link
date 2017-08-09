@@ -1,26 +1,40 @@
 <?php
 namespace Books\Form;
 
-use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
 use Zend\Validator\NotEmpty;
+use Carbon\Carbon;
+use Zend\Form\Fieldset;
 
-class CheckoutForm extends SionForm implements InputFilterProviderInterface
+class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterface
 {
     public function __construct()
     {
         parent::__construct('checkout');
-
+        $today = new Carbon();
+        $todayText = $today->format('Y-d-m');
+        $this->add([
+            'name' => 'checkedOutOn',
+            'type' => 'Date',
+            'options' => [
+                'label' => 'Checked out on',
+            ],
+            'attributes' => [
+                'required' => true,
+                'value' => $todayText,
+                'tabindex' => 1,
+            ],
+        ]);
         $this->add([
             'name' => 'bookIds',
-            'type' => 'Textarea',
+            'type' => 'Text',
             'options' => [
                 'label' => 'Book Ids',
                 'help-block' => 'One barcode per line'
             ],
             'attributes' => [
                 'required' => true,
-                'tabindex' => 1,
+                'tabindex' => 2,
                 'rows' => 6,
             ],
         ]);
@@ -36,34 +50,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 'value_options' => [],
             ],
             'attributes' => [
-                'tabindex' => 2,
-            ],
-        ]);
-
-        $this->add([
-            'name' => 'adminNotes',
-            'type' => 'Textarea',
-            'options' => [
-                'label' => 'Notes',
-                'required' => false,
-            ],
-            'attributes' => [
-                'required' => false,
-                'rows' => 3,
                 'tabindex' => 3,
-            ],
-            'filters' => [
-                ['name' => 'StripTags'],
-            ],
-        ]);
-        $this->add([
-            'name' => 'submit',
-            'type' => 'Submit',
-            'attributes' => [
-                'value' => 'Submit',
-                'id' => 'submit',
-                'class' => 'btn-primary',
-                'tabindex' => 4,
             ],
         ]);
     }
@@ -83,13 +70,6 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                             'type' => NotEmpty::EMPTY_ARRAY
                         ],
                     ],
-                ],
-            ],
-            'adminNotes' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull'],
                 ],
             ],
         ];

@@ -7,6 +7,7 @@ use Books\Model\LibraryTable;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\CheckinForm;
+use Books\Form\MassCheckoutForm;
 
 class CheckoutsController extends SionController
 {
@@ -89,10 +90,11 @@ class CheckoutsController extends SionController
 
         $sm = $this->getServiceLocator();
 
+        $subset = $this->params()->fromRoute('subset', 'all');
         //get the checkouts
         /** @var LibraryTable $table */
         $table = $sm->get('Books\Model\LibraryTable');
-        $entities = $table->getCheckoutsForLibrary($id);
+        $entities = $table->getCheckoutsForLibrary($id, $subset);
         $library = $table->getLibrary($id);
 
         /** @var PatresTable $table */
@@ -137,6 +139,41 @@ class CheckoutsController extends SionController
         return new ViewModel([
             'libraryId' => $id,
             'form'      => $form,
+        ]);
+    }
+
+    public function massCheckoutAction()
+    {
+        //get the parameter
+        $id = $this->getLibraryId();
+
+        $sm = $this->getServiceLocator();
+        $form = new MassCheckoutForm();
+        $personValueOptions = $sm->get('Books\FathersObjects');
+
+        $request = $this->getRequest();
+        if ($request->isPost ()) {
+            $data = $request->getPost ()->toArray ();
+            $form->setData($data);
+            if ($form->isValid()) {
+                $data = $form->getData();
+                /** @var LibraryTable $table */
+                $table = $this->getSionTable();
+//                 if (!($return = $table->checkinBooks($id, $data['bookIds']))) {
+                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+//                 } else {
+//                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
+//                     ->addMessage ('Books successfully checked in.' );
+//                     $this->redirect ()->toRoute ('checkouts/library', ['library_id' => $id]);
+//                 }
+            } else {
+                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+            }
+        }
+        return new ViewModel([
+            'libraryId'             => $id,
+            'form'                  => $form,
+            'personValueOptions'    => $personValueOptions,
         ]);
     }
 
