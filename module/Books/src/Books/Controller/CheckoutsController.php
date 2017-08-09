@@ -8,6 +8,7 @@ use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\CheckinForm;
 use Books\Form\MassCheckoutForm;
+use Zend\Form\Element\Select;
 
 class CheckoutsController extends SionController
 {
@@ -59,7 +60,7 @@ class CheckoutsController extends SionController
 
         //@todo move the checkout process to LibraryTable
         //first check-in each of the books we're about to checkout
-        $table->checkinBooks($id, $data['bookIds'], false);
+        $table->checkinWithinLibraryBooks($id, $data['bookIds'], false);
 
         foreach ($data['bookIds'] as $bookId) {
             $currentBook = $data;
@@ -125,7 +126,7 @@ class CheckoutsController extends SionController
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-                if (!($return = $table->checkinBooks($id, $data['bookIds']))) {
+                if (!($return = $table->checkinWithinLibraryBooks($id, $data['bookIds']))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
@@ -145,7 +146,7 @@ class CheckoutsController extends SionController
     public function massCheckoutAction()
     {
         //get the parameter
-        $id = $this->getLibraryId();
+        $libraryId = $this->getLibraryId();
 
         $sm = $this->getServiceLocator();
         $form = new MassCheckoutForm();
@@ -154,24 +155,42 @@ class CheckoutsController extends SionController
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
+            //add value options for validation purposes
+            /** @var Select $personIdSelect */
+            $personIdSelect = $form->get('checkout')->getTargetElement()->get('personId');
+            $personIdSelect->setValueOptions($sm->get('Schoenstatt\FathersValueOptions'));
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-//                 if (!($return = $table->checkinBooks($id, $data['bookIds']))) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
-//                 } else {
-//                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-//                     ->addMessage ('Books successfully checked in.' );
-//                     $this->redirect ()->toRoute ('checkouts/library', ['library_id' => $id]);
-//                 }
+                $badValues = [];
+                foreach ($data['checkout'] as $checkout) {
+                    //only look over a checkout record if it has both books and a personId defined
+                    if (is_null($checkout['personId']) || empty($checkout['withinLibraryIds'])) {
+                        continue;
+                    }
+                    if (true !== ($return = $table->checkoutWithinLibraryBooks($libraryId, $checkout))) {
+                        $badValues = array_merge($badValues, $return);
+                    }
+                }
+                if (!empty($badValues)) {
+                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+                        ->addMessage (sprintf("There was a problem checking out one or more of the books: (%s) Any other books have been checked out. Please try again.",
+                            implode(', ', $badValues)));
+                } else {
+                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
+                    ->addMessage ('Books successfully checked out.' );
+                    $this->redirect ()->toRoute ('checkouts/library/current', ['library_id' => $libraryId]);
+                }
             } else {
+                //eliminate value options to use the javascript options; this reduces page size
+                $personIdSelect->setValueOptions([]);
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }
         return new ViewModel([
-            'libraryId'             => $id,
+            'libraryId'             => $libraryId,
             'form'                  => $form,
             'personValueOptions'    => $personValueOptions,
         ]);

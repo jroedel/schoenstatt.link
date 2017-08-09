@@ -12,6 +12,9 @@ class BookList extends AbstractFilter
      */
     public function filter($value)
     {
+        if (is_null($value)) {
+            return [];
+        }
         if (!is_string($value)) {
             throw new \InvalidArgumentException('Only string values excepted.');
         }

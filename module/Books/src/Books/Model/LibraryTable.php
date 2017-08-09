@@ -20,6 +20,9 @@ class LibraryTable extends SionTable
         self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE,
         self::BOOK_VALUE_OPTIONS_LABEL_ID
     ];
+
+    const DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS = 14;
+
     /** @var UserTable $userTable */
     protected $userTable;
 
@@ -298,24 +301,24 @@ ORDER BY library_id, call_number, category, lang, author, title";
     }
 
     /**
-     * Returns the bookId's passed to the function. If requested, a book that wasn't checked
+     * Checks in the bookId's passed to the function. If requested, a book that wasn't checked
      * out will be first checked out and then back in.
      * @param array $bookIds
      * @return boolean
      */
-    public function checkinBooks($libraryId, array $withinLibraryIds, $createCheckoutsForBooksWithNoCheckouts = true)
+    public function checkinBooks(array $bookIds, $createCheckoutsForBooksWithNoCheckouts = true)
     {
         $checkouts = $this->getUnlinkedCheckouts();
-        $library = $this->getLibrary($libraryId);
+        $libraries = $this->getUnlinkedLibraries();
 
         $tz = new \DateTimeZone('UTC');
         $today = new \DateTime(null, $tz);
 
-        $bookLookup = $this->getLibraryBookLookup($libraryId);
+        $books = $this->getUnlinkedBooks();
         $booksToCheckin = [];
-        foreach ($withinLibraryIds as $withinLibraryId) {
-            if (key_exists($withinLibraryId, $bookLookup)) {
-                $booksToCheckin[$bookLookup[$withinLibraryId]] = false;
+        foreach ($bookIds as $bookId) {
+            if (key_exists($bookId, $books)) {
+                $booksToCheckin[$bookId] = false;
             }
         }
 
@@ -341,18 +344,18 @@ ORDER BY library_id, call_number, category, lang, author, title";
             foreach ($booksToCheckin as $bookId => $alreadyCheckedIn) {
                 if (!$alreadyCheckedIn) {
                     $data = [
-                        'personId'              => $library['defaultCheckoutPerson'],
+                        'personId'              => $libraries[$books[$bookId]['libraryId']]['defaultCheckoutPerson'],
                         'bookId'                => $bookId,
                         'checkedOutOn'          => $today,
                         'checkedOutBy'          => $this->getActingUserId(),
                         'checkedOutIp'          => $_SERVER['REMOTE_ADDR'],
-//                         'checkedOutUserAgent'   => $this->filterDbString($row['CheckedOutUserAgent']),
+                        //                         'checkedOutUserAgent'   => $this->filterDbString($row['CheckedOutUserAgent']),
                         'dueOn'                 => $today,
 
                         'checkedInOn'           => $today,
                         'checkedInBy'           => $this->getActingUserId(),
                         'checkedInIp'           => $_SERVER['REMOTE_ADDR'], //@todo there should be a better way to do this
-//                     'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
+                        //                     'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
                     ];
                     (string)$this->createEntity('checkout', $data, false);
                     $booksToCheckin[$checkout['bookId']] = true;
@@ -364,6 +367,91 @@ ORDER BY library_id, call_number, category, lang, author, title";
     }
 
     /**
+     * Checks in the withinLibraryId's passed to the function. If requested, a book that wasn't checked
+     * out will be first checked out and then back in.
+     * @param array $bookIds
+     * @return boolean
+     */
+    public function checkinWithinLibraryBooks($libraryId, array $withinLibraryIds, $createCheckoutsForBooksWithNoCheckouts = true)
+    {
+        $checkouts = $this->getUnlinkedCheckouts();
+        $library = $this->getLibrary($libraryId);
+
+        $tz = new \DateTimeZone('UTC');
+        $today = new \DateTime(null, $tz);
+
+        $bookLookup = $this->getLibraryBookLookup($libraryId);
+        $bookIds = [];
+        foreach ($withinLibraryIds as $withinLibraryId) {
+            if (key_exists($withinLibraryId, $bookLookup)) {
+                $booksToCheckin[] = $bookLookup[$withinLibraryId];
+            }
+        }
+
+        return $this->checkinBooks($bookIds, $createCheckoutsForBooksWithNoCheckouts);
+    }
+
+    /**
+     * Checks out books listed in $data. Data must contain 'personId' and 'withinLibraryIds' keys.
+     * If any of the books have open checkout records, they will be checked in first.
+     * If any of the bookIds don't exist within the library, an exception will be thrown before doing any checkouts.
+     * @param int $libraryId
+     * @param array $data
+     * @throws \InvalidArgumentException
+     * @return boolean|number[]
+     */
+    public function checkoutWithinLibraryBooks($libraryId, array $data)
+    {
+        if (!is_array($data) || !key_exists('personId', $data) ||
+            !key_exists('withinLibraryIds', $data)
+        ) {
+            throw new \InvalidArgumentException('data must be an associative array containing at least \'personId\' and \'withinLibraryIds\' keys.');
+        }
+        $withinLibraryIdLookup = $this->getLibraryBookLookup($libraryId);
+
+        //confirm all bookIds are valid
+        $bookIds = [];
+        $withinLibraryIdErrors = [];
+        foreach ($data['withinLibraryIds'] as $withinLibraryId)
+        {
+            if (!key_exists($withinLibraryId, $withinLibraryIdLookup)) {
+                $withinLibraryIdErrors[] = $withinLibraryId;
+            } else {
+                $bookIds[] = $withinLibraryIdLookup[$withinLibraryId];
+            }
+        }
+
+        if (!empty($withinLibraryIdErrors)) {
+            throw new \InvalidArgumentException(sprintf("There was a problem checking out one or more books: (%s) Please try again.",
+                implode(', ', $withinLibraryIdErrors)));
+        }
+
+        //first checkin books if any were formerly checked out
+        $this->checkinBooks($bookIds, false);
+
+        //create a prototype in order to allow for any possible other fields to be inserted into the checkouts table
+        //many other fields are filled in within preprocessCheckout
+        $paramsPrototype = $data;
+        unset($paramsPrototype['withinLibraryIds']);
+        if (isset($paramsPrototype['checkedInOn']) && !$paramsPrototype['checkedInOn'] instanceof \DateTime) {
+            unset($paramsPrototype['checkedInOn']);
+        }
+
+        //check out books
+        $badValues = [];
+        foreach ($bookIds as $bookId) {
+            $currentBook = $paramsPrototype;
+            $currentBook['bookId'] = $bookId;
+            if (!$newId = $this->createEntity('checkout', $currentBook))
+            {
+                $badValues[] = $bookId;
+            }
+        }
+        return empty($badValues) ? true : $badValues;
+    }
+
+    /**
+     * @todo fill in monthlyCheckoutStatistics
      * @return mixed[]
      */
     public function getLibraries()
@@ -441,11 +529,13 @@ ORDER BY `FiliationId`, `LibraryName`";
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
 
-                'defaultCheckoutPerson' => 604, //@todo make a new column for this
+                'defaultCheckoutTimePeriodInDays' => self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS, //@TODO add to database
+                'defaultCheckoutPerson' => 10, //@todo make a new column for this
                 'defaultCollection'     => null, //@todo make a new column for this
 
                 'books'                 => [], //to be filled in, in getLibraries()
                 'categoryStatistics'    => [],
+                'monthlyCheckoutStatistics' => [],
             ];
         }
         $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
@@ -705,22 +795,54 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
      */
     protected function preprocessCheckout($data, $entityData, $action)
     {
+        static $now;
+        static $libraries;
+        static $books;
         if ($action == self::ENTITY_ACTION_CREATE) {
+            if (!isset($data['bookId'])) {
+                throw new \InvalidArgumentException('bookId is required to create a checkout.');
+            }
             if (!isset($data['checkedOutOn'])) {
-                $date = new \DateTime(null, new \DateTimeZone('UTC'));
-                $data['checkedOutOn'] = $date;
+                if (is_null($now)) {
+                    $now = new \DateTime(null, new \DateTimeZone('UTC'));
+                }
+                $data['checkedOutOn'] = $now;
             }
 
             if (!isset($data['checkedOutBy'])) {
                 $data['checkedOutBy'] = $this->getActingUserId();
             }
 
+            if (!isset($data['checkedOutIp'])) {
+                $data['checkedOutIp'] = $_SERVER['REMOTE_ADDR'];
+            }
+
+            //@todo find a safe way to store user agent
+//             if (!isset($data['checkedOutUserAgent'])) {
+//                 $data['checkedOutUserAgent'] = $_SERVER['REMOTE_ADDR'];
+//             }
+
             //calculate the dueDate
             if (!isset($data['dueOn'])) {
-//                 $library = $this->getLibrary($data['libraryId']);
-                $daysToLend = 14;
-                $tz = new \DateTimeZone('UTC');
-                $dueDate = new Carbon(null, $tz);
+                if (is_null($libraries)) {
+                    $libraries = $this->getUnlinkedLibraries();
+                }
+                if (is_null($books)) {
+                    $books = $this->getUnlinkedBooks();
+                }
+                if (!key_exists($data['bookId'], $books)) {
+                    throw new \InvalidArgumentException('Invalid book attempting to be checked out.');
+                }
+                $daysToLend = $libraries[$books[$data['bookId']]['libraryId']]['defaultCheckoutTimePeriodInDays'];
+                if (!is_numeric($daysToLend)) {
+                    $daysToLend = self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
+                }
+                if ($data['checkedOutOn'] instanceof \DateTime) {
+                    $dueDate = Carbon::instance($data['checkedOutOn']);
+                } else {
+                    $tz = new \DateTimeZone('UTC');
+                    $dueDate = new Carbon(null, $tz);
+                }
                 $dueDate->addDays($daysToLend)
                     ->endOfDay();
                 $data['dueOn'] = $dueDate;

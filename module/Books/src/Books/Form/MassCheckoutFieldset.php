@@ -2,7 +2,6 @@
 namespace Books\Form;
 
 use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Validator\NotEmpty;
 use Carbon\Carbon;
 use Zend\Form\Fieldset;
 
@@ -12,7 +11,7 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
     {
         parent::__construct('checkout');
         $today = new Carbon();
-        $todayText = $today->format('Y-d-m');
+        $todayText = $today->format('Y-m-d');
         $this->add([
             'name' => 'checkedOutOn',
             'type' => 'Date',
@@ -20,20 +19,22 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
                 'label' => 'Checked out on',
             ],
             'attributes' => [
-                'required' => true,
+                'required' => false,
                 'value' => $todayText,
                 'tabindex' => 1,
+                'min' => $todayText,
+                'step' => 'any',
             ],
         ]);
         $this->add([
-            'name' => 'bookIds',
+            'name' => 'withinLibraryIds',
             'type' => 'Text',
             'options' => [
                 'label' => 'Book Ids',
                 'help-block' => 'One barcode per line'
             ],
             'attributes' => [
-                'required' => true,
+                'required' => false,
                 'tabindex' => 2,
                 'rows' => 6,
             ],
@@ -44,10 +45,12 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
             'type' => 'Select',
             'options' => [
                 'label' => 'Who\'s checking out?',
-                'required' => true,
+                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],
+                'allow_empty' => true,
+                'continue_if_empty' => true,
             ],
             'attributes' => [
                 'tabindex' => 3,
@@ -55,21 +58,31 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
         ]);
     }
 
+    /**
+     * @todo Ideally validation would fail if personId is set but withinLibraryIds isn't or withinLibraryIds is set, but personId not
+     * {@inheritDoc}
+     * @see \Zend\InputFilter\InputFilterProviderInterface::getInputFilterSpecification()
+     */
     public function getInputFilterSpecification()
     {
         return [
-            'bookIds' => [
-                'required' => true,
+            'checkedOutOn' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToDateTime'],
+                ],
+            ],
+            'withinLibraryIds' => [
+                'required' => false,
                 'filters' => [
                     ['name' => 'Books\Filter\BookList'],
                 ],
-                'validators' => [
-                    [
-                        'name' => 'Zend\Validator\NotEmpty',
-                        'options' => [
-                            'type' => NotEmpty::EMPTY_ARRAY
-                        ],
-                    ],
+                //Allow empty for rows that aren't filled in
+            ],
+            'personId' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull'],
                 ],
             ],
         ];
