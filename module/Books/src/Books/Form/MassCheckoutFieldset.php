@@ -21,7 +21,6 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
             'attributes' => [
                 'required' => false,
                 'value' => $todayText,
-                'tabindex' => 1,
                 'min' => $todayText,
                 'step' => 'any',
             ],
@@ -35,7 +34,6 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
             ],
             'attributes' => [
                 'required' => false,
-                'tabindex' => 2,
                 'rows' => 6,
             ],
         ]);
@@ -53,7 +51,6 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
                 'continue_if_empty' => true,
             ],
             'attributes' => [
-                'tabindex' => 3,
             ],
         ]);
     }

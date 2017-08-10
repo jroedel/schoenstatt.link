@@ -56,6 +56,13 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/mass-checkout'=> [
+                'label' => "Mass book checkouts",
+                'description' => 'Register offline checkout notices.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
 //             'libraries/popular-books'=> [
 //                 'label' => "Popular books",
 //                 'description' => 'View list of most popular books.',
@@ -125,7 +132,6 @@ return [
             'Books\Model\PublicationsTable'     => 'Books\Service\PublicationsTableFactory',
             'Books\Model\LibraryTable'          => 'Books\Service\LibraryTableServiceFactory',
             'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
-            'Books\Form\CheckoutFieldset'       => 'Books\Service\MassCheckoutFieldsetFactory',
             'Books\Form\PublicationForm'        => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
             'Books\FathersObjects'              => 'Books\Service\FathersObjectsFactory',

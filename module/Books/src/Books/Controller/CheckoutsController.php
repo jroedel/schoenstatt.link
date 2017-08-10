@@ -42,9 +42,9 @@ class CheckoutsController extends SionController
         $id = $this->getLibraryId();
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
-        $bookLookup = $table->getLibraryBookLookup();
+        $bookLookup = $table->getLibraryBookLookup($id);
         $badValues = [];
-        foreach ($data['bookIds'] as $value) {
+        foreach ($data['withinLibraryIds'] as $value) {
             if (!key_exists($value, $bookLookup)) {
                 $badValues[] = $value;
                 continue;
@@ -58,19 +58,7 @@ class CheckoutsController extends SionController
 
         //@todo first we should make sure the person exists, and if not create him
 
-        //@todo move the checkout process to LibraryTable
-        //first check-in each of the books we're about to checkout
-        $table->checkinWithinLibraryBooks($id, $data['bookIds'], false);
-
-        foreach ($data['bookIds'] as $bookId) {
-            $currentBook = $data;
-            $currentBook['bookId'] = $bookLookup[$bookId];
-            if (!$newId = $table->createEntity('checkout', $currentBook))
-            {
-                $badValues[] = $bookId;
-            }
-        }
-        if (!empty($badValues)) {
+        if (true !== $badValues = $table->checkoutWithinLibraryBooks($id, $data)) {
             $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
             ->addMessage (sprintf("There was a problem checking out one of the books: (%s) Any other books have been checked out. Please try again.",
                 implode(', ', $badValues)));
@@ -80,7 +68,6 @@ class CheckoutsController extends SionController
         //if all went well redirect to the borrower's page
         $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
             ->addMessage ('Books successfully checked out.' );
-        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
         $this->redirect()->toRoute('borrowers/borrower', ['person_id' => $data['personId']]);
     }
 

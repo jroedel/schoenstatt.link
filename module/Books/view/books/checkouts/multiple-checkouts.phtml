@@ -10,7 +10,7 @@ $form->setAttribute('action', $this->url('libraries/library/checkout', ['library
 $form->prepare();
 echo $this->form()->openTag($form);
 $this->formSelect()->setTranslatorEnabled(false);
-echo $this->formRow($form->get('bookIds'));?>
+echo $this->formRow($form->get('withinLibraryIds'));?>
 <ul id="book-list" class="list-unstyled"></ul>
 <?php echo $this->formRow($form->get('personId'));
 echo $this->formRow($form->get('adminNotes'));

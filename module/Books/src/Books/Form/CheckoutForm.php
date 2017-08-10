@@ -12,7 +12,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
         parent::__construct('checkout');
 
         $this->add([
-            'name' => 'bookIds',
+            'name' => 'withinLibraryIds',
             'type' => 'Textarea',
             'options' => [
                 'label' => 'Book Ids',
@@ -71,7 +71,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
-            'bookIds' => [
+            'withinLibraryIds' => [
                 'required' => true,
                 'filters' => [
                     ['name' => 'Books\Filter\BookList'],
