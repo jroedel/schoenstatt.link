@@ -5,32 +5,49 @@ use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
 use Zend\Validator\NotEmpty;
 
-class CheckinForm extends SionForm implements InputFilterProviderInterface
+class InactivationForm extends SionForm implements InputFilterProviderInterface
 {
     public function __construct()
     {
-        parent::__construct('checkin');
+        parent::__construct('inactivation');
 
         $this->add([
             'name' => 'withinLibraryIds',
             'type' => 'Textarea',
             'options' => [
-                'label' => 'Book Ids to check in',
+                'label' => 'Book Ids',
                 'help-block' => 'One barcode per line'
             ],
             'attributes' => [
                 'required' => true,
                 'tabindex' => 1,
+                'rows' => 6,
             ],
         ]);
 
+        $this->add([
+            'name' => 'inactivationReason',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Inactivation reason',
+                'required' => false,
+            ],
+            'attributes' => [
+                'required' => false,
+                'tabindex' => 3,
+            ],
+            'filters' => [
+                ['name' => 'StripTags'],
+            ],
+        ]);
         $this->add([
             'name' => 'submit',
             'type' => 'Submit',
             'attributes' => [
                 'value' => 'Submit',
                 'id' => 'submit',
-                'class' => 'btn-primary'
+                'class' => 'btn-primary',
+                'tabindex' => 4,
             ],
         ]);
     }
@@ -39,7 +56,7 @@ class CheckinForm extends SionForm implements InputFilterProviderInterface
     {
         return [
             'withinLibraryIds' => [
-                'required' => false,
+                'required' => true,
                 'filters' => [
                     ['name' => 'Books\Filter\BookList'],
                 ],
@@ -50,6 +67,13 @@ class CheckinForm extends SionForm implements InputFilterProviderInterface
                             'type' => NotEmpty::EMPTY_ARRAY
                         ],
                     ],
+                ],
+            ],
+            'inactivationReason' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'ToNull'],
                 ],
             ],
         ];

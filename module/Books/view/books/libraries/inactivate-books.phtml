@@ -1,12 +1,13 @@
 <?php
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/checkin.js"));
-$headText = 'Book Check-in';
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/inactivate-books.js"));
+$headText = 'Inactivate books';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('libraries/library/checkin', ['library_id' => $this->libraryId]));
+$form->setAttribute('action', $this->url('libraries/library/inactivate-books', ['library_id' => $this->libraryId]));
 $form->prepare();
 echo $this->form()->openTag($form);
+echo $this->formRow($form->get('inactivationReason'));
 echo $this->formRow($form->get('withinLibraryIds'));?>
 <ul id="book-list" class="list-unstyled"></ul>
 <?php echo $this->formRow($form->get('security'));

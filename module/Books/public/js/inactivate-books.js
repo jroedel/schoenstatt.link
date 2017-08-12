@@ -1,16 +1,16 @@
 $(function () {
 var books;
 var currentlyDisplayedBooks = [];
-$("textarea[tabindex='1']").focus();
-$.getJSON("/libraries/3/book-list-json", function(result, status){
+$("textarea[name='withinLibraryIds']").focus();
+$.getJSON("book-list-json", function(result, status){
     if (status === 'success' && result.hasOwnProperty('books') && result.books !== null && typeof result.books === 'object') {
       books = result.books;
     }
 });
 
-$("textarea[name='bookIds']").bind('input propertychange', function() {
+$("textarea[name='withinLibraryIds']").bind('input propertychange', function() {
 
-  var text = $("textarea[name='bookIds']").val();
+  var text = $("textarea[name='withinLibraryIds']").val();
   var regex = /\d{5}/gm;
   var barcodes = [];
   var res;
@@ -27,7 +27,9 @@ $("textarea[name='bookIds']").bind('input propertychange', function() {
       if (!books.hasOwnProperty(barcodes[i])) {
         html += "<li class=\"text-danger\">"+barcodes[i]+": Not a valid book</li>";
       } else if (books[barcodes[i]].hasOwnProperty('title')) {
-        if (true === books[barcodes[i]]['isCheckedOut']) {
+    	if (false === books[barcodes[i]]['isActive']) {
+    		html += "<li class=\"text-danger\">"+barcodes[i]+": "+books[barcodes[i]]['title']+", This book has been removed from the library.</li>";
+    	} else if (null !== books[barcodes[i]]['checkedOutBy']) {
           html += "<li class=\"text-warning\">"+barcodes[i]+": "+books[barcodes[i]]['title']+", Checked out by "+books[barcodes[i]]['checkedOutBy']+"</li>";
         } else {
           html += "<li class=\"text-success\">"+barcodes[i]+": "+books[barcodes[i]]['title']+"</li>";

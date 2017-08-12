@@ -113,7 +113,7 @@ class CheckoutsController extends SionController
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-                if (!($return = $table->checkinWithinLibraryBooks($id, $data['bookIds']))) {
+                if (!($return = $table->checkinWithinLibraryBooks($id, $data['withinLibraryIds']))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
@@ -183,6 +183,10 @@ class CheckoutsController extends SionController
         ]);
     }
 
+    /**
+     * Get the library id. If not found, send the user back to the libraries index and give them a flash message
+     * @return number
+     */
     protected function getLibraryId()
     {
         $id = ( int ) $this->params ()->fromRoute ( 'library_id' );

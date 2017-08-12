@@ -367,5 +367,6 @@ class LibraryImportsController extends SionController
                     break;
             }
         }
+        $table->removeDependentCacheItems('book'); //force cache refresh
     }
 }

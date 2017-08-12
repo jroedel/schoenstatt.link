@@ -63,6 +63,13 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/inactivate-books'=> [
+                'label' => "Inactivate books",
+                'description' => 'Remove books from the library.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
 //             'libraries/popular-books'=> [
 //                 'label' => "Popular books",
 //                 'description' => 'View list of most popular books.',
@@ -381,6 +388,16 @@ return [
                                     ],
                                 ],
                             ],
+                            'inactivate-books' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/inactivate-books',
+                                    'defaults' => [
+                                        'action'     => 'inactivateBooks',
+                                        'controller' => 'Books\Controller\Libraries',
+                                    ],
+                                ],
+                            ],
                             'admin' => [
                                 'type'    => 'Literal',
                                 'options' => [
@@ -655,8 +672,22 @@ return [
                     'callNumberHelpText'    => 'CallNumberHelpText',
                     'callNumberExplanation' => 'CallNumberExplanation',
                     'filiationId'           => 'FiliationId',
-                    'contactPerson'         => 'ContactPerson',
+                    'contactPersonId'       => 'ContactPerson',
                     'contactEmail'          => 'ContactEmail',
+                    'mainShowDisplay'       => 'MainShowDisplay',
+                    'useCollections'        => 'UseCollections',
+                    'allowCollectionlessBooks'=> 'AllowCollectionlessBooks',
+                    'mainCollectionId'      => 'MainCollectionId',
+                    'requireCallNumbers'    => 'RequireCallNumbers',
+                    'callNumberRegex'       => 'CallNumberRegex',
+                    'enforceCallNumberRegex'=> 'EnforceCallNumberRegex',
+                    'labelLine1'            => 'LabelLine1',
+                    'labelLine2'            => 'LabelLine2',
+                    'labelLine3'            => 'LabelLine3',
+                    'barcodeText'           => 'BarcodeText',
+                    'createCheckoutsIfCheckingInANonCheckedOutBook' => 'CreateCheckoutsIfCheckingInANonCheckedOutBook',
+                    'defaultCheckoutPersonId' => 'DefaultCheckoutPersonId',
+                    'defaultCheckoutTimePeriodInDays' => 'DefaultCheckoutTimePeriodInDays',
                     'updatedOn'             => 'UpdatedOn',
                     'updatedBy'             => 'UpdatedBy',
                     'createdOn'             => 'CreatedOn',
@@ -806,6 +837,7 @@ return [
                     'withinLibraryId'           => 'original_id',
                     'libraryId'                 => 'library_id',
                     'publicationId'             => 'publication_id',
+                    'isActive'                  => 'is_active',
 
                     'copyrightYear'             => 'copyright_year',
                     'publisher'                 => 'publisher',
@@ -1166,8 +1198,9 @@ return [
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
-                ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_administrator']], //@todo open to moderators
-                ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_administrator']], //@todo open to moderators
+                ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/import', 'roles' => ['lib_administrator', 'lib_library_administrator']],

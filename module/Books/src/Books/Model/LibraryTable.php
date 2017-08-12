@@ -23,6 +23,14 @@ class LibraryTable extends SionTable
 
     const DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS = 14;
 
+    const MAIN_SHOW_DISPLAY_VALUE_OPTIONS = [
+        self::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES => 'Show categories',
+        self::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS => 'Show collections',
+    ];
+    const MAIN_SHOW_DISPLAY_DEFAULT = self::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES;
+    const MAIN_SHOW_DISPLAY_SHOW_CATEGORIES = 'show-categories';
+    const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS = 'show-collections';
+
     /** @var UserTable $userTable */
     protected $userTable;
 
@@ -275,7 +283,6 @@ ORDER BY library_id, call_number, category, lang, author, title";
         return $entities;
     }
 
-
     /**
      * Return a lookup associated array keyed by the library's id, mapped to the bookId
      * @return number[]
@@ -344,7 +351,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
             foreach ($booksToCheckin as $bookId => $alreadyCheckedIn) {
                 if (!$alreadyCheckedIn) {
                     $data = [
-                        'personId'              => $libraries[$books[$bookId]['libraryId']]['defaultCheckoutPerson'],
+                        'personId'              => $libraries[$books[$bookId]['libraryId']]['defaultCheckoutPersonId'],
                         'bookId'                => $bookId,
                         'checkedOutOn'          => $today,
                         'checkedOutBy'          => $this->getActingUserId(),
@@ -362,6 +369,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
                 }
             }
         }
+        $this->removeDependentCacheItems('checkout'); // force cache refresh
 
         return true;
     }
@@ -408,13 +416,16 @@ ORDER BY library_id, call_number, category, lang, author, title";
             throw new \InvalidArgumentException('data must be an associative array containing at least \'personId\' and \'withinLibraryIds\' keys.');
         }
         $withinLibraryIdLookup = $this->getLibraryBookLookup($libraryId);
+        $books = $this->getUnlinkedBooks();
 
         //confirm all bookIds are valid
         $bookIds = [];
         $withinLibraryIdErrors = [];
         foreach ($data['withinLibraryIds'] as $withinLibraryId)
         {
-            if (!key_exists($withinLibraryId, $withinLibraryIdLookup)) {
+            if (!key_exists($withinLibraryId, $withinLibraryIdLookup) ||
+                false === $books[$withinLibraryIdLookup[$withinLibraryId]]['isActive'] //make sure book is active
+            ) {
                 $withinLibraryIdErrors[] = $withinLibraryId;
             } else {
                 $bookIds[] = $withinLibraryIdLookup[$withinLibraryId];
@@ -422,7 +433,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         }
 
         if (!empty($withinLibraryIdErrors)) {
-            throw new \InvalidArgumentException(sprintf("There was a problem checking out one or more books: (%s) Please try again.",
+            throw new \InvalidArgumentException(sprintf("The following book(s) don't exist or are inactivated: (%s) Please try again.",
                 implode(', ', $withinLibraryIdErrors)));
         }
 
@@ -442,11 +453,12 @@ ORDER BY library_id, call_number, category, lang, author, title";
         foreach ($bookIds as $bookId) {
             $currentBook = $paramsPrototype;
             $currentBook['bookId'] = $bookId;
-            if (!$newId = $this->createEntity('checkout', $currentBook))
+            if (!$newId = $this->createEntity('checkout', $currentBook, false))
             {
                 $badValues[] = $bookId;
             }
         }
+        $this->removeDependentCacheItems('checkout'); //force cache refresh
         return empty($badValues) ? true : $badValues;
     }
 
@@ -504,8 +516,11 @@ ORDER BY library_id, call_number, category, lang, author, title";
             return $cache;
         }
         $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberHelpText`,
-`CallNumberExplanation`, `FiliationId`, `ContactPerson`, `ContactEmail`,
-`UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`
+`CallNumberExplanation`, `FiliationId`, `ContactPerson`, `ContactEmail`, `MainShowDisplay`,
+`UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
+`CallNumberRegex`, `EnforceCallNumberRegex`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
+`BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
+`DefaultCheckoutTimePeriodInDays`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`
 FROM `lib_libraries`
 WHERE 1
 ORDER BY `FiliationId`, `LibraryName`";
@@ -522,16 +537,27 @@ ORDER BY `FiliationId`, `LibraryName`";
                 'callNumberHelpText'    => $this->filterDbString($row['CallNumberHelpText']),
                 'callNumberExplanation' => $this->filterDbString($row['CallNumberExplanation']),
                 'filiationId'           => $this->filterDbId($row['FiliationId']),
-                'contactPerson'         => $this->filterDbId($row['ContactPerson']),
+                'contactPersonId'       => $this->filterDbId($row['ContactPerson']),
                 'contactEmail'          => $this->filterEmailString($row['ContactEmail']),
+                'mainShowDisplay'       => $this->filterDbString($row['MainShowDisplay']),
+                'useCollections'        => $this->filterDbBool($row['UseCollections']),
+                'allowCollectionlessBooks'=> $this->filterDbBool($row['AllowCollectionlessBooks']),
+                'mainCollectionId'      => $this->filterDbId($row['MainCollectionId']),
+                'requireCallNumbers'    => $this->filterDbBool($row['RequireCallNumbers']),
+                'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
+                'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
+                'labelLine1'            => $this->filterDbString($row['LabelLine1']),
+                'labelLine2'            => $this->filterDbString($row['LabelLine2']),
+                'labelLine3'            => $this->filterDbString($row['LabelLine3']),
+                'barcodeText'           => $this->filterDbString($row['BarcodeText']),
+                'createCheckoutsIfCheckingInANonCheckedOutBook' => $this->filterDbBool($row['CreateCheckoutsIfCheckingInANonCheckedOutBook']),
+                'defaultCheckoutPersonId' => $this->filterDbId($row['DefaultCheckoutPersonId']),
+                'defaultCheckoutTimePeriodInDays' => $this->filterDbInt($row['DefaultCheckoutTimePeriodInDays']),
+
                 'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
-
-                'defaultCheckoutTimePeriodInDays' => self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS, //@TODO add to database
-                'defaultCheckoutPerson' => 10, //@todo make a new column for this
-                'defaultCollection'     => null, //@todo make a new column for this
 
                 'books'                 => [], //to be filled in, in getLibraries()
                 'categoryStatistics'    => [],
@@ -539,6 +565,43 @@ ORDER BY `FiliationId`, `LibraryName`";
             ];
         }
         $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
+        return $entities;
+    }
+
+    /**
+     * Get a Library instance for a given libraryId
+     * @param number $libraryId
+     * @throws \InvalidArgumentException
+     * @return \Books\Model\Library
+     */
+    public function getLibraryOptions($libraryId = null)
+    {
+        if (is_null($libraryId)) {
+            $libraryId = $this->getLibraryId();
+        }
+        if (is_null($libraryId) || !is_numeric($libraryId)) {
+            throw new \InvalidArgumentException('getLibraryOptions requires an active libraryId');
+        }
+        $entities = $this->getLibrariesOptions();
+        if (!key_exists((int)$libraryId, $entities)) {
+            throw new \InvalidArgumentException('getLibraryOptions requires a valid libraryId');
+        }
+        return $entities[(int)$libraryId];
+    }
+
+    public function getLibrariesOptions()
+    {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('libraries-options'))) {
+            return $cache;
+        }
+        $libraries = $this->getUnlinkedLibraries();
+        $entities = [];
+        foreach ($libraries as $libraryId => $library) {
+            if (!key_exists($libraryId, $libraries)) {
+                $entities[$libraryId] = new Library($libraries[$libraryId]);
+            }
+        }
+        $this->cacheEntityObjects('libraries-options', $entities, ['library']);
         return $entities;
     }
 
@@ -556,6 +619,7 @@ ORDER BY `FiliationId`, `LibraryName`";
             $currentCheckout = $entity['currentCheckout'];
             $entities[$entity['withinLibraryId']] = [
                 'title'     => $entity['title'],
+                'isActive'  => $entity['isActive'],
 //                 'author'    => $entity['author'],
 //                 'isCheckedOut' => !is_null($currentCheckout),
                 'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null, //@todo give the person's name
@@ -563,6 +627,67 @@ ORDER BY `FiliationId`, `LibraryName`";
             ];
         }
         return $entities;
+    }
+
+    /**
+     * Inactivate a list of books given in $data['withinLibraryIds']
+     * Other keys that can be set are 'inactivationReason' or any other book field
+     * All books are first checked in if they were checked out
+     * Function does not inactivate any books if one of the ids is not valid; instead
+     * an array of bad ids is returned
+     * @param number $libraryId
+     * @param array $data
+     * @throws \InvalidArgumentException
+     * @return boolean|number[]
+     */
+    public function inactivateWithinLibraryBooks($libraryId, array $data)
+    {
+        if (!is_array($data) || !key_exists('withinLibraryIds', $data)
+        ) {
+            throw new \InvalidArgumentException('data must be an associative array containing at least the \'withinLibraryIds\' key.');
+        }
+        $withinLibraryIdLookup = $this->getLibraryBookLookup($libraryId);
+
+        //confirm all bookIds are valid
+        $bookIds = [];
+        $withinLibraryIdErrors = [];
+        foreach ($data['withinLibraryIds'] as $withinLibraryId)
+        {
+            if (!key_exists($withinLibraryId, $withinLibraryIdLookup)) {
+                $withinLibraryIdErrors[] = $withinLibraryId;
+            } else {
+                $bookIds[] = $withinLibraryIdLookup[$withinLibraryId];
+            }
+        }
+
+        if (!empty($withinLibraryIdErrors)) {
+            throw new \InvalidArgumentException(sprintf("There was a problem inactivating one or more books: (%s) Please try again.",
+                implode(', ', $withinLibraryIdErrors)));
+        }
+
+        //first checkin books if any were formerly checked out
+        $this->checkinBooks($bookIds, false);
+
+        //create a prototype in order to allow for any possible other fields to be inserted into the checkouts table
+        //many other fields are filled in within preprocessCheckout
+        $paramsPrototype = $data;
+        if (isset($paramsPrototype['bookId'])) {
+            unset($paramsPrototype['bookId']);
+        }
+        unset($paramsPrototype['withinLibraryIds']);
+        $paramsPrototype['isActive'] = false;
+
+        //check out books
+        $badValues = [];
+        foreach ($bookIds as $bookId) {
+            $currentBook = $paramsPrototype;
+            if (!$newId = $this->updateEntity('book', $bookId, $currentBook, [], false))
+            {
+                $badValues[] = $bookId;
+            }
+        }
+        $this->removeDependentCacheItems('book'); //refresh the cache
+        return empty($badValues) ? true : $badValues;
     }
 
     /**
@@ -833,7 +958,9 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
                 if (!key_exists($data['bookId'], $books)) {
                     throw new \InvalidArgumentException('Invalid book attempting to be checked out.');
                 }
-                $daysToLend = $libraries[$books[$data['bookId']]['libraryId']]['defaultCheckoutTimePeriodInDays'];
+                $daysToLend = is_numeric($libraries[$books[$data['bookId']]['libraryId']]['defaultCheckoutTimePeriodInDays']) ?
+                    $libraries[$books[$data['bookId']]['libraryId']]['defaultCheckoutTimePeriodInDays'] :
+                    self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
                 if (!is_numeric($daysToLend)) {
                     $daysToLend = self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
                 }

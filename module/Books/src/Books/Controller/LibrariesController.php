@@ -9,6 +9,8 @@ use Books\Model\LibraryTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Service\ProblemService;
 use Zend\View\Model\JsonModel;
+use Books\Form\InactivationForm;
+use Zend\Mvc\Controller\Plugin\FlashMessenger;
 
 class LibrariesController extends SionController
 {
@@ -181,6 +183,46 @@ class LibrariesController extends SionController
         ]);
     }
 
+    public function inactivateBooksAction()
+    {
+        //get the parameter
+        $libraryId = $this->getLibraryId();
+
+        $sm = $this->getServiceLocator();
+        $form = new InactivationForm();
+
+        $request = $this->getRequest();
+        if ($request->isPost ()) {
+            $data = $request->getPost ()->toArray ();
+            $form->setData($data);
+            if ($form->isValid()) {
+                $data = $form->getData();
+                /** @var LibraryTable $table */
+                $table = $this->getSionTable();
+                try {
+                    if (is_array($badValues = $table->inactivateWithinLibraryBooks($libraryId, $data))) {
+                        $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+                        ->addMessage (sprintf("There was a problem with one or more of the books: (%s) Please try again.",
+                            implode(', ', $badValues)));
+                    } else {
+                        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
+                        ->addMessage ('Books successfully inactivated.' );
+//                         $this->redirect ()->toRoute ('libraries/library/admin', ['library_id' => $libraryId]);
+                    }
+                } catch (\Exception $e) {
+                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+                    ->addMessage ($e->getMessage());
+                }
+            } else {
+                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+            }
+        }
+        return new ViewModel([
+            'libraryId'             => $libraryId,
+            'form'                  => $form,
+        ]);
+    }
+
     public function bookListAction()
     {
         /** @var LibraryTable $table */
@@ -201,5 +243,20 @@ class LibrariesController extends SionController
             $entities[$book['libraryId']]['books'][] = $book;
         }
         return $entities;
+    }
+
+    /**
+     * Get the library id. If not found, send the user back to the libraries index and give them a flash message
+     * @return number
+     */
+    protected function getLibraryId()
+    {
+        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
+        if (!$id) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+            ->addMessage('Library not found.');
+            $this->redirect ()->toRoute ( 'libraries');
+        }
+        return $id;
     }
 }
