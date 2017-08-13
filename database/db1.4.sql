@@ -1,3 +1,5 @@
+#Submitted 2017-08-12
+
 # DELETE the CM PK library
 DELETE FROM `lib_books` WHERE library_id = 2;
 DELETE FROM `lib_libraries` WHERE LibraryId = 2;

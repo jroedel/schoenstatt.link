@@ -20,7 +20,7 @@ require 'init_autoloader.php';
 // Report all errors except E_DEPRECATED
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 // ini_set('display_errors', 1);
-// ini_set('xdebug.var_display_max_depth', 5);
+// ini_set('xdebug.var_display_max_depth', 2);
 
 // Run the application!
 Zend\Mvc\Application::init(require 'config/application.config.php')->run();

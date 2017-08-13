@@ -9,6 +9,13 @@ return [
             'Paperback'         => 'Paperback',
             'GraphicNovel'      => 'GraphicNovel',
         ],
+        'library_filiation_options' => [
+            50  => 'Vaterhaus',
+            12  => 'Colegio Mayor',
+            44  => 'Studentat Kentenich Vidhyaniketan',
+            35  => 'Novitiate Tuparenda',
+            7   => 'Bellavista - casa central',
+        ],
         'language_value_options' => [
             'en' => 'English',
             'es' => 'Spanish',
@@ -85,6 +92,13 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/edit'   => [
+                'label' => "Library configuration",
+                'description' => 'Edit library configuration options. For advanced users.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
             'sion-model/view-changes'   => [
                 'label' => "View changes",
                 'description' => 'View the recent changes made to the database.',
@@ -138,6 +152,7 @@ return [
             'Books\Config'                      => 'Books\Service\ConfigServiceFactory',
             'Books\Model\PublicationsTable'     => 'Books\Service\PublicationsTableFactory',
             'Books\Model\LibraryTable'          => 'Books\Service\LibraryTableServiceFactory',
+            'Books\Form\LibraryForm'            => 'Books\Service\LibraryFormFactory',
             'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
             'Books\Form\PublicationForm'        => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
@@ -624,7 +639,7 @@ return [
                 'entity_key_field'               		=> 'libraryId',
                 'sion_model_class'               		=> 'Books\Model\LibraryTable',
                 'get_object_function' 					=> 'getLibrary',
-                'get_objects_function'               	=> 'getLibraries',
+                'get_objects_function'               	=> 'getUnlinkedLibraries',
 //                 'format_view_helper'                    => 'formatEvent',
                 'required_columns_for_creation' 		=> [
                     'name',
@@ -640,12 +655,12 @@ return [
                 'show_route' 							=> 'libraries/library',
                 'show_route_key' 						=> 'library_id',
                 'show_route_key_field' 					=> 'libraryId',
-//                 'edit_action_form'               		=> 'Project\Form\EditEventForm',
-                'edit_action_template'               	=> 'project/events/edit',
-                'edit_route'               				=> 'events/event/edit',
+                'edit_action_form'               		=> 'Books\Form\LibraryForm',
+//                 'edit_action_template'               	=> 'libraries/library/edit',
+                'edit_route'               				=> 'libraries/library/edit',
                 'edit_route_key'               			=> 'library_id',
                 'edit_route_key_field'           		=> 'libraryId',
-//                 'create_action_form'              		=> 'Project\Form\CreateEventForm',
+                'create_action_form'              		=> 'Books\Form\LibraryForm',
 //                 'create_action_valid_data_handler'		=> 'createEvent',
                 'create_action_redirect_route'         	=> 'libraries/library',
                 'create_action_redirect_route_key'    	=> 'library_id',
@@ -1196,6 +1211,8 @@ return [
                 ['route' => 'libraries', 'roles' => ['lib_user']],
                 //@todo define library-specific ACL
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/edit', 'roles' => ['lib_library_administrator']],
+                ['route' => 'libraries/library/create', 'roles' => ['lib_administrator']],
                 ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_moderator']],

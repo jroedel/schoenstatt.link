@@ -1,0 +1,2 @@
+
+ALTER TABLE `sch_persons` ADD `SpousePersonId` INT NULL DEFAULT NULL AFTER `CreatedBy`, ADD `PriestDate` DATE NULL DEFAULT NULL AFTER `SpousePersonId`, ADD `BishopDate` DATE NULL DEFAULT NULL AFTER `PriestDate`, ADD `PrimaryLocale` VARCHAR(10) NULL DEFAULT NULL AFTER `BishopDate`, ADD `IsAuthor` BIT(1) NOT NULL DEFAULT b'0' AFTER `PrimaryLocale`, ADD `IsBorrower` BIT(1) NOT NULL DEFAULT b'0' AFTER `IsAuthor`;

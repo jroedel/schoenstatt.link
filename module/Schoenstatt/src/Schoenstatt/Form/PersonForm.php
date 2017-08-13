@@ -390,6 +390,18 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
     	    ],
     	]);
     	$this->add([
+    	    'name' => 'spousePersonId',
+    	    'type' => 'Select',
+    	    'options' => [
+    	        'label' => 'Spouse',
+    	        'required' => false,
+    	        'empty_option' => '',
+    	        'unselected_value' => '',
+    	        'disable_inarray_validator' => false,
+    	        'value_options' => [],
+    	    ],
+    	]);
+    	$this->add([
     	    'name' => 'personTags',
     	    'type' => 'Select',
     	    'options' => [
@@ -478,7 +490,58 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		        'required' => false,
 		    ],
 		]);
-
+		$this->add([
+		    'name' => 'priestDate',
+		    'type' => 'Date',
+		    'options' => [
+		        'label' => 'Priest ordination date',
+		        'format' => 'Y-m-d',
+		    ],
+		    'attributes' => [
+		        'min' => '1900-01-01',
+		        'step' => 'any',
+		        'required' => false,
+		    ],
+		]);
+		$this->add([
+		    'name' => 'bishopDate',
+		    'type' => 'Date',
+		    'options' => [
+		        'label' => 'Bishop ordination date',
+		        'format' => 'Y-m-d',
+		    ],
+		    'attributes' => [
+		        'min' => '1900-01-01',
+		        'step' => 'any',
+		        'required' => false,
+		    ],
+		]);
+        $this->add([
+            'name' => 'isAuthor',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Is author?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+        $this->add([
+            'name' => 'isBorrower',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Is library user?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
 		$this->add([
 		    'name' => 'nameDay',
 		    'type' => 'DateSelect',
@@ -617,6 +680,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		    'cellPhoneHasWhatsApp' => [
 		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
 		    ],
 			'cellPhone' => $this->phoneInputFilterSpec,
 			'phone1' => $this->phoneInputFilterSpec,
@@ -900,7 +966,22 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
 	            ],
-			],
+		    ],
+		    'spousePersonId' => [
+		        'required' => false,
+		    ],
+		    'isAuthor' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
+		    ],
+		    'isBorrower' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
+		    ],
     	    'personTags' => [
     	        'required' => false,
     	        'filters' => [
@@ -966,13 +1047,25 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         ]
 		            ],
                 ],
-			],
+		    ],
 		    'birthDate' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
-                ],
-			],
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToDateTime'],
+		        ],
+		    ],
+		    'priestDate' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToDateTime'],
+		        ],
+		    ],
+		    'bishopDate' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToDateTime'],
+		        ],
+		    ],
 		    'nameDay' => [
 		        'required' => false,
                 'filters' => [

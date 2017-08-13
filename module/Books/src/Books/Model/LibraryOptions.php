@@ -3,7 +3,7 @@ namespace Books\Model;
 
 use Zend\Stdlib\ArraySerializableInterface;
 
-class Library implements ArraySerializableInterface
+class LibraryOptions implements ArraySerializableInterface
 {
     /**
      * @var int $libraryId
@@ -152,7 +152,7 @@ class Library implements ArraySerializableInterface
      */
     public function getArrayCopy()
     {
-
+        //@todo getArrayCopy()
     }
 
     /**
@@ -160,6 +160,6 @@ class Library implements ArraySerializableInterface
      */
     public function getProblems()
     {
-
+        //@todo getProblems()
     }
 }

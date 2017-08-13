@@ -520,10 +520,11 @@ ORDER BY library_id, call_number, category, lang, author, title";
 `UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
 `CallNumberRegex`, `EnforceCallNumberRegex`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
 `BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
-`DefaultCheckoutTimePeriodInDays`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`
-FROM `lib_libraries`
+`DefaultCheckoutTimePeriodInDays`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
+(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount
+FROM `lib_libraries` l
 WHERE 1
-ORDER BY `FiliationId`, `LibraryName`";
+ORDER BY `LibraryName`";
 
         $results = $this->fetchSome(null, $sql, null);
 
@@ -559,6 +560,7 @@ ORDER BY `FiliationId`, `LibraryName`";
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
 
+                'bookCount'             => $this->filterDbInt($row['BookCount']),
                 'books'                 => [], //to be filled in, in getLibraries()
                 'categoryStatistics'    => [],
                 'monthlyCheckoutStatistics' => [],
@@ -589,6 +591,10 @@ ORDER BY `FiliationId`, `LibraryName`";
         return $entities[(int)$libraryId];
     }
 
+    /**
+     * Retrieve list of LibraryOptions objects for all libraries
+     * @return \Books\Model\LibraryOptions[]
+     */
     public function getLibrariesOptions()
     {
         if (!is_null($cache = $this->fetchCachedEntityObjects('libraries-options'))) {
@@ -597,9 +603,7 @@ ORDER BY `FiliationId`, `LibraryName`";
         $libraries = $this->getUnlinkedLibraries();
         $entities = [];
         foreach ($libraries as $libraryId => $library) {
-            if (!key_exists($libraryId, $libraries)) {
-                $entities[$libraryId] = new Library($libraries[$libraryId]);
-            }
+            $entities[$libraryId] = new LibraryOptions($libraries[$libraryId]);
         }
         $this->cacheEntityObjects('libraries-options', $entities, ['library']);
         return $entities;
@@ -921,7 +925,10 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
     protected function preprocessCheckout($data, $entityData, $action)
     {
         static $now;
-        static $libraries;
+        /**
+         * @var LibraryOptions[] $librariesOptions
+         */
+        static $librariesOptions;
         static $books;
         if ($action == self::ENTITY_ACTION_CREATE) {
             if (!isset($data['bookId'])) {
@@ -949,8 +956,8 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
 
             //calculate the dueDate
             if (!isset($data['dueOn'])) {
-                if (is_null($libraries)) {
-                    $libraries = $this->getUnlinkedLibraries();
+                if (is_null($librariesOptions)) {
+                    $librariesOptions = $this->getLibrariesOptions();
                 }
                 if (is_null($books)) {
                     $books = $this->getUnlinkedBooks();
@@ -958,10 +965,8 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
                 if (!key_exists($data['bookId'], $books)) {
                     throw new \InvalidArgumentException('Invalid book attempting to be checked out.');
                 }
-                $daysToLend = is_numeric($libraries[$books[$data['bookId']]['libraryId']]['defaultCheckoutTimePeriodInDays']) ?
-                    $libraries[$books[$data['bookId']]['libraryId']]['defaultCheckoutTimePeriodInDays'] :
-                    self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
-                if (!is_numeric($daysToLend)) {
+                $daysToLend = $librariesOptions[$books[$data['bookId']]['libraryId']]->defaultCheckoutTimePeriodInDays;
+                if (!is_numeric($daysToLend)) { //shouldn't happen
                     $daysToLend = self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
                 }
                 if ($data['checkedOutOn'] instanceof \DateTime) {

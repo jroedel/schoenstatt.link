@@ -130,7 +130,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     }
 
     /**
-     * Gets a simple key => value array of the generation
+     * Gets a simple key => value array
      * @param bool $includeInactive
      */
     public function getPersonValueOptions($includeInactive = false)
@@ -604,9 +604,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 //         $this->connectEntityRolesAndAssignments('person', $entities);
 
         //Calculate if the person has any active assignments and set the hasActiveAssignment flag
-//         foreach ($entities as $personId => $person) {
 
-//         }
+        //connect spouses
+        foreach ($entities as $personId => $person) {
+            if (!is_null($person['spousePersonId']) && key_exists($person['spousePersonId'], $entities)) {
+                $entities[$personId]['spousePerson'] = $entities[$person['spousePersonId']];
+            }
+        }
         $this->cacheEntityObjects('persons', $entities, ['person', 'assignent']);
         return $entities;
     }
@@ -616,20 +620,18 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         if ($cache = $this->fetchCachedEntityObjects('unlinked-persons')) {
             return $cache;
         }
-        $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`,
-`LastNameWithoutAccents`, `FirstNameWithoutAccents`, `PersonTags`, `LifeCommunity`,
-`Title`, `TitleAutomatic`, `Country`, `BirthDate`, `NameDay`, `DeathDate`,
-`PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
-`PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`,
-`AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `Email`, `Email2`,
-`EmailsUpdatedOn`, `EmailsUpdatedBy`, `CellPhone`, `CellPhoneHasWhatsApp`,
-`Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`, `Phone3Label`,
-`PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`, `Url2`, `Url2Label`,
-`Url3`, `Url3Label`, `FacebookUrl`, `SkypeUser`, `TwitterUser`, `InstagramUser`,
-`SlackUser`, `PostStreet1`, `PostStreet2`, `PostCityState`, `PostZip`,
-`PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`,
-`DataSource`, `DataSourceId`, `DataSourceUpdatedOn`,
-`UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_persons` WHERE 1
+        $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`, `LastNameWithoutAccents`,
+`FirstNameWithoutAccents`, `PersonTags`, `LifeCommunity`, `Title`, `TitleAutomatic`, `Country`,
+`BirthDate`, `NameDay`, `DeathDate`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
+`PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`, `AdminNotes`, `AdminNotesUpdatedOn`,
+`AdminNotesUpdatedBy`, `Email`, `Email2`, `EmailsUpdatedOn`, `EmailsUpdatedBy`, `CellPhone`,
+`CellPhoneHasWhatsApp`, `Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`, `Phone3Label`,
+`PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`, `Url2`, `Url2Label`, `Url3`, `Url3Label`,
+`FacebookUrl`, `SkypeUser`, `TwitterUser`, `InstagramUser`, `SlackUser`, `PostStreet1`, `PostStreet2`,
+`PostCityState`, `PostZip`, `PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`,
+`ContactInfoUpdatedBy`, `DataSource`, `DataSourceId`, `DataSourceUpdatedOn`, `UpdatedOn`,
+`UpdatedBy`, `CreatedOn`, `CreatedBy`, `SpousePersonId`, `PriestDate`, `BishopDate`, `PrimaryLocale`,
+`IsAuthor`, `IsBorrower` FROM `sch_persons` WHERE 1
 ORDER BY `LastName`, `FirstName`";
         $results = $this->fetchSome(null, $sqlPers, null);
         if (is_null($results) || 0 == count($results)) {
@@ -751,6 +753,8 @@ ORDER BY `LastName`, `FirstName`";
 
             $entities[$id] = [
                 'personId'                  => $id,
+                'isAuthor'                  => $this->filterDbBool($row['IsAuthor']),
+                'isBorrower'                => $this->filterDbBool($row['IsBorrower']),
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
@@ -760,6 +764,7 @@ ORDER BY `LastName`, `FirstName`";
                 'isActive'                  => $isLiving,
                 'title'                     => $title, //this is a calculated field, not for updating
                 'hasActiveAssignment'       => true, //assume so until proved otherwise
+                'spousePerson'              => null,
                 'assignments'               => [],
                 'aclRoles'                  => [],
                 'resourceId'                => 'person_'.$id,
@@ -776,13 +781,15 @@ ORDER BY `LastName`, `FirstName`";
                 'firstNameWithoutAccents'   => $this->filterDbString($row['FirstNameWithoutAccents']),
                 'lastNameWithoutAccents'    => $this->filterDbString($row['LastNameWithoutAccents']),
                 'fullFriendlyName'          => $fullName,
+                'spousePersonId'            => $this->filterDbId($row['SpousePersonId']),
                 'personTags'                => $personTags,
                 'automaticTitle'            => $automaticTitle,
                 'country'                   => $this->filterDbString($row['Country']),
                 'lifeCommunity'             => $this->filterDbId($row['LifeCommunity']),
                 'manualTitle'               => $manualTitle,
-                'primaryLocale'             => 'en_US', //@todo add this column
-
+                'primaryLocale'             => $this->filterDbString($row['PrimaryLocale']),
+                'priestDate'                => $this->filterDbDate($row['PriestDate']),
+                'bishopDate'                => $this->filterDbDate($row['BishopDate']),
                 'deathDate'                 => $deathDate,
                 'birthDate'                 => $birthDate,
                 'age'                       => $age,
@@ -834,8 +841,8 @@ ORDER BY `LastName`, `FirstName`";
                 'postCountry'               => $address['country'],
 
                 'contactNotes'              => $this->filterDbString($row['ContactNotes']),
-                //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
-            //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
+//                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
+//                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
 
                 'contactInfoUpdatedOn'      => $this->filterDbDate($row['ContactInfoUpdatedOn']),
                 'contactInfoUpdatedBy'      => $this->filterDbDate($row['ContactInfoUpdatedBy']),
@@ -850,7 +857,6 @@ ORDER BY `LastName`, `FirstName`";
                 'adminNotes'                => $this->filterDbString($row['AdminNotes']),
                 'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
                 'adminNotesUpdatedBy'       => $this->filterDbId($row['AdminNotesUpdatedBy']),
-
             ];
         }
         $this->cacheEntityObjects('unlinked-persons', $entities, ['person']);
@@ -1596,6 +1602,21 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $data['title'] = null;
         }
         return $data;
+    }
+
+    protected function postprocessPerson($data, $newEntityData, $action)
+    {
+        //after changing/inserting a person, check spouse info
+        if (isset($data['spousePersonId'])) {
+            $persons = $this->getUnlinkedPersons();
+            $spousePersonId = $newEntityData['spousePersonId'];
+            if (key_exists($spousePersonId, $persons)) {
+                if ($persons[$spousePersonId]['spousePersonId'] != $newEntityData['personId']) {
+                    var_dump("Updating $spousePersonId's spouseId to ".$newEntityData['personId']);
+                    $this->updateEntity('person', $spousePersonId, ['spousePersonId' => $newEntityData['personId']]);
+                }
+            }
+        }
     }
 
     /**

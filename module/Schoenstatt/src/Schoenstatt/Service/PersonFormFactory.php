@@ -22,6 +22,7 @@ class PersonFormFactory implements FactoryInterface
         /** @var \Schoenstatt\Model\SchoenstattTable $table **/
 		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
 
+		$persons = $table->getPersonValueOptions();
 		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
 
 		$lifeCommunities = $table->getAssociationValueOptions(false, false);
@@ -34,6 +35,7 @@ class PersonFormFactory implements FactoryInterface
 		/** @var \Schoenstatt\Form\PersonForm $form */
 		$form = $formManager->get('Schoenstatt\Form\PersonForm', [], true);
 
+		$form->get('spousePersonId')->setValueOptions($persons);
 		$form->get('country')->setValueOptions($countryNames);
 		$form->get('lifeCommunity')->setValueOptions($lifeCommunities);
 		$form->get('postCountry')->setValueOptions($countryNames);

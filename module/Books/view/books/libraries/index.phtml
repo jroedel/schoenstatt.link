@@ -8,7 +8,7 @@ $this->headTitle($headText);
 <ul class="list-group">
 <?php foreach ($this->objects as $libraryId => $library) :?>
   <li class="list-group-item">
-    <span class="badge"><?php echo count($library['books'])?></span>
+    <span class="badge"><?php echo $this->escapeHtml($library['bookCount'])?></span>
     <?php echo $this->formatEntity('library', $library);?>
   </li>
 <?php endforeach;?>

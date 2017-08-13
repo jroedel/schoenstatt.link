@@ -121,6 +121,10 @@ $this->headTitle($pageTitle);
 <div class="row"> <!-- personal info panel row -->
 <div class="col-md-6"> <!-- community info column (free and official) -->
 <p><strong><?php echo $this->translate('Home country'); ?>:</strong> <?php echo $this->countryName($object['country'], true, CountryName::COUNTRY_NAME_OFFICIAL);?></p>
+<?php if (!is_null($object['spousePerson'])): ?>
+    <p><strong><?php echo $this->translate('Spouse'); ?>:</strong> <?php
+    echo $this->formatEntity('person', $object['spousePerson']);?></p>
+<?php endif;?>
 </div> <!-- community info column -->
 
 <div class="col-md-6"> <!-- dates column -->
@@ -132,6 +136,14 @@ $this->headTitle($pageTitle);
     <p><strong><?php echo $this->translate('Nameday'); ?>: </strong>
         <?php echo $this->dayFormat($object['nameDay']);?>
     </p>
+    <?php endif;
+    if (is_object($object['priestDate'])): ?>
+        <p><strong><?php echo $this->translate('Priestly ordination'); ?>:</strong> <?php
+        echo $this->dateFormat($object['priestDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+    <?php endif;
+    if (is_object($object['bishopDate'])): ?>
+        <p><strong><?php echo $this->translate('Bishop ordination'); ?>:</strong> <?php
+        echo $this->dateFormat($object['bishopDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
     <?php endif;?>
 </div> <!-- dates column -->
 </div> <!-- personal info panel row -->

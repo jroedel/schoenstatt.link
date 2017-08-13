@@ -31,6 +31,11 @@ return [
                 'resource' => 'route/publications',
             ],
             [
+                'label' => 'Libraries',
+                'route' => 'libraries',
+                'resource' => 'route/libraries',
+            ],
+            [
                 'label' => 'Admin',
                 'route' => 'admin',
                 'resource' => 'route/admin',

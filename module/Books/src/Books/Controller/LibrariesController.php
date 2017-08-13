@@ -207,7 +207,7 @@ class LibrariesController extends SionController
                     } else {
                         $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
                         ->addMessage ('Books successfully inactivated.' );
-//                         $this->redirect ()->toRoute ('libraries/library/admin', ['library_id' => $libraryId]);
+                        $this->redirect ()->toRoute ('libraries/library/admin', ['library_id' => $libraryId]);
                     }
                 } catch (\Exception $e) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )

@@ -1,0 +1,15 @@
+<?php
+$headText = 'Edit library configuration';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<?php $form = $this->form;
+$form->setAttribute('action', $this->url('libraries/library/edit',
+		['library_id' => $this->entityId]));
+ $form->prepare();
+ echo $this->form()->openTag($form);
+ echo $this->partial('fields-partial', [
+     'form' => $form,
+ ]);
+ echo $this->formSubmit($form->get('submit'));
+ echo $this->form()->closeTag();
+?>

@@ -20,7 +20,8 @@ $jsScript = '';
         echo $this->formRow($form->get('manualTitle'));?>
 	</div>
 	<?php
-    $this->formSelect()->setTranslatorEnabled(false);
+	$this->formSelect()->setTranslatorEnabled(false);
+	echo $this->formRow($form->get('spousePersonId'));
     echo $this->formRow($form->get('country'));
     $this->formSelect()->setTranslatorEnabled(true);?>
     <hr>
@@ -58,6 +59,10 @@ echo $this->formRow($form->get('postCountry'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('contactNotes'));
 $jsScript .= <<<JS
+$("select[name='spousePersonId']").selectize({
+    create: false,
+    sortField: 'text'
+});
 $("select[name='phone1Label']").selectize({
     create: true,
     sortField: 'text'

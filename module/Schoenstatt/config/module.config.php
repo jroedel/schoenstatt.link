@@ -68,6 +68,7 @@ return [
     ],
     'service_manager' => [
         'factories' => [
+            'PatresGateway'                         => 'Schoenstatt\Service\PatresGatewayFactory',
             'Schoenstatt\FathersValueOptions'       => 'Schoenstatt\Service\FathersValueOptionsService',
             'Schoenstatt\Model\SchoenstattTable'    => 'Schoenstatt\Service\SchoenstattTableFactory',
             'Schoenstatt\Form\AdvancedSearchForm'   => 'Schoenstatt\Service\AdvancedSearchFormFactory',
@@ -1306,7 +1307,7 @@ return [
 //                 'touch_json_route'               		=> 'events/event/touch',
 //                 'touch_json_route_key'            		=> 'event_id',
                 'database_bound_data_preprocessor' 		=> 'preprocessPerson',
-//                 'database_bound_data_postprocessor' 	=> 'postprocessEvent',
+                'database_bound_data_postprocessor' 	=> 'postprocessPerson',
 //                 'moderate_route' 						=> 'persons/person/moderate',
 //                 'moderate_route_entity_key' 			=> 'person_id',
                 'has_dedicated_suggest_form' 			=> false,
@@ -1324,8 +1325,11 @@ return [
                     'lifeCommunity'             => 'LifeCommunity',
                     'manualTitle'               => 'Title',
                     'automaticTitle'            => 'TitleAutomatic',
+                    'spousePersonId'            => 'SpousePersonId',
                     'country'                   => 'Country',
                     'birthDate'                 => 'BirthDate',
+                    'priestDate'                => 'PriestDate',
+                    'bishopDate'                => 'BishopDate',
                     'nameDay'                   => 'NameDay',
                     'deathDate'                 => 'DeathDate',
                     'publicNotes'               => 'PublicNotes',
@@ -1375,6 +1379,8 @@ return [
                     'contactInfoUpdatedBy'      => 'ContactInfoUpdatedBy',
 
                     'personId'                  => 'PersonId',
+                    'isAuthor'                  => 'IsAuthor',
+                    'isBorrower'                => 'IsBorrower',
                     'dataSource'                => 'DataSource',
                     'dataSourceId'              => 'DataSourceId',
                     'dataSourceUpdatedOn'       => 'DataSourceUpdatedOn',
