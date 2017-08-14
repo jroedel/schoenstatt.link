@@ -69,8 +69,8 @@ $object = $this->object;
         echo $this->formatField('Contained in', $object['cntainedIn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Contained in ISBN', $object['containedInIsbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Genre', $object['genre'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true,
+        echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
+        echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
             'displayOnlyWithPermission' => 'route/publications/publication/edit']);
         foreach ($object['urls'] as $urlObject) :
             ?><p><?php echo $this->formatPublicationUrlObject($urlObject);?></p><?php

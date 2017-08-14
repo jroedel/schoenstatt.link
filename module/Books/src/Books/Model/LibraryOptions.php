@@ -122,6 +122,15 @@ class LibraryOptions implements ArraySerializableInterface
      * @var string $defaultCheckoutTimePeriodInDays
      */
     public $checkoutPersonListKind = self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
+    /**
+     * @var bool $isActive
+     */
+    public $isActive = true;
+    /**
+     * Array of collection options
+     * @var CollectionOptions[] $collections
+     */
+    public $collections = [];
 
     public function __construct(array $array)
     {
@@ -162,6 +171,7 @@ class LibraryOptions implements ArraySerializableInterface
         $this->enableCheckouts = isset($array['enableCheckouts']) ? (bool)$array['enableCheckouts'] : false;
         $this->isPublicallyListed = isset($array['isPublicallyListed']) ? (bool)$array['isPublicallyListed'] : false;
         $this->checkoutPersonListKind = isset($array['checkoutPersonListKind']) ? $array['checkoutPersonListKind'] : self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
+        $this->isActive = isset($array['isActive']) ? $array['isActive'] : true;
     }
 
     /**

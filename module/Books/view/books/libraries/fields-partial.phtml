@@ -1,4 +1,7 @@
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
 $this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
 $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
 $form = $this->form;
@@ -30,6 +33,8 @@ echo $this->formRow($form->get('labelLine1'));
 echo $this->formRow($form->get('labelLine2'));
 echo $this->formRow($form->get('labelLine3'));
 echo $this->formRow($form->get('barcodeText'));
+echo $this->formRow($form->get('adminNotes'));
+echo $this->formRow($form->get('isActive'));
 echo $this->formRow($form->get('isPublicallyListed'));
 echo $this->formRow($form->get('enableCheckouts'));
 echo $this->formRow($form->get('createCheckoutsIfCheckingInANonCheckedOutBook'));

@@ -1,7 +1,4 @@
 <?php
-$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
-$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
 $headText = 'Edit publication';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>

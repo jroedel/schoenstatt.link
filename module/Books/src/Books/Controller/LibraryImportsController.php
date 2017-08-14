@@ -4,6 +4,7 @@ namespace Books\Controller;
 use SionModel\Controller\SionController;
 use Books\Form\ImportForm;
 use Books\Model\LibraryTable;
+use Books\Model\LibraryOptions;
 
 class LibraryImportsController extends SionController
 {
@@ -90,6 +91,7 @@ class LibraryImportsController extends SionController
             'publicationId'     => 'PubID',
             'keywords'          => 'Categorías',
             'edition'           => 'Edition',
+            'collection'        => 'Biblioteca',
         ];
     }
 
@@ -133,6 +135,7 @@ class LibraryImportsController extends SionController
             'update'    => 0,
             'inactivate'=> 0,
             'error'     => 0,
+            'create-collection' => 0
         ];
         foreach ($objects as $object) {
             ++$stats[$object['action']];
@@ -167,7 +170,10 @@ class LibraryImportsController extends SionController
     protected function getBookFields()
     {
         return [
+            'collection', // will receive special treatment to convert this to a collectionId
+
             'publicationId',
+            'collectionId',
             'author',
             'title',
             'edition',
@@ -197,6 +203,7 @@ class LibraryImportsController extends SionController
             'adminNotesUpdatedBy',
         ];
     }
+
     /**
      * Read an excel file and import the records into the database
      * @param string $fileName
@@ -235,6 +242,7 @@ class LibraryImportsController extends SionController
         }
 
         //check if we got all the required fields mapped
+        $requiredFields = ['withinLibraryId', 'title'];
         $missingRequiredFields = [];
         foreach ($requiredFields as $value) {
             if (!key_exists($value, $fieldIndices)) {
@@ -254,6 +262,14 @@ class LibraryImportsController extends SionController
         }
         $table->setLibraryId($libraryId);
         $bookLookup = $table->getLibraryBookLookup();
+        /** @var LibraryOptions $libraryOptions */
+        $libraryOptions = $table->getSimpleLibrary($libraryId)['options'];
+        $preexistingCollectionMap = [];
+        foreach ($libraryOptions->collections as $collectionId => $collectionOptions) {
+            $preexistingCollectionMap[$collectionOptions->name] = $collectionId;
+        }
+
+        $collectionInsertsQueued = [];
         $transactions = [];
         $publications = null;
         $bookIdsBeingUpdated = [];
@@ -268,6 +284,32 @@ class LibraryImportsController extends SionController
             }
             //make sure we get an int not a float
             $params['withinLibraryId'] = $withinLibraryId;
+
+            //check if we need to do something with collections
+            if (!$libraryOptions->useCollections) {
+                if (isset($params['collection'])) {
+                    unset($params['collection']);
+                }
+                if (isset($params['collectionId'])) {
+                    unset($params['collectionId']);
+                }
+            }
+            else if (isset($params['collection']) && !is_null($params['collection']) &&
+                !isset($params['collectionId'])
+            ) {
+                if (key_exists($params['collection'], $preexistingCollectionMap)) {
+                    $params['collectionId'] = $preexistingCollectionMap[$params['collection']];
+                } else if (!in_array($params['collection'], $collectionInsertsQueued)) {
+                    $transactions[] = [
+                        'action'    => 'create-collection',
+                        'libraryId' => $libraryId,
+                        'name'      => $params['collection'],
+                        'title'     => 'New collection', //this is for the view script
+                        'collection'=> $params['collection'], //this is for the view script
+                    ];
+                    $collectionInsertsQueued[] = $params['collection'];
+                }
+            }
 
             if (key_exists('publicationId', $fieldIndices) && is_numeric($params['publicationId'])) {
                 //lazy load the publications list
@@ -354,7 +396,15 @@ class LibraryImportsController extends SionController
     {
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
+        $newCollectionsMap = [];
         foreach ($transactions as $key => $transaction) {
+            //set the new collectionId
+            if (($transaction['action'] == 'update' || $transaction['action'] == 'create') &&
+                isset($transaction['collection']) && !isset($transaction['collectionId']) &&
+                isset($newCollectionsMap[$transaction['collection']])
+            ) {
+                $transaction['collectionId'] = $newCollectionsMap[$transaction['collection']];
+            }
             switch ($transaction['action']) {
                 case 'update':
                     $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
@@ -365,8 +415,21 @@ class LibraryImportsController extends SionController
                 case 'inactivate':
                     $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
                     break;
+                case 'create-collection':
+                    $params = [
+                        'libraryId' => $transaction['libraryId'],
+                        'name'      => $transaction['collection'],
+                    ];
+                    //this should return the new key
+                    $newKey = $table->createEntity('collection', $params , [], false);
+                    $transactions[$key]['result'] = $newKey;
+                    $newCollectionsMap[$transaction['collection']] = $newKey;
+                    break;
             }
         }
         $table->removeDependentCacheItems('book'); //force cache refresh
+        if (!empty($newCollectionsMap)) {
+            $table->removeDependentCacheItems('collection');
+        }
     }
 }

@@ -1,4 +1,7 @@
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
 $this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
 $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
 $form = $this->form;

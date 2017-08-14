@@ -277,6 +277,33 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'inclusive'   => true,
             ],
         ]);
+        $this->add([//http://www.codingdrama.com/bootstrap-markdown/
+            'name' => 'adminNotes',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Admin notes',
+                'required' => false,
+            ],
+            'attributes' => [
+                'required' => false,
+                'data-provide' => 'markdown',
+                'data-parser' => 'CommonMark',
+                'rows' => 8,
+            ],
+        ]);
+        $this->add([
+            'name' => 'isActive',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Active?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '1',
+            ],
+        ]);
         $this->add([
             'name' => 'enableCheckouts',
             'type' => 'Checkbox',
@@ -617,8 +644,25 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                        ],
+                    ],
+                ],
+            ],
+            'adminNotes' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
+                ],
+            ],
+            'isActive' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
                 ],
             ],
             'enableCheckouts' => [

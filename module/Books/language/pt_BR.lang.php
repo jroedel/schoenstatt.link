@@ -14,6 +14,7 @@ return array(
     'German' => 'Alemão',
     'Learn Markdown in 60 seconds' => 'Aprender a usar Markdown em 60 segundos',
     'Name' => 'Nome',
+    'No' => 'Não',
     'No results found.' => 'Não foram encontrados resultados.',
     'Notes' => 'Notas',
     'Public notes' => 'Notas públicas',
@@ -25,5 +26,6 @@ return array(
     'Title' => 'Título',
     'View changes' => 'Ver actualizações recentes',
     'View the recent changes made to the database.' => 'Ver actualizações recentes da base de dados.',
+    'Yes' => 'Sim',
     'Zentrale' => 'Central',
 );

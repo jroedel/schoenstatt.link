@@ -1,0 +1,15 @@
+<?php
+$headText = 'New collection';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+
+<?php $form = $this->form;
+$this->formSelect()->setTranslatorEnabled(false);
+$form->setAttribute('action', $this->url('collections/collection/create', ['collection_id' => $this->collectionId]));
+$form->prepare();
+echo $this->form()->openTag($form);
+echo $this->partial('fields-partial', [
+    'form' => $form,
+]);
+echo $this->form()->closeTag();
+?>

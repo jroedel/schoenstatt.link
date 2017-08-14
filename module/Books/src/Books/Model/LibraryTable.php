@@ -521,6 +521,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
 `CallNumberRegex`, `EnforceCallNumberRegex`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
 `BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
 `DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `IsPublicallyListed`, `CheckoutPersonListKind`,
+`IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`,
 `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
 (SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount
 FROM `lib_libraries` l
@@ -558,6 +559,10 @@ ORDER BY `LibraryName`";
                 'enableCheckouts'       => $this->filterDbBool($row['EnableCheckouts']),
                 'isPublicallyListed'    => $this->filterDbBool($row['IsPublicallyListed']),
                 'checkoutPersonListKind'=> $this->filterDbString($row['CheckoutPersonListKind']),
+                'isActive'              => $this->filterDbBool($row['IsActive']),
+                'adminNotes'            => $this->filterDbString($row['AdminNotes']),
+                'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
+                'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
                 'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
@@ -565,16 +570,37 @@ ORDER BY `LibraryName`";
 
                 'bookCount'             => $this->filterDbInt($row['BookCount']),
                 'books'                 => [], //to be filled in, in getLibraries()
+                'collections'           => [],
                 'categoryStatistics'    => [],
                 'monthlyCheckoutStatistics' => [],
                 'options'               => null,
             ];
-            //@todo add collections here
             $entity['options'] = new LibraryOptions($entity);
             $entities[$id] = $entity;
         }
-        $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
+        $collections = $this->getUnlinkedCollections();
+        foreach ($collections as $collectionId => $collection) {
+            if (key_exists($collection['libraryId'], $entities)) {
+                $collection['library'] = $entities[$collection['libraryId']];
+                $entities[$collection['libraryId']]['options']->collections[$collectionId] =
+                    new CollectionOptions($collection);
+            }
+        }
+
+        $this->cacheEntityObjects('unlinked-libraries', $entities, ['library', 'collection']);
         return $entities;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public function getSimpleLibrary($id)
+    {
+        $libraries = $this->getUnlinkedLibraries();
+        if (!isset($libraries[$id]) || !($library = $libraries[$id])) {
+            return null;
+        }
+        return $library;
     }
 
     /**
@@ -616,6 +642,67 @@ ORDER BY `LibraryName`";
         return $entities;
     }
 
+    protected function getUnlinkedCollections()
+    {
+        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-collections'))) {
+            return $cache;
+        }
+        $sql = "SELECT `CollectionId`, `LibraryId`, `CollectionName`,
+`Description`, `CallNumberRegex`, `CallNumberHelpText`, `CallNumberExplanation`,
+`MainShowDisplay`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
+`DefaultCheckoutTimePeriodInDays`, `EnforceCallNumberRegex`, `RequireCallNumbers`,
+`IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`,
+`UpdatedBy`, `CreatedOn`, `CreatedBy`,
+(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`collection_id` = c.CollectionId)) AS BookCount
+FROM `lib_collections` c
+ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
+
+        $results = $this->fetchSome(null, $sql, null);
+
+        $entities = [];
+        foreach ($results as $row) {
+            $id = $this->filterDbId($row['CollectionId']);
+            $entities[$id] = [
+                'collectionId'          => $id,
+                'libraryId'             => $this->filterDbId($row['LibraryId']),
+                'name'                  => $this->filterDbString($row['CollectionName']),
+                'description'           => $this->filterDbString($row['Description']),
+                'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
+                'callNumberHelpText'    => $this->filterDbString($row['CallNumberHelpText']),
+                'callNumberExplanation' => $this->filterDbString($row['CallNumberExplanation']),
+                'mainShowDisplay'       => $this->filterDbString($row['MainShowDisplay']),
+                'requireCallNumbers'    => $this->filterDbBool($row['RequireCallNumbers']),
+                'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
+                'labelLine1'            => $this->filterDbString($row['LabelLine1']),
+                'labelLine2'            => $this->filterDbString($row['LabelLine2']),
+                'labelLine3'            => $this->filterDbString($row['LabelLine3']),
+                'defaultCheckoutTimePeriodInDays' => $this->filterDbInt($row['DefaultCheckoutTimePeriodInDays']),
+                'isActive'              => $this->filterDbBool($row['IsActive']),
+                'adminNotes'            => $this->filterDbString($row['AdminNotes']),
+                'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
+                'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
+                'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
+                'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+                'createdOn'             => $this->filterDbDate($row['CreatedOn']),
+                'createdBy'             => $this->filterDbId($row['CreatedBy']),
+            ];
+        }
+        $this->cacheEntityObjects('unlinked-collections', $entities, ['collection']);
+        return $entities;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public function getSimpleCollection($id)
+    {
+        $collections = $this->getUnlinkedCollections();
+        if (!isset($collections[$id]) || !($collection = $collections[$id])) {
+            return null;
+        }
+        return $collection;
+    }
+
     public function getLibraryBooksStatuses($libraryId = null)
     {
         if (is_null($libraryId)) {
@@ -631,10 +718,7 @@ ORDER BY `LibraryName`";
             $entities[$entity['withinLibraryId']] = [
                 'title'     => $entity['title'],
                 'isActive'  => $entity['isActive'],
-//                 'author'    => $entity['author'],
-//                 'isCheckedOut' => !is_null($currentCheckout),
                 'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null,
-//                 'checkedOutOn' => !is_null($currentCheckout) ? $currentCheckout['checkedOutOn'] : null,
             ];
         }
         return $entities;
