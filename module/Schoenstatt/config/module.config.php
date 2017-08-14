@@ -846,11 +846,11 @@ return [
                     ],
                 ],
             ],
-            'home' => [
+            'schoenstatt' => [
                 'type'    => 'Literal',
                 'options' => [
                     // Change this to something specific to your module
-                    'route'    => '/',
+                    'route'    => '/schoenstatt',
                     'defaults' => [
                         // Change this value to reflect the namespace in which
                         // the controllers for your module are found
@@ -1321,7 +1321,7 @@ return [
                 'enable_delete_action' 					=> true,
 //                 'delete_action_acl_resource' 			=> 'event_:id',
 //                 'delete_action_acl_permission' 			=> 'delete_event',
-                'delete_action_redirect_route' 			=> 'home',
+                'delete_action_redirect_route' 			=> 'schoenstatt',
                 'update_columns' => [
                     'lastName'                  => 'LastName',
                     'firstName'                 => 'FirstName',

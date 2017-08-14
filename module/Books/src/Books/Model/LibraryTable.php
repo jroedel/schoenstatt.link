@@ -633,7 +633,7 @@ ORDER BY `LibraryName`";
                 'isActive'  => $entity['isActive'],
 //                 'author'    => $entity['author'],
 //                 'isCheckedOut' => !is_null($currentCheckout),
-                'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null, //@todo give the person's name
+                'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null,
 //                 'checkedOutOn' => !is_null($currentCheckout) ? $currentCheckout['checkedOutOn'] : null,
             ];
         }

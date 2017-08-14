@@ -60,7 +60,7 @@ echo $this->doctype(); ?>
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="<?php echo $this->url('home') ?>"><?php echo $this->translate('Schoenstatt Link') ?></a>
+                    <a class="navbar-brand" href="<?php echo $this->url('welcome') ?>"><?php echo $this->translate('Schoenstatt Link') ?></a>
                 </div>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <?php
@@ -90,7 +90,7 @@ echo $this->doctype(); ?>
 					        0 != strcmp($routeName, 'assignments') &&
 					        0 != strcmp($routeName, 'publications/search') &&
 					        0 != strcmp($routeName, 'publications') &&
-					        0 != strcmp($routeName, 'home') &&
+					        0 != strcmp($routeName, 'schoenstatt') &&
 			                0 != strcmp($routeName, 'welcome')
 				        ) :
 				            $shouldAddSearch = false;

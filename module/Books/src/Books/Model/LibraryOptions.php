@@ -111,17 +111,17 @@ class LibraryOptions implements ArraySerializableInterface
      * Enable checkouts?
      * @var bool $defaultCheckoutTimePeriodInDays
      */
-    public $enableCheckouts;
+    public $enableCheckouts = false;
     /**
      * Should this library be listed without authentication?
      * @var bool $defaultCheckoutTimePeriodInDays
      */
-    public $isPublicallyListed;
+    public $isPublicallyListed = false;
     /**
      * Which list of borrowers should we show?
      * @var string $defaultCheckoutTimePeriodInDays
      */
-    public $checkoutPersonListKind;
+    public $checkoutPersonListKind = self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
 
     public function __construct(array $array)
     {
@@ -161,7 +161,7 @@ class LibraryOptions implements ArraySerializableInterface
         $this->defaultCheckoutTimePeriodInDays = isset($array['defaultCheckoutTimePeriodInDays']) ? $array['defaultCheckoutTimePeriodInDays'] : LibraryTable::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
         $this->enableCheckouts = isset($array['enableCheckouts']) ? (bool)$array['enableCheckouts'] : false;
         $this->isPublicallyListed = isset($array['isPublicallyListed']) ? (bool)$array['isPublicallyListed'] : false;
-        $this->checkoutPersonListKind = isset($array['checkoutPersonListKind']) ? $array['checkoutPersonListKind'] : DEFAULT_CHECKOUT_PERSON_LIST_KIND;
+        $this->checkoutPersonListKind = isset($array['checkoutPersonListKind']) ? $array['checkoutPersonListKind'] : self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
     }
 
     /**

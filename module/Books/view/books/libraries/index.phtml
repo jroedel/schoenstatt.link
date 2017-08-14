@@ -1,15 +1,25 @@
 <?php
-$headText = 'Libraries';
-$this->headTitle($headText);
-
-//@todo add schema for the Schoenstatt Library system
-//@see http://pending.3-2f.schemaorgae.appspot.com/LibrarySystem?>
+$headText = 'Schoenstatt Library System';
+$this->headTitle($headText);?>
 <h1><?php echo $this->translate($headText);?></h1>
-<ul class="list-group">
-<?php foreach ($this->objects as $libraryId => $library) :?>
-  <li class="list-group-item">
-    <span class="badge"><?php echo $this->escapeHtml($library['bookCount'])?></span>
-    <?php echo $this->formatEntity('library', $library, ['displayEditPencil' => false]);?>
-  </li>
+<p><?php echo $this->translate("The Schoenstatt Library System was developed in the Schoenstatt Fathers' seminary in Santiago, Chile to help with studies, but is made available to the whole Schoenstatt family with 3 objectives:");?></p>
+<ol>
+  <li><?php echo $this->translate("To develop a comprehensive, open, and up-to-date catalog of Schoenstatt literature");?></li>
+  <li><?php echo $this->translate("To help Father Kentenich scholars locate rare books and manuscripts");?></li>
+  <li><?php echo $this->translate("To encourage collaboration within the Schoenstatt family to further our knowledge of Father Kentenich's thinking and mission in the world");?></li>
+</ol>
+<p><?php echo str_replace('contact us', '<a href="mailto:webmaster@schoenstatt.link">contact us</a>', $this->translate("Please contact us if you are willing to help with the project or if you would like to add a library to the catalog."));?></p>
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+<div class="list-group">
+<?php foreach ($this->objects as $libraryId => $library) : ?>
+	<a href="<?php echo $this->url('libraries/library', ['library_id' => $libraryId]);?>" class="list-group-item">
+    	<span class="badge <?php echo $badge?>"><?php echo $this->escapeHtml($library['bookCount']); ?></span>
+    <h4 class="list-group-item-heading"><?php echo $this->formatEntity('library', $library, ['displayEditPencil' => false, 'displayAsLink' => false]);?></h4>
+    <?php if (!is_null($library['description'])):?>
+    <p class="list-group-item-text"><?php echo $this->escapeHtml($this->translate($library['description']));?></p>
+	<?php endif;?></a>
 <?php endforeach;?>
-</ul>
+</div>
+</div>
+</div>

@@ -43,8 +43,15 @@ class BorrowersController extends AbstractActionController
         ]);
     }
 
+    /**
+     * At the beginning of the project, we were using the Patres personId instead of the
+     * SchoenstattTable personId, this action fixes those Ids.
+     * @return \Zend\View\Model\ViewModel
+     */
     public function fixPersonIdAction()
     {
+        //already fixed, we will disable to prevent problems
+        return;
         $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $schTable */
         $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');

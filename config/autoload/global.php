@@ -16,14 +16,9 @@ return [
         // navigation with name default
         'default' => [
             [
-                'label' => 'Associations',
-                'route' => 'associations',
-                'resource' => 'route/associations',
-            ],
-            [
-                'label' => 'All contact info',
-                'route' => 'assignments/search',
-                'resource' => 'route/assignments/search',
+                'label' => 'Movement',
+                'route' => 'schoenstatt',
+                'resource' => 'route/schoenstatt',
             ],
             [
                 'label' => 'Publications',

@@ -11,6 +11,7 @@ use SionModel\Service\ProblemService;
 use Zend\View\Model\JsonModel;
 use Books\Form\InactivationForm;
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
+use Schoenstatt\Model\SchoenstattTable;
 
 class LibrariesController extends SionController
 {
@@ -63,6 +64,15 @@ class LibrariesController extends SionController
         $table = $sm->get('Books\Model\LibraryTable');
         $table->setLibraryId($this->getEntityIdParam('show'));
         $books = $table->getLibraryBooksStatuses();
+
+        /** @var SchoenstattTable $schTable */
+        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $persons = $schTable->getUnlinkedPersons();
+        foreach ($books as $bookId => $book) {
+            if (!is_null($book['checkedOutBy']) && key_exists($book['checkedOutBy'], $persons)) {
+                $books[$bookId]['checkedOutBy'] = $persons[$book['checkedOutBy']]['fullFriendlyName'];
+            }
+        }
         return new JsonModel(['books' => $books]);
     }
 

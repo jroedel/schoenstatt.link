@@ -15,7 +15,7 @@ return [
             'welcome' => [
                 'type' => 'Literal',
                 'options' => [
-                    'route'    => '/welcome',
+                    'route'    => '/',
                     'defaults' => [
                         'controller' => 'Application\Controller\Index',
                         'action'     => 'index',

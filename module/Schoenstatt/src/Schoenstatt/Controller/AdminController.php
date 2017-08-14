@@ -26,6 +26,9 @@ class AdminController extends AbstractActionController
     {
         $pages = [
             'persons/create'            => "Add new person",
+            'associations/create'       => "Add new association",
+            'assignments/create'        => "Add new assignment",
+            'roles/create'              => "Add new role",
             'sion-model/view-changes'   => "View Changes",
             'admin/import-father'       => "Import Schoenstatt Father",
             'juser'                     => "User Management",
