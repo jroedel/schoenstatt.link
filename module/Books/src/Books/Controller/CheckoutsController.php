@@ -9,6 +9,9 @@ use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\CheckinForm;
 use Books\Form\MassCheckoutForm;
 use Zend\Form\Element\Select;
+use Books\Model\LibraryOptions;
+use Schoenstatt\Service\PatresGateway;
+use Schoenstatt\Model\SchoenstattTable;
 
 class CheckoutsController extends SionController
 {
@@ -30,7 +33,7 @@ class CheckoutsController extends SionController
 
     /**
      * This function will be called by the SionController::createAction and passed
-     * prevalidated data from CheckoutForm
+     * already validated data from CheckoutForm
      * Foreach book:
      *  1. Check each book to make sure it exists, and if one or more aren't available, warn user
      *  2. If it's checked out, check it in first
@@ -39,10 +42,10 @@ class CheckoutsController extends SionController
      */
     public function createCheckouts($data)
     {
-        $id = $this->getLibraryId();
+        $libraryId = $this->getLibraryId();
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
-        $bookLookup = $table->getLibraryBookLookup($id);
+        $bookLookup = $table->getLibraryBookLookup($libraryId);
         $badValues = [];
         foreach ($data['withinLibraryIds'] as $value) {
             if (!key_exists($value, $bookLookup)) {
@@ -56,9 +59,22 @@ class CheckoutsController extends SionController
             return;
         }
 
-        //@todo first we should make sure the person exists, and if not create him
+        $library = $table->getLibrary($libraryId);
+        /** @var LibraryOptions $libraryOptions */
+        $libraryOptions = $library['options'];
+        if ($libraryOptions->checkoutPersonListKind == 'patres-sion') {
+            //@todo first we should make sure the person exists, and if not create him
+            $sm = $this->getServiceLocator();
+            /** @var PatresGateway $patresGateway */
+            $patresGateway = $sm->get('PatresGateway');
+            if (false === $personData = $patresGateway->getSchoenstattPersonFromPatresPersonId($data['personId'], true, ['isBorrower' => true])) {
+                throw new \Exception('The person selected was not found.');
+            }
+            $data['personId'] = $personData['personId'];
+        }
 
-        if (true !== $badValues = $table->checkoutWithinLibraryBooks($id, $data)) {
+        //checkout books
+        if (true !== $badValues = $table->checkoutWithinLibraryBooks($libraryId, $data)) {
             $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
             ->addMessage (sprintf("There was a problem checking out one of the books: (%s) Any other books have been checked out. Please try again.",
                 implode(', ', $badValues)));
@@ -85,10 +101,9 @@ class CheckoutsController extends SionController
         $entities = $table->getCheckoutsForLibrary($id, $subset);
         $library = $table->getLibrary($id);
 
-        /** @var PatresTable $table */
-//         $patresTable = $sm->get('Schoenstatt\FathersValueOptions');
-//         $persons = $patresTable->getPersons();
-        $persons = $sm->get('Schoenstatt\FathersValueOptions');
+        /** @var SchoenstattTable $schTable */
+        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $persons = $schTable->getPersons();
 
         return new ViewModel([
             'library'   => $library,

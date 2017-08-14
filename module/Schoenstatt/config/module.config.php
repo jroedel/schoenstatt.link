@@ -115,6 +115,12 @@ return [
     ],
     'schoenstatt' => [
         'general_presidium_id' => 71,
+        'person_value_options_providers' => [
+            'patres-sion' => [
+                'target'    => 'Schoenstatt\FathersValueOptions',
+                'label'     => 'Schoenstatt Fathers',
+            ],
+        ],
         'person_tags' => [ // they will appear in the value options in this order, they will be applied according to the sort order
             'bishop' => [
                 'title' => 'Bish.',

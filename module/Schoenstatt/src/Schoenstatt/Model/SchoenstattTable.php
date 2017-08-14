@@ -576,8 +576,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     }
 
     /**
-     * Get all records from the mailings table
-     * @return mixed[][]
+     *
+     * @return mixed[]
      */
 
     public function getPerson($id)
@@ -615,7 +615,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         return $entities;
     }
 
-    protected function getUnlinkedPersons()
+    public function getUnlinkedPersons()
     {
         if ($cache = $this->fetchCachedEntityObjects('unlinked-persons')) {
             return $cache;
@@ -775,7 +775,7 @@ ORDER BY `LastName`, `FirstName`";
                 */
                 'lastName'                  => $lastName,
                 'firstName'                 => $firstName,
-                'fullName'                  => $firstName.' '.$lastName,
+                'fullName'                  => $fullName,
                 'searchName'                => $firstName.' '.$lastName, //@todo remove accents
 //                 'searchName'                => $row['SearchName'],
                 'firstNameWithoutAccents'   => $this->filterDbString($row['FirstNameWithoutAccents']),
@@ -861,6 +861,20 @@ ORDER BY `LastName`, `FirstName`";
         }
         $this->cacheEntityObjects('unlinked-persons', $entities, ['person']);
         return $entities;
+    }
+
+    /**
+     *
+     * @return mixed[]
+     */
+
+    public function getSimplePerson($id)
+    {
+        $persons = $this->getUnlinkedPersons();
+        if (!isset($persons[$id]) || !($person = $persons[$id])) {
+            return null;
+        }
+        return $person;
     }
 
     /**

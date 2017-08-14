@@ -26,14 +26,26 @@ class CheckoutFormFactory implements FactoryInterface
 		$application = $serviceLocator->get('Application');
 		$routeMatch = $application->getMvcEvent()->getRouteMatch();
 		$libraryId = $routeMatch->getParam('library_id', null);
+		$libraries = $table->getUnlinkedLibraries();
+        if (!key_exists($libraryId, $libraries)) {
+            throw new \Exception('Library not found');
+        }
+        $libraryOptions = $libraries[$libraryId]['options'];
 
+        $schConfig = $serviceLocator->get ( 'Schoenstatt\Config' );
+        if (!isset($schConfig['person_value_options_providers'])) {
+            throw new \Exception('No person_value_options_providers set');
+        }
+        $providers = $schConfig['person_value_options_providers'];
+        if (!isset($providers[$libraryOptions->checkoutPersonListKind]) ||
+            !isset($providers[$libraryOptions->checkoutPersonListKind]['target']) ||
+            !$serviceLocator->has($providers[$libraryOptions->checkoutPersonListKind]['target'])
+        ) {
+            throw new \Exception('Improper checkout person list kind configuration');
+        }
 		$form = new CheckoutForm();
-		//Don't require the book to be available, we'll just close the old checkout and check it out again
-// 		$books = $table->getLibraryBookValueOptions(['libraryId' => $libraryId],// 'isAvailable' => true],
-// 	        ['labelOption' => LibraryTable::BOOK_VALUE_OPTIONS_LABEL_ID]);
-// 		$form->get('bookIds')->setValueOptions($books);
 
-		$persons = $serviceLocator->get ( 'Schoenstatt\FathersValueOptions' );
+		$persons = $serviceLocator->get ($providers[$libraryOptions->checkoutPersonListKind]['target']);
         $form->get('personId')->setValueOptions($persons);
 
 		return $form;

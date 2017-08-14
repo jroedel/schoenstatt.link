@@ -23,11 +23,21 @@ class LibraryFormFactory implements FactoryInterface
 		$persons = $schoenstattTable->getPersonValueOptions();
 		$config = $serviceLocator->get('Books\Config');
 
+		$schConfig = $serviceLocator->get('Schoenstatt\Config');
+		$personValueOptionsOptions = [];
+		foreach ($schConfig['person_value_options_providers'] as $key => $options) {
+		    if (!isset($options['label'])) {
+		        throw new \Exception('person_value_options_providers must have a \'label\' key set');
+		    }
+		    $personValueOptionsOptions[$key] = $options['label'];
+		}
+
         $form = new LibraryForm();
         $form->get('filiationId')->setValueOptions($config['library_filiation_options']);
         $form->get('contactPersonId')->setValueOptions($persons);
         $form->get('mainShowDisplay')->setValueOptions(LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS);
-		$form->get('defaultCheckoutPersonId')->setValueOptions($persons);
+        $form->get('defaultCheckoutPersonId')->setValueOptions($persons);
+        $form->get('checkoutPersonListKind')->setValueOptions($personValueOptionsOptions);
 		return $form;
     }
 }

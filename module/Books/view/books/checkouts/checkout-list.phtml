@@ -28,12 +28,12 @@ $persons = $this->persons && is_array($this->persons) ? $this->persons : null;
 <tr <?php if (!is_null($rowClass)) {
     echo "class=\"$rowClass\"";
 }?>>
-	<td><?php echo $this->formatEntity('library', $entity['book']['library']);?></td>
+	<td><?php echo $this->formatEntity('library', $entity['book']['library'], ['displayEditPencil' => false]);?></td>
 	<td><?php echo $this->formatEntity('book', $entity['book']);?></td>
 	<td><?php echo $this->dateFormat($entity['checkedOutOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></td>
 <?php if (!is_null($persons)):?>
-	<td><?php if (key_exists($entity['personId'], $persons)) {
-	   echo $this->persons[$entity['personId']];
+	<td><?php if (isset($persons[$entity['personId']])) {
+	   echo $this->formatEntity('borrower', $this->persons[$entity['personId']]);
 	}?></td>
 <?php endif;?>
 	<td><?php if ($entity['dueOn']) {

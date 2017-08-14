@@ -2,7 +2,6 @@
 namespace Schoenstatt\Service;
 
 use Schoenstatt\Model\SchoenstattTable;
-use Schoenstatt\Form\PersonForm;
 use Zend\InputFilter\InputFilterInterface;
 use Zend\Http\Client;
 use Zend\Json\Json;
@@ -35,9 +34,64 @@ class PatresGateway
      */
     protected $personInputFilter;
 
-    public function getPersonList($id)
-    {
+    /**
+     * @var string $personListUri
+     */
+    protected $personListUri;
 
+    /**
+     * Given a patres personId, a person from the SchoenstattTable is returned. Person is imported if requested
+     * @param number $patresPersonId
+     * @param bool $importPersonIfNotFound
+     * @param array $options May specify changes to be made to the person record in SchoenstattTable
+     */
+    public function getSchoenstattPersonFromPatresPersonId($patresPersonId, $importPersonIfNotFound = false,  $options = [])
+    {
+        $table = $this->getSchoenstattTable();
+        if (false === $personData = $this->getPersonInSchoenstattTable($patresPersonId)) {
+            if ($importPersonIfNotFound) {
+                if (false === $newId = $this->importRemotePerson($patresPersonId, $options)) {
+                    return false;
+                }
+                $personData = $this->getSchoenstattTable()->getPerson($newId);
+            } else {
+                return false;
+            }
+        } else { //check if we need to make changes based on $options
+            if ($this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options)) {
+                $personId = $personData['personId'];
+                $table = $this->getSchoenstattTable();
+                $table->updateEntity('person', $personId, $personData);
+                $personData = $table->getPerson($personId);
+            }
+        }
+        return $personData;
+    }
+
+    /**
+     * Get associative array of persons from Patres database $personId => $name
+     * @throws \Exception
+     * @return array
+     */
+    public function getPersonList()
+    {
+        $key = $this->getApiKey();
+        $listUrl = $this->getPersonListUri();
+        $client = new Client();
+        $client->setMethod('get');
+        $client->setUri($listUrl);
+        $client->setParameterGet(['key' => $key]);
+        $response = $client->send();
+
+        if (200 != $response->getStatusCode()) {
+            throw new \Exception('Failed to retrieve list of fathers from Patres. Status code: '. $response->getStatusCode());
+        }
+        $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
+        if (!isset($data['data'])) {
+            throw new \Exception('Failed to retrieve list of fathers from Patres. No data returned');
+        }
+        $persons = $data['data'];
+        return $persons;
     }
 
     /**
@@ -53,24 +107,7 @@ class PatresGateway
         $personData['dataSource'] = 'patres-sion';
         $personData['dataSourceId'] = $personId;
         unset($personData['personId']); //to make sure that we don't try setting that as the primary key
-        if (isset($options['isAuthor']) && is_bool($options['isAuthor'])) {
-            $personData['isAuthor'] = $options['isAuthor'];
-        }
-        if (isset($options['isLibraryUser']) && is_bool($options['isLibraryUser'])) {
-            $personData['isLibraryUser'] = $options['isLibraryUser'];
-        }
-        if (isset($options['adminTags'])) {
-            if (is_string($options['adminTags'])) {
-                $options['adminTags'] = [$options['adminTags']];
-            }
-            if (is_array($options['adminTags'])) {
-                if (isset($personData['adminTags']) && is_array($personData['adminTags'])) {
-                    $personData['adminTags'] = array_merge($personData['adminTags'], $options['adminTags']);
-                } else {
-                    $personData['adminTags'] = $options['adminTags'];
-                }
-            }
-        }
+        $this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options);
 
         $table = $this->getSchoenstattTable();
         if (0 !== count($currentPersonList = $table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true)))
@@ -147,6 +184,70 @@ class PatresGateway
     }
 
     /**
+     * Get the person data from the SchoenstattTable, returns false if not found
+     * @param unknown $personId
+     * @return boolean|mixed
+     */
+    public function getPersonInSchoenstattTable($personId)
+    {
+        if (0 === count($currentPersonList = $this->getSchoenstattTable()->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true)))
+        {
+            return false;
+        }
+        $currentPerson = current($currentPersonList);
+        return $currentPerson;
+    }
+
+    /**
+     * Update a person in the SchoenstattTable
+     * @param number $personId
+     * @param array $options
+     * @return boolean|boolean|number
+     */
+    public function updateSchoenstattTablePerson($personId, $options = [])
+    {
+        if (!$personData = $this->getPersonInSchoenstattTable($personId)) {
+            return false;
+        }
+        $this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options);
+        $table = $this->getSchoenstattTable();
+        return $table->updateEntity('person', $personId, $personData);
+    }
+
+    /**
+     * Complements person data without persisting changes. Returns true if data has been complemented
+     * @param mixed[] $personData
+     * @param array $options
+     * @return boolean
+     */
+    protected function complementSchoenstattTablePersonDataKeysWithOptions(&$personData, $options)
+    {
+        $return = false;
+        if (isset($options['isAuthor']) && is_bool($options['isAuthor'])) {
+            $personData['isAuthor'] = $options['isAuthor'];
+            $return = true;
+        }
+        if (isset($options['isBorrower']) && is_bool($options['isBorrower'])) {
+            $personData['isBorrower'] = $options['isBorrower'];
+            $return = true;
+        }
+        if (isset($options['adminTags'])) {
+            if (is_string($options['adminTags'])) {
+                $options['adminTags'] = [$options['adminTags']];
+            }
+            if (is_array($options['adminTags'])) {
+                if (isset($personData['adminTags']) && is_array($personData['adminTags'])) {
+                    $personData['adminTags'] = array_merge($personData['adminTags'], $options['adminTags']);
+                } else {
+                    $personData['adminTags'] = $options['adminTags'];
+                }
+                $return = true;
+            }
+        }
+        return $return;
+    }
+
+    /**
      * Get the schoenstattConfig value
      * @return mixed[]
      */
@@ -166,6 +267,33 @@ class PatresGateway
     public function setSchoenstattConfig($schoenstattConfig)
     {
         $this->schoenstattConfig = $schoenstattConfig;
+        return $this;
+    }
+
+    /**
+    * Get the personListUri value
+    * @return string
+    */
+    public function getPersonListUri()
+    {
+        if (is_null($this->personListUri)) {
+            $config = $this->getSchoenstattConfig();
+            $this->personListUri = $config['patres_api_person_list_uri'];
+        }
+        if (!is_string($this->personListUri)) {
+            throw new \Exception('No person list URI available');
+        }
+        return $this->personListUri;
+    }
+
+    /**
+    *
+    * @param string $personListUri
+    * @return self
+    */
+    public function setPersonListUri($personListUri)
+    {
+        $this->personListUri = $personListUri;
         return $this;
     }
 

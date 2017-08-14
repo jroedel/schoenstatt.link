@@ -3,9 +3,8 @@ namespace Books\Model;
 
 use Zend\Stdlib\ArraySerializableInterface;
 
-class LibraryOptions implements ArraySerializableInterface
+class CollectionOptions implements ArraySerializableInterface
 {
-    const DEFAULT_CHECKOUT_PERSON_LIST_KIND = 'all-borrowers';
     /**
      * @var int $libraryId
      */
@@ -107,21 +106,6 @@ class LibraryOptions implements ArraySerializableInterface
      * @var int $defaultCheckoutTimePeriodInDays
      */
     public $defaultCheckoutTimePeriodInDays;
-    /**
-     * Enable checkouts?
-     * @var bool $defaultCheckoutTimePeriodInDays
-     */
-    public $enableCheckouts;
-    /**
-     * Should this library be listed without authentication?
-     * @var bool $defaultCheckoutTimePeriodInDays
-     */
-    public $isPublicallyListed;
-    /**
-     * Which list of borrowers should we show?
-     * @var string $defaultCheckoutTimePeriodInDays
-     */
-    public $checkoutPersonListKind;
 
     public function __construct(array $array)
     {
@@ -146,9 +130,9 @@ class LibraryOptions implements ArraySerializableInterface
         $this->contactEmail= isset($array['contactEmail']) ? $array['contactEmail'] : null;
         $this->mainShowDisplay= isset($array['mainShowDisplay']) ? $array['mainShowDisplay'] : LibraryTable::MAIN_SHOW_DISPLAY_DEFAULT;
         $this->useCollections= isset($array['useCollections']) ? $array['useCollections'] : false;
-        $this->allowCollectionlessBooks= isset($array['allowCollectionlessBooks']) ? (bool)$array['allowCollectionlessBooks'] : true;
-        $this->mainCollectionId= isset($array['mainCollectionId']) ? (int)$array['mainCollectionId'] : null;
-        $this->requireCallNumbers = isset($array['requireCallNumbers']) ? (bool)$array['requireCallNumbers'] : false;
+        $this->allowCollectionlessBooks= isset($array['allowCollectionlessBooks']) ? $array['allowCollectionlessBooks'] : true;
+        $this->mainCollectionId= isset($array['mainCollectionId']) ? $array['mainCollectionId'] : null;
+        $this->requireCallNumbers = isset($array['requireCallNumbers']) ? $array['requireCallNumbers'] : false;
         $this->callNumberRegex = isset($array['callNumberRegex']) ? $array['callNumberRegex'] : null;
         $this->enforceCallNumberRegex= isset($array['enforceCallNumberRegex']) ? $array['enforceCallNumberRegex'] : false;
         $this->labelLine1= isset($array['labelLine1']) ? $array['labelLine1'] : null;
@@ -157,11 +141,8 @@ class LibraryOptions implements ArraySerializableInterface
         $this->barcodeText= isset($array['barcodeText']) ? $array['barcodeText'] : null;
         $this->createCheckoutsIfCheckingInANonCheckedOutBook= isset($array['createCheckoutsIfCheckingInANonCheckedOutBook']) ? $array['createCheckoutsIfCheckingInANonCheckedOutBook'] : true;
         //@todo find a way to force a value here if createCheckoutsIfCheckingInANonCheckedOutBook is true
-        $this->defaultCheckoutPersonId = isset($array['defaultCheckoutPersonId']) ? $array['defaultCheckoutPersonId'] : null;
-        $this->defaultCheckoutTimePeriodInDays = isset($array['defaultCheckoutTimePeriodInDays']) ? $array['defaultCheckoutTimePeriodInDays'] : LibraryTable::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
-        $this->enableCheckouts = isset($array['enableCheckouts']) ? (bool)$array['enableCheckouts'] : false;
-        $this->isPublicallyListed = isset($array['isPublicallyListed']) ? (bool)$array['isPublicallyListed'] : false;
-        $this->checkoutPersonListKind = isset($array['checkoutPersonListKind']) ? $array['checkoutPersonListKind'] : DEFAULT_CHECKOUT_PERSON_LIST_KIND;
+        $this->defaultCheckoutPersonId= isset($array['defaultCheckoutPersonId']) ? $array['defaultCheckoutPersonId'] : null;
+        $this->defaultCheckoutTimePeriodInDays= isset($array['defaultCheckoutTimePeriodInDays']) ? $array['defaultCheckoutTimePeriodInDays'] : LibraryTable::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
     }
 
     /**

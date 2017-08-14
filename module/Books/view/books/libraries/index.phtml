@@ -9,7 +9,7 @@ $this->headTitle($headText);
 <?php foreach ($this->objects as $libraryId => $library) :?>
   <li class="list-group-item">
     <span class="badge"><?php echo $this->escapeHtml($library['bookCount'])?></span>
-    <?php echo $this->formatEntity('library', $library);?>
+    <?php echo $this->formatEntity('library', $library, ['displayEditPencil' => false]);?>
   </li>
 <?php endforeach;?>
 </ul>

@@ -476,7 +476,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $books = $this->getUnlinkedBooks();
         foreach ($books as $bookId => $book) {
             if (!is_null($book['libraryId']) && key_exists($book['libraryId'], $entities)) {
-                $entities[$book['libraryId']]['books'][$bookId] = $book;
+                $entities[$book['libraryId']]['books'][$bookId] = $book; //@todo I don't think we need this and it makes the cache much bigger
 
                 //fill in category statistics
                 if (!is_null($book['category'])) {
@@ -520,7 +520,8 @@ ORDER BY library_id, call_number, category, lang, author, title";
 `UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
 `CallNumberRegex`, `EnforceCallNumberRegex`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
 `BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
-`DefaultCheckoutTimePeriodInDays`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
+`DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `IsPublicallyListed`, `CheckoutPersonListKind`,
+`UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
 (SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount
 FROM `lib_libraries` l
 WHERE 1
@@ -531,7 +532,7 @@ ORDER BY `LibraryName`";
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['LibraryId']);
-            $entities[$id] = [
+            $entity = [
                 'libraryId'             => $id,
                 'name'                  => $this->filterDbString($row['LibraryName']),
                 'description'           => $this->filterDbString($row['Description']),
@@ -554,7 +555,9 @@ ORDER BY `LibraryName`";
                 'createCheckoutsIfCheckingInANonCheckedOutBook' => $this->filterDbBool($row['CreateCheckoutsIfCheckingInANonCheckedOutBook']),
                 'defaultCheckoutPersonId' => $this->filterDbId($row['DefaultCheckoutPersonId']),
                 'defaultCheckoutTimePeriodInDays' => $this->filterDbInt($row['DefaultCheckoutTimePeriodInDays']),
-
+                'enableCheckouts'       => $this->filterDbBool($row['EnableCheckouts']),
+                'isPublicallyListed'    => $this->filterDbBool($row['IsPublicallyListed']),
+                'checkoutPersonListKind'=> $this->filterDbString($row['CheckoutPersonListKind']),
                 'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
@@ -564,7 +567,11 @@ ORDER BY `LibraryName`";
                 'books'                 => [], //to be filled in, in getLibraries()
                 'categoryStatistics'    => [],
                 'monthlyCheckoutStatistics' => [],
+                'options'               => null,
             ];
+            //@todo add collections here
+            $entity['options'] = new LibraryOptions($entity);
+            $entities[$id] = $entity;
         }
         $this->cacheEntityObjects('unlinked-libraries', $entities, ['library']);
         return $entities;
