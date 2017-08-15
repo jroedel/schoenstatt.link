@@ -1,13 +1,25 @@
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
 $form = $this->form;
-echo $this->formRow($form->get('name'));
-$this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('libraryId'));
+echo $this->formRow($form->get('name'));
 echo $this->formRow($form->get('description'));
-echo $this->formRow($form->get('filePath'));
-echo $this->formRow($form->get('worksheet'));
-echo $this->formRow($form->get('isCompleteImport'));
+echo $this->formRow($form->get('callNumberRegex'));
+echo $this->formRow($form->get('callNumberHelpText'));
+echo $this->formRow($form->get('callNumberExplanation'));
+echo $this->formRow($form->get('mainShowDisplay'));
+echo $this->formRow($form->get('labelLine1'));
+echo $this->formRow($form->get('labelLine2'));
+echo $this->formRow($form->get('labelLine3'));
+echo $this->formRow($form->get('defaultCheckoutTimePeriodInDays'));
+echo $this->formRow($form->get('requireCallNumbers'));
+echo $this->formRow($form->get('enforceCallNumberRegex'));
+echo $this->formRow($form->get('isActive'));
+echo $this->formRow($form->get('adminNotes'));
 echo $this->formRow($form->get('security'));
 echo $this->formRow($form->get('submit'));
-
 ?>

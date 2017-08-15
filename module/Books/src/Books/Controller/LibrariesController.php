@@ -32,6 +32,7 @@ class LibrariesController extends SionController
         $form->setData($params);
         $books = null;
 
+        /** @var LibraryTable $table */
         $table = $this->getSionTable();
 
         if ($form->isValid()) {
@@ -51,6 +52,7 @@ class LibrariesController extends SionController
         if (is_array($books) && empty($books)) {
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
+
         $view->setVariable('books', $books);
         $view->setVariable('form', $form);
 

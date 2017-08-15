@@ -26,10 +26,12 @@ class LibraryTable extends SionTable
     const MAIN_SHOW_DISPLAY_VALUE_OPTIONS = [
         self::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES => 'Show categories',
         self::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS => 'Show collections',
+        self::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS_CATEGORIES => 'Show collections and categories',
     ];
     const MAIN_SHOW_DISPLAY_DEFAULT = self::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES;
     const MAIN_SHOW_DISPLAY_SHOW_CATEGORIES = 'show-categories';
     const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS = 'show-collections';
+    const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS_CATEGORIES = 'show-collections-categories';
 
     /** @var UserTable $userTable */
     protected $userTable;
@@ -478,19 +480,42 @@ ORDER BY library_id, call_number, category, lang, author, title";
             if (!is_null($book['libraryId']) && key_exists($book['libraryId'], $entities)) {
                 $entities[$book['libraryId']]['books'][$bookId] = $book; //@todo I don't think we need this and it makes the cache much bigger
 
-                //fill in category statistics
+                $libraryId = $book['libraryId'];
+                //fill in statistics
+                $collectionId = 0;
+                if (!is_null($book['collectionId'])) {
+                    $collectionId = $book['collectionId'];
+                }
+                $category = '';
                 if (!is_null($book['category'])) {
-                    if (!key_exists($book['category'], $entities[$book['libraryId']]['categoryStatistics'])) {
-                        $entities[$book['libraryId']]['categoryStatistics'][$book['category']] = 1;
-                    } else {
-                        $entities[$book['libraryId']]['categoryStatistics'][$book['category']]++;
-                    }
+                    $category = $book['category'];
+                }
+                //statistics by category without respect for collections
+                if (!key_exists($category, $entities[$book['libraryId']]['categoryStatistics'])) {
+                    $entities[$libraryId]['categoryStatistics'][$category] = 1;
+                } else {
+                    $entities[$libraryId]['categoryStatistics'][$category]++;
+                }
+
+                //statistics on 2 levels: collection, category
+                if (!key_exists($collectionId, $entities[$book['libraryId']]['collectionCategoryStatistics'])) {
+                    $entities[$libraryId]['collectionCategoryStatistics'][$collectionId] = [];
+                }
+                if (!key_exists($category, $entities[$book['libraryId']]['collectionCategoryStatistics'][$collectionId])) {
+                    $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category] = 1;
+                } else {
+                    $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category]++;
                 }
             }
         }
 
+        //sort stats
         foreach ($entities as $entityId => $entity) {
             ksort($entities[$entityId]['categoryStatistics']);
+            ksort($entities[$entityId]['collectionCategoryStatistics']);
+            foreach ($entities[$entityId]['collectionCategoryStatistics'] as $collectionId => $categories) {
+                ksort($entities[$entityId]['collectionCategoryStatistics'][$collectionId]);
+            }
         }
 
         //check if the books are checked out
@@ -572,6 +597,7 @@ ORDER BY `LibraryName`";
                 'books'                 => [], //to be filled in, in getLibraries()
                 'collections'           => [],
                 'categoryStatistics'    => [],
+                'collectionCategoryStatistics' => [],
                 'monthlyCheckoutStatistics' => [],
                 'options'               => null,
             ];

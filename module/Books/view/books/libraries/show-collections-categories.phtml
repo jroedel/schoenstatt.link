@@ -1,0 +1,25 @@
+<?php use Books\Model\LibraryOptions;
+/** @var LibraryOptions $libraryOptions */
+$libraryOptions = $this->entity['options'];
+if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->books)):?>
+    <?php foreach ($this->entity['collectionCategoryStatistics'] as $collectionId => $categories) :
+        $collectionName = key_exists($collectionId, $libraryOptions->collections) ?
+        $this->translate($libraryOptions->collections[$collectionId]->name) :
+            $this->translate('(none)');?>
+        <h3><?php echo $this->translate($collectionName);?></h3>
+    	<ul class="list-group">
+    	<?php foreach ($categories as $category => $count) : ?>
+        	<li class="list-group-item">
+                <span class="badge"><?php echo $this->escapeHtml($count);?></span>
+                <a href="<?php echo $this->url('libraries/library', ['library_id' => $this->entityId],
+                    ['query' => ['category' => $category]]);?>"><?php
+                echo $this->escapeHtml($category);?></a>
+          	</li>
+		<?php endforeach;?>
+    	</ul>
+	<?php endforeach;?>
+<?php else:
+    echo $this->partial('books/library/book-list', [
+        'entities'  => $this->books,
+    ]);
+endif;?>

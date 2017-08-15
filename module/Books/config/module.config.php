@@ -163,6 +163,7 @@ return [
             'Books\Model\PublicationsTable'     => 'Books\Service\PublicationsTableFactory',
             'Books\Model\LibraryTable'          => 'Books\Service\LibraryTableServiceFactory',
             'Books\Form\LibraryForm'            => 'Books\Service\LibraryFormFactory',
+            'Books\Form\CollectionForm'         => 'Books\Service\CollectionFormFactory',
             'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
             'Books\Form\PublicationForm'        => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
@@ -1365,6 +1366,9 @@ return [
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/fix-person-id', 'roles' => ['lib_administrator']],
                 ['route' => 'books/book', 'roles' => ['lib_teo_viewer', 'lib_sch_viewer', 'lib_administrator']],
+
+                ['route' => 'collections/collection/edit', 'roles' => ['lib_library_administrator']],
+                ['route' => 'collections/create', 'roles' => ['lib_library_administrator']],
 
                 ['route' => 'checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'checkouts/library/overdue', 'roles' => ['lib_administrator', 'lib_library_administrator']],

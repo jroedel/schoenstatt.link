@@ -5,6 +5,7 @@ use SionModel\Controller\SionController;
 use Books\Form\ImportForm;
 use Books\Model\LibraryTable;
 use Books\Model\LibraryOptions;
+use JTranslate\Controller\Plugin\NowMessenger;
 
 class LibraryImportsController extends SionController
 {
@@ -120,14 +121,16 @@ class LibraryImportsController extends SionController
         $request = $this->getRequest();
         //@todo change this line to $object['columnMapping']
         $fieldsMap = $this->getColegioMayorLibraryFieldsMap();
-        $errorMessage = null;
+        $objects = null;
+        $shouldSimulate = true;
         if (file_exists($object['filePath']) &&
             !is_null($object['worksheet'])
         ) {
             $shouldSimulate = !$request->isPost() || is_null($request->getPost('import'));
             $objects = $this->importSpreadsheetFile($object['filePath'], $object['worksheet'], $fieldsMap, $shouldSimulate, $object['isCompleteImport']);
         } else {
-            $errorMessage = 'File not found.';
+            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+                ->addMessage ("File not found.");
         }
         //do stats on the objects
         $stats = [
@@ -137,10 +140,11 @@ class LibraryImportsController extends SionController
             'error'     => 0,
             'create-collection' => 0
         ];
-        foreach ($objects as $object) {
-            ++$stats[$object['action']];
+        if (isset($objects)) {
+            foreach ($objects as $object) {
+                ++$stats[$object['action']];
+            }
         }
-
         if (!$shouldSimulate) { //update the stats
             $params = [
                 'booksUpdated' => $stats['update'],
@@ -158,7 +162,6 @@ class LibraryImportsController extends SionController
             'fields'        => $fieldsMap,
             'simulate'      => $shouldSimulate,
             'statistics'    => $stats,
-            'errorMessage'  => $errorMessage,
         ], false);
     }
 
@@ -351,7 +354,7 @@ class LibraryImportsController extends SionController
                 || is_null($withinLibraryId) || !is_numeric($withinLibraryId)
             ) {
                 $params['action'] = 'error';
-                if (is_numeric($withinLibraryId)) {
+                if (is_numeric($withinLibraryId) && key_exists($withinLibraryId, $bookLookup)) {
                     //make sure we don't delete this book, because there was an import error
                     $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];
                 }
@@ -367,7 +370,6 @@ class LibraryImportsController extends SionController
 
         //delete missing rows from the database if asked to do so
         if ($deleteMissingRowsFromDatabase) {
-            $books = $table->getBooks();
             foreach ($bookLookup as $withinLibraryId => $bookId) {
                 if (!in_array($bookId, $bookIdsBeingUpdated)) {
                     $params = [

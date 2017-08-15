@@ -1,4 +1,5 @@
-<?php $this->headTitle()->setTranslatorEnabled(false);
+<?php use Books\Model\LibraryOptions;
+$this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($this->entity['name']);
 echo $this->partial('books/library/search-bar', [
     'form' => $this->form,
@@ -11,20 +12,11 @@ echo $this->partial('books/library/search-bar', [
 endif;?>
 <?php if ($this->isAllowed('route/libraries/library/admin')):?><a class="btn btn-default pull-right" href="<?php echo $this->url('libraries/library/admin',
         ['library_id' => $entityId]);?>"><?php echo $this->escapeHtml($this->translate('Admin menu'));?></a>
-<?php endif;?></div>
-<?php if (!empty($this->entity['categoryStatistics']) && is_null($this->books)):?>
-    <ul class="list-group">
-    <?php foreach ($this->entity['categoryStatistics'] as $category => $count) : ?>
-      <li class="list-group-item">
-        <span class="badge"><?php echo $this->escapeHtml($count);?></span>
-        <a href="<?php echo $this->url('libraries/library', ['library_id' => $this->entityId],
-                ['query' => ['category' => $category]]);?>"><?php
-            echo $this->escapeHtml($category);?></a>
-      </li>
-      <?php endforeach;?>
-    </ul>
-<?php else:
-    echo $this->partial('books/library/book-list', [
-        'entities'  => $this->books,
-    ]);
-endif;?>
+<?php endif;
+?></div>
+
+<?php
+/** @var LibraryOptions $libraryOptions */
+$libraryOptions = $this->entity['options'];
+echo $this->partial($libraryOptions->mainShowDisplay, $this->vars);
+?>
