@@ -1,4 +1,4 @@
-
+#submitted 2017-08-14
 ALTER TABLE `lib_collections` ADD `LabelLine1` VARCHAR(255) NULL DEFAULT NULL AFTER `MainShowDisplay`, ADD `LabelLine2` VARCHAR(255) NULL DEFAULT NULL AFTER `LabelLine1`, ADD `LabelLine3` VARCHAR(255) NULL DEFAULT NULL AFTER `LabelLine2`, ADD `DefaultCheckoutTimePeriodInDays` INT NULL DEFAULT NULL AFTER `LabelLine3`, ADD `EnforceCallNumberRegex` BIT(1) NULL DEFAULT NULL AFTER `DefaultCheckoutTimePeriodInDays`, ADD `RequireCallNumbers` BIT(1) NULL DEFAULT NULL AFTER `EnforceCallNumberRegex`;
 ALTER TABLE `lib_collections`
   DROP `PublicNotes`,

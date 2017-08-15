@@ -212,12 +212,12 @@ class LibraryImportsController extends SionController
      * @param string $fileName
      * @param string $sheetName
      * @param string[] $fieldsMap
-     * @param bool $simulate
+     * @param bool $simulate Passing byReference lets us tell the calling function that we weren't able to persist
      * @param bool $deleteMissingRowsFromDatabase
      * @throws \Exception
      * @return array[]|string[][]|boolean[][]|unknown[][]|number[][]|\Books\Model\number[][]
      */
-    public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, $simulate = true, $deleteMissingRowsFromDatabase = false)
+    public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, &$simulate = true, $deleteMissingRowsFromDatabase = false)
     {
         $bookFields = $this->getBookFields();
         $objPHPExcel = \PHPExcel_IOFactory::load($fileName);
@@ -267,10 +267,15 @@ class LibraryImportsController extends SionController
         $bookLookup = $table->getLibraryBookLookup();
         /** @var LibraryOptions $libraryOptions */
         $libraryOptions = $table->getSimpleLibrary($libraryId)['options'];
+        /** @var array $preexistingCollectionMap $name => $collectionId */
         $preexistingCollectionMap = [];
         foreach ($libraryOptions->collections as $collectionId => $collectionOptions) {
             $preexistingCollectionMap[$collectionOptions->name] = $collectionId;
         }
+
+        /** @var array $withinLibraryIds Used to check for double Ids */
+        $withinLibraryIds = [];
+        $duplicateWithinLibraryIds = [];
 
         $collectionInsertsQueued = [];
         $transactions = [];
@@ -278,6 +283,11 @@ class LibraryImportsController extends SionController
         $bookIdsBeingUpdated = [];
         foreach ($rows as $rowNumber => $rowColumns) {
             $withinLibraryId = (int)$rowColumns[$fieldIndices['withinLibraryId']];
+            if ($isDuplicateWithinLibraryId = in_array($withinLibraryId, $withinLibraryIds)) {
+                $duplicateWithinLibraryIds[] = $withinLibraryId;
+            }
+            $withinLibraryIds[] = $withinLibraryId;
+
             $params = [
                 'libraryId' => $libraryId
             ];
@@ -352,6 +362,7 @@ class LibraryImportsController extends SionController
             //determine the action to take on the row
             if (!key_exists('title', $params) || is_null($params['title'])
                 || is_null($withinLibraryId) || !is_numeric($withinLibraryId)
+                || $isDuplicateWithinLibraryId
             ) {
                 $params['action'] = 'error';
                 if (is_numeric($withinLibraryId) && key_exists($withinLibraryId, $bookLookup)) {
@@ -383,7 +394,13 @@ class LibraryImportsController extends SionController
             }
         }
 
-        if (!$simulate) {
+        if (!empty($duplicateWithinLibraryIds)) {
+            $simulate = true; //inform the calling function, we weren't able to persist
+            //this breaks the idea of the function a little, but there's no better way to let the user know
+            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
+            ->addMessage (sprintf("File not imported due to duplicate withinLibraryIds: %s.",
+                implode(',', $duplicateWithinLibraryIds)));
+        }else if (!$simulate) {
             $this->persistImportTransactions($transactions);
         }
 
