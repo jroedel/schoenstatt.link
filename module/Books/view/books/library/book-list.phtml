@@ -28,6 +28,12 @@ if (isset($this->entities) && !is_null($this->entities) && !empty($this->entitie
     	<td><?php echo $this->escapeHtml($book['edition']);?></td>
     	<td><?php if (!is_null($book['currentCheckout'])) {
     	    echo $this->formatEntity('checkout', $book['currentCheckout']);
+    	    if ($this->isAllowed('view_checkout_person') && isset($this->borrowers) &&
+	            key_exists($book['currentCheckout']['personId'], $this->borrowers)
+            ) {
+    	        echo ' '.sprintf($this->translate('by %s'),
+	                $this->borrowers[$book['currentCheckout']['personId']]);
+    	    }
     	}?></td>
     <?php endforeach; ?>
     </tr>

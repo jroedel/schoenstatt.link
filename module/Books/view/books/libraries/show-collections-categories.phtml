@@ -5,8 +5,11 @@ if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->book
     <?php foreach ($this->entity['collectionCategoryStatistics'] as $collectionId => $categories) :
         $collectionName = key_exists($collectionId, $libraryOptions->collections) ?
         $this->translate($libraryOptions->collections[$collectionId]->name) :
-            $this->translate('(none)');?>
-        <h3><?php echo $this->translate($collectionName);?></h3>
+            sprintf('(%s)', $this->translate('none'));?>
+        <h3><?php echo $this->translate($collectionName);
+        if (key_exists($collectionId, $libraryOptions->collections)) {
+            echo $this->editPencil('collection', $collectionId);
+        }?></h3>
     	<ul class="list-group">
     	<?php foreach ($categories as $category => $count) : ?>
         	<li class="list-group-item">
@@ -24,5 +27,6 @@ if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->book
 <?php else:
     echo $this->partial('books/library/book-list', [
         'entities'  => $this->books,
+        'borrowers' => $this->borrowers,
     ]);
 endif;?>

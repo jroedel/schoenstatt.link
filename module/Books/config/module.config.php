@@ -162,6 +162,7 @@ return [
             'Books\Config'                      => 'Books\Service\ConfigServiceFactory',
             'Books\Model\PublicationsTable'     => 'Books\Service\PublicationsTableFactory',
             'Books\Model\LibraryTable'          => 'Books\Service\LibraryTableServiceFactory',
+            'Books\Form\SearchForm'             => 'Books\Service\SearchFormFactory',
             'Books\Form\LibraryForm'            => 'Books\Service\LibraryFormFactory',
             'Books\Form\CollectionForm'         => 'Books\Service\CollectionFormFactory',
             'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
@@ -1298,6 +1299,7 @@ return [
                'book_teo',
                'book_sch',
                'pub_patres',
+               'view_checkout_person', //see who has a library book
            ],
            //'Event\Model\EventTable' => 'Event\Model\EventTable'
          ],
@@ -1311,6 +1313,7 @@ return [
         'rule_providers' => [
             'BjyAuthorize\Provider\Rule\Config' => [
                 'allow' => [
+                    [['lib_patres'], 'view_checkout_person'],
 //                 allow guests and users (and admins, through inheritance]
 //                 the "wear" privilege on the resource "pants"
                     //read permissions

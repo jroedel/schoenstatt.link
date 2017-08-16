@@ -9,7 +9,7 @@ use Books\Form\SearchForm;
 /**
  * @author Jeff Roedel <webmaster@schoenstatt.link>
  */
-class LibraryFormFactory implements FactoryInterface
+class SearchFormFactory implements FactoryInterface
 {
     /**
      * {@inheritDoc}
@@ -20,7 +20,8 @@ class LibraryFormFactory implements FactoryInterface
 		$table= $serviceLocator->get ( 'Books\Model\LibraryTable' );
 
         $form = new SearchForm();
-        $form->get('collectionId')->setValueOptions($table->getCollectionValueOptions());
+        $collections =  $table->getCollectionValueOptions();
+        $form->get('collectionId')->setValueOptions($collections);
 		return $form;
     }
 }

@@ -28,9 +28,12 @@ class LibrariesController extends SionController
         if (!is_null($entityObject['libraryId'])) {
             $params['libraryId'] = $entityObject['libraryId'];
         }
-        $form = new SearchForm();
+        $sm = $this->getServiceLocator();
+        $params = $this->params()->fromQuery();
+        $form = $sm->get('Books\Form\SearchForm');
         $form->setData($params);
         $books = null;
+        $borrowers = [];
 
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
@@ -46,6 +49,7 @@ class LibrariesController extends SionController
             if (count($data) > 1) {
                 $data['maxResults'] = 200;
                 $books = $table->searchBooks($data);
+                $borrowers = $sm->get('Books\BorrowersValueOptions');
             }
         }
 
@@ -54,6 +58,7 @@ class LibrariesController extends SionController
         }
 
         $view->setVariable('books', $books);
+        $view->setVariable('borrowers', $borrowers);
         $view->setVariable('form', $form);
 
         return $view;
@@ -158,10 +163,12 @@ class LibrariesController extends SionController
 
     public function searchAction()
     {
+        $sm = $this->getServiceLocator();
         $params = $this->params()->fromQuery();
-        $form = new SearchForm();
+        $form = $sm->get('Books\Form\SearchForm');
         $form->setData($params);
         $books = null;
+        $borrowers = [];
 
         if ($form->isValid()) {
             $notAllowed = [];
@@ -175,13 +182,14 @@ class LibrariesController extends SionController
             $data = $form->getData();
 
             if (!empty($data)) {
-                $sm = $this->getServiceLocator();
                 /** @var LibraryTable $table */
                 $table = $sm->get('Books\Model\LibraryTable');
 //                 $data['notAllowed'] = $notAllowed;
                 $data['maxResults'] = 200;
                 $books = $table->searchBooks($data);
                 $libraries = $this->transformBookQueryIntoLibraries($books);
+                $borrowers = $sm->get('Books\BorrowersValueOptions');
+                var_dump(count($borrowers));
             }
         }
 
@@ -191,6 +199,7 @@ class LibrariesController extends SionController
 
         return new ViewModel([
             'entities'  => $libraries,
+            'borrowers' => $borrowers,
             'form'      => $form,
         ]);
     }
