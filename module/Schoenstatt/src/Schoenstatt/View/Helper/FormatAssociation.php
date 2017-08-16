@@ -48,11 +48,11 @@ class FormatAssociation extends AbstractHelper
                     break;
                 case self::DISPLAY_KIND:
                     if (key_exists($data['kind'], $this->associationTypeLabels)) {
+                        //don't translate these, since they are already translated
                         $text = $this->associationTypeLabels[$data['kind']];
                     } else {
-                        $text = $data['kind'];
+                        $text = $this->view->translate($data['kind']);
                     }
-                    $text = $this->view->translate($text);
                     break;
                 default:
                     throw new \InvalidArgumentException("Invalid display parameter: $display");

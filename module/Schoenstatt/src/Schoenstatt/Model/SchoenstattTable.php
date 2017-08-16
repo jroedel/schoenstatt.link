@@ -1626,7 +1626,6 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $spousePersonId = $newEntityData['spousePersonId'];
             if (key_exists($spousePersonId, $persons)) {
                 if ($persons[$spousePersonId]['spousePersonId'] != $newEntityData['personId']) {
-                    var_dump("Updating $spousePersonId's spouseId to ".$newEntityData['personId']);
                     $this->updateEntity('person', $spousePersonId, ['spousePersonId' => $newEntityData['personId']]);
                 }
             }

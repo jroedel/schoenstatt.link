@@ -5,6 +5,9 @@
         <span class="badge"><?php echo $this->escapeHtml($count);?></span>
         <a href="<?php echo $this->url('libraries/library', ['library_id' => $this->entityId],
                 ['query' => ['category' => $category]]);?>"><?php
+            if (is_null($category) || strlen($category) === 0) {
+                $category = sprintf('(%s)', $this->translate('none'));
+            }
             echo $this->escapeHtml($category);?></a>
       </li>
       <?php endforeach;?>

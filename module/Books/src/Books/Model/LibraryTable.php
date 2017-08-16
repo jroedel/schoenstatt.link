@@ -27,11 +27,13 @@ class LibraryTable extends SionTable
         self::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES => 'Show categories',
         self::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS => 'Show collections',
         self::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS_CATEGORIES => 'Show collections and categories',
+//         self::MAIN_SHOW_DISPLAY_SHOW_LANGUAGES => 'Show languages',
     ];
     const MAIN_SHOW_DISPLAY_DEFAULT = self::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES;
     const MAIN_SHOW_DISPLAY_SHOW_CATEGORIES = 'show-categories';
     const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS = 'show-collections';
     const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS_CATEGORIES = 'show-collections-categories';
+//     const MAIN_SHOW_DISPLAY_SHOW_LANGUAGES = 'show-languages';
 
     /** @var UserTable $userTable */
     protected $userTable;
@@ -91,6 +93,19 @@ class LibraryTable extends SionTable
         return $return;
     }
 
+    public function getCollectionValueOptions($libraryId = null)
+    {
+        if (is_null($libraryId) && is_null($libraryId = $this->getLibraryId())) {
+            throw new \InvalidArgumentException('This function can only be called for a specific library');
+        }
+        $collections = $this->getUnlinkedCollections();
+        $valueOptions = [];
+        foreach ($collections as $collectionId => $collection) {
+            $valueOptions[$collectionId] = $collection['name'];
+        }
+        return $valueOptions;
+    }
+
     /**
      * Search for books. Returns a list of books. The query parameters are:
      * search(string), libraryId(int|array), maxResults(int)
@@ -108,6 +123,17 @@ class LibraryTable extends SionTable
         $results = [];
         $count = 0;
         foreach ($entities as $bookId => $book) {
+            //isActive, by default we don't include inactive books,
+            //if query['isActive'] is null, we include everything, otherwise whatever it says it should be
+            if (!isset($query['isActive']) && !$book['isActive']
+            ) {
+                continue;
+            } else if (isset($query['isActive']) && !is_null($query['isActive']) &&
+                $query['isActive'] !== $book['isActive']
+            ) {
+                continue;
+            }
+
             //isAvailable
             if (isset($query['isAvailable']) && is_bool($query['isAvailable']) &&
                 $query['isAvailable'] != $book['isAvailable']
@@ -117,10 +143,10 @@ class LibraryTable extends SionTable
 
             //isCheckedOut
             if (isset($query['isCheckedOut']) && is_bool($query['isCheckedOut']) &&
-                    $query['isCheckedOut'] != $book['isCheckedOut']
-                    ) {
-                        continue;
-                    }
+                $query['isCheckedOut'] != $book['isCheckedOut']
+            ) {
+                continue;
+            }
 
             //library
             if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_numeric($query['libraryId']) &&
@@ -130,6 +156,19 @@ class LibraryTable extends SionTable
             }
             if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_array($query['libraryId']) &&
                 !in_array($book['libraryId'], $query['libraryId'])
+            ) {
+                continue;
+            }
+
+
+            //collection
+            if (isset($query['collectionId']) && !is_null($query['collectionId']) && is_numeric($query['collectionId']) &&
+                $query['collectionId'] != $book['collectionId']
+            ) {
+                continue;
+            }
+            if (isset($query['collectionId']) && !is_null($query['collectionId']) && is_array($query['collectionId']) &&
+                !in_array($book['collectionId'], $query['collectionId'])
             ) {
                 continue;
             }
@@ -477,7 +516,9 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $entities = $this->getUnlinkedLibraries();
         $books = $this->getUnlinkedBooks();
         foreach ($books as $bookId => $book) {
-            if (!is_null($book['libraryId']) && key_exists($book['libraryId'], $entities)) {
+            if ($book['isActive'] && !is_null($book['libraryId']) && //don't do anything here with inactive books
+                key_exists($book['libraryId'], $entities)
+            ) {
                 $entities[$book['libraryId']]['books'][$bookId] = $book; //@todo I don't think we need this and it makes the cache much bigger
 
                 $libraryId = $book['libraryId'];

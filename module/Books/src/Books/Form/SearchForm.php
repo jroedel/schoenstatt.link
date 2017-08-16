@@ -50,6 +50,18 @@ class SearchForm extends Form implements InputFilterProviderInterface
                 'inclusive'   => true,
             ],
         ]);
+        $this->add([
+            'name' => 'collectionId',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Collection',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => [],
+            ],
+        ]);
+
 		$this->add([
 			'name' => 'submit',
 			'type' => 'Submit',
@@ -91,6 +103,16 @@ class SearchForm extends Form implements InputFilterProviderInterface
                     ],
                 ],
             ],
+		    'collectionId' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'ToNull',
+		                'options' => [
+		                    'type' => \Zend\Filter\ToNull::TYPE_STRING,
+		                ],
+		            ],
+		        ],
+		    ],
 		];
 	}
 }
