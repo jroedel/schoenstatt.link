@@ -42,13 +42,6 @@ class SearchForm extends Form implements InputFilterProviderInterface
             'options' => [
                 'required' => true,
             ],
-            'attributes' => [
-                'min'         => 0,
-                'max'         => 100,
-                'step'        => 1,
-                'value'       => 50,
-                'inclusive'   => true,
-            ],
         ]);
         $this->add([
             'name' => 'collectionId',

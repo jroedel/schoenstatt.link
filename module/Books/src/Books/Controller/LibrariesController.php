@@ -29,7 +29,6 @@ class LibrariesController extends SionController
             $params['libraryId'] = $entityObject['libraryId'];
         }
         $sm = $this->getServiceLocator();
-        $params = $this->params()->fromQuery();
         $form = $sm->get('Books\Form\SearchForm');
         $form->setData($params);
         $books = null;
@@ -45,7 +44,6 @@ class LibrariesController extends SionController
                     unset($data[$key]);
                 }
             }
-
             if (count($data) > 1) {
                 $data['maxResults'] = 200;
                 $books = $table->searchBooks($data);
