@@ -22,7 +22,7 @@ return [
 //            'CL' => ':cityState :zip',
 //        ],
 
-	    'default_redirect_route' => 'home',
+	    'default_redirect_route' => 'welcome',
 
 		/**
 		* If this key is set, it will be used to prime the SionForm with persons for suggestions.

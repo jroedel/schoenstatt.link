@@ -17,5 +17,6 @@ return array(
     'Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt\'s web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!' => 'Schoenstatt Link busca facilitar la comunicación, aumentando y mejorando la presencia web de Schoenstatt. Utilizamos el %s para ayudar a los usuarios de internet encontrar  las comunidades y santuarios de Schoenstatt a su alrededor e información sobre libros y materiales schoenstattianos. Por favor, ¡ayúdanos a centralizar esta información antes del fin del 2018!',
     'Sign in' => 'Acceder',
     'translation edits' => 'aportes traducción',
+    'Username' => 'Nombre de usuario',
     'We need your help!' => '¡Ayúdanos!',
 );

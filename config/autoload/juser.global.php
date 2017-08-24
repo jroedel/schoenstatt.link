@@ -26,7 +26,7 @@ return [
 
         'auth_identity_fields' => [ 'username', 'email' ],
 
-        'login_redirect_route' => 'home',
+        'login_redirect_route' => 'welcome',
 
         'logout_redirect_route' => 'zfcuser/login',
 

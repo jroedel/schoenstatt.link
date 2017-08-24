@@ -9,6 +9,7 @@ return array(
     'Email' => 'Email',
     'Google Knowledge Graph' => 'Google Knowledge Graph',
     'https://en.wikipedia.org/wiki/Knowledge_Graph' => 'https://en.wikipedia.org/wiki/Knowledge_Graph',
+    'Learn more' => 'Learn more',
     'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.' => 'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.',
     'publication edits' => 'publication edits',
     'schoenstatt edits' => 'schoenstatt edits',
@@ -18,5 +19,6 @@ return array(
     'Search contacts' => 'Search contacts',
     'Sign in' => 'Sign in',
     'translation edits' => 'translation edits',
+    'Username' => 'Username',
     'We need your help!' => 'We need your help!',
 );
