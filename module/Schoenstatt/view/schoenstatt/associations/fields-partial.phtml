@@ -1,4 +1,6 @@
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/selectize.min.js"));
 $form = $this->form;
 echo $this->formHidden($form->get('associationId'));?>
 <div class="form-group ">
@@ -63,6 +65,10 @@ $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('contactNotes'));
 echo $this->formRow($form->get('security'));
 $jsScript = <<<JS
+$("select[name='country']").selectize({
+    create: false,
+    sortField: 'text'
+});
 $("select[name='phone1Label']").selectize({
     create: true,
     sortField: 'text'
@@ -85,6 +91,14 @@ $("select[name='url2Label']").selectize({
 });
 $("select[name='url3Label']").selectize({
     create: true,
+    sortField: 'text'
+});
+$("select[name='post1Country']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='post2Country']").selectize({
+    create: false,
     sortField: 'text'
 });
 JS;

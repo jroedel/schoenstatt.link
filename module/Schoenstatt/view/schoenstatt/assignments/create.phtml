@@ -48,6 +48,10 @@ $("select[name='personId']").selectize({
     create: false,
     sortField: 'text'
 });
+$("select[name='associationId']").selectize({
+    create: false,
+    sortField: 'text'
+});
 JS;
 
 $this->inlineScript()->captureStart();

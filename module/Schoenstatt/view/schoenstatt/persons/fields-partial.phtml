@@ -59,6 +59,10 @@ echo $this->formRow($form->get('postCountry'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('contactNotes'));
 $jsScript .= <<<JS
+$("select[name='country']").selectize({
+    create: false,
+    sortField: 'text'
+});
 $("select[name='spousePersonId']").selectize({
     create: false,
     sortField: 'text'
