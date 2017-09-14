@@ -38,31 +38,20 @@ return [
 
         'allowed_login_states' => [1],
     ],
-    'slm_locale' => [
-        /**
-         * Beginning of SlmLocale configuration
-         *
-         * Default locale
-         *
-         */
-        'default' => 'en-US',
+'slm_locale' => [
+    'default' => 'en-US',
 
-        /**
-         * Supported locales
-         *
-         */
-        'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR'],
+    'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR'],
 
-        /**
-         * Strategies
-         *
-         */
-        'strategies' => ['query', 'cookie', 'acceptlanguage'],
+    'strategies' => ['uripath', 'cookie', 'acceptlanguage'],
 
-        /**
-         * End of SlmLocale configuration
-         */
-    ],
+//     'mappings' => [
+//         'en' => 'en_US',
+//         'es' => 'es_ES',
+//         'pt' => 'pt_BR',
+//         'de' => 'de_DE',
+//     ]
+],
     /**
      * GoalioRememberMe Configuration
      */

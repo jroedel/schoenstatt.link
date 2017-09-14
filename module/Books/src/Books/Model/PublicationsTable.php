@@ -295,6 +295,8 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
                 'isSubEdition'              => !is_null($mainPublicationId),
                 'mainPublication'           => null,
                 'translatedFromPublication' => null,
+                'bookCoverFileId'           => null,
+                'bookCoverFile'             => null,
             ];
         }
 

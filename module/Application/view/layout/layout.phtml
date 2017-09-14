@@ -1,6 +1,6 @@
 <?php use Zend\Math\Rand;
+use Zend\Uri\Uri;
 echo $this->doctype(); ?>
-
 <html lang="<?php echo Locale::getPrimaryLanguage(Locale::getDefault()); ?>">
     <head>
         <meta charset="utf-8">
@@ -10,6 +10,42 @@ echo $this->doctype(); ?>
             ->appendName('viewport', 'width=device-width, initial-scale=1.0')
             ->appendHttpEquiv('X-UA-Compatible', 'IE=edge')
         ?>
+
+        <?php //make a link to the canonical (en) page for search engines and alternative links to other languages
+        /** @var Uri $canonicalUrl */
+        $languages = ['en' => 'en_US', 'es' => 'es_ES', 'de' => 'de_DE', 'pt' => 'pt_BR'];
+        $currentLanguage = Locale::getPrimaryLanguage(Locale::getDefault());
+        $requestUri = $this->getHelperPluginManager()->getServiceLocator()->get('request')->getUri();
+        foreach ($languages as $languageId => $localeId) {
+            $canonicalUrl = $this->localeUrl($localeId);
+            $queryParams = $canonicalUrl->getQueryAsArray();
+            if (array_key_exists('lang', $queryParams)) {
+                unset($queryParams['lang']);
+                $canonicalUrl->setQuery($queryParams);
+            }
+            $canonicalUrl->setScheme($requestUri->getScheme())
+            ->setHost($requestUri->getHost())
+            ->normalize();
+            if ($languageId == 'en') {
+                $this->headLink([
+                    'href' => $canonicalUrl->toString(),
+                    'rel' => 'canonical',
+                ], 'PREPEND');
+            }
+            if ($languageId !== $currentLanguage) {
+                $this->headLink([
+                    'href' => $canonicalUrl->toString(),
+                    'rel' => 'alternate',
+                    'hreflang' => $languageId,
+                ], 'PREPEND');
+            }
+        }
+
+        echo $this->headLink()
+	       ->prependStylesheet($this->basePath() . '/'. $this->asset('css/basic.css'));
+//                         ->prependStylesheet($this->basePath('css/style.css'))
+//                         ->prependStylesheet($this->basePath('css/bootstrap-theme.min.css'))
+//                         ->prependStylesheet($this->basePath('css/bootstrap.min.css')) ?>
 
     	<!-- ****** faviconit.com favicons ****** -->
     	<link rel="shortcut icon" href="/favicon.ico">
@@ -34,11 +70,6 @@ echo $this->doctype(); ?>
     	<meta name="msapplication-config" content="/browserconfig.xml">
     	<!-- ****** faviconit.com favicons ****** -->
         <!-- Le styles -->
-        <?php echo $this->headLink()
-	       ->prependStylesheet($this->basePath() . '/'. $this->asset('css/basic.css'));
-//                         ->prependStylesheet($this->basePath('css/style.css'))
-//                         ->prependStylesheet($this->basePath('css/bootstrap-theme.min.css'))
-//                         ->prependStylesheet($this->basePath('css/bootstrap.min.css')) ?>
 
         <!-- Scripts -->
         <?php echo $this->headScript()
@@ -139,10 +170,10 @@ echo $this->doctype(); ?>
     				      $es = ['ar', 'es', 'cl', 'mx'];
     				      $de = ['de', 'ch'];
     				      $pt = ['pt', 'br'];?>
-                	<a href="?lang=en_US"><span class="flag-icon flag-icon-<?php echo $en[Rand::getInteger(0, 1)]; ?>"></span></a>
-                	<a href="?lang=es_ES"><span class="flag-icon flag-icon-<?php echo $es[Rand::getInteger(0, 3)]; ?>"></span></a>
-                	<a href="?lang=de_DE"><span class="flag-icon flag-icon-<?php echo $de[Rand::getInteger(0, 1)]; ?>"></span></a>
-                	<a href="?lang=pt_BR"><span class="flag-icon flag-icon-<?php echo $pt[Rand::getInteger(0, 1)]; ?>"></span></a>
+                	<a href="<?php echo $this->localeUrl('en_US');?>"><span class="flag-icon flag-icon-<?php echo $en[Rand::getInteger(0, 1)]; ?>"></span></a>
+                	<a href="<?php echo $this->localeUrl('es_ES');?>"><span class="flag-icon flag-icon-<?php echo $es[Rand::getInteger(0, 3)]; ?>"></span></a>
+                	<a href="<?php echo $this->localeUrl('de_DE');?>"><span class="flag-icon flag-icon-<?php echo $de[Rand::getInteger(0, 1)]; ?>"></span></a>
+                	<a href="<?php echo $this->localeUrl('pt_BR');?>"><span class="flag-icon flag-icon-<?php echo $pt[Rand::getInteger(0, 1)]; ?>"></span></a>
             	</div>
     		</div>
             <?php

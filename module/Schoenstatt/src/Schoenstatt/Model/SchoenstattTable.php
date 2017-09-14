@@ -1610,7 +1610,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      * @param array $data
      * @return array
      */
-    protected function preprocessPerson($data)
+    protected function preprocessPerson($data, $entityData, $action)
     {
         if (isset($data['automaticTitle']) && $data['automaticTitle'] === true) {
             $data['title'] = null;
