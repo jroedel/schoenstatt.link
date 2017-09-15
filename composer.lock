@@ -2818,12 +2818,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/basz/SlmLocale.git",
-                "reference": "44156cbfd5de297670f3c9e431e342d61346887c"
+                "reference": "7da8651e953ce0549356dda3faa448475575b913"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/basz/SlmLocale/zipball/44156cbfd5de297670f3c9e431e342d61346887c",
-                "reference": "44156cbfd5de297670f3c9e431e342d61346887c",
+                "url": "https://api.github.com/repos/basz/SlmLocale/zipball/7da8651e953ce0549356dda3faa448475575b913",
+                "reference": "7da8651e953ce0549356dda3faa448475575b913",
                 "shasum": ""
             },
             "require": {
@@ -2874,7 +2874,7 @@
                 "locale",
                 "zf2"
             ],
-            "time": "2017-07-28 17:25:43"
+            "time": "2017-09-15 07:09:21"
         },
         {
             "name": "snapshotpl/zf-snap-geoip",

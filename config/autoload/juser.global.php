@@ -45,12 +45,12 @@ return [
 
     'strategies' => ['uripath', 'cookie', 'acceptlanguage'],
 
-//     'mappings' => [
-//         'en' => 'en_US',
-//         'es' => 'es_ES',
-//         'pt' => 'pt_BR',
-//         'de' => 'de_DE',
-//     ]
+    'aliases' => [
+        'en' => 'en_US',
+        'es' => 'es_ES',
+        'pt' => 'pt_BR',
+        'de' => 'de_DE',
+    ],
 ],
     /**
      * GoalioRememberMe Configuration
