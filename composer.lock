@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "a5ee81c66326c6dfc49cab29b9806276",
+    "content-hash": "032c2ccc07868198465965fd8c43f5af",
     "packages": [
         {
             "name": "bjyoungblood/bjy-authorize",
@@ -545,104 +545,6 @@
                 "password"
             ],
             "time": "2014-11-20T16:49:30+00:00"
-        },
-        {
-            "name": "jroedel/zf2-jtranslate",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/jroedel/zf2-jtranslate.git",
-                "reference": "db049edaaa9b8a104249fae94791c0b627e5515a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/jroedel/zf2-jtranslate/zipball/db049edaaa9b8a104249fae94791c0b627e5515a",
-                "reference": "db049edaaa9b8a104249fae94791c0b627e5515a",
-                "shasum": ""
-            },
-            "require": {
-                "cakephp/utility": "^3.2.0",
-                "jroedel/zf2-juser": "@dev",
-                "mledoze/countries": "^1.8.0",
-                "php": ">=5.3.3",
-                "zendframework/zend-code": "^3.0.2 || ^2.5.0",
-                "zendframework/zend-i18n": "^2.5.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "JTranslate": "src"
-                },
-                "classmap": [
-                    "Module.php"
-                ]
-            },
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "jroedel",
-                    "homepage": "https://github.com/jroedel",
-                    "role": "Developer"
-                }
-            ],
-            "description": "Zend Framework 2 module to provide a translation GUI",
-            "homepage": "https://github.com/jroedel/zf2-jtranslate",
-            "keywords": [
-                "Zend Framework 2",
-                "gui",
-                "translation"
-            ],
-            "support": {
-                "issues": "https://github.com/jroedel/zf2-jtranslate/issues",
-                "source": "https://github.com/jroedel/zf2-jtranslate/tree/master"
-            },
-            "time": "2017-06-02 13:50:16"
-        },
-        {
-            "name": "jroedel/zf2-juser",
-            "version": "0.0.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/jroedel/zf2-juser.git",
-                "reference": "8e1b404fec76cf48f0e34b071b67912d76434311"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/jroedel/zf2-juser/zipball/8e1b404fec76cf48f0e34b071b67912d76434311",
-                "reference": "8e1b404fec76cf48f0e34b071b67912d76434311",
-                "shasum": ""
-            },
-            "require": {
-                "bjyoungblood/bjy-authorize": "1.4.*",
-                "goalio/goalio-rememberme": "1.*",
-                "php": ">=5.3.3",
-                "slm/locale": ">=0.1.0,<1.2.0-dev",
-                "snapshotpl/zf-snap-geoip": "2.*",
-                "zendframework/zendframework": "~2.5.0",
-                "zf-commons/zfc-user": "1.0.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "JUser": "src"
-                }
-            },
-            "license": [
-                "MIT"
-            ],
-            "description": "A fork of manuakasam/SamUser. Glues together ZfcUser, BjyAuthorize, SlmLocale, and GoalioRememberMe",
-            "homepage": "https://github.com/jroedel/zf2-juser",
-            "keywords": [
-                "framework",
-                "zf2"
-            ],
-            "support": {
-                "source": "https://github.com/jroedel/zf2-juser/tree/0.0.3",
-                "issues": "https://github.com/jroedel/zf2-juser/issues"
-            },
-            "time": "2016-11-22T17:03:45+00:00"
         },
         {
             "name": "kriswallsmith/assetic",
@@ -2912,16 +2814,16 @@
         },
         {
             "name": "slm/locale",
-            "version": "v0.2.0",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/basz/SlmLocale.git",
-                "reference": "34bca8eadd2245dff63d93e8b0ba9994bddfee87"
+                "reference": "44156cbfd5de297670f3c9e431e342d61346887c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/basz/SlmLocale/zipball/34bca8eadd2245dff63d93e8b0ba9994bddfee87",
-                "reference": "34bca8eadd2245dff63d93e8b0ba9994bddfee87",
+                "url": "https://api.github.com/repos/basz/SlmLocale/zipball/44156cbfd5de297670f3c9e431e342d61346887c",
+                "reference": "44156cbfd5de297670f3c9e431e342d61346887c",
                 "shasum": ""
             },
             "require": {
@@ -2972,7 +2874,7 @@
                 "locale",
                 "zf2"
             ],
-            "time": "2017-05-22T12:37:37+00:00"
+            "time": "2017-07-28 17:25:43"
         },
         {
             "name": "snapshotpl/zf-snap-geoip",
@@ -4405,16 +4307,16 @@
         },
         {
             "name": "zendframework/zend-diactoros",
-            "version": "1.5.0",
+            "version": "1.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/zendframework/zend-diactoros.git",
-                "reference": "1d23172f9dc1687a97c195a777b0199f14f7b26e"
+                "reference": "2faa791b66bac33ca40031d8bce03b7dc8143490"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/zendframework/zend-diactoros/zipball/1d23172f9dc1687a97c195a777b0199f14f7b26e",
-                "reference": "1d23172f9dc1687a97c195a777b0199f14f7b26e",
+                "url": "https://api.github.com/repos/zendframework/zend-diactoros/zipball/2faa791b66bac33ca40031d8bce03b7dc8143490",
+                "reference": "2faa791b66bac33ca40031d8bce03b7dc8143490",
                 "shasum": ""
             },
             "require": {
@@ -4433,8 +4335,8 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "1.5-dev",
-                    "dev-develop": "1.6-dev"
+                    "dev-master": "1.6-dev",
+                    "dev-develop": "1.7-dev"
                 }
             },
             "autoload": {
@@ -4453,7 +4355,7 @@
                 "psr",
                 "psr-7"
             ],
-            "time": "2017-08-22T20:38:56+00:00"
+            "time": "2017-09-13T14:47:08+00:00"
         },
         {
             "name": "zendframework/zend-dom",
@@ -7248,7 +7150,6 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "jroedel/zf2-jtranslate": 20,
         "slm/locale": 20
     },
     "prefer-stable": false,

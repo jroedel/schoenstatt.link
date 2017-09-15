@@ -10,7 +10,6 @@
     "require": {
         "php": ">=5.5",
         "zendframework/zendframework": "~2.5",
-        "jroedel/zf2-jtranslate": "@dev",
         "nesbot/carbon": "^1.21",
         "giggsey/libphonenumber-for-php": "^7.7",
         "neitanod/forceutf8": "^2.0",
@@ -31,27 +30,15 @@
         "bjyoungblood/bjy-authorize": "^1.4.0",
     	"goalio/goalio-rememberme": "1.*",
         "zf-commons/zfc-user": "1.0.0",
-        "slm/locale": ">=0.1.0,<1.2.0-dev",
-        "matriphe/iso-639": "^1.0"
+        "slm/locale": "dev-master",
+        "matriphe/iso-639": "^1.0",
+		"cakephp/utility": "^3.2.0",
+        "mledoze/countries": "^1.8.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
         "zendframework/zend-developer-tools": "^1.1",
         "phpunit/phpunit": "^5.7",
         "zendframework/zend-test": "^2.5"
-    },
-	"repositories": [
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/zf2-jtranslate"
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/zf2-juser"
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/SlmLocale"
-	   }
-	]
+    }
 }
