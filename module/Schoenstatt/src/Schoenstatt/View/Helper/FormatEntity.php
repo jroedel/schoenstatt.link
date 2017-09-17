@@ -9,10 +9,10 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
      *
      * @param mixed[] $config The 'schoenstatt' config key
      */
-    public function __construct($entityService, $associationTypeLabels)
+    public function __construct($entityService, $associationTypeLabels, $routePermissionCheckingEnabled = false)
     {
         $this->associationTypeLabels = $associationTypeLabels;
-        parent::__construct($entityService);
+        parent::__construct($entityService, $routePermissionCheckingEnabled);
     }
 
     /**

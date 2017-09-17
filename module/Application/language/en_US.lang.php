@@ -17,6 +17,7 @@ return array(
     'Schoenstatt Link' => 'Schoenstatt Link',
     'Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt\'s web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!' => 'Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt\'s web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!',
     'Search contacts' => 'Search contacts',
+    'Search publications' => 'Search publications',
     'Sign in' => 'Sign in',
     'translation edits' => 'translation edits',
     'Username' => 'Username',

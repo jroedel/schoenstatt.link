@@ -295,23 +295,27 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'resourceId',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Access level',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+                'value_options' => [
+                    'publication_public' => 'Public',
+                    'publication_user' => 'Authenticated users',
+                    'publication_institute' => 'Institute users',
+                    'publication_patres' => 'Schoenstatt Fathers',
+                ],
+            ],
+        ]);
+        $this->add([
             'name' => 'isAccessibleForFree',
             'type' => 'Checkbox',
             'options' => [
                 'label' => 'Accessible for free?',
-                'checked_value' => '1',
-                'unchecked_value' => '0',
-                'use_hidden_element' => true,
-            ],
-            'attributes' => [
-                'value'   => '0',
-            ],
-        ]);
-        $this->add([
-            'name' => 'isInternalForPatres',
-            'type' => 'Checkbox',
-            'options' => [
-                'label' => 'Internal for Schoenstatt Fathers?',
                 'checked_value' => '1',
                 'unchecked_value' => '0',
                 'use_hidden_element' => true,
@@ -791,13 +795,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\SortArray'],
                 ],
             ],
-            'isAccessibleForFree' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
-                ],
+            'resourceId' => [
+                'required' => true,
             ],
-            'isInternalForPatres' => [
+            'isAccessibleForFree' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']

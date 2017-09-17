@@ -21,7 +21,7 @@ $object = $this->object;
         </div>
 
         <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/publications/publication/edit')): ?>
+            <?php if ($this->isAllowed($object['resourceId'], 'edit')): ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
                     echo $this->url('publications/publication/edit', array('publication_id' => $object['publicationId']));?>">
                     <?php echo $this->translate('Edit publication')?></a>
@@ -39,22 +39,19 @@ $object = $this->object;
     <div class="col-md-6">
           <p><strong><?php echo $this->translate('Author(s)');?></strong></p>
           <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);?>
-        <?php if (!empty($object['childTerritories'])) :?>
-        <hr>
-            <h4 class="text-center"><strong><?php echo $this->translate('Associated territories');?></strong></h4>
-            <?php foreach ($object['childTerritories'] as $territory) :
-                if ($territory['isActive'] || $this->isAllowed('patres_details')):?>
-                    <p><?php echo $this->formatEntity('territory', $territory, [
-                        'displayInactiveLabel' => true
-                    ]);?></p><?php
-                endif;
-            endforeach;
-        endif;?>
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
       <!-- <p><strong><?php echo $this->translate('Superiors');?></strong></p> -->
         <?php echo $this->formatField('Language', $object['inLanguage']);
+        if (!is_null($object['mainPublication'])) :?>
+        <p><strong><?php echo $this->translate('Current publication');?>:</strong> <?php
+        echo $this->formatEntity('publication', $object['mainPublication']);?></p>
+        <?php endif;
+        if (!is_null($object['translatedFromPublication'])) :?>
+        <p><strong><?php echo $this->translate('Translated from');?>:</strong> <?php
+        echo $this->formatEntity('publication', $object['translatedFromPublication']);?></p>
+        <?php endif;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Translator', $object['translator'], ['displayOnlyIfNotNull' => true]);
@@ -108,7 +105,8 @@ $object = $this->object;
 </div> <!-- notes row -->
 <?php endif;?>
 
-  <?php if (!is_null($object['adminNotes']) && 0 !== strlen($object['adminNotes'])):?>
+  <?php if (!is_null($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
+          $this->isAllowed($object['resourceId'], 'show-admin-info')):?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="adminNotesPanel">

@@ -206,7 +206,7 @@ ORDER BY `Publisher`";
 `AuthorPerson3`, `Authors`, `BookEdition`, `InLanguage`, `Description`, `Isbn`, `Translator`,
 `Illustrator`, `NumberOfPages`, `CopyrightYear`, `Publisher`, `PublishingPlace`, `DatePublished`,
 `PublishingStatus`, `BookFormatType`, `MainPublicationId`, `VolumeNumber`, `ContainedIn`,
-`ContainedInIsbn`, `Genre`, `PublicTags`, `AdminTags`, `IsAccessableForFree`, `IsInternalForPatres`,
+`ContainedInIsbn`, `Genre`, `PublicTags`, `AdminTags`, `IsAccessableForFree`,
 `IsScientificWork`, `IsAwaitingMerge`, `HasBeenMerged`, `HasNoISBN`, `IsRevisedWithBookInHand`,
 `PublishDataAsJsonLd`, `IsFormallyPublished`, `JkQuality`, `JkQualityNotes`, `JkPeriod`,
 `JkEventId`, `Url1`, `Url1Label`, `Url2`, `Url2Label`, `Url3`, `Url3Label`, `DataSource`,
@@ -214,7 +214,7 @@ ORDER BY `Publisher`";
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
 `CreatedOn`, `CreatedBy`, `TranslatedFromPublicationId`
 FROM `sch_publications`
-ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
+ORDER BY `Authors`,`InLanguage`, `Title`";
         $results = $this->fetchSome(null, $sql, null);
         $entities = [];
         foreach ($results as $row) {
@@ -227,10 +227,20 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
             ];
             $urls = $this::processUrls($unprocessedUrls);
             $mainPublicationId = $this->filterDbId($row['MainPublicationId']);
+
+            $publishDataAsJsonLd = $this->filterDbBool($row['PublishDataAsJsonLd']);
+            /*
+             * For now, make public those that have the publishDataAsJsonFlag.
+             */
+            $resourceId = $this->filterDbString($row['ResourceId']);
+            if ('publication_public' === $resourceId && !$publishDataAsJsonLd) {
+                $resourceId = 'publication_user';
+            }
+
             $entities[$id] = [
                 'publicationId'             => $id,
                 'title' 					=> $this->filterDbString($row['Title']),
-                'resourceId'				=> $this->filterDbString($row['ResourceId']),
+                'resourceId'				=> $resourceId,
                 'authorPerson1' 			=> $this->filterDbId($row['AuthorPerson1']),
                 'authorPerson2' 			=> $this->filterDbId($row['AuthorPerson2']),
                 'authorPerson3' 			=> $this->filterDbId($row['AuthorPerson3']),
@@ -257,13 +267,12 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
                 'keywords' 					=> $this->filterDbArray($row['PublicTags']),
                 'adminTags'					=> $this->filterDbArray($row['AdminTags']),
                 'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
-                'isInternalForPatres'       => $this->filterDbBool($row['IsInternalForPatres']),
                 'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
                 'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
 
                 'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
                 'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
-                'publishDataAsJsonLd'       => $this->filterDbBool($row['PublishDataAsJsonLd']),
+                'publishDataAsJsonLd'       => $publishDataAsJsonLd,
                 'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
 
                 'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
@@ -299,7 +308,6 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
                 'bookCoverFile'             => null,
             ];
         }
-
         $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
         return $entities;
     }
@@ -435,7 +443,6 @@ ORDER BY `UpdatedOn` DESC, `Authors`, `Title`";
                 'keywords'                  => $keywords,
 
                 'isAccessibleForFree'       => false,
-                'isInternalForPatres'       => false,
                 'isScientificWork'          => $isScientific,
                 'isAwaitingMerge'           => true, //these should depend on the imported records already in db
                 'hasBeenMerged'             => false, //these should depend on the imported records already in db
@@ -544,7 +551,7 @@ WHERE 1";
                 'authorPerson2'             => null,
                 'authorPerson3'             => null,
                 'authors'                   => 'Kentenich, Josef',
-                'resourceId'                => $isInternal ? 'pub_patres' : 'pub',
+                'resourceId'                => $isInternal ? 'publication_patres' : 'publication_public',
                 'bookEdition'               => null,
                 'inLanguage'                 => $language,
                 'description'               => null,
@@ -567,7 +574,6 @@ WHERE 1";
                 'keywords'                  => null,// $keywords,
 
                 'isAccessibleForFree'       => false,
-                'isInternalForPatres'       => $isInternal,
                 'isScientificWork'          => $isScientific,
                 'isAwaitingMerge'           => true, //these should depend on the imported records already in db
                 'hasBeenMerged'             => false, //these should depend on the imported records already in db

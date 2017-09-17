@@ -1,9 +1,9 @@
 <?php
 namespace Books\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
+use SionModel\View\Helper\FormatEntity;
 
-class FormatPublication extends AbstractHelper
+class FormatPublication extends FormatEntity
 {
     const DISPLAY_TITLE = 'title';
     const DISPLAY_AUTHORS = 'authors';
@@ -11,7 +11,7 @@ class FormatPublication extends AbstractHelper
 
     /**
      *
-     * @param array $object
+     * @param array $data
      * @param array $options
      *
      * available options:
@@ -20,10 +20,10 @@ class FormatPublication extends AbstractHelper
      *  'link' => true,
      *  'displayEditPencil' => false,
      */
-    public function __invoke($entity, $object, $options = [])
+    public function __invoke($entityType, $data, array $options = [])
     {
     	//if there's not enough info we won't do anything
-    	if (!isset($object['publicationId']) || !isset($object['title'])) {
+    	if (!isset($data['publicationId']) || !isset($data['title'])) {
     		return '';
     	}
 
@@ -48,39 +48,38 @@ class FormatPublication extends AbstractHelper
     	$escapeMainText = true;
     	switch ($displayOption) {
     	    case self::DISPLAY_AUTHORS: //@todo make it work when we have real authors
-    	        $mainText = $object['authors'];
+    	        $mainText = $data['authors'];
     	       break;
     	    case self::DISPLAY_TITLE:
-    	        $mainText = $object['title'];
+    	        $mainText = $data['title'];
     	        break;
     	    case self::DISPLAY_EDITION:
     	        $mainText = '';
     	        $escapeMainText = false;
-    	        if (!is_null($object['bookEdition'])) {
-    	            $mainText .= sprintf("<strong>%s</strong>", $this->view->escapeHtml($object['bookEdition']));
+    	        if (!is_null($data['bookEdition'])) {
+    	            $mainText .= sprintf("<strong>%s</strong>", $this->view->escapeHtml($data['bookEdition']));
     	        }
-    	        if (!is_null($object['copyrightYear'])) {
+    	        if (!is_null($data['copyrightYear'])) {
     	            if (strlen($mainText) > 0) {
     	                $mainText .= ', ';
     	            }
-    	            $mainText .= $this->view->escapeHtml($object['copyrightYear']);
+    	            $mainText .= $this->view->escapeHtml($data['copyrightYear']);
     	        }
-    	        if (!is_null($object['publishingPlace'])) {
+    	        if (!is_null($data['publishingPlace'])) {
     	            if (strlen($mainText) > 0) {
     	                $mainText .= ' ';
     	            }
-    	            $mainText .= $this->view->escapeHtml($object['publishingPlace']);
+    	            $mainText .= $this->view->escapeHtml($data['publishingPlace']);
     	        }
     	}
 
     	if ($linkOption) {
-        	$linkFormat = '<a href="%s">%s</a>';
-        	$url = $this->view->url('publications/publication', array('publication_id' => $object['publicationId']));
+//         	$linkFormat = '<a href="%s">%s</a>';
+//         	$url = $this->view->url('publications/publication', array('publication_id' => $object['publicationId']));
         	if ($escapeMainText) {
-        	   $finalMarkup .= sprintf($linkFormat, $url, $this->view->escapeHtml($mainText));
-        	} else {
-        	    $finalMarkup .= sprintf($linkFormat, $url, $mainText);
+        	   $mainText = $this->view->escapeHtml($mainText);
         	}
+        	$finalMarkup .= $this->wrapAsLink('publication', $data, $mainText);
     	} else {
     	    if ($escapeMainText) {
     	       $finalMarkup .= $this->view->escapeHtml($mainText);
@@ -89,8 +88,8 @@ class FormatPublication extends AbstractHelper
     	    }
     	}
     	if ($showLanguageLabel) {
-    	    if (!is_null($object['inLanguage'])) {
-    	        $finalMarkup .= ' '. $this->view->label($object['inLanguage'], 'label-info');
+    	    if (!is_null($data['inLanguage'])) {
+    	        $finalMarkup .= ' '. $this->view->label($data['inLanguage'], 'label-info');
     	    }
     	}
 //     	if ($showLabels) {
@@ -101,7 +100,7 @@ class FormatPublication extends AbstractHelper
 //     	    }
 //     	}
     	if ($editPencilOption) { //permissions are checked in editPencil
-    		$finalMarkup .= $this->view->editPencil('publication', $object['publicationId']);
+    		$finalMarkup .= $this->view->editPencil('publication', $data['publicationId']);
     	}
     	return $finalMarkup;
     }

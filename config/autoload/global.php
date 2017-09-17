@@ -21,7 +21,7 @@ return [
                 'resource' => 'route/schoenstatt',
             ],
             [
-                'label' => 'Publications',
+                'label' => 'Literature',
                 'route' => 'publications',
                 'resource' => 'route/publications',
             ],

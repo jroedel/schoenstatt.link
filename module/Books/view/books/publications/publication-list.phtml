@@ -23,7 +23,10 @@ $columnNames = [
     <th><?php echo $this->translate($columnNames[$column]);?></th>
 <?php endforeach;?>
 </tr>
-<?php foreach($this->objects as $entityId => $entity) :?>
+<?php foreach($this->objects as $entityId => $entity) :
+if (!$this->isAllowed($entity['resourceId'], 'show')) {
+    continue;
+}?>
 <tr><?php foreach ($this->columns as $column) :
 switch ($column) {
     case 'authors':?>

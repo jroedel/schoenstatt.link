@@ -38,20 +38,20 @@ return [
 
         'allowed_login_states' => [1],
     ],
-'slm_locale' => [
-    'default' => 'en-US',
+    'slm_locale' => [
+        'default' => 'en-US',
 
-    'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR'],
+        'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR'],
 
-    'strategies' => ['uripath', 'cookie', 'acceptlanguage'],
+        'strategies' => ['uripath', 'cookie', 'acceptlanguage'],
 
-    'aliases' => [
-        'en' => 'en_US',
-        'es' => 'es_ES',
-        'pt' => 'pt_BR',
-        'de' => 'de_DE',
+        'aliases' => [
+            'en' => 'en_US',
+            'es' => 'es_ES',
+            'pt' => 'pt_BR',
+            'de' => 'de_DE',
+        ],
     ],
-],
     /**
      * GoalioRememberMe Configuration
      */

@@ -174,9 +174,9 @@ return [
     ],
     'view_helpers' => [
         'factories' => [
+            'formatPublication'             => 'Books\Service\FormatPublicationFactory',
         ],
         'invokables' => [
-            'formatPublication'             => 'Books\View\Helper\FormatPublication',
             'formatPublicationUrlObject'    => 'Books\View\Helper\FormatPublicationUrlObject',
             'formatField'                   => 'Books\View\Helper\FormatField',
         ],
@@ -205,7 +205,7 @@ return [
             'publications' => [
                 'type'    => 'Literal',
                 'options' => [
-                    'route'    => '/publications',
+                    'route'    => '/literature',
                     'defaults' => [
                         'controller' => 'Books\Controller\Publications',
                         'action'     => 'index',
@@ -1051,6 +1051,14 @@ return [
 //                     'cell'	=> 'contactInfo',
 //                 ],
                 'report_changes'               			=> true,
+
+                'acl_resource_id_field'                     => 'resourceId',
+                'acl_show_permission'                   => 'show',
+                'acl_edit_permission'                   => 'edit',
+                'acl_suggest_permission'                => 'suggest',
+                'acl_moderate_permission'               => 'moderate',
+                'acl_delete_permission'                 => 'delete',
+
                 'index_route'               			=> 'publications',
 //                 'index_template'               			=> 'project/events/index',
                 'default_route_key'                     => 'publication_id',
@@ -1119,7 +1127,6 @@ return [
                     'keywords'                  => 'PublicTags',
 
                     'isAccessibleForFree'       => 'IsAccessableForFree',
-                    'isInternalForPatres'       => 'IsInternalForPatres',
                     'isScientificWork'          => 'IsScientificWork',
                     'isAwaitingMerge'           => 'IsAwaitingMerge',
 
@@ -1298,7 +1305,10 @@ return [
                'book',
                'book_teo',
                'book_sch',
-               'pub_patres',
+               'publication_patres',
+               'publication_institute',
+               'publication_user',
+               'publication_public',
                'view_checkout_person', //see who has a library book
            ],
            //'Event\Model\EventTable' => 'Event\Model\EventTable'
@@ -1331,8 +1341,28 @@ return [
                     //approve permissions
 //                     [['lib_moderator'], 'book', 'approve'],
 //                     [['lib_teo_moderator'], 'book_teo', 'approve'],
-        //                     [['lib_sch_moderator'], 'book_sch', 'approve'],
-                    [['pub_patres'], 'pub_patres'],
+//                     [['lib_sch_moderator'], 'book_sch', 'approve'],
+                    [['pub_patres'], 'publication_patres', 'show'],
+                    [['pub_patres_moderator'], 'publication_patres', 'show-admin-info'],
+                    [['pub_patres_moderator'], 'publication_patres', 'edit'],
+                    [['pub_patres_moderator'], 'publication_patres', 'delete'],
+
+
+                    [['pub_institute'], 'publication_institute', 'show'],
+                    [['pub_institute_moderator'], 'publication_institute', 'show-admin-info'],
+                    [['pub_institute_moderator'], 'publication_institute', 'edit'],
+                    [['pub_institute_moderator'], 'publication_institute', 'delete'],
+
+                    [['user'], 'publication_user', 'show'],
+                    [['pub_moderator'], 'publication_user', 'show-admin-info'],
+                    [['pub_moderator'], 'publication_user', 'edit'],
+                    [['pub_moderator'], 'publication_user', 'delete'],
+
+                    [['guest', 'user'], 'publication_public', 'show'],
+                    [['pub_moderator'], 'publication_public', 'show-admin-info'],
+                    [['pub_moderator'], 'publication_public', 'edit'],
+                    [['pub_moderator'], 'publication_public', 'delete'],
+
                     //delete permissions
                     [['pub_general_moderator'], 'book', 'delete'],
                     [['pub_general_moderator'], 'book_teo', 'delete'],
@@ -1342,15 +1372,16 @@ return [
         ],
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'publications', 'roles' => ['pub_user']],
-                ['route' => 'publications/search', 'roles' => ['pub_user']],
+                ['route' => 'publications', 'roles' => ['guest', 'user']],
+                ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
-                ['route' => 'publications/publication', 'roles' => ['pub_user']],
+                ['route' => 'publications/publication', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/publication/edit', 'roles' => ['pub_moderator']],
-                ['route' => 'publications/publication/delete', 'roles' => ['pub_general_moderator']],
+                ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
                 ['route' => 'home', 'roles' => ['lib_user']],
                 ['route' => 'libraries', 'roles' => ['lib_user']],
+
                 //@todo define library-specific ACL
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_library_administrator']],

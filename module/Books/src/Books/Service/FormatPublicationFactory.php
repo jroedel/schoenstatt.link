@@ -1,16 +1,16 @@
 <?php
-namespace Schoenstatt\Service;
+namespace Books\Service;
 
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
-use Schoenstatt\View\Helper\FormatEntity;
+use Books\View\Helper\FormatPublication;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
  *
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class FormatEntityFactory implements FactoryInterface
+class FormatPublicationFactory implements FactoryInterface
 {
     /**
      * {@inheritDoc}
@@ -20,12 +20,8 @@ class FormatEntityFactory implements FactoryInterface
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
         $parentLocator = $serviceLocator->getServiceLocator();
-        /** @var AssociationKindsService $kindsService */
-        $kindsService = $parentLocator->get('Schoenstatt\AssociationKindsService');
-        $valueOptions= $kindsService->getValueOptions();
-
         $entityService = $parentLocator->get('SionModel\Service\EntitiesService');
-        $viewHelper = new FormatEntity($entityService, $valueOptions, true);
+        $viewHelper = new FormatPublication($entityService, true);
         return $viewHelper;
     }
 }

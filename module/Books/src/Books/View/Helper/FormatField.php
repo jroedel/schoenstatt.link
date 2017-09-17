@@ -50,7 +50,7 @@ class FormatField extends AbstractHelper
     	    if ($translateLabel) {
     	        $label = $this->view->escapeHtml($this->view->translate($label));
     	    }
-    	    $finalMarkup .= sprintf($labelMarkup, $label);
+    	    $finalMarkup .= sprintf($labelMarkup, $this->view->escapeHtml($label));
     	}
 //     	switch ($displayOption) {
 //     	    case 'authors': //@todo make it work when we have real authors
