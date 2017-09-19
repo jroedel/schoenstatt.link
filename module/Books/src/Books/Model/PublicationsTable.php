@@ -3,6 +3,7 @@ namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
 use SionModel\Filter\ToAscii;
+use Schoenstatt\Model\SchoenstattTable;
 
 class PublicationsTable extends SionTable
 {
@@ -10,6 +11,18 @@ class PublicationsTable extends SionTable
     const BOOK_FORMAT_TYPE_PAPERBACK        = 'Paperback';
     const BOOK_FORMAT_TYPE_AUDIOBOOKFORMAT  = 'AudiobookFormat';
     const BOOK_FORMAT_TYPE_EBOOK            = 'EBook';
+
+    const BOOK_FORMAT_TYPE_URLS = [
+        self::BOOK_FORMAT_TYPE_HARDCOVER => 'http://schema.org/Hardcover',
+        self::BOOK_FORMAT_TYPE_PAPERBACK => 'http://schema.org/Paperback',
+        self::BOOK_FORMAT_TYPE_AUDIOBOOKFORMAT => 'http://schema.org/AudiobookFormat',
+        self::BOOK_FORMAT_TYPE_EBOOK => 'http://schema.org/EBook',
+    ];
+
+    /**
+    * @var SchoenstattTable $schoenstattTable
+    */
+    protected $schoenstattTable;
 
     public function getAuthorsValueOptions()
     {
@@ -174,6 +187,8 @@ ORDER BY `Publisher`";
         }
 
         $entities = $this->getUnlinkedPublications();
+        $persons = $this->schoenstattTable->getUnlinkedPersons();
+        $associations = $this->schoenstattTable->getUnlinkedAssociations();
 
         foreach ($entities  as $entityId => $entityObject) {
             if (!is_null($entityObject['mainPublicationId']) &&
@@ -187,6 +202,29 @@ ORDER BY `Publisher`";
                 key_exists($entityObject['translatedFromPublicationId'], $entities)
             ) {
                 $entities[$entityId]['translatedFromPublication'] = $entities[$entityObject['translatedFromPublicationId']];
+            }
+
+            foreach ($entityObject['authorPersonIds'] as $personId) {
+                if (array_key_exists($personId, $persons)) {
+                    $entities[$entityId]['authorPersons'][$personId] = $persons[$personId];
+                }
+            }
+            foreach ($entityObject['authorAssociationIds'] as $associationId) {
+                if (array_key_exists($associationId, $associations)) {
+                    $entities[$entityId]['authorAssociations'][$associationId] = $associations[$associationId];
+                }
+            }
+            if (array_key_exists($entityObject['illustratorPersonId'], $persons)) {
+                $entities[$entityId]['illustratorPerson'] = $persons[$entityObject['illustratorPersonId']];
+            }
+            if (array_key_exists($entityObject['translatorPersonId'], $persons)) {
+                $entities[$entityId]['translatorPerson'] = $persons[$entityObject['translatorPersonId']];
+            }
+            if (array_key_exists($entityObject['editorPersonId'], $persons)) {
+                $entities[$entityId]['editorPerson'] = $persons[$entityObject['editorPersonId']];
+            }
+            if (array_key_exists($entityObject['publisherAssociationId'], $associations)) {
+                $entities[$entityId]['publisherAssociation'] = $associations[$entityObject['publisherAssociationId']];
             }
         }
 
@@ -203,8 +241,9 @@ ORDER BY `Publisher`";
             return $cache;
         }
         $sql = "SELECT `PublicationId`, `Title`, `ResourceId`, `AuthorPerson1`, `AuthorPerson2`,
-`AuthorPerson3`, `Authors`, `BookEdition`, `InLanguage`, `Description`, `Isbn`, `Translator`,
-`Illustrator`, `NumberOfPages`, `CopyrightYear`, `Publisher`, `PublishingPlace`, `DatePublished`,
+`AuthorPerson3`, `Authors`, `AuthorAssociationId1`, `AuthorAssociationId2`, `AuthorAssociationId3`,
+`BookEdition`, `InLanguage`, `Description`, `Isbn`, `Translator`, `Illustrator`, `Editor`,
+`NumberOfPages`, `CopyrightYear`, `Publisher`, `PublisherAssociationId`,  `PublishingPlace`, `DatePublished`,
 `PublishingStatus`, `BookFormatType`, `MainPublicationId`, `VolumeNumber`, `ContainedIn`,
 `ContainedInIsbn`, `Genre`, `PublicTags`, `AdminTags`, `IsAccessableForFree`,
 `IsScientificWork`, `IsAwaitingMerge`, `HasBeenMerged`, `HasNoISBN`, `IsRevisedWithBookInHand`,
@@ -237,35 +276,76 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 $resourceId = 'publication_user';
             }
 
+            $authorPersonIds = [];
+            $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
+            $authorPerson2Id = $this->filterDbId($row['AuthorPerson2']);
+            $authorPerson3Id = $this->filterDbId($row['AuthorPerson3']);
+            if (!is_null($authorPerson1Id)) {
+                $authorPersonIds[] = $authorPerson1Id;
+            }
+            if (!is_null($authorPerson2Id)) {
+                $authorPersonIds[] = $authorPerson2Id;
+            }
+            if (!is_null($authorPerson3Id)) {
+                $authorPersonIds[] = $authorPerson3Id;
+            }
+
+            $authorAssociationIds = [];
+            $authorAssociation1Id = $this->filterDbId($row['AuthorAssociationId1']);
+            $authorAssociation2Id = $this->filterDbId($row['AuthorAssociationId2']);
+            $authorAssociation3Id = $this->filterDbId($row['AuthorAssociationId3']);
+
+            if (!is_null($authorAssociation1Id)) {
+                $authorAssociationIds[] = $authorAssociation1Id;
+            }
+            if (!is_null($authorAssociation2Id)) {
+                $authorAssociationIds[] = $authorAssociation2Id;
+            }
+            if (!is_null($authorAssociation3Id)) {
+                $authorAssociationIds[] = $authorAssociation3Id;
+            }
+
+            $bookFormatType = $this->filterDbString($row['BookFormatType']);
+            $bookFormatTypeUrl = null;
+            if (array_key_exists($bookFormatType, self::BOOK_FORMAT_TYPE_URLS))
+            {
+                $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
+            }
+
             $entities[$id] = [
                 'publicationId'             => $id,
-                'title' 					=> $this->filterDbString($row['Title']),
-                'resourceId'				=> $resourceId,
-                'authorPerson1' 			=> $this->filterDbId($row['AuthorPerson1']),
-                'authorPerson2' 			=> $this->filterDbId($row['AuthorPerson2']),
-                'authorPerson3' 			=> $this->filterDbId($row['AuthorPerson3']),
-                'authors' 					=> $this->filterDbString($row['Authors']),
-                'bookEdition' 				=> $this->filterDbString($row['BookEdition']),
-                'inLanguage' 				=> $this->filterDbString($row['InLanguage']),
-                'description' 				=> $this->filterDbString($row['Description']),
-                'isbn' 						=> $this->filterDbString($row['Isbn']),
-                'translator' 				=> $this->filterDbString($row['Translator']),
-                'illustrator' 				=> $this->filterDbString($row['Illustrator']),
-                'numberOfPages' 			=> $this->filterDbInt($row['NumberOfPages']),
-                'copyrightYear' 			=> $this->filterDbInt($row['CopyrightYear']),
-                'publisher' 				=> $this->filterDbString($row['Publisher']),
-                'publishingPlace' 			=> $this->filterDbString($row['PublishingPlace']),
-                'datePublished' 			=> $this->filterDbDate($row['DatePublished']),
-                'publishingStatus' 			=> $this->filterDbString($row['PublishingStatus']),
-                'bookFormatType'			=> $this->filterDbString($row['BookFormatType']),
-                'mainPublicationId' 		=> $mainPublicationId,
+                'title'                     => $this->filterDbString($row['Title']),
+                'resourceId'                => $resourceId,
+                'authorPerson1Id'           => $authorPerson1Id,
+                'authorPerson2Id'           => $authorPerson2Id,
+                'authorPerson3Id'           => $authorPerson3Id,
+                'authorAssociation1Id'      => $authorAssociation1Id,
+                'authorAssociation2Id'      => $authorAssociation2Id,
+                'authorAssociation3Id'      => $authorAssociation3Id,
+                'authors'                   => $this->filterDbString($row['Authors']),
+                'bookEdition'               => $this->filterDbString($row['BookEdition']),
+                'inLanguage'                => $this->filterDbString($row['InLanguage']),
+                'description'               => $this->filterDbString($row['Description']),
+                'isbn'                      => $this->filterDbString($row['Isbn']),
+                'translatorPersonId'        => $this->filterDbString($row['Translator']),
+                'illustratorPersonId'       => $this->filterDbString($row['Illustrator']),
+                'editorPersonId'            => $this->filterDbString($row['Editor']),
+                'numberOfPages'             => $this->filterDbInt($row['NumberOfPages']),
+                'copyrightYear'             => $this->filterDbInt($row['CopyrightYear']),
+                'publisher'                 => $this->filterDbString($row['Publisher']),
+                'publisherAssociationId'    => $this->filterDbId($row['PublisherAssociationId']),
+                'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
+                'datePublished'             => $this->filterDbDate($row['DatePublished']),
+                'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
+                'bookFormatType'            => $bookFormatType,
+                'mainPublicationId'         => $mainPublicationId,
                 'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
-                'volumeNumber' 				=> $this->filterDbString($row['VolumeNumber']),
-                'cntainedIn' 				=> $this->filterDbString($row['ContainedIn']),
-                'containedInIsbn' 			=> $this->filterDbString($row['ContainedInIsbn']),
-                'genre' 					=> $this->filterDbString($row['Genre']),
-                'keywords' 					=> $this->filterDbArray($row['PublicTags']),
-                'adminTags'					=> $this->filterDbArray($row['AdminTags']),
+                'volumeNumber'              => $this->filterDbString($row['VolumeNumber']),
+                'containedIn'               => $this->filterDbString($row['ContainedIn']),
+                'containedInIsbn'           => $this->filterDbString($row['ContainedInIsbn']),
+                'genre'                     => $this->filterDbString($row['Genre']),
+                'keywords'                  => $this->filterDbArray($row['PublicTags']),
+                'adminTags'                 => $this->filterDbArray($row['AdminTags']),
                 'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
                 'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
                 'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
@@ -276,10 +356,10 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
 
                 'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
-                'jkQuality' 				=> $this->filterDbString($row['JkQuality']),
-                'jkQualityNotes' 			=> $this->filterDbString($row['JkQualityNotes']),
-                'jkPeriodId' 				=> $this->filterDbId($row['JkPeriod']),
-                'jkEventId' 				=> $this->filterDbId($row['JkEventId']),
+                'jkQuality'                 => $this->filterDbString($row['JkQuality']),
+                'jkQualityNotes'            => $this->filterDbString($row['JkQualityNotes']),
+                'jkPeriodId'                => $this->filterDbId($row['JkPeriod']),
+                'jkEventId'                 => $this->filterDbId($row['JkEventId']),
                 'urls'                      => $urls,
                 'url1'                      => $this->filterDbString($row['Url1']),
                 'url1Label'                 => $this->filterDbString($row['Url1Label']),
@@ -301,6 +381,15 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
 
+                'bookFormatTypeUrl'         => $bookFormatTypeUrl,
+                'authorPersonIds'           => $authorPersonIds,
+                'authorAssociationIds'      => $authorAssociationIds,
+                'authorPersons'             => [],
+                'authorAssociations'        => [],
+                'illustratorPerson'         => null,
+                'translatorPerson'          => null,
+                'editorPerson'              => null,
+                'publisherAssociation'      => null,
                 'isSubEdition'              => !is_null($mainPublicationId),
                 'mainPublication'           => null,
                 'translatedFromPublication' => null,
@@ -328,6 +417,19 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
         return $publication;
     }
 
+    /**
+     * Preprocess data bound for the database on the publication entities or its sub-entities
+     * @param array $data
+     * @return array
+     */
+    protected function preprocessPublication($data, $entityData, $action)
+    {
+        //@todo separate arrayed authorPersons when they are modified by a form
+//         if (isset($data['automaticTitle']) && $data['automaticTitle'] === true) {
+//             $data['title'] = null;
+//         }
+//         return $data;
+    }
 
     /**
      * Import records from old sion publication tables to the new one.
@@ -414,13 +516,13 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
 //                 'publicationId'             => null,
 
                 'title'                     => $this->filterDbString($row['titel']),
-                'authorPerson1'             => null,
-                'authorPerson2'             => null,
-                'authorPerson3'             => null,
+                'authorPerson1Id'           => null,
+                'authorPerson2Id'           => null,
+                'authorPerson3Id'           => null,
                 'resourceId'                => 'pub',
                 'authors'                   => $author,
                 'bookEdition'               => null, //'BookEdition',
-                'inLanguage'                 => $language,
+                'inLanguage'                => $language,
                 'description'               => $this->filterDbString($row['Inhalt']),
                 'isbn'                      => null,
                 'illustrator'               => null,
@@ -547,13 +649,13 @@ WHERE 1";
 //                 'publicationId'          => null,
 
                 'title'                     => $this->filterDbString($row['ed_title']),
-                'authorPerson1'             => null,
-                'authorPerson2'             => null,
-                'authorPerson3'             => null,
+                'authorPerson1Id'           => null,
+                'authorPerson2Id'           => null,
+                'authorPerson3Id'           => null,
                 'authors'                   => 'Kentenich, Josef',
                 'resourceId'                => $isInternal ? 'publication_patres' : 'publication_public',
                 'bookEdition'               => null,
-                'inLanguage'                 => $language,
+                'inLanguage'                => $language,
                 'description'               => null,
                 'isbn'                      => null,
                 'illustrator'               => null,
@@ -612,6 +714,44 @@ WHERE 1";
         return $entities;
     }
 
+    public function getAuthors()
+    {
+        $publications = $this->getUnlinkedPublications();
+        $authors = [];
+        foreach ($publications as $publicationId => $publication) {
+            if (is_null($publication['authors'])) {
+                continue;
+            }
+            $authorTexts = explode(';', $publication['authors']);
+            foreach ($authorTexts as $authorText) {
+                if (array_key_exists($authorText, $authors)) {
+                    $authors[$authorText][$publicationId] = $publication;
+                } else {
+                    $authors[$authorText] = [$publicationId => $publication];
+                }
+            }
+        }
+        return $authors;
+    }
+
+    public function importAuthors($simulate)
+    {
+        //1. get author list
+
+        //2. parse author names
+        //2a. Find Fr./Sr. prefixes
+
+        //2b. Find last name/first name
+
+        $publicationUpdates = [];
+        //3. look for preexisting authors in person table, add them to the list of author links to insert
+
+        //4. Insert new authors
+
+        //5. Update publication records
+
+    }
+
     protected function whichKentenichPeriod($date)
     {
         if (is_null($date)) {
@@ -654,5 +794,25 @@ WHERE 1";
             $dateIntStr = date_create_from_format('Ymd', $dateIntStr);
         }
         return $dateIntStr;
+    }
+
+    /**
+     * Get the schoenstattTable value
+     * @return SchoenstattTable
+     */
+    public function getSchoenstattTable()
+    {
+        return $this->schoenstattTable;
+    }
+
+    /**
+     *
+     * @param SchoenstattTable $schoenstattTable
+     * @return self
+     */
+    public function setSchoenstattTable($schoenstattTable)
+    {
+        $this->schoenstattTable = $schoenstattTable;
+        return $this;
     }
 }

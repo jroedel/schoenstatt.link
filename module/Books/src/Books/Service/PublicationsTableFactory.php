@@ -28,6 +28,9 @@ class PublicationsTableFactory implements FactoryInterface
 		$actingUserId = $user ? $user->id : null;
 
 		$table = new PublicationsTable($dbAdapter, $serviceLocator, $actingUserId);
+
+		$schTable = $serviceLocator->get('Schoenstatt\Model\SchoenstattTable');
+		$table->setSchoenstattTable($schTable);
 		return $table;
     }
 }

@@ -6,8 +6,8 @@ $object = $this->object;
 ?>
 <div class="row">
 <div class="col-md-3">
-<?php if (file_exists(sprintf('public/fathers/photos/%s.jpg', $object['publicationId']))) : ?>
-    <img src="<?php echo $this->basePath() . sprintf("/fathers/photos/%s.jpg", $object['publicationId']); ?>"
+<?php if (file_exists(sprintf('public/covers/%s.jpg', $object['publicationId']))) : ?>
+    <img src="<?php echo $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>"
     height="200px" alt="<?php echo $this->escapeHtmlAttr($object['title']);?>">
 <?php endif;?>
 <p class="align-center"><?php //echo $this->escapeHtml(ucwords($object['condition']));?></p>
@@ -54,8 +54,8 @@ $object = $this->object;
         <?php endif;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Translator', $object['translator'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Illustrator', $object['illustrator'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Translator', $object['translatorPersonId'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Illustrator', $object['illustratorPersonId'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
@@ -63,7 +63,7 @@ $object = $this->object;
         echo $this->formatField('Publishing status', $object['publishingStatus'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Book format', $object['bookFormatType'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Volume number', $object['volumeNumber'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Contained in', $object['cntainedIn'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Contained in', $object['containedIn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Contained in ISBN', $object['containedInIsbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Genre', $object['genre'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
@@ -120,4 +120,7 @@ $object = $this->object;
 </div> <!-- notes panel -->
 </div> <!-- notes column 12 -->
 </div> <!-- notes row -->
-<?php endif;?>
+<?php endif;
+
+echo $this->booksJsonLd('publication', $object);
+?>

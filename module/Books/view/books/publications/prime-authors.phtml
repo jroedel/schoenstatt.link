@@ -1,0 +1,21 @@
+<table class="table">
+<thead>
+<tr>
+	<th>Author</th>
+	<th>Publications</th>
+</tr>
+</thead>
+<tbody>
+<?php $authors = $this->authors;
+foreach ($authors as $authorText => $publications) :
+    $publicationTexts = [];
+    foreach ($publications as $publication) {
+        $publicationTexts[] = $this->formatEntity('publication', $publication);
+    }?>
+<tr>
+	<td><?php echo $this->escapeHtml($authorText);?></td>
+	<td><?php echo implode(', ', $publicationTexts);?></td>
+</tr>
+<?php endforeach;?>
+</tbody>
+</table>

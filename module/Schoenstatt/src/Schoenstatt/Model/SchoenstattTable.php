@@ -246,7 +246,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         return $entities;
     }
 
-    protected function getUnlinkedAssociations()
+    public function getUnlinkedAssociations()
     {
         $cacheKey = 'unlinked-associations-'.$this->getLocale();
         if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {

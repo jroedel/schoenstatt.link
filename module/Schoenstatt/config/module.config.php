@@ -94,9 +94,10 @@ return [
             'formatAssociation'     => 'Schoenstatt\Service\FormatAssociationFactory',
         ],
         'invokables' => [
-            'clipboardButton'        => 'Schoenstatt\View\Helper\ClipboardButton',
+            'clipboardButton'       => 'Schoenstatt\View\Helper\ClipboardButton',
             'formatPerson'          => 'Schoenstatt\View\Helper\FormatPerson',
             'languageChooser'       => 'Schoenstatt\View\Helper\LanguageChooser',
+            'schoenstattJsonLd'     => 'Schoenstatt\View\Helper\SchoenstattJsonLd',
         ],
     ],
 

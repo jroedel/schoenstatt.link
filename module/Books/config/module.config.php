@@ -170,6 +170,7 @@ return [
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
             'Books\FathersObjects'              => 'Books\Service\FathersObjectsFactory',
             'Books\BorrowersValueOptions'       => 'Books\Service\BorrowersValueOptionsService',
+            'Books\AuthorsValueOptions'         => 'Books\Service\AuthorsValueOptionsService',
         ],
     ],
     'view_helpers' => [
@@ -179,6 +180,7 @@ return [
         'invokables' => [
             'formatPublicationUrlObject'    => 'Books\View\Helper\FormatPublicationUrlObject',
             'formatField'                   => 'Books\View\Helper\FormatField',
+            'booksJsonLd'                   => 'Books\View\Helper\BooksJsonLd',
         ],
     ],
     'known_issues' => [ //possible keys: description, completed
@@ -213,6 +215,15 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'prime-authors' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/prime-authors',
+                            'defaults' => [
+                                'action'     => 'primeAuthors',
+                            ],
+                        ],
+                    ],
                     'create' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -1095,19 +1106,23 @@ return [
                     'publicationId'             => 'PublicationId',
                     'title'                     => 'Title',
                     'resourceId'                => 'ResourceId',
-                    'authorPerson1'             => 'AuthorPerson1',
-                    'authorPerson2'             => 'AuthorPerson2',
-                    'authorPerson3'             => 'AuthorPerson3',
+                    'authorPerson1Id'           => 'AuthorPerson1',
+                    'authorPerson2Id'           => 'AuthorPerson2',
+                    'authorPerson3Id'           => 'AuthorPerson3',
+                    'authorAssociation1Id'      => 'AuthorAssociationId1',
+                    'authorAssociation2Id'      => 'AuthorAssociationId2',
+                    'authorAssociation3Id'      => 'AuthorAssociationId3',
                     'authors'                   => 'Authors',
                     'bookEdition'               => 'BookEdition',
                     'inLanguage'                => 'InLanguage',
                     'description'               => 'Description',
                     'isbn'                      => 'Isbn',
-                    'illustrator'               => 'Illustrator',
-                    'translator'                => 'Translator',
+                    'illustratorPersonId'       => 'Illustrator',
+                    'translatorPersonId'        => 'Translator',
                     'numberOfPages'             => 'NumberOfPages',
                     'copyrightYear'             => 'CopyrightYear',
                     'publisher'                 => 'Publisher',
+                    'publisherAssociationId'    => 'PublisherAssociationId',
                     'publishingPlace'           => 'PublishingPlace',
                     'datePublished'             => 'DatePublished',
                     'publishingStatus'          => 'PublishingStatus',
@@ -1373,6 +1388,8 @@ return [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
+                ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
+
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
