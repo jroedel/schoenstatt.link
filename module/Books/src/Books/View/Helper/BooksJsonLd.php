@@ -52,7 +52,15 @@ class BooksJsonLd extends AbstractHelper
         foreach (self::$fieldSchemaPropertyMap as $field => $property) {
             switch ($field) {
                 case 'author':
+                    if (!empty($publication['authorPersons'])) {
 
+                    } elseif (!is_null($publication['authors'])) {
+                        $authors = explode(';', $publication['authors']);
+                        if (1 === count($authors)) {
+                            $authors = $authors[0];
+                        }
+                        $book->author($authors);
+                    }
                     break;
                 case 'sameAs': //urls
                     $sameAs = [];
@@ -66,7 +74,14 @@ class BooksJsonLd extends AbstractHelper
                     break;
                 case 'translatedFromPublication':
                     if (is_array($publication['translatedFromPublication'])) {
-                        $book->$property($this->generateSchemaObject($publication['translatedFromPublication']));
+                        $translatedFrom = $this->generateBookSchema($publication['translatedFromPublication']);
+                        $translatedFrom->url($this->view->url('publications/publication', ['publication_id' => $publication['translatedFromPublicationId']]));
+                        $book->$property($translatedFrom);
+                    }
+                    break;
+                case 'keywords':
+                    if (!empty($publication[$field])) {
+                        $book->$property(implode(',', $publication[$field]));
                     }
                     break;
                 case 'containedIn':
