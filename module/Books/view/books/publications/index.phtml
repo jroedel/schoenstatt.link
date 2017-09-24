@@ -1,6 +1,14 @@
 <?php
-$this->headMeta()->appendName('description', 'Literature relating to Schoenstatt. This index has been compiled from several libraries of the Schoenstatt Fathers and will continue to grow as we review the information of further books.');
-echo $this->partial('search-bar', [
+if ($this->language === 'xx') {
+    $headText = $this->translate('Schoenstatt Literature without language');
+} elseif (array_key_exists($this->language, $this->languages)) {
+    $headTextPattern = 'Schoenstatt Literature in %s';
+    $headText = sprintf($this->translate($headTextPattern), $this->translate($this->languages[$this->language]));
+}
+$this->headTitle()->setTranslatorEnabled(false);
+$this->headTitle($headText);?>
+<h1><?php echo $headText;?></h1>
+<?php echo $this->partial('search-bar', [
     'form' => $this->form,
 ]);
 if ($this->isAllowed('route/publications/create')):?>

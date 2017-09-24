@@ -35,7 +35,7 @@ switch ($column) {
 		]);?></td>
     	<?php break;
     case 'title':?>
-		<td><?php echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => true]);?></td>
+		<td><?php echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);?></td>
     	<?php break;
     case 'edition':?>
 		<td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>

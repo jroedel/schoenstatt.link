@@ -171,6 +171,7 @@ return [
             'Books\FathersObjects'              => 'Books\Service\FathersObjectsFactory',
             'Books\BorrowersValueOptions'       => 'Books\Service\BorrowersValueOptionsService',
             'Books\AuthorsValueOptions'         => 'Books\Service\AuthorsValueOptionsService',
+            'Books\LanguagesValueOptions'       => 'Books\Service\LanguagesValueOptionsFactory',
         ],
     ],
     'view_helpers' => [
@@ -210,11 +211,23 @@ return [
                     'route'    => '/literature',
                     'defaults' => [
                         'controller' => 'Books\Controller\Publications',
-                        'action'     => 'index',
+                        'action'     => 'languageIndex',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'index' => [
+                        'type'    => 'Segment',
+                        'options' => [
+                            'route'    => '/:inLanguage',
+                            'constraints' => [
+                                'language' => '[a-z]{2,2}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'index',
+                            ],
+                        ],
+                    ],
                     'prime-authors' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -1357,26 +1370,26 @@ return [
 //                     [['lib_moderator'], 'book', 'approve'],
 //                     [['lib_teo_moderator'], 'book_teo', 'approve'],
 //                     [['lib_sch_moderator'], 'book_sch', 'approve'],
-                    [['pub_patres'], 'publication_patres', 'show'],
-                    [['pub_patres_moderator'], 'publication_patres', 'show-admin-info'],
-                    [['pub_patres_moderator'], 'publication_patres', 'edit'],
-                    [['pub_patres_moderator'], 'publication_patres', 'delete'],
+                    [['pub_patres', 'pub_general_moderator'], 'publication_patres', 'show'],
+                    [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'show-admin-info'],
+                    [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'edit'],
+                    [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'delete'],
 
 
-                    [['pub_institute'], 'publication_institute', 'show'],
-                    [['pub_institute_moderator'], 'publication_institute', 'show-admin-info'],
-                    [['pub_institute_moderator'], 'publication_institute', 'edit'],
-                    [['pub_institute_moderator'], 'publication_institute', 'delete'],
+                    [['pub_institute', 'pub_general_moderator'], 'publication_institute', 'show'],
+                    [['pub_institute_moderator', 'pub_general_moderator'], 'publication_institute', 'show-admin-info'],
+                    [['pub_institute_moderator', 'pub_general_moderator'], 'publication_institute', 'edit'],
+                    [['pub_institute_moderator', 'pub_general_moderator'], 'publication_institute', 'delete'],
 
                     [['user'], 'publication_user', 'show'],
-                    [['pub_moderator'], 'publication_user', 'show-admin-info'],
-                    [['pub_moderator'], 'publication_user', 'edit'],
-                    [['pub_moderator'], 'publication_user', 'delete'],
+                    [['pub_moderator', 'pub_general_moderator'], 'publication_user', 'show-admin-info'],
+                    [['pub_moderator', 'pub_general_moderator'], 'publication_user', 'edit'],
+                    [['pub_moderator', 'pub_general_moderator'], 'publication_user', 'delete'],
 
                     [['guest', 'user'], 'publication_public', 'show'],
-                    [['pub_moderator'], 'publication_public', 'show-admin-info'],
-                    [['pub_moderator'], 'publication_public', 'edit'],
-                    [['pub_moderator'], 'publication_public', 'delete'],
+                    [['pub_moderator', 'pub_general_moderator'], 'publication_public', 'show-admin-info'],
+                    [['pub_moderator', 'pub_general_moderator'], 'publication_public', 'edit'],
+                    [['pub_moderator', 'pub_general_moderator'], 'publication_public', 'delete'],
 
                     //delete permissions
                     [['pub_general_moderator'], 'book', 'delete'],
@@ -1393,6 +1406,7 @@ return [
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
+                ['route' => 'publications/index', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/publication', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/publication/edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],

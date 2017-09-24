@@ -43,6 +43,7 @@ class FormatPublication extends FormatEntity
     	$linkOption = isset($options['link']) ? (bool)$options['link'] : $displayOption == self::DISPLAY_TITLE;
     	$editPencilOption = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : $displayOption == self::DISPLAY_TITLE;
     	$showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
+    	$showResourceLabel = isset($options['displayResourceLabel']) ? (bool)$options['displayResourceLabel'] : false;
 
     	$finalMarkup = '';
     	$escapeMainText = true;
@@ -90,6 +91,18 @@ class FormatPublication extends FormatEntity
     	if ($showLanguageLabel) {
     	    if (!is_null($data['inLanguage'])) {
     	        $finalMarkup .= ' '. $this->view->label($data['inLanguage'], 'label-info');
+    	    }
+    	}
+    	if ($showResourceLabel) {
+    	    static $resourceLabels;
+    	    if (is_null($resourceLabels)) {
+    	        $resourceLabels = [
+    	            'publication_institute' => 'Institute',
+    	            'publication_patres' => 'Patres',
+    	        ];
+    	    }
+    	    if (array_key_exists($data['resourceId'], $resourceLabels)) {
+    	        $finalMarkup .= ' '. $this->view->label($resourceLabels[$data['resourceId']], 'label-info');
     	    }
     	}
 //     	if ($showLabels) {

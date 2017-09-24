@@ -32,11 +32,44 @@ class PublicationsController extends SionController
         return $view;
     }
 
+    public function languageIndexAction()
+    {
+        /** @var PublicationsTable $table */
+        $table      = $this->getSionTable();
+        $entity     = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $objects    = $table->getPublicationLanguageCounts($this->isAllowed('publication_user', 'show'),
+            $this->isAllowed('publication_institute', 'show'), $this->isAllowed('publication_patres', 'show'));
+        $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
+        $languages = $this->getServiceLocator()->get('Books\LanguagesValueOptions');
+        $view = new ViewModel([
+            'form'      => $form,
+            'entity'    => $entity,
+            'entitySpec'=> $entitySpec,
+            'languages' => $languages,
+            'objects'   => $objects,
+        ]);
+        return $view;
+    }
+
     public function indexAction()
     {
-        $view = parent::indexAction();
+        /** @var PublicationsTable $table */
+        $table      = $this->getSionTable();
+        $entity     = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $language   = $this->params()->fromRoute('inLanguage');
+        $languages  = $this->getServiceLocator()->get('Books\LanguagesValueOptions');
+        $objects    = $table->searchPublications(['inLanguage' => $language]);
         $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
-        $view->setVariable('form', $form);
+        $view = new ViewModel([
+            'form'      => $form,
+            'language'  => $language,
+            'languages' => $languages,
+            'entity'    => $entity,
+            'entitySpec'=> $entitySpec,
+            'objects'   => $objects,
+        ]);
         return $view;
     }
 

@@ -82,6 +82,48 @@ ORDER BY `Publisher`";
         return $return;
     }
 
+    /**
+     * Get an associated array where language codes are given as the key and the count of
+     * associated publications as the value
+     * @param string $includeUser
+     * @param string $includeInstitute
+     * @param string $includePatres
+     * @return array
+     */
+    public function getPublicationLanguageCounts($includeUser = false, $includeInstitute = false, $includePatres = false)
+    {
+        $cacheKey = 'publication-languages-'.($includeUser ? '1':'0').($includeInstitute? '1':'0').($includePatres? '1':'0');
+        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+        $entities = $this->getUnlinkedPublications();
+
+        $languages = [];
+        foreach ($entities as $entityId => $object) {
+            if ('publication_public' ===  $object['resourceId'] ||
+                ($includeUser && 'publication_user' === $object['resourceId']) ||
+                ($includeInstitute && 'publication_institute' === $object['resourceId']) ||
+                ($includePatres && 'publication_patres' === $object['resourceId'])
+            ) {
+                if (is_null($object['inLanguage'])) {
+                    if (!array_key_exists('xx', $languages)) {
+                        $languages['xx'] = 1;
+                    } else {
+                        $languages['xx']++;
+                    }
+                } else {
+                    if (!array_key_exists($object['inLanguage'], $languages)) {
+                        $languages[$object['inLanguage']] = 1;
+                    } else {
+                        $languages[$object['inLanguage']]++;
+                    }
+                }
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $languages, ['publication']);
+        return $languages;
+    }
+
 
     /**
      * Search for books. Returns a list of publications. The query parameters are:
@@ -311,6 +353,10 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
             {
                 $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
             }
+            $inLanguage = $this->filterDbString($row['InLanguage']);
+            if (is_null($inLanguage)) {
+                $inLanguage = 'xx';
+            }
 
             $entities[$id] = [
                 'publicationId'             => $id,
@@ -324,7 +370,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'authorAssociation3Id'      => $authorAssociation3Id,
                 'authors'                   => $this->filterDbString($row['Authors']),
                 'bookEdition'               => $this->filterDbString($row['BookEdition']),
-                'inLanguage'                => $this->filterDbString($row['InLanguage']),
+                'inLanguage'                => $inLanguage,
                 'description'               => $this->filterDbString($row['Description']),
                 'isbn'                      => $this->filterDbString($row['Isbn']),
                 'translatorPersonId'        => $this->filterDbString($row['Translator']),

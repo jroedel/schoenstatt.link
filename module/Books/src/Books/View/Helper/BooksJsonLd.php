@@ -26,6 +26,7 @@ class BooksJsonLd extends AbstractHelper
         'numberOfPages'                 => 'numberOfPages',
         'publisher'                     => 'publisher',
         'translatorPersonId'            => 'translator',
+        'url'                           => 'url',
     ];
 
     public function __invoke($entityType, $object)
@@ -56,10 +57,14 @@ class BooksJsonLd extends AbstractHelper
 
                     } elseif (!is_null($publication['authors'])) {
                         $authors = explode(';', $publication['authors']);
-                        if (1 === count($authors)) {
-                            $authors = $authors[0];
+                        $authorObjects = [];
+                        foreach ($authors as $authorName) {
+                            $authorObjects[] = Schema::person()->name($authorName);
                         }
-                        $book->author($authors);
+                        if (1 === count($authorObjects)) {
+                            $authorObjects = $authorObjects[0];
+                        }
+                        $book->author($authorObjects);
                     }
                     break;
                 case 'sameAs': //urls
@@ -75,10 +80,11 @@ class BooksJsonLd extends AbstractHelper
                 case 'translatedFromPublication':
                     if (is_array($publication['translatedFromPublication'])) {
                         $translatedFrom = $this->generateBookSchema($publication['translatedFromPublication']);
-                        $translatedFrom->url($this->view->url('publications/publication', ['publication_id' => $publication['translatedFromPublicationId']]));
                         $book->$property($translatedFrom);
                     }
                     break;
+                case 'url':
+                    $book->url($this->view->localeUrl('en_US', 'publications/publication', ['publication_id' => $publication['publicationId']])->__toString());
                 case 'keywords':
                     if (!empty($publication[$field])) {
                         $book->$property(implode(',', $publication[$field]));
@@ -93,7 +99,8 @@ class BooksJsonLd extends AbstractHelper
                     if (!is_null($publication['publisherAssociation'])) {
                         $book->publisher($this->view->schoenstattJsonLd('association', $publication['publisherAssociation']));
                     } elseif (!is_null($publication['publisher'])) {//else, publisher
-                        $book->publisher($publication['publisher']);
+                        $publisher = Schema::organization()->name($publication['publisher']);
+                        $book->publisher($publisher);
                     }
                     break;
 //                                     case 'bookFormatType':
@@ -112,3 +119,74 @@ class BooksJsonLd extends AbstractHelper
         return $book;
     }
 }
+/* Example from https://developers.google.com/search/docs/data-types/books
+ * <script type="application/ld+json">
+{
+  "@context":"http://schema.org",
+  "@type":"Book",
+  "name" : "The Catcher in the Rye",
+  "author": {
+    "@type":"Person",
+    "name":"J.D. Salinger"
+  },
+  "url" : "http://www.barnesandnoble.com/store/info/offer/JDSalinger",
+  "workExample" : [{
+    "@type": "Book",
+    "isbn": "031676948",
+    "bookEdition": "2nd Edition",
+    "bookFormat": "http://schema.org/Hardcover",
+    "potentialAction":{
+    "@type":"ReadAction",
+    "target":
+      {
+        "@type":"EntryPoint",
+        "urlTemplate":"http://www.barnesandnoble.com/store/info/offer/0316769487?purchase=true",
+        "actionPlatform":[
+          "http://schema.org/DesktopWebPlatform",
+          "http://schema.org/IOSPlatform",
+          "http://schema.org/AndroidPlatform"
+        ]
+      },
+      "expectsAcceptanceOf":{
+        "@type":"Offer",
+        "Price":6.99,
+        "priceCurrency":"USD",
+        "eligibleRegion" : {
+          "@type":"Country",
+          "name":"US"
+        },
+        "availability": "http://schema.org/InStock"
+      }
+    }
+  },{
+    "@type": "Book",
+    "isbn": "031676947",
+    "bookEdition": "1st Edition",
+    "bookFormat": "http://schema.org/EBook",
+    "potentialAction":{
+    "@type":"ReadAction",
+    "target":
+      {
+        "@type":"EntryPoint",
+        "urlTemplate":"http://www.barnesandnoble.com/store/info/offer/031676947?purchase=true",
+        "actionPlatform":[
+          "http://schema.org/DesktopWebPlatform",
+          "http://schema.org/IOSPlatform",
+          "http://schema.org/AndroidPlatform"
+        ]
+      },
+      "expectsAcceptanceOf":{
+        "@type":"Offer",
+        "Price":1.99,
+        "priceCurrency":"USD",
+        "eligibleRegion" : {
+          "@type":"Country",
+          "name":"UK"
+        },
+        "availability": "http://schema.org/InStock"
+      }
+    }
+  }]
+}
+</script>
+ */
