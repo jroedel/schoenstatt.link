@@ -1,6 +1,3 @@
 Contact: webmaster@schoenstatt.link
-
-# Our PGP key
-Encryption: https://schoenstatt.link/pgp-key.txt
-
-Acknowledgements: 
+Encryption: https://schoenstatt.link/public-key.txt
+Acknowledgements: https://schoenstatt.link/acknowledgements

@@ -277,6 +277,15 @@ return [
                         ],
                         'may_terminate' => true,
                         'child_routes' => [
+                            'upload-cover' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/upload-cover',
+                                    'defaults' => [
+                                        'action'     => 'uploadCover',
+                                    ],
+                                ],
+                            ],
                             'edit' => [
                                 'type'    => 'Literal',
                                 'options' => [
@@ -1408,6 +1417,7 @@ return [
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/publication', 'roles' => ['guest', 'user']],
+                ['route' => 'publications/publication/upload-cover', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
                 ['route' => 'home', 'roles' => ['lib_user']],

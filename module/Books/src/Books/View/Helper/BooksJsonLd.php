@@ -27,6 +27,7 @@ class BooksJsonLd extends AbstractHelper
         'publisher'                     => 'publisher',
         'translatorPersonId'            => 'translator',
         'url'                           => 'url',
+        'image'                         => 'image',
     ];
 
     public function __invoke($entityType, $object)
@@ -106,7 +107,12 @@ class BooksJsonLd extends AbstractHelper
 //                                     case 'bookFormatType':
 //                                         $book->bookFormat(Schema::bookFormatType($publication[$field]));
 //                                         break;
-
+                case 'image':
+                    if (file_exists(sprintf('public/covers/%s.jpg', $publication['publicationId']))) {
+                        $imageUrl = sprintf('https://schoenstatt.link/covers/%s.jpg', $publication['publicationId']);
+                        $book->image($imageUrl);
+                    }
+                    break;
                 default:
                     if (array_key_exists($field, $publication) && !is_null($publication[$field]) &&
                         (!is_array($publication[$field]) || !empty($publication[$field]))

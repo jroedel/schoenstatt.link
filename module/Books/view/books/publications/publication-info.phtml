@@ -6,9 +6,10 @@ $object = $this->object;
 ?>
 <div class="row">
 <div class="col-md-3">
-<?php if (file_exists(sprintf('public/covers/%s.jpg', $object['publicationId']))) : ?>
-    <img src="<?php echo $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>"
-    height="200px" alt="<?php echo $this->escapeHtmlAttr($object['title']);?>">
+<?php if (file_exists(sprintf('public/covers/%s-200px.jpg', $object['publicationId']))) : ?>
+    <a href="<?php echo $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>">
+    <img src="<?php echo $this->basePath() . sprintf("/covers/%s-200px.jpg", $object['publicationId']); ?>"
+    height="200px" alt="<?php echo $this->escapeHtmlAttr($object['title']);?>"></a>
 <?php endif;?>
 <p class="align-center"><?php //echo $this->escapeHtml(ucwords($object['condition']));?></p>
 </div>
