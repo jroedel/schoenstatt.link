@@ -1,0 +1,23 @@
+<?php
+$text = [
+    'en' => <<<MD
+# Security research acknowledgements
+
+We give thanks to the ever-more necessary white-hat hackers who
+unceasingly look to find and **responsibly disclose security vulnerabilites**
+in all their shapes and sizes. We take pride in our attention to security
+and privacy at schoenstatt.link, but we know that no one is immune to
+mistakes and therefore encourage good-willed security experts to help us
+discover holes in system.
+
+We currently have a very limited budget and cannot offer a substantial
+bounty to discoverers of security bugs. We would, however, be happy to offer a
+place on this page and a kind postcard of thanks to any researcher who helps
+make the internet a more secure place.
+
+More information on reporting vulnerabilities can be found in our
+[security.txt](/security.txt).
+
+MD
+];
+echo $this->markdown($text['en']);

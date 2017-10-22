@@ -32,6 +32,16 @@ return [
                     ],
                 ],
             ],
+            'acknowledgements' => [
+                'type' => 'Literal',
+                'options' => [
+                    'route'    => '/acknowledgements',
+                    'defaults' => [
+                        'controller' => 'Application\Controller\Index',
+                        'action'     => 'acknowledgements',
+                    ],
+                ],
+            ],
             // The following is a route to simplify getting started creating
             // new controllers and actions without needing to create a new
             // module. Simply drop new controllers in, and you can access them
@@ -166,6 +176,7 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
+                ['route' => 'acknowledgements', 'roles' => ['guest', 'user']],
             ],
         ],
     ],
