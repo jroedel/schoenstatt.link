@@ -8,6 +8,7 @@ use SionModel\Controller\SionController;
 use Books\Form\PublicationsSearchForm;
 use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
+use Zend\Form\Element\Select;
 
 class PublicationsController extends SionController
 {
@@ -73,6 +74,26 @@ class PublicationsController extends SionController
         return $view;
     }
 
+    /**
+     * Remove the publication's self from the mainPublicationId select
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::editAction()
+     */
+    public function editAction()
+    {
+        $view = parent::editAction();
+        $entityId = $view->getVariable('entityId');
+        $form = $view->getVariable('form');
+        /** @var Select $mainPublicationId */
+        $mainPublicationId = $form->get('mainPublicationId');
+        $valueOptions = $mainPublicationId->getValueOptions();
+        if (array_key_exists($entityId, $valueOptions)) {
+            unset($valueOptions[$entityId]);
+            $mainPublicationId->setValueOptions($valueOptions);
+        }
+        return $view;
+    }
+
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
@@ -124,7 +145,9 @@ class PublicationsController extends SionController
         $object     = $this->getEntityObject($id);
 
         //set the new mainPublicationId to the old publicationId
-        $object['mainPublicationId'] = $object['publicationId'];
+        if (is_null($object['mainPublicationId'])) { //else, leave it as it was
+            $object['mainPublicationId'] = $object['publicationId'];
+        }
 
         //unset edition-specific fields, and create new publication
         unset($object['publicationId']);

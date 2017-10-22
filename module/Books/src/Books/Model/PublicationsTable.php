@@ -470,11 +470,17 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
      */
     protected function preprocessPublication($data, $entityData, $action)
     {
+        //don't allow the mainPublicationId to be set to itself, also, correct it
+        if (!is_null($data['mainPublicationId']) &&
+            $data['mainPublicationId'] == $entityData['publicationId']
+        ) {
+            $data['mainPublicationId'] = null;
+        }
         //@todo separate arrayed authorPersons when they are modified by a form
 //         if (isset($data['automaticTitle']) && $data['automaticTitle'] === true) {
 //             $data['title'] = null;
 //         }
-//         return $data;
+        return $data;
     }
 
     /**
