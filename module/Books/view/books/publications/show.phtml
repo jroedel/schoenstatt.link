@@ -3,4 +3,9 @@ $object = $this->entity;
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($object['title']);?>
 <h1><?php echo $this->escapeHtml($this->entity['title']);?></h1>
-<?php echo $this->partial('publication-info', ['object' => $this->entity]);?>
+<?php echo $this->partial('publication-info', ['object' => $this->entity]);
+
+if ($this->isAllowed('route/publications/publication/create-new-edition')):?>
+<a class="btn btn-default" href="<?php echo $this->url('publications/publication/create-new-edition', [], [], true);?>"><?php
+echo $this->translate('Add another edition');?></a>
+<?php endif;?>

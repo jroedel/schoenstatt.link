@@ -15,7 +15,8 @@ return [
         'changes_model' => 'Schoenstatt\Model\SchoenstattTable',
         'changes_show_all' => true,
 		'visits_model' => 'Schoenstatt\Model\SchoenstattTable',
-
+        'files_directory' => 'data/files',
+        'public_files_directory' => 'public/files',
 //        'post_place_line_format' => ':zip :cityState',
 //        'post_place_line_format_by_country' => [
 //            'US' => ':cityState :zip',

@@ -2,6 +2,7 @@
 namespace Books\Form;
 
 use Zend\Form\Form;
+use Zend\InputFilter\InputFilterProviderInterface;
 
 class UploadForm extends Form implements InputFilterProviderInterface
 {
@@ -10,11 +11,21 @@ class UploadForm extends Form implements InputFilterProviderInterface
         parent::__construct('upload-form');
 
         $this->add([
-            'name' => 'fileupload',
+            'name' => 'fileUpload',
             'type' => 'File',
             'options' => [
-                'label' => 'Excel file upload',
+                'label' => 'File upload',
                 'required' => true,
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'submit',
+            'type' => 'Submit',
+            'attributes' => [
+                'value' => 'Submit',
+                'id' => 'submit',
+                'class' => 'btn-primary'
             ],
         ]);
     }
@@ -22,7 +33,7 @@ class UploadForm extends Form implements InputFilterProviderInterface
     public function getInputFilterSpecification()
     {
         return [
-            'fileupload' => [
+            'fileUpload' => [
                 'required' => true,
             ],
         ];

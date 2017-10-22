@@ -114,16 +114,64 @@ class PublicationsController extends SionController
         ]);
     }
 
+    public function createNewEditionAction()
+    {
+        /** @var PublicationsTable $table */
+        $table      = $this->getSionTable();
+        $entity     = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $id         = (Int)$this->getEntityIdParam('show');
+        $object     = $this->getEntityObject($id);
+
+        //set the new mainPublicationId to the old publicationId
+        $object['mainPublicationId'] = $object['publicationId'];
+
+        //unset edition-specific fields, and create new publication
+        unset($object['publicationId']);
+        unset($object['bookEdition']);
+        unset($object['numberOfPages']);
+        unset($object['copyrightYear']);
+        unset($object['datePublished']);
+        unset($object['publishingStatus']);
+        unset($object['isbn']);
+        unset($object['hasNoISBN']);
+        unset($object['isAwaitingMerge']);
+        unset($object['isRevisedWithBookInHand']);
+        unset($object['publishDataAsJsonLd']);
+        unset($object['isFormallyPublished']);
+        unset($object['url1']);
+        unset($object['url1Label']);
+        unset($object['url2']);
+        unset($object['url2Label']);
+        unset($object['url3']);
+        unset($object['url3Label']);
+        unset($object['dataSource']);
+        unset($object['dataSourceId']);
+        unset($object['dataSourceUpdatedOn']);
+        unset($object['createdOn']);
+        unset($object['createdBy']);
+        unset($object['updatedOn']);
+        unset($object['updatedBy']);
+
+        $newId = $table->createEntity('publication', $object);
+
+        $this->redirect()->toRoute('publications/publication/edit', ['publication_id' => $newId]);
+    }
+
     public function uploadCoverAction()
     {
         $id = $this->getEntityIdParam();
         $form = new UploadForm();
         $request = $this->getRequest();
         if ($request->isPost()) {
-            $data = $request->getPost()->toArray();
+            $data = array_merge_recursive(
+                $this->getRequest()->getPost()->toArray(),
+                $this->getRequest()->getFiles()->toArray()
+            );
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
+                var_dump($data);
                 /** @var FilesTable $filesTable */
                 $filesTable = $this->getServiceLocator()->get('SionModel\FilesTable');
                 if (!$newId = $filesTable->createEntity('file', $data)) {
