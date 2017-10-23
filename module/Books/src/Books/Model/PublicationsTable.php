@@ -238,6 +238,7 @@ ORDER BY `Publisher`";
                 key_exists($entityObject['mainPublicationId'], $entities)
             ) {
                 $entities[$entityId]['mainPublication'] = $entities[$entityObject['mainPublicationId']];
+                $entities[$entityObject['mainPublicationId']]['subEditions'][$entityId] = &$entities[$entityId];
             }
             if (!is_null($entityObject['translatedFromPublicationId']) &&
                 $entityObject['translatedFromPublicationId'] != $entityId &&
@@ -438,6 +439,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'publisherAssociation'      => null,
                 'isSubEdition'              => !is_null($mainPublicationId),
                 'mainPublication'           => null,
+                'subEditions'               => [],
                 'translatedFromPublication' => null,
                 'bookCoverFileId'           => null,
                 'bookCoverFile'             => null,

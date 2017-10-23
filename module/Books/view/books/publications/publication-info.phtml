@@ -38,8 +38,14 @@ $object = $this->object;
     </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-          <p><strong><?php echo $this->translate('Author(s)');?></strong></p>
-          <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);?>
+          <p><strong><?php echo $this->translate('Author(s)');?>:</strong></p>
+          <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
+      if (!empty($object['subEditions'])):?>
+      <p><strong><?php echo $this->translate('Subedition(s)');?>:</strong></p><?php
+      foreach ($object['subEditions'] as $subId => $subPublication) :?>
+          <p><?php echo $this->formatEntity('publication', $subPublication);?></p>
+      <?php endforeach;
+      endif;?>
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
