@@ -22,6 +22,16 @@ return [
                     ],
                 ],
             ],
+            'sitemap' => [
+                'type' => 'Literal',
+                'options' => [
+                    'route'    => '/sitemap.xml',
+                    'defaults' => [
+                        'controller' => 'Application\Controller\Index',
+                        'action'     => 'sitemap',
+                    ],
+                ],
+            ],
             'developers' => [
                 'type' => 'Literal',
                 'options' => [
@@ -176,6 +186,7 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
+                ['route' => 'sitemap', 'roles' => ['guest', 'user']],
                 ['route' => 'acknowledgements', 'roles' => ['guest', 'user']],
             ],
         ],

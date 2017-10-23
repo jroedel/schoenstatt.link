@@ -34,6 +34,61 @@ class IndexController extends AbstractActionController
         return new ViewModel([]);
     }
 
+    public function sitemapAction()
+    {
+        $sm = $this->getServiceLocator();
+
+        /** @var \Zend\Navigation\Navigation $navigation */
+        $navigation = $sm->get('navigation');
+        $navigation->addPage([
+            'label' => 'Home',
+            'uri'   => $this->url()->fromRoute('welcome'),
+            'order' => 0,
+        ]);
+        $publicationsPage = $navigation->findOneBy('route', 'publications');
+
+        $pagesByLanguage = [];
+
+        /** @var \Books\Model\PublicationsTable $table */
+        $table = $sm->get('Books\Model\PublicationsTable');
+        $publications = $table->getUnlinkedPublications();
+        foreach ($publications as $publicationId => $object) {
+            if ($object['resourceId'] == 'publication_public') {
+                $url = $this->url()->fromRoute('publications/publication', ['publication_id' => $publicationId]);
+                if (!array_key_exists($object['inLanguage'], $pagesByLanguage)) {
+                    $pagesByLanguage[$object['inLanguage']] = [];
+                }
+                $pagesByLanguage[$object['inLanguage']][] = [
+                    'label' => $object['title'],
+                    'uri' => $url,
+                    'id'    => 'pub_'.$publicationId,
+                ];
+            }
+        }
+
+        foreach ($pagesByLanguage as $languageCode => $pages) {
+            $url = $this->url()->fromRoute('publications/index', ['inLanguage' => $languageCode]);
+            $publicationsPage->addPage([
+                'label' => $languageCode.' Liturature',
+                'uri' => $url,
+                'id'    => 'pub_lang_'.$languageCode,
+                'pages' => $pages,
+            ]);
+//             $publicationsPage->findOneBy('id', 'pub_lang_'.$code)->addPages();
+        }
+
+
+        // Explicitly set type to text/xml, otherwise it's text/html
+        $this->getResponse()->getHeaders()->addHeaderLine(
+            'Content-Type', 'text/xml'
+        );
+        // Only render the sitemap helper, without any layout
+        $viewModel = new ViewModel();
+        $viewModel->setVariable('navigation', $navigation);
+        $viewModel->setTerminal(true);
+        return $viewModel;
+    }
+
     public function get6MonthsChanges()
     {
         $sm = $this->serviceLocator;
