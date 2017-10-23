@@ -17,6 +17,6 @@ if ($this->isAllowed('route/publications/create')):?>
 echo $this->partial('publication-list', [
     'objects' => $this->objects,
     'columns' => [
-        'authors', 'title', 'edition',
+        'cover', 'authors', 'title', 'edition',
     ],
 ]);?>
