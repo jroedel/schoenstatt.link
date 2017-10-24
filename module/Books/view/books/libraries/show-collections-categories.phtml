@@ -23,10 +23,11 @@ if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->book
           	</li>
 		<?php endforeach;?>
     	</ul>
-	<?php endforeach;?>
-<?php else:
+	<?php endforeach;
+else:
     echo $this->partial('books/library/book-list', [
         'entities'  => $this->books,
         'borrowers' => $this->borrowers,
+        'publications'  => $this->publications,
     ]);
 endif;?>

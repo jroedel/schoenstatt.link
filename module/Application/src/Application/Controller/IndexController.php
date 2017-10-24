@@ -84,7 +84,6 @@ class IndexController extends AbstractActionController
                 'id'    => 'pub_lang_'.$languageCode,
                 'pages' => $pages,
             ]);
-//             $publicationsPage->findOneBy('id', 'pub_lang_'.$code)->addPages();
         }
 
 

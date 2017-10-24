@@ -359,6 +359,24 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 $inLanguage = 'xx';
             }
 
+            if (file_exists(sprintf('public/covers/%s.jpg', $id))) {
+                $coverImage = sprintf('/covers/%s.jpg', $id);
+                if (file_exists(sprintf('public/covers/%s-80px.jpg', $id))) {
+                    $coverThumbnail80 = sprintf('/covers/%s-80px.jpg', $id);
+                } else {
+                    $coverThumbnail80 = null;
+                }
+                if (file_exists(sprintf('public/covers/%s-200px.jpg', $id))) {
+                    $coverThumbnail200 = sprintf('/covers/%s-200px.jpg', $id);
+                } else {
+                    $coverThumbnail200 = null;
+                }
+            } else {
+                $coverImage = null;
+                $coverThumbnail80 = null;
+                $coverThumbnail200 = null;
+            }
+
             $entities[$id] = [
                 'publicationId'             => $id,
                 'title'                     => $this->filterDbString($row['Title']),
@@ -428,6 +446,9 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
 
+                'coverImageUri'             => $coverImage,
+                'coverThumbnail80pxUri'     => $coverThumbnail80,
+                'coverThumbnail200pxUri'    => $coverThumbnail200,
                 'bookFormatTypeUrl'         => $bookFormatTypeUrl,
                 'authorPersonIds'           => $authorPersonIds,
                 'authorAssociationIds'      => $authorAssociationIds,

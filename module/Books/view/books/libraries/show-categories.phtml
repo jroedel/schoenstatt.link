@@ -15,5 +15,6 @@
 <?php else:
     echo $this->partial('books/library/book-list', [
         'entities'  => $this->books,
+        'publications'  => $this->publications,
     ]);
 endif;?>

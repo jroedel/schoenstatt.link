@@ -48,7 +48,7 @@ class FormatField extends AbstractHelper
 
     	if (!is_null($label)) {
     	    if ($translateLabel) {
-    	        $label = $this->view->escapeHtml($this->view->translate($label));
+    	        $label = $this->view->translate($label);
     	    }
     	    $finalMarkup .= sprintf($labelMarkup, $this->view->escapeHtml($label));
     	}

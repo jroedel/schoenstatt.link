@@ -1,6 +1,7 @@
 <?php
-$this->headMeta()->appendName('description', 'Literature relating to Schoenstatt. This index has been compiled from several libraries of the Schoenstatt Fathers and will continue to grow as we review the information of further books.');
-$headText = 'Schoenstatt Literature Index';
+$this->headMeta()->appendName('description',
+    $this->translate('Literature relating to Schoenstatt. This index has been compiled from several libraries of the Schoenstatt Fathers and will continue to grow as we review the information of further books.'));
+$headText = $this->translate('Schoenstatt Literature Index');
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText);?>
 <h1><?php echo $headText;?></h1>

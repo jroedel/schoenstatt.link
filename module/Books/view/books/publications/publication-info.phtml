@@ -1,4 +1,6 @@
 <?php
+use Books\View\Helper\FormatPublication;
+
 /**
  * @var mixed[] $object
  */
@@ -41,9 +43,11 @@ $object = $this->object;
           <p><strong><?php echo $this->translate('Author(s)');?>:</strong></p>
           <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
       if (!empty($object['subEditions'])):?>
-      <p><strong><?php echo $this->translate('Subedition(s)');?>:</strong></p><?php
+      <p><strong><?php echo $this->translate('Other editions');?>:</strong></p><?php
       foreach ($object['subEditions'] as $subId => $subPublication) :?>
-          <p><?php echo $this->formatEntity('publication', $subPublication);?></p>
+          <p><?php echo $this->formatEntity('publication', $subPublication);
+          echo ' ';
+          echo $this->formatEntity('publication', $subPublication, ['display' => FormatPublication::DISPLAY_EDITION]);?></p>
       <?php endforeach;
       endif;?>
     </div> <!-- info 1 column -->

@@ -20,6 +20,7 @@ return array(
     'Notes' => 'Notas',
     'Password' => 'Contraseña',
     'Public notes' => 'Notas públicas',
+    'Publishing status' => 'Estado de publicaci[on',
     'Review potential problems with the data in the database.' => 'Revisar problemas con los datos de la base de datos.',
     'Schoenstatt Fathers' => 'Padres de Schoenstatt',
     'Search' => 'Buscar',

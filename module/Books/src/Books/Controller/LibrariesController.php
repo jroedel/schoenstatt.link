@@ -12,6 +12,7 @@ use Zend\View\Model\JsonModel;
 use Books\Form\InactivationForm;
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
+use Books\Model\PublicationsTable;
 
 class LibrariesController extends SionController
 {
@@ -55,6 +56,7 @@ class LibrariesController extends SionController
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
 
+        $view->setVariable('publications', $this->getPublications());
         $view->setVariable('books', $books);
         $view->setVariable('borrowers', $borrowers);
         $view->setVariable('form', $form);
@@ -187,7 +189,6 @@ class LibrariesController extends SionController
                 $books = $table->searchBooks($data);
                 $libraries = $this->transformBookQueryIntoLibraries($books);
                 $borrowers = $sm->get('Books\BorrowersValueOptions');
-                var_dump(count($borrowers));
             }
         }
 
@@ -196,6 +197,7 @@ class LibrariesController extends SionController
         }
 
         return new ViewModel([
+            'publications'  => $this->getPublications(),
             'entities'  => $libraries,
             'borrowers' => $borrowers,
             'form'      => $form,
@@ -262,6 +264,14 @@ class LibrariesController extends SionController
             $entities[$book['libraryId']]['books'][] = $book;
         }
         return $entities;
+    }
+
+    protected function getPublications()
+    {
+        /** @var PublicationsTable $table */
+        $table = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
+        $publications = $table->getUnlinkedPublications();
+        return $publications;
     }
 
     /**

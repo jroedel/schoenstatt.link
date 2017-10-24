@@ -1,6 +1,14 @@
 Options +FollowSymLinks
 RewriteEngine On
 
+# fix some bad links that got into google's index
+RewriteCond %{REQUEST_URI} ^/en-US$ [OR]
+RewriteCond %{REQUEST_URI} ^/en-US/$
+RewriteRule ^(.*)$ https://schoenstatt\.link/en/ [R=301,L]
+
+RewriteCond %{REQUEST_URI} ^/en-US/ [NC]
+RewriteRule ^en-US/(.*)$ https://schoenstatt\.link/en/$1 [R=301,L]
+
 # Redirect to https page
 RewriteCond %{HTTP_HOST} ^(www\.)?schoenstatt\.link [NC]
 RewriteCond %{SERVER_PORT} 80 

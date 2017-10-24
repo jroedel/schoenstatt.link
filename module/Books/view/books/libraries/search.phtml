@@ -26,6 +26,7 @@ $this->headTitle($title);
     <h1><?php echo $this->escapeHtml($library['name']);?></h1>
 	<?php echo $this->partial('books/library/book-list', [
 	    'entities' => $library['books'],
+	    'publications'  => $this->publications,
 	]);?>
 </div>
 <?php endforeach; ?>
