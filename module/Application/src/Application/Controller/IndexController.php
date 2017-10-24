@@ -44,6 +44,16 @@ class IndexController extends AbstractActionController
             'label' => 'Home',
             'uri'   => $this->url()->fromRoute('welcome'),
             'order' => 0,
+            'pages' => [
+                [
+                    'label' => 'Developers Center',
+                    'uri' => $this->url()->fromRoute('developers'),
+                ],
+                [
+                    'label' => 'Security research acknowledgements',
+                    'uri' => $this->url()->fromRoute('acknowledgements'),
+                ],
+            ]
         ]);
         $publicationsPage = $navigation->findOneBy('route', 'publications');
 
