@@ -909,7 +909,7 @@ return [
                 'table_key'                                 => 'book_id',
                 'entity_key_field'                          => 'bookId',
                 'sion_model_class'                          => 'Books\Model\LibraryTable',
-                'get_object_function'                       => 'getBook',
+                'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
                 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [

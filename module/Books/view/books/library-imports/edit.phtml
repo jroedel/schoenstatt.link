@@ -1,4 +1,9 @@
 <?php
+$limitFields = false;
+$limitedFields = [
+    'author',
+    'title',
+];
 $headText = 'Configure import';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
@@ -31,6 +36,13 @@ if ($this->isImported && !isset($this->transactions)) {
 <thead>
 <tr>
 <?php $fields = $this->fields;
+if ($limitFields && !is_null($limitedFields) && !empty($limitedFields)) {
+    foreach ($fields as $field => $column) {
+        if (!in_array($field, $limitedFields)) {
+            unset ($fields[$field]);
+        }
+    }
+}
 foreach ($fields as $field => $column): ?>
 	<th><?php echo $this->escapeHtml($field);?></th>
 <?php endforeach;?>

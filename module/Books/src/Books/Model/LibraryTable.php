@@ -6,6 +6,7 @@ use JUser\Model\UserTable;
 use Zend\Db\Adapter\AdapterInterface;
 use SionModel\Filter\ToAscii;
 use Carbon\Carbon;
+use Zend\Db\Sql\Select;
 
 class LibraryTable extends SionTable
 {
@@ -70,7 +71,7 @@ class LibraryTable extends SionTable
     public function getLibraryBookValueOptions(array $query, $options = [])
     {
         $labelOption = self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE;
-        if (key_exists('labelOption', $options) &&
+        if (isset($options['labelOption']) &&
             in_array($options['labelOption'], self::BOOK_VALUE_OPTIONS_LABEL_OPTIONS)
         ) {
             $labelOption = $options['labelOption'];
@@ -95,7 +96,7 @@ class LibraryTable extends SionTable
 
     public function getCollectionValueOptions($libraryId = null)
     {
-        if (is_null($libraryId) && is_null($libraryId = $this->getLibraryId())) {
+        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
         $collections = $this->getUnlinkedCollections();
@@ -115,7 +116,7 @@ class LibraryTable extends SionTable
     public function searchBooks($query)
     {
         $filter = new ToAscii();
-        if (isset($query['search']) && !is_null($query['search'])) {
+        if (isset($query['search']) && null !== $query['search']) {
             $query['search'] = $filter->filter($query['search']);
         }
 
@@ -128,7 +129,7 @@ class LibraryTable extends SionTable
             if (!isset($query['isActive']) && !$book['isActive']
             ) {
                 continue;
-            } else if (isset($query['isActive']) && !is_null($query['isActive']) &&
+            } else if (isset($query['isActive']) &&
                 $query['isActive'] !== $book['isActive']
             ) {
                 continue;
@@ -149,12 +150,12 @@ class LibraryTable extends SionTable
             }
 
             //library
-            if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_numeric($query['libraryId']) &&
+            if (isset($query['libraryId']) && is_numeric($query['libraryId']) &&
                 $query['libraryId'] != $book['libraryId']
             ) {
                 continue;
             }
-            if (isset($query['libraryId']) && !is_null($query['libraryId']) && is_array($query['libraryId']) &&
+            if (isset($query['libraryId']) && is_array($query['libraryId']) &&
                 !in_array($book['libraryId'], $query['libraryId'])
             ) {
                 continue;
@@ -162,30 +163,30 @@ class LibraryTable extends SionTable
 
 
             //collection
-            if (isset($query['collectionId']) && !is_null($query['collectionId']) && is_numeric($query['collectionId']) &&
+            if (isset($query['collectionId']) && is_numeric($query['collectionId']) &&
                 $query['collectionId'] != $book['collectionId']
             ) {
                 continue;
             }
-            if (isset($query['collectionId']) && !is_null($query['collectionId']) && is_array($query['collectionId']) &&
+            if (isset($query['collectionId']) && is_array($query['collectionId']) &&
                 !in_array($book['collectionId'], $query['collectionId'])
             ) {
                 continue;
             }
 
             //category
-            if (isset($query['category']) && !is_null($query['category']) && is_string($query['category']) &&
+            if (isset($query['category']) && is_string($query['category']) &&
                 $query['category'] != $book['category']
             ) {
                 continue;
             }
-            if (isset($query['category']) && !is_null($query['category']) && is_array($query['category']) &&
+            if (isset($query['category']) && is_array($query['category']) &&
                 !in_array($book['category'], $query['category'])
             ) {
                 continue;
             }
 
-            if (isset($query['search']) && !is_null($query['search']) &&
+            if (isset($query['search']) &&
                false === stripos($filter->filter($book['author']), $query['search']) &&
                false === stripos($filter->filter($book['title']), $query['search']) &&
                false === stripos($filter->filter($book['callNumber']), $query['search']) &&
@@ -212,14 +213,14 @@ class LibraryTable extends SionTable
     public function getBooks()
     {
         $libraryId = $this->getLibraryId();
-        $cacheKey = is_null($libraryId) ? 'books' : 'books-'.$libraryId;
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        $cacheKey = !isset($libraryId) ? 'books' : 'books-'.$libraryId;
+        if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
             return $cache;
         }
         $entities = $this->getUnlinkedBooks();
         $libraries = $this->getUnlinkedLibraries();
         foreach ($entities as $entityId => $entity) {
-            if (key_exists($entity['libraryId'], $libraries)) {
+            if (isset($libraries[$entity['libraryId']])) {
                 $entities[$entityId]['library'] = $libraries[$entity['libraryId']];
             } else {
                 unset($entities[$entityId]); //all books should be in a library
@@ -229,7 +230,7 @@ class LibraryTable extends SionTable
         $checkouts = $this->getUnlinkedCheckouts();
         foreach ($checkouts as $checkoutId => $checkout) {
             if ($checkout['status'] !== self::CHECKOUT_STATUS_RETURNED &&
-                key_exists($checkout['bookId'], $entities)
+                    isset($entities[$checkout['bookId']])
             ) {
                 $entities[$checkout['bookId']]['isAvailable'] = false;
                 $entities[$checkout['bookId']]['isCheckedOut'] = true;
@@ -241,87 +242,120 @@ class LibraryTable extends SionTable
     }
 
     /**
+     * Get a standardized select object to retrieve records from the database
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getBookSelectPrototype()
+    {
+        static $select;
+        if (!isset($select)) {
+            $select = new Select('lib_books');
+//         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+            $select->columns(['book_id', 'library_id', 'collection_id', 'author', 'title', 'edition', 'call_number',
+'category', 'pages', 'lang', 'original_id', 'publication_id', 'updated_at', 'created_by', 'created_at', 'updated_by',
+'inactivation_reason', 'is_active', 'isbn', 'copyright_year', 'publisher', 'publisher_place', 'public_tags', 'admin_tags',
+'public_notes', 'public_notes_updated_at', 'public_notes_updated_by', 'admin_notes', 'admin_notes_updated_at',
+'admin_notes_updated_by']);
+//         $select->group(['TheMonth', 'TheYear']);
+//         $select->where($predicate->in('ChangedEntity', $tableEntities));
+            $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
+        }
+
+        return clone $select;
+    }
+
+    public function getSimpleBook($id)
+    {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('lib_books');
+        }
+        $select = $this->getBookSelectPrototype();
+        $select->where(['book_id' => $id]);
+        $results = $gateway->selectWith($select);
+        if (!isset($results[0])) {
+            return null;
+        }
+        return $this->processBookRow($results[0]);
+    }
+
+    /**
      * @todo add an optional $libraryId param for when we're not in a library route
      * @return mixed|NULL|boolean[][]|NULL[][]|unknown[][]|string[][]|\SionModel\Db\Model\NULL[][]|number[][]|DateTime[][]
      */
     protected function getUnlinkedBooks()
     {
         $libraryId = $this->getLibraryId();
-        $cacheKey = is_null($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        $cacheKey = !isset($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
+        if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
             return $cache;
         }
 
-        if (!is_null($libraryId)) {
-            $sql = "SELECT book_id, library_id, collection_id, author, title, edition, call_number,
-category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
-inactivation_reason, is_active,
-isbn, copyright_year, publisher, publisher_place, public_tags, admin_tags,
-public_notes, public_notes_updated_at, public_notes_updated_by, admin_notes, admin_notes_updated_at,
-admin_notes_updated_by
-FROM lib_books
-WHERE (library_id = ?)
-ORDER BY library_id, call_number, category, lang, author, title";
-            $results = $this->fetchSome(null, $sql, [$libraryId]);
+        $gateway = $this->getTableGateway('lib_books');
+        if (null !== $libraryId) {
+            $select = $this->getBookSelectPrototype();
+            $select->where(['library_id' => $libraryId]);
+            $results = $gateway->selectWith($select);
         } else {
-            $sql = "SELECT book_id, library_id, collection_id, author, title, edition, call_number,
-category, pages, lang, original_id, publication_id, updated_at, created_by, created_at, updated_by,
-inactivation_reason, is_active, isbn, copyright_year, publisher, publisher_place, public_tags,
-admin_tags, public_notes, public_notes_updated_at, public_notes_updated_by, admin_notes,
-admin_notes_updated_at, admin_notes_updated_by
-FROM lib_books
-ORDER BY library_id, call_number, category, lang, author, title";
-            $results = $this->fetchSome(null, $sql, null);
+            $select = $this->getBookSelectPrototype();
+            $results = $gateway->selectWith($select);
         }
         $entities = [];
         foreach ($results as $row) {
-            $id = $this->filterDbId($row['book_id']);
-            $author = $this->filterDbString($row['author']);
-            $title = $this->filterDbString($row['title']);
-            $name = $author . ($author ? ' - ' : '') . $title;
-            $isActive = $this->filterDbBool($row['is_active']);
-            $entities[$id] = [
-                'bookId'                => $id,
-                'collectionId'          => $this->filterDbId($row['collection_id']),
-                'author'                => $author,
-                'title'                 => $title,
-                'edition'               => $this->filterDbString($row['edition']),
-                'callNumber'            => $this->filterDbString($row['call_number']),
-                'category'              => $this->filterDbString($row['category']),
-                'pages'                 => $this->filterDbInt($row['pages']),
-                'language'              => $this->filterDbString($row['lang']),
-                'withinLibraryId'       => $this->filterDbId($row['original_id']),
-                'libraryId'             => $this->filterDbId($row['library_id']),
-                'publicationId'         => $this->filterDbId($row['publication_id']),
-                'isActive'              => $isActive,
-                'inactivationReason'    => $this->filterDbString($row['inactivation_reason']),
-                'updatedOn'             => $this->filterDbDate($row['updated_at']),
-                'updatedBy'             => $this->filterDbId($row['updated_by']),
-                'createdOn'             => $this->filterDbDate($row['created_at']),
-                'createdBy'             => $this->filterDbId($row['created_by']),
-
-                'copyrightYear'         => $this->filterDbInt($row['copyright_year']),
-                'publisher'             => $this->filterDbString($row['publisher']),
-                'publishingPlace'       => $this->filterDbString($row['publisher_place']),
-                'isbn'                  => $this->filterDbString($row['isbn']),
-                'keywords'              => $this->filterDbArray($row['public_tags']),
-                'publicNotes'           => $this->filterDbString($row['public_notes']),
-                'publicNotesUpdatedOn'  => $this->filterDbDate($row['public_notes_updated_at']),
-                'publicNotesUpdatedBy'  => $this->filterDbId($row['public_notes_updated_by']),
-                'adminTags'             => $this->filterDbArray($row['admin_tags']),
-                'adminNotes'            => $this->filterDbString($row['admin_notes']), //store source info here
-                'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
-                'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
-
-                'name'                  => $name,
-                'isAvailable'           => $isActive, //available unless proved otherwise
-                'isCheckedOut'          => false, //until proved otherwise
-                'currentCheckout'       => null,
-                'library'               => null,
-            ];
+            $processedRow = $this->processBookRow($row);
+            $entities[$processedRow['bookId']] = $processedRow;
         }
         $this->cacheEntityObjects($cacheKey, $entities, ['book']);
         return $entities;
+    }
+
+    protected function processBookRow($row)
+    {
+        $id = $this->filterDbId($row['book_id']);
+        $author = $this->filterDbString($row['author']);
+        $title = $this->filterDbString($row['title']);
+        $name = $author . ($author ? ' - ' : '') . $title;
+        $isActive = $this->filterDbBool($row['is_active']);
+        $processedRow = [
+            'bookId'                => $id,
+            'collectionId'          => $this->filterDbId($row['collection_id']),
+            'author'                => $author,
+            'title'                 => $title,
+            'edition'               => $this->filterDbString($row['edition']),
+            'callNumber'            => $this->filterDbString($row['call_number']),
+            'category'              => $this->filterDbString($row['category']),
+            'pages'                 => $this->filterDbInt($row['pages']),
+            'language'              => $this->filterDbString($row['lang']),
+            'withinLibraryId'       => $this->filterDbId($row['original_id']),
+            'libraryId'             => $this->filterDbId($row['library_id']),
+            'publicationId'         => $this->filterDbId($row['publication_id']),
+            'isActive'              => $isActive,
+            'inactivationReason'    => $this->filterDbString($row['inactivation_reason']),
+            'updatedOn'             => $this->filterDbDate($row['updated_at']),
+            'updatedBy'             => $this->filterDbId($row['updated_by']),
+            'createdOn'             => $this->filterDbDate($row['created_at']),
+            'createdBy'             => $this->filterDbId($row['created_by']),
+
+            'copyrightYear'         => $this->filterDbInt($row['copyright_year']),
+            'publisher'             => $this->filterDbString($row['publisher']),
+            'publishingPlace'       => $this->filterDbString($row['publisher_place']),
+            'isbn'                  => $this->filterDbString($row['isbn']),
+            'keywords'              => $this->filterDbArray($row['public_tags']),
+            'publicNotes'           => $this->filterDbString($row['public_notes']),
+            'publicNotesUpdatedOn'  => $this->filterDbDate($row['public_notes_updated_at']),
+            'publicNotesUpdatedBy'  => $this->filterDbId($row['public_notes_updated_by']),
+            'adminTags'             => $this->filterDbArray($row['admin_tags']),
+            'adminNotes'            => $this->filterDbString($row['admin_notes']), //store source info here
+            'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
+            'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
+
+            'name'                  => $name,
+            'isAvailable'           => $isActive, //available unless proved otherwise
+            'isCheckedOut'          => false, //until proved otherwise
+            'currentCheckout'       => null,
+            'library'               => null,
+        ];
+        return $processedRow;
     }
 
     /**
@@ -330,17 +364,17 @@ ORDER BY library_id, call_number, category, lang, author, title";
      */
     public function getLibraryBookLookup($libraryId = null)
     {
-        if (is_null($libraryId)) {
+        if (!isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (is_null($libraryId)) {
+        if (!isset($libraryId)) {
             throw new \InvalidArgumentException('There must by a libraryId set to get the active library book lookup list.');
         }
         $entities = $this->getUnlinkedBooks();
         $bookLookup = [];
         foreach ($entities as $bookId => $book) {
             if ($book['libraryId'] == $libraryId && $book['isActive'] &&
-                !is_null($book['withinLibraryId'])
+                isset($book['withinLibraryId'])
             ) {
                 $bookLookup[$book['withinLibraryId']] = $bookId;
             }
@@ -365,7 +399,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $books = $this->getUnlinkedBooks();
         $booksToCheckin = [];
         foreach ($bookIds as $bookId) {
-            if (key_exists($bookId, $books)) {
+            if (isset($books[$bookId])) {
                 $booksToCheckin[$bookId] = false;
             }
         }
@@ -373,7 +407,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         //Check in all the outstanding checkouts
         foreach ($checkouts as $checkoutId => $checkout) {
             if ($checkout['status'] != self::CHECKOUT_STATUS_RETURNED &&
-                key_exists($checkout['bookId'], $booksToCheckin)
+                isset($booksToCheckin[$checkout['bookId']])
             ) {
                 $data = [
                     'checkedInOn'           => $today,
@@ -432,7 +466,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $bookLookup = $this->getLibraryBookLookup($libraryId);
         $bookIds = [];
         foreach ($withinLibraryIds as $withinLibraryId) {
-            if (key_exists($withinLibraryId, $bookLookup)) {
+            if (isset($bookLookup[$withinLibraryId])) {
                 $booksToCheckin[] = $bookLookup[$withinLibraryId];
             }
         }
@@ -451,8 +485,8 @@ ORDER BY library_id, call_number, category, lang, author, title";
      */
     public function checkoutWithinLibraryBooks($libraryId, array $data)
     {
-        if (!is_array($data) || !key_exists('personId', $data) ||
-            !key_exists('withinLibraryIds', $data)
+        if (!is_array($data) || !isset($data['personId']) ||
+            !isset($data['withinLibraryIds'])
         ) {
             throw new \InvalidArgumentException('data must be an associative array containing at least \'personId\' and \'withinLibraryIds\' keys.');
         }
@@ -464,7 +498,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
         $withinLibraryIdErrors = [];
         foreach ($data['withinLibraryIds'] as $withinLibraryId)
         {
-            if (!key_exists($withinLibraryId, $withinLibraryIdLookup) ||
+            if (!isset($withinLibraryIdLookup[$withinLibraryId]) ||
                 false === $books[$withinLibraryIdLookup[$withinLibraryId]]['isActive'] //make sure book is active
             ) {
                 $withinLibraryIdErrors[] = $withinLibraryId;
@@ -509,40 +543,40 @@ ORDER BY library_id, call_number, category, lang, author, title";
      */
     public function getLibraries()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('libraries'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('libraries'))) {
             return $cache;
         }
 
         $entities = $this->getUnlinkedLibraries();
         $books = $this->getUnlinkedBooks();
         foreach ($books as $bookId => $book) {
-            if ($book['isActive'] && !is_null($book['libraryId']) && //don't do anything here with inactive books
-                key_exists($book['libraryId'], $entities)
+            if ($book['isActive'] && isset($book['libraryId']) && //don't do anything here with inactive books
+                isset($entities[$book['libraryId']])
             ) {
                 $entities[$book['libraryId']]['books'][$bookId] = $book; //@todo I don't think we need this and it makes the cache much bigger
 
                 $libraryId = $book['libraryId'];
                 //fill in statistics
                 $collectionId = 0;
-                if (!is_null($book['collectionId'])) {
+                if (isset($book['collectionId'])) {
                     $collectionId = $book['collectionId'];
                 }
                 $category = '';
-                if (!is_null($book['category'])) {
+                if (isset($book['category'])) {
                     $category = $book['category'];
                 }
                 //statistics by category without respect for collections
-                if (!key_exists($category, $entities[$book['libraryId']]['categoryStatistics'])) {
+                if (!isset($entities[$book['libraryId']]['categoryStatistics'][$category])) {
                     $entities[$libraryId]['categoryStatistics'][$category] = 1;
                 } else {
                     $entities[$libraryId]['categoryStatistics'][$category]++;
                 }
 
                 //statistics on 2 levels: collection, category
-                if (!key_exists($collectionId, $entities[$book['libraryId']]['collectionCategoryStatistics'])) {
+                if (!isset($entities[$book['libraryId']]['collectionCategoryStatistics'][$collectionId])) {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId] = [];
                 }
-                if (!key_exists($category, $entities[$book['libraryId']]['collectionCategoryStatistics'][$collectionId])) {
+                if (!isset($entities[$book['libraryId']]['collectionCategoryStatistics'][$collectionId][$category])) {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category] = 1;
                 } else {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category]++;
@@ -562,8 +596,8 @@ ORDER BY library_id, call_number, category, lang, author, title";
         //check if the books are checked out
         $checkouts = $this->getUnlinkedCheckouts();
         foreach ($checkouts as $checkoutId => $checkout) {
-            if (is_null($checkout['checkedInOn']) && key_exists($checkout['bookId'], $books) &&
-                key_exists($checkout['bookId'], $entities[$books[$checkout['bookId']]['libraryId']]['books'])
+            if (null === $checkout['checkedInOn'] && isset($books[$checkout['bookId']]) &&
+                isset($entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']])
             ) { //book is checked out
                 $bookEntry = &$entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']];
                 $bookEntry['isAvailable'] = false;
@@ -578,7 +612,7 @@ ORDER BY library_id, call_number, category, lang, author, title";
 
     public function getUnlinkedLibraries()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {
             return $cache;
         }
         $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberHelpText`,
@@ -647,7 +681,7 @@ ORDER BY `LibraryName`";
         }
         $collections = $this->getUnlinkedCollections();
         foreach ($collections as $collectionId => $collection) {
-            if (key_exists($collection['libraryId'], $entities)) {
+            if (isset($entities[$collection['libraryId']])) {
                 $collection['library'] = $entities[$collection['libraryId']];
                 $entities[$collection['libraryId']]['options']->collections[$collectionId] =
                     new CollectionOptions($collection);
@@ -678,14 +712,14 @@ ORDER BY `LibraryName`";
      */
     public function getLibraryOptions($libraryId = null)
     {
-        if (is_null($libraryId)) {
+        if (!isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (is_null($libraryId) || !is_numeric($libraryId)) {
+        if (!isset($libraryId) || !is_numeric($libraryId)) {
             throw new \InvalidArgumentException('getLibraryOptions requires an active libraryId');
         }
         $entities = $this->getLibrariesOptions();
-        if (!key_exists((int)$libraryId, $entities)) {
+        if (!isset($entities[(int)$libraryId])) {
             throw new \InvalidArgumentException('getLibraryOptions requires a valid libraryId');
         }
         return $entities[(int)$libraryId];
@@ -697,7 +731,7 @@ ORDER BY `LibraryName`";
      */
     public function getLibrariesOptions()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('libraries-options'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('libraries-options'))) {
             return $cache;
         }
         $libraries = $this->getUnlinkedLibraries();
@@ -711,7 +745,7 @@ ORDER BY `LibraryName`";
 
     protected function getUnlinkedCollections()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-collections'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-collections'))) {
             return $cache;
         }
         $sql = "SELECT `CollectionId`, `LibraryId`, `CollectionName`,
@@ -772,10 +806,10 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
 
     public function getLibraryBooksStatuses($libraryId = null)
     {
-        if (is_null($libraryId)) {
+        if (!isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (is_null($libraryId) || !is_numeric($libraryId)) {
+        if (!isset($libraryId) || !is_numeric($libraryId)) {
             throw new \InvalidArgumentException('getLibraryBooksStatuses requires an active libraryId');
         }
         $library = $this->getLibrary($libraryId);
@@ -785,7 +819,7 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
             $entities[$entity['withinLibraryId']] = [
                 'title'     => $entity['title'],
                 'isActive'  => $entity['isActive'],
-                'checkedOutBy' => !is_null($currentCheckout) ? $currentCheckout['personId'] : null,
+                'checkedOutBy' => isset($currentCheckout) ? $currentCheckout['personId'] : null,
             ];
         }
         return $entities;
@@ -804,7 +838,7 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
      */
     public function inactivateWithinLibraryBooks($libraryId, array $data)
     {
-        if (!is_array($data) || !key_exists('withinLibraryIds', $data)
+        if (!is_array($data) || !isset($data['withinLibraryIds'])
         ) {
             throw new \InvalidArgumentException('data must be an associative array containing at least the \'withinLibraryIds\' key.');
         }
@@ -815,7 +849,7 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
         $withinLibraryIdErrors = [];
         foreach ($data['withinLibraryIds'] as $withinLibraryId)
         {
-            if (!key_exists($withinLibraryId, $withinLibraryIdLookup)) {
+            if (!isset($withinLibraryIdLookup[$withinLibraryId])) {
                 $withinLibraryIdErrors[] = $withinLibraryId;
             } else {
                 $bookIds[] = $withinLibraryIdLookup[$withinLibraryId];
@@ -857,16 +891,16 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
      */
     public function getLibraryImports()
     {
-        if (!is_null($libraryId = $this->getLibraryId())) {
+        if (null !== ($libraryId = $this->getLibraryId())) {
             $cacheKey = 'library-imports-'.$libraryId;
         } else {
             $cacheKey = 'library-imports';
         }
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
 
-        if (is_null($libraryId)) {
+        if (!isset($libraryId)) {
             $sql = "SELECT ImportId, ImportName, LibraryId, Description, Status,
 ColumnMapping, Worksheet, FilePath, IsCompleteImport, BooksUpdated, BooksCreated, BooksDeleted,
 UpdatedOn, UpdatedBy, CreatedOn, CreatedBy
@@ -935,7 +969,7 @@ ORDER BY CreatedOn DESC";
     protected function preprocessLibraryImport($data, $entityData, $action)
     {
         if (isset($data['columnMapping'])) {
-            if (!is_null($data['columnMapping'])) {
+            if (isset($data['columnMapping'])) {
                 $data['columnMappingSerialized'] = serialize($data['columnMapping']);
             } else {
                 $data['columnMappingSerialized'] = null;
@@ -975,8 +1009,8 @@ ORDER BY CreatedOn DESC";
         foreach ($checkouts as $checkoutId => $checkout) {
             if ($checkout['book']['libraryId'] == $libraryId &&
                 ($subset == 'all' || ($subset == 'current' &&
-                is_null($checkout['checkedInOn'])) ||
-                ($subset == 'overdue' && is_null($checkout['checkedInOn'])
+                !isset($checkout['checkedInOn'])) ||
+                ($subset == 'overdue' && !isset($checkout['checkedInOn'])
                     && is_object($checkout['dueOn']) && $now > $checkout['dueOn'])
             )) {
                 $entities[$checkoutId] = $checkout;
@@ -990,7 +1024,7 @@ ORDER BY CreatedOn DESC";
      */
     public function getCheckouts()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('checkouts'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('checkouts'))) {
             return $cache;
         }
 
@@ -999,8 +1033,8 @@ ORDER BY CreatedOn DESC";
         $libraries = $this->getUnlinkedLibraries();
 
         foreach ($entities as $entityId => $entity) {
-            if (key_exists($entity['bookId'], $books) &&
-                key_exists($books[$entity['bookId']]['libraryId'], $libraries)
+            if (isset($books[$entity['bookId']]) &&
+                isset($libraries[$books[$entity['bookId']]['libraryId']])
             ) {
                 $books[$entity['bookId']]['library'] = $libraries[$books[$entity['bookId']]['libraryId']];
                 $entities[$entityId]['book'] = $books[$entity['bookId']];
@@ -1015,7 +1049,7 @@ ORDER BY CreatedOn DESC";
 
     protected function getUnlinkedCheckouts()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-checkouts'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-checkouts'))) {
             return $cache;
         }
 
@@ -1036,9 +1070,9 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
             $dueOn = $this->filterDbDate($row['DueOn']);
             $checkedIn = $this->filterDbDate($row['CheckedInOn']);
             $status = null;
-            if (!is_null($checkedIn)) {
+            if (isset($checkedIn)) {
                 $status = self::CHECKOUT_STATUS_RETURNED;
-            } elseif (!is_null($dueOn) && $today >= $dueOn) {
+            } elseif (isset($dueOn) && $today >= $dueOn) {
                 $status = self::CHECKOUT_STATUS_OVERDUE;
             } else {
                 $status = self::CHECKOUT_STATUS_CHECKED_OUT;
@@ -1093,7 +1127,7 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
                 throw new \InvalidArgumentException('bookId is required to create a checkout.');
             }
             if (!isset($data['checkedOutOn'])) {
-                if (is_null($now)) {
+                if (!isset($now)) {
                     $now = new \DateTime(null, new \DateTimeZone('UTC'));
                 }
                 $data['checkedOutOn'] = $now;
@@ -1114,13 +1148,13 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
 
             //calculate the dueDate
             if (!isset($data['dueOn'])) {
-                if (is_null($librariesOptions)) {
+                if (!isset($librariesOptions)) {
                     $librariesOptions = $this->getLibrariesOptions();
                 }
-                if (is_null($books)) {
+                if (!isset($books)) {
                     $books = $this->getUnlinkedBooks();
                 }
-                if (!key_exists($data['bookId'], $books)) {
+                if (!isset($books[$data['bookId']])) {
                     throw new \InvalidArgumentException('Invalid book attempting to be checked out.');
                 }
                 $daysToLend = $librariesOptions[$books[$data['bookId']]['libraryId']]->defaultCheckoutTimePeriodInDays;
@@ -1165,7 +1199,7 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
     public function getLibrary($id)
     {
         $entities = $this->getLibraries();
-        if (!key_exists($id, $entities) || !($entity = $entities[$id])) {
+        if (!isset($entities[$id]) || !($entity = $entities[$id])) {
             return null;
         }
 

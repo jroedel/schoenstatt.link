@@ -20,7 +20,7 @@ class LibraryImportsController extends SionController
     */
     public function getLibraryId()
     {
-        if (is_null($this->libraryId)) {
+        if (!isset($this->libraryId)) {
             $this->libraryId = $this->params()->fromRoute('library_id');
         }
         return $this->libraryId;
@@ -105,7 +105,7 @@ class LibraryImportsController extends SionController
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
         //first thing is to figure out if it has already been imported
-        if (!is_null($object['booksCreated']) || !is_null($object['booksUpdated']) || !is_null($object['booksInactivated']))
+        if (isset($object['booksCreated']) || isset($object['booksUpdated']) || isset($object['booksInactivated']))
         {
             $form->get('filePath')->setAttribute('disabled', true);
             $form->get('worksheet')->setAttribute('disabled', true);
@@ -124,9 +124,9 @@ class LibraryImportsController extends SionController
         $objects = null;
         $shouldSimulate = true;
         if (file_exists($object['filePath']) &&
-            !is_null($object['worksheet'])
+            isset($object['worksheet'])
         ) {
-            $shouldSimulate = !$request->isPost() || is_null($request->getPost('import'));
+            $shouldSimulate = !$request->isPost() || null === $request->getPost('import');
             $objects = $this->importSpreadsheetFile($object['filePath'], $object['worksheet'], $fieldsMap, $shouldSimulate, $object['isCompleteImport']);
         } else {
             $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
@@ -248,7 +248,7 @@ class LibraryImportsController extends SionController
         $requiredFields = ['withinLibraryId', 'title'];
         $missingRequiredFields = [];
         foreach ($requiredFields as $value) {
-            if (!key_exists($value, $fieldIndices)) {
+            if (!isset($fieldIndices[$value])) {
                 $missingRequiredFields[] = $value;
             }
         }
@@ -257,10 +257,15 @@ class LibraryImportsController extends SionController
         }
 
         $rows = $sheet->rangeToArray('A2:'.$highColumn.$highRow);
+
+        //we're done with the PHPExcel object, free up the memory
+        $objPHPExcel->disconnectWorksheets();
+        unset($objPHPExcel);
+
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
         $libraryId = $this->getLibraryId();
-        if (is_null($libraryId)) {
+        if (!isset($libraryId)) {
             throw new \Exception('This function should only be called in the context of a particular library.');
         }
         $table->setLibraryId($libraryId);
@@ -292,9 +297,16 @@ class LibraryImportsController extends SionController
                 'libraryId' => $libraryId
             ];
             //add the fields to the param list
+            $foundAValue = false; //flag to make sure the row isn't empty
             foreach ($fieldIndices as $bookField => $columnIndex) {
+                $foundAValue = $foundAValue || isset($rowColumns[$columnIndex]);
                 $params[$bookField] = $rowColumns[$columnIndex];
             }
+            //if the row is empty, just skip to the next (not worth throwing an error)
+            if (!$foundAValue) {
+                continue;
+            }
+
             //make sure we get an int not a float
             $params['withinLibraryId'] = $withinLibraryId;
 
@@ -306,13 +318,10 @@ class LibraryImportsController extends SionController
                 if (isset($params['collectionId'])) {
                     unset($params['collectionId']);
                 }
-            }
-            else if (isset($params['collection']) && !is_null($params['collection']) &&
-                !isset($params['collectionId'])
-            ) {
-                if (key_exists($params['collection'], $preexistingCollectionMap)) {
+            } elseif (isset($params['collection']) && !isset($params['collectionId']) ) {//we need to lookup the collectionId for the rows
+                if (isset($preexistingCollectionMap[$params['collection']])) {
                     $params['collectionId'] = $preexistingCollectionMap[$params['collection']];
-                } else if (!in_array($params['collection'], $collectionInsertsQueued)) {
+                } elseif (!in_array($params['collection'], $collectionInsertsQueued)) {
                     $transactions[] = [
                         'action'    => 'create-collection',
                         'libraryId' => $libraryId,
@@ -324,52 +333,52 @@ class LibraryImportsController extends SionController
                 }
             }
 
-            if (key_exists('publicationId', $fieldIndices) && is_numeric($params['publicationId'])) {
+            if (isset($fieldIndices['publicationId']) && is_numeric($params['publicationId'])) {
                 //lazy load the publications list
-                if (is_null($publications)) {
+                if (!isset($publications)) {
                     /** @var \Books\Model\PublicationsTable $publicationsTable */
                     $publicationsTable = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
                     $publications = $publicationsTable->getUnlinkedPublications();
                 }
                 $publicationId = (int)$params['publicationId'];
-                if (key_exists($publicationId, $publications)) {
+                if (isset($publications[$publicationId])) {
                     //fill in info from the publication to the books table
                     $params['title'] = $publications[$publicationId]['title'];
-                    if (!is_null($publications[$publicationId]['authors'])) {
+                    if (isset($publications[$publicationId]['authors'])) {
                         $params['author'] = $publications[$publicationId]['authors'];
                     }
-                    if (!is_null($publications[$publicationId]['copyrightYear'])) {
+                    if (isset($publications[$publicationId]['copyrightYear'])) {
                         $params['copyrightYear'] = $publications[$publicationId]['copyrightYear'];
                     }
-                    if (!is_null($publications[$publicationId]['publisher'])) {
+                    if (isset($publications[$publicationId]['publisher'])) {
                         $params['publisher'] = $publications[$publicationId]['publisher'];
                     }
-                    if (!is_null($publications[$publicationId]['publishingPlace'])) {
+                    if (isset($publications[$publicationId]['publishingPlace'])) {
                         $params['publishingPlace'] = $publications[$publicationId]['publishingPlace'];
                     }
-                    if (!is_null($publications[$publicationId]['numberOfPages'])) {
+                    if (isset($publications[$publicationId]['numberOfPages'])) {
                         $params['pages'] = $publications[$publicationId]['numberOfPages'];
                     }
-                    if (!is_null($publications[$publicationId]['inLanguage'])) {
+                    if (isset($publications[$publicationId]['inLanguage'])) {
                         $params['language'] = $publications[$publicationId]['inLanguage'];
                     }
-                    if (!is_null($publications[$publicationId]['isbn'])) {
+                    if (isset($publications[$publicationId]['isbn'])) {
                         $params['isbn'] = $publications[$publicationId]['isbn'];
                     }
                 }
             }
 
             //determine the action to take on the row
-            if (!key_exists('title', $params) || is_null($params['title'])
-                || is_null($withinLibraryId) || !is_numeric($withinLibraryId)
+            if (!isset($params['title'])
+                || !isset($withinLibraryId) || !is_numeric($withinLibraryId)
                 || $isDuplicateWithinLibraryId
             ) {
                 $params['action'] = 'error';
-                if (is_numeric($withinLibraryId) && key_exists($withinLibraryId, $bookLookup)) {
+                if (is_numeric($withinLibraryId) && isset($bookLookup[$withinLibraryId])) {
                     //make sure we don't delete this book, because there was an import error
                     $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];
                 }
-            } else if (key_exists($withinLibraryId, $bookLookup)) {
+            } else if (isset($bookLookup[$withinLibraryId])) {
                 $params['action'] = 'update';
                 $params['bookId'] = $bookLookup[$withinLibraryId];
                 $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];

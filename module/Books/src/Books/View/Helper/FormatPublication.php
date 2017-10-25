@@ -90,6 +90,7 @@ class FormatPublication extends FormatEntity
     	}
     	if ($showLanguageLabel) {
     	    if (!is_null($data['inLanguage'])) {
+    	        $this->view->label()->setTranslatorTextDomain('Books');
     	        $finalMarkup .= ' '. $this->view->label($data['inLanguage'], 'label-info');
     	    }
     	}
@@ -102,6 +103,7 @@ class FormatPublication extends FormatEntity
     	        ];
     	    }
     	    if (array_key_exists($data['resourceId'], $resourceLabels)) {
+    	        $this->view->label()->setTranslatorTextDomain('Books');
     	        $finalMarkup .= ' '. $this->view->label($resourceLabels[$data['resourceId']], 'label-info');
     	    }
     	}

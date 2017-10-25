@@ -34,6 +34,7 @@ return array(
     'Barcode text' => 'Barcode text',
     'Begin new import' => 'Begin new import',
     'Bellavista' => 'Bellavista',
+    'Bibliographical information about "%s".' => 'Bibliographical information about "%s".',
     'biography' => 'biography',
     'Book' => 'Book',
     'Book Check-in' => 'Book Check-in',
