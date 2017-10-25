@@ -269,7 +269,6 @@ class LibraryImportsController extends SionController
             throw new \Exception('This function should only be called in the context of a particular library.');
         }
         $table->setLibraryId($libraryId);
-        $bookLookup = $table->getLibraryBookLookup();
         /** @var LibraryOptions $libraryOptions */
         $libraryOptions = $table->getSimpleLibrary($libraryId)['options'];
         /** @var array $preexistingCollectionMap $name => $collectionId */
@@ -282,6 +281,7 @@ class LibraryImportsController extends SionController
         $withinLibraryIds = [];
         $duplicateWithinLibraryIds = [];
 
+        $bookLookup = $table->getLibraryBookLookupWithActive();
         $collectionInsertsQueued = [];
         $transactions = [];
         $publications = null;
@@ -294,13 +294,18 @@ class LibraryImportsController extends SionController
             $withinLibraryIds[] = $withinLibraryId;
 
             $params = [
-                'libraryId' => $libraryId
+                'libraryId' => $libraryId,
             ];
             //add the fields to the param list
             $foundAValue = false; //flag to make sure the row isn't empty
             foreach ($fieldIndices as $bookField => $columnIndex) {
                 $foundAValue = $foundAValue || isset($rowColumns[$columnIndex]);
-                $params[$bookField] = $rowColumns[$columnIndex];
+                if ($bookField === 'copyrightYear') {
+                    $params[$bookField] = is_numeric($rowColumns[$columnIndex]) ?
+                        (int)$rowColumns[$columnIndex] : null;
+                } else {
+                    $params[$bookField] = $rowColumns[$columnIndex];
+                }
             }
             //if the row is empty, just skip to the next (not worth throwing an error)
             if (!$foundAValue) {
@@ -368,20 +373,29 @@ class LibraryImportsController extends SionController
                 }
             }
 
+            $hasWithinLibraryIdProblem = !isset($withinLibraryId) || !is_numeric($withinLibraryId);
+            if (!$hasWithinLibraryIdProblem) {
+                $bookId = isset($bookLookup[$withinLibraryId]) ? $bookLookup[$withinLibraryId]['bookId'] : null;
+            } else {
+                $bookId = null;
+            }
+
             //determine the action to take on the row
-            if (!isset($params['title'])
-                || !isset($withinLibraryId) || !is_numeric($withinLibraryId)
+            if (!isset($params['title']) || $hasWithinLibraryIdProblem
                 || $isDuplicateWithinLibraryId
             ) {
                 $params['action'] = 'error';
-                if (is_numeric($withinLibraryId) && isset($bookLookup[$withinLibraryId])) {
+                if (isset($bookId)) {
                     //make sure we don't delete this book, because there was an import error
-                    $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];
+                    $bookIdsBeingUpdated[] = $bookId;
                 }
-            } else if (isset($bookLookup[$withinLibraryId])) {
+            } elseif (isset($bookId)) {
                 $params['action'] = 'update';
-                $params['bookId'] = $bookLookup[$withinLibraryId];
-                $bookIdsBeingUpdated[] = $bookLookup[$withinLibraryId];
+                $params['bookId'] = $bookId;
+                if ($bookLookup[$withinLibraryId]['isActive']) {
+                    $params['isActive'] = true;
+                }
+                $bookIdsBeingUpdated[] = $bookId;
             } else {
                 $params['action'] = 'create';
             }
@@ -390,8 +404,9 @@ class LibraryImportsController extends SionController
 
         //delete missing rows from the database if asked to do so
         if ($deleteMissingRowsFromDatabase) {
-            foreach ($bookLookup as $withinLibraryId => $bookId) {
-                if (!in_array($bookId, $bookIdsBeingUpdated)) {
+            foreach ($bookLookup as $withinLibraryId => $bookInfo) {
+                $bookId = $bookInfo['bookId'];
+                if ($bookInfo['isActive'] && !in_array($bookId, $bookIdsBeingUpdated)) {
                     $params = [
                         'action'            => 'inactivate',
                         'bookId'            => $bookId,
@@ -409,7 +424,12 @@ class LibraryImportsController extends SionController
             $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
             ->addMessage (sprintf("File not imported due to duplicate withinLibraryIds: %s.",
                 implode(',', $duplicateWithinLibraryIds)));
-        }else if (!$simulate) {
+        } else if (!$simulate) {
+            //free up a little memory
+            unset($bookLookup);
+            unset($withinLibraryIds);
+            unset($bookIdsBeingUpdated);
+
             $this->persistImportTransactions($transactions);
         }
 

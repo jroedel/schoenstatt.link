@@ -272,7 +272,10 @@ class LibraryTable extends SionTable
         }
         $select = $this->getBookSelectPrototype();
         $select->where(['book_id' => $id]);
-        $results = $gateway->selectWith($select);
+        /** @var ResultSet $result */
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+
         if (!isset($results[0])) {
             return null;
         }
@@ -362,7 +365,7 @@ class LibraryTable extends SionTable
      * Return a lookup associated array keyed by the library's id, mapped to the bookId
      * @return number[]
      */
-    public function getLibraryBookLookup($libraryId = null)
+    public function getLibraryBookLookup($libraryId = null, $includeInactive = false)
     {
         if (!isset($libraryId)) {
             $libraryId = $this->getLibraryId();
@@ -373,13 +376,39 @@ class LibraryTable extends SionTable
         $entities = $this->getUnlinkedBooks();
         $bookLookup = [];
         foreach ($entities as $bookId => $book) {
-            if ($book['libraryId'] == $libraryId && $book['isActive'] &&
+            if ($book['libraryId'] == $libraryId && ($book['isActive'] || $includeInactive) &&
                 isset($book['withinLibraryId'])
             ) {
                 $bookLookup[$book['withinLibraryId']] = $bookId;
             }
         }
         return $bookLookup;
+    }
+
+    public function getLibraryBookLookupWithActive($libraryId = null)
+    {
+        if (!isset($libraryId)) {
+            $libraryId = $this->getLibraryId();
+        }
+        if (!isset($libraryId)) {
+            throw new \InvalidArgumentException('There must by a libraryId set to get the active library book lookup list.');
+        }
+        $select = new Select('lib_books');
+        //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+        $select->columns(['book_id',  'original_id',  'is_active']);
+        $select->where(['library_id' => $libraryId]);
+        $select->order(['original_id', 'book_id']);
+        $gateway = $this->getTableGateway('lib_books');
+        $results = $gateway->selectWith($select);
+
+        $lookup = [];
+        foreach ($results as $row) {
+            $lookup[$row['original_id']] = [
+                'bookId' => $row['book_id'],
+                'isActive' => $this->filterDbBool($row['is_active']),
+            ];
+        }
+        return $lookup;
     }
 
     /**
