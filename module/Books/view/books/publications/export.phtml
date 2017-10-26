@@ -1,0 +1,7 @@
+<?php
+echo $this->partial('publication-list', [
+    'objects' => $this->objects,
+    'columns' => [
+        'publicationId', 'authors', 'title', 'edition',
+    ],
+]);

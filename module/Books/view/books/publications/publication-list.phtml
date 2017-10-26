@@ -1,11 +1,12 @@
 <?php
 use Books\View\Helper\FormatPublication;
 
+$columns = $this->columns;
 /**
  * @var $objects mixed[]
  * @var $columns string[]
  */
-if (!isset($this->columns)) {
+if (!isset($columns)) {
     throw new \InvalidArgumentException('Please pass a list of columns to the publication-list partial');
 }
 $columnNames = [
@@ -13,12 +14,13 @@ $columnNames = [
     'authors'   => 'Authors',
     'title'     => 'Title',
     'edition'   => 'Edition',
+    'publicationId' => 'Publication Id'
 ];
 ?>
 <table class="table">
-<tr><?php foreach ($this->columns as $key => $column) :
-    if (!key_exists($column, $columnNames)) {
-        unset($column[$key]);
+<tr><?php foreach ($columns as $key => $column) :
+    if (!isset($columnNames[$column])) {
+        unset($columns[$key]);
         continue;
     }?>
     <th><?php echo $this->translate($columnNames[$column]);?></th>
@@ -28,7 +30,7 @@ $columnNames = [
 if (!$this->isAllowed($entity['resourceId'], 'show')) {
     continue;
 }?>
-<tr><?php foreach ($this->columns as $column) :
+<tr><?php foreach ($columns as $column) :
 switch ($column) {
     case 'cover': ?>
     <td><?php
@@ -49,6 +51,9 @@ switch ($column) {
     	<?php break;
     case 'edition':?>
 		<td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>
+    	<?php break;
+    case 'publicationId':?>
+		<td><?php echo $this->escapeHtml($entity['publicationId']);?></td>
     	<?php break;
 
     default:

@@ -135,6 +135,18 @@ class PublicationsController extends SionController
         ]);
     }
 
+    public function exportAction()
+    {
+//         var_dump('hello');
+        $view = parent::indexAction();
+        return $view;
+        /** @var PublicationsTable $table */
+//         $table      = $this->getSionTable();
+//         return new ViewModel([
+//             'objects' =>
+//         ]);
+    }
+
     public function createNewEditionAction()
     {
         /** @var PublicationsTable $table */

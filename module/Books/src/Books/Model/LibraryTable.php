@@ -283,7 +283,6 @@ class LibraryTable extends SionTable
     }
 
     /**
-     * @todo add an optional $libraryId param for when we're not in a library route
      * @return mixed|NULL|boolean[][]|NULL[][]|unknown[][]|string[][]|\SionModel\Db\Model\NULL[][]|number[][]|DateTime[][]
      */
     protected function getUnlinkedBooks()

@@ -228,6 +228,15 @@ return [
                             ],
                         ],
                     ],
+                    'export' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/export',
+                            'defaults' => [
+                                'action'     => 'export',
+                            ],
+                        ],
+                    ],
                     'prime-authors' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -1425,6 +1434,7 @@ return [
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
+                ['route' => 'publications/export', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/publication/upload-cover', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/create-new-edition', 'roles' => ['pub_moderator']],
