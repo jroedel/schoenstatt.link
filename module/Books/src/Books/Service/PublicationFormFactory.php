@@ -33,6 +33,8 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $editions = $table->getEditionValueOptions(true);
         $allEditions = $table->getEditionValueOptions(false);
 
+        $categories = $table->getCategoryValueOptions();
+
         $form = new PublicationForm();
         $form->get('inLanguage')->setValueOptions($languages);
         $form->get('mainPublicationId')->setValueOptions($editions);
@@ -44,6 +46,7 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
 		$form->get('url1Label')->setValueOptions($urlLabels);
 		$form->get('url2Label')->setValueOptions($urlLabels);
 		$form->get('url3Label')->setValueOptions($urlLabels);
+		$form->get('categoryId')->setValueOptions($categories);
 // 		$form->get('adminTags')->setValueOptions($adminTags);
 		return $form;
     }

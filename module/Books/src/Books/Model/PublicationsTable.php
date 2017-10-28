@@ -4,6 +4,7 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use SionModel\Filter\ToAscii;
 use Schoenstatt\Model\SchoenstattTable;
+use Zend\Db\Sql\Select;
 
 class PublicationsTable extends SionTable
 {
@@ -78,6 +79,18 @@ ORDER BY `Publisher`";
         foreach ($entities as $entityId => $entityObject) {
             $return[$entityId] = $entityObject['title'].
                 (!is_null($entityObject['bookEdition']) ? '"'.$entityObject['bookEdition'].'"' : '');
+        }
+        return $return;
+    }
+
+    public function getCategoryValueOptions($includePlaceholders = false)
+    {
+        $entities = $this->getCategories();
+        $return = [];
+        foreach ($entities as $entityId => $entityObject) {
+            if (!$entityObject['isPlaceholder'] || $includePlaceholders) {
+                $return[$entityId] = $entityObject['fullName'];
+            }
         }
         return $return;
     }
@@ -234,7 +247,7 @@ ORDER BY `Publisher`";
         $persons = $this->schoenstattTable->getUnlinkedPersons();
         $associations = $this->schoenstattTable->getUnlinkedAssociations();
 
-        foreach ($entities  as $entityId => $entityObject) {
+        foreach ($entities as $entityId => $entityObject) {
             if (!is_null($entityObject['mainPublicationId']) &&
                 $entityObject['mainPublicationId'] != $entityId &&
                 key_exists($entityObject['mainPublicationId'], $entities)
@@ -296,10 +309,13 @@ ORDER BY `Publisher`";
 `JkEventId`, `Url1`, `Url1Label`, `Url2`, `Url2Label`, `Url3`, `Url3Label`, `DataSource`,
 `DataSourceId`, `DataSourceUpdatedOn`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`,
-`CreatedOn`, `CreatedBy`, `TranslatedFromPublicationId`
+`CreatedOn`, `CreatedBy`, `TranslatedFromPublicationId`, `CategoryId`, `TranslatorId`, `IllustratorId`,
+`EditorId`, `HasNoExplictEditionNumber`, `EditionNotes`
 FROM `sch_publications`
 ORDER BY `Authors`,`InLanguage`, `Title`";
         $results = $this->fetchSome(null, $sql, null);
+
+        $categories = $this->getCategories();
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['PublicationId']);
@@ -325,13 +341,13 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
             $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
             $authorPerson2Id = $this->filterDbId($row['AuthorPerson2']);
             $authorPerson3Id = $this->filterDbId($row['AuthorPerson3']);
-            if (!is_null($authorPerson1Id)) {
+            if (isset($authorPerson1Id)) {
                 $authorPersonIds[] = $authorPerson1Id;
             }
-            if (!is_null($authorPerson2Id)) {
+            if (isset($authorPerson2Id)) {
                 $authorPersonIds[] = $authorPerson2Id;
             }
-            if (!is_null($authorPerson3Id)) {
+            if (isset($authorPerson3Id)) {
                 $authorPersonIds[] = $authorPerson3Id;
             }
 
@@ -340,13 +356,13 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
             $authorAssociation2Id = $this->filterDbId($row['AuthorAssociationId2']);
             $authorAssociation3Id = $this->filterDbId($row['AuthorAssociationId3']);
 
-            if (!is_null($authorAssociation1Id)) {
+            if (isset($authorAssociation1Id)) {
                 $authorAssociationIds[] = $authorAssociation1Id;
             }
-            if (!is_null($authorAssociation2Id)) {
+            if (isset($authorAssociation2Id)) {
                 $authorAssociationIds[] = $authorAssociation2Id;
             }
-            if (!is_null($authorAssociation3Id)) {
+            if (isset($authorAssociation3Id)) {
                 $authorAssociationIds[] = $authorAssociation3Id;
             }
 
@@ -379,6 +395,8 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 $coverThumbnail200 = null;
             }
 
+            $categoryId = $this->filterDbId($row['CategoryId']);
+
             $entities[$id] = [
                 'publicationId'             => $id,
                 'title'                     => $this->filterDbString($row['Title']),
@@ -391,12 +409,17 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'authorAssociation3Id'      => $authorAssociation3Id,
                 'authors'                   => $this->filterDbString($row['Authors']),
                 'bookEdition'               => $this->filterDbString($row['BookEdition']),
+                'categoryId'                => $categoryId,
+
                 'inLanguage'                => $inLanguage,
                 'description'               => $this->filterDbString($row['Description']),
                 'isbn'                      => $this->filterDbString($row['Isbn']),
-                'translatorPersonId'        => $this->filterDbString($row['Translator']),
-                'illustratorPersonId'       => $this->filterDbString($row['Illustrator']),
-                'editorPersonId'            => $this->filterDbString($row['Editor']),
+                'translatorText'            => $this->filterDbString($row['Translator']),
+                'illustratorText'           => $this->filterDbString($row['Illustrator']),
+                'editorText'                => $this->filterDbString($row['Editor']),
+                'translatorPersonId'        => $this->filterDbString($row['TranslatorId']),
+                'illustratorPersonId'       => $this->filterDbString($row['IllustratorId']),
+                'editorPersonId'            => $this->filterDbString($row['EditorId']),
                 'numberOfPages'             => $this->filterDbInt($row['NumberOfPages']),
                 'copyrightYear'             => $this->filterDbInt($row['CopyrightYear']),
                 'publisher'                 => $this->filterDbString($row['Publisher']),
@@ -417,6 +440,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
                 'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
 
+                'hasNoExplictEditionNumber' => $this->filterDbBool($row['HasNoExplictEditionNumber']),
                 'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
                 'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
 //                 'publishDataAsJsonLd'       => $publishDataAsJsonLd,
@@ -437,6 +461,8 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'dataSource'                => $this->filterDbString($row['DataSource']),
                 'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
                 'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
+
+                'editionNotes'              => $this->filterDbString($row['EditionNotes']),
                 'publicNotes'               => $this->filterDbString($row['PublicNotes']),
                 'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),
                 'publicNotesUpdatedBy'      => $this->filterDbId($row['PublicNotesUpdatedBy']),
@@ -448,6 +474,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
 
+                'category'                  => (isset($categoryId) && isset($categories[$categoryId])) ? $categories[$categoryId] : null,
                 'coverImageUri'             => $coverImage,
                 'coverThumbnail80pxUri'     => $coverThumbnail80,
                 'coverThumbnail200pxUri'    => $coverThumbnail200,
@@ -506,6 +533,60 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
 //             $data['title'] = null;
 //         }
         return $data;
+    }
+
+    public function getCategories()
+    {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('publication-categories'))) {
+            return $cache;
+        }
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('sch_pub_categories');
+        }
+        $select = new Select('sch_pub_categories');
+        $select->columns(['PublicationCategoryId', 'ParentId', 'CategoryName', 'SortOrder', 'IsPlaceholder']);
+        $select->order(['SortOrder']);
+        /** @var ResultSet $result */
+        $result = $gateway->selectWith($select);
+
+        $categories = [];
+        foreach ($result as $row) {
+            $id = $this->filterDbId($row['PublicationCategoryId']);
+            $name = $this->filterDbString($row['CategoryName']);
+            $categories[$id] = [
+                'categoryId'    => $id,
+                'parentId'      => $this->filterDbString($row['ParentId']),
+                'name'          => $name,
+                'sort'          => $this->filterDbInt($row['SortOrder']),
+                'isPlaceholder' => $this->filterDbBool($row['IsPlaceholder']),
+
+                'fullName'      => null,
+                'fullNameStack' => [],
+            ];
+        }
+
+        foreach ($categories as $categoryId => $object) {
+            if (empty($categories[$categoryId]['fullNameStack'])) {
+                $stack = $this->getCategoriesNameStack($categoryId, $categories);
+                $categories[$categoryId]['fullNameStack'] = $stack;
+                $categories[$categoryId]['fullName'] = implode(' - ', $stack);
+            }
+        }
+
+        $this->cacheEntityObjects('publication-categories', $categories, []);
+        return $categories;
+    }
+
+    private function getCategoriesNameStack($categoryId, &$categories)
+    {
+        if (null === $categories[$categoryId]['parentId']) {
+            return [$categories[$categoryId]['name']];
+        } else {
+            $stack = $this->getCategoriesNameStack($categories[$categoryId]['parentId'], $categories);
+            $stack[] = $categories[$categoryId]['name'];
+        }
+        return $stack;
     }
 
     /**

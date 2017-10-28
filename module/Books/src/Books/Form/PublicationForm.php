@@ -49,6 +49,19 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'hasNoExplictEditionNumber',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Publication has no explicit edition number?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+        $this->add([
             'name' => 'inLanguage',
             'type' => 'Select',
             'options' => [
@@ -68,7 +81,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
             ],
             'attributes' => [
-                'rows' => 8,
+                'rows' => 5,
             ],
         ]);
         $this->add([
@@ -391,6 +404,23 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
         ]);
 
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
+            'name' => 'editionNotes',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Edition notes',
+                'required' => false,
+            ],
+            'attributes' => [
+                'required' => false,
+                'data-provide' => 'markdown',
+                'data-parser' => 'CommonMark',
+                'rows' => 8,
+            ],
+            'filters' => [
+                ['name' => 'StripTags'],
+            ],
+        ]);
+        $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
             'type' => 'Textarea',
             'options' => [
@@ -405,6 +435,17 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
             'filters' => [
                 ['name' => 'StripTags'],
+            ],
+        ]);
+        $this->add([
+            'name' => 'categoryId',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Category',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => [],
             ],
         ]);
 
@@ -505,6 +546,12 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                             'max' => 50,
                         ],
                     ],
+                ],
+            ],
+            'hasNoExplictEditionNumber' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
                 ],
             ],
             'description' => [
@@ -832,6 +879,38 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'editionNotes' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'publicNotes' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+            ],
+            'categoryId' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
                 ],
             ],
             'adminNotes' => [

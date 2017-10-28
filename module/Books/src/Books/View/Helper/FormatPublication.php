@@ -120,7 +120,7 @@ class FormatPublication extends FormatEntity
     	}
     	if ($showHandChecked && $data['isRevisedWithBookInHand']) {
     	    $finalMarkup .= sprintf('&nbsp;<span class="fa fa-check-circle-o fa-3 text-success" title="%s"></span>',
-	            $this->view->translate('Information has been hand checked!'));
+	            $this->view->translate('Information has been hand checked'));
     	}
     	return $finalMarkup;
     }

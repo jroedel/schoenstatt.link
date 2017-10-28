@@ -9,6 +9,7 @@ echo $this->formRow($form->get('title'));
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('authors'));
 echo $this->formRow($form->get('bookEdition'));
+echo $this->formRow($form->get('hasNoExplictEditionNumber'));
 echo $this->formRow($form->get('inLanguage'));
 echo $this->formRow($form->get('description'));
 echo $this->formRow($form->get('mainPublicationId'));
@@ -34,7 +35,9 @@ echo $this->formRow($form->get('isScientificWork'));
 echo $this->formRow($form->get('isRevisedWithBookInHand'));?>
 <div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php
+echo $this->formRow($form->get('editionNotes'));
 echo $this->formRow($form->get('publicNotes'));
+echo $this->formRow($form->get('categoryId'));
 echo $this->formRow($form->get('url1'));
 echo $this->formRow($form->get('url1Label'));
 echo $this->formRow($form->get('url2'));
