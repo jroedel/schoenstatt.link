@@ -14,7 +14,8 @@ $columnNames = [
     'authors'   => 'Authors',
     'title'     => 'Title',
     'edition'   => 'Edition',
-    'publicationId' => 'Publication Id'
+    'publicationId' => 'Publication Id',
+    'language'  => 'Language',
 ];
 ?>
 <table class="table">
@@ -27,7 +28,8 @@ $columnNames = [
 <?php endforeach;?>
 </tr>
 <?php foreach($this->objects as $entityId => $entity) :
-if (!$this->isAllowed($entity['resourceId'], 'show')) {
+$username = $this->zfcUserDisplayName();
+if (!$this->isAllowed($entity['resourceId'], 'show') || (!$entity['isRevisedWithBookInHand'] && false === $username)) {
     continue;
 }?>
 <tr><?php foreach ($columns as $column) :
@@ -54,6 +56,9 @@ switch ($column) {
     	<?php break;
     case 'publicationId':?>
 		<td><?php echo $this->escapeHtml($entity['publicationId']);?></td>
+    	<?php break;
+    case 'language':?>
+		<td><?php echo $this->escapeHtml($entity['inLanguage']);?></td>
     	<?php break;
 
     default:

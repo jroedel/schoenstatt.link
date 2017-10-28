@@ -89,6 +89,8 @@ ORDER BY `Publisher`";
      * @param string $includeInstitute
      * @param string $includePatres
      * @return array
+     *
+     * @todo reduce this to an sql query
      */
     public function getPublicationLanguageCounts($includeUser = false, $includeInstitute = false, $includePatres = false)
     {
@@ -100,7 +102,7 @@ ORDER BY `Publisher`";
 
         $languages = [];
         foreach ($entities as $entityId => $object) {
-            if ('publication_public' ===  $object['resourceId'] ||
+            if (('publication_public' ===  $object['resourceId'] && (isset($this->actingUserId) || $object['isRevisedWithBookInHand'])) ||
                 ($includeUser && 'publication_user' === $object['resourceId']) ||
                 ($includeInstitute && 'publication_institute' === $object['resourceId']) ||
                 ($includePatres && 'publication_patres' === $object['resourceId'])
@@ -310,14 +312,14 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
             $urls = $this::processUrls($unprocessedUrls);
             $mainPublicationId = $this->filterDbId($row['MainPublicationId']);
 
-            $publishDataAsJsonLd = $this->filterDbBool($row['PublishDataAsJsonLd']);
+//             $publishDataAsJsonLd = $this->filterDbBool($row['PublishDataAsJsonLd']);
             /*
              * For now, make public those that have the publishDataAsJsonFlag.
              */
             $resourceId = $this->filterDbString($row['ResourceId']);
-            if ('publication_public' === $resourceId && !$publishDataAsJsonLd) {
-                $resourceId = 'publication_user';
-            }
+//             if ('publication_public' === $resourceId && !$publishDataAsJsonLd) {
+//                 $resourceId = 'publication_user';
+//             }
 
             $authorPersonIds = [];
             $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
@@ -417,7 +419,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
 
                 'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
                 'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
-                'publishDataAsJsonLd'       => $publishDataAsJsonLd,
+//                 'publishDataAsJsonLd'       => $publishDataAsJsonLd,
                 'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
 
                 'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),

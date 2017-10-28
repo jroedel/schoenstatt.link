@@ -363,19 +363,19 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'value'   => '0',
             ],
         ]);
-        $this->add([
-            'name' => 'publishDataAsJsonLd',
-            'type' => 'Checkbox',
-            'options' => [
-                'label' => 'Publish data in search engines?',
-                'checked_value' => '1',
-                'unchecked_value' => '0',
-                'use_hidden_element' => true,
-            ],
-            'attributes' => [
-                'value'   => '0',
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'publishDataAsJsonLd',
+//             'type' => 'Checkbox',
+//             'options' => [
+//                 'label' => 'Publish data in search engines?',
+//                 'checked_value' => '1',
+//                 'unchecked_value' => '0',
+//                 'use_hidden_element' => true,
+//             ],
+//             'attributes' => [
+//                 'value'   => '0',
+//             ],
+//         ]);
         $this->add([
             'name' => 'isFormallyPublished',
             'type' => 'Checkbox',
@@ -822,12 +822,12 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Filter\ToBit']
                 ],
             ],
-            'publishDataAsJsonLd' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
-                ],
-            ],
+//             'publishDataAsJsonLd' => [
+//                 'required' => false,
+//                 'filters' => [
+//                     ['name' => 'SionModel\Filter\ToBit']
+//                 ],
+//             ],
             'isFormallyPublished' => [
                 'required' => false,
                 'filters' => [

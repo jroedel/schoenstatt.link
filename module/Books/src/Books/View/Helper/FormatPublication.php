@@ -40,10 +40,11 @@ class FormatPublication extends FormatEntity
     	} else {
     	    $displayOption = $this::DISPLAY_TITLE;
     	}
-    	$linkOption = isset($options['link']) ? (bool)$options['link'] : $displayOption == self::DISPLAY_TITLE;
-    	$editPencilOption = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : $displayOption == self::DISPLAY_TITLE;
+    	$linkOption        = isset($options['link']) ? (bool)$options['link'] : $displayOption == self::DISPLAY_TITLE;
+    	$editPencilOption  = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : $displayOption == self::DISPLAY_TITLE;
     	$showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
     	$showResourceLabel = isset($options['displayResourceLabel']) ? (bool)$options['displayResourceLabel'] : false;
+    	$showHandChecked   = isset($options['displayHandChecked']) ? (bool)$options['displayHandChecked'] : $displayOption == self::DISPLAY_TITLE;
 
     	$finalMarkup = '';
     	$escapeMainText = true;
@@ -116,6 +117,10 @@ class FormatPublication extends FormatEntity
 //     	}
     	if ($editPencilOption) { //permissions are checked in editPencil
     		$finalMarkup .= $this->view->editPencil('publication', $data['publicationId']);
+    	}
+    	if ($showHandChecked && $data['isRevisedWithBookInHand']) {
+    	    $finalMarkup .= sprintf('&nbsp;<span class="fa fa-check-circle-o fa-3 text-success" title="%s"></span>',
+	            $this->view->translate('Information has been hand checked!'));
     	}
     	return $finalMarkup;
     }
