@@ -2,6 +2,7 @@
 namespace Books\View\Helper;
 
 use SionModel\View\Helper\FormatEntity;
+use Zend\Validator\Regex;
 
 class FormatPublication extends FormatEntity
 {
@@ -49,8 +50,22 @@ class FormatPublication extends FormatEntity
     	$finalMarkup = '';
     	$escapeMainText = true;
     	switch ($displayOption) {
-    	    case self::DISPLAY_AUTHORS: //@todo make it work when we have real authors
-    	        $mainText = $data['authors'];
+    	    case self::DISPLAY_AUTHORS: //@todo create links to accessible authors
+    	        static $authorDetector;
+    	        if (!isset($authorDetector)) {
+    	           $authorDetector = new Regex('/^(p|a)\d{1,5}$/');
+    	        }
+    	        $authors = [];
+    	        foreach ($data['authorsAll'] as $value) {
+    	            if ($authorDetector->isValid($value)) {
+    	                if (isset($this->authorValueOptions[$value])) {
+    	                    $authors[] = $this->authorValueOptions[$value];
+    	                }
+    	            } else {
+    	                $authors[] = $value;
+    	            }
+    	        }
+    	        $mainText = implode('; ', $authors);
     	       break;
     	    case self::DISPLAY_TITLE:
     	        $mainText = $data['title'];
@@ -123,5 +138,30 @@ class FormatPublication extends FormatEntity
 	            $this->view->translate('Information has been hand checked'));
     	}
     	return $finalMarkup;
+    }
+
+    /**
+    * @var array $authorValueOptions
+    */
+    protected $authorValueOptions;
+
+    /**
+    * Get the authorValueOptions value
+    * @return array
+    */
+    public function getAuthorValueOptions()
+    {
+        return $this->authorValueOptions;
+    }
+
+    /**
+    *
+    * @param array $authorValueOptions
+    * @return self
+    */
+    public function setAuthorValueOptions($authorValueOptions)
+    {
+        $this->authorValueOptions = $authorValueOptions;
+        return $this;
     }
 }

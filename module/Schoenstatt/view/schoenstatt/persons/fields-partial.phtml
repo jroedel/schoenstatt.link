@@ -23,7 +23,9 @@ $jsScript = '';
 	$this->formSelect()->setTranslatorEnabled(false);
 	echo $this->formRow($form->get('spousePersonId'));
     echo $this->formRow($form->get('country'));
-    $this->formSelect()->setTranslatorEnabled(true);?>
+    $this->formSelect()->setTranslatorEnabled(true);
+    echo $this->formRow($form->get('isBorrower'));
+    echo $this->formRow($form->get('isAuthor'));?>
     <hr>
     <h2><?php echo $this->translate('Contact Info');?></h2>
 <?php echo $this->formRow($form->get('email'));

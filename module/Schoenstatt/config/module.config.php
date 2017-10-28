@@ -1487,6 +1487,7 @@ return [
                     'suppressionDate'           => 'SuppressionDate',
                     'isLifeCommunity'           => 'IsLifeCommunity',
                     'isNameTranslateable'       => 'IsNameTranslateable',
+                    'isAuthor'                  => 'IsAuthor',
                     'isActive'                  => 'IsActive',
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',

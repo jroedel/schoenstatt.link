@@ -5,6 +5,7 @@ use SionModel\Db\Model\SionTable;
 use SionModel\Filter\ToAscii;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Db\Sql\Select;
+use Zend\Validator\Regex;
 
 class PublicationsTable extends SionTable
 {
@@ -27,21 +28,39 @@ class PublicationsTable extends SionTable
 
     public function getAuthorsValueOptions()
     {
+        $authors = [];
+        $authorPersons = $this->schoenstattTable->getUnlinkedPersons();
+        foreach ($authorPersons as $personId => $object) {
+            if (!$object['isAuthor']) {
+                continue;
+            }
+            $authors['p'.$personId] = $object['fullName'];
+        }
+
+        $authorAssociations = $this->schoenstattTable->getUnlinkedAssociations();
+        foreach ($authorAssociations as $associationId => $object) {
+            if (!$object['isAuthor']) {
+                continue;
+            }
+            $authors['a'.$associationId] = $object['formattedName'];
+        }
+
         $sql = "SELECT DISTINCT `Authors`
 FROM `sch_publications`
 WHERE (`Authors` NOT LIKE '%;%')
 ORDER BY `Authors`";
         $results = $this->fetchSome(null, $sql, null);
-        $authors = null;
         foreach ($results as $row) {
             $author = $this->filterDbString($row['Authors']);
-            if (!is_null($author)) {
+            if (isset($author)) {
                 $authors[$author] = $author;
             }
         }
+        asort($authors);
         return $authors;
     }
 
+    // @todo add publisher associations
     public function getPublishersValueOptions()
     {
         $sql = "SELECT DISTINCT `Publisher`
@@ -51,7 +70,7 @@ ORDER BY `Publisher`";
         $authors = null;
         foreach ($results as $row) {
             $publisher = $this->filterDbString($row['Publisher']);
-            if (!is_null($publisher)) {
+            if (isset($publisher)) {
                 $authors[$publisher] = $publisher;
             }
         }
@@ -64,7 +83,7 @@ ORDER BY `Publisher`";
         $valueOptions = [];
         foreach ($publications as $publication) {
             foreach ($publication['keywords'] as $keyword) {
-                if (!key_exists($keyword, $valueOptions)) {
+                if (!isset($valueOptions[$keyword])) {
                     $valueOptions[$keyword] = $keyword;
                 }
             }
@@ -78,7 +97,7 @@ ORDER BY `Publisher`";
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
             $return[$entityId] = $entityObject['title'].
-                (!is_null($entityObject['bookEdition']) ? '"'.$entityObject['bookEdition'].'"' : '');
+                (isset($entityObject['bookEdition']) ? '"'.$entityObject['bookEdition'].'"' : '');
         }
         return $return;
     }
@@ -108,7 +127,7 @@ ORDER BY `Publisher`";
     public function getPublicationLanguageCounts($includeUser = false, $includeInstitute = false, $includePatres = false)
     {
         $cacheKey = 'publication-languages-'.($includeUser ? '1':'0').($includeInstitute? '1':'0').($includePatres? '1':'0');
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $entities = $this->getUnlinkedPublications();
@@ -120,14 +139,14 @@ ORDER BY `Publisher`";
                 ($includeInstitute && 'publication_institute' === $object['resourceId']) ||
                 ($includePatres && 'publication_patres' === $object['resourceId'])
             ) {
-                if (is_null($object['inLanguage'])) {
-                    if (!array_key_exists('xx', $languages)) {
+                if (!isset($object['inLanguage'])) {
+                    if (!isset($languages['xx'])) {
                         $languages['xx'] = 1;
                     } else {
                         $languages['xx']++;
                     }
                 } else {
-                    if (!array_key_exists($object['inLanguage'], $languages)) {
+                    if (!isset($languages[$object['inLanguage']])) {
                         $languages[$object['inLanguage']] = 1;
                     } else {
                         $languages[$object['inLanguage']]++;
@@ -150,7 +169,7 @@ ORDER BY `Publisher`";
     public function searchPublications($query)
     {
         $filter = new ToAscii();
-        if (isset($query['search']) && !is_null($query['search'])) {
+        if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
         }
 
@@ -170,23 +189,23 @@ ORDER BY `Publisher`";
             }
 
             //language
-            if (isset($query['inLanguage']) && !is_null($query['inLanguage']) && is_string($query['inLanguage']) &&
+            if (isset($query['inLanguage']) && is_string($query['inLanguage']) &&
                 $query['inLanguage'] != $publication['inLanguage']
             ) {
                 continue;
             }
-            if (isset($query['inLanguage']) && !is_null($query['inLanguage']) && is_array($query['inLanguage']) &&
+            if (isset($query['inLanguage']) && is_array($query['inLanguage']) &&
                 !in_array($publication['inLanguage'], $query['inLanguage'])
             ) {
                 continue;
             }
             //keywords
-            if (isset($query['keywords']) && !is_null($query['keywords']) && is_string($query['keywords']) &&
+            if (isset($query['keywords']) && is_string($query['keywords']) &&
                 !in_array($query['keywords'], $publication['keywords'])
             ) {
                 continue;
             }
-            if (isset($query['keywords']) && !is_null($query['keywords']) && is_array($query['keywords'])
+            if (isset($query['keywords']) && is_array($query['keywords'])
             ) {
                 $found = false;
                 foreach ($query['keywords'] as $searchKeyword) {
@@ -200,7 +219,7 @@ ORDER BY `Publisher`";
                 }
             }
 
-            if (isset($query['search']) && !is_null($query['search']) &&
+            if (isset($query['search']) &&
                 false === stripos($filter->filter($publication['authors']), $query['search']) &&
                 false === stripos($filter->filter($publication['title']), $query['search']) &&
                 false === stripos($filter->filter($publication['bookEdition']), $query['search']) &&
@@ -224,10 +243,10 @@ ORDER BY `Publisher`";
         }
         //add the subEdition or the mainEdition depending on $displaySubEditions
         foreach ($subEditions as $publicationId => $publication) {
-            if (!is_null($publication['mainPublicationId']) &&
-                key_exists($publication['mainPublicationId'], $entities)
+            if (isset($publication['mainPublicationId']) &&
+                isset($entities[$publication['mainPublicationId']])
             ) {
-                if (!$displaySubEditions && !key_exists($publication['mainPublicationId'], $results)) {
+                if (!$displaySubEditions && !isset($results[$publication['mainPublicationId']])) {
                     $results[$publication['mainPublicationId']] = $entities[$publication['mainPublicationId']];
                 } elseif ($displaySubEditions) {
                     $results[$publicationId] = $publication;
@@ -239,7 +258,7 @@ ORDER BY `Publisher`";
 
     public function getPublications()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('publications'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('publications'))) {
             return $cache;
         }
 
@@ -248,40 +267,40 @@ ORDER BY `Publisher`";
         $associations = $this->schoenstattTable->getUnlinkedAssociations();
 
         foreach ($entities as $entityId => $entityObject) {
-            if (!is_null($entityObject['mainPublicationId']) &&
+            if (isset($entityObject['mainPublicationId']) &&
                 $entityObject['mainPublicationId'] != $entityId &&
-                key_exists($entityObject['mainPublicationId'], $entities)
+                isset($entities[$entityObject['mainPublicationId']])
             ) {
                 $entities[$entityId]['mainPublication'] = $entities[$entityObject['mainPublicationId']];
                 $entities[$entityObject['mainPublicationId']]['subEditions'][$entityId] = &$entities[$entityId];
             }
-            if (!is_null($entityObject['translatedFromPublicationId']) &&
+            if (isset($entityObject['translatedFromPublicationId']) &&
                 $entityObject['translatedFromPublicationId'] != $entityId &&
-                key_exists($entityObject['translatedFromPublicationId'], $entities)
+                isset($entities[$entityObject['translatedFromPublicationId']])
             ) {
                 $entities[$entityId]['translatedFromPublication'] = $entities[$entityObject['translatedFromPublicationId']];
             }
 
             foreach ($entityObject['authorPersonIds'] as $personId) {
-                if (array_key_exists($personId, $persons)) {
+                if (isset($persons[$personId])) {
                     $entities[$entityId]['authorPersons'][$personId] = $persons[$personId];
                 }
             }
             foreach ($entityObject['authorAssociationIds'] as $associationId) {
-                if (array_key_exists($associationId, $associations)) {
+                if (isset($associations[$associationId])) {
                     $entities[$entityId]['authorAssociations'][$associationId] = $associations[$associationId];
                 }
             }
-            if (array_key_exists($entityObject['illustratorPersonId'], $persons)) {
+            if (isset($persons[$entityObject['illustratorPersonId']])) {
                 $entities[$entityId]['illustratorPerson'] = $persons[$entityObject['illustratorPersonId']];
             }
-            if (array_key_exists($entityObject['translatorPersonId'], $persons)) {
+            if (isset($persons[$entityObject['translatorPersonId']])) {
                 $entities[$entityId]['translatorPerson'] = $persons[$entityObject['translatorPersonId']];
             }
-            if (array_key_exists($entityObject['editorPersonId'], $persons)) {
+            if (isset($persons[$entityObject['editorPersonId']])) {
                 $entities[$entityId]['editorPerson'] = $persons[$entityObject['editorPersonId']];
             }
-            if (array_key_exists($entityObject['publisherAssociationId'], $associations)) {
+            if (isset($associations[$entityObject['publisherAssociationId']])) {
                 $entities[$entityId]['publisherAssociation'] = $associations[$entityObject['publisherAssociationId']];
             }
         }
@@ -295,11 +314,12 @@ ORDER BY `Publisher`";
      */
     public function getUnlinkedPublications()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-publications'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-publications'))) {
             return $cache;
         }
         $sql = "SELECT `PublicationId`, `Title`, `ResourceId`, `AuthorPerson1`, `AuthorPerson2`,
-`AuthorPerson3`, `Authors`, `AuthorAssociationId1`, `AuthorAssociationId2`, `AuthorAssociationId3`,
+`AuthorPerson3`, `AuthorPerson4`, `AuthorPerson5`, `Authors`,
+`AuthorAssociationId1`, `AuthorAssociationId2`, `AuthorAssociationId3`,
 `BookEdition`, `InLanguage`, `Description`, `Isbn`, `Translator`, `Illustrator`, `Editor`,
 `NumberOfPages`, `CopyrightYear`, `Publisher`, `PublisherAssociationId`,  `PublishingPlace`, `DatePublished`,
 `PublishingStatus`, `BookFormatType`, `MainPublicationId`, `VolumeNumber`, `ContainedIn`,
@@ -337,43 +357,66 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
 //                 $resourceId = 'publication_user';
 //             }
 
-            $authorPersonIds = [];
-            $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
-            $authorPerson2Id = $this->filterDbId($row['AuthorPerson2']);
-            $authorPerson3Id = $this->filterDbId($row['AuthorPerson3']);
-            if (isset($authorPerson1Id)) {
-                $authorPersonIds[] = $authorPerson1Id;
-            }
-            if (isset($authorPerson2Id)) {
-                $authorPersonIds[] = $authorPerson2Id;
-            }
-            if (isset($authorPerson3Id)) {
-                $authorPersonIds[] = $authorPerson3Id;
-            }
+            $authorsAll = [];
 
             $authorAssociationIds = [];
             $authorAssociation1Id = $this->filterDbId($row['AuthorAssociationId1']);
             $authorAssociation2Id = $this->filterDbId($row['AuthorAssociationId2']);
             $authorAssociation3Id = $this->filterDbId($row['AuthorAssociationId3']);
-
             if (isset($authorAssociation1Id)) {
                 $authorAssociationIds[] = $authorAssociation1Id;
+                $authorsAll[] = 'a'.$authorAssociation1Id;
             }
             if (isset($authorAssociation2Id)) {
                 $authorAssociationIds[] = $authorAssociation2Id;
+                $authorsAll[] = 'a'.$authorAssociation2Id;
             }
             if (isset($authorAssociation3Id)) {
                 $authorAssociationIds[] = $authorAssociation3Id;
+                $authorsAll[] = 'a'.$authorAssociation3Id;
+            }
+
+            $authorPersonIds = [];
+            $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
+            $authorPerson2Id = $this->filterDbId($row['AuthorPerson2']);
+            $authorPerson3Id = $this->filterDbId($row['AuthorPerson3']);
+            $authorPerson4Id = $this->filterDbId($row['AuthorPerson4']);
+            $authorPerson5Id = $this->filterDbId($row['AuthorPerson5']);
+            if (isset($authorPerson1Id)) {
+                $authorPersonIds[] = $authorPerson1Id;
+                $authorsAll[] = 'p'.$authorPerson1Id;
+            }
+            if (isset($authorPerson2Id)) {
+                $authorPersonIds[] = $authorPerson2Id;
+                $authorsAll[] = 'p'.$authorPerson2Id;
+            }
+            if (isset($authorPerson3Id)) {
+                $authorPersonIds[] = $authorPerson3Id;
+                $authorsAll[] = 'p'.$authorPerson3Id;
+            }
+            if (isset($authorPerson4Id)) {
+                $authorPersonIds[] = $authorPerson4Id;
+                $authorsAll[] = 'p'.$authorPerson4Id;
+            }
+            if (isset($authorPerson5Id)) {
+                $authorPersonIds[] = $authorPerson5Id;
+                $authorsAll[] = 'p'.$authorPerson5Id;
+            }
+
+            $authors = $this->filterDbString($row['Authors']);
+            $implodedAuthors = explode(';', $authors);
+            foreach ($implodedAuthors as $author) {
+                $authorsAll[] = trim($author);
             }
 
             $bookFormatType = $this->filterDbString($row['BookFormatType']);
             $bookFormatTypeUrl = null;
-            if (array_key_exists($bookFormatType, self::BOOK_FORMAT_TYPE_URLS))
+            if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType]))
             {
                 $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
             }
             $inLanguage = $this->filterDbString($row['InLanguage']);
-            if (is_null($inLanguage)) {
+            if (!isset($inLanguage)) {
                 $inLanguage = 'xx';
             }
 
@@ -404,12 +447,16 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'authorPerson1Id'           => $authorPerson1Id,
                 'authorPerson2Id'           => $authorPerson2Id,
                 'authorPerson3Id'           => $authorPerson3Id,
+                'authorPerson4Id'           => $authorPerson4Id,
+                'authorPerson5Id'           => $authorPerson5Id,
                 'authorAssociation1Id'      => $authorAssociation1Id,
                 'authorAssociation2Id'      => $authorAssociation2Id,
                 'authorAssociation3Id'      => $authorAssociation3Id,
-                'authors'                   => $this->filterDbString($row['Authors']),
+                'authors'                   => $authors,
                 'bookEdition'               => $this->filterDbString($row['BookEdition']),
                 'categoryId'                => $categoryId,
+
+                'authorsAll'                => $authorsAll,
 
                 'inLanguage'                => $inLanguage,
                 'description'               => $this->filterDbString($row['Description']),
@@ -487,7 +534,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'translatorPerson'          => null,
                 'editorPerson'              => null,
                 'publisherAssociation'      => null,
-                'isSubEdition'              => !is_null($mainPublicationId),
+                'isSubEdition'              => isset($mainPublicationId),
                 'mainPublication'           => null,
                 'subEditions'               => [],
                 'translatedFromPublication' => null,
@@ -523,12 +570,45 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
     protected function preprocessPublication($data, $entityData, $action)
     {
         //don't allow the mainPublicationId to be set to itself, also, correct it
-        if (!is_null($data['mainPublicationId']) &&
+        if (isset($data['mainPublicationId']) &&
             $data['mainPublicationId'] == $entityData['publicationId']
         ) {
             $data['mainPublicationId'] = null;
         }
-        //@todo separate arrayed authorPersons when they are modified by a form
+
+        /*
+         * Break out the authorsAll field from the form
+         *
+         * technically there's a potential security bug because the user could pass in any
+         * association or person and be able to expose the whole list of persons/associations
+         */
+        if (!isset($data['authors']) && isset($data['authorsAll']) && is_array($data['authorsAll'])) {
+            $authors = [];
+            $authorPersons = [];
+            $authorAssociations = [];
+            $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
+            foreach ($data['authorsAll'] as $value) {
+                if ($entityDetector->isValid($value)) { //we've got a person or association
+                    if ($value[0] == 'p') {
+                        $authorPersons[] = substr($value, 1);
+                    } elseif ($value[0] == 'a') {
+                        $autorAssociations[] = substr($value, 1);
+                    }
+                } else { //we've just a regular text author
+                    $authors[] = $value;
+                }
+            }
+            $data['authors'] = $authors;
+            $data['authorAssociation1Id'] = isset($authorAssociations[0]) ? $authorAssociations[0] : null;
+            $data['authorAssociation2Id'] = isset($authorAssociations[1]) ? $authorAssociations[1] : null;
+            $data['authorAssociation3Id'] = isset($authorAssociations[2]) ? $authorAssociations[2] : null;
+
+            $data['authorPerson1Id'] = isset($authorPersons[0]) ? $authorPersons[0] : null;
+            $data['authorPerson2Id'] = isset($authorPersons[1]) ? $authorPersons[1] : null;
+            $data['authorPerson3Id'] = isset($authorPersons[2]) ? $authorPersons[2] : null;
+            $data['authorPerson4Id'] = isset($authorPersons[3]) ? $authorPersons[3] : null;
+            $data['authorPerson5Id'] = isset($authorPersons[4]) ? $authorPersons[4] : null;
+        }
 //         if (isset($data['automaticTitle']) && $data['automaticTitle'] === true) {
 //             $data['title'] = null;
 //         }
@@ -615,18 +695,18 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
         foreach ($results as $row) {
 //             $id = $this->filterDbId($row['PublicationId']);
             $yearPublished = $this->filterDbString($row['jahr']);
-            $dateFromYear = !is_null($yearPublished) ? date_create_from_format('Y', $yearPublished) : null;
+            $dateFromYear = isset($yearPublished) ? date_create_from_format('Y', $yearPublished) : null;
 
             $keywords = $this->filterDbString($row['Stichworte']);
-            if (!is_null($keywords)) {
+            if (issett($keywords)) {
                 $keywords = explode(',', $keywords);
                 $keywords = array_map('trim', $keywords);
                 $keywords = implode('|', $keywords);
             }
             $category = $this->filterDbString($row['kategorie']);
-            if (!is_null($category) && is_null($keywords)) {
+            if (isset($category) && !isset($keywords)) {
                 $keywords = $category;
-            } elseif (!is_null($category)) {
+            } elseif (isset($category)) {
                 $keywords .= '|'.$category;
             }
 
@@ -649,7 +729,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
             $isScientific = $this->filterDbString($row['art']) == 'scientific';
 
             $originalSource = $this->filterDbString($row['quelle']);
-            if (!is_null($originalSource)) {
+            if (isset($originalSource)) {
                 $originalSource = 'Original source: '. $originalSource;
             }
             $originalLanguage = $this->filterDbString($row['sprache']);
@@ -694,7 +774,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'bookFormatType'            => $row['herausgabe'] == 'digital' ? self::BOOK_FORMAT_TYPE_EBOOK : self::BOOK_FORMAT_TYPE_PAPERBACK,
                 'genre'                     => null,
                 'url1'                      => $download,
-                'url1Label'                 => !is_null($download) ? 'Download' : null,
+                'url1Label'                 => isset($download) ? 'Download' : null,
                 'textId'                    => null,
                 'mainPublication'           => null,
 //                 'volumeNumber'              => $this->filterDbString($row['BandNr']),
@@ -741,42 +821,42 @@ WHERE 1";
         foreach ($results as $row) {
             $publicNotes = '';
 //             $yearPublished = $this->filterDbString($row['jahr']);
-//             $dateFromYear = !is_null($yearPublished) ? date_create_from_format('Y', $yearPublished) : null;
+//             $dateFromYear = isset($yearPublished) ? date_create_from_format('Y', $yearPublished) : null;
 
             $isInternal = $this->filterDbString($row['ed_internpatres']) == 'yes' ||
                 $this->filterDbString($row['ev_intern']) == 'yes';
 
-            if (!is_null($remarks = $this->filterDbString($row['ed_remark']))) {
+            if (null !== ($remarks = $this->filterDbString($row['ed_remark']))) {
                 $publicNotes .= sprintf("Edition remarks: %s\r\n", $remarks);
             }
 
-            if (!is_null($evName = $this->filterDbString($row['ev_name']))) {
+            if (null !== ($evName = $this->filterDbString($row['ev_name']))) {
                 $publicNotes .= sprintf("Event name: %s\r\n", $evName);
             }
 
             $startDate = $this->filterDbDateInt($row['ev_datestart']);
             $endDate = $this->filterDbDateInt($row['ev_dateend']);
-            if (!is_null($startDate)) {
+            if (isset($startDate)) {
                 $dateString = date_format($startDate, 'Y-m-d');
-                if (!is_null($endDate)) {
+                if (isset($endDate)) {
                     $dateString .= ' - '.date_format($endDate, 'Y-m-d');
                 }
-                if (!is_null($dateRemarks = $this->filterDbString($row['ev_dateremark']))) {
+                if (null !== ($dateRemarks = $this->filterDbString($row['ev_dateremark']))) {
                     $dateString .= sprintf(" (%s)", $dateRemarks);
                 }
                 $publicNotes .= sprintf("Text from %s\r\n", $dateString);
             }
 
-            if (!is_null($shortName = $this->filterDbString($row['ev_shortname']))) {
+            if (null !== ($shortName = $this->filterDbString($row['ev_shortname']))) {
                 $publicNotes .= sprintf("Short name: %s\r\n", $shortName);
             }
 
-            if (!is_null($abbreviation = $this->filterDbString($row['ev_kuerzelvaut']))) {
+            if (null !== ($abbreviation = $this->filterDbString($row['ev_kuerzelvaut']))) {
                 $publicNotes .= sprintf("Abbreviation: %s\r\n", $abbreviation);
             }
 
             $originalSource = $this->filterDbString($row['ed_location']);
-            if (!is_null($originalSource)) {
+            if (isset($originalSource)) {
                 $originalSource = 'Original source: '. $originalSource;
             }
             $originalLanguage = $this->filterDbString($row['ed_lang']);
@@ -796,8 +876,8 @@ WHERE 1";
                     break;
             }
 
-            if (!is_null($quality = $this->filterDbString(ltrim($row['ed_quality'])))) {
-                $quality = ucfirst(substr($quality, 0, 1));
+            if (null !== ($quality = $this->filterDbString(ltrim($row['ed_quality'])))) {
+                $quality = ucfirst(mb_substr($quality, 0, 1));
                 $qualityChr = ord($quality);
                 if ($qualityChr < 65 || $quality > 72) {
                     $quality = null;
@@ -862,7 +942,7 @@ WHERE 1";
         if (!$simulate)
         {
             foreach ($entities as $key => $data) {
-                if (!is_null($data['title'])) {
+                if (isset($data['title'])) {
                     $this->createEntity('publication', $data);
                 } else {
                     unset($entities[$key]);
@@ -877,12 +957,12 @@ WHERE 1";
         $publications = $this->getUnlinkedPublications();
         $authors = [];
         foreach ($publications as $publicationId => $publication) {
-            if (is_null($publication['authors'])) {
+            if (!isset($publication['authors'])) {
                 continue;
             }
             $authorTexts = explode(';', $publication['authors']);
             foreach ($authorTexts as $authorText) {
-                if (array_key_exists($authorText, $authors)) {
+                if (isset($authors[$authorText])) {
                     $authors[$authorText][$publicationId] = $publication;
                 } else {
                     $authors[$authorText] = [$publicationId => $publication];
@@ -912,12 +992,12 @@ WHERE 1";
 
     protected function whichKentenichPeriod($date)
     {
-        if (is_null($date)) {
+        if (null === $date) {
             return null;
         }
         $tz = new \DateTimeZone('UTC');
         static $periodEnd;
-        if (is_null($periodEnd)) {
+        if (!isset($periodEnd)) {
             $periodEnd = [
                 1 => date_create_from_format('Y-m-d', '1913-01-01'),
                 2 => date_create_from_format('Y-m-d', '1920-01-01'),
@@ -943,11 +1023,11 @@ WHERE 1";
         if ($dateIntStr == '0') {
             $dateIntStr = null;
         }
-        if (!is_null($dateIntStr)) {
-            if (substr($dateIntStr, 4) == '0000') {
-                $dateIntStr = substr($dateIntStr, 0,4).'0101';
-            } elseif (substr($dateIntStr, 6) == '00') {
-                $dateIntStr = substr($dateIntStr, 0,6).'01';
+        if (isset($dateIntStr)) {
+            if (mb_substr($dateIntStr, 4) == '0000') {
+                $dateIntStr = mb_substr($dateIntStr, 0,4).'0101';
+            } elseif (mb_substr($dateIntStr, 6) == '00') {
+                $dateIntStr = mb_substr($dateIntStr, 0,6).'01';
             }
             $dateIntStr = date_create_from_format('Ymd', $dateIntStr);
         }

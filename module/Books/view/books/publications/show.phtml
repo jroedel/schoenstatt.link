@@ -9,6 +9,12 @@ $this->headTitle($object['title']);?>
 <?php echo $this->partial('publication-info', ['object' => $this->entity]);
 
 if ($this->isAllowed('route/publications/publication/create-new-edition')):?>
-<a class="btn btn-default" href="<?php echo $this->url('publications/publication/create-new-edition', [], [], true);?>"><?php
-echo $this->translate('Add another edition');?></a>
-<?php endif;?>
+<p><a class="btn btn-default" href="<?php echo $this->url('publications/publication/create-new-edition', [], [], true);?>"><?php
+echo $this->translate('Add another edition');?></a></p>
+<?php endif;
+if ($this->isAllowed('route/publications/publication/edit')) {
+    echo $this->partial('sion-model/sion-model/entity-changes-panel', [
+        'changes' => $this->changes,
+        'panelTitle' => 'Change log'
+    ]);
+}?>

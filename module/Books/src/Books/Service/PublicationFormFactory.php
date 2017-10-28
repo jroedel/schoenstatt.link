@@ -39,7 +39,7 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $form->get('inLanguage')->setValueOptions($languages);
         $form->get('mainPublicationId')->setValueOptions($editions);
         $form->get('translatedFromPublicationId')->setValueOptions($allEditions);
-		$form->get('authors')->setValueOptions($authors);
+		$form->get('authorsAll')->setValueOptions($authors);
 		$form->get('keywords')->setValueOptions($keywords);
 		$form->get('publisher')->setValueOptions($publishers);
 		$form->get('bookFormatType')->setValueOptions($bookFormats);

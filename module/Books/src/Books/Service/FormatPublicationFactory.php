@@ -21,7 +21,14 @@ class FormatPublicationFactory implements FactoryInterface
     {
         $parentLocator = $serviceLocator->getServiceLocator();
         $entityService = $parentLocator->get('SionModel\Service\EntitiesService');
+
+        /** @var \Books\Model\PublicationsTable $table */
+        $table = $parentLocator->get('Books\Model\PublicationsTable');
+        $valueOptions = $table->getAuthorsValueOptions();
+
         $viewHelper = new FormatPublication($entityService, true);
+        $viewHelper->setAuthorValueOptions($valueOptions);
+
         return $viewHelper;
     }
 }

@@ -23,7 +23,7 @@ class PublicationsController extends SionController
     {
         $view = parent::showAction();
         $entityObject = $view->getVariable('entity');
-        if (!is_null($entityObject['bookCoverFileId'])) {
+        if (isset($entityObject['bookCoverFileId'])) {
             $bookCoverFileId = $entityObject['bookCoverFileId'];
             /** @var FilesTable $filesTable */
             $filesTable = $this->getServiceLocator()->get('SionModel\FilesTable');
@@ -87,7 +87,7 @@ class PublicationsController extends SionController
         /** @var Select $mainPublicationId */
         $mainPublicationId = $form->get('mainPublicationId');
         $valueOptions = $mainPublicationId->getValueOptions();
-        if (array_key_exists($entityId, $valueOptions)) {
+        if (isset($valueOptions[$entityId])) {
             unset($valueOptions[$entityId]);
             $mainPublicationId->setValueOptions($valueOptions);
         }
@@ -151,7 +151,7 @@ class PublicationsController extends SionController
         $object     = $this->getEntityObject($id);
 
         //set the new mainPublicationId to the old publicationId
-        if (is_null($object['mainPublicationId'])) { //else, leave it as it was
+        if (!isset($object['mainPublicationId'])) { //else, leave it as it was
             $object['mainPublicationId'] = $object['publicationId'];
         }
 
@@ -164,6 +164,8 @@ class PublicationsController extends SionController
         unset($object['publishingStatus']);
         unset($object['isbn']);
         unset($object['hasNoISBN']);
+        unset($object['hasNoExplictEditionNumber']);
+        unset($object['editionNotes']);
         unset($object['isAwaitingMerge']);
         unset($object['isRevisedWithBookInHand']);
         unset($object['publishDataAsJsonLd']);

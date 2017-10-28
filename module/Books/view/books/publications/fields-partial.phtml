@@ -7,7 +7,7 @@ $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/select
 $form = $this->form;
 echo $this->formRow($form->get('title'));
 $this->formSelect()->setTranslatorEnabled(false);
-echo $this->formRow($form->get('authors'));
+echo $this->formRow($form->get('authorsAll'));
 echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('hasNoExplictEditionNumber'));
 echo $this->formRow($form->get('inLanguage'));
@@ -49,7 +49,7 @@ echo $this->formRow($form->get('adminTags'));
 echo $this->formRow($form->get('security'));
 
 $jsScript = <<<JS
-$("select[name='authors[]']").selectize({
+$("select[name='authorsAll[]']").selectize({
     create: true,
     sortField: 'text'
 });

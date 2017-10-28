@@ -168,7 +168,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             if (!$includeNonLifeLongMembership && !$this->filterDbBool($object['isLifeCommunity'])) {
                 continue;
             }
-            if (!is_null($object['formattedName'])) {
+            if (isset($object['formattedName'])) {
                 $valueOptions[$entityId] = $object['formattedName'];
             } else {
                 $valueOptions[$entityId] = $object['name'];
@@ -208,8 +208,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         $valueOptions = [];
         foreach ($roles as $roleId => $role) {
             if ($includeInactive || $role['isActive']) {
-                if (key_exists($role['associationId'], $valueOptions)) {
-                    if (!key_exists($role['roleTitle'], $valueOptions[$role['associationId']])) {
+                if (isset($valueOptions[$role['associationId']])) {
+                    if (!isset($valueOptions[$role['associationId']][$role['roleTitle']])) {
                         $valueOptions[$role['associationId']][$role['roleId']] = $role['roleTitle'];
                     }
                 } else {
@@ -228,13 +228,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     public function getAssociations()
     {
         $cacheKey = 'associations-'.$this->getLocale();
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $entities = $this->getUnlinkedAssociations();
 
         foreach ($entities as $entityId => $entity) {
-            if (!is_null($entity['parentId']) && key_exists($entity['parentId'], $entities)) {
+            if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
                 $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
                 $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];
             }
@@ -249,7 +249,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     public function getUnlinkedAssociations()
     {
         $cacheKey = 'unlinked-associations-'.$this->getLocale();
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
 
@@ -263,12 +263,12 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 `Post1Street1`, `Post1Street2`, `Post1CityState`, `Post1Zip`, `Post1Country`,
 `Post2Street1`, `Post2Street2`, `Post2CityState`, `Post2Zip`, `Post2Country`,
 `ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`, `UpdatedOn`,
-`UpdatedBy`, `CreatedOn`, `CreatedBy` FROM `sch_associations` WHERE 1";
+`UpdatedBy`, `CreatedOn`, `CreatedBy`, `IsAuthor` FROM `sch_associations` WHERE 1";
 
         $results = $this->fetchSome(null, $sql, null);
         $sort = [];
         foreach($results as $k=>$v) {
-            if (!key_exists($v['Kind'], $this->associationKinds)) {
+            if (!isset($this->associationKinds[$v['Kind']])) {
                 unset($results[$k]);
                 continue;
             }
@@ -281,12 +281,12 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         array_multisort($sort['KindSort'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
 
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
-        $areCountryTranslationsReady = !is_null($this->countryNameTranslations);
+        $areCountryTranslationsReady = isset($this->countryNameTranslations);
         $locale = $this->getLocale();
         $entities = [];
         foreach ($results as $row) {
             $kind = $this->filterDbString($row['Kind']);
-            if (!key_exists($kind, $this->associationKinds)) {
+            if (!isset($this->associationKinds[$kind])) {
                 continue;
             }
             $associationKindSpec = $this->associationKinds[$kind];
@@ -301,22 +301,22 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             $urls = $this::processUrls($unprocessedUrls);
 
             $phones = [];
-            if (!is_null($phone1 = $this->filterDbString($row['Phone1']))) {
+            if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
                 $phones[] = [
                     'number' => $phone1,
-                    'label' => !is_null($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
+                    'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
                 ];
             }
-            if (!is_null($phone2 = $this->filterDbString($row['Phone2']))) {
+            if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
                 $phones[] = [
                     'number' => $phone2,
-                    'label' => !is_null($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
+                    'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
                 ];
             }
-            if (!is_null($phone3 = $this->filterDbString($row['Phone3']))) {
+            if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
                 $phones[] = [
                     'number' => $phone3,
-                    'label' => !is_null($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
+                    'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
                 ];
             }
 
@@ -333,7 +333,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             $post2Country   = $this->filterDbString($row['Post2Country']);
 
             $postAddresses = [];
-            if (!is_null($post1Street1) || !is_null($post1Street2) || !is_null($post1CityState)) {
+            if (isset($post1Street1) || isset($post1Street2) || isset($post1CityState)) {
                 $postAddresses[] = [
                     'street1'   => $post1Street1,
                     'street2'   => $post1Street2,
@@ -342,7 +342,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                     'country'   => $post1Country,
                 ];
             }
-            if (!is_null($post2Street1) || !is_null($post2Street2) || !is_null($post2CityState)) {
+            if (isset($post2Street1) || isset($post2Street2) || isset($post2CityState)) {
                 $postAddresses[] = [
                     'street1'   => $post2Street1,
                     'street2'   => $post2Street1,
@@ -361,9 +361,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 $token = $name;
                 if ($associationKindSpec->shouldTranslateNameParameter) {
                     if ($areCountryTranslationsReady &&
-                        key_exists($token, $this->countryNameTranslations) &&
-                        key_exists($locale, $this->countryNameTranslations[$token]) &&
-                        !is_null($this->countryNameTranslations[$token][$locale])
+                        isset($this->countryNameTranslations[$token]) &&
+                        isset($this->countryNameTranslations[$token][$locale])
                     ) {
                         $token = $this->countryNameTranslations[$token][$locale];
                     } else if ($isTranslatorReady) {
@@ -391,6 +390,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
                 'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
                 'isNameTranslateable'   => $isNameTranslateable,
+                'isAuthor'              => $this->filterDbBool($row['IsAuthor']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminTags'             => $this->filterDbArray($row['AdminTags']),
 
@@ -494,13 +494,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         //if we're creating a diocesan movement, check if auto-creation of any league branches were requested
         if ($entityAction === SionTable::ENTITY_ACTION_CREATE)
         {
-            if (!isset($newData['associationId']) || is_null($newData['associationId'])) {
+            if (!isset($newData['associationId'])) {
                 throw new \Exception('There was an unexpectedly no associationId on a new association');
             }
             $this->createAssociatedRoles($newData['associationId'], $newData['kind']);
             if ($newData['kind'] == 'sch-diocesan-movement') {
                 foreach ($data as $key => $value) {
-                    if (key_exists($key, self::ADD_LEAGUE_KINDS) && $value) {
+                    if (isset(self::ADD_LEAGUE_KINDS[$key]) && $value) {
                         $branchData = [
                             'name' => $newData['name'],
                             'kind' => self::ADD_LEAGUE_KINDS[$key],
@@ -529,8 +529,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             //don't include sub-diocesan associations
             if ($entity['country'] != $country) {
                 unset($entities[$entityId]);
-            } elseif (key_exists($entity['kind'], $associationConfig) &&
-                key_exists('is_sub_diocesan_association', $associationConfig[$entity['kind']]) &&
+            } elseif (isset($associationConfig[$entity['kind']]) &&
+                isset($associationConfig[$entity['kind']]['is_sub_diocesan_association']) &&
                 true === $associationConfig[$entity['kind']]['is_sub_diocesan_association']
             ) {
                 unset($entities[$entityId]);
@@ -607,7 +607,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 
         //connect spouses
         foreach ($entities as $personId => $person) {
-            if (!is_null($person['spousePersonId']) && key_exists($person['spousePersonId'], $entities)) {
+            if (isset($person['spousePersonId']) && isset($entities[$person['spousePersonId']])) {
                 $entities[$personId]['spousePerson'] = $entities[$person['spousePersonId']];
             }
         }
@@ -634,7 +634,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 `IsAuthor`, `IsBorrower` FROM `sch_persons` WHERE 1
 ORDER BY `LastName`, `FirstName`";
         $results = $this->fetchSome(null, $sqlPers, null);
-        if (is_null($results) || 0 == count($results)) {
+        if (!isset($results) || 0 == count($results)) {
             return null;
         }
 
@@ -655,7 +655,7 @@ ORDER BY `LastName`, `FirstName`";
             $deathDate = $this->filterDbDate($row['DeathDate']);
             $birthDate = $this->filterDbDate($row['BirthDate']);
             $nameDay = null;
-            if (!is_null($row['NameDay']) && $row['NameDay'] != '0000-00-00') {
+            if (isset($row['NameDay']) && $row['NameDay'] != '0000-00-00') {
                 try {
                     $nameDay = new \DateTime('1900'.substr($row['NameDay'], 4), $tz);
                 } catch (\Exception $e) {
@@ -677,7 +677,7 @@ ORDER BY `LastName`, `FirstName`";
             $urls = $this::processUrls($unprocessedUrls);
 
             $today = new \DateTime(null, $tz);
-            $isLiving = is_null($deathDate);
+            $isLiving = !isset($deathDate);
             //             $category = null;
             //             $condition = null;
             $personTags = $this->filterDbArray($row['PersonTags']);
@@ -717,29 +717,29 @@ ORDER BY `LastName`, `FirstName`";
             $sort = strtoupper(substr($lastName.$firstName, 0, 4));
 
             $phones = [];
-            if (!is_null($cellPhone = $this->filterDbString($row['CellPhone']))) {
+            if (null !== ($cellPhone = $this->filterDbString($row['CellPhone']))) {
                 $phones[] = [
                     'number' => $cellPhone,
                     'label' => 'Main cell phone',
                     'whatsApp' => $this->filterDbBool($row['CellPhoneHasWhatsApp']),
                 ];
             }
-            if (!is_null($phone1 = $this->filterDbString($row['Phone1']))) {
+            if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
                 $phones[] = [
                     'number' => $phone1,
-                    'label' => !is_null($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
+                    'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
                 ];
             }
-            if (!is_null($phone2 = $this->filterDbString($row['Phone2']))) {
+            if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
                 $phones[] = [
                     'number' => $phone2,
-                    'label' => !is_null($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
+                    'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
                 ];
             }
-            if (!is_null($phone3 = $this->filterDbString($row['Phone3']))) {
+            if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
                 $phones[] = [
                     'number' => $phone3,
-                    'label' => !is_null($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
+                    'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
                 ];
             }
 
@@ -890,7 +890,7 @@ ORDER BY `LastName`, `FirstName`";
         $entities = $this->getUnlinkedRoles();
         $associations = $this->getUnlinkedAssociations();
         foreach ($entities as $key => $role) {
-            if ($role['associationId'] && key_exists($role['associationId'], $associations)) {
+            if ($role['associationId'] && isset($associations[$role['associationId']])) {
                 $entities[$key]['association'] = $associations[$role['associationId']];
             } else {
                 unset($entities[$key]);
@@ -973,7 +973,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      */
     public function getDefaultAssociatedRoles($associationKind)
     {
-        if (!key_exists($associationKind, $this->associationKinds)) {
+        if (!isset($this->associationKinds[$associationKind])) {
             return [];
         }
         return $this->associationKinds[$associationKind]->defaultRoles;
@@ -1050,7 +1050,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     private function getAssignmentPrototype()
     {
         static $prototype;
-        if (is_null($prototype)) {
+        if (!isset($prototype)) {
             $prototype = [
                 'assignmentId'          => null,
                 'roleId'                => null,
@@ -1087,7 +1087,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     public function getAssignments()
     {
         $cacheKey = 'assignments'.$this->getLocale();
-        if (!is_null($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $entities       = $this->getUnlinkedAssignments();
@@ -1095,8 +1095,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $associations   = $this->getUnlinkedAssociations();
 
         foreach ($entities as $assignmentId => $assignment) {
-            if (!key_exists($assignment['personId'], $persons) ||
-                !key_exists($assignment['associationId'], $associations)
+            if (!isset($persons[$assignment['personId']]) ||
+                !isset($associations[$assignment['associationId']])
             ) {
                 unset($entities[$assignmentId]);
             } else {
@@ -1114,7 +1114,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
     protected function getUnlinkedAssignments()
     {
-        if (!is_null($cache = $this->fetchCachedEntityObjects('unlinked-assignments'))) {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-assignments'))) {
             return $cache;
         }
         $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`PersonId`,
@@ -1224,7 +1224,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         //get rid of unnecesary parameters
         $realParamCount = 0;
         foreach ($query as $key => $value) {
-            if (is_null($value) || $value === '') {
+            if (!isset($value) || $value === '') {
                 unset($query[$key]);
             } elseif (in_array($key, $oneOfRequiredParams)) {
                 $realParamCount++;
@@ -1246,11 +1246,11 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             throw new \InvalidArgumentException('Role title query param should be a string or an array.');
         }
 
-        $searchSearchField = isset($query['search']) && !is_null($query['search']) && is_string($query['search']);
+        $searchSearchField = isset($query['search']) && isset($query['search']) && is_string($query['search']);
         $searchAssociationKind = isset($query['associationKind']) && is_string($query['associationKind']);
         $searchAssociationCountry = isset($query['associationCountry']) && is_string($query['associationCountry']);
         $searchRoleTitle = isset($query['roleTitle']) && is_array($query['roleTitle']);
-        $searchPersonName = isset($query['personName']) && !is_null($query['personName']) && is_string($query['personName']);
+        $searchPersonName = isset($query['personName']) && isset($query['personName']) && is_string($query['personName']);
 
         $acceptingMerePersons = !$onlyAssignments && !$searchAssociationCountry && !$searchAssociationKind
             && !$searchRoleTitle;
@@ -1260,7 +1260,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 //         var_dump($query);
 
         $assignments = $this->getAssignmentPersonAssociations();
-        if (is_null($assignments)) {
+        if (!isset($assignments)) {
             return [];
         }
 /*
@@ -1328,20 +1328,20 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $hasMerePersonFailed = false;
             $hasMereAssociationFailed = false;
 
-            $isFullAssignment = !is_null($assignment['assignmentId']);
-            $isMerePerson = is_null($assignment['assignmentId']) && !is_null($assignment['person']);
-            $isMereAssociation = is_null($assignment['assignmentId']) && !is_null($assignment['association']);
+            $isFullAssignment = isset($assignment['assignmentId']);
+            $isMerePerson = !isset($assignment['assignmentId']) && isset($assignment['person']);
+            $isMereAssociation = !isset($assignment['assignmentId']) && isset($assignment['association']);
 
             //0. Categorical criteria: just continue
 
             //0.1 search field criteria
             if ($searchSearchField &&
-                (is_null($assignment['association']) ||
+                (!isset($assignment['association']) ||
                     (false === stripos($assignment['association']['name'], $query['search']) &&
                      false === stripos($assignment['association']['formattedName'], $query['search']))) &&
-                (is_null($assignment['roleTitle']) || false === stripos($assignment['roleTitle'], $query['search'])) &&
-                (is_null($assignment['formattedRoleTitle']) || false === stripos($assignment['formattedRoleTitle'], $query['search'])) &&
-                (is_null($assignment['person']) || (false === stripos($assignment['person']['searchName'], $query['search'])))
+                (!isset($assignment['roleTitle']) || false === stripos($assignment['roleTitle'], $query['search'])) &&
+                (!isset($assignment['formattedRoleTitle']) || false === stripos($assignment['formattedRoleTitle'], $query['search'])) &&
+                (!isset($assignment['person']) || (false === stripos($assignment['person']['searchName'], $query['search'])))
             ) {
                 continue;
             }
@@ -1424,10 +1424,10 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
             //save info about what we've returned
             if (!$hasAssignmentFailed && !$hasAssociationFailed && !$hasPersonFailed) {
-                if (!is_null($assignment['personId'])) {
+                if (isset($assignment['personId'])) {
                     $personsReturned[] = $assignment['personId'];
                 }
-                if (!is_null($assignment['associationId'])) {
+                if (isset($assignment['associationId'])) {
                     $associationsReturned[] = $assignment['associationId'];
                 }
                 $results[] = $assignment;
@@ -1503,7 +1503,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         //get rid of unnecessary parameters
         $realParamCount = 0;
         foreach ($query as $key => $value) {
-            if (is_null($value) || $value === '') {
+            if (!isset($value) || $value === '') {
                 unset($query[$key]);
             } elseif (in_array($key, $oneOfRequiredParams)) {
                 $realParamCount++;
@@ -1512,7 +1512,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         if ($realParamCount == 0 && !$bypassRequiredParams) {
             return null;
         }
-        if (isset($query['category']) && !is_null($query['category'])) {
+        if (isset($query['category'])) {
             if (is_string($query['category'])) {
                 $query['category'] = array($query['category']);
             }
@@ -1520,7 +1520,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 unset($query['category']);
             }
         }
-        if (isset($query['category']) && !is_null($query['category'])) {
+        if (isset($query['category'])) {
             if (is_string($query['category'])) {
                 $query['category'] = array($query['category']);
             }
@@ -1529,7 +1529,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
         $statusAcceptNull = true;
-        if (isset($query['status']) && !is_null($query['status'])) {
+        if (isset($query['status'])) {
             if (is_string($query['status'])) {
                 $query['status'] = array($query['status']);
             }
@@ -1545,34 +1545,34 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
 
         $persons = $this->getPersons();
-        if (is_null($persons)) {
+        if (!isset($persons)) {
             return [];
         }
         $return = [];
         foreach ($persons as $personId => $person) {
-            if (isset($query['search']) && $query['search'] && !is_null($query['search']) &&
+            if (isset($query['search']) &&
                false === stripos($person['searchName'], $query['search']))
             {
                 continue;
             }
-            if (isset($query['personName']) && !is_null($query['personName']) &&
+            if (isset($query['personName']) &&
                 false === stripos($person['searchName'], $query['personName'])) {
                 continue;
             }
             //@todo I'm not actually checking the value here I think?
-            if (isset($query['deceased']) && false === $query['deceased'] && !is_null($person['deathDate'])) {
+            if (isset($query['deceased']) && false === $query['deceased'] && isset($person['deathDate'])) {
                 continue;
             }
-            if (isset($query['country']) && !is_null($query['country']) && $query['country'] != $person['country']) {
+            if (isset($query['country']) && $query['country'] != $person['country']) {
                 continue;
             }
-            if (isset($query['category']) && !is_null($query['category']) &&
+            if (isset($query['category']) &&
                 !in_array($person['category'], $query['category']))
             {
                 continue;
             }
-            if (isset($query['dataSource']) && !is_null($query['dataSource']) &&
-                isset($query['dataSourceId']) && !is_null($query['dataSourceId']) &&
+            if (isset($query['dataSource']) &&
+                isset($query['dataSourceId']) &&
                 ($query['dataSource'] != $person['dataSource'] ||
                 $query['dataSourceId'] != $person['dataSourceId']))
             {
@@ -1624,7 +1624,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         if (isset($data['spousePersonId'])) {
             $persons = $this->getUnlinkedPersons();
             $spousePersonId = $newEntityData['spousePersonId'];
-            if (key_exists($spousePersonId, $persons)) {
+            if (isset($persons[$spousePersonId])) {
                 if ($persons[$spousePersonId]['spousePersonId'] != $newEntityData['personId']) {
                     $this->updateEntity('person', $spousePersonId, ['spousePersonId' => $newEntityData['personId']]);
                 }
@@ -1698,8 +1698,8 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
 
         //set assignments
         foreach ($assignments as $assignmentId => $assignment) {
-            if (key_exists($assignment['associationId'], $entities) &&
-                key_exists($assignment['personId'], $persons)
+            if (isset($entities[$assignment['associationId']]) &&
+                isset($persons[$assignment['personId']])
             ) {
                 $assignment['person'] = $persons[$assignment['personId']];
                 $entities[$assignment['associationId']]['assignments'][$assignmentId] = $assignment;
@@ -1720,15 +1720,15 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
 
         //set roles
         foreach ($roles as $roleId => $role) {
-            if (key_exists($role['associationId'], $entities)) {
+            if (isset($entities[$role['associationId']])) {
                 $entities[$role['associationId']]['roles'][$roleId] = $role;
                 if ($role['isMainRole'] && $role['isActive'] &&
-                    key_exists('mainRole', $entities[$role['associationId']])
+                    isset($entities[$role['associationId']]['mainRole'])
                 ) {
                     $entities[$role['associationId']]['mainRole'] = $role;
                 }
                 if ($role['isMainContact'] && $role['isActive'] &&
-                    key_exists('mainContact', $entities[$role['associationId']])
+                    isset($entities[$role['associationId']]['mainContact'])
                 ) {
                     $entities[$role['associationId']]['mainContact'] = $role;
                 }
@@ -1748,7 +1748,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
 
         $problems = [];
         foreach ($persons as $personId => $person) {
-            if (is_null($person['email'])) {
+            if (!isset($person['email'])) {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_PERSON_NO_EMAIL)
                     ->setData($person);
@@ -1885,7 +1885,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
      */
     public function getLocale()
     {
-        if (is_null($this->locale)) {
+        if (!isset($this->locale)) {
             $this->locale = \Locale::getDefault();
         }
         return $this->locale;

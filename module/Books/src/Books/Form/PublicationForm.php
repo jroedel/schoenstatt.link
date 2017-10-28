@@ -3,6 +3,7 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
+use Zend\Form\FormInterface;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -23,7 +24,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
         ]);
 
         $this->add([
-            'name' => 'authors',
+            'name' => 'authorsAll',
             'type' => 'Select',
             'options' => [
                 'label' => 'Author(s)',
@@ -517,10 +518,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            'authors' => [
+            'authorsAll' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\TrimStringArray'],
+//                     ['name' => 'SionModel\Filter\TrimStringArray'],
                 ],
             ],
             'inLanguage' => [
@@ -933,4 +934,11 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ];
     }
+
+//     public function getData($flag = FormInterface::VALUES_NORMALIZED)
+//     {
+//         $values = parent::getData($flag);
+
+//         //check if we need to set any
+//     }
 }

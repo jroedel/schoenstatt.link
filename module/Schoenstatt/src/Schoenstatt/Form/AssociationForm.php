@@ -147,6 +147,19 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		]);
 
+		$this->add([
+		    'name' => 'isAuthor',
+		    'type' => 'Checkbox',
+		    'options' => [
+		        'label' => 'Has association authored books?',
+		        'checked_value' => '1',
+		        'unchecked_value' => '0',
+		        'use_hidden_element' => true,
+		    ],
+		    'attributes' => [
+		        'value'   => '0',
+		    ],
+		]);
 
 		$this->add([
 		    'name' => 'email',
@@ -670,9 +683,18 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
-			],
+		    ],
+		    'isAuthor' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
+		    ],
 		    'isActive' => [
 		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToBit']
+		        ],
 		    ],
 		    'suppressionDate' => [
 				'required' => false,
