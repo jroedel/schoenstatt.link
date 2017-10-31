@@ -7,9 +7,7 @@ $this->formSelect()->setTranslatorEnabled(false);
 $form->setAttribute('action', $this->url('publications/create'));
  $form->prepare();
  echo $this->form()->openTag($form);
- echo $this->partial('fields-partial', [
-     'form' => $form,
- ]);
+ echo $this->partial('fields-partial', $this->vars);
  echo $this->formSubmit($form->get('submit'));
  echo $this->form()->closeTag();
 ?>

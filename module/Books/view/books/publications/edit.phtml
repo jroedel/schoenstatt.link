@@ -7,9 +7,7 @@ $form->setAttribute('action', $this->url('publications/publication/edit',
 		['publication_id' => $this->entityId]));
  $form->prepare();
  echo $this->form()->openTag($form);
- echo $this->partial('fields-partial', [
-     'form' => $form,
- ]);
+ echo $this->partial('fields-partial', $this->vars);
  echo $this->formSubmit($form->get('submit'));
 if ($this->isAllowed('route/publications/publication/delete')) :?>
     &nbsp;<a class="btn btn-danger" href="<?php echo $this->url('publications/publication/delete', [], [], true);?>"><?php

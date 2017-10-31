@@ -1,3 +1,5 @@
+# submitted 2017-10-28
+
 ALTER TABLE `sch_publications` CHANGE `Editor` `EditorId` INT(11) NULL DEFAULT NULL;
 ALTER TABLE `sch_publications` ADD `Editor` VARCHAR(50) NULL DEFAULT NULL AFTER `Illustrator`, ADD `IllustratorId` INT NULL DEFAULT NULL AFTER `Editor`, ADD `TranslatorId` INT NULL DEFAULT NULL AFTER `IllustratorId`;
 ALTER TABLE `sch_publications` ADD `HasNoExplictEditionNumber` BIT(1) NOT NULL DEFAULT b'0' AFTER `TranslatedFromPublicationId`, ADD `EditionNotes` TEXT NULL DEFAULT NULL AFTER `HasNoExplictEditionNumber`, ADD `CategoryId` INT NULL DEFAULT NULL AFTER `EditionNotes`;

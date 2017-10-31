@@ -83,15 +83,63 @@ class PublicationsController extends SionController
     {
         $view = parent::editAction();
         $entityId = $view->getVariable('entityId');
+        $this->injectPublicationValueOptions($view, $entityId);
+        return $view;
+    }
+
+    public function createAction()
+    {
+        $view = parent::createAction();
+        $entityId = $view->getVariable('entityId');
+        $this->injectPublicationValueOptions($view, $entityId);
+        return $view;
+    }
+
+    protected function injectPublicationValueOptions(ViewModel &$view, $publicationId)
+    {
         $form = $view->getVariable('form');
         /** @var Select $mainPublicationId */
         $mainPublicationId = $form->get('mainPublicationId');
         $valueOptions = $mainPublicationId->getValueOptions();
-        if (isset($valueOptions[$entityId])) {
-            unset($valueOptions[$entityId]);
-            $mainPublicationId->setValueOptions($valueOptions);
+        $valueOptions = $this->transformValueOptionsObject($valueOptions);
+        if (isset($publicationId) && isset($valueOptions[$publicationId])) { //unset the publication's own id
+            unset($valueOptions[$publicationId]);
         }
-        return $view;
+
+        //we pass the valueOptions directly to selectize to reduce file size, but keep them set for validation
+        $view->setVariable('publicationValueOptions', $valueOptions);
+        $translatedFromPublicationId = $form->get('translatedFromPublicationId');
+        $mainPublicationId->setValueOptions([]);
+        $translatedFromPublicationId->setValueOptions([]);
+
+        //get author persons, author associations, authorTexts
+        /** @var PublicationsTable $table */
+        $table = $this->getSionTable();
+
+        $authorPersonTexts = $table->getAuthorTextValueOptions();
+
+        $authorPersons = $table->getAuthorPersonValueOptions();
+        $authorPersons = array_merge($authorPersons, $authorPersonTexts);
+        $authorPersons = $this->transformValueOptionsObject($authorPersons);
+
+        $authorAssociations = $table->getAuthorAssociationValueOptions();
+        $authorAssociations = $this->transformValueOptionsObject($authorAssociations);
+
+//         $view->setVariable('authorPersonTexts', $authorPersonTexts);
+        $view->setVariable('authorPersons', $authorPersons);
+        $view->setVariable('authorAssociations', $authorAssociations);
+    }
+
+    protected function transformValueOptionsObject($associativeOptions)
+    {
+        $valueOptions = [];
+        foreach ($associativeOptions as $key => $value) {
+            $valueOptions[] = [
+                'i' => $key,
+                'n' => $value,
+            ];
+        }
+        return $valueOptions;
     }
 
     public function searchAction()
@@ -233,6 +281,29 @@ class PublicationsController extends SionController
         ]);
         $view->setTemplate('books/publications/prime-authors');
         return $view;
+    }
+
+    public function trimTitlesAction()
+    {
+        $simulate = '0' !== $this->params()->fromQuery('simulate', '1');
+        /** @var PublicationsTable $table */
+        $table = $this->getSionTable();
+        $publications = $table->getUnlinkedPublications();
+        $changes = [];
+        foreach ($publications as $publicationId => $object) {
+            $trimmed = trim($object['title'], '. ');
+            $howMany = strlen($object['title'])-strlen($trimmed);
+            if ($howMany !== 0 && $howMany < 3) {
+                $changes[$object['title']] = $trimmed;
+                if (!$simulate) {
+                    $table->updateEntity('publication', $publicationId, ['title' => $trimmed], [], false);
+                }
+            }
+        }
+        return new ViewModel([
+            'changes' => $changes,
+            'simulate' => $simulate,
+        ]);
     }
 
     /**

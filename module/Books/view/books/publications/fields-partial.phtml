@@ -1,4 +1,6 @@
 <?php
+use Zend\Json\Json;
+
 $this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
 $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
@@ -11,6 +13,9 @@ echo $this->formRow($form->get('authorsAll'));
 echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('hasNoExplictEditionNumber'));
 echo $this->formRow($form->get('inLanguage'));
+echo $this->formRow($form->get('editorsAll'));
+echo $this->formRow($form->get('translatorsAll'));
+echo $this->formRow($form->get('illustratorsAll'));
 echo $this->formRow($form->get('description'));
 echo $this->formRow($form->get('mainPublicationId'));
 echo $this->formRow($form->get('translatedFromPublicationId'));
@@ -47,11 +52,47 @@ echo $this->formRow($form->get('url3Label'));
 echo $this->formRow($form->get('adminNotes'));
 echo $this->formRow($form->get('adminTags'));
 echo $this->formRow($form->get('security'));
-
+$publicationValueOptions = Json::encode($this->publicationValueOptions);
+$authorPersonTexts = Json::encode($this->authorPersonTexts);
+$authorPersons = Json::encode($this->authorPersons);
+$authorAssociations = Json::encode($this->authorAssociations);
 $jsScript = <<<JS
+var publicationOptions = $publicationValueOptions;
+var authorPersons = $authorPersons;
+var authorAssociations = $authorAssociations;
+
+$("select[name='illustratorsAll[]']").selectize({
+    create: true,
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n'
+});
+$("select[name='translatorsAll[]']").selectize({
+    create: true,
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n'
+});
+authorPersons.concat(authorAssociations);
+$("select[name='editorsAll[]']").selectize({
+    create: true,
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n'
+});
 $("select[name='authorsAll[]']").selectize({
     create: true,
-    sortField: 'text'
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n'
 });
 $("select[name='inLanguage']").selectize({
     create: false,
@@ -59,11 +100,19 @@ $("select[name='inLanguage']").selectize({
 });
 $("select[name='mainPublicationId']").selectize({
     create: false,
-    sortField: 'text'
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+	options: publicationOptions,
+    sortField: 'n'
 });
 $("select[name='translatedFromPublicationId']").selectize({
     create: false,
-    sortField: 'text'
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+	options: publicationOptions,
+    sortField: 'n'
 });
 $("select[name='publisher']").selectize({
     create: true,

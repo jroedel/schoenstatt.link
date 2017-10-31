@@ -3,7 +3,6 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Form\FormInterface;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -71,6 +70,51 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],
+            ],
+        ]);
+        $this->add([
+            'name' => 'editorsAll', //same value options as authorsAll
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Editor(s)',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'translatorsAll', //only show persons
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Translator',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'illustratorsAll', //only show persons
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Illustrator',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+                'multiple' => true,
             ],
         ]);
 

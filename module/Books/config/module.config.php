@@ -246,6 +246,15 @@ return [
                             ],
                         ],
                     ],
+                    'trim-titles' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/trim-titles',
+                            'defaults' => [
+                                'action'     => 'trimTitles',
+                            ],
+                        ],
+                    ],
                     'create' => [
                         'type'    => 'Literal',
                         'options' => [
@@ -1163,9 +1172,14 @@ return [
                     'illustratorText'           => 'Illustrator',
                     'translatorText'            => 'Translator',
                     'editorText'                => 'Editor',
-                    'illustratorPersonId'       => 'IllustratorId',
-                    'translatorPersonId'        => 'TranslatorId',
-                    'editorPersonId'            => 'EditorId',
+                    'illustratorPerson1Id'      => 'IllustratorId',
+                    'translatorPerson1Id'       => 'TranslatorId',
+                    'translatorPerson2Id'       => 'Translator2Id',
+                    'translatorPerson3Id'       => 'Translator3Id',
+                    'editorPerson1Id'           => 'EditorId',
+                    'editorPerson2Id'           => 'Editor2Id',
+                    'editorPerson3Id'           => 'Editor3Id',
+                    'editorAssociation1Id'      => 'EditorAssociationId1',
                     'numberOfPages'             => 'NumberOfPages',
                     'copyrightYear'             => 'CopyrightYear',
                     'publisher'                 => 'Publisher',
@@ -1438,6 +1452,7 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
+                ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
 
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],
