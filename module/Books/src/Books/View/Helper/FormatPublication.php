@@ -2,13 +2,14 @@
 namespace Books\View\Helper;
 
 use SionModel\View\Helper\FormatEntity;
-use Zend\Validator\Regex;
 
 class FormatPublication extends FormatEntity
 {
     const DISPLAY_TITLE = 'title';
     const DISPLAY_AUTHORS = 'authors';
     const DISPLAY_EDITION = 'edition';
+    const DISPLAY_TRANSLATORS = 'translators';
+    const DISPLAY_ILLUSTRATORS = 'illustrators';
 
     /**
      *
@@ -32,7 +33,9 @@ class FormatPublication extends FormatEntity
         if (isset($options['display'])) {
             if ($options['display'] === self::DISPLAY_AUTHORS ||
                 $options['display'] === self::DISPLAY_TITLE ||
-                $options['display'] === self::DISPLAY_EDITION)
+                $options['display'] === self::DISPLAY_EDITION ||
+                $options['display'] === self::DISPLAY_TRANSLATORS ||
+                $options['display'] === self::DISPLAY_ILLUSTRATORS)
             {
                 $displayOption = $options['display'];
             } else {
@@ -49,39 +52,63 @@ class FormatPublication extends FormatEntity
 
         $finalMarkup = '';
         $escapeMainText = true;
-        static $editorAbbreviation;
+        static $editorText;
         switch ($displayOption) {
             //authors also include editors
-            case self::DISPLAY_AUTHORS: //@todo create links to accessible authors
-                static $authorDetector;
-                if (!isset($authorDetector)) {
-                   $authorDetector = new Regex('/^(p|a)\d{1,5}$/');
-                }
+            case self::DISPLAY_AUTHORS:
                 $authors = [];
-                foreach ($data['authorsAll'] as $value) {
-                    if ($authorDetector->isValid($value)) {
-                        if (isset($this->authorValueOptions[$value])) {
-                            $authors[] = $this->authorValueOptions[$value];
-                        }
-                    } else {
-                        $authors[] = $value;
-                    }
+                foreach ($data['authorAssociations'] as $id => $object) {
+                    $authors[] = $this->view->formatEntity('association', $object);
                 }
-                foreach ($data['editorsAll'] as $value) {
-                    if (!isset($editorAbbreviation)) {
-                        $editorAbbreviation = $this->view->translate('Ed.');
-                    }
-                    if ($authorDetector->isValid($value)) {
-                        if (isset($this->authorValueOptions[$value])) {
-                            $authors[] = $this->authorValueOptions[$value].
-                               sprintf(' (%s)', $editorAbbreviation);
-                        }
-                    } else {
-                        $authors[] = $value.sprintf(' (%s)', $editorAbbreviation);
-                    }
+                foreach ($data['authorPersons'] as $id => $object) {
+                    $authors[] = $this->view->formatEntity('person', $object);
                 }
-               $mainText = implode('; ', $authors);
-               break;
+                foreach ($data['authorsText'] as $text) {
+                    $authors[] = $this->view->escapeHtml($text);
+                }
+                if (isset($data['editorAssociation'])) {
+                    if (!isset($editorText)) {
+                        $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
+                    }
+                    $authors[] = $this->view->formatEntity('association', $data['editorAssociation']).$editorText;
+                }
+                foreach ($data['editorPersons'] as $id => $object) {
+                    if (!isset($editorText)) {
+                        $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
+                    }
+                    $authors[] = $this->view->formatEntity('person', $object).$editorText;
+                }
+                foreach ($data['editorsText'] as $text) {
+                    if (!isset($editorText)) {
+                        $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
+                    }
+                    $authors[] = $this->view->escapeHtml($text).$editorText;
+                }
+                $escapeMainText = false;
+                $mainText = implode('; ', $authors);
+                break;
+            case self::DISPLAY_TRANSLATORS:
+                $authors = [];
+                foreach ($data['translatorPersons'] as $id => $object) {
+                    $authors[] = $this->view->formatEntity('person', $object);
+                }
+                foreach ($data['translatorsText'] as $text) {
+                    $authors[] = $this->view->escapeHtml($text);
+                }
+                $escapeMainText = false;
+                $mainText = implode('; ', $authors);
+                break;
+            case self::DISPLAY_ILLUSTRATORS:
+                $authors = [];
+                if (isset($data['illustratorPerson'])) {
+                    $authors[] = $this->view->formatEntity('person', $data['illustratorPerson']);
+                }
+                foreach ($data['illustratorsText'] as $text) {
+                    $authors[] = $this->view->escapeHtml($text);
+                }
+                $escapeMainText = false;
+                $mainText = implode('; ', $authors);
+                break;
             case self::DISPLAY_TITLE:
                 $mainText = $data['title'];
                 break;

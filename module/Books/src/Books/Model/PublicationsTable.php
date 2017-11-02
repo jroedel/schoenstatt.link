@@ -612,13 +612,13 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'editorPerson2Id'           => $editorPerson2Id,
                 'editorPerson3Id'           => $editorPerson3Id,
                 'editorAssociationId'       => $editorAssociationId,
-                'editorText'                => $editorText,
+                'editorsText'               => $editorText,
                 'translatorPerson1Id'       => $translatorPerson1Id,
                 'translatorPerson2Id'       => $translatorPerson2Id,
                 'translatorPerson3Id'       => $translatorPerson3Id,
-                'translatorText'            => $translatorText,
+                'translatorsText'           => $translatorText,
                 'illustratorPersonId'       => $illustratorPersonId,
-                'illustratorText'           => $illustratorText,
+                'illustratorsText'          => $illustratorText,
                 'numberOfPages'             => $this->filterDbInt($row['NumberOfPages']),
                 'copyrightYear'             => $this->filterDbInt($row['CopyrightYear']),
                 'publisher'                 => $this->filterDbString($row['Publisher']),
@@ -790,7 +790,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 throw new \Exception('Only 5 author persons are allowed');
             }
         }
-        if (!key_exists('editorText', $data) && !key_exists('editorPerson1Id', $data) &&
+        if (!key_exists('editorsText', $data) && !key_exists('editorPerson1Id', $data) &&
             !key_exists('editorPerson2Id', $data) &&  !key_exists('editorPerson3Id', $data) &&
             !key_exists('editorAssociationId', $data) &&
             key_exists('editorsAll', $data)
@@ -814,7 +814,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                     }
                 }
             }
-            $data['editorText'] = $text;
+            $data['editorsText'] = $text;
             $data['editorAssociationId'] = isset($associations[0]) ? $associations[0] : null;
             if (isset($associations[1])) {
                 throw new \Exception('Only 1 editor association is allowed');
@@ -827,7 +827,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 throw new \Exception('Only 3 editor persons are allowed');
             }
         }
-        if (!key_exists('translatorText', $data) && !key_exists('translatorPerson1Id', $data) &&
+        if (!key_exists('translatorsText', $data) && !key_exists('translatorPerson1Id', $data) &&
             !key_exists('translatorPerson2Id', $data) &&  !key_exists('translatorPerson3Id', $data) &&
             key_exists('translatorsAll', $data)
         ) {
@@ -845,7 +845,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                     }
                 }
             }
-            $data['translatorText'] = $text;
+            $data['translatorsText'] = $text;
 
             $data['translatorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
             $data['translatorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
@@ -854,7 +854,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 throw new \Exception('Only 3 translator persons are allowed');
             }
         }
-        if (!key_exists('illustratorText', $data) && !key_exists('illustratorPersonId', $data) &&
+        if (!key_exists('illustratorsText', $data) && !key_exists('illustratorPersonId', $data) &&
             key_exists('illustratorsAll', $data)
         ) {
             $text = [];
@@ -871,7 +871,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                     }
                 }
             }
-            $data['illustratorText'] = $text;
+            $data['illustratorsText'] = $text;
 
             $data['illustratorPersonId'] = isset($persons[0]) ? $persons[0] : null;
             if (isset($persons[1])) {

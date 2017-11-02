@@ -65,8 +65,14 @@ $object = $this->object;
         <?php endif;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
-//         echo $this->formatField('Translator', $object['translatorPersonId'], ['displayOnlyIfNotNull' => true]);
-//         echo $this->formatField('Illustrator', $object['illustratorPersonId'], ['displayOnlyIfNotNull' => true]);
+        if (!empty($object['translatorsAll'])) {
+            echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Translator(s)'),
+                    $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_TRANSLATORS]));
+        }
+        if (!empty($object['illustratorsAll'])) {
+            echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Illustrator(s)'),
+                    $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_ILLUSTRATORS]));
+        }
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
