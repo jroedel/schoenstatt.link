@@ -32,11 +32,25 @@ class PublicationsTable extends SionTable
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        $authorPersons = $this->getAuthorPersonValueOptions();
+        $authorPersons = $this->getAuthorsNoAssociationsValueOptions();
         $authorAssociations = $this->getAuthorAssociationValueOptions();
+
+        $authors = array_merge($authorPersons, $authorAssociations);
+        asort($authors);
+        $this->cacheEntityObjects($cacheKey, $authors, ['publication']);
+        return $authors;
+    }
+
+    public function getAuthorsNoAssociationsValueOptions()
+    {
+        $cacheKey = 'publication-authors-no-associations';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+        $authorPersons = $this->getAuthorPersonValueOptions();
         $authorTexts = $this->getAuthorTextValueOptions();
 
-        $authors = array_merge($authorPersons, $authorAssociations, $authorTexts);
+        $authors = array_merge($authorPersons, $authorTexts);
         asort($authors);
         $this->cacheEntityObjects($cacheKey, $authors, ['publication']);
         return $authors;
@@ -284,7 +298,7 @@ ORDER BY `Publisher`";
             }
 
             if (isset($query['search']) &&
-                false === stripos($filter->filter($publication['authors']), $query['search']) &&
+                false === stripos($filter->filter($publication['authorsText']), $query['search']) &&
                 false === stripos($filter->filter($publication['title']), $query['search']) &&
                 false === stripos($filter->filter($publication['bookEdition']), $query['search']) &&
                 false === stripos($filter->filter($publication['description']), $query['search']) &&
@@ -475,45 +489,9 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 $authorsAll[] = 'p'.$authorPerson5Id;
             }
 
-            $authors = $this->filterDbString($row['Authors']);
-            $implodedAuthors = explode(';', $authors);
-            foreach ($implodedAuthors as $author) {
-                $author = trim($author);
-                if (isset($author)) {
-                    $authorsAll[] = $author;
-                }
-            }
-
-            $translatorsAll = [];
-            $translatorPersonIds = [];
-            $translatorText = $this->filterDbString($row['Translator']);
-            $translatorPerson1Id = $this->filterDbId($row['TranslatorId']);
-            $translatorPerson2Id = $this->filterDbId($row['Translator2Id']);
-            $translatorPerson3Id = $this->filterDbId($row['Translator3Id']);
-            if (isset($translatorPerson1Id)) {
-                $translatorPersonIds[] = $translatorPerson1Id;
-                $translatorsAll[] = 'p'.$translatorPerson1Id;
-            }
-            if (isset($translatorPerson2Id)) {
-                $translatorPersonIds[] = $translatorPerson2Id;
-                $translatorsAll[] = 'p'.$translatorPerson2Id;
-            }
-            if (isset($translatorPerson3Id)) {
-                $translatorPersonIds[] = $translatorPerson3Id;
-                $translatorsAll[] = 'p'.$translatorPerson3Id;
-            }
-            if (isset($translatorText)) {
-                $translatorsAll[] = $translatorText;
-            }
-
-            $illustratorsAll = [];
-            $illustratorPersonId = $this->filterDbId($row['IllustratorId']);
-            $illustratorText = $this->filterDbString($row['Illustrator']);
-            if (isset($illustratorPersonId)) {
-                $illustratorsAll[] = 'p'.$illustratorPersonId;
-            }
-            if (isset($illustratorText)) {
-                $illustratorsAll[] = $illustratorText;
+            $authorsText = $this->filterDbArray($row['Authors']);
+            foreach ($authorsText as $author) {
+                $authorsAll[] = $author;
             }
 
             $editorsAll = [];
@@ -522,7 +500,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
             $editorPerson2Id = $this->filterDbId($row['Editor2Id']);
             $editorPerson3Id = $this->filterDbId($row['Editor3Id']);
             $editorAssociationId= $this->filterDbId($row['EditorAssociationId1']);
-            $editorText = $this->filterDbString($row['Editor']);
+            $editorText = $this->filterDbArray($row['Editor']);
             if (isset($editorPerson1Id)) {
                 $editorPersonIds[] = $editorPerson1Id;
                 $editorsAll[] = 'p'.$editorPerson1Id;
@@ -539,7 +517,45 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 $editorsAll[] = 'a'.$editorAssociationId;
             }
             if (isset($editorText)) {
-                $editorsAll[] = $editorText;
+                foreach ($editorText as $value) {
+                    $editorsAll[] = $value;
+                }
+            }
+
+            $translatorsAll = [];
+            $translatorPersonIds = [];
+            $translatorPerson1Id = $this->filterDbId($row['TranslatorId']);
+            $translatorPerson2Id = $this->filterDbId($row['Translator2Id']);
+            $translatorPerson3Id = $this->filterDbId($row['Translator3Id']);
+            $translatorText = $this->filterDbArray($row['Translator']);
+            if (isset($translatorPerson1Id)) {
+                $translatorPersonIds[] = $translatorPerson1Id;
+                $translatorsAll[] = 'p'.$translatorPerson1Id;
+            }
+            if (isset($translatorPerson2Id)) {
+                $translatorPersonIds[] = $translatorPerson2Id;
+                $translatorsAll[] = 'p'.$translatorPerson2Id;
+            }
+            if (isset($translatorPerson3Id)) {
+                $translatorPersonIds[] = $translatorPerson3Id;
+                $translatorsAll[] = 'p'.$translatorPerson3Id;
+            }
+            if (isset($translatorText)) {
+                foreach ($translatorText as $value) {
+                    $translatorsAll[] = $value;
+                }
+            }
+
+            $illustratorsAll = [];
+            $illustratorPersonId = $this->filterDbId($row['IllustratorId']);
+            $illustratorText = $this->filterDbArray($row['Illustrator']);
+            if (isset($illustratorPersonId)) {
+                $illustratorsAll[] = 'p'.$illustratorPersonId;
+            }
+            if (isset($illustratorText)) {
+                foreach ($illustratorText as $value) {
+                    $illustratorsAll[] = $value;
+                }
             }
 
             $bookFormatType = $this->filterDbString($row['BookFormatType']);
@@ -585,7 +601,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'authorAssociation1Id'      => $authorAssociation1Id,
                 'authorAssociation2Id'      => $authorAssociation2Id,
                 'authorAssociation3Id'      => $authorAssociation3Id,
-                'authors'                   => $authors,
+                'authorsText'               => $authorsText,
                 'bookEdition'               => $this->filterDbString($row['BookEdition']),
                 'categoryId'                => $categoryId,
 
@@ -736,25 +752,28 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
          * The fix is to create a custom Validator. This validator should also check how many
          * associations and persons are allowed.
          */
-        if (!isset($data['authors']) && isset($data['authorsAll']) && is_array($data['authorsAll'])) {
+        //use key_exists here because nulls or empty arrays should be included
+        if (!key_exists('authorsText', $data) && key_exists('authorsAll', $data)) {
             $text = [];
             $persons = [];
             $associations = [];
             if (!isset($entityDetector)) {
                 $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
             }
-            foreach ($data['authorsAll'] as $value) {
-                if ($entityDetector->isValid($value)) { //we've got a person or association
-                    if ($value[0] == 'p') {
-                        $persons[] = substr($value, 1);
-                    } elseif ($value[0] == 'a') {
-                        $associations[] = substr($value, 1);
+            if (null !== $data['authorsAll']) {
+                foreach ($data['authorsAll'] as $value) {
+                    if ($entityDetector->isValid($value)) { //we've got a person or association
+                        if ($value[0] == 'p') {
+                            $persons[] = substr($value, 1);
+                        } elseif ($value[0] == 'a') {
+                            $associations[] = substr($value, 1);
+                        }
+                    } else { //we've just a regular text author
+                        $text[] = $value;
                     }
-                } else { //we've just a regular text author
-                    $text[] = $value;
                 }
             }
-            $data['authors'] = $text;
+            $data['authorsText'] = $text;
             $data['authorAssociation1Id'] = isset($associations[0]) ? $associations[0] : null;
             $data['authorAssociation2Id'] = isset($associations[1]) ? $associations[1] : null;
             $data['authorAssociation3Id'] = isset($associations[2]) ? $associations[2] : null;
@@ -771,26 +790,28 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 throw new \Exception('Only 5 author persons are allowed');
             }
         }
-        if (!isset($data['editorText']) && !isset($data['editorPerson1Id']) &&
-            !isset($data['editorPerson2Id']) &&  !isset($data['editorPerson3Id']) &&
-            !isset($data['editorAssociationId']) &&
-            isset($data['editorsAll']) && is_array($data['editorsAll'])
+        if (!key_exists('editorText', $data) && !key_exists('editorPerson1Id', $data) &&
+            !key_exists('editorPerson2Id', $data) &&  !key_exists('editorPerson3Id', $data) &&
+            !key_exists('editorAssociationId', $data) &&
+            key_exists('editorsAll', $data)
         ) {
             $text = [];
             $persons = [];
             $associations = [];
-            if (!isset($entityDetector)) {
-                $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
-            }
-            foreach ($data['editorsAll'] as $value) {
-                if ($entityDetector->isValid($value)) { //we've got a person or association
-                    if ($value[0] == 'p') {
-                        $persons[] = substr($value, 1);
-                    } elseif ($value[0] == 'a') {
-                        $associations[] = substr($value, 1);
+            if (null !== $data['editorsAll']) {
+                if (!isset($entityDetector)) {
+                    $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
+                }
+                foreach ($data['editorsAll'] as $value) {
+                    if ($entityDetector->isValid($value)) { //we've got a person or association
+                        if ($value[0] == 'p') {
+                            $persons[] = substr($value, 1);
+                        } elseif ($value[0] == 'a') {
+                            $associations[] = substr($value, 1);
+                        }
+                    } else { //we've just a regular text author
+                        $text[] = $value;
                     }
-                } else { //we've just a regular text author
-                    $text[] = $value;
                 }
             }
             $data['editorText'] = $text;
@@ -806,20 +827,22 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 throw new \Exception('Only 3 editor persons are allowed');
             }
         }
-        if (!isset($data['translatorText']) && !isset($data['translatorPerson1Id']) &&
-            !isset($data['translatorPerson2Id']) &&  !isset($data['translatorPerson3Id']) &&
-            isset($data['translatorsAll']) && is_array($data['translatorsAll'])
+        if (!key_exists('translatorText', $data) && !key_exists('translatorPerson1Id', $data) &&
+            !key_exists('translatorPerson2Id', $data) &&  !key_exists('translatorPerson3Id', $data) &&
+            key_exists('translatorsAll', $data)
         ) {
             $text = [];
             $persons = [];
-            if (!isset($personDetector)) {
-                $personDetector= new Regex('/^p\d{1,5}$/');
-            }
-            foreach ($data['translatorsAll'] as $value) {
-                if ($personDetector->isValid($value)) { //we've got a person or association
-                    $persons[] = substr($value, 1);
-                } else { //we've just a regular text author
-                    $text[] = $value;
+            if (null !== $data['translatorsAll']) {
+                if (!isset($personDetector)) {
+                    $personDetector= new Regex('/^p\d{1,5}$/');
+                }
+                foreach ($data['translatorsAll'] as $value) {
+                    if ($personDetector->isValid($value)) { //we've got a person or association
+                        $persons[] = substr($value, 1);
+                    } else { //we've just a regular text author
+                        $text[] = $value;
+                    }
                 }
             }
             $data['translatorText'] = $text;
@@ -831,19 +854,21 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 throw new \Exception('Only 3 translator persons are allowed');
             }
         }
-        if (!isset($data['illustratorText']) && !isset($data['illustratorPersonId']) &&
-            isset($data['illustratorsAll']) && is_array($data['illustratorsAll'])
+        if (!key_exists('illustratorText', $data) && !key_exists('illustratorPersonId', $data) &&
+            key_exists('illustratorsAll', $data)
         ) {
             $text = [];
             $persons = [];
-            if (!isset($personDetector)) {
-                $personDetector= new Regex('/^p\d{1,5}$/');
-            }
-            foreach ($data['illustratorsAll'] as $value) {
-                if ($personDetector->isValid($value)) { //we've got a person or association
-                    $persons[] = substr($value, 1);
-                } else { //we've just a regular text author
-                    $text[] = $value;
+            if (null !== $data['illustratorsAll']) {
+                if (!isset($personDetector)) {
+                    $personDetector= new Regex('/^p\d{1,5}$/');
+                }
+                foreach ($data['illustratorsAll'] as $value) {
+                    if ($personDetector->isValid($value)) { //we've got a person or association
+                        $persons[] = substr($value, 1);
+                    } else { //we've just a regular text author
+                        $text[] = $value;
+                    }
                 }
             }
             $data['illustratorText'] = $text;
@@ -1003,7 +1028,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'authorPerson2Id'           => null,
                 'authorPerson3Id'           => null,
                 'resourceId'                => 'pub',
-                'authors'                   => $author,
+                'authorsText'               => $author,
                 'bookEdition'               => null, //'BookEdition',
                 'inLanguage'                => $language,
                 'description'               => $this->filterDbString($row['Inhalt']),
@@ -1135,7 +1160,7 @@ WHERE 1";
                 'authorPerson1Id'           => null,
                 'authorPerson2Id'           => null,
                 'authorPerson3Id'           => null,
-                'authors'                   => 'Kentenich, Josef',
+                'authorsText'               => 'Kentenich, Josef',
                 'resourceId'                => $isInternal ? 'publication_patres' : 'publication_public',
                 'bookEdition'               => null,
                 'inLanguage'                => $language,
@@ -1202,10 +1227,10 @@ WHERE 1";
         $publications = $this->getUnlinkedPublications();
         $authors = [];
         foreach ($publications as $publicationId => $publication) {
-            if (!isset($publication['authors'])) {
+            if (!isset($publication['authorsText'])) {
                 continue;
             }
-            $authorTexts = explode(';', $publication['authors']);
+            $authorTexts = $publication['authorsText'];
             foreach ($authorTexts as $authorText) {
                 if (isset($authors[$authorText])) {
                     $authors[$authorText][$publicationId] = $publication;

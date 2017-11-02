@@ -349,8 +349,8 @@ class LibraryImportsController extends SionController
                 if (isset($publications[$publicationId])) {
                     //fill in info from the publication to the books table
                     $params['title'] = $publications[$publicationId]['title'];
-                    if (isset($publications[$publicationId]['authors'])) {
-                        $params['author'] = $publications[$publicationId]['authors'];
+                    if (isset($publications[$publicationId]['authorsText'])) {
+                        $params['author'] = $publications[$publicationId]['authorsText'];
                     }
                     if (isset($publications[$publicationId]['copyrightYear'])) {
                         $params['copyrightYear'] = $publications[$publicationId]['copyrightYear'];

@@ -562,10 +562,28 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            'authorsAll' => [
+            'authorsAll' => [ //@todo add a validator
                 'required' => false,
                 'filters' => [
-//                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                ],
+            ],
+            'editorsAll' => [ //@todo add a validator
+                'required' => false,
+                'filters' => [
+                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                ],
+            ],
+            'translatorsAll' => [ //@todo add a validator
+                'required' => false,
+                'filters' => [
+                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                ],
+            ],
+            'illustratorsAll' => [ //@todo add a validator
+                'required' => false,
+                'filters' => [
+                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
                 ],
             ],
             'inLanguage' => [

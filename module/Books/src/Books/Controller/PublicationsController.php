@@ -108,24 +108,16 @@ class PublicationsController extends SionController
 
         //we pass the valueOptions directly to selectize to reduce file size, but keep them set for validation
         $view->setVariable('publicationValueOptions', $valueOptions);
-        $translatedFromPublicationId = $form->get('translatedFromPublicationId');
-        $mainPublicationId->setValueOptions([]);
-        $translatedFromPublicationId->setValueOptions([]);
 
-        //get author persons, author associations, authorTexts
+        $translatorsAll = $form->get('translatorsAll');
+
+        $authorPersons = $translatorsAll->getValueOptions();
         /** @var PublicationsTable $table */
         $table = $this->getSionTable();
-
-        $authorPersonTexts = $table->getAuthorTextValueOptions();
-
-        $authorPersons = $table->getAuthorPersonValueOptions();
-        $authorPersons = array_merge($authorPersons, $authorPersonTexts);
-        $authorPersons = $this->transformValueOptionsObject($authorPersons);
-
         $authorAssociations = $table->getAuthorAssociationValueOptions();
-        $authorAssociations = $this->transformValueOptionsObject($authorAssociations);
 
-//         $view->setVariable('authorPersonTexts', $authorPersonTexts);
+        $authorPersons = $this->transformValueOptionsObject($authorPersons);
+        $authorAssociations = $this->transformValueOptionsObject($authorAssociations);
         $view->setVariable('authorPersons', $authorPersons);
         $view->setVariable('authorAssociations', $authorAssociations);
     }

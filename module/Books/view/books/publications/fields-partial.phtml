@@ -9,16 +9,41 @@ $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/select
 $form = $this->form;
 echo $this->formRow($form->get('title'));
 $this->formSelect()->setTranslatorEnabled(false);
-echo $this->formRow($form->get('authorsAll'));
+$this->formSelectWithoutOptions()->setTranslatorEnabled(false);?>
+<div class="form-group ">
+<?php echo $this->formLabel($form->get('authorsAll'));
+echo $this->formSelectWithoutOptions($form->get('authorsAll'));
+echo $this->formElementErrors($form->get('authorsAll'));?>
+</div><?php
 echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('hasNoExplictEditionNumber'));
-echo $this->formRow($form->get('inLanguage'));
-echo $this->formRow($form->get('editorsAll'));
-echo $this->formRow($form->get('translatorsAll'));
-echo $this->formRow($form->get('illustratorsAll'));
-echo $this->formRow($form->get('description'));
-echo $this->formRow($form->get('mainPublicationId'));
-echo $this->formRow($form->get('translatedFromPublicationId'));
+echo $this->formRow($form->get('inLanguage'));?>
+<div class="form-group ">
+<?php echo $this->formLabel($form->get('editorsAll'));
+echo $this->formSelectWithoutOptions($form->get('editorsAll'));
+echo $this->formElementErrors($form->get('editorsAll'));?>
+</div>
+<div class="form-group ">
+<?php echo $this->formLabel($form->get('translatorsAll'));
+echo $this->formSelectWithoutOptions($form->get('translatorsAll'));
+echo $this->formElementErrors($form->get('translatorsAll'));?>
+</div>
+<div class="form-group ">
+<?php echo $this->formLabel($form->get('illustratorsAll'));
+echo $this->formSelectWithoutOptions($form->get('illustratorsAll'));
+echo $this->formElementErrors($form->get('illustratorsAll'));?>
+</div><?php
+echo $this->formRow($form->get('description'));?>
+<div class="form-group ">
+<?php echo $this->formLabel($form->get('mainPublicationId'));
+echo $this->formSelectWithoutOptions($form->get('mainPublicationId'));
+echo $this->formElementErrors($form->get('mainPublicationId'));?>
+</div>
+<div class="form-group ">
+<?php echo $this->formLabel($form->get('translatedFromPublicationId'));
+echo $this->formSelectWithoutOptions($form->get('translatedFromPublicationId'));
+echo $this->formElementErrors($form->get('translatedFromPublicationId'));?>
+</div><?php
 echo $this->formRow($form->get('volumeNumber'));
 echo $this->formRow($form->get('isbn'));
 echo $this->formRow($form->get('hasNoISBN'));

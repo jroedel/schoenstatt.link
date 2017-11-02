@@ -56,8 +56,8 @@ class BooksJsonLd extends AbstractHelper
                 case 'author':
                     if (!empty($publication['authorPersons'])) {
 
-                    } elseif (!is_null($publication['authors'])) {
-                        $authors = explode(';', $publication['authors']);
+                    } elseif (!is_null($publication['authorsText'])) {
+                        $authors = $publication['authorsText'];
                         $authorObjects = [];
                         foreach ($authors as $authorName) {
                             $authorObjects[] = Schema::person()->name($authorName);

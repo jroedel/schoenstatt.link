@@ -21,6 +21,7 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
 		$table = $serviceLocator->get ( 'Books\Model\PublicationsTable' );
 
 		$authors = $table->getAuthorsValueOptions();
+		$authorsOnlyPersons = $table->getAuthorsNoAssociationsValueOptions();
 		$publishers = $table->getPublishersValueOptions();
 		$config = $serviceLocator->get('Books\Config');
 
@@ -39,7 +40,10 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $form->get('inLanguage')->setValueOptions($languages);
         $form->get('mainPublicationId')->setValueOptions($editions);
         $form->get('translatedFromPublicationId')->setValueOptions($allEditions);
-		$form->get('authorsAll')->setValueOptions($authors);
+        $form->get('authorsAll')->setValueOptions($authors);
+        $form->get('editorsAll')->setValueOptions($authors);
+        $form->get('translatorsAll')->setValueOptions($authorsOnlyPersons);
+        $form->get('illustratorsAll')->setValueOptions($authorsOnlyPersons);
 		$form->get('keywords')->setValueOptions($keywords);
 		$form->get('publisher')->setValueOptions($publishers);
 		$form->get('bookFormatType')->setValueOptions($bookFormats);
