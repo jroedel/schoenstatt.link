@@ -63,7 +63,7 @@ class IndexController extends AbstractActionController
         $table = $sm->get('Books\Model\PublicationsTable');
         $publications = $table->getUnlinkedPublications();
         foreach ($publications as $publicationId => $object) {
-            if ($object['resourceId'] == 'publication_public') {
+            if ($object['resourceId'] == 'publication_public' && true === $object['isRevisedWithBookInHand']) {
                 $url = $this->url()->fromRoute('publications/publication', ['publication_id' => $publicationId]);
                 if (!array_key_exists($object['inLanguage'], $pagesByLanguage)) {
                     $pagesByLanguage[$object['inLanguage']] = [];

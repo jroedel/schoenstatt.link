@@ -101,10 +101,10 @@ class PublicationsController extends SionController
         /** @var Select $mainPublicationId */
         $mainPublicationId = $form->get('mainPublicationId');
         $valueOptions = $mainPublicationId->getValueOptions();
-        $valueOptions = $this->transformValueOptionsObject($valueOptions);
         if (isset($publicationId) && isset($valueOptions[$publicationId])) { //unset the publication's own id
             unset($valueOptions[$publicationId]);
         }
+        $valueOptions = $this->transformValueOptionsObject($valueOptions);
 
         //we pass the valueOptions directly to selectize to reduce file size, but keep them set for validation
         $view->setVariable('publicationValueOptions', $valueOptions);
