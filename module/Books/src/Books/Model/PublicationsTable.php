@@ -88,50 +88,33 @@ class PublicationsTable extends SionTable
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        $authors = [];
+        $sql = "SELECT Author FROM
+(SELECT DISTINCT `Authors` AS Author FROM `sch_publications` a
+UNION SELECT DISTINCT `Editor` AS Author FROM `sch_publications` b
+UNION SELECT DISTINCT `Illustrator` AS Author FROM `sch_publications` c
+UNION SELECT DISTINCT `Translator` AS Author FROM `sch_publications` d ) e
+GROUP BY Author ORDER BY Author";
+        $results = $this->fetchSome(null, $sql, null);
 
-        $sql = "SELECT DISTINCT `Authors`
-FROM `sch_publications`
-WHERE (`Authors` NOT LIKE '%;%')
-ORDER BY `Authors`";
-        $results = $this->fetchSome(null, $sql, null);
+        $authors = [];
+        $authorConcatenations = []; //these might be repeated so we have to check
         foreach ($results as $row) {
-            $author = $this->filterDbString($row['Authors']);
+            $author = $this->filterDbString($row['Author']);
             if (isset($author)) {
-                $authors[$author] = $author;
+                if (false !== strpos($author, '|')) {
+                    $authorsList = $this->filterDbArray($author);
+                    foreach ($authorsList as $author) {
+                        $authorConcatenations[$author] = $author;
+                    }
+                } else {
+                    $authors[$author] = $author;
+                }
             }
         }
-        $sql = "SELECT DISTINCT `Editor`
-FROM `sch_publications`
-WHERE (`Editor` NOT LIKE '%;%')
-ORDER BY `Editor`";
-        $results = $this->fetchSome(null, $sql, null);
-        foreach ($results as $row) {
-            $author = $this->filterDbString($row['Editor']);
-            if (isset($author)) {
-                $authors[$author] = $author;
-            }
-        }
-        $sql = "SELECT DISTINCT `Illustrator`
-FROM `sch_publications`
-WHERE (`Illustrator` NOT LIKE '%;%')
-ORDER BY `Illustrator`";
-        $results = $this->fetchSome(null, $sql, null);
-        foreach ($results as $row) {
-            $author = $this->filterDbString($row['Illustrator']);
-            if (isset($author)) {
-                $authors[$author] = $author;
-            }
-        }
-        $sql = "SELECT DISTINCT `Translator`
-FROM `sch_publications`
-WHERE (`Translator` NOT LIKE '%;%')
-ORDER BY `Translator`";
-        $results = $this->fetchSome(null, $sql, null);
-        foreach ($results as $row) {
-            $author = $this->filterDbString($row['Translator']);
-            if (isset($author)) {
-                $authors[$author] = $author;
+        //factor in the concatenated authors, making sure not to push duplicates
+        foreach ($authorConcatenations as $key => $value) {
+            if (!isset($authors[$key])) {
+                $authors[$key] = $value;
             }
         }
         $this->cacheEntityObjects($cacheKey, $authors, ['publication']);

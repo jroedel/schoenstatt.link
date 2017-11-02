@@ -92,7 +92,8 @@ $("select[name='illustratorsAll[]']").selectize({
 	valueField: 'i',
 	labelField: 'n',
 	searchField: 'n',
-    sortField: 'n'
+    sortField: 'n',
+    delimiter: ';'
 });
 $("select[name='translatorsAll[]']").selectize({
     create: true,
@@ -100,7 +101,8 @@ $("select[name='translatorsAll[]']").selectize({
 	valueField: 'i',
 	labelField: 'n',
 	searchField: 'n',
-    sortField: 'n'
+    sortField: 'n',
+    delimiter: ';'
 });
 authorPersons.concat(authorAssociations);
 $("select[name='editorsAll[]']").selectize({
@@ -109,7 +111,8 @@ $("select[name='editorsAll[]']").selectize({
 	valueField: 'i',
 	labelField: 'n',
 	searchField: 'n',
-    sortField: 'n'
+    sortField: 'n',
+    delimiter: ';'
 });
 $("select[name='authorsAll[]']").selectize({
     create: true,
@@ -117,7 +120,8 @@ $("select[name='authorsAll[]']").selectize({
 	valueField: 'i',
 	labelField: 'n',
 	searchField: 'n',
-    sortField: 'n'
+    sortField: 'n',
+    delimiter: ';'
 });
 $("select[name='inLanguage']").selectize({
     create: false,
