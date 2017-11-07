@@ -1,14 +1,16 @@
 {
-    "name": "zendframework/skeleton-application",
-    "description": "Skeleton Application for ZF2",
+    "name": "jroedel/schoenstatt.link",
+    "description": "Database application for Schoenstatt-related topics",
     "license": "BSD-3-Clause",
     "keywords": [
         "framework",
-        "zf2"
+        "zf2",
+        "mvc",
+        "translation"
     ],
     "homepage": "http://framework.zend.com/",
     "require": {
-        "php": ">=5.5",
+        "php": ">=5.6",
         "zendframework/zendframework": "~2.5",
         "nesbot/carbon": "^1.21",
         "giggsey/libphonenumber-for-php": "^7.7",

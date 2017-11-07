@@ -18,6 +18,8 @@ use Zend\Permissions\Acl\Assertion\AssertionAggregate;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
+use SionModel\Db\GeoPoint;
+use Zend\Validator\GpsPoint;
 
 class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface, ResourceProviderInterface
 {
@@ -223,6 +225,40 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     }
 
     /**
+     * Get a standardized select object to retrieve records from the database
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getAssociationSelectPrototype()
+    {
+        static $select;
+        if (!isset($select)) {
+            $select = new Select('sch_associations');
+            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+            $select->columns(['AssociationId', 'AssociationName', 'Parent', 'Kind', 'OverrideNameFormat',
+'Country', 'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
+'IsActive', 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminTags',
+'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy', 'Email', 'Email2',
+'EmailsUpdatedOn', 'EmailsUpdatedBy', 'Phone1', 'Phone1Label', 'Phone2', 'Phone2Label',
+'Phone3', 'Phone3Label', 'PhonesUpdatedOn', 'PhonesUpdatedBy', 'Url1', 'Url1Label',
+'Url2', 'Url2Label', 'Url3', 'Url3Label', 'FacebookUrl', 'TwitterUser', 'InstagramUser',
+'Post1Street1', 'Post1Street2', 'Post1CityState', 'Post1Zip', 'Post1Country',
+'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country',
+'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
+'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
+'BlessingDate', 'GeoPoint' => new Expression('ST_AsText(`Location`)'), 'Latitude', 'Longitude',
+'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
+'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
+'VisitorsInformationPt', 'VisitorsInformationFr',
+'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr']);
+            //         $select->group(['TheMonth', 'TheYear']);
+            //         $select->where($predicate->in('ChangedEntity', $tableEntities));
+//             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
+        }
+
+        return clone $select;
+    }
+
+    /**
      * @return mixed[]
      */
     public function getAssociations()
@@ -246,6 +282,24 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         return $entities;
     }
 
+    public function getSimpleBook($id)
+    {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('sch_associations');
+        }
+        $select = $this->getAssociationSelectPrototype();
+        $select->where(['AssociationId' => $id]);
+        /** @var ResultSet $result */
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+
+        if (!isset($results[0])) {
+            return null;
+        }
+        return $this->processAssociationRow($results[0]);
+    }
+
     public function getUnlinkedAssociations()
     {
         $cacheKey = 'unlinked-associations-'.$this->getLocale();
@@ -253,219 +307,237 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             return $cache;
         }
 
-        $sql = "SELECT `AssociationId`, `AssociationName`, `Parent`, `Kind`, `OverrideNameFormat`,
-`Country`, `FoundationDate`, `SuppressionDate`, `IsLifeCommunity`, `IsNameTranslateable`,
-`IsActive`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`, `AdminTags`,
-`AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `Email`, `Email2`,
-`EmailsUpdatedOn`, `EmailsUpdatedBy`, `Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`,
-`Phone3`, `Phone3Label`, `PhonesUpdatedOn`, `PhonesUpdatedBy`, `Url1`, `Url1Label`,
-`Url2`, `Url2Label`, `Url3`, `Url3Label`, `FacebookUrl`, `TwitterUser`, `InstagramUser`,
-`Post1Street1`, `Post1Street2`, `Post1CityState`, `Post1Zip`, `Post1Country`,
-`Post2Street1`, `Post2Street2`, `Post2CityState`, `Post2Zip`, `Post2Country`,
-`ContactNotes`, `ContactInfoUpdatedOn`, `ContactInfoUpdatedBy`, `UpdatedOn`,
-`UpdatedBy`, `CreatedOn`, `CreatedBy`, `IsAuthor` FROM `sch_associations` WHERE 1";
-
-        $results = $this->fetchSome(null, $sql, null);
-        $sort = [];
-        foreach($results as $k=>$v) {
-            if (!isset($this->associationKinds[$v['Kind']])) {
-                unset($results[$k]);
-                continue;
-            }
-            $kindSort = $this->associationKinds[$v['Kind']]->sort;
-            $results[$k]['AssociationSort'] = $kindSort;
-            $sort['KindSort'][$k] = $kindSort;
-            $sort['AssociationName'][$k] = $v['AssociationName'];
-        }
-        # sort by event_type desc and then title asc
-        array_multisort($sort['KindSort'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
-
-        $isTranslatorReady = $this->translator instanceof TranslatorInterface;
-        $areCountryTranslationsReady = isset($this->countryNameTranslations);
-        $locale = $this->getLocale();
+        $gateway = $this->getTableGateway('sch_associations');
+        $select = $this->getAssociationSelectPrototype();
+        $results = $gateway->selectWith($select);
         $entities = [];
         foreach ($results as $row) {
-            $kind = $this->filterDbString($row['Kind']);
-            if (!isset($this->associationKinds[$kind])) {
-                continue;
+            $processedRow = $this->processAssociationRow($row);
+            if (isset($processedRow)) {
+                $entities[$processedRow['associationId']] = $processedRow;
             }
-            $associationKindSpec = $this->associationKinds[$kind];
-
-            $id = $this->filterDbId($row['AssociationId']);
-            //process URLs
-            $unprocessedUrls = [
-                ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
-                ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
-                ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
-            ];
-            $urls = $this::processUrls($unprocessedUrls);
-
-            $phones = [];
-            if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
-                $phones[] = [
-                    'number' => $phone1,
-                    'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
-                ];
-            }
-            if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
-                $phones[] = [
-                    'number' => $phone2,
-                    'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
-                ];
-            }
-            if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
-                $phones[] = [
-                    'number' => $phone3,
-                    'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
-                ];
-            }
-
-            //abstract address elements
-            $post1Street1   = $this->filterDbString($row['Post1Street1']);
-            $post1Street2   = $this->filterDbString($row['Post1Street2']);
-            $post1CityState = $this->filterDbString($row['Post1CityState']);
-            $post1Zip       = $this->filterDbString($row['Post1Zip']);
-            $post1Country   = $this->filterDbString($row['Post1Country']);
-            $post2Street1   = $this->filterDbString($row['Post2Street1']);
-            $post2Street2   = $this->filterDbString($row['Post2Street2']);
-            $post2CityState = $this->filterDbString($row['Post2CityState']);
-            $post2Zip       = $this->filterDbString($row['Post2Zip']);
-            $post2Country   = $this->filterDbString($row['Post2Country']);
-
-            $postAddresses = [];
-            if (isset($post1Street1) || isset($post1Street2) || isset($post1CityState)) {
-                $postAddresses[] = [
-                    'street1'   => $post1Street1,
-                    'street2'   => $post1Street2,
-                    'cityState' => $post1CityState,
-                    'zip'       => $post1Zip,
-                    'country'   => $post1Country,
-                ];
-            }
-            if (isset($post2Street1) || isset($post2Street2) || isset($post2CityState)) {
-                $postAddresses[] = [
-                    'street1'   => $post2Street1,
-                    'street2'   => $post2Street1,
-                    'cityState' => $post2CityState,
-                    'zip'       => $post2Zip,
-                    'country'   => $post2Country,
-                ];
-            }
-
-            $name = $this->filterDbString($row['AssociationName']);
-            $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
-            $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
-            $formattedName = null;
-            if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()
-            ) {
-                $token = $name;
-                if ($associationKindSpec->shouldTranslateNameParameter) {
-                    if ($areCountryTranslationsReady &&
-                        isset($this->countryNameTranslations[$token]) &&
-                        isset($this->countryNameTranslations[$token][$locale])
-                    ) {
-                        $token = $this->countryNameTranslations[$token][$locale];
-                    } else if ($isTranslatorReady) {
-                        $token = $this->translator->translate($token, 'Schoenstatt');
-                    }
-                }
-                $formattedName = sprintf($associationKindSpec->translatedNameFormat, $token);
-            } else { //no name format
-                if ($isNameTranslateable && $isTranslatorReady) {
-                    $formattedName = $this->translator->translate($name, 'Schoenstatt');
-                } else {
-                    $formattedName = $name;
-                }
-            }
-
-            $entities[$id] = [
-                'associationId'         => $id,
-                'name'                  => $name,
-                'overrideNameFormat'    => $overrideNameFormat,
-                'formattedName'         => $formattedName,
-                'parentId'              => $this->filterDbId($row['Parent']),
-                'kind'                  => $kind,
-                'country'               => $this->filterDbString($row['Country']),
-                'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
-                'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
-                'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
-                'isNameTranslateable'   => $isNameTranslateable,
-                'isAuthor'              => $this->filterDbBool($row['IsAuthor']),
-                'isActive'              => $this->filterDbBool($row['IsActive']),
-                'adminTags'             => $this->filterDbArray($row['AdminTags']),
-
-                'sort'                  => $associationKindSpec->sort,
-                'isSubDiocesan'         => $associationKindSpec->isSubDiocesanAssociation,
-                'resourceId'            => 'association_'.$id,
-                'roles'                 => [],
-            	'assignments'			=> [],
-                'mainRole'              => null,
-                'mainAssignment'        => null,
-                'mainPerson'            => null,
-                'mainContact'           => null,
-                'mainContactAssignment' => null,
-                'mainContactPerson'     => null,
-                'childAssociations'     => [],
-                'parent'                => null,
-/**
- * Contact fields
-*/
-                'email'                     => $this->filterEmailString($row['Email']),
-                'email2'                    => $this->filterEmailString($row['Email2']),
-                'emailsUpdatedOn'           => $this->filterDbDate($row['EmailsUpdatedOn']),
-                'emailsUpdatedBy'           => $this->filterDbId($row['EmailsUpdatedBy']),
-                'phones'                    => $phones,
-                'phone1'                    => $phone1,
-                'phone1Label'               => $this->filterDbString($row['Phone1Label']),
-                'phone2'                    => $phone2,
-                'phone2Label'               => $this->filterDbString($row['Phone2Label']),
-                'phone3'                    => $phone3,
-                'phone3Label'               => $this->filterDbString($row['Phone3Label']),
-                'phonesUpdatedOn'           => $this->filterDbDate($row['PhonesUpdatedOn']),
-                'phonesUpdatedBy'           => $this->filterDbId($row['PhonesUpdatedBy']),
-                'urls'                      => $urls,
-                'url1'                      => $this->filterDbString($row['Url1']),
-                'url1Label'                 => $this->filterDbString($row['Url1Label']),
-                'url2'                      => $this->filterDbString($row['Url2']),
-                'url2Label'                 => $this->filterDbString($row['Url2Label']),
-                'url3'                      => $this->filterDbString($row['Url3']),
-                'url3Label'                 => $this->filterDbString($row['Url3Label']),
-                'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
-                'twitterUser'               => $this->filterDbString($row['TwitterUser']),
-                'instagramUser'             => $this->filterDbString($row['InstagramUser']),
-                'postAddresses'             => $postAddresses,
-                'post1Street1'              => $post1Street1,
-                'post1Street2'              => $post1Street2,
-                'post1CityState'            => $post1CityState,
-                'post1Zip'                  => $post1Zip,
-                'post1Country'              => $post1Country,
-                'post2Street1'              => $post2Street1,
-                'post2Street2'              => $post2Street2,
-                'post2CityState'            => $post2CityState,
-                'post2Zip'                  => $post2Zip,
-                'post2Country'              => $post2Country,
-                'contactNotes'              => $this->filterDbString($row['ContactNotes']),
-//                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
-//                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
-
-                'contactInfoUpdatedOn'      => $this->filterDbDate($row['ContactInfoUpdatedOn']),
-                'contactInfoUpdatedBy'      => $this->filterDbDate($row['ContactInfoUpdatedBy']),
-
-                'publicNotes'           => $this->filterDbString($row['PublicNotes']),
-                'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
-                'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
-                'adminNotes'            => $this->filterDbString($row['AdminNotes']),
-                'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
-                'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
-                'createdOn'             => $this->filterDbDate($row['CreatedOn']),
-                'createdBy'             => $this->filterDbId($row['CreatedBy']),
-                'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
-                'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
-            ];
         }
+        $this->sortAssociationRowData($entities);
         $this->cacheEntityObjects($cacheKey, $entities, ['association']);
         return $entities;
     }
+
+    protected function sortAssociationRowData(&$results)
+    {
+        $sort = [];
+        foreach($results as $k=>$v) {
+            $sort['KindSort'][$k] = $v['sort'];
+            $sort['AssociationName'][$k] = $v['name'];
+        }
+        # sort by event_type desc and then title asc
+        array_multisort($sort['KindSort'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
+    }
+
+    protected function processAssociationRow($row)
+    {
+        $isTranslatorReady = $this->translator instanceof TranslatorInterface;
+        $areCountryTranslationsReady = isset($this->countryNameTranslations);
+        $locale = $this->getLocale();
+        $kind = $this->filterDbString($row['Kind']);
+        if (!isset($this->associationKinds[$kind])) {
+            return null;
+        }
+        $associationKindSpec = $this->associationKinds[$kind];
+
+        $id = $this->filterDbId($row['AssociationId']);
+        //process URLs
+        $unprocessedUrls = [
+            ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
+            ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
+            ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
+        ];
+        $urls = $this::processUrls($unprocessedUrls);
+
+        $phones = [];
+        if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
+            $phones[] = [
+                'number' => $phone1,
+                'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
+            ];
+        }
+        if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
+            $phones[] = [
+                'number' => $phone2,
+                'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
+            ];
+        }
+        if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
+            $phones[] = [
+                'number' => $phone3,
+                'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
+            ];
+        }
+
+        //abstract address elements
+        $post1Street1   = $this->filterDbString($row['Post1Street1']);
+        $post1Street2   = $this->filterDbString($row['Post1Street2']);
+        $post1CityState = $this->filterDbString($row['Post1CityState']);
+        $post1Zip       = $this->filterDbString($row['Post1Zip']);
+        $post1Country   = $this->filterDbString($row['Post1Country']);
+        $post2Street1   = $this->filterDbString($row['Post2Street1']);
+        $post2Street2   = $this->filterDbString($row['Post2Street2']);
+        $post2CityState = $this->filterDbString($row['Post2CityState']);
+        $post2Zip       = $this->filterDbString($row['Post2Zip']);
+        $post2Country   = $this->filterDbString($row['Post2Country']);
+
+        $postAddresses = [];
+        if (isset($post1Street1) || isset($post1Street2) || isset($post1CityState)) {
+            $postAddresses[] = [
+                'street1'   => $post1Street1,
+                'street2'   => $post1Street2,
+                'cityState' => $post1CityState,
+                'zip'       => $post1Zip,
+                'country'   => $post1Country,
+            ];
+        }
+        if (isset($post2Street1) || isset($post2Street2) || isset($post2CityState)) {
+            $postAddresses[] = [
+                'street1'   => $post2Street1,
+                'street2'   => $post2Street1,
+                'cityState' => $post2CityState,
+                'zip'       => $post2Zip,
+                'country'   => $post2Country,
+            ];
+        }
+
+        $name = $this->filterDbString($row['AssociationName']);
+        $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
+        $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
+        $formattedName = null;
+        if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()) {
+            $token = $name;
+            if ($associationKindSpec->shouldTranslateNameParameter) {
+                if ($areCountryTranslationsReady &&
+                    isset($this->countryNameTranslations[$token]) &&
+                    isset($this->countryNameTranslations[$token][$locale])
+                ) {
+                    $token = $this->countryNameTranslations[$token][$locale];
+                } else if ($isTranslatorReady) {
+                    $token = $this->translator->translate($token, 'Schoenstatt');
+                }
+            }
+            $formattedName = sprintf($associationKindSpec->translatedNameFormat, $token);
+        } else { //no name format
+            if ($isNameTranslateable && $isTranslatorReady) {
+                $formattedName = $this->translator->translate($name, 'Schoenstatt');
+            } else {
+                $formattedName = $name;
+            }
+        }
+
+        $processedRow = [
+            'associationId'         => $id,
+            'name'                  => $name,
+            'overrideNameFormat'    => $overrideNameFormat,
+            'formattedName'         => $formattedName,
+            'parentId'              => $this->filterDbId($row['Parent']),
+            'kind'                  => $kind,
+            'country'               => $this->filterDbString($row['Country']),
+            'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
+            'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
+            'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
+            'isNameTranslateable'   => $isNameTranslateable,
+            'isAuthor'              => $this->filterDbBool($row['IsAuthor']),
+            'isActive'              => $this->filterDbBool($row['IsActive']),
+
+            'blessingDate'              => $this->filterDbDate($row['BlessingDate']),
+            'geoPoint'                  => $this->filterDbGeoPoint($row['GeoPoint']),
+            'latitude'                  => $this->filterDbString($row['Latitude']),
+            'longitude'                 => $this->filterDbString($row['Longitude']),
+            'idealEn'                   => $this->filterDbString($row['IdealEn']),
+            'idealEs'                   => $this->filterDbString($row['IdealEs']),
+            'idealDe'                   => $this->filterDbString($row['IdealDe']),
+            'idealPt'                   => $this->filterDbString($row['IdealPt']),
+            'idealFr'                   => $this->filterDbString($row['IdealFr']),
+            'visitorsInformationEn'     => $this->filterDbString($row['VisitorsInformationEn']),
+            'visitorsInformationEs'     => $this->filterDbString($row['VisitorsInformationEs']),
+            'visitorsInformationDe'     => $this->filterDbString($row['VisitorsInformationDe']),
+            'visitorsInformationPt'     => $this->filterDbString($row['VisitorsInformationPt']),
+            'visitorsInformationFr'     => $this->filterDbString($row['VisitorsInformationFr']),
+            'historyEn'                 => $this->filterDbString($row['HistoryEn']),
+            'historyEs'                 => $this->filterDbString($row['HistoryEs']),
+            'historyDe'                 => $this->filterDbString($row['HistoryDe']),
+            'historyPt'                 => $this->filterDbString($row['HistoryPt']),
+            'historyFr'                 => $this->filterDbString($row['HistoryFr']),
+
+            'adminTags'             => $this->filterDbArray($row['AdminTags']),
+
+            'sort'                  => $associationKindSpec->sort,
+            'isSubDiocesan'         => $associationKindSpec->isSubDiocesanAssociation,
+            'resourceId'            => 'association_'.$id,
+            'roles'                 => [],
+            'assignments'			=> [],
+            'mainRole'              => null,
+            'mainAssignment'        => null,
+            'mainPerson'            => null,
+            'mainContact'           => null,
+            'mainContactAssignment' => null,
+            'mainContactPerson'     => null,
+            'childAssociations'     => [],
+            'parent'                => null,
+            /**
+             * Contact fields
+             */
+            'email'                     => $this->filterEmailString($row['Email']),
+            'email2'                    => $this->filterEmailString($row['Email2']),
+            'emailsUpdatedOn'           => $this->filterDbDate($row['EmailsUpdatedOn']),
+            'emailsUpdatedBy'           => $this->filterDbId($row['EmailsUpdatedBy']),
+            'phones'                    => $phones,
+            'phone1'                    => $phone1,
+            'phone1Label'               => $this->filterDbString($row['Phone1Label']),
+            'phone2'                    => $phone2,
+            'phone2Label'               => $this->filterDbString($row['Phone2Label']),
+            'phone3'                    => $phone3,
+            'phone3Label'               => $this->filterDbString($row['Phone3Label']),
+            'phonesUpdatedOn'           => $this->filterDbDate($row['PhonesUpdatedOn']),
+            'phonesUpdatedBy'           => $this->filterDbId($row['PhonesUpdatedBy']),
+            'urls'                      => $urls,
+            'url1'                      => $this->filterDbString($row['Url1']),
+            'url1Label'                 => $this->filterDbString($row['Url1Label']),
+            'url2'                      => $this->filterDbString($row['Url2']),
+            'url2Label'                 => $this->filterDbString($row['Url2Label']),
+            'url3'                      => $this->filterDbString($row['Url3']),
+            'url3Label'                 => $this->filterDbString($row['Url3Label']),
+            'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
+            'twitterUser'               => $this->filterDbString($row['TwitterUser']),
+            'instagramUser'             => $this->filterDbString($row['InstagramUser']),
+            'postAddresses'             => $postAddresses,
+            'post1Street1'              => $post1Street1,
+            'post1Street2'              => $post1Street2,
+            'post1CityState'            => $post1CityState,
+            'post1Zip'                  => $post1Zip,
+            'post1Country'              => $post1Country,
+            'post2Street1'              => $post2Street1,
+            'post2Street2'              => $post2Street2,
+            'post2CityState'            => $post2CityState,
+            'post2Zip'                  => $post2Zip,
+            'post2Country'              => $post2Country,
+            'contactNotes'              => $this->filterDbString($row['ContactNotes']),
+            //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
+        //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
+
+            'contactInfoUpdatedOn'      => $this->filterDbDate($row['ContactInfoUpdatedOn']),
+            'contactInfoUpdatedBy'      => $this->filterDbDate($row['ContactInfoUpdatedBy']),
+
+            'publicNotes'           => $this->filterDbString($row['PublicNotes']),
+            'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
+            'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
+            'adminNotes'            => $this->filterDbString($row['AdminNotes']),
+            'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
+            'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
+            'createdOn'             => $this->filterDbDate($row['CreatedOn']),
+            'createdBy'             => $this->filterDbId($row['CreatedBy']),
+            'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
+            'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+        ];
+        return $processedRow;
+    }
+
     /**
      *
      * @param int $id
@@ -480,6 +552,32 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         }
 
         return $association;
+    }
+
+    /**
+     * Preprocess data bound for the database on the person entities or its sub-entities
+     * @param array $data
+     * @return array
+     */
+    protected function associationPreprocessor($data, $entityData, $action)
+    {
+        static $validator;
+        if (!isset($data['geoPoint']) && isset($data['longitude']) && isset($data['latitude']) &&
+            (0 != $data['longitude'] || 0 != $data['latitude'])
+        ) {
+            if (!isset($validator)) {
+                $validator = new GpsPoint();
+            }
+            if ($validator->isValid($data['latitude'].','.$data['longitude'])) {
+                $data['geoPoint'] = new GeoPoint($data['longitude'], $data['latitude']);
+            }
+        } elseif (isset($data['geoPoint']) && $data['geoPoint'] instanceof GeoPoint &&
+            !isset($data['longitude']) && !isset($data['latitude'])
+        ) {
+            $data['longitude'] = $data['geoPoint']->longitude;
+            $data['latitude'] = $data['geoPoint']->latitude;
+        }
+        return $data;
     }
 
     /**

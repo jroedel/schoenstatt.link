@@ -46,7 +46,6 @@ class LibraryTable extends SionTable
      */
     protected $libraryId;
 
-
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $libraryConfig)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
@@ -294,7 +293,7 @@ class LibraryTable extends SionTable
         }
 
         $gateway = $this->getTableGateway('lib_books');
-        if (null !== $libraryId) {
+        if (isset($libraryId)) {
             $select = $this->getBookSelectPrototype();
             $select->where(['library_id' => $libraryId]);
             $results = $gateway->selectWith($select);

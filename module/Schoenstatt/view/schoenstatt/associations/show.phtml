@@ -57,25 +57,30 @@ $this->headTitle($name);?>
 						isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
 						$this->isAllowed('route/persons/person/edit-contact-info'));?></span></p>
             <?php endforeach;
-            if (!is_null($object['phonesUpdatedOn'])) :  //@todo add a question mark here with text
+            if (isset($object['phonesUpdatedOn'])) :  //@todo add a question mark here with text
                 //@todo use diffForHumans view helper
         	    $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
         	<?php endif;
         	$addressLabel = null;
+        	if (isset($object['geoPoint'])) :?>
+        	    <a href="<?php echo sprintf('http://www.openstreetmap.org/?lat=%s&lon=%s&zoom=15&layers=M',
+    	            $object['geoPoint']->latitude, $object['geoPoint']->longitude);?>" target="_blank"><?php
+        	       echo $this->translate('View in map');?></a>
+        	<?php endif;
         	if (count($object['postAddresses']) > 1) {
         	    $addressLabel = 'Postal addresses';
         	} elseif (count($object['postAddresses']) == 1) {
     	        $addressLabel = 'Postal address';
     	    }
-    	    if (!is_null($addressLabel)) :?>
+    	    if (isset($addressLabel)) :?>
     	    <p><strong><?php echo $this->translate($addressLabel)?>:</strong></p>
     	    <?php
     	    endif;
         	foreach ($object['postAddresses'] as $address) {
         	    echo $this->address($address);
         	}
-        	if (!is_null($object['contactNotes'])) :?>
+        	if (isset($object['contactNotes'])) :?>
         		<p><strong><?php echo $this->translate('Notes');?>:</strong></p>
         		<div id="contactNotes"><?php echo $this->markdown($object['contactNotes']);?></div>
         	<?php endif;?>
@@ -115,20 +120,20 @@ $this->headTitle($name);?>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
         <p><strong><?php echo $this->translate('Foundation date');?>:</strong>
-        <?php if (!is_null($object['foundationDate'])) {
+        <?php if (isset($object['foundationDate'])) {
         echo $this->dateFormat($object['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
         }?></p>
-		<?php if (!is_null($object['suppressionDate'])) :?>
+		<?php if (isset($object['suppressionDate'])) :?>
       		<p><strong><?php echo $this->translate('Suppression date');?>:</strong> <?php
                 echo $this->dateFormat($object['suppressionDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
             ?></p>
 		<?php endif;?>
-		<?php if (!is_null($object['country'])) :?>
+		<?php if (isset($object['country'])) :?>
       		<p><strong><?php echo $this->translate('Country');?>:</strong> <?php
                 echo $this->countryName($object['country'], true);
             ?></p>
 		<?php endif;?>
-		<?php if (!is_null($object['parent'])) :?>
+		<?php if (isset($object['parent'])) :?>
       		<p><strong><?php echo $this->translate('Parent organization');?>:</strong> <?php
                 echo $this->formatEntity('association', $object['parent']);
             ?></p>
@@ -285,7 +290,7 @@ endif;?>
     <?php endif;?>
 	</div>
     <div class="col-md-6"><!-- Admin notes column -->
-		<?php if ($object['adminNotes']):?>
+		<?php if (isset($object['adminNotes'])):?>
     		<p><strong><?php echo $this->translate('Admin notes');?>:</strong></p>
     		<div><?php echo $this->markdown($object['adminNotes']);?></div>
 		<?php endif;?>

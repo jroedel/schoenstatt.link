@@ -424,6 +424,18 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		]);
 
 		$this->add([
+		    'name' => 'geoPoint',
+		    'type' => 'Text',
+		    'options' => [
+		        'label' => 'Gps location (lat, long)',
+		        'required' => false,
+		    ],
+		    'attributes' => [
+		        'placeholder' => 'ex. 30.311108, -97.842738',
+		        'maxlength' => '32',
+		    ],
+		]);
+		$this->add([
 		    'name' => 'post1Street1',
 		    'type' => 'Text',
 		    'options' => [
@@ -843,6 +855,15 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 	            'validators' => [
                     ['name' => 'SionModel\Validator\Instagram'],
 	            ],
+		    ],
+		    'geoPoint' => [
+		        'required' => false,
+		        'filters' => [
+		            ['name' => 'SionModel\Filter\ToGeoPoint'],
+		        ],
+		        'validators' => [
+		            ['name' => 'Zend\Validator\GpsPoint'],
+		        ],
 		    ],
 		    'post1Street1' => [
 		        'required' => false,
