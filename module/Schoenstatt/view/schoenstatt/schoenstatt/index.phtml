@@ -10,7 +10,6 @@ echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
         $this->translate($this->generalPresidium['name']).'</a>',
     'columns'       => ['role', 'person', 'email', 'telephone'],
 ]);
-
 echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
     'assignments' => $this->nationalLeaders,
     'wrapInPanel' => true,

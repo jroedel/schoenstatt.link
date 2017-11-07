@@ -245,7 +245,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country',
 'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
-'GeoPoint' => new Expression('ST_AsText(`Location`)'), 'Latitude', 'Longitude',
+'GeoPoint' => new Expression('AsText(`Location`)'), 'Latitude', 'Longitude',
 'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
 'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
 'VisitorsInformationPt', 'VisitorsInformationFr',
@@ -1587,6 +1587,27 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $nationalLeaders[$assignment['associationId']] = $assignment;
         }
         return $nationalLeaders;
+    }
+
+    /**
+     * Get the list of main roles of shrines.
+     * A list of assignments are returned, but keyed by the associationId.
+     * This provides compatibility with the assignments-table-partial, while giving the
+     * ability to print the list of all active national movements.
+     * @return mixed[]
+     */
+    public function getShrines()
+    {
+        $shrineResults = $this->searchEntities([
+            'associationKind' => 'sch-shrine',
+//             'onlyMainContact' => true,
+        ]);
+
+        $shrines = [];
+        foreach ($shrineResults as $assignment) {
+            $shrines[$assignment['associationId']] = $assignment;
+        }
+        return $shrines;
     }
 
     /**

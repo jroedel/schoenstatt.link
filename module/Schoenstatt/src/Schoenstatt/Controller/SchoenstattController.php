@@ -27,7 +27,6 @@ class SchoenstattController extends AbstractActionController
         /** @var SchoenstattTable $table */
         $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
 
-
         $config = $sm->get('Schoenstatt\Config');
         if (!isset($config['general_presidium_id']) || !is_numeric($config['general_presidium_id'])) {
             throw new \Exception('Please set the "general_presidium_id" configuration.');
@@ -35,6 +34,7 @@ class SchoenstattController extends AbstractActionController
         $generalPresidiumId = $config['general_presidium_id'];
         $generalPresidium = $table->getAssociation($generalPresidiumId);
         $nationalLeaders = $table->getNationalMovementsLeaders();
+
         $form = new SearchForm();
 
         return new ViewModel([
@@ -42,6 +42,26 @@ class SchoenstattController extends AbstractActionController
             'generalPresidiumId'=> $generalPresidiumId,
             'generalPresidium'  => $generalPresidium,
             'nationalLeaders'   => $nationalLeaders,
+        ]);
+    }
+
+    public function shrinesAction()
+    {
+        if (!$this->zfcUserAuthentication()->hasIdentity()) {
+            return $this->redirect()->toRoute('welcome');
+        }
+
+        $sm = $this->getServiceLocator();
+        /** @var SchoenstattTable $table */
+        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+
+        $shrines = $table->getShrines();
+
+//         $form = new SearchForm();
+
+        return new ViewModel([
+//             'form'              => $form,
+            'shrines'   => $shrines,
         ]);
     }
 

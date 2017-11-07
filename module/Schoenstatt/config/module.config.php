@@ -377,6 +377,8 @@ return [
             'sch-shrine' => [
                 'sort'  => 495,
                 'label' => 'Schoenstatt shrine',
+                'name_format' => 'Schoenstatt Shrine %s',
+                'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => false,
                 'default_roles' => [
                     [
@@ -906,6 +908,21 @@ return [
                         '__NAMESPACE__' => 'Schoenstatt\Controller',
                         'controller'    => 'Schoenstatt',
                         'action'        => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+            ],
+            'shrines' => [
+                'type'    => 'Literal',
+                'options' => [
+                    // Change this to something specific to your module
+                    'route'    => '/shrines',
+                    'defaults' => [
+                        // Change this value to reflect the namespace in which
+                        // the controllers for your module are found
+                        '__NAMESPACE__' => 'Schoenstatt\Controller',
+                        'controller'    => 'Schoenstatt',
+                        'action'        => 'shrines',
                     ],
                 ],
                 'may_terminate' => true,
@@ -1880,6 +1897,7 @@ return [
     'bjyauthorize' => [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
+                ['route' => 'shrines', 'roles' => ['sch_basic', 'sch_user']],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
