@@ -175,13 +175,8 @@ class SchoenstattController extends AbstractActionController
         if (!$simulate) { //import the items
             /** @var SchoenstattTable $table */
             $table = $this->getServiceLocator()->get('Schoenstatt\Model\SchoenstattTable');
-            $insertNow = false;
             foreach ($dataToImport as $key => $data) {
-                if ($insertNow) {
                 $dataToImport[$key]['result'] = $table->createEntity('association', $data, false);
-                } elseif ('Valle Hermoso del Niño Jesús' === $data['name']) {
-                    $insertNow = true;
-                }
             }
         }
         return new ViewModel([
