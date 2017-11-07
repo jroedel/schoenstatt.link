@@ -1598,14 +1598,21 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      */
     public function getShrines()
     {
-        $shrineResults = $this->searchEntities([
-            'associationKind' => 'sch-shrine',
-//             'onlyMainContact' => true,
-        ]);
+//         $shrineResults = $this->searchEntities([
+//             'associationKind' => 'sch-shrine',
+// //             'onlyMainContact' => true,
+//         ]);
 
+//         $shrines = [];
+//         foreach ($shrineResults as $assignment) {
+//             $shrines[$assignment['associationId']] = $assignment;
+//         }
+        $objects = $this->getAssociations();
         $shrines = [];
-        foreach ($shrineResults as $assignment) {
-            $shrines[$assignment['associationId']] = $assignment;
+        foreach ($objects as $associationId => $object) {
+            if ('sch-shrine' === $object['kind']) {
+                $shrines[$associationId] = $object;
+            }
         }
         return $shrines;
     }

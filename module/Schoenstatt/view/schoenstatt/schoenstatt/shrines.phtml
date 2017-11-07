@@ -5,14 +5,14 @@ $this->headTitle($headText); ?>
 
 <?php
 // echo $this->partial('search-bar', ['form' => $form, 'centerOnPage' => false]);
-echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
-    'assignments' => $this->shrines,
-    'wrapInPanel' => true,
-    'showActive' => true,
-    'showInactive' => false,
-    'headerText'  => 'Shrines of the world',
-    'columns'       => ['association'], //'person', 'email', 'telephone'],
-    'associationFormatOptions' => [
-        'showLabel' => false,
-    ],
+echo $this->partial('schoenstatt/associations/associations-table', [
+    'objects' => $this->shrines,
+//     'wrapInPanel' => true,
+//     'showActive' => true,
+//     'showInactive' => false,
+//     'headerText'  => 'Shrines of the world',
+//     'columns'       => ['association'], //'person', 'email', 'telephone'],
+//     'associationFormatOptions' => [
+//         'showLabel' => false,
+//     ],
 ]);
