@@ -350,6 +350,8 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 			        'Blog' => 'Blog',
 			        'G+' => 'G+',
 			        'Personal website' => 'Personal website',
+			        'Map' => 'Map',
+			        'Information' => 'Information',
 			    ],
 			],
 		    'attributes' => [
@@ -383,6 +385,8 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 			        'Blog' => 'Blog',
 			        'G+' => 'G+',
 			        'Personal website' => 'Personal website',
+			        'Map' => 'Map',
+			        'Information' => 'Information',
 			    ],
 			],
 		    'attributes' => [
@@ -416,6 +420,8 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 			        'Blog' => 'Blog',
 			        'G+' => 'G+',
 			        'Personal website' => 'Personal website',
+			        'Map' => 'Map',
+			        'Information' => 'Information',
 			    ],
 			],
 		    'attributes' => [
@@ -562,22 +568,22 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		    ],
 		]);
 
-		$this->add([
-		    'name' => 'adminTags',
-		    'type' => 'Select',
-		    'options' => [
-		        'label' => 'Admin tags',
-		        'empty_option' => '',
-		        'placeholder' => 'Select tags or type new ones...',
-		        'unselected_value' => '',
-    			'disable_inarray_validator' => true,
-		        'value_options' => [],
-		    ],
-		    'attributes' => [
-		        'required' => false,
-		        'multiple' => true,
-		    ],
-		]);
+// 		$this->add([
+// 		    'name' => 'adminTags',
+// 		    'type' => 'Select',
+// 		    'options' => [
+// 		        'label' => 'Admin tags',
+// 		        'empty_option' => '',
+// 		        'placeholder' => 'Select tags or type new ones...',
+// 		        'unselected_value' => '',
+//     			'disable_inarray_validator' => true,
+// 		        'value_options' => [],
+// 		    ],
+// 		    'attributes' => [
+// 		        'required' => false,
+// 		        'multiple' => true,
+// 		    ],
+// 		]);
 /**
  * Common elements
  */
@@ -1060,13 +1066,13 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 		            ],
                 ],
 			],
-		    'adminTags' => [
-				'required' => false,
-                'filters' => [
-                    ['name' => 'StringToLower'],
-                    ['name' => 'SionModel\Filter\SortArray'],
-                ],
-		    ],
+// 		    'adminTags' => [
+// 				'required' => false,
+//                 'filters' => [
+//                     ['name' => 'StringToLower'],
+//                     ['name' => 'SionModel\Filter\SortArray'],
+//                 ],
+// 		    ],
 		];
 		return $this->filterSpec;
 	}

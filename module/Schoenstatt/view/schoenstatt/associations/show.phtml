@@ -298,6 +298,14 @@ endif;?>
 	</div></div>
 </div></div></div>
 
+<?php
+if ($this->isAllowed('route/associations/association/edit')) {
+    echo $this->partial('sion-model/sion-model/entity-changes-panel', [
+        'changes' => $this->changes,
+        'panelTitle' => 'Change log'
+    ]);
+}?>
+
 <!-- @todo Add photos at the bottom -->
 <div class="row"><div class="col-md-12">
 <?php if ($this->isAllowed('route/associations/association/edit')): ?>
