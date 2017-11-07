@@ -1538,7 +1538,6 @@ return [
                     'isAuthor'                  => 'IsAuthor',
                     'isActive'                  => 'IsActive',
 
-                    'blessingDate'              => 'BlessingDate',
                     'geoPoint'                  => 'Location',
                     'latitude'                  => 'Latitude',
                     'longitude'                 => 'Longitude',

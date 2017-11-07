@@ -245,7 +245,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country',
 'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
-'BlessingDate', 'GeoPoint' => new Expression('ST_AsText(`Location`)'), 'Latitude', 'Longitude',
+'GeoPoint' => new Expression('ST_AsText(`Location`)'), 'Latitude', 'Longitude',
 'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
 'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
 'VisitorsInformationPt', 'VisitorsInformationFr',
@@ -445,7 +445,6 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             'isAuthor'              => $this->filterDbBool($row['IsAuthor']),
             'isActive'              => $this->filterDbBool($row['IsActive']),
 
-            'blessingDate'              => $this->filterDbDate($row['BlessingDate']),
             'geoPoint'                  => $this->filterDbGeoPoint($row['GeoPoint']),
             'latitude'                  => $this->filterDbString($row['Latitude']),
             'longitude'                 => $this->filterDbString($row['Longitude']),
