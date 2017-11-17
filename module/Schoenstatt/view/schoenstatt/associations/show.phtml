@@ -63,8 +63,11 @@ $this->headTitle($name);?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
         	<?php endif;
         	$addressLabel = null;
-        	if (isset($object['geoPoint'])) :?>
-        	    <a href="<?php echo sprintf('http://www.openstreetmap.org/?lat=%s&lon=%s&zoom=15&layers=M',
+        	if (isset($object['geoPoint'])) :
+        	//'http://www.openstreetmap.org/?lat=%s&lon=%s&zoom=15&layers=M'
+        	   $geoUrlFormat = 'https://www.openstreetmap.org/?mlat=%s&mlon=%s#map=18/%s/%s&layers=N';?>
+        	    <a href="<?php echo sprintf($geoUrlFormat,
+    	            $object['geoPoint']->latitude, $object['geoPoint']->longitude,
     	            $object['geoPoint']->latitude, $object['geoPoint']->longitude);?>" target="_blank"><?php
         	       echo $this->translate('View in map');?></a>
         	<?php endif;

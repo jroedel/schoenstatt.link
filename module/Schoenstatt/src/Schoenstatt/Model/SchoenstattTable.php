@@ -270,6 +270,9 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         $entities = $this->getUnlinkedAssociations();
 
         foreach ($entities as $entityId => $entity) {
+            if ($entityId !== $entity['associationId']) {
+                var_dump($entityId);
+            }
             if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
                 $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
                 $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];
@@ -324,13 +327,16 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 
     protected function sortAssociationRowData(&$results)
     {
-        $sort = [];
-        foreach($results as $k=>$v) {
-            $sort['KindSort'][$k] = $v['sort'];
-            $sort['AssociationName'][$k] = $v['name'];
+        uasort($results, ['Schoenstatt\Model\SchoenstattTable', 'associationCompare']);
+    }
+
+
+    static protected function associationCompare($a, $b)
+    {
+        if ($a['sort'] == $b['sort']) {
+            return strcmp($a['name'], $b['name']);
         }
-        # sort by event_type desc and then title asc
-        array_multisort($sort['KindSort'], SORT_ASC, $sort['AssociationName'], SORT_ASC, $results);
+        return ($a['sort'] < $b['sort']) ? -1 : 1;
     }
 
     protected function processAssociationRow($row)
@@ -474,7 +480,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             'mainRole'              => null,
             'mainAssignment'        => null,
             'mainPerson'            => null,
-            'mainContact'           => null,
+            'mainContactRole'       => null,
             'mainContactAssignment' => null,
             'mainContactPerson'     => null,
             'childAssociations'     => [],
@@ -1848,14 +1854,14 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
             if (isset($entities[$role['associationId']])) {
                 $entities[$role['associationId']]['roles'][$roleId] = $role;
                 if ($role['isMainRole'] && $role['isActive'] &&
-                    isset($entities[$role['associationId']]['mainRole'])
+                    !isset($entities[$role['associationId']]['mainRole'])
                 ) {
                     $entities[$role['associationId']]['mainRole'] = $role;
                 }
                 if ($role['isMainContact'] && $role['isActive'] &&
-                    isset($entities[$role['associationId']]['mainContact'])
+                    !isset($entities[$role['associationId']]['mainContactRole'])
                 ) {
-                    $entities[$role['associationId']]['mainContact'] = $role;
+                    $entities[$role['associationId']]['mainContactRole'] = $role;
                 }
             }
         }

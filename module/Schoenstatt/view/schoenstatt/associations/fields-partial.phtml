@@ -19,9 +19,7 @@ echo $this->formHidden($form->get('associationId'));?>
 <?php
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('parentId'));
-$this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('kind'));
-$this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('country'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
