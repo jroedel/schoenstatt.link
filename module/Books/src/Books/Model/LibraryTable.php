@@ -494,7 +494,7 @@ class LibraryTable extends SionTable
         $bookIds = [];
         foreach ($withinLibraryIds as $withinLibraryId) {
             if (isset($bookLookup[$withinLibraryId])) {
-                $booksToCheckin[] = $bookLookup[$withinLibraryId];
+                $bookIds[] = $bookLookup[$withinLibraryId];
             }
         }
 
