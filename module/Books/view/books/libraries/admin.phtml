@@ -20,7 +20,7 @@ $this->headTitle($headText); ?>
         }
     ?>
 	<a href="<?php echo $this->url($route, $routeParameters);?>" class="list-group-item"><?php
-        if (key_exists('badges', $values) && is_array($values['badges'])) :
+	   if (isset($values['badges']) && is_array($values['badges'])) :
         foreach ($values['badges'] as $badge => $value) :
             if ($badge == 'info' || $badge == 'warning' || $badge == 'danger' || $badge == 'success') {
                 $badge = 'alert-'.$badge;

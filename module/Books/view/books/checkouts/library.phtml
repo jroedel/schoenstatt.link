@@ -1,9 +1,25 @@
 <?php
-$headText = sprintf($this->translate('Checkouts for %s'), $this->library['name']);
+// @todo add export option
+$title = [
+    'all' => 'Checkouts for %s',
+    'current' => 'Current checkouts for %s',
+    'overdue' => 'Overdue checkouts for %s',
+];
+$headText = sprintf($this->translate($title[$this->subset]), $this->library['name']);
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText); ?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
-<?php echo $this->partial('checkout-list', [
-    'entities'  => $this->entities,
-    'persons'   => $this->persons,
+<?php
+
+$columnOptions = [
+    'all'       => ['book', 'borrower', 'checkedOutOn', 'dueOn', 'checkedInOn'],
+    'current'   => ['withinLibraryId', 'book', 'borrower', 'checkedOutOn', 'dueOn'],
+    'overdue'   => ['withinLibraryId', 'book', 'borrower', 'checkedOutOn', 'dueOn'],
+];
+
+echo $this->partial('checkout-list', [
+    'entities'      => $this->entities,
+    'columns'       => $columnOptions[$this->subset],
+    'persons'       => $this->persons,
+    'showLibrary'   => false,
 ]);?>

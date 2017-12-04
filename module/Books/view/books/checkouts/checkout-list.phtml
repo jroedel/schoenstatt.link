@@ -1,48 +1,106 @@
 <?php
+// @todo add totals (categorized by returned/current checkouts
 use Books\Model\LibraryTable;
-$persons = $this->persons && is_array($this->persons) ? $this->persons : null;
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset('js/bootstrap-sortable.js'));
+$this->headLink()->appendStylesheet($this->basePath() . '/'. $this->asset('css/bootstrap-sortable.css'));
+$columnNames = [
+    'library'       => 'Library',
+    'book'          => 'Book',
+    'callNumber'    => 'Call number',
+    'withinLibraryId'=> 'Barcode',
+    'borrower'      => 'Checked out by',
+    'checkedOutOn'   => 'Checked out on',
+    'dueOn'         => 'Due on',
+    'checkedInOn'   => 'Checked in on',
+];
+$options = [
+    'showLabels' => false,
+];
+if ($this->options) {
+    if (isset($this->options['showLabels']) && is_bool($this->options['showLabels'])) {
+        $options['showLabels'] = $this->options['showLabels'];
+    }
+}
+$columns = [
+    'library', 'book', 'borrower', 'checkedOutOn', 'dueOn', 'checkedInOn'
+];
+if (isset($this->columns) && is_array($this->columns)) {
+    $columns = $this->columns;
+}
 
-/**
- * @param $entities mixed[]
- */
-?>
-<table class="table">
-<thead><tr>
-	<th><?php echo $this->translate('Library');?></th>
-	<th><?php echo $this->translate('Book');?></th>
-	<th><?php echo $this->translate('Checked out on');?></th>
-<?php if (!is_null($persons)):?>
-	<th><?php echo $this->translate('Checked out by');?></th>
-<?php endif;?>
-	<th><?php echo $this->translate('Due on');?></th>
-	<th><?php echo $this->translate('Checked in on');?></th>
-</tr></thead>
-<tbody>
-<?php foreach ($this->entities as $entityId => $entity) :
-    $rowClass = null;
-    if ($entity['status'] == LibraryTable::CHECKOUT_STATUS_OVERDUE) {
-        $rowClass = 'danger';
-    } elseif ($entity['status'] == LibraryTable::CHECKOUT_STATUS_RETURNED) {
-        $rowClass = 'success';
-    }?>
-<tr <?php if (!is_null($rowClass)) {
+$persons = $this->persons && is_array($this->persons) ? $this->persons : null;
+$areResults = isset($this->entities) && 0!=count($this->entities);
+if ($areResults) :
+$resultsTotal = 0;?>
+<div class="panel panel-default">
+<div id="book-list" class="table-responsive panel-body">
+    <table class="table sortable">
+        <thead>
+        <tr>
+            <?php foreach ($columns as $col) :?>
+                <th><?php echo $this->translate($columnNames[$col]);?></th>
+            <?php endforeach;?>
+        </tr>
+        </thead>
+        <tbody>
+        <?php foreach ($this->entities as $entityId => $entity):
+            $resultsTotal++;
+
+            $rowClass = null;
+            if ($entity['status'] == LibraryTable::CHECKOUT_STATUS_OVERDUE) {
+                $rowClass = 'danger';
+            } elseif ($entity['status'] == LibraryTable::CHECKOUT_STATUS_RETURNED) {
+                $rowClass = 'success';
+            }
+        ?>
+        <tr <?php if (isset($rowClass)) {
     echo "class=\"$rowClass\"";
 }?>>
-	<td><?php echo $this->formatEntity('library', $entity['book']['library'], ['displayEditPencil' => false]);?></td>
-	<td><?php echo $this->formatEntity('book', $entity['book']);?></td>
-	<td><?php echo $this->dateFormat($entity['checkedOutOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></td>
-<?php if (!is_null($persons)):?>
-	<td><?php if (isset($persons[$entity['personId']])) {
-	   echo $this->formatEntity('borrower', $this->persons[$entity['personId']]);
-	}?></td>
-<?php endif;?>
-	<td><?php if ($entity['dueOn']) {
-	   echo $this->dateFormat($entity['dueOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-    }?></td>
-	<td><?php if ($entity['checkedInOn']) {
-	    echo $this->dateFormat($entity['checkedInOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-	}?></td>
-</tr>
-<?php endforeach;?>
-</tbody>
-</table>
+<?php foreach ($columns as $col) :
+    switch ($col) :
+        case 'library':?>
+            <td><?php echo $this->formatEntity('library',
+                    $entity['book']['library'], ['displayEditPencil' => false]);
+            ?></td>
+        <?php break;
+        case 'book':?>
+            <td><?php echo $this->formatEntity('book', $entity['book']);?></td>
+        <?php break;
+        case 'callNumber':?>
+            <td><?php if (isset($entity['book']) && isset($entity['book']['callNumber'])) {
+                echo $this->escapeHtml($entity['book']['callNumber']);
+            }?></td>
+        <?php break;
+        case 'withinLibraryId':?>
+            <td><?php if (isset($entity['book']) && isset($entity['book']['withinLibraryId'])) {
+                echo $this->escapeHtml($entity['book']['withinLibraryId']);
+            }?></td>
+        <?php break;
+        case 'borrower':?>
+            <td><?php if (isset($persons[$entity['personId']])) {
+               echo $this->formatEntity('borrower', $this->persons[$entity['personId']]);
+            }?></td>
+        <?php break;
+        case 'dueOn':
+        case 'checkedOutOn':
+        case 'checkedInOn': ?>
+            <td><?php if (isset($entity[$col])) {
+                echo $this->dateFormat($entity[$col], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+            }?></td><?php
+            break;
+    endswitch;
+endforeach;
+    ?></tr><?php
+        endforeach;
+        ?></tbody>
+    </table>
+</div>
+<div class="panel-footer"><?php
+    if ($this->isAllowed('export')) :
+        $queryParams = array_merge(['rendererType' => 'PHPExcel'], $_GET); //@todo this could be insecure, filter?>
+    <span class="pull-right"><a href="<?php echo $this->url(null, [], ['query' => $queryParams], true);
+        ?>"><?php echo $this->translate("Export");?></a></span>
+    <?php endif;?>
+</div>
+</div>
+<?php endif;
