@@ -71,13 +71,27 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'libraries/library/inactivate-books'=> [
-                'label' => "Inactivate books",
-                'description' => 'Remove books from the library.',
+            'libraries/library/label-management'=> [
+                'label' => "Label management",
+                'description' => 'Print new call number labels and manage books pending a label change.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/batch-operations'=> [
+                'label' => "Batch book operations",
+                'description' => 'Perform changes to multiple books including inactivation, label printing, or changes to collection, language, or category.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
+//             'libraries/library/inactivate-books'=> [
+//                 'label' => "Inactivate books",
+//                 'description' => 'Remove books from the library.',
+//                 'route_parameters' => [
+//                     'library_id' => ':libraryId',
+//                 ],
+//             ],
 //             'libraries/popular-books'=> [
 //                 'label' => "Popular books",
 //                 'description' => 'View list of most popular books.',
@@ -87,8 +101,8 @@ return [
 //                 'description' => '',
 //             ],
             'library-imports/library'   => [
-                'label' => "Book imports",
-                'description' => 'View past book imports and import new books.',
+                'label' => "Library import/export",
+                'description' => 'Import or export library book information.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
@@ -474,6 +488,26 @@ return [
                                     'defaults' => [
                                         'action'     => 'massCheckout',
                                         'controller' => 'Books\Controller\Checkouts',
+                                    ],
+                                ],
+                            ],
+                            'label-management' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/label-management',
+                                    'defaults' => [
+                                        'action'     => 'labelManagement',
+                                        'controller' => 'Books\Controller\Libraries',
+                                    ],
+                                ],
+                            ],
+                            'batch-operations' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/batch-operations',
+                                    'defaults' => [
+                                        'action'     => 'batchOperations',
+                                        'controller' => 'Books\Controller\Libraries',
                                     ],
                                 ],
                             ],
@@ -1471,6 +1505,7 @@ return [
                 ['route' => 'libraries', 'roles' => ['lib_user']],
 
                 //@todo define library-specific ACL
+
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_library_administrator']],
                 ['route' => 'libraries/library/create', 'roles' => ['lib_administrator']],
@@ -1478,6 +1513,8 @@ return [
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/label-management', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],

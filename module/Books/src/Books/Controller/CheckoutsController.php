@@ -107,6 +107,7 @@ class CheckoutsController extends SionController
 
         return new ViewModel([
             'library'   => $library,
+            'subset'    => $subset,
             'entities'  => $entities,
             'persons'   => $persons,
         ]);
