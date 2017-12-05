@@ -86,11 +86,180 @@ class LibraryTable extends SionTable
                     break;
                 case self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE:
                 default:
-                    $return[$bookId] = $withinLibraryId.'-'.$book['author'].' '.$book['title'];
+                    $return[$bookId] = $withinLibraryId.'-'.$book['authorText'].' '.$book['title'];
                     break;
             }
         }
         return $return;
+    }
+
+    public function getAuthorsValueOptions($libraryId = null)
+    {
+        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+            throw new \InvalidArgumentException('This function can only be called for a specific library');
+        }
+        $cacheKey = 'library-author-texts-'.$libraryId;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $sql = "SELECT DISTINCT `author` FROM `lib_books` WHERE (`library_id` = ?) ORDER BY author";
+        $params = [$libraryId];
+        $results = $this->fetchSome(null, $sql, $params);
+
+        $authors = [];
+        $authorConcatenations = []; //these might be repeated so we have to check
+        foreach ($results as $row) {
+            $author = $this->filterDbString($row['author']);
+            if (isset($author)) {
+                if (false !== strpos($author, '|')) {
+                    $authorsList = $this->filterDbArray($author);
+                    foreach ($authorsList as $author) {
+                        $authorConcatenations[$author] = $author;
+                    }
+                } else {
+                    $authors[$author] = $author;
+                }
+            }
+        }
+        //factor in the concatenated authors, making sure not to push duplicates
+        foreach ($authorConcatenations as $key => $value) {
+            if (!isset($authors[$key])) {
+                $authors[$key] = $value;
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $authors, ['book']);
+        return $authors;
+    }
+
+    public function getKeywordsValueOptions($libraryId = null)
+    {
+        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+            throw new \InvalidArgumentException('This function can only be called for a specific library');
+        }
+        $cacheKey = 'library-keywords-'.$libraryId;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $sql = "SELECT DISTINCT `public_tags` FROM `lib_books` WHERE (`library_id` = ?) ORDER BY public_tags";
+        $params = [$libraryId];
+        $results = $this->fetchSome(null, $sql, $params);
+
+        $keywords = [];
+        $keywordConcatenations = []; //these might be repeated so we have to check
+        foreach ($results as $row) {
+            $keyword = $this->filterDbString($row['public_tags']);
+            if (isset($keyword)) {
+                if (false !== strpos($keyword, '|')) {
+                    $keywordList = $this->filterDbArray($keyword);
+                    foreach ($keywordList as $keyword) {
+                        $keywordConcatenations[$keyword] = $keyword;
+                    }
+                } else {
+                    $keywords[$keyword] = $keyword;
+                }
+            }
+        }
+        //factor in the concatenated authors, making sure not to push duplicates
+        foreach ($keywordConcatenations as $key => $value) {
+            if (!isset($keywords[$key])) {
+                $keywords[$key] = $value;
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $keywords, ['book']);
+        return $keywords;
+    }
+
+    public function getAdminKeywordsValueOptions($libraryId = null)
+    {
+        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+            throw new \InvalidArgumentException('This function can only be called for a specific library');
+        }
+        $cacheKey = 'library-admin-keywords-'.$libraryId;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $sql = "SELECT DISTINCT `admin_tags` FROM `lib_books` WHERE (`library_id` = ?) ORDER BY admin_tags";
+        $params = [$libraryId];
+        $results = $this->fetchSome(null, $sql, $params);
+
+        $keywords = [];
+        $keywordConcatenations = []; //these might be repeated so we have to check
+        foreach ($results as $row) {
+            $keyword = $this->filterDbString($row['admin_tags']);
+            if (isset($keyword)) {
+                if (false !== strpos($keyword, '|')) {
+                    $keywordList = $this->filterDbArray($keyword);
+                    foreach ($keywordList as $keyword) {
+                        $keywordConcatenations[$keyword] = $keyword;
+                    }
+                } else {
+                    $keywords[$keyword] = $keyword;
+                }
+            }
+        }
+        //factor in the concatenated authors, making sure not to push duplicates
+        foreach ($keywordConcatenations as $key => $value) {
+            if (!isset($keywords[$key])) {
+                $keywords[$key] = $value;
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $keywords, ['book']);
+        return $keywords;
+    }
+
+    public function getPublishersValueOptions($libraryId = null)
+    {
+        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+            throw new \InvalidArgumentException('This function can only be called for a specific library');
+        }
+        $cacheKey = 'library-publishers-'.$libraryId;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $sql = "SELECT DISTINCT `publisher`
+FROM `lib_books`
+WHERE (`library_id` = ?)
+ORDER BY `publisher`";
+        $params = [$libraryId];
+        $results = $this->fetchSome(null, $sql, $params);
+        $values = null;
+        foreach ($results as $row) {
+            $publisher = $this->filterDbString($row['publisher']);
+            if (isset($publisher)) {
+                $values[$publisher] = $publisher;
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $values, ['book']);
+        return $values;
+    }
+
+    public function getCategoryValueOptions($libraryId = null)
+    {
+        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+            throw new \InvalidArgumentException('This function can only be called for a specific library');
+        }
+        $cacheKey = 'library-categories-'.$libraryId;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $sql = "SELECT DISTINCT `category` FROM `lib_books` WHERE (`library_id` = ?) ORDER BY category";
+        $params = [$libraryId];
+        $results = $this->fetchSome(null, $sql, $params);
+
+        $categories = [];
+        foreach ($results as $row) {
+            $category = $this->filterDbString($row['category']);
+            if (isset($category)) {
+                $categories[$category] = $category;
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $categories, ['book']);
+        return $categories;
     }
 
     public function getCollectionValueOptions($libraryId = null)
@@ -186,7 +355,7 @@ class LibraryTable extends SionTable
             }
 
             if (isset($query['search']) &&
-               false === stripos($filter->filter($book['author']), $query['search']) &&
+               false === stripos($filter->filter($book['authorText']), $query['search']) &&
                false === stripos($filter->filter($book['title']), $query['search']) &&
                false === stripos($filter->filter($book['callNumber']), $query['search']) &&
                false === stripos($filter->filter($book['category']), $query['search']) &&
@@ -250,7 +419,7 @@ class LibraryTable extends SionTable
         if (!isset($select)) {
             $select = new Select('lib_books');
 //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['book_id', 'library_id', 'collection_id', 'author', 'title', 'edition', 'call_number',
+            $select->columns(['book_id', 'library_id', 'collection_id', 'author', 'title', 'edition', 'call_number', 'new_call_number',
 'category', 'pages', 'lang', 'original_id', 'publication_id', 'updated_at', 'created_by', 'created_at', 'updated_by',
 'inactivation_reason', 'is_active', 'isbn', 'copyright_year', 'publisher', 'publisher_place', 'public_tags', 'admin_tags',
 'public_notes', 'public_notes_updated_at', 'public_notes_updated_by', 'admin_notes', 'admin_notes_updated_at',
@@ -313,20 +482,23 @@ class LibraryTable extends SionTable
     protected function processBookRow($row)
     {
         $id = $this->filterDbId($row['book_id']);
-        $author = $this->filterDbString($row['author']);
+        $authorText = $this->filterDbString($row['author']);
+        $authors = $this->filterDbArray($authorText);
+        $authorsPrettyText = implode('; ', $authors);
         $title = $this->filterDbString($row['title']);
-        $name = $author . ($author ? ' - ' : '') . $title;
+        $name = $authorsPrettyText . ($authorText ? ' - ' : '') . $title;
         $isActive = $this->filterDbBool($row['is_active']);
         $processedRow = [
             'bookId'                => $id,
             'collectionId'          => $this->filterDbId($row['collection_id']),
-            'author'                => $author,
+            'authorText'            => $authorText,
             'title'                 => $title,
-            'edition'               => $this->filterDbString($row['edition']),
+            'bookEdition'           => $this->filterDbString($row['edition']),
             'callNumber'            => $this->filterDbString($row['call_number']),
+            'newCallNumber'         => $this->filterDbString($row['new_call_number']),
             'category'              => $this->filterDbString($row['category']),
-            'pages'                 => $this->filterDbInt($row['pages']),
-            'language'              => $this->filterDbString($row['lang']),
+            'numberOfPages'         => $this->filterDbInt($row['pages']),
+            'inLanguage'            => $this->filterDbArray($row['lang']),
             'withinLibraryId'       => $this->filterDbId($row['original_id']),
             'libraryId'             => $this->filterDbId($row['library_id']),
             'publicationId'         => $this->filterDbId($row['publication_id']),
@@ -336,7 +508,6 @@ class LibraryTable extends SionTable
             'updatedBy'             => $this->filterDbId($row['updated_by']),
             'createdOn'             => $this->filterDbDate($row['created_at']),
             'createdBy'             => $this->filterDbId($row['created_by']),
-
             'copyrightYear'         => $this->filterDbInt($row['copyright_year']),
             'publisher'             => $this->filterDbString($row['publisher']),
             'publishingPlace'       => $this->filterDbString($row['publisher_place']),
@@ -350,6 +521,8 @@ class LibraryTable extends SionTable
             'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
             'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
 
+            'authors'               => $authors,
+            'authorsPrettyText'     => $authorsPrettyText,
             'name'                  => $name,
             'isAvailable'           => $isActive, //available unless proved otherwise
             'isCheckedOut'          => false, //until proved otherwise
@@ -357,6 +530,21 @@ class LibraryTable extends SionTable
             'library'               => null,
         ];
         return $processedRow;
+    }
+
+
+    /**
+     * Process book data before putting into the database.
+     * @param mixed[] $data
+     * @param mixed[] $entityData
+     * @return mixed[]
+     */
+    protected function preprocessBook($data, $entityData, $action)
+    {
+        if (isset($data['authors'])) {
+            $data['authorText'] = implode('|',$data['authors']);
+        }
+        return $data;
     }
 
     /**
@@ -1203,7 +1391,7 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
     }
 
     /**
-     *
+     * @todo factor out getBooks because it uses too much memory
      * @param int $id
      * @return mixed[]
      */

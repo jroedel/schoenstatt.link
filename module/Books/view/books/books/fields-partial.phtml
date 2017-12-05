@@ -1,0 +1,80 @@
+<?php
+use Books\Form\BookForm;
+use Zend\Json\Json;
+
+$this->headLink()->appendStylesheet($this->basePath() . '/css/jquery-ui.min.css');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
+$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
+$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/book-form.js"));
+/** @var BookForm $form */
+$form = $this->form;
+$libraryOptions = $form->getLibraryOptions();
+echo $this->formRow($form->get('title'));
+$this->formSelect()->setTranslatorEnabled(false);
+echo $this->formRow($form->get('authors'));
+echo $this->formRow($form->get('callNumber'));
+echo $this->formRow($form->get('newCallNumber'));
+echo $this->formRow($form->get('collectionId'));
+echo $this->formRow($form->get('bookEdition'));
+echo $this->formRow($form->get('inLanguage'));
+echo $this->formRow($form->get('publicationId'));
+echo $this->formRow($form->get('category'));
+echo $this->formRow($form->get('isbn'));
+echo $this->formRow($form->get('numberOfPages'));
+echo $this->formRow($form->get('copyrightYear'));
+echo $this->formRow($form->get('publisher'));
+echo $this->formRow($form->get('publishingPlace'));
+echo $this->formRow($form->get('keywords'));?>
+<div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
+<?php
+echo $this->formRow($form->get('publicNotes'));
+echo $this->formRow($form->get('adminNotes'));
+echo $this->formRow($form->get('adminTags'));
+echo $this->formRow($form->get('isActive'));
+echo $this->formRow($form->get('inactivationReason'));
+echo $this->formRow($form->get('security'));
+$libraryOptionsJson = Json::encode($libraryOptions);
+$jsScript = <<<JS
+libraryOptions = $libraryOptionsJson;
+$("select[name='authors[]']").selectize({
+    create: true,
+    sortField: 'text',
+    delimiter: ';'
+});
+$("select[name='inLanguage[]']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='publisher']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='publicationId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='keywords[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='adminTags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+
+//use the following function with JqueryUI to validate the ISBN
+function validateIsbn(a){var b=i=r=0,t=10,l=a.length;if(l==t){for(i;i<9;i++)b+=a[i]*(t-i);r=(b+(a[9]=='X'?t:a[9]))%11==0}if(l==13){for(i;i<12;i++)b+=(i+1)%2?+a[i]:a[i]*3;r=b%t==t-(+a[12]||t)}return r?a:0}
+
+console.log(libraryOptions);
+JS;
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();
+
+?>

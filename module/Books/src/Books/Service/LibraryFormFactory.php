@@ -32,9 +32,14 @@ class LibraryFormFactory implements FactoryInterface
 		    $personValueOptionsOptions[$key] = $options['label'];
 		}
 
+		/** @var LibraryTable $table */
+		$table = $serviceLocator->get('Books\Model\LibraryTable');
+		$collections = $table->getCollectionValueOptions();
+
         $form = new LibraryForm();
         $form->get('filiationId')->setValueOptions($config['library_filiation_options']);
         $form->get('contactPersonId')->setValueOptions($persons);
+        $form->get('mainCollectionId')->setValueOptions($collections);
         $form->get('mainShowDisplay')->setValueOptions(LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS);
         $form->get('defaultCheckoutPersonId')->setValueOptions($persons);
         $form->get('checkoutPersonListKind')->setValueOptions($personValueOptionsOptions);

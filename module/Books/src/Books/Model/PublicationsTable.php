@@ -128,14 +128,14 @@ GROUP BY Author ORDER BY Author";
 FROM `sch_publications`
 ORDER BY `Publisher`";
         $results = $this->fetchSome(null, $sql, null);
-        $authors = null;
+        $values = null;
         foreach ($results as $row) {
             $publisher = $this->filterDbString($row['Publisher']);
             if (isset($publisher)) {
-                $authors[$publisher] = $publisher;
+                $values[$publisher] = $publisher;
             }
         }
-        return $authors;
+        return $values;
     }
 
     public function getKeywordsValueOptions()

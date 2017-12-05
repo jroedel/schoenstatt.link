@@ -78,12 +78,12 @@ class LibraryImportsController extends SionController
     private function getColegioMayorLibraryFieldsMap()
     {
         return [
-            'author'            => 'Autor',
+            'authorText'            => 'Autor',
             'title'             => 'Titulo',
             'callNumber'        => 'Lomo',
             'category'          => 'Categoría',
-            'pages'             => 'Páginas',
-            'language'          => 'Idioma',
+            'numberOfPages'             => 'Páginas',
+            'inLanguage'          => 'Idioma',
             'withinLibraryId'   => 'ID',
             'copyrightYear'     => 'Año',
             'publisher'         => 'Editorial',
@@ -91,7 +91,7 @@ class LibraryImportsController extends SionController
             'isbn'              => 'ISBN',
             'publicationId'     => 'PubID',
             'keywords'          => 'Categorías',
-            'edition'           => 'Edition',
+            'bookEdition'           => 'Edition',
             'collection'        => 'Biblioteca',
         ];
     }
@@ -177,13 +177,13 @@ class LibraryImportsController extends SionController
 
             'publicationId',
             'collectionId',
-            'author',
+            'authorText',
             'title',
-            'edition',
+            'bookEdition',
             'callNumber',
             'category',
-            'pages',
-            'language',
+            'numberOfPages',
+            'inLanguage',
             'withinLibraryId',
             'publicationId',
             'isActive',
@@ -350,7 +350,7 @@ class LibraryImportsController extends SionController
                     //fill in info from the publication to the books table
                     $params['title'] = $publications[$publicationId]['title'];
                     if (isset($publications[$publicationId]['authorsText'])) {
-                        $params['author'] = $publications[$publicationId]['authorsText'];
+                        $params['authorText'] = $publications[$publicationId]['authorsText'];
                     }
                     if (isset($publications[$publicationId]['copyrightYear'])) {
                         $params['copyrightYear'] = $publications[$publicationId]['copyrightYear'];
@@ -362,10 +362,10 @@ class LibraryImportsController extends SionController
                         $params['publishingPlace'] = $publications[$publicationId]['publishingPlace'];
                     }
                     if (isset($publications[$publicationId]['numberOfPages'])) {
-                        $params['pages'] = $publications[$publicationId]['numberOfPages'];
+                        $params['numberOfPages'] = $publications[$publicationId]['numberOfPages'];
                     }
                     if (isset($publications[$publicationId]['inLanguage'])) {
-                        $params['language'] = $publications[$publicationId]['inLanguage'];
+                        $params['inLanguage'] = $publications[$publicationId]['inLanguage'];
                     }
                     if (isset($publications[$publicationId]['isbn'])) {
                         $params['isbn'] = $publications[$publicationId]['isbn'];

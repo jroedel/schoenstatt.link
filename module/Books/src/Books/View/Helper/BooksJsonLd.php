@@ -7,7 +7,7 @@ use Spatie\SchemaOrg\Schema;
 class BooksJsonLd extends AbstractHelper
 {
     public static $fieldSchemaPropertyMap = [
-        'author'                        => 'author',
+        'authorText'                        => 'authorText',
         'bookEdition'                   => 'bookEdition',
         'bookFormatTypeUrl'             => 'bookFormat',
         'copyrightYear'                 => 'copyrightYear',
@@ -53,7 +53,7 @@ class BooksJsonLd extends AbstractHelper
         //special: author, 'sameAs', translatedFromPublicationId (isBasedOnUrl)
         foreach (self::$fieldSchemaPropertyMap as $field => $property) {
             switch ($field) {
-                case 'author':
+                case 'authorText':
                     if (!empty($publication['authorPersons'])) {
 
                     } elseif (!is_null($publication['authorsText'])) {
