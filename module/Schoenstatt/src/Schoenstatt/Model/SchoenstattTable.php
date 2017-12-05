@@ -270,9 +270,6 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         $entities = $this->getUnlinkedAssociations();
 
         foreach ($entities as $entityId => $entity) {
-            if ($entityId !== $entity['associationId']) {
-                var_dump($entityId);
-            }
             if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
                 $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
                 $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];

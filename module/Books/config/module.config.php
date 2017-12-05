@@ -182,6 +182,7 @@ return [
             'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
             'Books\Form\PublicationForm'        => 'Books\Service\PublicationFormFactory',
             'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
+            'Books\Form\BookForm'               => 'Books\Service\BookFormFactory',
             'Books\FathersObjects'              => 'Books\Service\FathersObjectsFactory',
             'Books\BorrowersValueOptions'       => 'Books\Service\BorrowersValueOptionsService',
             'Books\AuthorsValueOptions'         => 'Books\Service\AuthorsValueOptionsService',
@@ -236,7 +237,7 @@ return [
                         'options' => [
                             'route'    => '/:inLanguage',
                             'constraints' => [
-                                'language' => '[a-z]{2,2}',
+                                'inLanguage' => '[a-z]{2,2}',
                             ],
                             'defaults' => [
                                 'action'     => 'index',
@@ -985,12 +986,12 @@ return [
                 'show_route'                                => 'books/book',
                 'show_route_key'                            => 'book_id',
                 'show_route_key_field'                      => 'bookId',
-                'edit_action_form'                          => 'Project\Form\EditEventForm',
+                'edit_action_form'                          => 'Books\Form\BookForm',
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'books/book/edit',
                 'edit_route_key'                            => 'book_id',
                 'edit_route_key_field'                      => 'bookId',
-//                 'create_action_form'                        => 'Patres\Form\CreateBookForm',
+                'create_action_form'                        => 'Books\Form\BookForm',
 //                 'create_action_valid_data_handler'          => 'createEvent',
                 'create_action_redirect_route'              => 'books/book',
                 'create_action_redirect_route_key'          => 'book_id',
@@ -1001,26 +1002,27 @@ return [
 //                 'touch_field_route_key'                     => 'event_id',
 //                 'touch_json_route'                          => 'events/event/touch',
 //                 'touch_json_route_key'                      => 'event_id',
-//                 'database_bound_data_preprocessor'          => 'preprocessEvent',
+                'database_bound_data_preprocessor'          => 'preprocessBook',
 //                 'database_bound_data_postprocessor'         => 'postprocessEvent',
 //                 'moderate_route'                            => 'events/event/moderate',
 //                 'moderate_route_entity_key'                 => 'event_id',
                 'has_dedicated_suggest_form'                => false,
 //                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
-//                 'enable_delete_action'                      => true,
+                'enable_delete_action'                      => false,
 //                 'delete_action_acl_resource'                => 'event_:id',
 //                 'delete_action_acl_permission'              => 'delete_event',
 //                 'delete_action_redirect_route'              => 'events',
                 'update_columns' => [
                     'bookId'                    => 'book_id',
                     'collectionId'              => 'collection_id',
-                    'author'                    => 'author',
+                    'authorText'                => 'author',
                     'title'                     => 'title',
-                    'edition'                   => 'edition',
+                    'bookEdition'               => 'edition',
                     'callNumber'                => 'call_number',
+                    'newCallNumber'             => 'new_call_number',
                     'category'                  => 'category',
-                    'pages'                     => 'pages',
-                    'language'                  => 'lang',
+                    'numberOfPages'             => 'pages',
+                    'inLanguage'                => 'lang',
                     'withinLibraryId'           => 'original_id',
                     'libraryId'                 => 'library_id',
                     'publicationId'             => 'publication_id',
@@ -1506,6 +1508,10 @@ return [
 
                 //@todo define library-specific ACL
 
+                ['route' => 'books/book', 'roles' => ['lib_user']],
+                ['route' => 'books/book/edit', 'roles' => ['lib_library_moderator']],
+                ['route' => 'books/create', 'roles' => ['lib_library_moderator']],
+
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_library_administrator']],
                 ['route' => 'libraries/library/create', 'roles' => ['lib_administrator']],
@@ -1552,6 +1558,10 @@ return [
                 'js/checkin.js' => [
                     'js/multiple-checkouts.js',
                 ],
+                'js/book-form.js' => [
+                    'js/jquery-ui.min.js',
+                    'js/selectize.min.js',
+                ],
             ],
             'paths' => [
                 'Books' => __DIR__ . '/../public',
@@ -1565,6 +1575,12 @@ return [
                 ],
             ],
             'js/checkin.js' => [
+                'cache'     => 'AssetManager\\Cache\\FilePathCache',
+                'options' => [
+                    'dir' => 'public', // path/to/cache
+                ],
+            ],
+            'js/book-form.js' => [
                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
                 'options' => [
                     'dir' => 'public', // path/to/cache

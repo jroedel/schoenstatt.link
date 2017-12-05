@@ -30,7 +30,7 @@ if (isset($this->entities) && !is_null($this->entities) && !empty($this->entitie
     <?php endif;?>
     </th><?php endif;?>
     	<td><?php echo $this->escapeHtml($book['callNumber']);?></td>
-    	<td><?php echo $this->escapeHtml($book['author']);?></td>
+    	<td><?php echo $this->escapeHtml($book['authorText']);?></td>
     	<?php if (0 && !is_null($book['file_type'])) :?>
         	<td><a href="<?php echo $book['url']; //echo $this->url('library/book', ['book_id' => $book['book_id']));?>" target="_blank">
         	<?php echo $book['title'];?></a>
@@ -38,7 +38,7 @@ if (isset($this->entities) && !is_null($this->entities) && !empty($this->entitie
     	<?php else: ?>
     		<td><?php echo $this->escapeHtml($book['title']);?></td>
     	<?php endif;?>
-    	<td><?php echo $this->escapeHtml($book['edition']);?></td>
+    	<td><?php echo $this->escapeHtml($book['bookEdition']);?></td>
     	<td><?php if (!is_null($book['currentCheckout'])) {
     	    echo $this->formatEntity('checkout', $book['currentCheckout']);
     	    if ($this->isAllowed('view_checkout_person') && isset($this->borrowers) &&

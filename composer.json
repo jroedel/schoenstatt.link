@@ -32,7 +32,7 @@
         "bjyoungblood/bjy-authorize": "^1.4.0",
     	"goalio/goalio-rememberme": "1.*",
         "zf-commons/zfc-user": "1.0.0",
-        "slm/locale": "dev-master",
+        "slm/locale": "~0.2",
         "matriphe/iso-639": "^1.0",
 		"cakephp/utility": "^3.2.0",
         "mledoze/countries": "^1.8.0",

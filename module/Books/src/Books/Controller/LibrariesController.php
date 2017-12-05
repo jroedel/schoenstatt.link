@@ -26,7 +26,7 @@ class LibrariesController extends SionController
         $view = parent::showAction();
         $entityObject = $view->getVariable('entity');
         $params = $this->params()->fromQuery();
-        if (!is_null($entityObject['libraryId'])) {
+        if (isset($entityObject['libraryId'])) {
             $params['libraryId'] = $entityObject['libraryId'];
         }
         $sm = $this->getServiceLocator();
@@ -64,6 +64,16 @@ class LibrariesController extends SionController
         return $view;
     }
 
+    public function labelManagementAction()
+    {
+
+    }
+
+    public function batchOperationsAction()
+    {
+
+    }
+
     public function getBookListJsonAction()
     {
         $sm = $this->getServiceLocator();
@@ -95,30 +105,30 @@ class LibrariesController extends SionController
         /** @var TranslationsTable $translations */
         $translations = $sm->get('JTranslate\Model\TranslationsTable');
 
-        if (key_exists('admin/moderate', $pages)) {
+        if (isset($pages['admin/moderate'])) {
 //             $suggestionCount = $table->getSuggestionCount();
 //             $pages['admin/moderate']['badges'] = [$suggestionCount ? ' '.$suggestionCount : " 0"];
         }
 
-        if (key_exists('jtranslate', $pages)) {
+        if (isset($pages['jtranslate'])) {
             $pages['jtranslate']['badges'] = [(string) $translations->getOutstandingTranslationCount()];
         }
 
-        if (key_exists('admin/website-status', $pages)) {
+        if (isset($pages['admin/website-status'])) {
             $pages['admin/website-status']['badges'] = [count($this->getKnownIssues())];
         }
 
-        if (key_exists('sion-model/data-problems', $pages)) {
+        if (isset($pages['sion-model/data-problems'])) {
             $problemCounts = $this->getProblemCounts();
             $pages['sion-model/data-problems']['badges'] = $problemCounts;
         }
 
-        if (key_exists('library-imports/library', $pages)) {
+        if (isset($pages['library-imports/library'])) {
             $importCount = $table->getLibraryImports();
             $pages['library-imports/library']['badges'] = [count($importCount)];
         }
 
-        if (key_exists('sion-model/auto-fix-data-problems', $pages)) {
+        if (isset($pages['sion-model/auto-fix-data-problems'])) {
             /** @var ProblemService $problemService */
             $problemService = $sm->get('SionModel\Service\ProblemService');
             $problems = $problemService->getCurrentProblems();
@@ -148,7 +158,7 @@ class LibrariesController extends SionController
         ];
         foreach ($problems as $problem) {
             $severity = $problem->getSeverity();
-            if (key_exists($severity, $problemCounts)) {
+            if (isset($problemCounts[$severity])) {
                 $problemCounts[$severity]++;
             }
         }
@@ -258,7 +268,7 @@ class LibrariesController extends SionController
     {
         $entities = [];
         foreach ($books as $bookId => $book) {
-            if (!key_exists($book['libraryId'], $entities)) {
+            if (!isset($entities[$book['libraryId']])) {
                 $entities[$book['libraryId']] = $book['library'];
             }
             $entities[$book['libraryId']]['books'][] = $book;

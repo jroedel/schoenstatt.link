@@ -31,8 +31,9 @@ class LibraryTableServiceFactory implements FactoryInterface
 
 		/** @var \Zend\Mvc\Router\RouteMatch $routeMatch */
 		$routeMatch = $serviceLocator->get('Application')->getMvcEvent()->getRouteMatch();
-		if (!is_null($libraryId = $routeMatch->getParam('library_id'))) {
-		  $table->setLibraryId($libraryId);
+		$libraryId = $routeMatch->getParam('library_id');
+		if (isset($libraryId)) {
+            $table->setLibraryId($libraryId);
 		}
 		return $table;
     }
