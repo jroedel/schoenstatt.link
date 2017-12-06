@@ -36,12 +36,11 @@ class CollectionOptions implements ArraySerializableInterface
      */
     public $callNumberExplanation;
     /**
-     * @todo What should be displayed on the index show page?
+     * What should be displayed on the index show page?
      * @var string $mainShowDisplay
      */
     public $mainShowDisplay;
     /**
-     * @todo Should the library require call numbers?
      * @var bool $requireCallNumbers
      */
     public $requireCallNumbers = false;
@@ -56,7 +55,7 @@ class CollectionOptions implements ArraySerializableInterface
      */
     public $enforceCallNumberRegex = false;
     /**
-     * @todo The 3 label lines indicate how to format a label for the spine of a book
+     * The 3 label lines indicate how to format a label for the spine of a book
      * @var string $labelLine1
      */
     public $labelLine1;

@@ -34,6 +34,17 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'callNumberPlaceholder',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Call number placeholder',
+                'required' => false,
+            ],
+            'attributes' => [
+                'maxlength' => '50',
+            ],
+        ]);
+        $this->add([
             'name' => 'callNumberHelpText',
             'type' => 'Text',
             'options' => [
@@ -42,7 +53,6 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
             'attributes' => [
                 'maxlength' => '255',
-                'rows' => '3',
             ],
         ]);
         $this->add([
@@ -397,6 +407,28 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            'callNumberPlaceholder' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 50,
+                        ],
+                    ],
+                ],
+            ],
             'callNumberHelpText' => [
                 'required' => false,
                 'filters' => [
@@ -423,7 +455,6 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'filters' => [
                     ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [

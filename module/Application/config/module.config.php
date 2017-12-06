@@ -141,7 +141,7 @@ return [
             ),
             'paths' => array(
 //                 'photos' => __DIR__ . '/../../../../data/foto',
-                'Application' => __DIR__ . '/../public',
+                __NAMESPACE__ => __DIR__ . '/../public',
             ),
 //             'map' => array(
 //                 'specific-path.css' => __DIR__ . '/some/particular/file.css',
