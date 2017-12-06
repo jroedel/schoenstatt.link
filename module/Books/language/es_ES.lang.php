@@ -11,6 +11,7 @@ return array(
     'Data problems' => 'Problemas en los datos',
     'Edition' => 'Edición',
     'English' => 'Inglés',
+    'Export' => 'Exportar',
     'Field' => 'Campo',
     'Filiation' => 'Filial',
     'German' => 'Alemán',

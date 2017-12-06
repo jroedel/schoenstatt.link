@@ -7,6 +7,13 @@ use Zend\Db\Adapter\AdapterInterface;
 use SionModel\Filter\ToAscii;
 use Carbon\Carbon;
 use Zend\Db\Sql\Select;
+use Zend\Db\Sql\Predicate\Expression;
+use Zend\Db\Sql\Where;
+use Zend\Db\Sql\Predicate\Predicate;
+use Zend\Db\Sql\Predicate\Like;
+use Zend\Db\Sql\Predicate\Operator;
+use Zend\Db\Sql\Predicate\PredicateSet;
+use Zend\Db\Sql\Predicate\In;
 
 class LibraryTable extends SionTable
 {
@@ -35,6 +42,10 @@ class LibraryTable extends SionTable
     const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS = 'show-collections';
     const MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS_CATEGORIES = 'show-collections-categories';
 //     const MAIN_SHOW_DISPLAY_SHOW_LANGUAGES = 'show-languages';
+
+    const BOOK_QUERY_FIELDS = [
+        'title', 'author',
+    ];
 
     /** @var UserTable $userTable */
     protected $userTable;
@@ -276,103 +287,152 @@ ORDER BY `publisher`";
     }
 
     /**
-     * Search for books. Returns a list of books. The query parameters are:
-     * search(string), libraryId(int|array), maxResults(int)
-     * @param mixed[] $query
+     * Search for books. Returns a list of books.
+     * @param mixed[] $query search(string), libraryId(int|array)
+     *      category(string|array)
+     * @param mixed[] $options maxResults(int)
      * @return mixed[]
      */
-    public function searchBooks($query)
+    public function searchBooks($query, $options = [])
     {
-        $filter = new ToAscii();
-        if (isset($query['search']) && null !== $query['search']) {
-            $query['search'] = $filter->filter($query['search']);
+        $libraryId = $this->getLibraryId();
+
+        $queryParameters = [
+            'title', 'author', 'search',
+            'isActive', 'isCheckedOut',
+            'collectionId', 'libraryId', 'category'
+        ];
+        $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
+
+        $fieldMap = $this->getEntitySpecification('book')->updateColumns;
+
+        $gateway = $this->getTableGateway('lib_books');
+        $select = $this->getBookSelectPrototype();
+        $where = new Where();
+
+        //Prepare the libraryId predicate
+        $libraryClause = null;
+        if (isset($query['libraryId'])) {
+            if (is_array($query['libraryId'])) {
+                $libaries = [];
+                foreach ($query['libraryId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $libaries)) {
+                        $libaries[] = $value;
+                    }
+                }
+                if (count($libaries) === 1) {
+                    $query['libraryId'] = $libaries[0];
+                } elseif (count($libraries) > 1) {
+                    $libraryClause = new In($fieldMap['libraryId'], $libaries);
+                }
+            }
+            if (is_numeric($query['libraryId'])) {
+                $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $query['libraryId']);
+            }
+        } elseif (isset($libraryId)) { //if the caller didn't specify a libraryId query param, set the current library
+            $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $libraryId);
+        }
+        if (isset($libraryClause)) {
+            $where->addPredicate($libraryClause, PredicateSet::OP_AND);
         }
 
-        $entities = $this->getBooks();
-        $results = [];
-        $count = 0;
-        foreach ($entities as $bookId => $book) {
-            //isActive, by default we don't include inactive books,
-            //if query['isActive'] is null, we include everything, otherwise whatever it says it should be
-            if (!isset($query['isActive']) && !$book['isActive']
-            ) {
-                continue;
-            } else if (isset($query['isActive']) &&
-                $query['isActive'] !== $book['isActive']
-            ) {
-                continue;
-            }
-
-            //isAvailable
-            if (isset($query['isAvailable']) && is_bool($query['isAvailable']) &&
-                $query['isAvailable'] != $book['isAvailable']
-            ) {
-                continue;
-            }
-
-            //isCheckedOut
-            if (isset($query['isCheckedOut']) && is_bool($query['isCheckedOut']) &&
-                $query['isCheckedOut'] != $book['isCheckedOut']
-            ) {
-                continue;
-            }
-
-            //library
-            if (isset($query['libraryId']) && is_numeric($query['libraryId']) &&
-                $query['libraryId'] != $book['libraryId']
-            ) {
-                continue;
-            }
-            if (isset($query['libraryId']) && is_array($query['libraryId']) &&
-                !in_array($book['libraryId'], $query['libraryId'])
-            ) {
-                continue;
-            }
-
-
-            //collection
-            if (isset($query['collectionId']) && is_numeric($query['collectionId']) &&
-                $query['collectionId'] != $book['collectionId']
-            ) {
-                continue;
-            }
-            if (isset($query['collectionId']) && is_array($query['collectionId']) &&
-                !in_array($book['collectionId'], $query['collectionId'])
-            ) {
-                continue;
-            }
-
-            //category
-            if (isset($query['category']) && is_string($query['category']) &&
-                $query['category'] != $book['category']
-            ) {
-                continue;
-            }
-            if (isset($query['category']) && is_array($query['category']) &&
-                !in_array($book['category'], $query['category'])
-            ) {
-                continue;
-            }
-
-            if (isset($query['search']) &&
-               false === stripos($filter->filter($book['authorText']), $query['search']) &&
-               false === stripos($filter->filter($book['title']), $query['search']) &&
-               false === stripos($filter->filter($book['callNumber']), $query['search']) &&
-               false === stripos($filter->filter($book['category']), $query['search']) &&
-                !(!isset($query['libraryId']) && //@todo test this
-                    false === stripos($filter->filter($book['library']['name']), $query['search']))
-            ) {
-                continue;
-            }
-            $count++;
-            if (isset($query['maxResults']) && is_numeric($query['maxResults']) &&
-                $count > $query['maxResults']
-            ) {
-                break;
-            }
-            $results[$bookId] = $book;
+        //Prepare the search predicate
+        if (isset($query['search'])) {
+            $search = $query['search'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $searchClause = new Predicate();
+            $searchClause->addPredicates([
+                new Like($fieldMap['authorText'], $searchLike),
+                new Like($fieldMap['title'], $searchLike),
+                new Like($fieldMap['category'], $searchLike),
+                new Like($fieldMap['callNumber'], $searchLike),
+                new Operator($fieldMap['withinLibraryId'], Operator::OPERATOR_EQUAL_TO, $search),
+            ], PredicateSet::OP_OR);
+            $where->addPredicate($searchClause);
         }
-        return $results;
+
+        // Prepare collectionId predicate
+        if (isset($query['collectionId'])) {
+            $collectionIdClause = null;
+            if (is_array($query['collectionId'])) {
+                $collections = [];
+                foreach ($query['collectionId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $collections)) {
+                        $collections[] = $value;
+                    }
+                }
+                if (count($collections) === 1) {
+                    $query['collectionId'] = $collections[0];
+                } elseif (count($collections) > 1) {
+                    $collectionIdClause= new In($fieldMap['collectionId'], $collections);
+                }
+            }
+            if (is_numeric($query['collectionId'])) {
+                $collectionIdClause= new Operator($fieldMap['collectionId'], Operator::OPERATOR_EQUAL_TO, $query['collectionId']);
+            }
+            if (isset($collectionIdClause)) {
+                $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
+            }
+        }
+
+        //Prepare category predicate
+        if (isset($query['category'])) {
+            $categoryClause = null;
+            if (is_array($query['category'])) {
+                $categories = [];
+                foreach ($query['category'] as $value) {
+                    if (0 !== strlen($value) && !in_array($value, $categories)) {
+                        $categories[] = $value;
+                    }
+                }
+                if (count($categories) === 1) {
+                    $query['category'] = $categories[0];
+                } elseif (count($categories) > 1) {
+                    $categoryClause= new In($fieldMap['category'], $categories);
+                }
+            }
+            if (is_string($query['category']) && 0 !== strlen($query['category'])) {
+                $categoryClause = new Operator($fieldMap['category'], Operator::OPERATOR_EQUAL_TO, $query['category']);
+            }
+            if (isset($categoryClause)) {
+                $where->addPredicate($categoryClause, PredicateSet::OP_AND);
+            }
+        }
+
+        //Prepare title predicate
+        if (isset($query['title']) && 0 !== strlen($query['title'])) {
+            $search = $query['title'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $titleClause = new Operator($fieldMap['title'], Operator::OPERATOR_EQUAL_TO, $query['title']);
+            $where->addPredicate($titleClause, PredicateSet::OP_AND);
+        }
+
+        //Prepare author predicate
+        if (isset($query['authorText']) && 0 !== strlen($query['author'])) {
+            $search = $query['author'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $authorClause= new Operator($fieldMap['authorText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
+            $where->addPredicate($authorClause, PredicateSet::OP_AND);
+        }
+
+        //Prepare isActive predicate
+        if (isset($query['isActive']) && is_bool($query['isActive'])) {
+            $authorClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
+            $where->addPredicate($authorClause, PredicateSet::OP_AND);
+        }
+
+        //@todo Prepare isCheckedOut
+
+        //Set the where clause
+        $select->where($where);
+
+        $results = $gateway->selectWith($select);
+        $entities = [];
+        foreach ($results as $row) {
+            $processedRow = $this->processBookRow($row);
+            $entities[$processedRow['bookId']] = $processedRow;
+        }
+        return $entities;
     }
 
     /**
@@ -423,7 +483,7 @@ ORDER BY `publisher`";
 'category', 'pages', 'lang', 'original_id', 'publication_id', 'updated_at', 'created_by', 'created_at', 'updated_by',
 'inactivation_reason', 'is_active', 'isbn', 'copyright_year', 'publisher', 'publisher_place', 'public_tags', 'admin_tags',
 'public_notes', 'public_notes_updated_at', 'public_notes_updated_by', 'admin_notes', 'admin_notes_updated_at',
-'admin_notes_updated_by']);
+                'admin_notes_updated_by']);//, 'CurrentCheckouts' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
 //         $select->group(['TheMonth', 'TheYear']);
 //         $select->where($predicate->in('ChangedEntity', $tableEntities));
             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
