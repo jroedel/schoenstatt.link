@@ -36,7 +36,7 @@ if (isset($this->entities) && !is_null($this->entities) && !empty($this->entitie
         	<?php echo $book['title'];?></a>
         	<?php echo '('.$book['file_type'].', '.number_format($book['file_size']/1048576, 1, '.','').'MB)';?></td>
     	<?php else: ?>
-    		<td><?php echo $this->escapeHtml($book['title']);?></td>
+    		<td><?php echo $this->formatEntity('book', $book);?></td>
     	<?php endif;?>
     	<td><?php echo $this->escapeHtml($book['bookEdition']);?></td>
     	<td><?php if (!is_null($book['currentCheckout'])) {
