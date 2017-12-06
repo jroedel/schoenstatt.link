@@ -830,7 +830,7 @@ ORDER BY `publisher`";
         if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {
             return $cache;
         }
-        $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberHelpText`,
+        $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberPlaceholder`, `CallNumberHelpText`,
 `CallNumberExplanation`, `FiliationId`, `ContactPerson`, `ContactEmail`, `MainShowDisplay`,
 `UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
 `CallNumberRegex`, `EnforceCallNumberRegex`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
@@ -838,7 +838,8 @@ ORDER BY `publisher`";
 `DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `IsPublicallyListed`, `CheckoutPersonListKind`,
 `IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`,
 `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
-(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount
+(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount,
+(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = l.LibraryId)) AS MaxWithinLibraryId
 FROM `lib_libraries` l
 WHERE 1
 ORDER BY `LibraryName`";
@@ -848,6 +849,9 @@ ORDER BY `LibraryName`";
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['LibraryId']);
+            $nextWithinLibraryId = $this->filterDbInt($row['MaxWithinLibraryId']);
+            $nextWithinLibraryId = isset($nextWithinLibraryId) && is_numeric($nextWithinLibraryId) ?
+                (int)$nextWithinLibraryId + 1 : null;
             $entity = [
                 'libraryId'             => $id,
                 'name'                  => $this->filterDbString($row['LibraryName']),
@@ -862,6 +866,7 @@ ORDER BY `LibraryName`";
                 'allowCollectionlessBooks'=> $this->filterDbBool($row['AllowCollectionlessBooks']),
                 'mainCollectionId'      => $this->filterDbId($row['MainCollectionId']),
                 'requireCallNumbers'    => $this->filterDbBool($row['RequireCallNumbers']),
+                'callNumberPlaceholder' => $this->filterDbString($row['CallNumberPlaceholder']),
                 'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
                 'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
                 'labelLine1'            => $this->filterDbString($row['LabelLine1']),
@@ -883,6 +888,7 @@ ORDER BY `LibraryName`";
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
 
+                'nextWithinLibraryId'   => $nextWithinLibraryId,
                 'bookCount'             => $this->filterDbInt($row['BookCount']),
                 'books'                 => [], //to be filled in, in getLibraries()
                 'collections'           => [],

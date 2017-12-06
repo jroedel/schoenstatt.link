@@ -850,6 +850,7 @@ return [
                     'libraryId'             => 'LibraryId',
                     'name'                  => 'LibraryName',
                     'description'           => 'Description',
+                    'callNumberPlaceholder' => 'CallNumberPlaceholder',
                     'callNumberHelpText'    => 'CallNumberHelpText',
                     'callNumberExplanation' => 'CallNumberExplanation',
                     'filiationId'           => 'FiliationId',
@@ -967,6 +968,7 @@ return [
                 'get_objects_function'                      => 'getBooks',
                 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
+                    'withinLibraryId',
                     'title',
                     'libraryId',
                 ],

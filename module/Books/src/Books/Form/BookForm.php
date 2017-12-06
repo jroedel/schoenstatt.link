@@ -14,16 +14,47 @@ class BookForm extends SionForm implements InputFilterProviderInterface
 
     public function __construct()
     {
-        parent::__construct('publication');
+        parent::__construct('book');
 
+        $this->add([
+            'name' => 'libraryId',
+            'type' => 'Hidden',
+        ]);
+
+        $this->add([
+            'name' => 'withinLibraryId',
+            'type' => 'Number',
+            'options' => [
+                'label' => 'Barcode',
+            ],
+            'attributes' => [
+                'required' => true,
+                'min'         => 0,
+//                 'max'         => 100,
+                'step'        => 1,
+//                 'value'       => 50,
+//                 'inclusive'   => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'nextWithinLibraryId',
+            'type' => 'Button',
+            'options' => [
+                'label' => 'Use next free barcode',
+            ],
+            'attributes' => [
+                'id'     => "nextWithinLibraryId",
+                'class' => 'btn btn-default'
+            ],
+        ]);
         $this->add([
             'name' => 'title',
             'type' => 'Text',
             'options' => [
                 'label' => 'Title',
-                'required' => true,
             ],
             'attributes' => [
+                'required' => true,
                 'maxlength' => '300',
             ],
         ]);
@@ -33,7 +64,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Author(s)',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
@@ -48,11 +78,9 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'name' => 'callNumber',
             'type' => 'Text',
             'options' => [
-                'label' => 'Call number',
-                'required' => false,
+                'label' => 'Call number'
             ],
             'attributes' => [
-                'placeholder' => 'ex. LIT 256 1.1',
                 'maxlength' => '50',
             ],
         ]);
@@ -61,11 +89,9 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'New call number',
-                'required' => false,
                 'help-block' => 'Use this field when the printed call number should be changed. It will be added to the next labels to be printed.'
             ],
             'attributes' => [
-                'placeholder' => 'ex. LIT 256 1.1',
                 'maxlength' => '50',
             ],
         ]);
@@ -74,7 +100,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Collection',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],
@@ -85,7 +110,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Edition',
-                'required' => false,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -96,7 +120,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Language',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],
@@ -110,7 +133,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Literature dataset link',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => false,
@@ -122,7 +144,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Category',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
@@ -137,7 +158,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'ISBN',
-                'required' => false,
             ],
             'attributes' => [
                 'placeholder' => 'ex. 9780030426599',
@@ -149,7 +169,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Number',
             'options' => [
                 'label' => 'Number of pages',
-                'required' => false,
             ],
             'attributes' => [
                 'min'         => 0,
@@ -163,7 +182,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Number',
             'options' => [
                 'label' => 'Copyright year',
-                'required' => false,
             ],
             'attributes' => [
                 'min'         => 1800,
@@ -177,7 +195,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Publisher',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
@@ -189,7 +206,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Publishing place',
-                'required' => true,
             ],
             'attributes' => [
                 'placeholder' => 'Madrid, Spain',
@@ -201,7 +217,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Keywords',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
@@ -217,7 +232,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Textarea',
             'options' => [
                 'label' => 'Public notes',
-                'required' => false,
             ],
             'attributes' => [
                 'required' => false,
@@ -235,7 +249,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Textarea',
             'options' => [
                 'label' => 'Admin notes',
-                'required' => false,
             ],
             'attributes' => [
                 'required' => false,
@@ -279,7 +292,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Inactivation reason',
-                'required' => true,
             ],
             'attributes' => [
                 'placeholder' => 'ex. Book lost',
@@ -313,23 +325,68 @@ class BookForm extends SionForm implements InputFilterProviderInterface
     */
     public function setLibraryOptions(LibraryOptions $libraryOptions)
     {
-        if ($libraryOptions->useCollections) {
-            $this->get('collectionId')->setAttribute('disabled', true);
-        }
+        $this->get('collectionId')->setAttribute('disabled', !$libraryOptions->useCollections);
+        $callNumber = $this->get('callNumber');
+        $newCallNumber = $this->get('newCallNumber');
         // @todo add regex validator to callNumber
         if (isset($libraryOptions->callNumberRegex)) {
-            $this->get('callNumber')->setOption('regex', $libraryOptions->callNumberRegex);
+            $callNumber->setAttribute('data-regex', $libraryOptions->callNumberRegex);
+            $newCallNumber->setAttribute('data-regex', $libraryOptions->callNumberRegex);
+        }
+        if (isset($libraryOptions->callNumberPlaceholder)) {
+            $callNumber->setAttribute('placeholder', $libraryOptions->callNumberPlaceholder);
+            $newCallNumber->setAttribute('placeholder', $libraryOptions->callNumberPlaceholder);
         }
         if (isset($libraryOptions->callNumberHelpText)) {
-            $this->get('callNumber')->setOption('help-block', $libraryOptions->callNumberHelpText);
+            $callNumber->setOption('help-block', $libraryOptions->callNumberHelpText);
         }
+        //control the empty option and the default collection
+        /** @var \Zend\Form\Element\Select $collectionId */
+        $collectionId = $this->get('collectionId');
+        if (false === $libraryOptions->allowCollectionlessBooks) { //disable the empty option
+            $collectionId->setEmptyOption(null);
+        } else {
+            $collectionId->setEmptyOption('');
+        }
+        if (!isset($this->data) && isset($libraryOptions->mainCollectionId)) {
+            $collectionId->setValue($libraryOptions->mainCollectionId);
+        }
+
+        if (is_bool($libraryOptions->requireCallNumbers)) {
+            $callNumber->setAttribute('required', $libraryOptions->requireCallNumbers);
+            $this->getInputFilter()->get('callNumber')->setRequired($libraryOptions->requireCallNumbers);
+        }
+
         $this->libraryOptions = $libraryOptions;
         return $this;
+    }
+
+    public function setData($data)
+    {
+        if (isset($this->libraryOptions) && isset($this->libraryOptions->libraryId)) {
+            $data['libraryId'] = $this->libraryOptions->libraryId;
+        }
+        $return = parent::setData($data);
+        return $return;
     }
 
     public function getInputFilterSpecification()
     {
         return [
+            'libraryId' => [
+                'required' => true,
+            ],
+            'withinLibraryId' => [
+                'required' => true,
+                'filters' => [
+                    ['name' => 'ToInt'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                        ]
+                    ],
+                ],
+            ],
             'title' => [
                 'required' => true,
                 'filters' => [

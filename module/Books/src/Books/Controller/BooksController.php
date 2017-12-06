@@ -9,4 +9,14 @@ class BooksController extends SionController
     {
         return parent::__construct('book');
     }
+
+    public function showAction()
+    {
+        $view = parent::showAction();
+        /** @var \Books\Model\LibraryTable $table */
+        $table = $this->getSionTable();
+        $entity = $table->getBook($view->getVariable('entityId'));
+        $view->setVariable('entity', $entity);
+        return $view;
+    }
 }

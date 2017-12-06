@@ -12,14 +12,9 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
         $this->setAttribute('method', 'post');
         $this->add([
             'name' => 'libraryId',
-            'type' => 'Select',
+            'type' => 'Hidden',
             'options' => [
-                'label' => 'Library',
                 'required' => true,
-                'value_options' => [],
-            ],
-            'attributes' => [
-                'disabled' => true,
             ],
         ]);
         $this->add([
@@ -162,7 +157,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Number',
             'options' => [
                 'label' => 'Default checkout time period (days)',
-                'required' => true,
+                'required' => false,
             ],
             'attributes' => [
                 'min'         => 1,
@@ -427,7 +422,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
             'defaultCheckoutTimePeriodInDays' => [
-                'required' => true,
+                'required' => false,
                 'filters' => [
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',

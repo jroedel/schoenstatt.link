@@ -23,3 +23,5 @@ CREATE TABLE `lib_categories` (
 --
 ALTER TABLE `lib_categories`
   ADD PRIMARY KEY (`LibraryId`,`CategoryName`);
+
+ALTER TABLE `lib_libraries` ADD `CallNumberPlaceholder` VARCHAR(50) NULL DEFAULT NULL AFTER `Description`;

@@ -19,14 +19,6 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $description;
     /**
-     * @var string $callNumberHelpText
-     */
-    public $callNumberHelpText;
-    /**
-     * @var string $callNumberExplanation
-     */
-    public $callNumberExplanation;
-    /**
      * @var int $filiationId
      */
     public $filiationId;
@@ -60,10 +52,23 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $mainCollectionId;
     /**
-     * @todo Should the library require call numbers?
      * @var bool $requireCallNumbers
      */
     public $requireCallNumbers = false;
+    /**
+     * Text to be set as placeholder for call numbers; won't be translated
+     * @var string $callNumberPlaceholder
+     */
+    public $callNumberPlaceholder;
+    /**
+     * Text to place below call number input field
+     * @var string $callNumberHelpText
+     */
+    public $callNumberHelpText;
+    /**
+     * @var string $callNumberExplanation
+     */
+    public $callNumberExplanation;
     /**
      * @todo The regular expression to parameterize the call number, especially for use with label lines
      * @var string $callNumberRegex
@@ -127,6 +132,10 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $isActive = true;
     /**
+     * @var int $nextWithinLibraryId
+     */
+    public $nextWithinLibraryId;
+    /**
      * Array of collection options
      * @var CollectionOptions[] $collections
      */
@@ -158,6 +167,7 @@ class LibraryOptions implements ArraySerializableInterface
         $this->allowCollectionlessBooks= isset($array['allowCollectionlessBooks']) ? (bool)$array['allowCollectionlessBooks'] : true;
         $this->mainCollectionId= isset($array['mainCollectionId']) ? (int)$array['mainCollectionId'] : null;
         $this->requireCallNumbers = isset($array['requireCallNumbers']) ? (bool)$array['requireCallNumbers'] : false;
+        $this->callNumberPlaceholder = isset($array['callNumberPlaceholder']) ? (string)$array['callNumberPlaceholder'] : null;
         $this->callNumberRegex = isset($array['callNumberRegex']) ? $array['callNumberRegex'] : null;
         $this->enforceCallNumberRegex= isset($array['enforceCallNumberRegex']) ? $array['enforceCallNumberRegex'] : false;
         $this->labelLine1= isset($array['labelLine1']) ? $array['labelLine1'] : null;
@@ -172,6 +182,7 @@ class LibraryOptions implements ArraySerializableInterface
         $this->isPublicallyListed = isset($array['isPublicallyListed']) ? (bool)$array['isPublicallyListed'] : false;
         $this->checkoutPersonListKind = isset($array['checkoutPersonListKind']) ? $array['checkoutPersonListKind'] : self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
         $this->isActive = isset($array['isActive']) ? $array['isActive'] : true;
+        $this->nextWithinLibraryId = isset($array['nextWithinLibraryId']) ? $array['nextWithinLibraryId'] : null;
     }
 
     /**

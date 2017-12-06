@@ -16,12 +16,8 @@ class CollectionFormFactory implements FactoryInterface
      */
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
-        /** @var LibraryTable $table */
-        $table = $serviceLocator->get('Books\Model\LibraryTable');
-        $libraries = $table->getLibraryValueOptions();
         $form = new CollectionForm();
         $form->get('mainShowDisplay')->setValueOptions(LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS);
-        $form->get('libraryId')->setValueOptions($libraries);
 		return $form;
     }
 }
