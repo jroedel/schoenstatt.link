@@ -41,13 +41,14 @@ class LibrariesController extends SionController
         if ($form->isValid()) {
             $data = $form->getData();
             foreach ($data as $key => $value) {
-                if (is_null($value)) {
+                if (!isset($value)) {
                     unset($data[$key]);
                 }
             }
             if (count($data) > 1) {
-                $data['maxResults'] = 200;
-                $books = $table->searchBooks($data);
+//                 $data['category'] = ['Documentos', 'Dogmática General'];
+//                 $data['isActive'] = false;
+                $books = $table->searchBooks($data, ['maxResults' => 200]);
                 $borrowers = $sm->get('Books\BorrowersValueOptions');
             }
         }
@@ -196,6 +197,7 @@ class LibrariesController extends SionController
                 $table = $sm->get('Books\Model\LibraryTable');
 //                 $data['notAllowed'] = $notAllowed;
                 $data['maxResults'] = 200;
+//                 var_dump($data);
                 $books = $table->searchBooks($data);
                 $libraries = $this->transformBookQueryIntoLibraries($books);
                 $borrowers = $sm->get('Books\BorrowersValueOptions');

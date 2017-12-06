@@ -10,6 +10,7 @@ return array(
     'Contact person' => 'Pessoa de contato',
     'Data problems' => 'Problemas de dados',
     'English' => 'Inglês',
+    'Export' => 'Exportar',
     'Field' => 'Campo',
     'Filiation' => 'Filial',
     'German' => 'Alemão',

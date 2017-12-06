@@ -1,1 +1,32 @@
 <?php
+$headText = 'Label management';
+$this->headTitle($headText); ?>
+<h1><?php echo $this->translate($headText);?></h1>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title"><?php echo $this->translate('Step 1: Select books to print call number');?></h3>
+  </div>
+  <div class="panel-body">
+    <p><a href="" class="btn btn-default"><?php echo $this->translate('Select by list of barcodes');?></a>
+    <a href="" class="btn btn-default"><?php echo $this->translate('Select by advanced search');?></a></p>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title"><?php echo $this->translate('Step 2: Export labels to Excel & print');?></h3>
+  </div>
+  <div class="panel-body">
+    <p><a href="" class="btn btn-default"><?php echo $this->translate('Export');?></a></p>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title"><?php echo $this->translate('Step 3: Confirm call number change in the database');?></h3>
+  </div>
+  <div class="panel-body">
+    <p><a href="" class="btn btn-default"><?php echo $this->translate('Deselect some books');?></a> <?php echo $this->translate('or');?>
+    <a href="" class="btn btn-default"><?php echo sprintf($this->translate('Confirm change of %s call numbers'), 3);?></a></p>
+  </div>
+</div>
