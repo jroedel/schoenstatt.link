@@ -1,11 +1,13 @@
 <?php
 
 return array(
+    '$3' => '$3',
     'Add new person' => 'Agregar nueva persona',
     'Admin notes' => 'Notas (solamente para el administrador)',
     'Admin tags' => 'Etiquetas (solamente para el administrador)',
     'Advanced options' => 'Opciones Avanzadas',
     'Author' => 'Autor',
+    'Authors' => 'Autores',
     'Cancel' => 'Cancelar',
     'Contact person' => 'Persona de contacto',
     'Data problems' => 'Problemas en los datos',

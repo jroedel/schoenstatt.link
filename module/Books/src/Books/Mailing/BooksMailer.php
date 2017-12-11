@@ -127,6 +127,10 @@ class BooksMailer extends Mailer
 
         $debugCount = 0;
         foreach ($borrowers as $personId => $object) {
+            if ($debugCount > 0) {
+                break;
+            }
+            $debugCount++;
             $locale = $object['primaryLocale'];
             $salutation = (isset($object['title']) ?
                 $this->translator->translate($object['title'], 'Schoenstatt', $locale).' ' :
@@ -154,10 +158,10 @@ class BooksMailer extends Mailer
 
             $message = $mailService->getMessage();
             $message->setSubject($localizedSubject[$locale]);
-//             $message->setTo('webmaster@schoenstatt.link', isset($object['fullFriendlyName']) ?
-//                 $asciiFilter->filter($object['fullFriendlyName']) : null);
-            $message->setTo($borrower['email'], isset($object['fullFriendlyName']) ?
+            $message->setTo('webmaster@schoenstatt.link', isset($object['fullFriendlyName']) ?
                 $asciiFilter->filter($object['fullFriendlyName']) : null);
+//             $message->setTo($borrower['email'], isset($object['fullFriendlyName']) ?
+//                 $asciiFilter->filter($object['fullFriendlyName']) : null);
             $body = $this::inlineEmailStyles($message->getBodyText());
             $message->setBody($body);
             $result = $mailService->send();
@@ -172,10 +176,10 @@ class BooksMailer extends Mailer
             } else {
                 $borrowers[$personId]['mailingStatus'] = self::STATUS_SUCCESSFULLY_SENT;
             }
-//             if (is_object($exception)) {
-//                 var_dump($exception->getMessage());
-//                 var_dump($exception->getTraceAsString());
-//             }
+            if (is_object($exception)) {
+                var_dump($exception->getMessage());
+                var_dump($exception->getTraceAsString());
+            }
             //report email
             $this->reportMailing($message, 1, 3, $exception, $locale, $template, $trackingToken, $tags);
         }

@@ -1,6 +1,7 @@
 <?php
 
 return array(
+    '$3' => '$3',
     'Add new person' => 'Neue Person hinzufügen',
     'Admin notes' => 'Bemerkungen (nur für den Verwalter)',
     'Admin tags' => 'Tags (nur für den Verwalter)',
