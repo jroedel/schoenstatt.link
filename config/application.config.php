@@ -26,6 +26,7 @@ $modules = [
     'Neilime\MobileDetect',
     'AssetManager',
     'ZfcDatagrid',
+    'AcMailer',
 //     'Bible',
     'Books',
     'Application',
