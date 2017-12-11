@@ -187,6 +187,7 @@ return [
             'Books\BorrowersValueOptions'       => 'Books\Service\BorrowersValueOptionsService',
             'Books\AuthorsValueOptions'         => 'Books\Service\AuthorsValueOptionsService',
             'Books\LanguagesValueOptions'       => 'Books\Service\LanguagesValueOptionsFactory',
+            'Books\BooksMailer'                 => 'Books\Service\BooksMailerFactory',
         ],
     ],
     'view_helpers' => [
@@ -508,6 +509,16 @@ return [
                                     'route'    => '/batch-operations',
                                     'defaults' => [
                                         'action'     => 'batchOperations',
+                                        'controller' => 'Books\Controller\Libraries',
+                                    ],
+                                ],
+                            ],
+                            'send-book-notices' => [
+                                'type'    => 'Literal',
+                                'options' => [
+                                    'route'    => '/send-book-notices',
+                                    'defaults' => [
+                                        'action'     => 'sendBookNotices',
                                         'controller' => 'Books\Controller\Libraries',
                                     ],
                                 ],
@@ -1523,6 +1534,7 @@ return [
                 ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/label-management', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/send-book-notices', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],

@@ -36,7 +36,7 @@ if ($this->isImported && !isset($this->transactions)) {
 <thead>
 <tr>
 <?php $fields = $this->fields;
-if ($limitFields && !is_null($limitedFields) && !empty($limitedFields)) {
+if ($limitFields && isset($limitedFields) && !empty($limitedFields)) {
     foreach ($fields as $field => $column) {
         if (!in_array($field, $limitedFields)) {
             unset ($fields[$field]);
@@ -71,8 +71,10 @@ switch ($transaction['action']) {
 }?>
 <tr class="<?php echo $trClass;?>">
 	<?php foreach ($fields as $field => $column) :?>
-	<td><?php if (key_exists($field, $transaction)) {
+	<td><?php if (isset($transaction[$field]) && !is_array($transaction[$field])) {
 	   echo $this->escapeHtml($transaction[$field]);
+    } elseif (isset($transaction[$field]) && is_array($transaction[$field])) {
+//         var_dump($transaction[$field]);
     }?></td>
 	<?php endforeach;?>
 </tr>

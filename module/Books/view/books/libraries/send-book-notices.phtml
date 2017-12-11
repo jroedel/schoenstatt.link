@@ -1,0 +1,21 @@
+<?php
+/**
+ * @param mixed[] $library
+ * @param mixed[] $borrowers
+ * @param bool $simulate
+ */
+$headText = 'Book notices for %s';
+$this->headTitle()->setTranslatorEnabled(false);
+$this->headTitle(sprintf($headText, $this->library['name']));?>
+<h1><?php echo sprintf($this->translate($headText), $this->formatEntity('library', $this->library));?></h1>
+<?php if (isset($this->simulate) && $this->simulate) :?>
+<p><?php echo $this->translate('All following emails are a simulation, click "Send now" to send emails.')?></p>
+<p><a href="?simulate=0" class="btn btn-primary"><?php echo $this->translate('Send emails now');?></a>
+<?php endif;
+foreach ($this->borrowers as $personId => $object) :?>
+<h2><?php echo $this->formatEntity('borrower', $object);?> <?php echo $this->escapeHtml($object['email']);?></h2>
+<?php echo $this->partial('books/checkouts/checkout-list', [
+    'entities' => $object['checkouts'],
+    'columns' => ['withinLibraryId', 'callNumber', 'book', 'checkedOutOn', 'dueOn'],
+]);
+endforeach;

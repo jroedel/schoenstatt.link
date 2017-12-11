@@ -415,10 +415,15 @@ ORDER BY `publisher`";
             $where->addPredicate($authorClause, PredicateSet::OP_AND);
         }
 
-        //Prepare isActive predicate
-        if (isset($query['isActive']) && is_bool($query['isActive'])) {
-            $authorClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
-            $where->addPredicate($authorClause, PredicateSet::OP_AND);
+        //Prepare isActive predicate, default to true unless caller sets it to null
+        if (!array_key_exists('isActive', $query) ||
+            (!is_bool($query['isActive']) && null !== $query['isActive'])
+        ) {
+            $query['isActive'] = true;
+        }
+        if (isset($query['isActive'])) {
+            $isActiveClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
+            $where->addPredicate($isActiveClause, PredicateSet::OP_AND);
         }
 
         //@todo Prepare isCheckedOut
@@ -458,7 +463,7 @@ ORDER BY `publisher`";
         $checkouts = $this->getUnlinkedCheckouts();
         foreach ($checkouts as $checkoutId => $checkout) {
             if ($checkout['status'] !== self::CHECKOUT_STATUS_RETURNED &&
-                    isset($entities[$checkout['bookId']])
+                isset($entities[$checkout['bookId']])
             ) {
                 $entities[$checkout['bookId']]['isAvailable'] = false;
                 $entities[$checkout['bookId']]['isCheckedOut'] = true;
@@ -1283,6 +1288,7 @@ ORDER BY CreatedOn DESC";
      */
     public function getCheckoutsForLibrary($libraryId, $subset = 'all')
     {
+        //@todo only query the database for particular checkouts (depending on the subset)
         $checkouts = $this->getCheckouts();
         $entities = [];
         $tz = new \DateTimeZone('UTC');
@@ -1317,7 +1323,8 @@ ORDER BY CreatedOn DESC";
             if (isset($books[$entity['bookId']]) &&
                 isset($libraries[$books[$entity['bookId']]['libraryId']])
             ) {
-                $books[$entity['bookId']]['library'] = $libraries[$books[$entity['bookId']]['libraryId']];
+                //get a reference to the library entry so we don't make a lot of array copies
+                $books[$entity['bookId']]['library'] = &$libraries[$books[$entity['bookId']]['libraryId']];
                 $entities[$entityId]['book'] = $books[$entity['bookId']];
             } else {
                 unset($entities[$entityId]); //get rid of bad records

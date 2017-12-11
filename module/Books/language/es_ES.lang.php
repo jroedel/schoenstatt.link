@@ -9,6 +9,7 @@ return array(
     'Cancel' => 'Cancelar',
     'Contact person' => 'Persona de contacto',
     'Data problems' => 'Problemas en los datos',
+    'Dear %s,' => 'Querido %s,',
     'Edition' => 'Edición',
     'English' => 'Inglés',
     'Export' => 'Exportar',

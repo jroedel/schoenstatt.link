@@ -1,0 +1,33 @@
+<?php
+
+use Books\Model\LibraryTable;
+
+/**
+ * @param mixed[] $checkouts
+ */
+$tz = new DateTimeZone('UTC');
+$today = new \DateTime(null, $tz);
+foreach ($this->checkouts as $checkoutId => $object) {
+    if (!isset($object['book'])) {
+        continue;
+    }
+    $book = $object['book'];
+    echo $this->escapeHtml($book['title']);
+    if (isset($book['authorPrettyText'])) {
+        echo ' - '.$this->escapeHtml($book['authorPrettyText']);
+    }
+    echo '<br>';
+//     echo $this->translate('Barcode').': '.$book['withinLibraryId'].'<br>';
+//     if (isset($book['collection'])) { //@todo check config for translation details
+//         echo $this->translate('Collection').': '.$book['collection']['name'].'<br>';
+//     }
+    if (isset($book['callNumber'])) {
+        echo $this->translate('Call number').': '.$this->escapeHtml($book['callNumber']).'<br>';
+    }
+    echo $this->translate('Due on').': '.$this->dateFormat($object['dueOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+
+    if ($object['status'] === LibraryTable::CHECKOUT_STATUS_OVERDUE) {
+        echo ' ('.$this->translate('Overdue').')';
+    }
+    echo '<br><br>';
+}

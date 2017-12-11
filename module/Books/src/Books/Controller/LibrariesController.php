@@ -13,6 +13,7 @@ use Books\Form\InactivationForm;
 use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
+use Books\Mailing\BooksMailer;
 
 class LibrariesController extends SionController
 {
@@ -263,6 +264,31 @@ class LibrariesController extends SionController
         $books = $table->getBooks();
         return new ViewModel([
             'objects' => $books,
+        ]);
+    }
+
+    /**
+     * Send notices to users
+     * @return \Zend\View\Model\ViewModel
+     */
+    public function sendBookNoticesAction()
+    {
+        $sm = $this->getServiceLocator();
+        $libraryId = $this->getLibraryId();
+        $simulate = (bool)$this->params()->fromQuery('simulate', true);
+//         var_dump($simulate);
+        $sendOnlyToBorrowersWithOverdueBooks = (bool)$this->params()->fromQuery('onlyOverdueBorrowers', true);
+
+        $table = $this->getSionTable();
+        $library = $table->getSimpleLibrary($libraryId);
+        /** @var BooksMailer $mailer */
+        $mailer = $sm->get('Books\BooksMailer');
+
+        $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate);
+        return new ViewModel([
+            'simulate' => $simulate,
+            'borrowers' => $borrowers,
+            'library'   => $library,
         ]);
     }
 

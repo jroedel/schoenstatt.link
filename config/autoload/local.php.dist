@@ -69,14 +69,44 @@ return [
 
     'service_manager' => [
     	'factories' => [
-        	'Zend\Db\Adapter\Adapter' => function ($sm) use ($adapter) {
-				return $adapter;
-        	},
+            'Zend\Db\Adapter\Adapter' => 'Application\Service\DbAdapterServiceFactory',
         ],
     ],
     'recaptcha' => [
         'name' => 'recaptcha',
-        'privKey' => '6LdY0-ASAAAAAHkr1UcVufyHJgh7VVjC-I-AjJhW',
-        'pubKey' => '6LdY0-ASAAAAACbpxyVeCeYXPtJrmcgDW6ArzJhK',
+        'privKey' => '6LdY0-ASAAAAAAAAAAAAfyHJgh7VVjC-I-AjJhW',
+        'pubKey' => '6LdY0-ASAAAAAAAAAAAAAeCeYXPtJrmcgDW6ArzJhK',
+    ],
+    'acmailer_options' => [
+         // Default mail service
+         'default' => [
+
+             'smtp_options' => [
+                'connection_config' => [
+                    /**
+                     * The SMTP authentication identity.
+                     * If this is not set, the 'from' option of the message will be used.
+                     *
+                     * Default value is an empty string
+                     */
+                    'username' => 'webmaster@schoenstatt.link',
+
+                    /**
+                     * The SMTP authentication credential.
+                     *
+                     * Default value is an empty string
+                     */
+                    'password' => 'xxxxxx',
+
+                    /**
+                     * This defines the encryption type to be used, 'ssl' or 'tls'.
+                     * Null should be used to disable SSL.
+                     *
+                     * Default value is null
+                     */
+                    'ssl' => 'ssl',
+                ],
+            ],
+        ],
     ],
 ];
