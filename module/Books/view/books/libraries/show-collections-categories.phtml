@@ -3,11 +3,11 @@
 $libraryOptions = $this->entity['options'];
 if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->books)):?>
     <?php foreach ($this->entity['collectionCategoryStatistics'] as $collectionId => $categories) :
-        $collectionName = key_exists($collectionId, $libraryOptions->collections) ?
-        $this->translate($libraryOptions->collections[$collectionId]->name) :
+        $collectionName = isset($libraryOptions->collections[$collectionId]) ?
+            $this->translate($libraryOptions->collections[$collectionId]->name) :
             sprintf('(%s)', $this->translate('none'));?>
-        <h3><?php echo $this->translate($collectionName);
-        if (key_exists($collectionId, $libraryOptions->collections)) {
+        <h3><?php echo $this->escapeHtml($collectionName);
+        if (isset($libraryOptions->collections[$collectionId])) {
             echo $this->editPencil('collection', $collectionId);
         }?></h3>
     	<ul class="list-group">

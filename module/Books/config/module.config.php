@@ -1440,6 +1440,7 @@ return [
                'publication_user',
                'publication_public',
                'view_checkout_person', //see who has a library book
+               'send_library_emails', //send out library emails @todo make library-specific
            ],
            //'Event\Model\EventTable' => 'Event\Model\EventTable'
          ],
@@ -1453,7 +1454,6 @@ return [
         'rule_providers' => [
             'BjyAuthorize\Provider\Rule\Config' => [
                 'allow' => [
-                    [['lib_patres'], 'view_checkout_person'],
 //                 allow guests and users (and admins, through inheritance]
 //                 the "wear" privilege on the resource "pants"
                     //read permissions
@@ -1497,6 +1497,10 @@ return [
                     [['pub_general_moderator'], 'book', 'delete'],
                     [['pub_general_moderator'], 'book_teo', 'delete'],
                     [['pub_general_moderator'], 'book_sch', 'delete'],
+
+                    //library permissions
+                    [['lib_patres'], 'view_checkout_person'],
+                    [['lib_library_moderator'], 'send_library_emails'],
                 ],
             ],
         ],
@@ -1534,7 +1538,7 @@ return [
                 ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/label-management', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/library/send-book-notices', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/send-book-notices', 'roles' => ['user', 'guest']], //controller action has additional proectiont
                 ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_library_moderator']],
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],

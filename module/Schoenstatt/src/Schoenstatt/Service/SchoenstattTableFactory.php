@@ -28,7 +28,10 @@ class SchoenstattTableFactory implements FactoryInterface
 		$user = $userService->getAuthService()->getIdentity();
 		$actingUserId = $user ? $user->id : null;
 
-		$table = new SchoenstattTable($dbAdapter, $serviceLocator, $actingUserId, $config['schoenstatt']);
+		/** @var \JTranslate\Model\CountriesInfo */
+		$countriesInfo = $serviceLocator->get('CountriesInfo');
+
+		$table = new SchoenstattTable($dbAdapter, $serviceLocator, $actingUserId, $config['schoenstatt'], $countriesInfo);
 		return $table;
     }
 }

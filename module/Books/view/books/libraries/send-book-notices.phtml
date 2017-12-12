@@ -13,7 +13,9 @@ $this->headTitle(sprintf($headText, $this->library['name']));?>
 <p><a href="?simulate=0" class="btn btn-primary"><?php echo $this->translate('Send emails now');?></a>
 <?php endif;
 foreach ($this->borrowers as $personId => $object) :?>
-<h2><?php echo $this->formatEntity('borrower', $object);?> <?php echo $this->escapeHtml($object['email']);?></h2>
+<h2><?php echo $this->formatEntity('borrower', $object);?></h2>
+<p><?php echo $this->translate('Email');?>: <?php echo $this->escapeHtml($object['email']);?></p>
+<p><?php echo $this->translate('Locale');?>: <?php echo $this->escapeHtml($object['primaryLocale']);?></p>
 <?php echo $this->partial('books/checkouts/checkout-list', [
     'entities' => $object['checkouts'],
     'columns' => ['withinLibraryId', 'callNumber', 'book', 'checkedOutOn', 'dueOn'],

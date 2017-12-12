@@ -1,9 +1,9 @@
-
+# submitted 2017-12-11
 --
 -- Table structure for table `mailings`
 --
 
-CREATE TABLE `sch_mailings` (
+CREATE TABLE `mailings` (
   `MailingId` int(11) NOT NULL,
   `ToAddresses` varchar(2000) NOT NULL,
   `MailingOn` datetime DEFAULT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE `sch_mailings` (
 --
 -- Indexes for table `a_data_mailing`
 --
-ALTER TABLE `sch_mailings`
+ALTER TABLE `mailings`
   ADD PRIMARY KEY (`MailingId`);
 
 --
@@ -44,5 +44,5 @@ ALTER TABLE `sch_mailings`
 --
 -- AUTO_INCREMENT for table `a_data_mailing`
 --
-ALTER TABLE `sch_mailings`
+ALTER TABLE `mailings`
   MODIFY `MailingId` int(11) NOT NULL AUTO_INCREMENT;

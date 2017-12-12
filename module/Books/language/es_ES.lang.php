@@ -13,6 +13,7 @@ return array(
     'Data problems' => 'Problemas en los datos',
     'Dear %s,' => 'Querido %s,',
     'Edition' => 'Edición',
+    'Email' => 'Email',
     'English' => 'Inglés',
     'Export' => 'Exportar',
     'Field' => 'Campo',
