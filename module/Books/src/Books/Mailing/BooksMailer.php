@@ -135,10 +135,10 @@ class BooksMailer extends Mailer
         $debugCount = 0;
         foreach ($borrowers as $personId => $object) {
             if ($debugCount > 0) {
-                break;
+//                 break;
             }
             $debugCount++;
-            $locale = $object['primaryLocale'];
+            $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : Locale::getDefault();
             $salutation = (isset($object['title']) ?
                 $this->translator->translate($object['title'], 'Schoenstatt', $locale).' ' :
                 '').$object['firstName'];
@@ -184,13 +184,14 @@ class BooksMailer extends Mailer
             } else {
                 $borrowers[$personId]['mailingStatus'] = self::STATUS_SUCCESSFULLY_SENT;
             }
-            if (is_object($exception)) {
-                var_dump($exception->getMessage());
-                var_dump($exception->getTraceAsString());
-            }
+//             if (is_object($exception)) {
+//                 var_dump($exception->getMessage());
+//                 var_dump($exception->getTraceAsString());
+//             }
             //report email
             $this->reportMailing($message, 1, 3, $exception, $locale, $template, $trackingToken, $tags);
         }
+
         return $borrowers;
     }
 
