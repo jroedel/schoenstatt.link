@@ -960,6 +960,7 @@ ORDER BY `LibraryName`";
                 'categoryStatistics'    => [],
                 'collectionCategoryStatistics' => [],
                 'monthlyCheckoutStatistics' => [],
+                'contactPerson'         => null,
                 'options'               => null,
             ];
             $entity['options'] = new LibraryOptions($entity);

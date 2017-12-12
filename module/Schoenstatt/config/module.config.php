@@ -881,6 +881,16 @@ return [
                             ],
                         ],
                     ],
+                    'maintenance' => [
+                        'type'    => 'Literal',
+                        'options' => [
+                            'route'    => '/maintenance',
+                            'defaults' => [
+                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'action'     => 'maintenance',
+                            ],
+                        ],
+                    ],
                     'moderate' => [
                         'type'    => 'Segment',
                         'options' => [
@@ -1900,6 +1910,7 @@ return [
                 ['route' => 'shrines', 'roles' => ['sch_basic', 'sch_user']],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
+                ['route' => 'admin/maintenance', 'roles' => ['administrator']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'assignments/assignment/delete', 'roles' => ['sch_general_moderator']],
