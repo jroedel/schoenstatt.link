@@ -140,12 +140,12 @@ class BooksMailer extends Mailer
         $timeZone = new \DateTimeZone('UTC');
         $asciiFilter = new ToAscii();
 
-        $debugCount = 0;
+//         $debugCount = 0;
         foreach ($borrowers as $personId => $object) {
-            if ($debugCount > 0) {
-                break;
-            }
-            $debugCount++;
+//             if ($debugCount > 0) {
+//                 break;
+//             }
+//             $debugCount++;
             $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : Locale::getDefault();
             $salutation = (isset($object['title']) ?
                 $this->translator->translate($object['title'], 'Schoenstatt', $locale).' ' :
@@ -175,10 +175,10 @@ class BooksMailer extends Mailer
 
             $message = $mailService->getMessage();
             $message->setSubject($localizedSubject[$locale]);
-            $message->setTo('webmaster@schoenstatt.link', isset($object['fullFriendlyName']) ?
-                $asciiFilter->filter($object['fullFriendlyName']) : null);
-//             $message->setTo($borrower['email'], isset($object['fullFriendlyName']) ?
+//             $message->setTo('webmaster@schoenstatt.link', isset($object['fullFriendlyName']) ?
 //                 $asciiFilter->filter($object['fullFriendlyName']) : null);
+            $message->setTo($borrower['email'], isset($object['fullFriendlyName']) ?
+                $asciiFilter->filter($object['fullFriendlyName']) : null);
             if (isset($replyEmail)) {
                 $message->addReplyTo($replyEmail);
             }
