@@ -6,6 +6,7 @@ $this->headTitle($headText); ?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
 <?php echo $this->partial('books/checkouts/checkout-list', [
     'entities' => $this->entities,
+    'columns' => ['library', 'book', 'checkedOutOn', 'dueOn', 'checkedInOn'],
 ]);
 $timerText = $this->translate('This page will redirect in {0} seconds.');
 $jsScript= <<<JS

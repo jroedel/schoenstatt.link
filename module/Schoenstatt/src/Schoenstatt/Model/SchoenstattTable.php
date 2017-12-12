@@ -890,10 +890,6 @@ ORDER BY `LastName`, `FirstName`";
                     }
                 }
             }
-            if (!isset($primaryLocale) && isset($country)) {
-                var_dump($country);
-                var_dump($countryInfo->languages);
-            }
 
             $entities[$id] = [
                 'personId'                  => $id,
