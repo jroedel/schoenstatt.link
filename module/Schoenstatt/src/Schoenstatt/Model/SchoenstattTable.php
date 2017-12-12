@@ -20,6 +20,7 @@ use Zend\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
 use SionModel\Db\GeoPoint;
 use Zend\Validator\GpsPoint;
+use JTranslate\Model\CountriesInfo;
 
 class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface, ResourceProviderInterface
 {
@@ -111,7 +112,14 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     */
     protected $associationKinds;
 
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $schoenstattConfig)
+    /**
+    * @var CountriesInfo $countriesInfo
+    */
+    protected $countriesInfo;
+
+    protected $countryLanguageMap = [];
+
+    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $schoenstattConfig, $countriesInfo)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $schoenstattConfig;
@@ -129,6 +137,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
             }
         }
+        $this->countriesInfo = $countriesInfo;
     }
 
     /**
@@ -747,6 +756,14 @@ ORDER BY `LastName`, `FirstName`";
         array_multisort($sort['LastName'], SORT_ASC, $results);
 
         $entities = [];
+        $possibleLocales = ['en'=>'en_US', 'de'=>'de_DE','es'=>'es_ES','pt'=>'pt_BR', 'fr'=>'fr_FR'];
+        $language3to2Map = ['eng'=>'en','deu'=>'de','spa'=>'es','por'=>'pt', 'gsw'=>'de', 'fra'=>'fr', //real language conversions
+            //similar language conversions
+            'bar'=>'de',
+            'pol'=>'de',
+            'hun'=>'de',
+            'ces'=>'de',
+        ];
         $filter = new ToNull();
         $tz = new \DateTimeZone('UTC');
         $today = new \DateTime(null, $tz);
@@ -851,6 +868,33 @@ ORDER BY `LastName`, `FirstName`";
                 'country'               => $this->filterDbString($row['PostCountry']),
             ];
 
+            $country = $this->filterDbString($row['Country']);
+
+            $primaryLocale = $this->filterDbString($row['PrimaryLocale']);
+            if (!isset($primaryLocale) || !isset($possibleLocales[$primaryLocale]) && isset($country)) { //not a valid locale, find another
+                if (isset($this->countryLanguageMap[$country])) {
+                    $primaryLocale = $this->countryLanguageMap[$country];
+                } else {
+                    $countryInfo = $this->countriesInfo->getCountry($country);
+                    if (isset($countryInfo) && is_object($countryInfo) && property_exists($countryInfo, 'languages')) {
+                        $languages = $countryInfo->languages;
+                        if (isset($languages) && is_object($languages)) {
+                            foreach ($language3to2Map as $language3 => $language2) {
+                                if (property_exists($languages, $language3)) {
+                                    $primaryLocale = $possibleLocales[$language2];
+                                    $this->countryLanguageMap[$country] = $primaryLocale;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (!isset($primaryLocale) && isset($country)) {
+                var_dump($country);
+                var_dump($countryInfo->languages);
+            }
+
             $entities[$id] = [
                 'personId'                  => $id,
                 'isAuthor'                  => $this->filterDbBool($row['IsAuthor']),
@@ -884,10 +928,10 @@ ORDER BY `LastName`, `FirstName`";
                 'spousePersonId'            => $this->filterDbId($row['SpousePersonId']),
                 'personTags'                => $personTags,
                 'automaticTitle'            => $automaticTitle,
-                'country'                   => $this->filterDbString($row['Country']),
+                'country'                   => $country,
                 'lifeCommunity'             => $this->filterDbId($row['LifeCommunity']),
                 'manualTitle'               => $manualTitle,
-                'primaryLocale'             => $this->filterDbString($row['PrimaryLocale']),
+                'primaryLocale'             => $primaryLocale,
                 'priestDate'                => $this->filterDbDate($row['PriestDate']),
                 'bishopDate'                => $this->filterDbDate($row['BishopDate']),
                 'deathDate'                 => $deathDate,
@@ -2030,4 +2074,23 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         return $this;
     }
 
+    /**
+     * Get the countriesInfo value
+     * @return CountriesInfo
+     */
+    public function getCountriesInfo()
+    {
+        return $this->countriesInfo;
+    }
+
+    /**
+     *
+     * @param CountriesInfo $countriesInfo
+     * @return self
+     */
+    public function setCountriesInfo($countriesInfo)
+    {
+        $this->countriesInfo = $countriesInfo;
+        return $this;
+    }
 }

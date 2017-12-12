@@ -14,6 +14,8 @@ use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
 use Books\Mailing\BooksMailer;
+use JTranslate\Model\CountriesInfo;
+use BjyAuthorize\Exception\UnAuthorizedException;
 
 class LibrariesController extends SionController
 {
@@ -274,6 +276,17 @@ class LibrariesController extends SionController
     public function sendBookNoticesAction()
     {
         $sm = $this->getServiceLocator();
+        $key = $this->params()->fromQuery('key', null);
+        $config = $sm->get('Config');
+        $apiKeys = [];
+        if (isset($config['schoenstatt']) && isset($config['schoenstatt']['api_keys']) &&
+            is_array($config['schoenstatt']['api_keys'])
+        ) {
+            $apiKeys = $config['schoenstatt']['api_keys'];
+        }
+        if (!$this->isAllowed('send_library_emails') && !in_array($key, $apiKeys)) {
+            throw new UnAuthorizedException();
+        }
         $libraryId = $this->getLibraryId();
         $simulate = (bool)$this->params()->fromQuery('simulate', true);
 //         var_dump($simulate);
@@ -285,6 +298,7 @@ class LibrariesController extends SionController
         $mailer = $sm->get('Books\BooksMailer');
 
         $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate);
+
         return new ViewModel([
             'simulate' => $simulate,
             'borrowers' => $borrowers,

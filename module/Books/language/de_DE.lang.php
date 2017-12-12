@@ -11,6 +11,7 @@ return array(
     'Contact person' => 'Kontaktperson',
     'Data problems' => 'Probleme der Daten',
     'Dear %s,' => 'Lieber %s,',
+    'Email' => 'E-Mail',
     'English' => 'Englisch',
     'Export' => 'Exportieren',
     'Field' => 'Feld',

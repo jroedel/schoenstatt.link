@@ -120,6 +120,13 @@ class BooksMailer extends Mailer
                 'content' => '—The Schoenstatt Link Team',
             ],
         ];
+        $footerParagraph = [ //footer paragraph
+            'type' => 'content',
+            'content' => 'Follow %s on Twitter',
+            'isContentParameterized' => true,
+            'shouldEscape' => false,
+            'contentParams' => ['<a href="https://twitter.com/SchoenstattData">@SchoenstattData</a>'],
+        ];
 
         $mailService = $this->getMailService();
         $timeZone = new \DateTimeZone('UTC');
@@ -154,6 +161,7 @@ class BooksMailer extends Mailer
                 'paragraphs'    => $paragraphs,
                 'title'         => $localizedSubject[$locale],
                 'textDomain'    => $textDomain,
+                'footer'        => $footerParagraph,
             ]);
 
             $message = $mailService->getMessage();
