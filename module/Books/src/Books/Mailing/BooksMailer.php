@@ -51,8 +51,8 @@ class BooksMailer extends Mailer
                 $borrowersToContact[] = $object['personId'];
             }
         }
-
-        $borrowers = $this->getSchoenstattTable()->getPersons($borrowersToContact); //@todo only get selected persons
+        $schTable = $this->getSchoenstattTable();
+        $borrowers = $schTable->getPersons($borrowersToContact); //@todo only get selected persons
         //now loop through checkouts again to fill up the person list
         foreach ($checkouts as $checkoutId => $object) {
             if (isset($borrowers[$object['personId']])) {
@@ -81,6 +81,14 @@ class BooksMailer extends Mailer
         }
 
         $library = $libraryTable->getSimpleLibrary($libraryId);
+        if (isset($library['contactEmail'])) {
+            $replyEmail = $library['contactEmail'];
+        } elseif (isset($library['contactPersonId'])) {
+            $person = $schTable->getSimplePerson($library['contactPersonId']);
+            if (isset($person['email'])) {
+                $replyEmail = $person['email'];
+            }
+        }
         $localizedLibraryName = [];
         $subjectBase = '%s - Overdue notice';
         $localizedSubject = [];
@@ -135,7 +143,7 @@ class BooksMailer extends Mailer
         $debugCount = 0;
         foreach ($borrowers as $personId => $object) {
             if ($debugCount > 0) {
-//                 break;
+                break;
             }
             $debugCount++;
             $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : Locale::getDefault();
@@ -149,17 +157,18 @@ class BooksMailer extends Mailer
             if (!isset($localizedLibraryName[$locale])) {
                 $localizedLibraryName[$locale] = $this->translator->translate($library['name'], $textDomain, $locale);
             }
+            $trackingToken = self::getNewTrackingToken();
             $paragraphs = $paragraphPrototype;
             $paragraphs['salutation']['contentParams'] = [$salutation];
             $paragraphs['message']['contentParams'] = [$localizedLibraryName[$locale]];
             $paragraphs['list']['checkouts'] = $object['checkouts'];
             $paragraphs['button']['urlArgs'][] = ['person_id' => $object['personId']]; //url person_id param
-
-            $trackingToken = self::getNewTrackingToken();
+            $paragraphs['button']['urlArgs'][] = ['query' => ['token' => $trackingToken]];
             $mailService->setTemplate($template, [
                 'locale'        => $locale,
                 'paragraphs'    => $paragraphs,
                 'title'         => $localizedSubject[$locale],
+                'shouldTranslateTitle' => false,
                 'textDomain'    => $textDomain,
                 'footer'        => $footerParagraph,
             ]);
@@ -170,6 +179,9 @@ class BooksMailer extends Mailer
                 $asciiFilter->filter($object['fullFriendlyName']) : null);
 //             $message->setTo($borrower['email'], isset($object['fullFriendlyName']) ?
 //                 $asciiFilter->filter($object['fullFriendlyName']) : null);
+            if (isset($replyEmail)) {
+                $message->addReplyTo($replyEmail);
+            }
             $body = $this::inlineEmailStyles($message->getBodyText());
             $message->setBody($body);
             $result = $mailService->send();

@@ -13,6 +13,7 @@ use Zend\View\Model\ViewModel;
 use Zend\Mvc\Controller\AbstractActionController;
 use JTranslate\Model\TranslationsTable;
 use JTranslate\Controller\Plugin\NowMessenger;
+use Schoenstatt\Model\SchoenstattTable;
 // use Patres\Form\ModerateGenericForm;
 // use Patres\Mailing\Mailer;
 // use Schoenstatt\Form\PersonForm;
@@ -82,111 +83,37 @@ class AdminController extends AbstractActionController
         ]);
     }
 
-//     public function testEmailsAction()
-//     {
-//         return;
-//         $sm = $this->getServiceLocator();
-//         /** @var \Patres\Model\PatresTable $table */
-//         $table = $sm->get('Patres\Model\PatresTable');
+    public function maintenanceAction()
+    {
+        $sm = $this->getServiceLocator();
+        /** @var SchoenstattTable $table */
+        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
 
-//         //send an email to admin
-// //         $suggestion = $table->getLastSuggestion();
-//         $suggestion = $table->getSuggestions()[12];
-//         /** @var Mailer $mailer **/
-//         $mailer = $sm->get('Patres\Mailing\Mailer');
-//         $mailer->sendReviewedSuggestionNotice($suggestion);
-//         return new ViewModel([
-//             'suggestion' => $suggestion,
-//         ]);
-//     }
+        //remove erroneous priest tag from seminarians (so far, all priests should have priestDate)
+        $persons = $table->getUnlinkedPersons();
+        $simulate = (bool)$this->params()->fromQuery('simulate', true);
+        $changes = [];
+        foreach ($persons as $personId => $object) {
+            $hasPriestTag = in_array('priest', $object['personTags']);
+            if ($hasPriestTag && !isset($object['priestDate'])) {
+                $personTags = $object['personTags'];
+                foreach ($personTags as $key => $value) {
+                    if ('priest' === $value) {
+                        unset($personTags[$key]);
+                        break;
+                    }
+                }
+                if (!$simulate) {
+                    $table->updateEntity('person', $personId, ['personTags'=>$personTags]);
+                }
+                $changes[] = $personId;
+            }
+        }
 
-//     public function testSuggestionsAction()
-//     {
-//         $sm = $this->getServiceLocator();
-//         /** @var \Patres\Model\PatresTable $table */
-//         $table = $sm->get('Patres\Model\PatresTable');
+        return new ViewModel([
+            'changes' => $changes,
+            'simulate'  => $simulate,
+        ]);
+    }
 
-//         $suggestions = $table->getSuggestions();
-//         return new ViewModel([
-//             'suggestions' => $suggestions,
-//         ]);
-//     }
-
-//     public function reviewPhoneNumbersAction()
-//     {
-//         $sm = $this->getServiceLocator();
-//         /** @var \Patres\Model\PatresTable $table */
-//         $table = $sm->get('Patres\Model\PatresTable');
-//         $phones = $table->getAllPersonPhoneNumbers();
-
-//         return new ViewModel([
-//             'phones' => $phones,
-//         ]);
-//     }
-
-//     public function livingSituationBootstrapAction()
-//     {
-//         $sm = $this->getServiceLocator();
-//         /** @var \Patres\Model\PatresTable $table */
-//         $table = $sm->get('Patres\Model\PatresTable');
-//         $persons = $table->createFirstLivingSituations(true); //this must be hard-coded true to affect the db
-//         $columns = [
-//             'personId' => 'ID',
-//             'fullName' => 'Name',
-//             'responsibleTerritoryId' => 'Responsible Territory',
-//             'filiationId' => 'Filiation',
-//             'houseId' => 'House',
-//             'status' => 'Status',
-//             'persStatus' => 'PersStatus',
-//             'glSpez' => 'GlSpez',
-//             'gruppePers' => 'GruppePers'
-//         ];
-//         return new ViewModel([
-//             'persons' => $persons,
-//             'columns' => $columns,
-//         ]);
-//     }
-
-//     /**
-//      * @todo I'm not sure that this correctly handles DENY!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//      * @return \Zend\View\Model\ViewModel
-//      */
-//     public function moderateAction()
-//     {
-//         $sm = $this->getServiceLocator();
-//         /** @var \Patres\Model\PatresTable $table */
-//         $table = $sm->get('Patres\Model\PatresTable');
-
-//         $form = new ModerateGenericForm();
-//         $request = $this->getRequest();
-//         $continueModeration = false;
-//         if ($request->isPost()) {
-//             $data = $request->getPost ()->toArray ();
-//             $form->setData($data);
-//             if ($form->isValid()) {
-//                 $data = $form->getData();
-//                 try {
-//                     $table->updateSuggestion($data);
-
-//                     //send an email to user
-//                     /** @var Mailer $mailer **/
-//                     $mailer = $sm->get('Patres\Mailing\Mailer');
-//                     $suggestion = $table->getSuggestion($data['suggestionId']);
-//                     $mailer->sendReviewedSuggestionNotice($suggestion);
-//                 } catch (\Exception $e) {
-//                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error updating suggestion.' );
-//                     $continueModeration = true;
-//                 }
-//             } else {
-//                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error updating suggestion.' );
-//                 $continueModeration = true;
-//             }
-//         }
-//         $suggestions = $table->getSuggestions();
-//         return new ViewModel([
-//             'suggestions' => $suggestions,
-//             'form' => $form,
-//             'continueModeration' => $continueModeration
-//         ]);
-//     }
 }
