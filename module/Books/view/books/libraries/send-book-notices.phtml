@@ -1,16 +1,19 @@
 <?php
 /**
+ * @param array $queryParams
  * @param mixed[] $library
  * @param mixed[] $borrowers
  * @param bool $simulate
  */
 $headText = 'Book notices for %s';
 $this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle(sprintf($headText, $this->library['name']));?>
+$this->headTitle(sprintf($headText, $this->library['name']));
+$queryParams = $this->queryParams;?>
 <h1><?php echo sprintf($this->translate($headText), $this->formatEntity('library', $this->library, ['displayEditPencil'=>false]));?></h1>
 <?php if (isset($this->simulate) && $this->simulate) :?>
 <p><?php echo $this->translate('All following emails are a simulation, click "Send now" to send emails.')?></p>
-<p><a href="?simulate=0" class="btn btn-primary"><?php echo $this->translate('Send emails now');?></a>
+<p><a href="<?php $queryParams['simulate'] = 0;
+echo $this->url(null, [], ['query' => $queryParams], true);?>" class="btn btn-primary"><?php echo $this->translate('Send emails now');?></a>
 <?php endif;
 foreach ($this->borrowers as $personId => $object) :?>
 <h2><?php echo $this->formatEntity('borrower', $object);?></h2>

@@ -46,7 +46,8 @@ class BooksMailer extends Mailer
         //first loop through once to get our list of persons
         foreach ($checkouts as $checkoutId => $object) {
             if ((!$onlyIfBorrowerHasOverdueBook || LibraryTable::CHECKOUT_STATUS_OVERDUE === $object['status']) &&
-                !in_array($object['personId'], $borrowersToContact)
+                !in_array($object['personId'], $borrowersToContact) &&
+                (empty($borrowerSubset) || in_array($object['personId'], $borrowerSubset)) //make sure the person is in our subset
             ) {
                 $borrowersToContact[] = $object['personId'];
             }
@@ -69,7 +70,7 @@ class BooksMailer extends Mailer
         }
         //@todo delete the following when getPersons is finished
         foreach ($borrowers as $personId => $object) {
-            if (!isset($object['mailingStatus'])) {
+            if (!isset($object['mailingStatus']) || !in_array($personId, $borrowersToContact)) {
                 unset($borrowers[$personId]);
             } elseif ($onlyIfBorrowerHasOverdueBook && !$object['hasOverdueBook']) {
                 unset($borrowers[$personId]);
@@ -177,7 +178,7 @@ class BooksMailer extends Mailer
             $message->setSubject($localizedSubject[$locale]);
 //             $message->setTo('webmaster@schoenstatt.link', isset($object['fullFriendlyName']) ?
 //                 $asciiFilter->filter($object['fullFriendlyName']) : null);
-            $message->setTo($borrower['email'], isset($object['fullFriendlyName']) ?
+            $message->setTo($object['email'], isset($object['fullFriendlyName']) ?
                 $asciiFilter->filter($object['fullFriendlyName']) : null);
             if (isset($replyEmail)) {
                 $message->addReplyTo($replyEmail);

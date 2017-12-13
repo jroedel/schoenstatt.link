@@ -2,9 +2,24 @@
 <?php
 $headText = $this->person['fullFriendlyName'];
 $this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle($headText); ?>
+$this->headTitle($headText);
+$libraries = [];
+foreach ($this->entities as $checkoutId => $object) {
+    if (!isset($libraries[$object['book']['libraryId']]) &&
+        $this->isAllowed('route/libraries/library/send-book-notices') //@todo check for library-specific permission
+    ) {
+        $libraries[$object['book']['libraryId']] = $object['book']['library'];
+    }
+}?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
-<?php echo $this->partial('books/checkouts/checkout-list', [
+<?php $personId = $this->person['personId'];
+if (!empty($libraries)):?>
+<p><?php foreach ($libraries as $libraryId => $library) :?><a href="<?php
+echo $this->url('libraries/library/send-book-notices', ['library_id' => $libraryId], ['query' => ['borrowers' => [$personId], 'onlyOverdueBorrowers' => '0']]);?>" class="btn btn-primary"><?php
+        echo sprintf($this->translate('Send email regarding %s books'), $library['name']);?></a> <?php
+    endforeach;?></p><?php
+endif;
+echo $this->partial('books/checkouts/checkout-list', [
     'entities' => $this->entities,
     'columns' => ['library', 'book', 'checkedOutOn', 'dueOn', 'checkedInOn'],
 ]);
