@@ -453,21 +453,14 @@ ORDER BY `publisher`";
         $entities = $this->getUnlinkedBooks();
         $libraries = $this->getUnlinkedLibraries();
         foreach ($entities as $entityId => $entity) {
+            $unset = false;
             if (isset($libraries[$entity['libraryId']])) {
                 $entities[$entityId]['library'] = $libraries[$entity['libraryId']];
             } else {
                 unset($entities[$entityId]); //all books should be in a library
             }
-        }
-
-        $checkouts = $this->getUnlinkedCheckouts();
-        foreach ($checkouts as $checkoutId => $checkout) {
-            if ($checkout['status'] !== self::CHECKOUT_STATUS_RETURNED &&
-                isset($entities[$checkout['bookId']])
-            ) {
-                $entities[$checkout['bookId']]['isAvailable'] = false;
-                $entities[$checkout['bookId']]['isCheckedOut'] = true;
-                $entities[$checkout['bookId']]['currentCheckout'] = $checkout;
+            if (!$unset && isset($entity['currentCheckoutId'])) {
+                $entities[$entityId]['currentCheckout'] = $this->getCheckout($entity['currentCheckoutId']);
             }
         }
         $this->cacheEntityObjects($cacheKey, $entities, ['book', 'checkout', 'library']);
@@ -488,7 +481,7 @@ ORDER BY `publisher`";
 'category', 'pages', 'lang', 'original_id', 'publication_id', 'updated_at', 'created_by', 'created_at', 'updated_by',
 'inactivation_reason', 'is_active', 'isbn', 'copyright_year', 'publisher', 'publisher_place', 'public_tags', 'admin_tags',
 'public_notes', 'public_notes_updated_at', 'public_notes_updated_by', 'admin_notes', 'admin_notes_updated_at',
-                'admin_notes_updated_by']);//, 'CurrentCheckouts' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
+                'admin_notes_updated_by', 'current_checkout_id' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
 //         $select->group(['TheMonth', 'TheYear']);
 //         $select->where($predicate->in('ChangedEntity', $tableEntities));
             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
@@ -513,6 +506,32 @@ ORDER BY `publisher`";
             return null;
         }
         return $this->processBookRow($results[0]);
+    }
+
+    /**
+     * @param int $id
+     * @return mixed[]
+     */
+    public function getBook($id)
+    {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('lib_books');
+        }
+        $select = $this->getBookSelectPrototype();
+        $select->where(['book_id' => $id]);
+        /** @var ResultSet $result */
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+
+        if (!isset($results[0])) {
+            return null;
+        }
+        $object = $this->processBookRow($results[0]);
+        if (isset($object['libraryId'])) {
+            $object['library'] = $this->getSimpleLibrary([$object['libraryId']]);
+        }
+        return $object;
     }
 
     /**
@@ -589,14 +608,13 @@ ORDER BY `publisher`";
             'authors'               => $authors,
             'authorsPrettyText'     => $authorsPrettyText,
             'name'                  => $name,
-            'isAvailable'           => $isActive, //available unless proved otherwise
-            'isCheckedOut'          => false, //until proved otherwise
-            'currentCheckout'       => null,
+            'isAvailable'           => $isActive && !isset($row['current_checkout_id']),
+            'isCheckedOut'          => isset($row['current_checkout_id']),
+            'currentCheckoutId'     => $this->filterDbId($row['current_checkout_id']),
             'library'               => null,
         ];
         return $processedRow;
     }
-
 
     /**
      * Process book data before putting into the database.
@@ -815,6 +833,23 @@ ORDER BY `publisher`";
         }
         $this->removeDependentCacheItems('checkout'); //force cache refresh
         return empty($badValues) ? true : $badValues;
+    }
+
+    public function renewBook($checkoutId)
+    {
+        $checkout = $this->getCheckout($checkoutId);
+        $book = $this->getSimpleBook($bookId);
+        $library = $this->getSimpleLibrary($book['libraryId']);
+        static $today;
+        //if the dueDate hasn't arrived, extend it; else, from today's date
+        if (!isset($today)) {
+            $tz = new \DateTimeZone('UTC');
+            $today = Carbon::today($tz);
+        }
+        /** @var LibraryOptions $libraryOptions */
+        $libraryOptions = $library['options'];
+        $libraryOptions->defaultCheckoutTimePeriodInDays;
+        $newDueOn = $today->addDays($libraryOptions->defaultCheckoutTimePeriodInDays);
     }
 
     /**
@@ -1266,20 +1301,114 @@ ORDER BY CreatedOn DESC";
     }
 
     /**
+     * Get a standardized select object to retrieve records from the database
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getCheckoutSelectPrototype()
+    {
+        static $select;
+        if (!isset($select)) {
+            $select = new Select('lib_checkouts');
+            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+            $select->columns(['CheckoutId', 'PersonId', 'BookId', 'CheckedOutOn', 'CheckedOutBy',
+                'CheckedOutIp', 'CheckedOutUserAgent', 'DueOn', 'TimesRenewed', 'LastRenewedOn', 'CheckedInOn',
+                'CheckedInBy', 'CheckedInIp', 'CheckedInUserAgent', 'AdminNotes', 'AdminNotesUpdatedOn',
+                'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy']);//, 'CurrentCheckouts' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
+            //         $select->group(['TheMonth', 'TheYear']);
+            //         $select->where($predicate->in('ChangedEntity', $tableEntities));
+            $select->order(['CheckedInOn', 'CheckedOutOn' => 'DESC']);
+        }
+
+        return clone $select;
+    }
+
+    protected function processCheckoutRow($row)
+    {
+        static $today;
+        if (!isset($today)) {
+            $tz = new \DateTimeZone('UTC');
+            $today = new \DateTime(null, $tz);
+        }
+        $id = $this->filterDbId($row['CheckoutId']);
+        $dueOn = $this->filterDbDate($row['DueOn']);
+        $checkedIn = $this->filterDbDate($row['CheckedInOn']);
+        $status = null;
+        if (isset($checkedIn)) {
+            $status = self::CHECKOUT_STATUS_RETURNED;
+        } elseif (isset($dueOn) && $today >= $dueOn) {
+            $status = self::CHECKOUT_STATUS_OVERDUE;
+        } else {
+            $status = self::CHECKOUT_STATUS_CHECKED_OUT;
+        }
+
+        $processedRow = [
+            'checkoutId'            => $id,
+            'personId'              => $this->filterDbId($row['PersonId']),
+            'bookId'                => $this->filterDbId($row['BookId']),
+            'checkedOutOn'          => $this->filterDbDate($row['CheckedOutOn']),
+            'checkedOutBy'          => $this->filterDbId($row['CheckedOutBy']),
+            'checkedOutIp'          => $this->filterDbString($row['CheckedOutIp']),
+            'checkedOutUserAgent'   => $this->filterDbString($row['CheckedOutUserAgent']),
+            'dueOn'                 => $dueOn,
+            'timesRenewed'          => $this->filterDbInt($row['TimesRenewed']),
+            'lastRenewedOn'         => $this->filterDbDate($row['LastRenewedOn']),
+            'checkedInOn'           => $checkedIn,
+            'checkedInBy'           => $this->filterDbId($row['CheckedInBy']),
+            'checkedInIp'           => $this->filterDbString($row['CheckedInIp']),
+            'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
+            'adminNotes'            => $this->filterDbString($row['AdminNotes']),
+            'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
+            'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
+            'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
+            'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+
+            'status'                => $status,
+            'book'                  => null,
+            'person'                => null,
+        ];
+        return $processedRow;
+    }
+
+    /**
      * Return an array of checkouts performed by a certain person
      * @param int $personId
      * @return mixed[]
      */
     public function getCheckoutsForPerson($personId)
     {
-        $checkouts = $this->getCheckouts();
-        $entities = [];
-        foreach ($checkouts as $checkoutId => $checkout) {
-            if ($checkout['personId'] == $personId) {
-                $entities[$checkoutId] = $checkout;
-            }
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('lib_checkouts');
         }
-        return $entities;
+        $select = $this->getCheckoutSelectPrototype();
+        $select->where(['PersonId' => $personId]);
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+
+        if (!isset($results[0])) {
+            return null;
+        }
+        $objects = [];
+        $libraryCache = [];
+        foreach ($results as $row) {
+            $object = $this->processCheckoutRow($row);
+            if (isset($object['bookId'])) {
+                $object['book'] = $this->getSimpleBook($object['bookId']);
+            }
+            $libraryId = $object['book']['libraryId'];
+            if (isset($libraryId)) {
+                if (isset($libraryCache[$libraryId])) {
+                    $object['book']['library'] = $libraryCache[$libraryId];
+                } else {
+                    $library = $this->getSimpleLibrary($libraryId);
+                    $libraryCache[$libraryId] = $library;
+                    $object['book']['library'] = $library;
+                }
+            }
+            $objects[$object['checkoutId']] = $object;
+        }
+
+        return $objects;
     }
 
     /**
@@ -1336,61 +1465,53 @@ ORDER BY CreatedOn DESC";
         return $entities;
     }
 
+    /**
+     *
+     * @param int $id
+     * @return mixed[]
+     */
+    public function getCheckout($id)
+    {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('lib_checkouts');
+        }
+        $select = $this->getCheckoutSelectPrototype();
+        $select->where(['CheckoutId' => $id]);
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+
+        if (!isset($results[0])) {
+            return null;
+        }
+        $object = $this->processCheckoutRow($results[0]);
+        if (isset($object['bookId'])) {
+            $object['book'] = $this->getSimpleBook($object['bookId']);
+        }
+
+        return $object;
+    }
+
     protected function getUnlinkedCheckouts()
     {
         if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-checkouts'))) {
             return $cache;
         }
+        $gateway = $this->getTableGateway('lib_checkouts');
+//         if (isset($libraryId)) {
+//             $select = $this->getBookSelectPrototype();
+//             $select->where(['library_id' => $libraryId]);
+//             $results = $gateway->selectWith($select);
+//         } else {
+            $select = $this->getCheckoutSelectPrototype();
+            $results = $gateway->selectWith($select);
+//         }
 
-        $sql = "SELECT CheckoutId, PersonId, BookId, CheckedOutOn, CheckedOutBy,
-CheckedOutIp, CheckedOutUserAgent, DueOn, TimesRenewed, LastRenewedOn, CheckedInOn,
-CheckedInBy, CheckedInIp, CheckedInUserAgent, AdminNotes, AdminNotesUpdatedOn,
-AdminNotesUpdatedBy, UpdatedOn, UpdatedBy
-FROM lib_checkouts
-ORDER BY CheckedInOn, CheckedOutOn DESC;";
-
-        $results = $this->fetchSome(null, $sql, null);
-
-        $tz = new \DateTimeZone('UTC');
-        $today = new \DateTime(null, $tz);
         $entities = [];
         foreach ($results as $row) {
-            $id = $this->filterDbId($row['CheckoutId']);
-            $dueOn = $this->filterDbDate($row['DueOn']);
-            $checkedIn = $this->filterDbDate($row['CheckedInOn']);
-            $status = null;
-            if (isset($checkedIn)) {
-                $status = self::CHECKOUT_STATUS_RETURNED;
-            } elseif (isset($dueOn) && $today >= $dueOn) {
-                $status = self::CHECKOUT_STATUS_OVERDUE;
-            } else {
-                $status = self::CHECKOUT_STATUS_CHECKED_OUT;
-            }
-
-            $entities[$id] = [
-                'checkoutId'            => $id,
-                'personId'              => $this->filterDbId($row['PersonId']),
-                'bookId'                => $this->filterDbId($row['BookId']),
-                'checkedOutOn'          => $this->filterDbDate($row['CheckedOutOn']),
-                'checkedOutBy'          => $this->filterDbId($row['CheckedOutBy']),
-                'checkedOutIp'          => $this->filterDbString($row['CheckedOutIp']),
-                'checkedOutUserAgent'   => $this->filterDbString($row['CheckedOutUserAgent']),
-                'dueOn'                 => $dueOn,
-                'timesRenewed'          => $this->filterDbInt($row['TimesRenewed']),
-                'lastRenewedOn'         => $this->filterDbDate($row['LastRenewedOn']),
-                'checkedInOn'           => $checkedIn,
-                'checkedInBy'           => $this->filterDbId($row['CheckedInBy']),
-                'checkedInIp'           => $this->filterDbString($row['CheckedInIp']),
-                'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
-                'adminNotes'            => $this->filterDbString($row['AdminNotes']),
-                'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
-                'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
-                'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
-                'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
-
-                'status'                => $status,
-                'book'                  => null,
-            ];
+            $processedRow = $this->processCheckoutRow($row);
+            $id = $processedRow['checkoutId'];
+            $entities[$id] = $processedRow;
         }
 
         $this->cacheEntityObjects('unlinked-checkouts', $entities, ['checkout']);
@@ -1465,22 +1586,6 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
     }
 
     /**
-     * @todo factor out getBooks because it uses too much memory
-     * @param int $id
-     * @return mixed[]
-     */
-    public function getBook($id)
-    {
-        $entities = $this->getBooks();
-
-        if (!isset($entities[$id]) || !($entity = $entities[$id])) {
-            return null;
-        }
-
-        return $entity;
-    }
-
-    /**
      *
      * @param int $id
      * @return mixed[]
@@ -1488,22 +1593,6 @@ ORDER BY CheckedInOn, CheckedOutOn DESC;";
     public function getLibrary($id)
     {
         $entities = $this->getLibraries();
-        if (!isset($entities[$id]) || !($entity = $entities[$id])) {
-            return null;
-        }
-
-        return $entity;
-    }
-
-    /**
-     *
-     * @param int $id
-     * @return mixed[]
-     */
-    public function getCheckout($id)
-    {
-        $entities = $this->getCheckouts();
-
         if (!isset($entities[$id]) || !($entity = $entities[$id])) {
             return null;
         }

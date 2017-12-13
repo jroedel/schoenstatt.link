@@ -1,0 +1,1 @@
+ALTER TABLE `lib_checkouts` ADD INDEX( `BookId`, `CheckedInOn`);

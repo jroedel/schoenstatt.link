@@ -289,7 +289,7 @@ class LibrariesController extends SionController
         }
         $libraryId = $this->getLibraryId();
         $simulate = (bool)$this->params()->fromQuery('simulate', true);
-//         var_dump($simulate);
+        $borrowerSubset = $this->params()->fromQuery('borrowers', []);
         $sendOnlyToBorrowersWithOverdueBooks = (bool)$this->params()->fromQuery('onlyOverdueBorrowers', true);
 
         $table = $this->getSionTable();
@@ -297,9 +297,10 @@ class LibrariesController extends SionController
         /** @var BooksMailer $mailer */
         $mailer = $sm->get('Books\BooksMailer');
 
-        $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate);
+        $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate, $borrowerSubset);
 
         return new ViewModel([
+            'queryParams'   => $this->params()->fromQuery(),
             'simulate' => $simulate,
             'borrowers' => $borrowers,
             'library'   => $library,

@@ -98,12 +98,10 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $barcodeText;
     /**
-     * @todo Should new checkouts be created if we are asked to checkin a book without checkout
      * @var bool $createCheckoutsIfCheckingInANonCheckedOutBook
      */
     public $createCheckoutsIfCheckingInANonCheckedOutBook = true;
     /**
-     * @todo If we auto-create a checkout, under which personId should it be registered?
      * @var int $defaultCheckoutPersonId
      */
     public $defaultCheckoutPersonId;
@@ -112,6 +110,11 @@ class LibraryOptions implements ArraySerializableInterface
      * @var int $defaultCheckoutTimePeriodInDays
      */
     public $defaultCheckoutTimePeriodInDays;
+    /**
+     * How many times can a book be renewed?
+     * @var int|null
+     */
+    public $maximumBookRenewals;
     /**
      * Enable checkouts?
      * @var bool $defaultCheckoutTimePeriodInDays

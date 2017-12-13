@@ -169,11 +169,11 @@ class PatresGateway
             throw new \Exception('Request for information on father \''.$personId.'\' failed. No information returned.');
         }
         $person = $data['data'];
-        if (isset($person['priestDate']) && !is_null($person['bishopDate'])) {
+        if (isset($person['bishopDate'])) {
             $person['personTags'] = 'bishop';
-        } else if (isset($person['priestDate']) && !is_null($person['priestDate'])) {
+        } elseif (isset($person['priestDate'])) {
             $person['personTags'] = 'priest';
-        } else if (isset($person['priestDate']) && !is_null($person['deaconDate'])) {
+        } elseif (isset($person['priestDate'])) {
             $person['personTags'] = 'deacon';
         }
         $person['lifeCommunity'] = 1;
