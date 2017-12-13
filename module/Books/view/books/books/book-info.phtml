@@ -37,9 +37,8 @@ $object = $this->object;
     </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-        <p><strong><?php echo $this->translate('Library');?>:</strong><?php
-//         var_dump($object['library']);
-            echo $this->formatEntity('book', $object['library']);?></p>
+        <p><strong><?php echo $this->translate('Library');?>:</strong> <?php
+            echo $this->formatEntity('library', $object['library']);?></p>
         <?php echo $this->formatField('Author(s)', $object['authorsPrettyText']);?>
     </div> <!-- info 1 column -->
 
@@ -47,6 +46,7 @@ $object = $this->object;
         <?php
         echo $this->formatField('Language', $object['inLanguage']);
         echo $this->formatField('Barcode', $object['withinLibraryId']);
+        echo $this->formatField('Category', $object['category']); //make this a link to search involving all books of this category
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);

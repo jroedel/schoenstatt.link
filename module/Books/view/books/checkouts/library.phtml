@@ -10,7 +10,6 @@ $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText); ?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
 <?php
-
 $columnOptions = [
     'all'       => ['book', 'borrower', 'checkedOutOn', 'dueOn', 'checkedInOn'],
     'current'   => ['withinLibraryId', 'callNumber', 'book', 'borrower', 'checkedOutOn', 'dueOn'],

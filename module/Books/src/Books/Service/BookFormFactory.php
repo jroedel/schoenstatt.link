@@ -3,7 +3,6 @@ namespace Books\Service;
 
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
-use Books\Form\PublicationForm;
 use Matriphe\ISO639\ISO639;
 use Books\Model\LibraryTable;
 use Books\Form\BookForm;
@@ -43,10 +42,8 @@ class BookFormFactory extends ISO639 implements FactoryInterface
 		$config = $serviceLocator->get('Books\Config');
 
 		$languages = $this->getLanguageValueOptions();
-
 		$keywords = $table->getKeywordsValueOptions();
 		$adminTags = $table->getAdminKeywordsValueOptions();
-
         $categories = $table->getCategoryValueOptions();
 
         /** @var PublicationsTable */

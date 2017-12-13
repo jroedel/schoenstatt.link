@@ -6,7 +6,7 @@ $this->headTitle($headText);
 $libraries = [];
 foreach ($this->entities as $checkoutId => $object) {
     if (!isset($libraries[$object['book']['libraryId']]) &&
-        $this->isAllowed('route/libraries/library/send-book-notices') //@todo check for library-specific permission
+        $this->isAllowed('send_library_emails') //@todo check for library-specific permission
     ) {
         $libraries[$object['book']['libraryId']] = $object['book']['library'];
     }
