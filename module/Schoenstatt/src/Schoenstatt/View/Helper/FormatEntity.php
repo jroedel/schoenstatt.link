@@ -34,18 +34,18 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
                 return $this->view->formatAssociation($data, $options);
                 break;
             case 'role':
-                $finalMarkup = $this->view->escapeHtml($this->view->translate($data['roleTitle']));
+                $finalMarkup = $this->view->escapeHtml($data['formattedRoleTitle']);
                 if ($editPencilOption) {
                     $finalMarkup .= $this->view->editPencil('role', $data['roleId']);
                 }
                 if ($showLabelOption) {
-                    if ($data['isMainRole']) {
+                    if (isset($data['isMainRole']) && $data['isMainRole']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Main role', 'label-primary');
                     }
-                    if ($data['isMainContact']) {
+                    if (isset($data['isMainContact']) && $data['isMainContact']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Main contact', 'label-info');
                     }
-                    if (!$data['isActive']) {
+                    if (isset($data['isActive']) && !$data['isActive']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Inactive', 'label-warning');
                     }
                 }

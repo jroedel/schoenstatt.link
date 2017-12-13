@@ -19,4 +19,9 @@ class BooksController extends SionController
         $view->setVariable('entity', $entity);
         return $view;
     }
+
+    public function searchAction()
+    {
+
+    }
 }
