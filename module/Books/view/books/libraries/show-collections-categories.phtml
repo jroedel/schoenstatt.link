@@ -7,7 +7,7 @@ if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->book
             $this->translate($libraryOptions->collections[$collectionId]->name) :
             sprintf('(%s)', $this->translate('none'));?>
         <h3><?php echo $this->escapeHtml($collectionName);
-        if (isset($libraryOptions->collections[$collectionId])) {
+        if (isset($libraryOptions->collections[$collectionId]) && $this->isAllowed($this->entity['resourceId'], 'administrate')) {
             echo $this->editPencil('collection', $collectionId);
         }?></h3>
     	<ul class="list-group">
@@ -16,7 +16,7 @@ if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->book
                 <span class="badge"><?php echo $this->escapeHtml($count);?></span>
                 <a href="<?php echo $this->url('libraries/library', ['library_id' => $this->entityId],
                         ['query' => ['category' => $category, 'collectionId' => $collectionId === 0 ? '' : $collectionId]]);?>"><?php
-                if (is_null($category) || strlen($category) === 0) {
+                if (!isset($category) || strlen($category) === 0) {
                     $category = sprintf('(%s)', $this->translate('none'));
                 }
                 echo $this->escapeHtml($category);?></a>

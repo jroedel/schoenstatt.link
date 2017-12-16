@@ -28,13 +28,6 @@ class LibraryTableServiceFactory implements FactoryInterface
 		$actingUserId = $user ? $user->id : null;
 
 		$table = new LibraryTable( $dbAdapter, $serviceLocator, $actingUserId, $config);
-
-		/** @var \Zend\Mvc\Router\RouteMatch $routeMatch */
-		$routeMatch = $serviceLocator->get('Application')->getMvcEvent()->getRouteMatch();
-		$libraryId = $routeMatch->getParam('library_id');
-		if (isset($libraryId)) {
-            $table->setLibraryId($libraryId);
-		}
 		return $table;
     }
 }

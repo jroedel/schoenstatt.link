@@ -10,7 +10,8 @@ $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle(sprintf($headText, $this->library['name']));
 $queryParams = $this->queryParams;?>
 <h1><?php echo sprintf($this->translate($headText), $this->formatEntity('library', $this->library, ['displayEditPencil'=>false]));?></h1>
-<?php if (isset($this->simulate) && $this->simulate) :?>
+<?php //@todo add feed back to user whether the email was successfully sent in the case of a non-simulation
+if (isset($this->simulate) && $this->simulate) :?>
 <p><?php echo $this->translate('All following emails are a simulation, click "Send now" to send emails.')?></p>
 <p><a href="<?php $queryParams['simulate'] = 0;
 echo $this->url(null, [], ['query' => $queryParams], true);?>" class="btn btn-primary"><?php echo $this->translate('Send emails now');?></a>
