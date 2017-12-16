@@ -14,7 +14,6 @@ use Zend\Mvc\Controller\Plugin\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
 use Books\Mailing\BooksMailer;
-use JTranslate\Model\CountriesInfo;
 use BjyAuthorize\Exception\UnAuthorizedException;
 
 class LibrariesController extends SionController
@@ -70,16 +69,26 @@ class LibrariesController extends SionController
 
     public function labelManagementAction()
     {
-
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
     }
 
     public function batchOperationsAction()
     {
-
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
     }
 
     public function getBookListJsonAction()
     {
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
         $sm = $this->getServiceLocator();
         /** @var LibraryTable $table */
         $table = $sm->get('Books\Model\LibraryTable');
@@ -100,6 +109,10 @@ class LibrariesController extends SionController
     public function adminAction()
     {
         $view = $this->showAction();
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
         $sm = $this->getServiceLocator();
         $config = $sm->get('Books\Config');
         $pages = $config['admin_pages'];
@@ -221,6 +234,10 @@ class LibrariesController extends SionController
 
     public function inactivateBooksAction()
     {
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
         //get the parameter
         $libraryId = $this->getLibraryId();
 
@@ -261,6 +278,10 @@ class LibrariesController extends SionController
 
     public function bookListAction()
     {
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'show')) {
+            throw new UnAuthorizedException();
+        }
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
         $books = $table->getBooks();
@@ -284,7 +305,8 @@ class LibrariesController extends SionController
         ) {
             $apiKeys = $config['schoenstatt']['api_keys'];
         }
-        if (!$this->isAllowed('send_library_emails') && !in_array($key, $apiKeys)) {
+        $resourceId = 'library_'.$this->getLibraryId();
+        if (!$this->isAllowed($resourceId, 'administrate') && !in_array($key, $apiKeys)) {
             throw new UnAuthorizedException();
         }
         $libraryId = $this->getLibraryId();
@@ -296,7 +318,6 @@ class LibrariesController extends SionController
         $library = $table->getSimpleLibrary($libraryId);
         /** @var BooksMailer $mailer */
         $mailer = $sm->get('Books\BooksMailer');
-
         $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate, $borrowerSubset);
 
         return new ViewModel([

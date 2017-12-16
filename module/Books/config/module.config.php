@@ -774,11 +774,8 @@ return [
                             'constraints' => [
                                 'collection_id' => '[0-9]{1,5}',
                             ],
-                            'defaults' => [
-                                'action'     => 'show',
-                            ],
                         ],
-                        'may_terminate' => true,
+                        'may_terminate' => false,
                         'child_routes' => [
                             'edit' => [
                                 'type'    => 'Literal',
@@ -794,9 +791,9 @@ return [
                     'create' => [
                         'type'    => 'Segment',
                         'options' => [
-                            'route'    => '/create/:collection_id',
+                            'route'    => '/create/:library_id',
                             'constraints' => [
-                                'collection_id' => '[0-9]{1,3}',
+                                'library_id' => '[0-9]{1,3}',
                             ],
                             'defaults' => [
                                 'action'     => 'create',
@@ -857,6 +854,12 @@ return [
 //                 'delete_action_acl_resource' 			=> 'event_:id',
 //                 'delete_action_acl_permission' 			=> 'delete_event',
 //                 'delete_action_redirect_route' 			=> 'events',
+                'acl_resource_id_field'                     => 'resourceId',
+                'acl_show_permission'                       => 'show',
+                'acl_edit_permission'                       => 'administrate',
+                'acl_suggest_permission'                    => 'suggest',
+                'acl_moderate_permission'                   => 'administrate',
+//                 'acl_delete_permission'                     => 'administrate',
                 'update_columns' => [
                     'libraryId'             => 'LibraryId',
                     'name'                  => 'LibraryName',
@@ -884,6 +887,8 @@ return [
                     'enableCheckouts'       => 'EnableCheckouts',
                     'isPublicallyListed'    => 'IsPublicallyListed',
                     'checkoutPersonListKind'=> 'CheckoutPersonListKind',
+                    'checkoutBooksRole'     => 'CheckoutBooksRole',
+                    'viewRole'              => 'ViewRole',
                     'isActive'              => 'IsActive',
                     'adminNotes'            => 'AdminNotes',
                     'adminNotesUpdatedOn'   => 'AdminNotesUpdatedOn',
@@ -977,7 +982,7 @@ return [
                 'sion_model_class'                          => 'Books\Model\LibraryTable',
                 'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
-                //                 'format_view_helper'                        => 'formatEvent',
+//                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'withinLibraryId',
                     'title',
@@ -992,7 +997,7 @@ return [
 //                     'cell'    => 'contactInfo',
 //                 ],
                 'report_changes'                            => true,
-                'index_route'                               => 'books',
+                'index_route'                               => 'libraries',
 //                 'index_template'                            => 'project/events/index',
                 'default_route_key'                         => 'book_id',
 //                 'show_action_template'                      => 'project/events/show',
@@ -1025,6 +1030,12 @@ return [
 //                 'delete_action_acl_resource'                => 'event_:id',
 //                 'delete_action_acl_permission'              => 'delete_event',
 //                 'delete_action_redirect_route'              => 'events',
+                'acl_resource_id_field'                     => 'resourceId',
+                'acl_show_permission'                       => 'show',
+                'acl_edit_permission'                       => 'administrate',
+//                 'acl_suggest_permission'                    => 'suggest',
+                'acl_moderate_permission'                   => 'administrate',
+//                 'acl_delete_permission'                     => 'administrate',
                 'update_columns' => [
                     'bookId'                    => 'book_id',
                     'collectionId'              => 'collection_id',
@@ -1309,13 +1320,13 @@ return [
 //                     'cell'    => 'contactInfo',
 //                 ],
                 'report_changes'                            => true,
-//                 'index_route'                               => 'events',
+                'index_route'                               => 'libraries',
 //                 'index_template'                            => 'project/events/index',
-//                 'default_route_key'                         => 'association_id',
+                'default_route_key'                         => 'collection_id',
 //                 'show_action_template'                      => 'project/events/show',
-                'show_route'                                => 'collections/collection',
-                'show_route_key'                            => 'collection_id',
-                'show_route_key_field'                      => 'collectionId',
+                'show_route'                                => 'libraries/library',
+                'show_route_key'                            => 'library_id',
+                'show_route_key_field'                      => 'libraryId',
                 'edit_action_form'                          => 'Books\Form\CollectionForm',
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'collections/collection/edit',
@@ -1323,9 +1334,9 @@ return [
                 'edit_route_key_field'                      => 'collectionId',
                 'create_action_form'                        => 'Books\Form\CollectionForm',
 //                 'create_action_valid_data_handler'          => 'createEvent',s
-                'create_action_redirect_route'              => 'collections/collection',
-                'create_action_redirect_route_key'          => 'collection_id',
-                'create_action_redirect_route_key_field'    => 'collectionId',
+                'create_action_redirect_route'              => 'libraries/library',
+                'create_action_redirect_route_key'          => 'library_id',
+                'create_action_redirect_route_key_field'    => 'libraryId',
 //                 'create_action_template'                    => 'project/events/create',
 //                 'touch_default_field'                       => 'eventId',
 //                 'touch_route_key'                           => 'event_id',
@@ -1338,10 +1349,16 @@ return [
 //                 'moderate_route_entity_key'                 => 'event_id',
                 'has_dedicated_suggest_form'                => false,
 //                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
-//                 'enable_delete_action'                      => true,
+                'enable_delete_action'                      => true,
 //                 'delete_action_acl_resource'                => 'event_:id',
 //                 'delete_action_acl_permission'              => 'delete_event',
 //                 'delete_action_redirect_route'              => 'events',
+                'acl_resource_id_field'                     => 'resourceId',
+                'acl_show_permission'                       => 'show',
+                'acl_edit_permission'                       => 'administrate',
+//                 'acl_suggest_permission'                    => 'suggest',
+                'acl_moderate_permission'                   => 'administrate',
+                'acl_delete_permission'                     => 'administrate',
                 'update_columns'                            => [
                     'collectionId'              => 'CollectionId',
                     'libraryId'                 => 'LibraryId',
@@ -1440,9 +1457,8 @@ return [
                'publication_user',
                'publication_public',
                'view_checkout_person', //see who has a library book
-               'send_library_emails', //send out library emails @todo make library-specific
            ],
-           //'Event\Model\EventTable' => 'Event\Model\EventTable'
+           'Books\Model\LibraryTable' => 'Books\Model\LibraryTable'
          ],
 
         /* rules can be specified here with the format:
@@ -1454,24 +1470,6 @@ return [
         'rule_providers' => [
             'BjyAuthorize\Provider\Rule\Config' => [
                 'allow' => [
-//                 allow guests and users (and admins, through inheritance]
-//                 the "wear" privilege on the resource "pants"
-                    //read permissions
-                    [['lib_user'], 'book', 'read'],
-                    [['lib_teo_viewer'], 'book_teo', 'read'],
-                    [['lib_sch_viewer'], 'book_sch', 'read'],
-                    //write permissions
-//                     [['lib_moderator'], 'book', 'write'],
-//                     [['lib_teo_moderator'], 'book_teo', 'write'],
-//                     [['lib_sch_moderator'], 'book_sch', 'write'],
-                    //suggest permissions
-                    [['lib_user'], 'book', 'suggest'],
-                    [['lib_user'], 'book_teo', 'suggest'],
-                    [['lib_user'], 'book_sch', 'suggest'],
-                    //approve permissions
-//                     [['lib_moderator'], 'book', 'approve'],
-//                     [['lib_teo_moderator'], 'book_teo', 'approve'],
-//                     [['lib_sch_moderator'], 'book_sch', 'approve'],
                     [['pub_patres', 'pub_general_moderator'], 'publication_patres', 'show'],
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'show-admin-info'],
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'edit'],
@@ -1493,16 +1491,11 @@ return [
                     [['pub_moderator', 'pub_general_moderator'], 'publication_public', 'edit'],
                     [['pub_moderator', 'pub_general_moderator'], 'publication_public', 'delete'],
 
-                    //delete permissions
-                    [['pub_general_moderator'], 'book', 'delete'],
-                    [['pub_general_moderator'], 'book_teo', 'delete'],
-                    [['pub_general_moderator'], 'book_sch', 'delete'],
-
                     //library permissions
                     [['lib_patres'], 'view_checkout_person'],
-                    [['lib_library_moderator'], 'send_library_emails'],
                 ],
             ],
+            'Books\Model\LibraryTable' => 'Books\Model\LibraryTable'
         ],
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
@@ -1526,43 +1519,42 @@ return [
                 //@todo define library-specific ACL
 
                 ['route' => 'books/book', 'roles' => ['lib_user']],
-                ['route' => 'books/book/edit', 'roles' => ['lib_library_moderator']],
-                ['route' => 'books/create', 'roles' => ['lib_library_moderator']],
+                ['route' => 'books/book/edit', 'roles' => ['lib_user']],
+                ['route' => 'books/create', 'roles' => ['lib_user']],
 
                 ['route' => 'libraries/library', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/edit', 'roles' => ['lib_library_administrator']],
-                ['route' => 'libraries/library/create', 'roles' => ['lib_administrator']],
-                ['route' => 'libraries/library/book-list', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']], //@todo restrict to fathers
-                ['route' => 'libraries/library/checkin', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/library/label-management', 'roles' => ['lib_library_moderator']],
+                ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/create', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/book-list', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/checkin', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/label-management', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/send-book-notices', 'roles' => ['user', 'guest']], //controller action has additional proectiont
-                ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/library/admin', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_library_moderator']],
-                ['route' => 'libraries/import', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'libraries/checkouts', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'libraries/checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'borrowers', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/admin', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_user']],
+                ['route' => 'libraries/import', 'roles' => ['lib_user']],
+                ['route' => 'libraries/checkouts', 'roles' => ['lib_user']],
+                ['route' => 'libraries/checkouts/library', 'roles' => ['lib_user']],
+                ['route' => 'borrowers', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/fix-person-id', 'roles' => ['lib_administrator']],
-                ['route' => 'books/book', 'roles' => ['lib_teo_viewer', 'lib_sch_viewer', 'lib_administrator']],
+                ['route' => 'books/book', 'roles' => ['lib_user']],
 
-                ['route' => 'collections/collection/edit', 'roles' => ['lib_library_administrator']],
-                ['route' => 'collections/create', 'roles' => ['lib_library_administrator']],
+                ['route' => 'collections/collection/edit', 'roles' => ['lib_user']],
+                ['route' => 'collections/create', 'roles' => ['lib_user']],
 
-                ['route' => 'checkouts/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'checkouts/library/overdue', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'checkouts/library/current', 'roles' => ['lib_administrator', 'lib_library_administrator']],
+                ['route' => 'checkouts/library', 'roles' => ['lib_user']],
+                ['route' => 'checkouts/library/overdue', 'roles' => ['lib_user']],
+                ['route' => 'checkouts/library/current', 'roles' => ['lib_user']],
 
-                ['route' => 'library-imports/library', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'library-imports/library-import', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'library-imports/library/create', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-                ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_administrator', 'lib_library_administrator']],
-
+                ['route' => 'library-imports/library', 'roles' => ['lib_user']],
+                ['route' => 'library-imports/library-import', 'roles' => ['lib_user']],
+                ['route' => 'library-imports/library/create', 'roles' => ['lib_user']],
+                ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_user']],
+                ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
             ],
         ],
     ],

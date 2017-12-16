@@ -4,7 +4,6 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use JUser\Model\UserTable;
 use Zend\Db\Adapter\AdapterInterface;
-use SionModel\Filter\ToAscii;
 use Carbon\Carbon;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Predicate\Expression;
@@ -14,8 +13,11 @@ use Zend\Db\Sql\Predicate\Like;
 use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
+use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
+use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
+use Zend\Permissions\Acl\Resource\GenericResource;
 
-class LibraryTable extends SionTable
+class LibraryTable extends SionTable implements ResourceProviderInterface, RuleProviderInterface
 {
     const CHECKOUT_STATUS_CHECKED_OUT = 'checked-out';
     const CHECKOUT_STATUS_RETURNED = 'returned';
@@ -45,6 +47,14 @@ class LibraryTable extends SionTable
 
     const BOOK_QUERY_FIELDS = [
         'title', 'author',
+    ];
+
+    const LIBRARY_GENERAL_ROLE_OPTIONS = [
+        'guest'         => 'Public',
+        'lib_user'      => 'Authenticated users',
+        'lib_academic'  => 'Academic users',
+        'lib_institute' => 'Institute members',
+        'lib_patres'    => 'Patres',
     ];
 
     /** @var UserTable $userTable */
@@ -584,6 +594,7 @@ ORDER BY `publisher`";
         $authorsPrettyText = implode('; ', $authors);
         $title = $this->filterDbString($row['title']);
         $name = $authorsPrettyText . ($authorText ? ' - ' : '') . $title;
+        $libraryId = $this->filterDbId($row['library_id']);
         $isActive = $this->filterDbBool($row['is_active']);
         $processedRow = [
             'bookId'                => $id,
@@ -597,7 +608,7 @@ ORDER BY `publisher`";
             'numberOfPages'         => $this->filterDbInt($row['pages']),
             'inLanguage'            => $this->filterDbArray($row['lang']),
             'withinLibraryId'       => $this->filterDbId($row['original_id']),
-            'libraryId'             => $this->filterDbId($row['library_id']),
+            'libraryId'             => $libraryId,
             'publicationId'         => $this->filterDbId($row['publication_id']),
             'isActive'              => $isActive,
             'inactivationReason'    => $this->filterDbString($row['inactivation_reason']),
@@ -618,6 +629,7 @@ ORDER BY `publisher`";
             'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
             'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
 
+            'resourceId'            => 'library_'.$libraryId,
             'authors'               => $authors,
             'authorsPrettyText'     => $authorsPrettyText,
             'name'                  => $name,
@@ -866,6 +878,33 @@ ORDER BY `publisher`";
     }
 
     /**
+     * Get a standardized select object to retrieve records from the database
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getLibrarySelectPrototype()
+    {
+        static $select;
+        if (!isset($select)) {
+            $select = new Select('lib_libraries');
+            $select->columns(['LibraryId', 'LibraryName', 'Description', 'CallNumberPlaceholder', 'CallNumberHelpText',
+                'CallNumberExplanation', 'FiliationId', 'ContactPerson', 'ContactEmail', 'MainShowDisplay',
+                'UseCollections', 'AllowCollectionlessBooks', 'MainCollectionId', 'RequireCallNumbers',
+                'CallNumberRegex', 'EnforceCallNumberRegex', 'CheckoutBooksRole', 'ViewRole', 'LabelLine1', 'LabelLine2', 'LabelLine3',
+                'BarcodeText', 'CreateCheckoutsIfCheckingInANonCheckedOutBook', 'DefaultCheckoutPersonId',
+                'DefaultCheckoutTimePeriodInDays', 'EnableCheckouts', 'IsPublicallyListed', 'CheckoutPersonListKind',
+                'IsActive', 'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy',
+                'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy',
+                'BookCount' => new Expression('(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = LibraryId))'),
+                'MaxWithinLibraryId' => new Expression('(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = LibraryId))')]);
+//         $select->group(['TheMonth', 'TheYear']);
+//         $select->where($predicate->in('ChangedEntity', $tableEntities));
+            $select->order(['LibraryName']);
+        }
+
+        return clone $select;
+    }
+
+    /**
      * @todo fill in monthlyCheckoutStatistics
      * @return mixed[]
      */
@@ -946,7 +985,7 @@ ORDER BY `publisher`";
         $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberPlaceholder`, `CallNumberHelpText`,
 `CallNumberExplanation`, `FiliationId`, `ContactPerson`, `ContactEmail`, `MainShowDisplay`,
 `UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
-`CallNumberRegex`, `EnforceCallNumberRegex`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
+`CallNumberRegex`, `EnforceCallNumberRegex`, `CheckoutBooksRole`, `ViewRole`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
 `BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
 `DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `IsPublicallyListed`, `CheckoutPersonListKind`,
 `IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`,
@@ -965,12 +1004,14 @@ ORDER BY `LibraryName`";
             $nextWithinLibraryId = $this->filterDbInt($row['MaxWithinLibraryId']);
             $nextWithinLibraryId = isset($nextWithinLibraryId) && is_numeric($nextWithinLibraryId) ?
                 (int)$nextWithinLibraryId + 1 : null;
+            $resourceId = 'library_'.$id;
             $entity = [
                 'libraryId'             => $id,
                 'name'                  => $this->filterDbString($row['LibraryName']),
                 'description'           => $this->filterDbString($row['Description']),
                 'callNumberHelpText'    => $this->filterDbString($row['CallNumberHelpText']),
                 'callNumberExplanation' => $this->filterDbString($row['CallNumberExplanation']),
+                'callNumberPlaceholder' => $this->filterDbString($row['CallNumberPlaceholder']),
                 'filiationId'           => $this->filterDbId($row['FiliationId']),
                 'contactPersonId'       => $this->filterDbId($row['ContactPerson']),
                 'contactEmail'          => $this->filterEmailString($row['ContactEmail']),
@@ -982,6 +1023,9 @@ ORDER BY `LibraryName`";
                 'callNumberPlaceholder' => $this->filterDbString($row['CallNumberPlaceholder']),
                 'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
                 'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
+                'checkoutPersonListKind'=> $this->filterDbString($row['CheckoutPersonListKind']),
+                'checkoutBooksRole'     => $this->filterDbString($row['CheckoutBooksRole']),
+                'viewRole'              => $this->filterDbString($row['ViewRole']),
                 'labelLine1'            => $this->filterDbString($row['LabelLine1']),
                 'labelLine2'            => $this->filterDbString($row['LabelLine2']),
                 'labelLine3'            => $this->filterDbString($row['LabelLine3']),
@@ -1001,6 +1045,7 @@ ORDER BY `LibraryName`";
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
 
+                'resourceId'            => $resourceId,
                 'nextWithinLibraryId'   => $nextWithinLibraryId,
                 'bookCount'             => $this->filterDbInt($row['BookCount']),
                 'books'                 => [], //to be filled in, in getLibraries()
@@ -1098,9 +1143,10 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['CollectionId']);
+            $libraryId = $this->filterDbId($row['LibraryId']);
             $entities[$id] = [
                 'collectionId'          => $id,
-                'libraryId'             => $this->filterDbId($row['LibraryId']),
+                'libraryId'             => $libraryId,
                 'name'                  => $this->filterDbString($row['CollectionName']),
                 'description'           => $this->filterDbString($row['Description']),
                 'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
@@ -1121,6 +1167,8 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
                 'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
                 'createdOn'             => $this->filterDbDate($row['CreatedOn']),
                 'createdBy'             => $this->filterDbId($row['CreatedBy']),
+
+                'resourceId'            => 'library_'.$libraryId,
             ];
         }
         $this->cacheEntityObjects('unlinked-collections', $entities, ['collection']);
@@ -1596,6 +1644,46 @@ ORDER BY CreatedOn DESC";
             }
         }
         return $data;
+    }
+
+    public function getResources()
+    {
+        $return = [];
+        $libraries = $this->getUnlinkedLibraries();
+        foreach ($libraries as $libraryId => $object) {
+            $return[] = new GenericResource($object['resourceId']);
+        }
+        return $return;
+    }
+
+    /**
+     * {@inheritDoc}
+     * @see \BjyAuthorize\Provider\Rule\ProviderInterface::getRules()
+     * Format of the allow key is [['role1', 'role2'], 'resourceId', 'permission']
+     */
+    public function getRules()
+    {
+        $libraries = $this->getUnlinkedLibraries();
+
+        $allow = [];
+        foreach ($libraries as $key => $object)
+        {
+            if (isset($object['viewRole'])) {
+                $allow[] = [[$object['viewRole']], $object['resourceId'], 'show'];
+            }
+            if (isset($object['checkoutBooksRole'])) {
+                $allow[] = [[$object['checkoutBooksRole']], $object['resourceId'], 'checkout'];
+            }
+            /*
+             * @todo create a way of adding a list of library administrators from a table
+             * I imagine a table (ResourceId, PermissionId, RuleType['role', 'user', 'person'], Id
+             * There could be a common SionModel form for adding/editing/viewing these rules.
+             * The form would use protected values and an setData override to allow assertion of
+             * only intended resource/permission modifications
+             */
+            $allow[] = [['lib_administrator'], $object['resourceId'], 'administrate'];
+        }
+        return ['allow' => $allow];
     }
 
     /**

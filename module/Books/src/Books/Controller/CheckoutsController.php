@@ -12,6 +12,7 @@ use Zend\Form\Element\Select;
 use Books\Model\LibraryOptions;
 use Schoenstatt\Service\PatresGateway;
 use Schoenstatt\Model\SchoenstattTable;
+use BjyAuthorize\Exception\UnAuthorizedException;
 
 class CheckoutsController extends SionController
 {
@@ -22,10 +23,14 @@ class CheckoutsController extends SionController
 
     public function createAction()
     {
+        $libraryId = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
+        if (!$this->isAllowed($resourceId, 'checkout')) {
+            throw new UnAuthorizedException();
+        }
         $view = parent::createAction();
-        if (!is_null($view)) {
+        if (isset($view)) {
             //@todo In the SionController function, I should automatically retrieve all route params and add them to the view
-            $libraryId = $this->params()->fromRoute('library_id');
             $view->setVariable('libraryId', $libraryId);
             return $view;
         }
@@ -43,6 +48,7 @@ class CheckoutsController extends SionController
     public function createCheckouts($data)
     {
         $libraryId = $this->getLibraryId();
+
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
         $bookLookup = $table->getLibraryBookLookup($libraryId);
@@ -91,6 +97,10 @@ class CheckoutsController extends SionController
     {
         //get the parameter
         $id = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
 
         $sm = $this->getServiceLocator();
 
@@ -117,6 +127,10 @@ class CheckoutsController extends SionController
     {
         //get the parameter
         $id = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
 
         $sm = $this->getServiceLocator();
         $form = new CheckinForm();
@@ -150,6 +164,10 @@ class CheckoutsController extends SionController
     {
         //get the parameter
         $libraryId = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
 
         $sm = $this->getServiceLocator();
         $form = new MassCheckoutForm();

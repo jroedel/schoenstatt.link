@@ -43,6 +43,8 @@ class LibraryFormFactory implements FactoryInterface
         $form->get('mainShowDisplay')->setValueOptions(LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS);
         $form->get('defaultCheckoutPersonId')->setValueOptions($persons);
         $form->get('checkoutPersonListKind')->setValueOptions($personValueOptionsOptions);
+        $form->get('checkoutBooksRole')->setValueOptions(LibraryTable::LIBRARY_GENERAL_ROLE_OPTIONS);
+        $form->get('viewRole')->setValueOptions(LibraryTable::LIBRARY_GENERAL_ROLE_OPTIONS);
 		return $form;
     }
 }

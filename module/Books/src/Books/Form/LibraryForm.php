@@ -198,6 +198,31 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'checkoutBooksRole',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Who can checkout books?',
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => [],
+            ],
+            'attributes' => [
+                'required' => false,
+            ],
+        ]);
+        $this->add([
+            'name' => 'viewRole',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Library visibility',
+                'empty_option' => null,
+                'value_options' => [],
+            ],
+            'attributes' => [
+                'required' => true,
+            ],
+        ]);
+        $this->add([
             'name' => 'labelLine1',
             'type' => 'Text',
             'options' => [
@@ -569,6 +594,26 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'checkoutBooksRole' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+            ],
+            'viewRole' => [
+                'required' => true,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
                 ],
             ],
             'labelLine1' => [

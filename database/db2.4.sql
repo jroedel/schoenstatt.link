@@ -1,2 +1,10 @@
 ALTER TABLE `lib_checkouts` ADD INDEX( `BookId`, `CheckedInOn`);
 ALTER TABLE `lib_books` ADD INDEX( `collection_id`, `is_active`);
+ALTER TABLE `lib_libraries` ADD `CheckoutBooksRole` VARCHAR(50) NULL DEFAULT NULL AFTER `CheckoutPersonListKind`, ADD `ViewRole` VARCHAR(50) NULL DEFAULT 'lib_user' AFTER `CheckoutBooksRole`;
+INSERT INTO `user_role` (`parent`, `role_id`, `is_default`, `create_datetime`, `create_by`) VALUES ('lib_user', 'lib_academic', '0', '2017-12-15 00:00:00', '5');
+INSERT INTO `user_role` (`parent`, `role_id`, `is_default`, `create_datetime`, `create_by`) VALUES ('lib_academic', 'lib_institute', '0', '2017-12-15 00:00:00', '5');
+UPDATE `user_role` SET `parent` = 'lib_institute' WHERE `user_role`.`role_id` = 'lib_patres';
+ALTER TABLE `sch_changes` ADD INDEX( `ChangedEntity`, `ChangedIDValue`);
+DELETE FROM `user_role_linker` WHERE (role_id IN ('lib_library_moderator', 'lib_library_administrator', 'lib_sch_viewer', 'lib_teo_viewer'));
+UPDATE `user_role` SET `parent` = NULL WHERE (parent IN ('lib_library_moderator', 'lib_library_administrator', 'lib_sch_viewer', 'lib_teo_viewer'));
+DELETE FROM `user_role` WHERE (role_id IN ('lib_library_moderator', 'lib_library_administrator', 'lib_sch_viewer', 'lib_teo_viewer'));

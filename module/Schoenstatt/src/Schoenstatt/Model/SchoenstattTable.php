@@ -2035,7 +2035,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         foreach ($allow as $resourceId => $roles) {
             $return[] = [$roles, $resourceId];
         }
-        var_dump(['allow' => $return]);
+//         var_dump(['allow' => $return]);
         return ['allow' => $return];
     }
 
