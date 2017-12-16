@@ -1303,13 +1303,14 @@ ORDER BY CreatedOn DESC";
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['ImportId']);
+            $libraryId = $this->filterDbId($row['LibraryId']);
             $columnMappingSerialized = $this->filterDbString($row['ColumnMapping']);
             $filePath = $this->filterDbString($row['FilePath']);
             $fileAvailable = file_exists($filePath);
             $entities[$id] = [
                 'importId'                  => $id,
                 'name'                      => $this->filterDbString($row['ImportName']),
-                'libraryId'                 => $this->filterDbId($row['LibraryId']),
+                'libraryId'                 => $libraryId,
                 'status'                    => $this->filterDbString($row['Status']),
                 'description'               => $this->filterDbString($row['Description']),
                 'columnMappingSerialized'   => $columnMappingSerialized,
@@ -1324,6 +1325,7 @@ ORDER BY CreatedOn DESC";
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
 
+                'resourceId'                => 'library_'.$libraryId,
                 'columnMapping'             => unserialize($columnMappingSerialized),
                 'fileAvailable'             => $fileAvailable,
             ];

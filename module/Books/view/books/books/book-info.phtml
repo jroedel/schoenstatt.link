@@ -21,7 +21,7 @@ $object = $this->object;
             <h3 class="panel-title"><?php echo $this->escapeHtml($this->translate('Book Info')); ?></h3>
         </div>
         <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/books/book/edit'))://$object['resourceId'], 'edit')): ?>
+            <?php if ($this->isAllowed($object['resourceId'], 'administrate')): ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
                     echo $this->url('books/book/edit', [], [], true);?>">
                     <?php echo $this->translate('Edit book')?></a>
@@ -55,7 +55,7 @@ $object = $this->object;
         echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
         echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
-            'displayOnlyWithPermission' => 'route/publications/publication/edit']);
+            'displayOnlyWithPermission' => $object['resourceId']]);
         ?>
     </div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->

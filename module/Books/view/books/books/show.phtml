@@ -11,11 +11,11 @@ if (isset($this->entity['publication'])) {
     echo $this->partial('publication-info', ['object' => $this->entity]);
 }
 
-if ($this->isAllowed('route/books/book/inactivate')):?>
-<p><a class="btn btn-default" href="<?php echo $this->url('books/book/inactivate', [], [], true);?>"><?php
-echo $this->translate('Add another edition');?></a></p>
+if ($this->isAllowed($object['resourceId'], 'administrate')):?>
+<!-- <p><a class="btn btn-default" href="<?php // echo $this->url('books/book/inactivate', [], [], true);?>"><?php
+echo $this->translate('Add another edition');?></a></p> -->
 <?php endif;
-if ($this->isAllowed('route/books/book/edit')) {
+if ($this->isAllowed($object['resourceId'], 'administrate')) {
     echo $this->partial('sion-model/sion-model/entity-changes-panel', [
         'changes' => $this->changes,
         'panelTitle' => 'Change log'
