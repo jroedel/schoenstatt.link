@@ -6,6 +6,7 @@ use Books\Form\ImportForm;
 use Books\Model\LibraryTable;
 use Books\Model\LibraryOptions;
 use JTranslate\Controller\Plugin\NowMessenger;
+use BjyAuthorize\Exception\UnAuthorizedException;
 
 class LibraryImportsController extends SionController
 {
@@ -44,6 +45,11 @@ class LibraryImportsController extends SionController
 
     public function indexAction()
     {
+        $libraryId = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
         $view = parent::indexAction();
         $view->setVariable('libraryId', $this->getLibraryId());
         return $view;
@@ -51,8 +57,12 @@ class LibraryImportsController extends SionController
 
     public function createAction()
     {
-        $view = parent::createAction();
         $libraryId = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
+        if (!$this->isAllowed($resourceId, 'administrate')) {
+            throw new UnAuthorizedException();
+        }
+        $view = parent::createAction();
         $view->setVariable('libraryId', $libraryId);
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
