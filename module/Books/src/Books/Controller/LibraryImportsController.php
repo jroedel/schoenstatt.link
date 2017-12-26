@@ -157,9 +157,10 @@ class LibraryImportsController extends SionController
         }
         if (!$shouldSimulate) { //update the stats
             $params = [
-                'booksUpdated' => $stats['update'],
-                'booksCreated' => $stats['create'],
-                'booksInactivated' => $stats['inactivate'],
+                'booksUpdated'      => $stats['update'],
+                'booksCreated'      => $stats['create'],
+                'booksInactivated'  => $stats['inactivate'],
+                'status'            => LibraryTable::IMPORT_STATUS_COMPLETED,
             ];
             /** @var LibraryTable $table */
             $table = $this->getSionTable();

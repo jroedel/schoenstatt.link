@@ -1,4 +1,6 @@
 <?php
+use Books\Model\LibraryTable;
+
 if ($this->isAllowed('route/library-imports/library/create')):?>
 <p><a class="btn btn-primary" href="<?php
     echo $this->url('library-imports/library/create', ['library_id' => $this->libraryId]);?>"><?php echo $this->translate('Start new import');?></a></p>
@@ -13,7 +15,7 @@ if ($this->isAllowed('route/library-imports/library/create')):?>
 	<th><?php echo $this->translate('Last updated');?></th>
 	<th><?php echo $this->translate('Books created');?></th>
 	<th><?php echo $this->translate('Books updated');?></th>
-	<th><?php echo $this->translate('Books deleted');?></th>
+	<th><?php echo $this->translate('Books inactivated');?></th>
 </tr>
 </thead>
 <tbody>
@@ -21,7 +23,7 @@ if ($this->isAllowed('route/library-imports/library/create')):?>
 $objects = $this->objects;
 foreach ($objects as $object) :?>
 <tr>
-	<td><?php echo $this->escapeHtml($object['name']);?></td>
+	<td><?php echo $this->formatEntity('library-import', $object, ['displayEditPencil' => LibraryTable::IMPORT_STATUS_PENDING == $object['status']]);?></td>
 	<td><?php echo $this->escapeHtml($object['description']);?></td>
 	<td><?php echo $object['isCompleteImport'] ? $this->translate('Yes') : $this->translate('No');?></td>
 	<td><?php echo $this->dateFormat($object['createdOn'], \IntlDateFormatter::MEDIUM, \IntlDateFormatter::MEDIUM);?></td>

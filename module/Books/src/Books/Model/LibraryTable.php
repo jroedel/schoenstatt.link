@@ -19,6 +19,9 @@ use Zend\Permissions\Acl\Resource\GenericResource;
 
 class LibraryTable extends SionTable implements ResourceProviderInterface, RuleProviderInterface
 {
+    const IMPORT_STATUS_PENDING = 'pending';
+    const IMPORT_STATUS_COMPLETED = 'completed';
+
     const CHECKOUT_STATUS_CHECKED_OUT = 'checked-out';
     const CHECKOUT_STATUS_RETURNED = 'returned';
     const CHECKOUT_STATUS_OVERDUE = 'overdue';

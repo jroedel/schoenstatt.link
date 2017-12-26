@@ -1,3 +1,4 @@
+#submitted 2017-12-16
 ALTER TABLE `lib_checkouts` ADD INDEX( `BookId`, `CheckedInOn`);
 ALTER TABLE `lib_books` ADD INDEX( `collection_id`, `is_active`);
 ALTER TABLE `lib_libraries` ADD `CheckoutBooksRole` VARCHAR(50) NULL DEFAULT NULL AFTER `CheckoutPersonListKind`, ADD `ViewRole` VARCHAR(50) NULL DEFAULT 'lib_user' AFTER `CheckoutBooksRole`;
