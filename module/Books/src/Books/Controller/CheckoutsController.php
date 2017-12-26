@@ -96,7 +96,7 @@ class CheckoutsController extends SionController
     public function libraryAction()
     {
         //get the parameter
-        $id = $this->getLibraryId();
+        $libraryId = $this->getLibraryId();
         $resourceId = 'library_'.$libraryId;
         if (!$this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
@@ -108,8 +108,8 @@ class CheckoutsController extends SionController
         //get the checkouts
         /** @var LibraryTable $table */
         $table = $sm->get('Books\Model\LibraryTable');
-        $entities = $table->getCheckoutsForLibrary($id, $subset);
-        $library = $table->getLibrary($id);
+        $entities = $table->getCheckoutsForLibrary($libraryId, $subset);
+        $library = $table->getLibrary($libraryId);
 
         /** @var SchoenstattTable $schTable */
         $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
@@ -126,7 +126,7 @@ class CheckoutsController extends SionController
     public function checkinAction()
     {
         //get the parameter
-        $id = $this->getLibraryId();
+        $libraryId = $this->getLibraryId();
         $resourceId = 'library_'.$libraryId;
         if (!$this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
@@ -143,19 +143,19 @@ class CheckoutsController extends SionController
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-                if (!($return = $table->checkinWithinLibraryBooks($id, $data['withinLibraryIds']))) {
+                if (!($return = $table->checkinWithinLibraryBooks($libraryId, $data['withinLibraryIds']))) {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
                 } else {
                     $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
                         ->addMessage ('Books successfully checked in.' );
-                    $this->redirect ()->toRoute ('checkouts/library', ['library_id' => $id]);
+                    $this->redirect ()->toRoute ('checkouts/library', ['library_id' => $libraryId]);
                 }
             } else {
                 $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
             }
         }
         return new ViewModel([
-            'libraryId' => $id,
+            'libraryId' => $libraryId,
             'form'      => $form,
         ]);
     }
