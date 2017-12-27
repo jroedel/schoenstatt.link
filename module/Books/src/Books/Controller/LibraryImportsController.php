@@ -144,11 +144,11 @@ class LibraryImportsController extends SionController
         }
         //do stats on the objects
         $stats = [
-            'create'    => 0,
-            'update'    => 0,
-            'inactivate'=> 0,
-            'error'     => 0,
-            'create-collection' => 0
+            'create'            => 0,
+            'update'            => 0,
+            'inactivate'        => 0,
+            'error'             => 0,
+            'create-collection' => 0,
         ];
         if (isset($objects)) {
             foreach ($objects as $object) {
@@ -164,7 +164,7 @@ class LibraryImportsController extends SionController
             ];
             /** @var LibraryTable $table */
             $table = $this->getSionTable();
-            $table->updateEntity('library-import', $importId, $params);
+            $table->updateEntity('library-import', $importId, $params, []);
         }
 
         return $view->setVariables([
@@ -272,6 +272,7 @@ class LibraryImportsController extends SionController
         //we're done with the PHPExcel object, free up the memory
         $objPHPExcel->disconnectWorksheets();
         unset($objPHPExcel);
+        unset($sheet);
 
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
@@ -297,6 +298,28 @@ class LibraryImportsController extends SionController
         $transactions = [];
         $publications = null;
         $bookIdsBeingUpdated = [];
+        $publicationIds = [];
+
+        //first get the list of publicationIds used to query the PublicationTable
+        if (isset($fieldIndices['publicationId'])) {
+            $pubIdIndex = $fieldIndices['publicationId'];
+            foreach ($rows as $rowNumber => $rowColumns) {
+                if (isset($rowColumns[$pubIdIndex]) && is_numeric($rowColumns[$pubIdIndex]) &&
+                    !in_array($rowColumns[$pubIdIndex], $publicationIds)
+                ) {
+                    $publicationIds[] = (int)$rowColumns[$pubIdIndex];
+                }
+            }
+        }
+        if (!empty($publicationIds)) {
+            if (!isset($publications)) {
+                /** @var \Books\Model\PublicationsTable $publicationsTable */
+                $publicationsTable = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
+                $publications = $publicationsTable->getUnlinkedPublications($publicationIds);
+            }
+        }
+
+        //now for the real deal
         foreach ($rows as $rowNumber => $rowColumns) {
             $withinLibraryId = (int)$rowColumns[$fieldIndices['withinLibraryId']];
             if ($isDuplicateWithinLibraryId = in_array($withinLibraryId, $withinLibraryIds)) {
@@ -350,12 +373,6 @@ class LibraryImportsController extends SionController
             }
 
             if (isset($fieldIndices['publicationId']) && is_numeric($params['publicationId'])) {
-                //lazy load the publications list
-                if (!isset($publications)) {
-                    /** @var \Books\Model\PublicationsTable $publicationsTable */
-                    $publicationsTable = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
-                    $publications = $publicationsTable->getUnlinkedPublications();
-                }
                 $publicationId = (int)$params['publicationId'];
                 if (isset($publications[$publicationId])) {
                     //fill in info from the publication to the books table
@@ -437,9 +454,11 @@ class LibraryImportsController extends SionController
                 implode(',', $duplicateWithinLibraryIds)));
         } else if (!$simulate) {
             //free up a little memory
+            unset($rows);
             unset($bookLookup);
             unset($withinLibraryIds);
             unset($bookIdsBeingUpdated);
+            unset($publications);
 
             $this->persistImportTransactions($transactions);
         }

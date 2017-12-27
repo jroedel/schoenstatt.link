@@ -219,6 +219,38 @@ ORDER BY `Publisher`";
         return $languages;
     }
 
+    /**
+     * Get a standardized select object to retrieve records from the database
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getPublicationsSelectPrototype()
+    {
+        static $select;
+        if (!isset($select)) {
+            $select = new Select('sch_publications');
+            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+            $select->columns(['PublicationId', 'Title', 'ResourceId', 'AuthorPerson1', 'AuthorPerson2',
+                'AuthorPerson3', 'AuthorPerson4', 'AuthorPerson5', 'Authors', 'AuthorAssociationId1',
+                'AuthorAssociationId2', 'AuthorAssociationId3', 'BookEdition', 'InLanguage', 'Description',
+                'Isbn', 'Translator', 'Illustrator', 'Editor', 'IllustratorId', 'TranslatorId',
+                'Translator2Id', 'Translator3Id', 'EditorId', 'Editor2Id', 'Editor3Id', 'EditorAssociationId1',
+                'NumberOfPages', 'CopyrightYear', 'Publisher', 'PublisherAssociationId', 'PublishingPlace',
+                'DatePublished', 'PublishingStatus', 'BookFormatType', 'MainPublicationId', 'VolumeNumber',
+                'ContainedIn', 'ContainedInIsbn', 'Genre', 'PublicTags', 'AdminTags', 'IsAccessableForFree',
+                'IsInternalForPatres', 'IsScientificWork', 'IsAwaitingMerge', 'HasBeenMerged', 'JkQuality',
+                'JkQualityNotes', 'JkPeriod', 'JkEventId', 'Url1', 'Url1Label', 'Url2', 'Url2Label', 'Url3',
+                'Url3Label', 'DataSource', 'DataSourceId', 'DataSourceUpdatedOn', 'PublicNotes',
+                'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminNotes', 'AdminNotesUpdatedOn',
+                'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'HasNoISBN',
+                'IsRevisedWithBookInHand', 'PublishDataAsJsonLd', 'IsFormallyPublished',
+                'TranslatedFromPublicationId', 'HasNoExplictEditionNumber', 'EditionNotes', 'CategoryId']);//, 'CurrentCheckouts' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
+            //         $select->group(['TheMonth', 'TheYear']);
+            //         $select->where($predicate->in('ChangedEntity', $tableEntities));
+            $select->order(['Authors', 'InLanguage', 'Title']);
+        }
+
+        return clone $select;
+    }
 
     /**
      * Search for books. Returns a list of publications. The query parameters are:
@@ -378,35 +410,42 @@ ORDER BY `Publisher`";
     }
 
     /**
-     * @return mixed[]
+     * Get an array of publications
+     * @param array $ids
+     * @return array
      */
-    public function getUnlinkedPublications()
+    public function getUnlinkedPublications(array $ids = [])
     {
         if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-publications'))) {
             return $cache;
         }
-        $sql = "SELECT `PublicationId`, `Title`, `ResourceId`, `AuthorPerson1`, `AuthorPerson2`,
-`AuthorPerson3`, `AuthorPerson4`, `AuthorPerson5`, `Authors`, `AuthorAssociationId1`,
-`AuthorAssociationId2`, `AuthorAssociationId3`, `BookEdition`, `InLanguage`, `Description`,
-`Isbn`, `Translator`, `Illustrator`, `Editor`, `IllustratorId`, `TranslatorId`,
-`Translator2Id`, `Translator3Id`, `EditorId`, `Editor2Id`, `Editor3Id`, `EditorAssociationId1`,
-`NumberOfPages`, `CopyrightYear`, `Publisher`, `PublisherAssociationId`, `PublishingPlace`,
-`DatePublished`, `PublishingStatus`, `BookFormatType`, `MainPublicationId`, `VolumeNumber`,
-`ContainedIn`, `ContainedInIsbn`, `Genre`, `PublicTags`, `AdminTags`, `IsAccessableForFree`,
-`IsInternalForPatres`, `IsScientificWork`, `IsAwaitingMerge`, `HasBeenMerged`, `JkQuality`,
-`JkQualityNotes`, `JkPeriod`, `JkEventId`, `Url1`, `Url1Label`, `Url2`, `Url2Label`, `Url3`,
-`Url3Label`, `DataSource`, `DataSourceId`, `DataSourceUpdatedOn`, `PublicNotes`,
-`PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`, `AdminNotes`, `AdminNotesUpdatedOn`,
-`AdminNotesUpdatedBy`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`, `HasNoISBN`,
-`IsRevisedWithBookInHand`, `PublishDataAsJsonLd`, `IsFormallyPublished`,
-`TranslatedFromPublicationId`, `HasNoExplictEditionNumber`, `EditionNotes`, `CategoryId`
-FROM `sch_publications`
-ORDER BY `Authors`,`InLanguage`, `Title`";
-        $results = $this->fetchSome(null, $sql, null);
+        $gateway = $this->getTableGateway('sch_publications');
+        $select = $this->getPublicationsSelectPrototype();
+        if (!empty($ids)) {
+            $select->where(['publicationId' => $ids]);
+        }
+        $results = $gateway->selectWith($select);
 
-        $categories = $this->getCategories();
         $entities = [];
         foreach ($results as $row) {
+            $processedRow = $this->processPublicationRow($row);
+            $id = $processedRow['publicationId'];
+            $entities[$id] = $processedRow;
+        }
+
+        $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
+        return $entities;
+    }
+    /**
+     * @return mixed[]
+     */
+    protected function processPublicationRow($row)
+    {
+        static $categories;
+
+        if (!isset($categories)) {
+            $categories = $this->getCategories();
+        }
             $id = $this->filterDbId($row['PublicationId']);
             //process URLs
             $unprocessedUrls = [
@@ -572,7 +611,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
 
             $categoryId = $this->filterDbId($row['CategoryId']);
 
-            $entities[$id] = [
+            $processedRow = [
                 'publicationId'             => $id,
                 'title'                     => $row['Title'],
                 'resourceId'                => $resourceId,
@@ -625,7 +664,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'hasNoExplictEditionNumber' => $this->filterDbBool($row['HasNoExplictEditionNumber']),
                 'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
                 'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
-//                 'publishDataAsJsonLd'       => $publishDataAsJsonLd,
+    //                 'publishDataAsJsonLd'       => $publishDataAsJsonLd,
                 'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
 
                 'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
@@ -690,9 +729,7 @@ ORDER BY `Authors`,`InLanguage`, `Title`";
                 'bookCoverFileId'           => null,
                 'bookCoverFile'             => null,
             ];
-        }
-        $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
-        return $entities;
+        return $processedRow;
     }
 
     /**

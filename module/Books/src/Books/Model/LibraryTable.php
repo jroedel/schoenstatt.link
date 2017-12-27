@@ -553,7 +553,11 @@ ORDER BY `publisher`";
     }
 
     /**
-     * @return mixed|NULL|boolean[][]|NULL[][]|unknown[][]|string[][]|\SionModel\Db\Model\NULL[][]|number[][]|DateTime[][]
+     * Retrieve an array of book records. There are 3 possibilities of
+     * selecting books. If the $bookIds parameter isn't empty, only these Ids will be retrieved.
+     * If libraryId member is set, all books from that library, books from any/all libraries.
+     * @param array $bookIds
+     * @return array
      */
     protected function getUnlinkedBooks(array $bookIds = [])
     {
@@ -589,6 +593,11 @@ ORDER BY `publisher`";
         return $entities;
     }
 
+    /**
+     * Manipulate a database book row into a standardized row
+     * @param array $row
+     * @return array[]
+     */
     protected function processBookRow($row)
     {
         $id = $this->filterDbId($row['book_id']);
@@ -682,16 +691,25 @@ ORDER BY `publisher`";
         return $bookLookup;
     }
 
+    /**
+     * Get a associative array to lookup bookIds according to the withinLibraryId.
+     * Includes information on whether the book is active or not. Format:
+     * [
+     *     xxxxx => [ 'bookId' => yyyyy, 'isActive' => true],
+     * ]
+     * @param number $libraryId
+     * @throws \InvalidArgumentException
+     * @return array
+     */
     public function getLibraryBookLookupWithActive($libraryId = null)
     {
         if (!isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (!isset($libraryId)) {
+        if (!isset($libraryId) || !is_numeric($libraryId)) {
             throw new \InvalidArgumentException('There must by a libraryId set to get the active library book lookup list.');
         }
         $select = new Select('lib_books');
-        //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
         $select->columns(['book_id',  'original_id',  'is_active']);
         $select->where(['library_id' => $libraryId]);
         $select->order(['original_id', 'book_id']);
