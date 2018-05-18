@@ -15,7 +15,7 @@ $modules = [
     'MaglMarkdown',
     'TwbBundle',
     'ZfSnapGeoip',
-    'ZfcBase',
+//    'ZfcBase',
     'ZfcUser',
 	'BjyAuthorize',
     'SlmLocale',
@@ -29,8 +29,8 @@ $modules = [
     'AcMailer',
 //     'Bible',
     'Books',
-    'Application',
     'Schoenstatt',
+    'Application',
 ];
 $modules = array_merge($toolsOrNot, $modules);
 return array(
