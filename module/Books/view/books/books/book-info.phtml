@@ -39,13 +39,19 @@ $object = $this->object;
     <div class="col-md-6">
         <p><strong><?php echo $this->translate('Library');?>:</strong> <?php
             echo $this->formatEntity('library', $object['library']);?></p>
-        <?php echo $this->formatField('Author(s)', $object['authorsPrettyText']);?>
+        <?php 
+        echo $this->formatField('Call number', $object['callNumber']);
+        echo $this->formatField('Pending call number', $object['newCallNumber'], ['displayOnlyIfNotNull' => true]);
+        if (isset($object['collectionId']) && isset($object['library']['options']) && isset($object['library']['options']->collections[$object['collectionId']])) {
+            echo $this->formatField('Collection', $object['library']['options']->collections[$object['collectionId']]->name, ['displayOnlyIfNotNull' => true]);
+        }
+        echo $this->formatField('Barcode', $object['withinLibraryId']);
+        echo $this->formatField('Author(s)', $object['authorsPrettyText']);?>
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
         <?php
         echo $this->formatField('Language', $object['inLanguage']);
-        echo $this->formatField('Barcode', $object['withinLibraryId']);
         echo $this->formatField('Category', $object['category']); //make this a link to search involving all books of this category
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
@@ -56,6 +62,14 @@ $object = $this->object;
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
         echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
             'displayOnlyWithPermission' => $object['resourceId']]);
+        if (isset($this->borrowers[$object['currentCheckout']['personId']])) {
+            echo $this->formatField('Checked out by', $this->borrowers[$object['currentCheckout']['personId']], ['displayOnlyIfNotNull' => true,
+                'displayOnlyWithPermission' => 'view_checkout_person']);
+        }
+        echo $this->formatField('Due on', $object['currentCheckout']['dueOn'], ['displayOnlyIfNotNull' => true,
+            'displayOnlyWithPermission' => 'view_checkout_person']);
+        echo $this->formatField('Inactivation reason', $object['inactivationReason'], ['displayOnlyIfNotNull' => true,
+            'displayOnlyWithPermission' => 'route/libraries/library/inactivate-books']);
         ?>
     </div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->

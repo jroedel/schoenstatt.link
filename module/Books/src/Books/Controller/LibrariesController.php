@@ -199,13 +199,6 @@ class LibrariesController extends SionController
 
         if ($form->isValid()) {
             $notAllowed = [];
-//             if (!$this->isAllowed('book_teo', 'read')) {
-//                 $notAllowed[] = '\'DigitaSión Teo\'';
-//                 $notAllowed[] = '\'DigitaSión Fil\'';
-//             }
-//             if (!$this->isAllowed('book_sch', 'read')) {
-//                 $notAllowed[] = '\'DigitaSión Sch\'';
-//             }
             $data = $form->getData();
 
             if (!empty($data)) {

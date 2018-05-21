@@ -446,10 +446,23 @@ ORDER BY `publisher`";
 
         $results = $gateway->selectWith($select);
         $entities = [];
+        $checkoutsToGrab = [];
         foreach ($results as $row) {
             $processedRow = $this->processBookRow($row);
+            if (isset($processedRow['currentCheckoutId'])) {
+                $checkoutsToGrab[$processedRow['bookId']] = $processedRow['currentCheckoutId'];
+            }
             $entities[$processedRow['bookId']] = $processedRow;
         }
+        
+        //grab checkouts to fill them in to entities
+        $checkouts = $this->getCheckouts(array_values($checkoutsToGrab));
+        foreach ($checkoutsToGrab as $bookId => $checkoutId) {
+            if (isset($checkouts[$checkoutId])) {
+                $entities[$bookId]['currentCheckout'] = $checkouts[$checkoutId];
+            }
+        }
+        
         return $entities;
     }
 
@@ -548,6 +561,12 @@ ORDER BY `publisher`";
         $object = $this->processBookRow($results[0]);
         if (isset($object['libraryId'])) {
             $object['library'] = $this->getSimpleLibrary($object['libraryId']);
+        }
+        if (isset($object['currentCheckoutId'])) {
+            $checkout = $this->getCheckout($object['currentCheckoutId']);
+            if (isset($checkout)) { 
+                $object['currentCheckout'] = $checkout;
+            }
         }
         return $object;
     }
@@ -648,6 +667,7 @@ ORDER BY `publisher`";
             'isAvailable'           => $isActive && !isset($row['current_checkout_id']),
             'isCheckedOut'          => isset($row['current_checkout_id']),
             'currentCheckoutId'     => $this->filterDbId($row['current_checkout_id']),
+            'currentCheckout'       => null,
             'library'               => null,
         ];
         return $processedRow;
@@ -1523,13 +1543,13 @@ ORDER BY CreatedOn DESC";
     /**
      * @return mixed[]
      */
-    public function getCheckouts()
+    public function getCheckouts(array $checkoutIds = [])
     {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('checkouts'))) {
+        if (empty($checkoutIds) && null !== ($cache = $this->fetchCachedEntityObjects('checkouts'))) {
             return $cache;
         }
 
-        $entities = $this->getUnlinkedCheckouts();
+        $entities = $this->getUnlinkedCheckouts($checkoutIds);
         $books = $this->getUnlinkedBooks();
         $libraries = $this->getUnlinkedLibraries();
 
@@ -1545,7 +1565,9 @@ ORDER BY CreatedOn DESC";
             }
         }
 
-        $this->cacheEntityObjects('checkouts', $entities, ['checkout', 'book', 'library']);
+        if (empty($checkoutIds)) {
+            $this->cacheEntityObjects('checkouts', $entities, ['checkout', 'book', 'library']);
+        }
         return $entities;
     }
 
@@ -1576,20 +1598,23 @@ ORDER BY CreatedOn DESC";
         return $object;
     }
 
-    protected function getUnlinkedCheckouts()
+    protected function getUnlinkedCheckouts(array $checkoutIds = [])
     {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-checkouts'))) {
+        if (empty($checkoutIds) && null !== ($cache = $this->fetchCachedEntityObjects('unlinked-checkouts'))) {
             return $cache;
         }
         $gateway = $this->getTableGateway('lib_checkouts');
-//         if (isset($libraryId)) {
-//             $select = $this->getBookSelectPrototype();
-//             $select->where(['library_id' => $libraryId]);
-//             $results = $gateway->selectWith($select);
-//         } else {
-            $select = $this->getCheckoutSelectPrototype();
-            $results = $gateway->selectWith($select);
-//         }
+        
+        $where = [];
+        if (!empty($checkoutIds)) {
+            $where['CheckoutId'] = $checkoutIds;
+        }
+        
+        $select = $this->getCheckoutSelectPrototype();
+        if (!empty($where)) {
+            $select->where($where);
+        }
+        $results = $gateway->selectWith($select);
 
         $entities = [];
         foreach ($results as $row) {
@@ -1598,7 +1623,9 @@ ORDER BY CreatedOn DESC";
             $entities[$id] = $processedRow;
         }
 
-        $this->cacheEntityObjects('unlinked-checkouts', $entities, ['checkout']);
+        if (empty($checkoutIds)) {
+            $this->cacheEntityObjects('unlinked-checkouts', $entities, ['checkout']);
+        }
         return $entities;
     }
 

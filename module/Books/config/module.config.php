@@ -1537,7 +1537,7 @@ return [
                 ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/label-management', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/send-book-notices', 'roles' => ['user', 'guest']], //controller action has additional proectiont
+                ['route' => 'libraries/library/send-book-notices', 'roles' => ['user', 'guest']], //controller action has additional protection
                 ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_user']],

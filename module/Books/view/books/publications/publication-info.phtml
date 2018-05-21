@@ -5,8 +5,12 @@ use Books\View\Helper\FormatPublication;
  * @var mixed[] $object
  */
 $object = $this->object;
+$showCover = !isset($this->options) || !isset($this->options['showCover']) || false !== $this->options['showCover'];
+$panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) || 'book-title-and-link' != $this->options['panelTitle']) ?
+    'text' : 'book-title-and-link';
 ?>
 <div class="row">
+<?php if ($showCover):?>
 <div class="col-md-3">
 <?php if (file_exists(sprintf('public/covers/%s-200px.jpg', $object['publicationId']))) : ?>
     <a href="<?php echo $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>">
@@ -16,11 +20,19 @@ $object = $this->object;
 <p class="align-center"><?php //echo $this->escapeHtml(ucwords($object['condition']));?></p>
 </div>
 <div class="col-md-9">
+<?php else:?>
+<div class="col-md-12">
+<?php endif;?>
 <div class="panel panel-default" id="infoPanel">
     <div class="panel-heading">
         <div class="row">
         <div class="col-xs-6">
-            <h3 class="panel-title"><?php echo $this->escapeHtml($this->translate('Publication Info')); ?></h3>
+            <h3 class="panel-title"><?php 
+            if ('book-title-and-link' == $panelTitle) {
+                echo $this->formatEntity('publication', $object);
+            } else {
+                echo $this->escapeHtml($this->translate('Publication Info'));
+            }?></h3>
         </div>
 
         <div class="col-xs-6">

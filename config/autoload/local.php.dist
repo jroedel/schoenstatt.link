@@ -66,6 +66,18 @@ return [
             'dsn'            => 'mysql:dbname='.$dbParams['database'].';host='.$dbParams['hostname'],
             'driver_options' => [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;']
     ],
+    'sion_model' => [
+	'max_items_to_cache' => 1,
+        'api_keys' => ['xxxxxxxxxxxxx'],
+    ],
+     'schoenstatt' => [
+         'api_keys' => [
+             'xxxxxxxxxxxxxxxxxxxxxx',
+         ],
+         'patres_api_key' => 'xxxxxxxxxxxxxxxxxxxxxx',
+         'patres_api_person_list_uri' => 'https://schoenstatt-fathers.link/api/persons',
+         'patres_api_get_person_uri' =>  'https://schoenstatt-fathers.link/api/persons/%s',
+     ],
 
     'service_manager' => [
     	'factories' => [
