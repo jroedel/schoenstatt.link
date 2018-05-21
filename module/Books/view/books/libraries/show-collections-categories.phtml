@@ -6,7 +6,7 @@ if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->book
         $collectionName = isset($libraryOptions->collections[$collectionId]) ?
             $this->translate($libraryOptions->collections[$collectionId]->name) :
             sprintf('(%s)', $this->translate('none'));?>
-        <h3><?php echo $this->escapeHtml($collectionName);
+        <h3 id="collection_<?php echo $this->escapeHtmlAttr($collectionId);?>"><?php echo $this->escapeHtml($collectionName);
         if (isset($libraryOptions->collections[$collectionId]) && $this->isAllowed($this->entity['resourceId'], 'administrate')) {
             echo $this->editPencil('collection', $collectionId);
         }?></h3>

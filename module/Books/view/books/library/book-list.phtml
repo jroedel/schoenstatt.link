@@ -3,7 +3,8 @@
  * @param mixed[] $entities
  * @param string $name
  */
-if (isset($this->entities) && !empty($this->entities)):?>
+if (isset($this->entities) && !empty($this->entities)):
+$showCheckouts = $this->isAllowed('view_checkout_person');?>
 <table class="table">
 <tr>
 	<?php if (isset($this->publications) && is_array($this->publications)):
@@ -12,8 +13,10 @@ if (isset($this->entities) && !empty($this->entities)):?>
 	<th>#</th>
     <th><?php echo $this->translate("Author");?></th>
     <th><?php echo $this->translate("Title");?></th>
-    <th><?php echo $this->translate("Edition");?></th>
-    <th><?php echo $this->translate("Due on");?></th>
+    <th><?php echo $this->translate("Edition");?></th><?php 
+    if ($showCheckouts) :?>
+    <th><?php echo $this->translate("Due on");?></th><?php 
+    endif;?>
 </tr>
 <?php  foreach($this->entities as $book) : ?>
     <tr<?php if (!$book['isAvailable']) {
@@ -39,16 +42,16 @@ if (isset($this->entities) && !empty($this->entities)):?>
     		<td><?php echo $this->formatEntity('book', $book);?></td>
     	<?php endif;?>
     	<td><?php echo $this->escapeHtml($book['bookEdition']);?></td>
-    	<td><?php if (isset($book['currentCheckout'])) {
-    	    echo $this->formatEntity('checkout', $book['currentCheckout']);
-    	    if ($this->isAllowed('view_checkout_person') && isset($this->borrowers) &&
-	            isset($this->borrowers[$book['currentCheckout']['personId']])
-            ) {
-    	        echo ' '.sprintf($this->translate('by %s'),
-	                $this->borrowers[$book['currentCheckout']['personId']]);
-    	    }
-    	}?></td>
-    <?php endforeach; ?>
+    	<?php if ($showCheckouts) :?><td><?php 
+    	    if (isset($book['currentCheckout'])) {
+        	    echo $this->formatEntity('checkout', $book['currentCheckout']);
+        	    if (isset($this->borrowers) && isset($this->borrowers[$book['currentCheckout']['personId']])
+                ) {
+        	        echo ' '.sprintf($this->translate('by %s'),
+    	                $this->borrowers[$book['currentCheckout']['personId']]);
+        	    }
+    	    }?></td><?php endif;
+	    endforeach; ?>
     </tr>
 </table>
 <?php else:?>
