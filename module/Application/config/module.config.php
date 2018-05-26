@@ -9,45 +9,55 @@
 
 namespace Application;
 
+use Application\Controller\IndexController;
+use Zend\Router\Http\Literal;
+use Zend\Navigation\Service\DefaultNavigationFactory;
+use Zend\I18n\Translator\TranslatorServiceFactory;
+use Zend\Log\LoggerAbstractServiceFactory;
+use Zend\Cache\Service\StorageCacheAbstractServiceFactory;
+use Zend\ServiceManager\Factory\InvokableFactory;
+use BjyAuthorize\Guard\Route;
+use SionModel\Controller\LazyControllerFactory;
+
 return [
     'router' => [
         'routes' => [
             'welcome' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => IndexController::class,
                         'action'     => 'index',
                     ],
                 ],
             ],
             'sitemap' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/sitemap.xml',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => IndexController::class,
                         'action'     => 'sitemap',
                     ],
                 ],
             ],
             'developers' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/developers',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => IndexController::class,
                         'action'     => 'developers',
                     ],
                 ],
             ],
             'acknowledgements' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/acknowledgements',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => IndexController::class,
                         'action'     => 'acknowledgements',
                     ],
                 ],
@@ -57,7 +67,7 @@ return [
             // module. Simply drop new controllers in, and you can access them
             // using the path /application/:controller/:action
 //             'application' => [
-//                 'type'    => 'Literal',
+//                 'type'    => Literal::class,
 //                 'options' => [
 //                     'route'    => '/application',
 //                     'defaults' => [
@@ -86,12 +96,12 @@ return [
     ],
     'service_manager' => [
         'abstract_factories' => [
-            'Zend\Cache\Service\StorageCacheAbstractServiceFactory',
-            'Zend\Log\LoggerAbstractServiceFactory',
+            StorageCacheAbstractServiceFactory::class,
+            LoggerAbstractServiceFactory::class,
         ],
         'factories' => [
-            'translator' => 'Zend\Mvc\Service\TranslatorServiceFactory',
-            'navigation' => 'Zend\Navigation\Service\DefaultNavigationFactory'
+            'translator' => TranslatorServiceFactory::class,
+            'navigation' => DefaultNavigationFactory::class
         ],
     ],
 //     'translator' => [
@@ -105,8 +115,14 @@ return [
 //         ],
 //     ],
     'controllers' => [
-        'invokables' => [
-            'Application\Controller\Index' => Controller\IndexController::class
+//         'invokables' => [
+//             IndexController::class => IndexController::class
+//         ],
+//         'factories' => [
+//             IndexController::class => IndexController::class,
+//         ],
+        'abstract_factories' => [
+            \Application\Controller\LazyControllerFactory::class,
         ],
     ],
     'view_manager' => [
@@ -174,16 +190,9 @@ return [
 //             'cache'        => 'Application\Cache\Redis',
         ),
     ),
-    // Placeholder for console routes
-    'console' => [
-        'router' => [
-            'routes' => [
-            ],
-        ],
-    ],
     'bjyauthorize' => [
         'guards' => [
-            'BjyAuthorize\Guard\Route' => [
+            Route::class => [
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
                 ['route' => 'sitemap', 'roles' => ['guest', 'user']],

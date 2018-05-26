@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Mailing\BooksMailer;
 
 /**
@@ -13,18 +13,18 @@ use Books\Mailing\BooksMailer;
 class BooksMailerFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $table = $serviceLocator->get ( 'Books\Model\LibraryTable' );
+        $table = $container->get ( 'Books\Model\LibraryTable' );
         /** @var SchoenstattTable $schTable */
-        $schTable = $serviceLocator->get('Schoenstatt\Model\SchoenstattTable');
-		$translator = $serviceLocator->get ( 'translator' );
-		$mailService = $serviceLocator->get ( 'acmailer.mailservice.default' );
-		$config = $serviceLocator->get ( 'Config' );
+        $schTable = $container->get('Schoenstatt\Model\SchoenstattTable');
+		$translator = $container->get ( 'translator' );
+		$mailService = $container->get ( 'acmailer.mailservice.default' );
+		$config = $container->get ( 'Config' );
 
 		$mailer = new BooksMailer( $mailService, $translator, $config, $table, $schTable);
 		return $mailer;

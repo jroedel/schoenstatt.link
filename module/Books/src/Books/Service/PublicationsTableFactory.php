@@ -1,9 +1,10 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Model\PublicationsTable;
+use Schoenstatt\Model\SchoenstattTable;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
@@ -13,23 +14,22 @@ use Books\Model\PublicationsTable;
 class PublicationsTableFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $config = $serviceLocator->get('Config');
-        $dbAdapter = $serviceLocator->get($config['books']['books_db_adapter']);
-
-		/** @var  User $userService **/
-		$userService = $serviceLocator->get('zfcuser_user_service');
-		$user = $userService->getAuthService()->getIdentity();
+        $config = $container->get('Config');
+        $dbAdapter = $container->get($config['books']['books_db_adapter']);
+        
+        $authService = $container->get('zfcuser_auth_service');
+        $user = $authService->getIdentity();
 		$actingUserId = $user ? $user->id : null;
 
-		$table = new PublicationsTable($dbAdapter, $serviceLocator, $actingUserId);
+		$table = new PublicationsTable($dbAdapter, $container, $actingUserId);
 
-		$schTable = $serviceLocator->get('Schoenstatt\Model\SchoenstattTable');
+		$schTable = $container->get(SchoenstattTable::class);
 		$table->setSchoenstattTable($schTable);
 		return $table;
     }

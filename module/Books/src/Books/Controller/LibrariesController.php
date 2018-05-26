@@ -310,7 +310,7 @@ class LibrariesController extends SionController
         $table = $this->getSionTable();
         $library = $table->getSimpleLibrary($libraryId);
         /** @var BooksMailer $mailer */
-        $mailer = $sm->get('Books\BooksMailer');
+        $mailer = $sm->get(BooksMailer::class);
         $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate, $borrowerSubset);
 
         return new ViewModel([

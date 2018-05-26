@@ -1,9 +1,10 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
 use Books\Model\LibraryTable;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
+use Zend\Db\Adapter\Adapter;
 
 /**
  * Factory responsible of priming the LibraryTable service
@@ -13,21 +14,20 @@ use Books\Model\LibraryTable;
 class LibraryTableServiceFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $dbAdapter = $serviceLocator->get('Zend\Db\Adapter\Adapter');
+        $dbAdapter = $container->get(Adapter::class);
 
-		$config = $serviceLocator->get ( 'Books\Config' );
-		/** @var  User $userService **/
-		$userService = $serviceLocator->get('zfcuser_user_service');
-		$user = $userService->getAuthService()->getIdentity();
+		$config = $container->get ( 'Books\Config' );
+		$authService = $container->get('zfcuser_auth_service');
+		$user = $authService->getIdentity();
 		$actingUserId = $user ? $user->id : null;
 
-		$table = new LibraryTable( $dbAdapter, $serviceLocator, $actingUserId, $config);
+		$table = new LibraryTable( $dbAdapter, $container, $actingUserId, $config);
 		return $table;
     }
 }

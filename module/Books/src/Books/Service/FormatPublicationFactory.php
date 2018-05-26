@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\View\Helper\FormatPublication;
 
 /**
@@ -13,13 +13,13 @@ use Books\View\Helper\FormatPublication;
 class FormatPublicationFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $parentLocator = $serviceLocator->getServiceLocator();
+        $parentLocator = $container->getServiceLocator();
         $entityService = $parentLocator->get('SionModel\Service\EntitiesService');
 
         /** @var \Books\Model\PublicationsTable $table */

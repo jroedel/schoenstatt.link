@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Model\LibraryTable;
 use Books\Form\SearchForm;
 
@@ -12,12 +12,14 @@ use Books\Form\SearchForm;
 class SearchFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
 		/** @var LibraryTable $table **/
-		$table= $serviceLocator->get ( 'Books\Model\LibraryTable' );
+		$table= $container->get (LibraryTable::class );
 
         $form = new SearchForm();
         $collections =  $table->getCollectionValueOptions();

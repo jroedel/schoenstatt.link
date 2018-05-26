@@ -1,9 +1,11 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
+use Schoenstatt\Model\SchoenstattTable;
+use Schoenstatt\Form\PersonForm;
 
 /**
  * Factory responsible of priming the PatresTable service
@@ -13,27 +15,27 @@ use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
 class PersonFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return CreateTimelineEventForm
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var \Schoenstatt\Model\SchoenstattTable $table **/
-		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
+		$table = $container->get ( SchoenstattTable::class);
 
 		$persons = $table->getPersonValueOptions();
-		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
+		$countryNames = $container->get ( 'CountryValueOptions' );
 
 		$lifeCommunities = $table->getAssociationValueOptions(false, false);
 
-		$personTags = $serviceLocator->get ( 'Schoenstatt\PersonTagsValueOptions' );
+		$personTags = $container->get ( 'Schoenstatt\PersonTagsValueOptions' );
 // 		$adminTags = $table->getPersonAdminTags();
 
 		/** @var FormElementManagerV2Polyfill $formManager */
-		$formManager = $serviceLocator->get('FormElementManager');
+		$formManager = $container->get('FormElementManager');
 		/** @var \Schoenstatt\Form\PersonForm $form */
-		$form = $formManager->get('Schoenstatt\Form\PersonForm', [], true);
+		$form = $formManager->get(PersonForm::class, [], true);
 
 		$form->get('spousePersonId')->setValueOptions($persons);
 		$form->get('country')->setValueOptions($countryNames);

@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Matriphe\ISO639\ISO639;
 use Books\Model\LibraryTable;
 use Books\Form\BookForm;
@@ -14,15 +14,17 @@ use Books\Model\PublicationsTable;
 class BookFormFactory extends ISO639 implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var LibraryTable $table **/
-		$table = $serviceLocator->get ( 'Books\Model\LibraryTable' );
+		$table = $container->get ( 'Books\Model\LibraryTable' );
 
-		/** @var \Zend\Mvc\Router\RouteMatch $routeMatch */
-		$routeMatch = $serviceLocator->get('Application')->getMvcEvent()->getRouteMatch();
+		/** @var \Zend\Router\RouteMatch $routeMatch */
+		$routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
 		$libraryId = $routeMatch->getParam('library_id');
 		if (!isset($libraryId)) {
 		    $bookId = $routeMatch->getParam('book_id');
@@ -39,7 +41,7 @@ class BookFormFactory extends ISO639 implements FactoryInterface
 		$authors = $table->getAuthorsValueOptions($libraryId);
 		$collections = $table->getCollectionValueOptions($libraryId);
 		$publishers = $table->getPublishersValueOptions();
-		$config = $serviceLocator->get('Books\Config');
+		$config = $container->get('Books\Config');
 
 		$languages = $this->getLanguageValueOptions();
 		$keywords = $table->getKeywordsValueOptions();
@@ -47,7 +49,7 @@ class BookFormFactory extends ISO639 implements FactoryInterface
         $categories = $table->getCategoryValueOptions();
 
         /** @var PublicationsTable */
-        $publicationsTable = $serviceLocator->get('Books\Model\PublicationsTable');
+        $publicationsTable = $container->get('Books\Model\PublicationsTable');
         $allEditions = $publicationsTable->getEditionValueOptions(false);
 
         $form = new BookForm();

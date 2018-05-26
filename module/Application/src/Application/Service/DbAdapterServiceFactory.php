@@ -1,8 +1,9 @@
 <?php
 namespace Application\Service;
 
-use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
@@ -11,21 +12,29 @@ use Zend\ServiceManager\ServiceLocatorInterface;
  */
 class DbAdapterServiceFactory implements FactoryInterface
 {
+    
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @param  ContainerInterface $container
+     * @param  string             $requestedName
+     * @param  null|array         $options
+     * @return object
+     * @throws ServiceNotFoundException if unable to resolve the service.
+     * @throws ServiceNotCreatedException if an exception is raised when
+     *     creating a service.
+     * @throws ContainerException if any other error occurs
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $config = $serviceLocator->get('Config');
-
+        $config = $container->get('Config');
+        
         $dbParams = $config['db'];
-
+        
         $env = getenv('APP_ENV') ?: 'production';
         if ($env != 'production') {
             $adapter = new \BjyProfiler\Db\Adapter\ProfilingAdapter($dbParams);
-
+            
             if (php_sapi_name() == 'cli') {
                 $logger = new \Zend\Log\Logger();
                 // write queries profiling info to stdout in CLI mode

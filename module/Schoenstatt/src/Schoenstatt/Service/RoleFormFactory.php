@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
@@ -16,24 +16,24 @@ use Schoenstatt\Form\RoleForm;
 class RoleFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return AssociationForm
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
+		$table = $container->get ( SchoenstattTable::class);
 		/** @var \Zend\I18n\Translator\Translator $translator */
-		$translator = $serviceLocator->get ( 'translator' );
+		$translator = $container->get ( 'translator' );
 
 		$associations = $table->getAssociationValueOptions();
 		$roleTitles = $table->getRoleTitleValueOptions($translator);
 
 		/** @var FormElementManagerV2Polyfill $formManager */
-		$formManager = $serviceLocator->get('FormElementManager');
+		$formManager = $container->get('FormElementManager');
 		/** @var RoleForm $form */
-		$form = $formManager->get('Schoenstatt\Form\RoleForm', [], true);
+		$form = $formManager->get(RoleForm::class, [], true);
 
 		$form->get('associationId')->setValueOptions($associations);
 		$form->get('roleTitle')->setValueOptions($roleTitles);

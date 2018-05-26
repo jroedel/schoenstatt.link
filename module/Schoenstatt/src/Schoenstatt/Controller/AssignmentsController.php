@@ -18,9 +18,14 @@ use Schoenstatt\Form\AdvancedSearchForm;
 
 class AssignmentsController extends SionController
 {
-    public function __construct()
+    protected $schoenstattTable;
+    protected $advancedSearchForm;
+    
+    public function __construct(SchoenstattTable $schoenstattTable, AdvancedSearchForm $advancedSearchForm)
     {
         parent::__construct('assignment');
+        $this->schoenstattTable = $schoenstattTable;
+        $this->advancedSearchForm = $advancedSearchForm;
     }
 
     /**
@@ -28,7 +33,6 @@ class AssignmentsController extends SionController
      */
     public function searchAction()
     {
-        $sm = $this->getServiceLocator();
         //make sure we get clean parameters
         $params = $this->params()->fromQuery();
         /** @var SearchForm $form */
@@ -39,7 +43,7 @@ class AssignmentsController extends SionController
             $data = $form->getData();
 //             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
-                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $table = $this->schoenstattTable;
                 $entities = $table->searchEntities($data, ['bypassRequiredParams' => true]);
 //             }
         }
@@ -57,11 +61,10 @@ class AssignmentsController extends SionController
      */
     public function advancedSearchAction()
     {
-        $sm = $this->getServiceLocator();
         //make sure we get clean parameters
         $params = $this->params()->fromQuery();
         /** @var AdvancedSearchForm $form */
-        $form = $sm->get('Schoenstatt\Form\AdvancedSearchForm');
+        $form = $this->advancedSearchForm;
         $form->setData($params);
         $entities = null;
         //         $showPhotos = false;
@@ -71,7 +74,7 @@ class AssignmentsController extends SionController
 //             unset($data['showPhotos']);
             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
-                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $table = $this->schoenstattTable;
                 $entities = $table->searchEntities($data);
             }
         }
@@ -94,7 +97,7 @@ class AssignmentsController extends SionController
                 /** @var \Schoenstatt\Form\AssignmentForm $form */
                 $form = $view->getVariable('form');
             }
-            if (!is_null($queryRoleId)) {
+            if (isset($queryRoleId)) {
                 //verify the query param
                 $queryAssociationId = null;
                 $queryAssociationRoles = null;
@@ -107,7 +110,7 @@ class AssignmentsController extends SionController
                     }
                 }
                 //if it's valid, fill in the form
-                if (!is_null($queryAssociationId)) {
+                if (isset($queryAssociationId)) {
                     if (!$form->get('associationId')->getValue()) {
                         $form->get('associationId')->setValue($queryAssociationId);
                         $form->get('roleId')->setValueOptions($queryAssociationRoles);
@@ -115,7 +118,7 @@ class AssignmentsController extends SionController
                     }
                 }
             }
-            if (!is_null($queryPersonId)) {
+            if (isset($queryPersonId)) {
                 $personElement = $form->get('personId');
                 if (key_exists($queryPersonId, $personElement->getValueOptions())) {
                     $personElement->setValue($queryPersonId);

@@ -126,13 +126,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         $this->translator = $serviceLocator->get('translator');
 
         /** @var AssociationKindsService $kindsService */
-        $kindsService = $serviceLocator->get('Schoenstatt\AssociationKindsService');
+        $kindsService = $serviceLocator->get(AssociationKindsService::class);
         $this->associationKinds = $kindsService->getAssociationKinds();
 
         if (!$this->countryNameTranslations = $this->fetchCachedEntityObjects('country-name-translations')) {
-            if ($serviceLocator->has('CountriesInfo')) {
+            if ($serviceLocator->has(CountriesInfo::class)) {
                 /** @var \JTranslate\Model\CountriesInfo $countriesInfo */
-                $countriesInfo = $serviceLocator->get('CountriesInfo');
+                $countriesInfo = $serviceLocator->get(CountriesInfo::class);
                 $this->countryNameTranslations = $countriesInfo->getCountryNameTranslations();
                 $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
             }

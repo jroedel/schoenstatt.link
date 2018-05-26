@@ -1,0 +1,4 @@
+[production]
+;change name of this file to ".phploy"
+    pass="xxxxxxxxxxx"
+    post-deploy[] = "wget https://schoenstatt.link/sm/clear-persistent-cache?key=xxxxxxxxxxxx --spider --quiet"

@@ -14,6 +14,9 @@ use Zend\Mvc\Controller\AbstractActionController;
 use JTranslate\Model\TranslationsTable;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Model\SchoenstattTable;
+use Schoenstatt\Service\PatresGateway;
+use SionModel\Service\ProblemService;
+use Schoenstatt\Form\ImportFatherForm;
 // use Patres\Form\ModerateGenericForm;
 // use Patres\Mailing\Mailer;
 // use Schoenstatt\Form\PersonForm;
@@ -23,6 +26,20 @@ class AdminController extends AbstractActionController
 {
     protected $personInputFilter;
 
+    protected $translationsTable;
+    protected $problemService;
+    protected $importFatherForm;
+    protected $schoenstattTable;
+    
+    public function __construct(TranslationsTable $translationsTable, ProblemService $problemService, 
+        ImportFatherForm $importFatherForm, SchoenstattTable $schoenstattTable)
+    {
+        $this->translationsTable = $translationsTable;
+        $this->problemService = $problemService;
+        $this->importFatherForm = $importFatherForm;
+        $this->schoenstattTable = $schoenstattTable;
+    }
+    
     public function indexAction()
     {
         $pages = [
@@ -37,15 +54,14 @@ class AdminController extends AbstractActionController
             'sion-model/data-problems'  => "Data problems",
         ];
         $badges = [];
-        $sm = $this->getServiceLocator();
 
         /** @var TranslationsTable $translations */
-        $translations = $sm->get('JTranslate\Model\TranslationsTable');
+        $translations = $this->translationsTable;
 
         $badges['jtranslate'] = (string) $translations->getOutstandingTranslationCount();
 
         /** @var ProblemService $problemService */
-        $problemService = $sm->get('SionModel\Service\ProblemService');
+        $problemService = $this->problemService;
         $problems = $problemService->getCurrentProblems();
         $badges['sion-model/data-problems'] = count($problems);
 
@@ -57,8 +73,7 @@ class AdminController extends AbstractActionController
 
     public function importFatherAction()
     {
-        $sm = $this->getServiceLocator();
-        $form = $sm->get('Schoenstatt\Form\ImportFatherForm');
+        $form = $this->importFatherForm;
         $request = $this->getRequest();
         if ($request->isPost ()) {
             $data = $request->getPost ()->toArray ();
@@ -66,12 +81,12 @@ class AdminController extends AbstractActionController
             if ($form->isValid()) { //here the sent personId will be checked against the haystack
                 $personId = $form->getData()['personId'];
                 /** @var \Schoenstatt\Service\PatresGateway $patresGateway */
-                $patresGateway = $sm->get('PatresGateway');
+                $patresGateway = $sm->get(PatresGateway::class);
                 if (false === $patresGateway->importRemotePerson($personId))
                 {
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Person already exists in the database.' );
                 } else {
-                    $form = $sm->get('Schoenstatt\Form\ImportFatherForm');
+                    //$form = $sm->get('Schoenstatt\Form\ImportFatherForm'); why was this here?
                     $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully imported.' );
                 }
             } else {
@@ -85,9 +100,8 @@ class AdminController extends AbstractActionController
 
     public function maintenanceAction()
     {
-        $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $this->schoenstattTable;
 
         //remove erroneous priest tag from seminarians (so far, all priests should have priestDate)
         $persons = $table->getUnlinkedPersons();

@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 
 /**
  * Factory responsible of retrieving an array containing the Books configuration
@@ -12,13 +12,13 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 class FathersObjectsFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $fathers = $serviceLocator->get('Schoenstatt\FathersValueOptions');
+        $fathers = $container->get('Schoenstatt\FathersValueOptions');
 
         $objects = [];
         foreach ($fathers as $personId => $name) {

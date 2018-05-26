@@ -17,17 +17,24 @@ use libKML\Placemark;
 
 class SchoenstattController extends AbstractActionController
 {
+    protected $schoenstattTable;
+    protected $schConfig;
+    
+    public function __construct(SchoenstattTable $schoenstattTable, array $config)
+    {
+        $this->schoenstattTable = $schoenstattTable;
+        $this->schConfig = $config['schoenstatt'];
+    }
+    
     public function indexAction()
     {
         if (!$this->zfcUserAuthentication()->hasIdentity()) {
             return $this->redirect()->toRoute('welcome');
         }
 
-        $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $this->schoenstattTable;
 
-        $config = $sm->get('Schoenstatt\Config');
+        $config = $this->schConfig;
         if (!isset($config['general_presidium_id']) || !is_numeric($config['general_presidium_id'])) {
             throw new \Exception('Please set the "general_presidium_id" configuration.');
         }
@@ -51,9 +58,7 @@ class SchoenstattController extends AbstractActionController
             return $this->redirect()->toRoute('welcome');
         }
 
-        $sm = $this->getServiceLocator();
-        /** @var SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $this->schoenstattTable;
 
         $shrines = $table->getShrines();
 
@@ -173,8 +178,7 @@ class SchoenstattController extends AbstractActionController
         }
         ksort($cityCountryMap);
         if (!$simulate) { //import the items
-            /** @var SchoenstattTable $table */
-            $table = $this->getServiceLocator()->get('Schoenstatt\Model\SchoenstattTable');
+            $table = $this->schoenstattTable;
             foreach ($dataToImport as $key => $data) {
                 $dataToImport[$key]['result'] = $table->createEntity('association', $data, false);
             }
@@ -188,7 +192,7 @@ class SchoenstattController extends AbstractActionController
     protected function getNationalMovementAssociationMap()
     {
         /** @var SchoenstattTable $table */
-        $table = $this->getServiceLocator()->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $this->schoenstattTable;
         $objects = $table->getUnlinkedAssociations();
         $map = [];
         foreach ($objects as $associationId => $object) {

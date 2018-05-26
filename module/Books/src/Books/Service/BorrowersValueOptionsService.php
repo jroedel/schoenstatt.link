@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 
 /**
@@ -13,14 +13,14 @@ use Schoenstatt\Model\SchoenstattTable;
 class BorrowersValueOptionsService implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table */
-        $table = $serviceLocator->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $container->get('Schoenstatt\Model\SchoenstattTable');
         $persons = $table->getUnlinkedPersons();
         $valueOptions = [];
         foreach ($persons as $personId => $person) {
