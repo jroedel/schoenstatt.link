@@ -1,8 +1,10 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
+use Schoenstatt\Form\PersonForm;
+use Schoenstatt\Model\SchoenstattTable;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
@@ -12,16 +14,16 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 class PatresGatewayFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var \Schoenstatt\Form\PersonForm $personForm */
-        $personForm = $serviceLocator->get('Schoenstatt\Form\PersonForm');
-        $config = $serviceLocator->get('Schoenstatt\Config');
-        $table = $serviceLocator->get('Schoenstatt\Model\SchoenstattTable');
+        $personForm = $container->get(PersonForm::class);
+        $config = $container->get('Schoenstatt\Config');
+        $table = $container->get(SchoenstattTable::class);
 
         $patresGateway = new PatresGateway();
 

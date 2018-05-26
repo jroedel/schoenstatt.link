@@ -1,5 +1,41 @@
 <?php
 use SionModel\Problem\EntityProblem;
+use Schoenstatt\Form\PersonForm;
+use Schoenstatt\Service\PersonFormFactory;
+use Schoenstatt\Form\AssignmentForm;
+use Schoenstatt\Service\AssignmentFormFactory;
+use Schoenstatt\Service\EditAssignmentFormFactory;
+use Schoenstatt\Form\AssociationForm;
+use Schoenstatt\Service\AssociationFormFactory;
+use Schoenstatt\Form\RoleForm;
+use Schoenstatt\Service\RoleFormFactory;
+use Schoenstatt\Service\ConfigServiceFactory;
+use Schoenstatt\Form\ImportFatherForm;
+use Schoenstatt\Service\ImportFatherFormFactory;
+use Schoenstatt\Form\AdvancedSearchForm;
+use Schoenstatt\Service\AdvancedSearchFormFactory;
+use Schoenstatt\Model\SchoenstattTable;
+use Schoenstatt\Service\SchoenstattTableFactory;
+use Schoenstatt\Service\FathersValueOptionsService;
+use Schoenstatt\Service\PatresGatewayFactory;
+use Schoenstatt\Service\PatresGateway;
+use Schoenstatt\Service\PersonTagsValueOptionsFactory;
+use Schoenstatt\Service\AssociationKindsServiceFactory;
+use Schoenstatt\Service\AssociationKindsService;
+use Schoenstatt\Service\FormatEntityFactory;
+use Schoenstatt\Service\FormatAssociationFactory;
+use Schoenstatt\View\Helper\ClipboardButton;
+use Schoenstatt\View\Helper\FormatPerson;
+use Schoenstatt\View\Helper\LanguageChooser;
+use Schoenstatt\View\Helper\SchoenstattJsonLd;
+use Schoenstatt\Controller\SchoenstattController;
+use Schoenstatt\Controller\PersonsController;
+use Schoenstatt\Controller\AssociationsController;
+use Schoenstatt\Controller\AdminController;
+use Schoenstatt\Controller\AssignmentsController;
+use Schoenstatt\Controller\RolesController;
+use Zend\Mvc\Controller\LazyControllerAbstractFactory;
+use SionModel\Controller\LazyControllerFactory;
 
 $leagueRoles = [
     [
@@ -57,30 +93,33 @@ $federationRoles = [
 
 return [
     'controllers' => [
-        'invokables' => [
-            'Schoenstatt\Controller\Schoenstatt'    => 'Schoenstatt\Controller\SchoenstattController',
-            'Schoenstatt\Controller\Persons'        => 'Schoenstatt\Controller\PersonsController',
-            'Schoenstatt\Controller\Associations'   => 'Schoenstatt\Controller\AssociationsController',
-            'Schoenstatt\Controller\Admin'          => 'Schoenstatt\Controller\AdminController',
-            'Schoenstatt\Controller\Assignments'    => 'Schoenstatt\Controller\AssignmentsController',
-            'Schoenstatt\Controller\Roles'          => 'Schoenstatt\Controller\RolesController',
+//         'factories' => [
+//             SchoenstattController::class    => SchoenstattController::class,
+//             PersonsController::class        => PersonsController::class,
+//             AssociationsController::class   => AssociationsController::class,
+//             AdminController::class          => AdminController::class,
+//             AssignmentsController::class    => AssignmentsController::class,
+//             RolesController::class          => RolesController::class,
+    //         ],
+        'abstract_factories' => [
+            \Schoenstatt\Controller\LazyControllerFactory::class,
         ],
     ],
     'service_manager' => [
         'factories' => [
-            'PatresGateway'                         => 'Schoenstatt\Service\PatresGatewayFactory',
-            'Schoenstatt\FathersValueOptions'       => 'Schoenstatt\Service\FathersValueOptionsService',
-            'Schoenstatt\Model\SchoenstattTable'    => 'Schoenstatt\Service\SchoenstattTableFactory',
-            'Schoenstatt\Form\AdvancedSearchForm'   => 'Schoenstatt\Service\AdvancedSearchFormFactory',
-            'Schoenstatt\Form\PersonForm'           => 'Schoenstatt\Service\PersonFormFactory',
-            'Schoenstatt\Form\AssignmentForm'       => 'Schoenstatt\Service\AssignmentFormFactory',
-            'Schoenstatt\Form\EditAssignmentForm'   => 'Schoenstatt\Service\EditAssignmentFormFactory',
-            'Schoenstatt\Form\AssociationForm'      => 'Schoenstatt\Service\AssociationFormFactory',
-            'Schoenstatt\Form\RoleForm'             => 'Schoenstatt\Service\RoleFormFactory',
-            'Schoenstatt\Config'                    => 'Schoenstatt\Service\ConfigServiceFactory',
-            'Schoenstatt\Form\ImportFatherForm'     => 'Schoenstatt\Service\ImportFatherFormFactory',
-            'Schoenstatt\PersonTagsValueOptions'    => 'Schoenstatt\Service\PersonTagsValueOptionsFactory',
-            'Schoenstatt\AssociationKindsService'   => 'Schoenstatt\Service\AssociationKindsServiceFactory',
+            PatresGateway::class                    => PatresGatewayFactory::class,
+            'Schoenstatt\FathersValueOptions'       => FathersValueOptionsService::class,
+            SchoenstattTable::class                 => SchoenstattTableFactory::class,
+            AdvancedSearchForm::class               => AdvancedSearchFormFactory::class,
+            PersonForm::class                       => PersonFormFactory::class,
+            AssignmentForm::class                   => AssignmentFormFactory::class,
+            'Schoenstatt\Form\EditAssignmentForm'   => EditAssignmentFormFactory::class,
+            AssociationForm::class                  => AssociationFormFactory::class,
+            RoleForm::class                         => RoleFormFactory::class,
+            'Schoenstatt\Config'                    => ConfigServiceFactory::class,
+            ImportFatherForm::class                 => ImportFatherFormFactory::class,
+            'Schoenstatt\PersonTagsValueOptions'    => PersonTagsValueOptionsFactory::class,
+            AssociationKindsService::class          => AssociationKindsServiceFactory::class,
         ],
     ],
     'view_manager' => [
@@ -90,14 +129,14 @@ return [
     ],
     'view_helpers' => [
         'factories' => [
-            'formatEntity'          => 'Schoenstatt\Service\FormatEntityFactory',
-            'formatAssociation'     => 'Schoenstatt\Service\FormatAssociationFactory',
+            'formatEntity'          => FormatEntityFactory::class,
+            'formatAssociation'     => FormatAssociationFactory::class,
         ],
         'invokables' => [
-            'clipboardButton'       => 'Schoenstatt\View\Helper\ClipboardButton',
-            'formatPerson'          => 'Schoenstatt\View\Helper\FormatPerson',
-            'languageChooser'       => 'Schoenstatt\View\Helper\LanguageChooser',
-            'schoenstattJsonLd'     => 'Schoenstatt\View\Helper\SchoenstattJsonLd',
+            'clipboardButton'       => ClipboardButton::class,
+            'formatPerson'          => FormatPerson::class,
+            'languageChooser'       => LanguageChooser::class,
+            'schoenstattJsonLd'     => SchoenstattJsonLd::class,
         ],
     ],
 
@@ -105,13 +144,13 @@ return [
             // Resource providers to be used to load all available resources into Zend\Permissions\Acl\Acl
             // Keys are the provider service names, values are the options to be passed to the provider
             'resource_providers'    => [
-                'Schoenstatt\Model\SchoenstattTable' => [],
+                SchoenstattTable::class => [],
             ],
 
             // Rule providers to be used to load all available rules into Zend\Permissions\Acl\Acl
             // Keys are the provider service names, values are the options to be passed to the provider
             'rule_providers'        => [
-                'Schoenstatt\Model\SchoenstattTable' => [],
+                SchoenstattTable::class => [],
             ],
     ],
     'schoenstatt' => [
@@ -845,18 +884,18 @@ return [
                 'options' => [
                     'route'    => '/admin',
                     'defaults' => [
-                        'controller' => 'Schoenstatt\Controller\Admin',
+                        'controller' => AdminController::class,
                         'action'     => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'data-problems' => [
-                        'type'    => 'Zend\Mvc\Router\Http\Literal',
+                        'type'    => 'Literal',
                         'options' => [
                             'route'    => '/data-problems',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'controller' => AdminController::class,
                                 'action'     => 'dataProblems',
                             ],
                         ],
@@ -866,7 +905,7 @@ return [
                         'options' => [
                             'route'    => '/import-father',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'controller' => AdminController::class,
                                 'action'     => 'importFather',
                             ],
                         ],
@@ -876,7 +915,7 @@ return [
                         'options' => [
                             'route'    => '/import-shrines',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Schoenstatt',
+                                'controller' => SchoenstattController::class,
                                 'action'     => 'importShrines',
                             ],
                         ],
@@ -886,7 +925,7 @@ return [
                         'options' => [
                             'route'    => '/maintenance',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'controller' => AdminController::class,
                                 'action'     => 'maintenance',
                             ],
                         ],
@@ -896,7 +935,7 @@ return [
                         'options' => [
                             'route'    => '/moderate[/:suggestion_id]',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Admin',
+                                'controller' => AdminController::class,
                                 'action'     => 'moderate',
                             ],
                             'constraints' => [
@@ -913,10 +952,7 @@ return [
                     // Change this to something specific to your module
                     'route'    => '/movement',
                     'defaults' => [
-                        // Change this value to reflect the namespace in which
-                        // the controllers for your module are found
-                        '__NAMESPACE__' => 'Schoenstatt\Controller',
-                        'controller'    => 'Schoenstatt',
+                        'controller'    => SchoenstattController::class,
                         'action'        => 'index',
                     ],
                 ],
@@ -928,10 +964,7 @@ return [
                     // Change this to something specific to your module
                     'route'    => '/shrines',
                     'defaults' => [
-                        // Change this value to reflect the namespace in which
-                        // the controllers for your module are found
-                        '__NAMESPACE__' => 'Schoenstatt\Controller',
-                        'controller'    => 'Schoenstatt',
+                        'controller'    => SchoenstattController::class,
                         'action'        => 'shrines',
                     ],
                 ],
@@ -942,7 +975,7 @@ return [
                 'options' => [
                     'route'    => '/persons',
                     'defaults' => [
-                        'controller' => 'Schoenstatt\Controller\Persons',
+                        'controller' => PersonsController::class,
                         'action'     => 'search',
                     ],
                 ],
@@ -1028,7 +1061,7 @@ return [
                 'options' => [
                     'route'    => '/assignments',
                     'defaults' => [
-                        'controller' => 'Schoenstatt\Controller\Assignments',
+                        'controller' => AssignmentsController::class,
                     ],
                 ],
                 'may_terminate' => false,
@@ -1121,7 +1154,7 @@ return [
                 'options' => [
                     'route'    => '/roles',
                     'defaults' => [
-                        'controller' => 'Schoenstatt\Controller\Roles',
+                        'controller' => RolesController::class,
                         'action'     => 'index',
                     ],
                 ],
@@ -1176,7 +1209,7 @@ return [
                 'options' => [
                     'route'    => '/associations',
                     'defaults' => [
-                        'controller' => 'Schoenstatt\Controller\Associations',
+                        'controller' => AssociationsController::class,
                         'action'     => 'index',
                     ],
                 ],
@@ -1190,7 +1223,7 @@ return [
                                 'course_id' => '[0-9]{1,5}',
                             ],
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Associations',
+                                'controller' => AssociationsController::class,
                                 'action'     => 'show',
                             ],
                         ],
@@ -1251,7 +1284,7 @@ return [
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Associations',
+                                'controller' => AssociationsController::class,
                                 'action'     => 'create',
                             ],
                         ],
@@ -1261,7 +1294,7 @@ return [
                         'options' => [
                             'route'    => '/import',
                             'defaults' => [
-                                'controller' => 'Schoenstatt\Controller\Associations',
+                                'controller' => AssociationsController::class,
                                 'action'     => 'import',
                             ],
                         ],
@@ -1272,7 +1305,7 @@ return [
     ],
     'sion_model' => [
         'problem_providers' => [
-            'Schoenstatt\Model\SchoenstattTable',
+            SchoenstattTable::class,
         ],
         'problem_specifications' => [
             'person-no-email' => [
@@ -1302,7 +1335,7 @@ return [
                 'table_name' 							=> 'sch_persons',
                 'table_key' 							=> 'PersonId',
                 'entity_key_field'               		=> 'personId',
-                'sion_model_class'               		=> 'Schoenstatt\Model\SchoenstattTable',
+                'sion_model_class'               		=> SchoenstattTable::class,
                 'get_object_function' 					=> 'getPerson',
                 'get_objects_function'               	=> 'getPersons',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1373,12 +1406,12 @@ return [
                 'show_route' 							=> 'persons/person',
                 'show_route_key' 						=> 'person_id',
                 'show_route_key_field' 					=> 'personId',
-                'edit_action_form'               		=> 'Schoenstatt\Form\PersonForm',
+                'edit_action_form'               		=> PersonForm::class,
 //                 'edit_action_template'               	=> 'project/events/edit',
                 'edit_route'               				=> 'persons/person/edit',
                 'edit_route_key'               			=> 'person_id',
                 'edit_route_key_field'           		=> 'personId',
-                'create_action_form'              		=> 'Schoenstatt\Form\PersonForm',
+                'create_action_form'              		=> PersonForm::class,
                 'create_action_valid_data_handler'		=> 'createPerson',
                 'create_action_redirect_route'         	=> 'persons/person',
                 'create_action_redirect_route_key'    	=> 'person_id',
@@ -1477,7 +1510,7 @@ return [
                 'table_name'                            => 'sch_associations',
                 'table_key'                             => 'AssociationId',
                 'entity_key_field'                      => 'associationId',
-                'sion_model_class'                      => 'Schoenstatt\Model\SchoenstattTable',
+                'sion_model_class'                      => SchoenstattTable::class,
                 'get_object_function'                   => 'getSimpleBook',
                 'get_objects_function'                  => 'getAssociations',
                 'name_field'                            => 'associationName',
@@ -1496,12 +1529,12 @@ return [
                 'show_route'                            => 'associations/association',
                 'show_route_key'                        => 'association_id',
                 'show_route_key_field'                  => 'associationId',
-                'edit_action_form'                      => 'Schoenstatt\Form\AssociationForm',
+                'edit_action_form'                      => AssociationForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
                 'edit_route'                            => 'associations/association/edit',
                 'edit_route_key'                        => 'association_id',
                 'edit_route_key_field'                  => 'associationId',
-                'create_action_form'                    => 'Schoenstatt\Form\AssociationForm',
+                'create_action_form'                    => AssociationForm::class,
 //                 'create_action_valid_data_handler'      => 'createAssociation',
                 'create_action_redirect_route'          => 'associations/association',
                 'create_action_redirect_route_key'      => 'association_id',
@@ -1636,7 +1669,7 @@ return [
                 'table_name' 							=> 'sch_roles',
                 'table_key' 							=> 'RoleId',
                 'entity_key_field'               		=> 'roleId',
-                'sion_model_class'               		=> 'Schoenstatt\Model\SchoenstattTable',
+                'sion_model_class'               		=> SchoenstattTable::class,
                 'get_object_function' 					=> 'getRole',
                 'get_objects_function'               	=> 'getRoles',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1658,12 +1691,12 @@ return [
                 'show_route' 							=> 'associations/association',
                 'show_route_key' 						=> 'association_id',
                 'show_route_key_field' 					=> 'associationId',
-                'edit_action_form'               		=> 'Schoenstatt\Form\RoleForm',
+                'edit_action_form'               		=> RoleForm::class,
 //                 'edit_action_template'               	=> 'project/events/edit',
                 'edit_route'               				=> 'roles/role/edit',
                 'edit_route_key'               			=> 'role_id',
                 'edit_route_key_field'           		=> 'roleId',
-                'create_action_form'              		=> 'Schoenstatt\Form\RoleForm',
+                'create_action_form'              		=> RoleForm::class,
 //                 'create_action_valid_data_handler'		=> 'createEvent',
                 'create_action_redirect_route'         	=> 'associations/association',
                 'create_action_redirect_route_key'    	=> 'association_id',
@@ -1704,7 +1737,7 @@ return [
                 'table_name' 							=> 'sch_assignments',
                 'table_key' 							=> 'AssignmentId',
                 'entity_key_field'               		=> 'assignmentId',
-                'sion_model_class'               		=> 'Schoenstatt\Model\SchoenstattTable',
+                'sion_model_class'               		=> SchoenstattTable::class,
                 'get_object_function' 					=> 'getAssignment',
                 'get_objects_function'               	=> 'getAssignments',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1731,7 +1764,7 @@ return [
                 'edit_route'               				=> 'assignments/assignment/edit',
                 'edit_route_key'               			=> 'assignment_id',
                 'edit_route_key_field'           		=> 'assignmentId',
-                'create_action_form'              		=> 'Schoenstatt\Form\AssignmentForm',
+                'create_action_form'              		=> AssignmentForm::class,
 //                 'create_action_valid_data_handler'		=> 'createEvent',
                 'create_action_redirect_route'         	=> 'associations/association',
                 'create_action_redirect_route_key'    	=> 'association_id',

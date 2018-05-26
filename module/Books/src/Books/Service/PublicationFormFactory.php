@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Form\PublicationForm;
 use Books\Model\PublicationsTable;
 use Matriphe\ISO639\ISO639;
@@ -13,17 +13,19 @@ use Matriphe\ISO639\ISO639;
 class PublicationFormFactory extends ISO639 implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var PublicationsTable $table **/
-		$table = $serviceLocator->get ( 'Books\Model\PublicationsTable' );
+		$table = $container->get (PublicationsTable::class);
 
 		$authors = $table->getAuthorsValueOptions();
 		$authorsOnlyPersons = $table->getAuthorsNoAssociationsValueOptions();
 		$publishers = $table->getPublishersValueOptions();
-		$config = $serviceLocator->get('Books\Config');
+		$config = $container->get('Books\Config');
 
 		$languages = $this->getLanguageValueOptions();//$config['language_value_options'];
 

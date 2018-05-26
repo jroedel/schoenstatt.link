@@ -132,7 +132,7 @@ class AssociationsController extends SionController
         /** @var SchoenstattTable $table */
         $table = $this->getSionTable();
         /** @var CountriesInfo $countryInfo */
-        $countryInfo = $this->getServiceLocator()->get('CountriesInfo');
+        $countryInfo = $this->getServiceLocator()->get(CountriesInfo::class);
         $countryNames = $countryInfo->getCountryNames();
         $entities = $table->getAssociations();
         $return = [];

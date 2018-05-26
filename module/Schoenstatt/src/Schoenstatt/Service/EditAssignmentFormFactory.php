@@ -1,10 +1,10 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Schoenstatt\Form\AssociationForm;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AssignmentForm;
+use Schoenstatt\Model\SchoenstattTable;
 
 /**
  * Factory responsible of prepping the AssignmentForm
@@ -14,16 +14,14 @@ use Schoenstatt\Form\AssignmentForm;
 class EditAssignmentFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return AssociationForm
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var \Schoenstatt\Model\SchoenstattTable $table */
-        $table = $serviceLocator->get('Schoenstatt\Model\SchoenstattTable');
         /** @var AssignmentForm $form */
-		$form = $serviceLocator->get('Schoenstatt\Form\AssignmentForm');
+		$form = $container->get(AssignmentForm::class);
 
 		$form->prepareforEdit();
 		return $form;

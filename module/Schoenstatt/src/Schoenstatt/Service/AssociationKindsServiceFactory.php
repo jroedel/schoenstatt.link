@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 
 /**
  * Factory responsible of constructing the central collection of AssociationKind specs
@@ -12,19 +12,19 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 class AssociationKindsServiceFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $config = $serviceLocator->get('Schoenstatt\Config');
+        $config = $container->get('Schoenstatt\Config');
         if (!key_exists('association_kinds', $config)) {
             throw new \Exception('No association configuration defined!');
         }
 
         $kindsConfig = $config['association_kinds'];
-        $translator = $serviceLocator->get('translator');
+        $translator = $container->get('translator');
         $kindsService = new AssociationKindsService($kindsConfig, $translator);
         return $kindsService;
     }

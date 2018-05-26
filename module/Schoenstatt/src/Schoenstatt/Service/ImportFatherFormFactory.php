@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\ImportFatherForm;
 
 /**
@@ -13,13 +13,13 @@ use Schoenstatt\Form\ImportFatherForm;
 class ImportFatherFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $persons = $serviceLocator->get('Schoenstatt\FathersValueOptions');
+        $persons = $container->get('Schoenstatt\FathersValueOptions');
         $form = new ImportFatherForm();
         $form->get('personId')->setValueOptions($persons);
         return $form;

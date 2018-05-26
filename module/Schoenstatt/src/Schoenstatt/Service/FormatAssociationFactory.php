@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\View\Helper\FormatAssociation;
 
 /**
@@ -13,15 +13,15 @@ use Schoenstatt\View\Helper\FormatAssociation;
 class FormatAssociationFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $parentLocator = $serviceLocator->getServiceLocator();
+        $parentLocator = $container->getServiceLocator();
         /** @var AssociationKindsService $kindsService */
-        $kindsService = $parentLocator->get('Schoenstatt\AssociationKindsService');
+        $kindsService = $parentLocator->get(AssociationKindsService::class);
         $valueOptions= $kindsService->getValueOptions();
 
         $viewHelper = new FormatAssociation($valueOptions);

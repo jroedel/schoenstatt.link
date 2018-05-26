@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Model\LibraryTable;
 use Books\Form\CheckoutForm;
 use Zend\Mvc\Application;
@@ -13,17 +13,19 @@ use Zend\Mvc\Application;
 class CheckoutFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var LibraryTable $table **/
-		$table = $serviceLocator->get ( 'Books\Model\LibraryTable' );
+		$table = $container->get ( 'Books\Model\LibraryTable' );
 
 		/**
 		 * @var Application $application
 		 */
-		$application = $serviceLocator->get('Application');
+		$application = $container->get('Application');
 		$routeMatch = $application->getMvcEvent()->getRouteMatch();
 		$libraryId = $routeMatch->getParam('library_id', null);
 		$libraries = $table->getUnlinkedLibraries();
@@ -32,20 +34,20 @@ class CheckoutFormFactory implements FactoryInterface
         }
         $libraryOptions = $libraries[$libraryId]['options'];
 
-        $schConfig = $serviceLocator->get ( 'Schoenstatt\Config' );
+        $schConfig = $container->get ( 'Schoenstatt\Config' );
         if (!isset($schConfig['person_value_options_providers'])) {
             throw new \Exception('No person_value_options_providers set');
         }
         $providers = $schConfig['person_value_options_providers'];
         if (!isset($providers[$libraryOptions->checkoutPersonListKind]) ||
             !isset($providers[$libraryOptions->checkoutPersonListKind]['target']) ||
-            !$serviceLocator->has($providers[$libraryOptions->checkoutPersonListKind]['target'])
+            !$container->has($providers[$libraryOptions->checkoutPersonListKind]['target'])
         ) {
             throw new \Exception('Improper checkout person list kind configuration');
         }
 		$form = new CheckoutForm();
 
-		$persons = $serviceLocator->get ($providers[$libraryOptions->checkoutPersonListKind]['target']);
+		$persons = $container->get ($providers[$libraryOptions->checkoutPersonListKind]['target']);
         $form->get('personId')->setValueOptions($persons);
 
 		return $form;

@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Form\LibraryForm;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
@@ -13,17 +13,19 @@ use Books\Model\LibraryTable;
 class LibraryFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
 		/** @var SchoenstattTable $schoenstattTable **/
-		$schoenstattTable= $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
+		$schoenstattTable= $container->get (SchoenstattTable::class);
 
 		$persons = $schoenstattTable->getPersonValueOptions();
-		$config = $serviceLocator->get('Books\Config');
+		$config = $container->get('Books\Config');
 
-		$schConfig = $serviceLocator->get('Schoenstatt\Config');
+		$schConfig = $container->get('Schoenstatt\Config');
 		$personValueOptionsOptions = [];
 		foreach ($schConfig['person_value_options_providers'] as $key => $options) {
 		    if (!isset($options['label'])) {
@@ -32,8 +34,7 @@ class LibraryFormFactory implements FactoryInterface
 		    $personValueOptionsOptions[$key] = $options['label'];
 		}
 
-		/** @var LibraryTable $table */
-		$table = $serviceLocator->get('Books\Model\LibraryTable');
+		$table = $container->get(LibraryTable::class);
 		$collections = $table->getCollectionValueOptions();
 
         $form = new LibraryForm();

@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Books\Form\PublicationsSearchForm;
 
 /**
@@ -11,11 +11,13 @@ use Books\Form\PublicationsSearchForm;
 class PublicationsSearchFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-		$languages = $serviceLocator->get('Books\LanguagesValueOptions');
+		$languages = $container->get('Books\LanguagesValueOptions');
 
 		$form = new PublicationsSearchForm();
 		$form->get('inLanguage')->setValueOptions($languages);

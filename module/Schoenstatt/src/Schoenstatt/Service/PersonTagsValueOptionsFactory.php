@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
@@ -12,13 +12,13 @@ use Zend\ServiceManager\ServiceLocatorInterface;
 class PersonTagsValueOptionsFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $config = $serviceLocator->get('Config')['schoenstatt'];
+        $config = $container->get('Config')['schoenstatt'];
 
         $tagLabels = [];
         foreach ($config['person_tags'] as $key => $value) {

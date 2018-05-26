@@ -1,8 +1,8 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Matriphe\ISO639\ISO639;
 
 /**
@@ -11,9 +11,11 @@ use Matriphe\ISO639\ISO639;
 class LanguagesValueOptionsFactory extends ISO639 implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
+     *
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
 		$languages = $this->getLanguageValueOptions();
 		$languages['xx'] = '(none)';

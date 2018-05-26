@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AdvancedSearchForm;
 use Schoenstatt\Model\SchoenstattTable;
 
@@ -13,26 +13,26 @@ use Schoenstatt\Model\SchoenstattTable;
 class AdvancedSearchFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return AdvancedSearchForm
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
+		$table = $container->get ( 'Schoenstatt\Model\SchoenstattTable' );
 		$form = new AdvancedSearchForm();
 		$roleTitles = $table->getRoleTitleValueOptions();
 
 		/** @var AssociationKindsService $kindsService */
-		$kindsService = $serviceLocator->get('Schoenstatt\AssociationKindsService');
+		$kindsService = $container->get(AssociationKindsService::class);
 		$kinds = $kindsService->getValueOptions();
 
 		$form->get('roleTitle')->setValueOptions($roleTitles);
 		$form->get('associationKind')->setValueOptions($kinds);
 
 		//retrieve country names
-		$viewHelperManager = $serviceLocator->get('ViewHelperManager');
+		$viewHelperManager = $container->get('ViewHelperManager');
 		$countryNames = $viewHelperManager->get('countryName');
 		$usedCountries = $table->getCountries();
 		$countries = [];

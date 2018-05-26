@@ -1,7 +1,52 @@
 <?php
+use Zend\Db\Adapter\Adapter;
+use Books\Service\LibraryControllerFactory;
+use Books\Controller\PublicationsController;
+use Books\Controller\LibrariesController;
+use Books\Controller\BooksController;
+use Books\Controller\CheckoutsController;
+use Books\Controller\BorrowersController;
+use Books\Controller\CollectionsController;
+use Books\Controller\LibraryImportsController;
+use Zend\Router\Http\Literal;
+use Zend\Router\Http\Segment;
+use Books\Service\ConfigServiceFactory;
+use Books\Service\PublicationsTableFactory;
+use Books\Model\PublicationsTable;
+use Books\Service\LibraryTableServiceFactory;
+use Books\Model\LibraryTable;
+use Books\Form\SearchForm;
+use Books\Service\SearchFormFactory;
+use Books\Service\LibraryFormFactory;
+use Books\Form\LibraryForm;
+use Books\Form\CollectionForm;
+use Books\Service\CollectionFormFactory;
+use Books\Service\CheckoutFormFactory;
+use Books\Service\PublicationsSearchFormFactory;
+use Books\Form\PublicationsSearchForm;
+use Books\Form\BookForm;
+use Books\Service\BookFormFactory;
+use Books\Service\FathersObjectsFactory;
+use Books\Service\BorrowersValueOptionsService;
+use Books\Service\AuthorsValueOptionsService;
+use Books\Service\LanguagesValueOptionsFactory;
+use Books\Service\BooksMailerFactory;
+use Books\Mailing\BooksMailer;
+use Books\Service\PublicationFormFactory;
+use Books\Form\PublicationForm;
+use Books\Service\FormatPublicationFactory;
+use Books\View\Helper\FormatPublicationUrlObject;
+use Books\View\Helper\FormatField;
+use Books\View\Helper\BooksJsonLd;
+use Books\View\Helper\FormSelectWithoutOptions;
+use Books\Form\ImportForm;
+use Schoenstatt\Model\SchoenstattTable;
+use BjyAuthorize\Guard\Route;
+use BjyAuthorize\Provider\Rule\Config;
+
 return [
     'books' => [
-        'books_db_adapter' => 'Zend\Db\Adapter\Adapter',
+        'books_db_adapter' => Adapter::class,
         'book_format_type_value_options' => [
             'AudiobookFormat'   => 'AudiobookFormat',
             'EBook'             => 'EBook',
@@ -156,49 +201,48 @@ return [
             ],
         ],
     ],
-    'controllers' => [
-        'factories' => [
-            'Books\Controller\Library'      => 'Books\Service\LibraryControllerFactory',
-        ],
-        'invokables' => [
-            'Books\Controller\Publications' => 'Books\Controller\PublicationsController',
-            'Books\Controller\Library'      => 'Books\Controller\LibraryController',
-            'Books\Controller\Libraries'    => 'Books\Controller\LibrariesController',
-            'Books\Controller\Books'        => 'Books\Controller\BooksController',
-            'Books\Controller\Checkouts'    => 'Books\Controller\CheckoutsController',
-            'Books\Controller\Borrowers'    => 'Books\Controller\BorrowersController',
-            'Books\Controller\Collections'  => 'Books\Controller\CollectionsController',
-            'Books\Controller\LibraryImports'=>'Books\Controller\LibraryImportsController',
-        ],
-    ],
+     'controllers' => [
+//         'invokables' => [
+//             PublicationsController::class   => PublicationsController::class,
+//             LibrariesController::class      => LibrariesController::class,
+//             BooksController::class          => BooksController::class,
+//             CheckoutsController::class      => CheckoutsController::class,
+//             BorrowersController::class      => BorrowersController::class,
+//             CollectionsController::class    => CollectionsController::class,
+//             LibraryImportsController::class => LibraryImportsController::class,
+//         ],
+         'abstract_factories' => [
+             \Books\Controller\LazyControllerFactory::class,
+         ],
+     ],
     'service_manager' => [
         'factories' => [
-            'Books\Config'                      => 'Books\Service\ConfigServiceFactory',
-            'Books\Model\PublicationsTable'     => 'Books\Service\PublicationsTableFactory',
-            'Books\Model\LibraryTable'          => 'Books\Service\LibraryTableServiceFactory',
-            'Books\Form\SearchForm'             => 'Books\Service\SearchFormFactory',
-            'Books\Form\LibraryForm'            => 'Books\Service\LibraryFormFactory',
-            'Books\Form\CollectionForm'         => 'Books\Service\CollectionFormFactory',
-            'Books\Form\CreateCheckoutForm'     => 'Books\Service\CheckoutFormFactory',
-            'Books\Form\PublicationForm'        => 'Books\Service\PublicationFormFactory',
-            'Books\Form\PublicationsSearchForm' => 'Books\Service\PublicationsSearchFormFactory',
-            'Books\Form\BookForm'               => 'Books\Service\BookFormFactory',
-            'Books\FathersObjects'              => 'Books\Service\FathersObjectsFactory',
-            'Books\BorrowersValueOptions'       => 'Books\Service\BorrowersValueOptionsService',
-            'Books\AuthorsValueOptions'         => 'Books\Service\AuthorsValueOptionsService',
-            'Books\LanguagesValueOptions'       => 'Books\Service\LanguagesValueOptionsFactory',
-            'Books\BooksMailer'                 => 'Books\Service\BooksMailerFactory',
+            'Books\Config'                  => ConfigServiceFactory::class,
+            PublicationsTable::class        => PublicationsTableFactory::class,
+            LibraryTable::class             => LibraryTableServiceFactory::class,
+            SearchForm::class               => SearchFormFactory::class,
+            LibraryForm::class              => LibraryFormFactory::class,
+            CollectionForm::class           => CollectionFormFactory::class,
+            'Books\Form\CreateCheckoutForm' => CheckoutFormFactory::class,
+            PublicationForm::class          => PublicationFormFactory::class,
+            PublicationsSearchForm::class   => PublicationsSearchFormFactory::class,
+            BookForm::class                 => BookFormFactory::class,
+            'Books\FathersObjects'          => FathersObjectsFactory::class,
+            'Books\BorrowersValueOptions'   => BorrowersValueOptionsService::class,
+            'Books\AuthorsValueOptions'     => AuthorsValueOptionsService::class,
+            'Books\LanguagesValueOptions'   => LanguagesValueOptionsFactory::class,
+            BooksMailer::class              => BooksMailerFactory::class,
         ],
     ],
     'view_helpers' => [
         'factories' => [
-            'formatPublication'             => 'Books\Service\FormatPublicationFactory',
+            'formatPublication'             => FormatPublicationFactory::class,
         ],
         'invokables' => [
-            'formatPublicationUrlObject'    => 'Books\View\Helper\FormatPublicationUrlObject',
-            'formatField'                   => 'Books\View\Helper\FormatField',
-            'booksJsonLd'                   => 'Books\View\Helper\BooksJsonLd',
-            'formSelectWithoutOptions'      => 'Books\View\Helper\FormSelectWithoutOptions',
+            'formatPublicationUrlObject'    => FormatPublicationUrlObject::class,
+            'formatField'                   => FormatField::class,
+            'booksJsonLd'                   => BooksJsonLd::class,
+            'formSelectWithoutOptions'      => FormSelectWithoutOptions::class,
         ],
     ],
     'known_issues' => [ //possible keys: description, completed
@@ -223,18 +267,18 @@ return [
     'router' => [
         'routes' => [
             'publications' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     'route'    => '/literature',
                     'defaults' => [
-                        'controller' => 'Books\Controller\Publications',
+                        'controller' => PublicationsController::class,
                         'action'     => 'languageIndex',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'index' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:inLanguage',
                             'constraints' => [
@@ -246,7 +290,7 @@ return [
                         ],
                     ],
                     'export' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/export',
                             'defaults' => [
@@ -255,7 +299,7 @@ return [
                         ],
                     ],
                     'prime-authors' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/prime-authors',
                             'defaults' => [
@@ -264,7 +308,7 @@ return [
                         ],
                     ],
                     'trim-titles' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/trim-titles',
                             'defaults' => [
@@ -273,7 +317,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
@@ -282,7 +326,7 @@ return [
                         ],
                     ],
                     'import' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/import',
                             'defaults' => [
@@ -291,7 +335,7 @@ return [
                         ],
                     ],
                     'search' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/search',
                             'defaults' => [
@@ -300,7 +344,7 @@ return [
                         ],
                     ],
                     'publication' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:publication_id',
                             'constraints' => [
@@ -313,7 +357,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'create-new-edition' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/create-new-edition',
                                     'defaults' => [
@@ -322,7 +366,7 @@ return [
                                 ],
                             ],
                             'upload-cover' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/upload-cover',
                                     'defaults' => [
@@ -331,7 +375,7 @@ return [
                                 ],
                             ],
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -340,7 +384,7 @@ return [
                                 ],
                             ],
                             'delete' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/delete',
                                     'defaults' => [
@@ -349,7 +393,7 @@ return [
                                 ],
                             ],
                             'suggest' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/suggest',
                                     'defaults' => [
@@ -358,7 +402,7 @@ return [
                                 ],
                             ],
                             'moderate' => [
-                                'type'    => 'Segment',
+                                'type'    => Segment::class,
                                 'options' => [
                                     'route'    => '/moderate/:suggestion_id',
                                     'constraints' => [
@@ -374,17 +418,17 @@ return [
                 ],
             ],
             'books' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/books',
                     'defaults' => [
-                        'controller' => 'Books\Controller\Books',
+                        'controller' => BooksController::class,
                     ],
                 ],
                 'may_terminate' => false,
                 'child_routes' => [
                     'book' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:book_id',
                             'constraints' => [
@@ -397,7 +441,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -408,7 +452,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/create/:library_id',
                             'constraints' => [
@@ -422,18 +466,18 @@ return [
                 ],
             ],
             'libraries' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/libraries',
                     'defaults' => [
-                        'controller' => 'Books\Controller\Libraries',
+                        'controller' => LibrariesController::class,
                         'action'     => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'library' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:library_id',
                             'constraints' => [
@@ -446,7 +490,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -455,7 +499,7 @@ return [
                                 ],
                             ],
                             'delete' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/delete',
                                     'defaults' => [
@@ -464,77 +508,77 @@ return [
                                 ],
                             ],
                             'checkout' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/checkout',
                                     'defaults' => [
                                         'action'     => 'create',
-                                        'controller' => 'Books\Controller\Checkouts',
+                                        'controller' => CheckoutsController::class,
                                     ],
                                 ],
                             ],
                             'checkin' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/checkin',
                                     'defaults' => [
                                         'action'     => 'checkin',
-                                        'controller' => 'Books\Controller\Checkouts',
+                                        'controller' => CheckoutsController::class,
                                     ],
                                 ],
                             ],
                             'mass-checkout' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/mass-checkout',
                                     'defaults' => [
                                         'action'     => 'massCheckout',
-                                        'controller' => 'Books\Controller\Checkouts',
+                                        'controller' => CheckoutsController::class,
                                     ],
                                 ],
                             ],
                             'label-management' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/label-management',
                                     'defaults' => [
                                         'action'     => 'labelManagement',
-                                        'controller' => 'Books\Controller\Libraries',
+                                        'controller' => LibrariesController::class,
                                     ],
                                 ],
                             ],
                             'batch-operations' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/batch-operations',
                                     'defaults' => [
                                         'action'     => 'batchOperations',
-                                        'controller' => 'Books\Controller\Libraries',
+                                        'controller' => LibrariesController::class,
                                     ],
                                 ],
                             ],
                             'send-book-notices' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/send-book-notices',
                                     'defaults' => [
                                         'action'     => 'sendBookNotices',
-                                        'controller' => 'Books\Controller\Libraries',
+                                        'controller' => LibrariesController::class,
                                     ],
                                 ],
                             ],
                             'inactivate-books' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/inactivate-books',
                                     'defaults' => [
                                         'action'     => 'inactivateBooks',
-                                        'controller' => 'Books\Controller\Libraries',
+                                        'controller' => LibrariesController::class,
                                     ],
                                 ],
                             ],
                             'admin' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/admin',
                                     'defaults' => [
@@ -543,7 +587,7 @@ return [
                                 ],
                             ],
                             'import' => [
-                                'type' => 'Literal',
+                                'type' => Literal::class,
                                 'options' => [
                                     'route'    => '/import',
                                     'defaults' => [
@@ -552,7 +596,7 @@ return [
                                 ],
                             ],
                             'book-list' => [
-                                'type' => 'Literal',
+                                'type' => Literal::class,
                                 'options' => [
                                     'route'    => '/book-list',
                                     'defaults' => [
@@ -561,7 +605,7 @@ return [
                                 ],
                             ],
                             'book-list-json' => [
-                                'type' => 'Literal',
+                                'type' => Literal::class,
                                 'options' => [
                                     'route'    => '/book-list-json',
                                     'defaults' => [
@@ -572,7 +616,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
@@ -583,18 +627,18 @@ return [
                 ],
             ],
             'borrowers' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/borrowers',
                     'defaults' => [
-                        'controller'=> 'Books\Controller\Borrowers',
+                        'controller'=> BorrowersController::class,
                         'action'    => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'borrower' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:person_id',
                             'constraints' => [
@@ -606,7 +650,7 @@ return [
                         ],
                     ],
                     'fix-person-id' => [ //We will never show all imports at once, just per-library
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/fix-person-id',
                             'defaults' => [
@@ -617,17 +661,17 @@ return [
                 ],
             ],
             'library-imports' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/library-imports',
                     'defaults' => [
-                        'controller'=> 'Books\Controller\LibraryImports',
+                        'controller'=> LibraryImportsController::class,
                     ],
                 ],
                 'may_terminate' => false,
                 'child_routes' => [
                     'library' => [ //We will never show all imports at once, just per-library
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/library/:library_id',
                             'constraints' => [
@@ -640,7 +684,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'create' => [ //We will never show all imports at once, just per-library
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/create',
                                     'defaults' => [
@@ -651,7 +695,7 @@ return [
                         ],
                     ],
                     'library-import' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:import_id',
                             'constraints' => [
@@ -664,7 +708,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -673,7 +717,7 @@ return [
                                 ],
                             ],
                             'cancel' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/cancel',
                                     'defaults' => [
@@ -686,18 +730,18 @@ return [
                 ],
             ],
             'checkouts' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/checkouts',
                     'defaults' => [
-                        'controller'=> 'Books\Controller\Checkouts',
+                        'controller'=> CheckoutsController::class,
                         'action'    => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'checkout' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:checkout_id',
                             'constraints' => [
@@ -710,7 +754,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -721,7 +765,7 @@ return [
                         ],
                     ],
                     'library' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/library/:library_id',
                             'constraints' => [
@@ -736,7 +780,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'current' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/current',
                                     'defaults' => [
@@ -745,7 +789,7 @@ return [
                                 ],
                             ],
                             'overdue' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/overdue',
                                     'defaults' => [
@@ -758,17 +802,17 @@ return [
                 ],
             ],
             'collections' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/collections',
                     'defaults' => [
-                        'controller' => 'Books\Controller\Collections',
+                        'controller' => CollectionsController::class,
                     ],
                 ],
                 'may_terminate' => false,
                 'child_routes' => [
                     'collection' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:collection_id',
                             'constraints' => [
@@ -778,7 +822,7 @@ return [
                         'may_terminate' => false,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -789,7 +833,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/create/:library_id',
                             'constraints' => [
@@ -811,7 +855,7 @@ return [
                 'table_name' 							=> 'lib_libraries',
                 'table_key' 							=> 'LibraryId',
                 'entity_key_field'               		=> 'libraryId',
-                'sion_model_class'               		=> 'Books\Model\LibraryTable',
+                'sion_model_class'               		=> LibraryTable::class,
                 'get_object_function' 					=> 'getLibrary',
                 'get_objects_function'               	=> 'getUnlinkedLibraries',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -829,12 +873,12 @@ return [
                 'show_route' 							=> 'libraries/library',
                 'show_route_key' 						=> 'library_id',
                 'show_route_key_field' 					=> 'libraryId',
-                'edit_action_form'               		=> 'Books\Form\LibraryForm',
+                'edit_action_form'               		=> LibraryForm::class,
 //                 'edit_action_template'               	=> 'libraries/library/edit',
                 'edit_route'               				=> 'libraries/library/edit',
                 'edit_route_key'               			=> 'library_id',
                 'edit_route_key_field'           		=> 'libraryId',
-                'create_action_form'              		=> 'Books\Form\LibraryForm',
+                'create_action_form'              		=> LibraryForm::class,
 //                 'create_action_valid_data_handler'		=> 'createEvent',
                 'create_action_redirect_route'         	=> 'libraries/library',
                 'create_action_redirect_route_key'    	=> 'library_id',
@@ -904,7 +948,7 @@ return [
                 'table_name'                                => 'lib_imports',
                 'table_key'                                 => 'ImportId',
                 'entity_key_field'                          => 'importId',
-                'sion_model_class'                          => 'Books\Model\LibraryTable',
+                'sion_model_class'                          => LibraryTable::class,
                 'get_object_function'                       => 'getLibraryImport',
                 'get_objects_function'                      => 'getLibraryImports',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -929,12 +973,12 @@ return [
                 'show_route'                                => 'library-imports/library-import',
                 'show_route_key'                            => 'import_id',
                 'show_route_key_field'                      => 'importId',
-                'edit_action_form'                          => 'Books\Form\ImportForm',
+                'edit_action_form'                          => ImportForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'library-imports/library-import/edit',
                 'edit_route_key'                            => 'import_id',
                 'edit_route_key_field'                      => 'importId',
-                'create_action_form'                        => 'Books\Form\ImportForm',
+                'create_action_form'                        => ImportForm::class,
 //                 'create_action_valid_data_handler'          => 'createEvent',
                 'create_action_redirect_route'              => 'library-imports/library-import/edit',
                 'create_action_redirect_route_key'          => 'import_id',
@@ -985,7 +1029,7 @@ return [
                 'table_name'                                => 'lib_books',
                 'table_key'                                 => 'book_id',
                 'entity_key_field'                          => 'bookId',
-                'sion_model_class'                          => 'Books\Model\LibraryTable',
+                'sion_model_class'                          => LibraryTable::class,
                 'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -1010,12 +1054,12 @@ return [
                 'show_route'                                => 'books/book',
                 'show_route_key'                            => 'book_id',
                 'show_route_key_field'                      => 'bookId',
-                'edit_action_form'                          => 'Books\Form\BookForm',
+                'edit_action_form'                          => BookForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'books/book/edit',
                 'edit_route_key'                            => 'book_id',
                 'edit_route_key_field'                      => 'bookId',
-                'create_action_form'                        => 'Books\Form\BookForm',
+                'create_action_form'                        => BookForm::class,
 //                 'create_action_valid_data_handler'          => 'createEvent',
                 'create_action_redirect_route'              => 'books/book',
                 'create_action_redirect_route_key'          => 'book_id',
@@ -1086,7 +1130,7 @@ return [
                 'table_name' 							=> 'lib_checkouts',
                 'table_key' 							=> 'CheckoutId',
                 'entity_key_field'               		=> 'checkoutId',
-                'sion_model_class'               		=> 'Books\Model\LibraryTable',
+                'sion_model_class'               		=> LibraryTable::class,
                 'get_object_function' 					=> 'getCheckout',
                 'get_objects_function'               	=> 'getCheckouts',
                 'required_columns_for_creation' 		=> [
@@ -1162,7 +1206,7 @@ return [
                 'table_name' 							=> 'sch_publications',
                 'table_key' 							=> 'PublicationId',
                 'entity_key_field'               		=> 'publicationId',
-                'sion_model_class'               		=> 'Books\Model\PublicationsTable',
+                'sion_model_class'               		=> PublicationsTable::class,
                 'get_object_function' 					=> 'getPublication',
                 'get_objects_function'               	=> 'getPublications',
                 'format_view_helper'                    => 'formatPublication',
@@ -1179,7 +1223,7 @@ return [
 //                 ],
                 'report_changes'               			=> true,
 
-                'acl_resource_id_field'                     => 'resourceId',
+                'acl_resource_id_field'                 => 'resourceId',
                 'acl_show_permission'                   => 'show',
                 'acl_edit_permission'                   => 'edit',
                 'acl_suggest_permission'                => 'suggest',
@@ -1193,12 +1237,12 @@ return [
                 'show_route' 							=> 'publications/publication',
                 'show_route_key' 						=> 'publication_id',
                 'show_route_key_field' 					=> 'publicationId',
-                'edit_action_form'               		=> 'Books\Form\PublicationForm',
+                'edit_action_form'               		=> PublicationForm::class,
 //                 'edit_action_template'               	=> 'project/events/edit',
                 'edit_route'               				=> 'publications/publication/edit',
                 'edit_route_key'               			=> 'publication_id',
                 'edit_route_key_field'           		=> 'publicationId',
-                'create_action_form'              		=> 'Books\Form\PublicationForm',
+                'create_action_form'              		=> PublicationForm::class,
 //                 'create_action_valid_data_handler'		=> 'createEvent',
                 'create_action_redirect_route'         	=> 'publications/publication',
                 'create_action_redirect_route_key'    	=> 'publication_id',
@@ -1309,7 +1353,7 @@ return [
                 'table_name'                                => 'lib_collections',
                 'table_key'                                 => 'CollectionId',
                 'entity_key_field'                          => 'collectionId',
-                'sion_model_class'                          => 'Books\Model\LibraryTable',
+                'sion_model_class'                          => LibraryTable::class,
                 'get_object_function'                       => 'getSimpleCollection',
                 'get_objects_function'                      => 'getUnlinkedCollections',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -1333,12 +1377,12 @@ return [
                 'show_route'                                => 'libraries/library',
                 'show_route_key'                            => 'library_id',
                 'show_route_key_field'                      => 'libraryId',
-                'edit_action_form'                          => 'Books\Form\CollectionForm',
+                'edit_action_form'                          => CollectionForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'collections/collection/edit',
                 'edit_route_key'                            => 'collection_id',
                 'edit_route_key_field'                      => 'collectionId',
-                'create_action_form'                        => 'Books\Form\CollectionForm',
+                'create_action_form'                        => CollectionForm::class,
 //                 'create_action_valid_data_handler'          => 'createEvent',s
                 'create_action_redirect_route'              => 'libraries/library',
                 'create_action_redirect_route_key'          => 'library_id',
@@ -1395,7 +1439,7 @@ return [
                 'table_name'                                => 'sch_persons',
                 'table_key'                                 => 'PersonId',
                 'entity_key_field'                          => 'personId',
-                'sion_model_class'                          => 'Schoenstatt\Model\SchoenstattTable',
+                'sion_model_class'                          => SchoenstattTable::class,
                 'get_object_function'                       => 'getPerson',
                 'get_objects_function'                      => 'getPersons',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -1454,7 +1498,7 @@ return [
         // resource providers provide a list of resources that will be tracked
         // in the ACL. like roles, they can be hierarchical
         'resource_providers' => [
-           'BjyAuthorize\Provider\Resource\Config' => [
+           \BjyAuthorize\Provider\Resource\Config::class => [
                'book',
                'book_teo',
                'book_sch',
@@ -1464,7 +1508,7 @@ return [
                'publication_public',
                'view_checkout_person', //see who has a library book
            ],
-           'Books\Model\LibraryTable' => 'Books\Model\LibraryTable'
+           LibraryTable::class => LibraryTable::class
          ],
 
         /* rules can be specified here with the format:
@@ -1474,7 +1518,7 @@ return [
         * *if you use assertions, define them using the service manager!*
         */
         'rule_providers' => [
-            'BjyAuthorize\Provider\Rule\Config' => [
+            Config::class => [
                 'allow' => [
                     [['pub_patres', 'pub_general_moderator'], 'publication_patres', 'show'],
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'show-admin-info'],
@@ -1501,10 +1545,10 @@ return [
                     [['lib_patres'], 'view_checkout_person'],
                 ],
             ],
-            'Books\Model\LibraryTable' => 'Books\Model\LibraryTable'
+            LibraryTable::class => LibraryTable::class
         ],
         'guards' => [
-            'BjyAuthorize\Guard\Route' => [
+            Route::class => [
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],

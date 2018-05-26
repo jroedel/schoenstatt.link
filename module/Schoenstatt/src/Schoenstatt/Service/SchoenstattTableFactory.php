@@ -1,9 +1,11 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
+use JTranslate\Model\CountriesInfo;
+use Zend\Db\Adapter\Adapter;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
@@ -13,25 +15,25 @@ use Schoenstatt\Model\SchoenstattTable;
 class SchoenstattTableFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return array
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $dbAdapter = $serviceLocator->get('Zend\Db\Adapter\Adapter');
+        $dbAdapter = $container->get(Adapter::class);
 
-        $config = $serviceLocator->get ( 'Config' );
+        $config = $container->get ( 'Config' );
 
 		/** @var  User $userService **/
-		$userService = $serviceLocator->get('zfcuser_user_service');
+		$userService = $container->get('zfcuser_user_service');
 		$user = $userService->getAuthService()->getIdentity();
 		$actingUserId = $user ? $user->id : null;
 
 		/** @var \JTranslate\Model\CountriesInfo */
-		$countriesInfo = $serviceLocator->get('CountriesInfo');
+		$countriesInfo = $container->get(CountriesInfo::class);
 
-		$table = new SchoenstattTable($dbAdapter, $serviceLocator, $actingUserId, $config['schoenstatt'], $countriesInfo);
+		$table = new SchoenstattTable($dbAdapter, $container, $actingUserId, $config['schoenstatt'], $countriesInfo);
 		return $table;
     }
 }

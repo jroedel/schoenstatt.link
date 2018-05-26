@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
@@ -16,27 +16,27 @@ use Schoenstatt\Service\AssociationKindsService;
 class AssociationFormFactory implements FactoryInterface
 {
     /**
-     * {@inheritDoc}
+     * Create an object
      *
-     * @return AssociationForm
+     * @inheritdoc
      */
-    public function createService(ServiceLocatorInterface $serviceLocator)
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-		$table = $serviceLocator->get ( 'Schoenstatt\Model\SchoenstattTable' );
+		$table = $container->get (SchoenstattTable::class );
 
 		$associations = $table->getAssociationValueOptions();
 
 		/** @var AssociationKindsService $kindsService */
-		$kindsService = $serviceLocator->get('Schoenstatt\AssociationKindsService');
+		$kindsService = $container->get(AssociationKindsService::class);
 		$kinds = $kindsService->getValueOptions();
 
-		$countryNames = $serviceLocator->get ( 'CountryValueOptions' );
+		$countryNames = $container->get ( 'CountryValueOptions' );
 
 		/** @var FormElementManagerV2Polyfill $formManager */
-		$formManager = $serviceLocator->get('FormElementManager');
+		$formManager = $container->get('FormElementManager');
 		/** @var \Schoenstatt\Form\AssociationForm $form */
-		$form = $formManager->get('Schoenstatt\Form\AssociationForm', [], true);
+		$form = $formManager->get(AssociationForm::class, [], true);
 
 		$form->get('parentId')->setValueOptions($associations);
 		$form->get('kind')->setValueOptions($kinds);

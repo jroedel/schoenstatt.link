@@ -3,11 +3,25 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use BjyAuthorize\Exception\UnAuthorizedException;
+use Books\Model\PublicationsTable;
 
 class BooksController extends SionController
 {
-    public function __construct()
+    /**
+     * @var PublicationsTable $publicationsTable
+     */
+    protected $publicationsTable;
+    
+    /**
+     * @var array $borrowersValueOptions
+     */
+    protected $borrowersValueOptions;
+    
+    public function __construct(PublicationsTable $publicationsTable, array $borrowersValueOptions)
     {
+        $this->publicationsTable = $publicationsTable;
+        //@todo confirm that the value options are being brought in, we'll probably need a factory for this
+        $this->borrowersValueOptions = $borrowersValueOptions;
         return parent::__construct('book');
     }
 
@@ -29,12 +43,12 @@ class BooksController extends SionController
         $table = $this->getSionTable();
         $entity = $table->getBook($view->getVariable('entityId'));
         if (isset($entity['currentCheckout'])) {
-            $borrowers = $this->getServiceLocator()->get('Books\BorrowersValueOptions');
+            $borrowers = $this->borrowersValueOptions;
             $view->setVariable('borrowers', $borrowers);
         }
         if (isset($entity['publicationId'])) {
             /** @var \Books\Model\PublicationsTable $pubTable */
-            $pubTable = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
+            $pubTable = $this->publicationsTable;
             $publication = $pubTable->getPublication($entity['publicationId']);
             $entity['publication'] = $publication;
         }

@@ -12,12 +12,37 @@ namespace Application\Controller;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Carbon\Carbon;
+use Zend\Navigation\Navigation;
+use Books\Model\PublicationsTable;
+use Schoenstatt\Model\SchoenstattTable;
 
 class IndexController extends AbstractActionController
 {
+    /**
+     * @var Navigation $navigation
+     */
+    protected $navigation;
+    
+    /**
+     * @var PublicationsTable $publicationsTable
+     */
+    protected $publicationsTable;
+    
+    /**
+     * 
+     * @var SchoenstattTable $schoenstattTable
+     */
+    protected $schoenstattTable;
+    
+    public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable)
+    {
+        $this->navigation = $navigation;
+        $this->publicationsTable = $publicationsTable;
+        $this->schoenstattTable = $schoenstattTable;
+    }
+    
     public function indexAction()
     {
-        $sm = $this->serviceLocator;
         $changeCounts = $this->get6MonthsChanges();
         return new ViewModel([
             'changeCounts' => $changeCounts,
@@ -36,10 +61,7 @@ class IndexController extends AbstractActionController
 
     public function sitemapAction()
     {
-        $sm = $this->getServiceLocator();
-
-        /** @var \Zend\Navigation\Navigation $navigation */
-        $navigation = $sm->get('navigation');
+        $navigation = $this->navigation;
         $navigation->addPage([
             'label' => 'Home',
             'uri'   => $this->url()->fromRoute('welcome'),
@@ -59,8 +81,7 @@ class IndexController extends AbstractActionController
 
         $pagesByLanguage = [];
 
-        /** @var \Books\Model\PublicationsTable $table */
-        $table = $sm->get('Books\Model\PublicationsTable');
+        $table = $publicationsTable;
         $publications = $table->getUnlinkedPublications();
         foreach ($publications as $publicationId => $object) {
             if ($object['resourceId'] == 'publication_public' && true === $object['isRevisedWithBookInHand']) {
@@ -100,9 +121,8 @@ class IndexController extends AbstractActionController
 
     public function get6MonthsChanges()
     {
-        $sm = $this->serviceLocator;
-        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
-        $pubTable = $sm->get('Books\Model\PublicationsTable');
+        $schTable = $this->schoenstattTable;
+        $pubTable = $this->publicationsTable;
         $cMonth = new Carbon();
         $cMonth->startOfMonth()
             ->subMonths(5);
