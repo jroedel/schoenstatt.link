@@ -15,8 +15,6 @@ return [
         'factories' => [
             'formatBibleVerse'          => 'Bible\Service\FormatBibleVerseFactory',
         ],
-        'invokables' => [
-        ],
     ],
     // The following section is new and should be added to your file
     'router' => [
@@ -98,6 +96,7 @@ return [
     ],
 
     'view_manager' => [
+        'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
             'bible' => __DIR__ . '/../view',
         ],

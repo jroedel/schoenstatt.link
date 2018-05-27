@@ -1656,6 +1656,7 @@ return [
 //         ],
     ],
     'view_manager' => [
+        'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
             'library' => __DIR__ . '/../view',
         ],

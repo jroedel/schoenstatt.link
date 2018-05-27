@@ -123,8 +123,9 @@ return [
         ],
     ],
     'view_manager' => [
+        'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
-            'Schoenstatt' => __DIR__ . '/../view',
+            'schoenstatt' => __DIR__ . '/../view',
         ],
     ],
     'view_helpers' => [
