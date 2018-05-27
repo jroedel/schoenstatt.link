@@ -36,7 +36,8 @@
         "zendframework/zend-navigation": "^2.9",
         "zendframework/zend-authentication": "^2.6",
         "wshafer/assetmanager": "2.0.0-beta2",
-        "roave/security-advisories": "dev-master"
+        "roave/security-advisories": "dev-master",
+        "zendframework/zend-mvc-form": "^1.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
@@ -55,5 +56,16 @@
 	     "type": "vcs",
 	     "url": "https://github.com/jroedel/GoalioRememberMe"
 	   }
-	]
+	],
+	"autoload": {
+    	"psr-4": {
+        	"Application\\": "module/Application/src/",
+        	"Bible\\": "module/Bible/src/",
+        	"Books\\": "module/Books/src/",
+        	"JTranslate\\": "module/JTranslate/src/",
+        	"JUser\\": "module/JUser/src/",
+        	"Schoenstatt\\": "module/Schoenstatt/src/",
+        	"SionModel\\": "module/SionModel/src/"
+    	}
+	}
 }
