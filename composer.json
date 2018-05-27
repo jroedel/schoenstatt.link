@@ -37,7 +37,8 @@
         "zendframework/zend-authentication": "^2.6",
         "wshafer/assetmanager": "2.0.0-beta2",
         "roave/security-advisories": "dev-master",
-        "zendframework/zend-mvc-form": "^1.0"
+        "zendframework/zend-mvc-form": "^1.0",
+        "jroedel/zf-snap-geoip": "^3.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
@@ -55,6 +56,10 @@
 	   {
 	     "type": "vcs",
 	     "url": "https://github.com/jroedel/GoalioRememberMe"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/ZfSnapGeoip"
 	   }
 	],
 	"autoload": {

@@ -18,12 +18,6 @@ use Zend\Filter\StripTags;
 
 class AssociationsController extends SionController
 {
-
-    public function __construct()
-    {
-        parent::__construct('association');
-    }
-
     public function showAction()
     {
         $view = parent::showAction();
@@ -132,7 +126,7 @@ class AssociationsController extends SionController
         /** @var SchoenstattTable $table */
         $table = $this->getSionTable();
         /** @var CountriesInfo $countryInfo */
-        $countryInfo = $this->getServiceLocator()->get(CountriesInfo::class);
+        $countryInfo = $this->services[CountriesInfo::class];
         $countryNames = $countryInfo->getCountryNames();
         $entities = $table->getAssociations();
         $return = [];
@@ -179,9 +173,8 @@ class AssociationsController extends SionController
             ['name' => 'Schoenstatt Movement of Croatia', 'country' => 'HR', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
         ];
 
-        $sm = $this->getServiceLocator ();
         /** @var SchoenstattTable $table */
-        $table = $sm->get ( 'Schoenstatt\Model\SchoenstattTable' );
+        $table = $this->getSionTable();
         foreach ($toImport as $data) {
             $newId = $table->createEntity('association', $data);
             $table->createAssociatedRoles($newId, $data['kind']);

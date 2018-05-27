@@ -14,11 +14,6 @@ class PublicationsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 1000;
 
-    public function __construct()
-    {
-        parent::__construct('publication');
-    }
-
     public function showAction()
     {
         $view = parent::showAction();
@@ -26,7 +21,7 @@ class PublicationsController extends SionController
         if (isset($entityObject['bookCoverFileId'])) {
             $bookCoverFileId = $entityObject['bookCoverFileId'];
             /** @var FilesTable $filesTable */
-            $filesTable = $this->getServiceLocator()->get('SionModel\FilesTable');
+            $filesTable = $this->services[FilesTable::class];
             $entityObject['bookCoverFile'] = $filesTable->getFile($bookCoverFileId);
             $view->setVariable('entity', $entityObject);
         }
@@ -41,8 +36,8 @@ class PublicationsController extends SionController
         $entitySpec = $this->getEntitySpecification();
         $objects    = $table->getPublicationLanguageCounts($this->isAllowed('publication_user', 'show'),
             $this->isAllowed('publication_institute', 'show'), $this->isAllowed('publication_patres', 'show'));
-        $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
-        $languages = $this->getServiceLocator()->get('Books\LanguagesValueOptions');
+        $form = $this->services[PublicationsSearchForm::class];
+        $languages = $this->services['Books\LanguagesValueOptions'];
         $view = new ViewModel([
             'form'      => $form,
             'entity'    => $entity,
@@ -60,9 +55,9 @@ class PublicationsController extends SionController
         $entity     = $this->getEntity();
         $entitySpec = $this->getEntitySpecification();
         $language   = $this->params()->fromRoute('inLanguage');
-        $languages  = $this->getServiceLocator()->get('Books\LanguagesValueOptions');
+        $languages  = $this->services['Books\LanguagesValueOptions'];
         $objects    = $table->searchPublications(['inLanguage' => $language]);
-        $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
+        $form = $this->services[PublicationsSearchForm::class];
         $view = new ViewModel([
             'form'      => $form,
             'language'  => $language,
@@ -137,7 +132,7 @@ class PublicationsController extends SionController
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
-        $form = $this->getServiceLocator()->get('Books\Form\PublicationsSearchForm');
+        $form = $this->services[PublicationsSearchForm::class];
         $form->setData($params);
         $entities = null;
 
@@ -153,9 +148,8 @@ class PublicationsController extends SionController
             $data = $form->getData();
 
             if (!empty($data)) {
-                $sm = $this->getServiceLocator();
                 /** @var PublicationsTable $table */
-                $table = $sm->get('Books\Model\PublicationsTable');
+                $table = $this->getSionTable();
 //                 $data['notAllowed'] = $notAllowed;
                 $data['maxResults'] = self::MAX_SEARCH_RESULTS;
                 $entities = $table->searchPublications($data);
@@ -244,7 +238,7 @@ class PublicationsController extends SionController
                 $data = $form->getData();
                 var_dump($data);
                 /** @var FilesTable $filesTable */
-                $filesTable = $this->getServiceLocator()->get('SionModel\FilesTable');
+                $filesTable = $this->services[FilesTable::class];
                 if (!$newId = $filesTable->createEntity('file', $data)) {
                     //update the publication record
                     $publicationData = [

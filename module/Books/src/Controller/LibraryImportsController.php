@@ -7,6 +7,7 @@ use Books\Model\LibraryTable;
 use Books\Model\LibraryOptions;
 use JTranslate\Controller\Plugin\NowMessenger;
 use BjyAuthorize\Exception\UnAuthorizedException;
+use Books\Model\PublicationsTable;
 
 class LibraryImportsController extends SionController
 {
@@ -37,12 +38,7 @@ class LibraryImportsController extends SionController
         $this->libraryId = $libraryId;
         return $this;
     }
-
-    public function __construct()
-    {
-        return parent::__construct('library-import');
-    }
-
+    
     public function indexAction()
     {
         $libraryId = $this->getLibraryId();
@@ -314,7 +310,7 @@ class LibraryImportsController extends SionController
         if (!empty($publicationIds)) {
             if (!isset($publications)) {
                 /** @var \Books\Model\PublicationsTable $publicationsTable */
-                $publicationsTable = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
+                $publicationsTable = $this->services[PublicationsTable::class];
                 $publications = $publicationsTable->getUnlinkedPublications($publicationIds);
             }
         }

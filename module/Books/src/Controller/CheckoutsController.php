@@ -16,11 +16,6 @@ use BjyAuthorize\Exception\UnAuthorizedException;
 
 class CheckoutsController extends SionController
 {
-    public function __construct()
-    {
-        return parent::__construct('checkout');
-    }
-
     public function createAction()
     {
         $libraryId = $this->getLibraryId();
@@ -70,9 +65,8 @@ class CheckoutsController extends SionController
         $libraryOptions = $library['options'];
         if ($libraryOptions->checkoutPersonListKind == 'patres-sion') {
             //@todo first we should make sure the person exists, and if not create him
-            $sm = $this->getServiceLocator();
             /** @var PatresGateway $patresGateway */
-            $patresGateway = $sm->get('PatresGateway');
+            $patresGateway = $this->services[PatresGateway::class];
             if (false === $personData = $patresGateway->getSchoenstattPersonFromPatresPersonId($data['personId'], true, ['isBorrower' => true])) {
                 throw new \Exception('The person selected was not found.');
             }
@@ -102,17 +96,15 @@ class CheckoutsController extends SionController
             throw new UnAuthorizedException();
         }
 
-        $sm = $this->getServiceLocator();
-
         $subset = $this->params()->fromRoute('subset', 'all');
         //get the checkouts
         /** @var LibraryTable $table */
-        $table = $sm->get('Books\Model\LibraryTable');
+        $table = $this->getSionTable();
         $entities = $table->getCheckoutsForLibrary($libraryId, $subset);
         $library = $table->getLibrary($libraryId);
 
         /** @var SchoenstattTable $schTable */
-        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $schTable = $this->services[SchoenstattTable::class];
         $persons = $schTable->getPersons();
 
         return new ViewModel([
@@ -132,7 +124,6 @@ class CheckoutsController extends SionController
             throw new UnAuthorizedException();
         }
 
-        $sm = $this->getServiceLocator();
         $form = new CheckinForm();
 
         $request = $this->getRequest();
@@ -169,9 +160,8 @@ class CheckoutsController extends SionController
             throw new UnAuthorizedException();
         }
 
-        $sm = $this->getServiceLocator();
         $form = new MassCheckoutForm();
-        $personValueOptions = $sm->get('Books\FathersObjects');
+        $personValueOptions = $this->services['Books\FathersObjects'];
 
         $request = $this->getRequest();
         if ($request->isPost ()) {
@@ -179,7 +169,7 @@ class CheckoutsController extends SionController
             //add value options for validation purposes
             /** @var Select $personIdSelect */
             $personIdSelect = $form->get('checkout')->getTargetElement()->get('personId');
-            $personIdSelect->setValueOptions($sm->get('Schoenstatt\FathersValueOptions'));
+            $personIdSelect->setValueOptions($this->services['Schoenstatt\FathersValueOptions']);
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();

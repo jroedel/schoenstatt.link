@@ -6,11 +6,6 @@ use BjyAuthorize\Exception\UnAuthorizedException;
 
 class CollectionsController extends SionController
 {
-    public function __construct()
-    {
-        return parent::__construct('collection');
-    }
-
     public function createAction()
     {
         $libraryId = $this->params ()->fromRoute ( 'library_id' );

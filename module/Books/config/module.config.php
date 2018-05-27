@@ -43,6 +43,10 @@ use Books\Form\ImportForm;
 use Schoenstatt\Model\SchoenstattTable;
 use BjyAuthorize\Guard\Route;
 use BjyAuthorize\Provider\Rule\Config;
+use Schoenstatt\Service\PatresGateway;
+use JTranslate\Model\TranslationsTable;
+use SionModel\Service\ProblemService;
+use SionModel\Db\Model\FilesTable;
 
 return [
     'books' => [
@@ -211,10 +215,19 @@ return [
 //             CollectionsController::class    => CollectionsController::class,
 //             LibraryImportsController::class => LibraryImportsController::class,
 //         ],
-         'abstract_factories' => [
-             \Books\Controller\LazyControllerFactory::class,
-         ],
-     ],
+        'factories' => [
+             PublicationsController::class   => SionControllerFactory::class,
+             LibrariesController::class      => SionControllerFactory::class,
+             BooksController::class          => SionControllerFactory::class,
+             CheckoutsController::class      => SionControllerFactory::class,
+             BorrowersController::class      => SionControllerFactory::class,
+             CollectionsController::class    => SionControllerFactory::class,
+             LibraryImportsController::class => SionControllerFactory::class,
+        ],
+        'abstract_factories' => [
+            \Books\Controller\LazyControllerFactory::class,
+        ],
+    ],
     'service_manager' => [
         'factories' => [
             'Books\Config'                  => ConfigServiceFactory::class,
@@ -856,6 +869,16 @@ return [
                 'table_key' 							=> 'LibraryId',
                 'entity_key_field'               		=> 'libraryId',
                 'sion_model_class'               		=> LibraryTable::class,
+                'sion_controllers'                      => [LibrariesController::class],
+                'controller_services'                   => [
+                    SearchForm::class,
+                    'Books\BorrowersValueOptions',
+                    SchoenstattTable::class,
+                    TranslationsTable::class,
+                    ProblemService::class,
+                    BooksMailer::class,
+                    PublicationsTable::class,
+                ],
                 'get_object_function' 					=> 'getLibrary',
                 'get_objects_function'               	=> 'getUnlinkedLibraries',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -949,6 +972,10 @@ return [
                 'table_key'                                 => 'ImportId',
                 'entity_key_field'                          => 'importId',
                 'sion_model_class'                          => LibraryTable::class,
+                'sion_controllers'                          => [LibraryImportsController::class],
+                'controller_services'                       => [
+                    PublicationsTable::class,
+                ],
                 'get_object_function'                       => 'getLibraryImport',
                 'get_objects_function'                      => 'getLibraryImports',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -1030,6 +1057,11 @@ return [
                 'table_key'                                 => 'book_id',
                 'entity_key_field'                          => 'bookId',
                 'sion_model_class'                          => LibraryTable::class,
+                'sion_controllers'                          => [BooksController::class],
+                'controller_services'                       => [
+                    'Books\BorrowersValueOptions',
+                    PublicationsTable::class,
+                ],
                 'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -1131,6 +1163,13 @@ return [
                 'table_key' 							=> 'CheckoutId',
                 'entity_key_field'               		=> 'checkoutId',
                 'sion_model_class'               		=> LibraryTable::class,
+                'sion_controllers'                      => [CheckoutsController::class],
+                'controller_services'                   => [
+                    PatresGateway::class,
+                    SchoenstattTable::class,
+                    'Books\FathersObjects',
+                    'Schoenstatt\FathersValueOptions',
+                ],
                 'get_object_function' 					=> 'getCheckout',
                 'get_objects_function'               	=> 'getCheckouts',
                 'required_columns_for_creation' 		=> [
@@ -1207,6 +1246,12 @@ return [
                 'table_key' 							=> 'PublicationId',
                 'entity_key_field'               		=> 'publicationId',
                 'sion_model_class'               		=> PublicationsTable::class,
+                'sion_controllers'                      => [PublicationsController::class],
+                'controller_services'                   => [
+                    FilesTable::class,
+                    PublicationsSearchForm::class,
+                    'Books\LanguagesValueOptions',
+                ],
                 'get_object_function' 					=> 'getPublication',
                 'get_objects_function'               	=> 'getPublications',
                 'format_view_helper'                    => 'formatPublication',
@@ -1354,6 +1399,8 @@ return [
                 'table_key'                                 => 'CollectionId',
                 'entity_key_field'                          => 'collectionId',
                 'sion_model_class'                          => LibraryTable::class,
+                'sion_controllers'                          => [CollectionsController::class],
+                'controller_services'                       => [],
                 'get_object_function'                       => 'getSimpleCollection',
                 'get_objects_function'                      => 'getUnlinkedCollections',
 //                 'format_view_helper'                        => 'formatEvent',
@@ -1440,6 +1487,10 @@ return [
                 'table_key'                                 => 'PersonId',
                 'entity_key_field'                          => 'personId',
                 'sion_model_class'                          => SchoenstattTable::class,
+                'sion_controllers'                          => [BorrowersController::class],
+                'controller_services'                       => [
+                    
+                ],
                 'get_object_function'                       => 'getPerson',
                 'get_objects_function'                      => 'getPersons',
 //                 'format_view_helper'                        => 'formatEvent',
