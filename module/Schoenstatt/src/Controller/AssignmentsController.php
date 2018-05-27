@@ -18,16 +18,6 @@ use Schoenstatt\Form\AdvancedSearchForm;
 
 class AssignmentsController extends SionController
 {
-    protected $schoenstattTable;
-    protected $advancedSearchForm;
-    
-    public function __construct(SchoenstattTable $schoenstattTable, AdvancedSearchForm $advancedSearchForm)
-    {
-        parent::__construct('assignment');
-        $this->schoenstattTable = $schoenstattTable;
-        $this->advancedSearchForm = $advancedSearchForm;
-    }
-
     /**
      * @return \Zend\View\Model\ViewModel
      */
@@ -43,7 +33,7 @@ class AssignmentsController extends SionController
             $data = $form->getData();
 //             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
-                $table = $this->schoenstattTable;
+                $table = $this->getSionTable();
                 $entities = $table->searchEntities($data, ['bypassRequiredParams' => true]);
 //             }
         }
@@ -64,7 +54,7 @@ class AssignmentsController extends SionController
         //make sure we get clean parameters
         $params = $this->params()->fromQuery();
         /** @var AdvancedSearchForm $form */
-        $form = $this->advancedSearchForm;
+        $form = $this->services[AdvancedSearchForm::class];
         $form->setData($params);
         $entities = null;
         //         $showPhotos = false;
@@ -74,7 +64,7 @@ class AssignmentsController extends SionController
 //             unset($data['showPhotos']);
             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
-                $table = $this->schoenstattTable;
+                $table = $this->getSionTable();
                 $entities = $table->searchEntities($data);
             }
         }
@@ -93,7 +83,7 @@ class AssignmentsController extends SionController
         if ($this->getRequest()->isGet()) {
             $queryRoleId = $this->params()->fromQuery('roleId');
             $queryPersonId = $this->params()->fromQuery('personId');
-            if (!is_null($queryRoleId) || !is_null($queryPersonId)) {
+            if (isset($queryRoleId) || isset($queryPersonId)) {
                 /** @var \Schoenstatt\Form\AssignmentForm $form */
                 $form = $view->getVariable('form');
             }

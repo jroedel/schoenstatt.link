@@ -36,6 +36,7 @@ use Schoenstatt\Controller\AssignmentsController;
 use Schoenstatt\Controller\RolesController;
 use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use SionModel\Controller\LazyControllerFactory;
+use SionModel\Controller\SionControllerFactory;
 
 $leagueRoles = [
     [
@@ -100,7 +101,13 @@ return [
 //             AdminController::class          => AdminController::class,
 //             AssignmentsController::class    => AssignmentsController::class,
 //             RolesController::class          => RolesController::class,
-    //         ],
+        //         ],
+//         'factories' => [
+//             PersonsController::class        => SionControllerFactory::class,
+//             AssignmentsController::class    => SionControllerFactory::class,
+//             AssociationsController::class   => SionControllerFactory::class,
+//             RolesController::class          => SionControllerFactory::class,
+//         ],
         'abstract_factories' => [
             \Schoenstatt\Controller\LazyControllerFactory::class,
         ],
@@ -1337,6 +1344,10 @@ return [
                 'table_key' 							=> 'PersonId',
                 'entity_key_field'               		=> 'personId',
                 'sion_model_class'               		=> SchoenstattTable::class,
+                'sion_controllers'                      => [PersonsController::class],
+                'controller_services'                   => [
+                    
+                ],
                 'get_object_function' 					=> 'getPerson',
                 'get_objects_function'               	=> 'getPersons',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1512,6 +1523,10 @@ return [
                 'table_key'                             => 'AssociationId',
                 'entity_key_field'                      => 'associationId',
                 'sion_model_class'                      => SchoenstattTable::class,
+                'sion_controllers'                      => [AssociationsController::class],
+                'controller_services'                   => [
+                    CountriesInfo::class,
+                ],
                 'get_object_function'                   => 'getSimpleBook',
                 'get_objects_function'                  => 'getAssociations',
                 'name_field'                            => 'associationName',
@@ -1671,6 +1686,7 @@ return [
                 'table_key' 							=> 'RoleId',
                 'entity_key_field'               		=> 'roleId',
                 'sion_model_class'               		=> SchoenstattTable::class,
+                'sion_controllers'                      => [RolesController::class],
                 'get_object_function' 					=> 'getRole',
                 'get_objects_function'               	=> 'getRoles',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1739,6 +1755,7 @@ return [
                 'table_key' 							=> 'AssignmentId',
                 'entity_key_field'               		=> 'assignmentId',
                 'sion_model_class'               		=> SchoenstattTable::class,
+                'sion_controllers'                      => [AssignmentsController::class],
                 'get_object_function' 					=> 'getAssignment',
                 'get_objects_function'               	=> 'getAssignments',
 //                 'format_view_helper'                    => 'formatEvent',

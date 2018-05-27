@@ -7,24 +7,6 @@ use Books\Model\PublicationsTable;
 
 class BooksController extends SionController
 {
-    /**
-     * @var PublicationsTable $publicationsTable
-     */
-    protected $publicationsTable;
-    
-    /**
-     * @var array $borrowersValueOptions
-     */
-    protected $borrowersValueOptions;
-    
-    public function __construct(PublicationsTable $publicationsTable, array $borrowersValueOptions)
-    {
-        $this->publicationsTable = $publicationsTable;
-        //@todo confirm that the value options are being brought in, we'll probably need a factory for this
-        $this->borrowersValueOptions = $borrowersValueOptions;
-        return parent::__construct('book');
-    }
-
     public function createAction()
     {
         $resourceId = 'library_'.$this->params ()->fromRoute ( 'library_id' );
@@ -43,12 +25,12 @@ class BooksController extends SionController
         $table = $this->getSionTable();
         $entity = $table->getBook($view->getVariable('entityId'));
         if (isset($entity['currentCheckout'])) {
-            $borrowers = $this->borrowersValueOptions;
+            $borrowers = $this->services['Books\BorrowersValueOptions'];
             $view->setVariable('borrowers', $borrowers);
         }
         if (isset($entity['publicationId'])) {
             /** @var \Books\Model\PublicationsTable $pubTable */
-            $pubTable = $this->publicationsTable;
+            $pubTable = $this->services[PublicationsTable::class];
             $publication = $pubTable->getPublication($entity['publicationId']);
             $entity['publication'] = $publication;
         }

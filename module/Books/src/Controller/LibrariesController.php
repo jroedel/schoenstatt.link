@@ -15,14 +15,10 @@ use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
 use Books\Mailing\BooksMailer;
 use BjyAuthorize\Exception\UnAuthorizedException;
+use JTranslate\Model\TranslationsTable;
 
 class LibrariesController extends SionController
 {
-    public function __construct()
-    {
-        return parent::__construct('library');
-    }
-
     public function showAction()
     {
         $view = parent::showAction();
@@ -31,8 +27,7 @@ class LibrariesController extends SionController
         if (isset($entityObject['libraryId'])) {
             $params['libraryId'] = $entityObject['libraryId'];
         }
-        $sm = $this->getServiceLocator();
-        $form = $sm->get('Books\Form\SearchForm');
+        $form = $this->services[SearchForm::class];
         $form->setData($params);
         $books = null;
         $borrowers = [];
@@ -51,7 +46,7 @@ class LibrariesController extends SionController
 //                 $data['category'] = ['Documentos', 'Dogmática General'];
 //                 $data['isActive'] = false;
                 $books = $table->searchBooks($data, ['maxResults' => 200]);
-                $borrowers = $sm->get('Books\BorrowersValueOptions');
+                $borrowers = $this->services['Books\BorrowersValueOptions'];
             }
         }
 
@@ -89,14 +84,13 @@ class LibrariesController extends SionController
         if (!$this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
-        $sm = $this->getServiceLocator();
         /** @var LibraryTable $table */
-        $table = $sm->get('Books\Model\LibraryTable');
+        $table = $this->getSionTable();
         $table->setLibraryId($this->getEntityIdParam('show'));
         $books = $table->getLibraryBooksStatuses();
 
         /** @var SchoenstattTable $schTable */
-        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $schTable = $this->services[SchoenstattTable::class];
         $persons = $schTable->getUnlinkedPersons();
         foreach ($books as $bookId => $book) {
             if (!is_null($book['checkedOutBy']) && key_exists($book['checkedOutBy'], $persons)) {
@@ -113,14 +107,13 @@ class LibrariesController extends SionController
         if (!$this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
-        $sm = $this->getServiceLocator();
-        $config = $sm->get('Books\Config');
+        $config = $this->config['books'];
         $pages = $config['admin_pages'];
         /** @var LibraryTable $table */
-        $table = $sm->get('Books\Model\LibraryTable');
+        $table = $this->getSionTable();
 
         /** @var TranslationsTable $translations */
-        $translations = $sm->get('JTranslate\Model\TranslationsTable');
+        $translations = $this->services[TranslationsTable::class];
 
         if (isset($pages['admin/moderate'])) {
 //             $suggestionCount = $table->getSuggestionCount();
@@ -147,7 +140,7 @@ class LibrariesController extends SionController
 
         if (isset($pages['sion-model/auto-fix-data-problems'])) {
             /** @var ProblemService $problemService */
-            $problemService = $sm->get('SionModel\Service\ProblemService');
+            $problemService = $this->services[ProblemService::class];
             $problems = $problemService->getCurrentProblems();
             $autoFixProblems = $problemService->autoFixProblems();
             $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
@@ -164,9 +157,8 @@ class LibrariesController extends SionController
      */
     protected function getProblemCounts()
     {
-        $sm = $this->getServiceLocator();
         /** @var ProblemService $problemService */
-        $problemService = $sm->get('SionModel\Service\ProblemService');
+        $problemService = $this->services[ProblemService::class];
         $problems = $problemService->getCurrentProblems();
         $problemCounts = [
             EntityProblem::SEVERITY_ERROR => 0,
@@ -190,9 +182,8 @@ class LibrariesController extends SionController
 
     public function searchAction()
     {
-        $sm = $this->getServiceLocator();
         $params = $this->params()->fromQuery();
-        $form = $sm->get('Books\Form\SearchForm');
+        $form = $this->services[SearchForm::class];
         $form->setData($params);
         $books = null;
         $borrowers = [];
@@ -203,13 +194,13 @@ class LibrariesController extends SionController
 
             if (!empty($data)) {
                 /** @var LibraryTable $table */
-                $table = $sm->get('Books\Model\LibraryTable');
+                $table = $this->getSionTable();
 //                 $data['notAllowed'] = $notAllowed;
                 $data['maxResults'] = 200;
 //                 var_dump($data);
                 $books = $table->searchBooks($data);
                 $libraries = $this->transformBookQueryIntoLibraries($books);
-                $borrowers = $sm->get('Books\BorrowersValueOptions');
+                $borrowers = $this->services['Books\BorrowersValueOptions'];
             }
         }
 
@@ -234,7 +225,6 @@ class LibrariesController extends SionController
         //get the parameter
         $libraryId = $this->getLibraryId();
 
-        $sm = $this->getServiceLocator();
         $form = new InactivationForm();
 
         $request = $this->getRequest();
@@ -289,9 +279,8 @@ class LibrariesController extends SionController
      */
     public function sendBookNoticesAction()
     {
-        $sm = $this->getServiceLocator();
         $key = $this->params()->fromQuery('key', null);
-        $config = $sm->get('Config');
+        $config = $this->config;
         $apiKeys = [];
         if (isset($config['schoenstatt']) && isset($config['schoenstatt']['api_keys']) &&
             is_array($config['schoenstatt']['api_keys'])
@@ -310,7 +299,7 @@ class LibrariesController extends SionController
         $table = $this->getSionTable();
         $library = $table->getSimpleLibrary($libraryId);
         /** @var BooksMailer $mailer */
-        $mailer = $sm->get(BooksMailer::class);
+        $mailer = $this->services[BooksMailer::class];
         $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate, $borrowerSubset);
 
         return new ViewModel([
@@ -336,7 +325,7 @@ class LibrariesController extends SionController
     protected function getPublications()
     {
         /** @var PublicationsTable $table */
-        $table = $this->getServiceLocator()->get('Books\Model\PublicationsTable');
+        $table = $this->services[PublicationsTable::class];
         $publications = $table->getUnlinkedPublications();
         return $publications;
     }

@@ -19,17 +19,11 @@ use SionModel\Controller\SionController;
 
 class PersonsController extends SionController
 {
-    public function __construct()
-    {
-        parent::__construct('person');
-    }
-
     /**
      * @return \Zend\View\Model\ViewModel
      */
     public function searchAction()
     {
-        $sm = $this->getServiceLocator();
         //make sure we get clean parameters
         $params = $this->params()->fromQuery();
         /** @var SearchForm $form */
@@ -44,7 +38,7 @@ class PersonsController extends SionController
 //             unset($data['showPhotos']);
             if (!empty($data)) {
                 /** @var SchoenstattTable $table */
-                $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+                $table = $this->getSionTable();
                 $persons = $table->searchPersons($data);
             }
         }
@@ -67,9 +61,8 @@ class PersonsController extends SionController
             ->addMessage('Person not found.');
             return $this->redirect()->toRoute('persons');
         }
-        $sm = $this->getServiceLocator();
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
-        $table = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $this->getSionTable();
         $person = $table->getPerson($id);
         if (!$person) {
             $this->flashMessenger()
@@ -127,8 +120,7 @@ class PersonsController extends SionController
      */
     protected function addUserNamesToUrlList(&$person, $deviceType)
     {
-        $sm = $this->getServiceLocator();
-        $config = $sm->get('Config');
+        $config = $this->config;
         $urlConfig = $config['schoenstatt']['url_map'];
 
         //first check the existing urls to fill in logo info
