@@ -18,6 +18,9 @@ use Zend\Cache\Service\StorageCacheAbstractServiceFactory;
 use Zend\ServiceManager\Factory\InvokableFactory;
 use BjyAuthorize\Guard\Route;
 use SionModel\Controller\LazyControllerFactory;
+use SionModel\Service\ProblemService;
+use JTranslate\Model\TranslationsTable;
+use Zend\ServiceManager\Proxy\LazyServiceFactory;
 
 return [
     'router' => [
@@ -102,6 +105,22 @@ return [
         'factories' => [
             'translator' => TranslatorServiceFactory::class,
             'navigation' => DefaultNavigationFactory::class
+        ],
+        'lazy_services' => [
+            // Mapping services to their class names is required
+            // since the ServiceManager is not a declarative DIC.
+            'class_map' => [
+                ProblemService::class => ProblemService::class,
+                TranslationsTable::class => TranslationsTable::class,
+            ],
+        ],
+        'delegators' => [
+            ProblemService::class => [
+                LazyServiceFactory::class,
+            ],
+            TranslationsTable::class => [
+                LazyServiceFactory::class,
+            ],
         ],
     ],
 //     'translator' => [

@@ -47,6 +47,7 @@ use Schoenstatt\Service\PatresGateway;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
+use Zend\ServiceManager\Proxy\LazyServiceFactory;
 
 return [
     'books' => [
@@ -245,6 +246,30 @@ return [
             'Books\AuthorsValueOptions'     => AuthorsValueOptionsService::class,
             'Books\LanguagesValueOptions'   => LanguagesValueOptionsFactory::class,
             BooksMailer::class              => BooksMailerFactory::class,
+        ],
+        'lazy_services' => [
+            // Mapping services to their class names is required
+            // since the ServiceManager is not a declarative DIC.
+            'class_map' => [
+                LibraryForm::class => LibraryForm::class,
+                SearchForm::class => SearchForm::class,
+                BooksMailer::class => BooksMailer::class,
+                PublicationsTable::class => PublicationsTable::class,
+            ],
+        ],
+        'delegators' => [
+            LibraryForm::class => [
+                LazyServiceFactory::class,
+            ],
+            SearchForm::class => [
+                LazyServiceFactory::class,
+            ],
+            BooksMailer::class => [
+                LazyServiceFactory::class,
+            ],
+            PublicationsTable::class => [
+                LazyServiceFactory::class,
+            ],
         ],
     ],
     'view_helpers' => [
@@ -876,7 +901,7 @@ return [
                     SchoenstattTable::class,
                     TranslationsTable::class,
                     ProblemService::class,
-                    BooksMailer::class,
+                    //BooksMailer::class, @todo return this to the controller
                     PublicationsTable::class,
                 ],
                 'get_object_function' 					=> 'getLibrary',
