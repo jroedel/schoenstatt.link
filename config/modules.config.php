@@ -27,8 +27,7 @@ $modules = [
     'Zend\Validator',
     'MaglMarkdown',
     'TwbBundle',
-    //    'ZfSnapGeoip',
-//    'ZfcBase',
+    'ZfSnapGeoip',
     'ZfcUser',
     'BjyAuthorize',
     'SlmLocale',
@@ -39,7 +38,7 @@ $modules = [
     'Neilime\MobileDetect',
     'AssetManager',
     //    'ZfcDatagrid',
-//    'AcMailer',
+//    'AcMailer', Should we upgrade to v7 or switch to a web service?
 //     'Bible',
     'Books',
     'Schoenstatt',
