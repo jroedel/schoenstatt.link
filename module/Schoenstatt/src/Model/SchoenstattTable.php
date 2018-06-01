@@ -2,7 +2,6 @@
 namespace Schoenstatt\Model;
 
 use Zend\Filter\ToNull;
-use Assetic\Exception\Exception;
 use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;

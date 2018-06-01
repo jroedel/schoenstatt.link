@@ -1,9 +1,7 @@
 <?php
-$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
-$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
+$this->headScript()->appendFile($this->basePath() . "/js/gen-selectize-markdown-$lang.js");
 $form = $this->form;
 echo $this->formRow($form->get('name'));
 echo $this->formRow($form->get('description'));

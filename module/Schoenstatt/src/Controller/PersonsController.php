@@ -9,7 +9,7 @@
 
 namespace Schoenstatt\Controller;
 
-use Zend\Mvc\Controller\Plugin\FlashMessenger;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Zend\View\Model\ViewModel;
 use Schoenstatt\Form\PersonForm;
 use JTranslate\Controller\Plugin\NowMessenger;

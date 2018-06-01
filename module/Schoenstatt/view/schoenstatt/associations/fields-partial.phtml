@@ -1,6 +1,7 @@
 <?php
-$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
-$this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/selectize.min.js"));
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown-jquery-ui.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
 $form = $this->form;
 echo $this->formHidden($form->get('associationId'));?>
 <div class="form-group ">

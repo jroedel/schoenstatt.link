@@ -2,16 +2,10 @@
 use Books\Form\BookForm;
 use Zend\Json\Json;
 
-$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
-$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
-$this->headLink()->appendStylesheet($this->basePath() . '/css/jquery-ui.min.css');
-// $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/jquery.min.js"));
-$this->headScript()->appendFile($this->basePath() . '/js/jquery.validate.min.js');
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
-// $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/book-form.js"));
-
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown-jquery-ui.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
-$this->headScript()->offsetSetFile(100, $this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
+$this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
+
 /** @var BookForm $form */
 $form = $this->form;
 $libraryOptions = $form->getLibraryOptions();

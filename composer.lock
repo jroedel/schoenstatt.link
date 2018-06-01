@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "2badc45ff3cf422af888b2e31e2374c3",
+    "content-hash": "a29a262aa4ee8c149a91ec6ad2ea0740",
     "packages": [
         {
             "name": "cakephp/core",
@@ -630,83 +630,6 @@
                 "issues": "https://github.com/kokspflanze/BjyAuthorize/issues"
             },
             "time": "2017-08-21T20:42:39+00:00"
-        },
-        {
-            "name": "kriswallsmith/assetic",
-            "version": "v1.4.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/kriswallsmith/assetic.git",
-                "reference": "e911c437dbdf006a8f62c2f59b15b2d69a5e0aa1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/kriswallsmith/assetic/zipball/e911c437dbdf006a8f62c2f59b15b2d69a5e0aa1",
-                "reference": "e911c437dbdf006a8f62c2f59b15b2d69a5e0aa1",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.1",
-                "symfony/process": "~2.1|~3.0"
-            },
-            "conflict": {
-                "twig/twig": "<1.27"
-            },
-            "require-dev": {
-                "leafo/lessphp": "^0.3.7",
-                "leafo/scssphp": "~0.1",
-                "meenie/javascript-packer": "^1.1",
-                "mrclay/minify": "<2.3",
-                "natxet/cssmin": "3.0.4",
-                "patchwork/jsqueeze": "~1.0|~2.0",
-                "phpunit/phpunit": "~4.8 || ^5.6",
-                "psr/log": "~1.0",
-                "ptachoire/cssembed": "~1.0",
-                "symfony/phpunit-bridge": "~2.7|~3.0",
-                "twig/twig": "~1.23|~2.0",
-                "yfix/packager": "dev-master"
-            },
-            "suggest": {
-                "leafo/lessphp": "Assetic provides the integration with the lessphp LESS compiler",
-                "leafo/scssphp": "Assetic provides the integration with the scssphp SCSS compiler",
-                "leafo/scssphp-compass": "Assetic provides the integration with the SCSS compass plugin",
-                "patchwork/jsqueeze": "Assetic provides the integration with the JSqueeze JavaScript compressor",
-                "ptachoire/cssembed": "Assetic provides the integration with phpcssembed to embed data uris",
-                "twig/twig": "Assetic provides the integration with the Twig templating engine"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.4-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "Assetic": "src/"
-                },
-                "files": [
-                    "src/functions.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Kris Wallsmith",
-                    "email": "kris.wallsmith@gmail.com",
-                    "homepage": "http://kriswallsmith.net/"
-                }
-            ],
-            "description": "Asset Management for PHP",
-            "homepage": "https://github.com/kriswallsmith/assetic",
-            "keywords": [
-                "assets",
-                "compression",
-                "minification"
-            ],
-            "time": "2016-11-11T18:43:20+00:00"
         },
         {
             "name": "league/commonmark",
@@ -1565,56 +1488,6 @@
             "time": "2017-02-14T16:28:37+00:00"
         },
         {
-            "name": "psr/http-message",
-            "version": "1.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/php-fig/http-message.git",
-                "reference": "f6561bf28d520154e4b0ec72be95418abe6d9363"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/http-message/zipball/f6561bf28d520154e4b0ec72be95418abe6d9363",
-                "reference": "f6561bf28d520154e4b0ec72be95418abe6d9363",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.0.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Psr\\Http\\Message\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "PHP-FIG",
-                    "homepage": "http://www.php-fig.org/"
-                }
-            ],
-            "description": "Common interface for HTTP messages",
-            "homepage": "https://github.com/php-fig/http-message",
-            "keywords": [
-                "http",
-                "http-message",
-                "psr",
-                "psr-7",
-                "request",
-                "response"
-            ],
-            "time": "2016-08-06T14:39:51+00:00"
-        },
-        {
             "name": "psr/log",
             "version": "1.0.2",
             "source": {
@@ -1872,73 +1745,6 @@
             ],
             "description": "Prevents installation of composer packages with known security vulnerabilities: no API, simply require it",
             "time": "2018-05-21T07:43:38+00:00"
-        },
-        {
-            "name": "rwoverdijk/assetmanager",
-            "version": "1.7.3",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/RWOverdijk/AssetManager.git",
-                "reference": "301810eb2ffece940909e79db6ef7fb055cbbd46"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/RWOverdijk/AssetManager/zipball/301810eb2ffece940909e79db6ef7fb055cbbd46",
-                "reference": "301810eb2ffece940909e79db6ef7fb055cbbd46",
-                "shasum": ""
-            },
-            "require": {
-                "kriswallsmith/assetic": "^1.2.1",
-                "php": "^5.5 || ^7.0",
-                "zendframework/zend-eventmanager": "^2.6.3 || ^3.0.1",
-                "zendframework/zend-loader": "^2.5.1",
-                "zendframework/zend-modulemanager": "^2.7.2",
-                "zendframework/zend-mvc": "^2.7.9 || ^3.0.2",
-                "zendframework/zend-servicemanager": "^2.7.6 || ^3.1.1",
-                "zendframework/zend-stdlib": "^2.7.7 || ^3.0.1"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.8",
-                "squizlabs/php_codesniffer": "~1.5.0",
-                "zendframework/zend-cache": "^2.7.1",
-                "zendframework/zend-console": "^2.6",
-                "zendframework/zend-http": "^2.5.4",
-                "zendframework/zend-view": "^2.8.1"
-            },
-            "suggest": {
-                "zendframework/zend-mvc-console": "zend-mvc-console provides the ability to expose zend-mvc as a console application"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "AssetManager": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-2-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Wesley Overdijk",
-                    "email": "r.w.overdijk@gmail.com",
-                    "homepage": "http://blog.spoonx.nl/"
-                },
-                {
-                    "name": "Marco Pivetta",
-                    "email": "ocramius@gmail.com",
-                    "homepage": "http://ocramius.github.com/"
-                }
-            ],
-            "description": "An assetmanager module for Zend Framework 2.",
-            "homepage": "https://github.com/RWOverdijk/AssetManager",
-            "keywords": [
-                "asset",
-                "asset manager",
-                "zend framework 2",
-                "zf2"
-            ],
-            "time": "2017-07-31T07:32:20+00:00"
         },
         {
             "name": "slm/locale",
@@ -2427,55 +2233,6 @@
             "time": "2018-05-01T05:47:21+00:00"
         },
         {
-            "name": "symfony/process",
-            "version": "v3.4.11",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/symfony/process.git",
-                "reference": "4cbf2db9abcb01486a21b7a059e03a62fae63187"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/symfony/process/zipball/4cbf2db9abcb01486a21b7a059e03a62fae63187",
-                "reference": "4cbf2db9abcb01486a21b7a059e03a62fae63187",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^5.5.9|>=7.0.8"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "3.4-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Symfony\\Component\\Process\\": ""
-                },
-                "exclude-from-classmap": [
-                    "/Tests/"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Fabien Potencier",
-                    "email": "fabien@symfony.com"
-                },
-                {
-                    "name": "Symfony Community",
-                    "homepage": "https://symfony.com/contributors"
-                }
-            ],
-            "description": "Symfony Process Component",
-            "homepage": "https://symfony.com",
-            "time": "2018-05-16T08:49:21+00:00"
-        },
-        {
             "name": "symfony/translation",
             "version": "v4.0.11",
             "source": {
@@ -2806,146 +2563,6 @@
                 "utf8"
             ],
             "time": "2017-10-08T23:25:51+00:00"
-        },
-        {
-            "name": "wshafer/assetmanager",
-            "version": "2.0.0-beta2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/wshafer/AssetManager.git",
-                "reference": "3a789aeced3636536c7925142a8d383a6b0e1b12"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/wshafer/AssetManager/zipball/3a789aeced3636536c7925142a8d383a6b0e1b12",
-                "reference": "3a789aeced3636536c7925142a8d383a6b0e1b12",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^5.6 || ^7.0",
-                "wshafer/assetmanager-core": "^1.0.0",
-                "zendframework/zend-component-installer": "^1.0 || ^0.7.0",
-                "zendframework/zend-modulemanager": "^2.8.0",
-                "zendframework/zend-mvc": "^3.1.0",
-                "zendframework/zend-psr7bridge": "^0.2.2"
-            },
-            "provide": {
-                "rwoverdijk/assetmanager": "*"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^5.7",
-                "squizlabs/php_codesniffer": "~3.0",
-                "zendframework/zend-cache": "^2.7.1",
-                "zendframework/zend-mvc-console": "^1.1"
-            },
-            "suggest": {
-                "zendframework/zend-mvc-console": "zend-mvc-console provides the ability to expose zend-mvc as a console application"
-            },
-            "type": "library",
-            "extra": {
-                "zf": {
-                    "module": "AssetManager"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "AssetManager\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-2-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Wesley Overdijk",
-                    "email": "r.w.overdijk@gmail.com",
-                    "homepage": "http://blog.spoonx.nl/"
-                },
-                {
-                    "name": "Marco Pivetta",
-                    "email": "ocramius@gmail.com",
-                    "homepage": "http://ocramius.github.com/"
-                },
-                {
-                    "name": "Westin Shafer",
-                    "email": "shafer_w2002@yahoo.com",
-                    "homepage": "https://github.com/wshafer"
-                }
-            ],
-            "description": "An assetmanager module for Zend Framework.",
-            "homepage": "https://github.com/wshafer/AssetManager/wiki",
-            "keywords": [
-                "Zend Framework",
-                "asset",
-                "asset manager",
-                "zf3"
-            ],
-            "time": "2017-12-27T21:57:13+00:00"
-        },
-        {
-            "name": "wshafer/assetmanager-core",
-            "version": "1.0.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/wshafer/assetmanager-core.git",
-                "reference": "b1bf9b3ab3b28f847fbe3f57d6c2c32b98c1431d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/wshafer/assetmanager-core/zipball/b1bf9b3ab3b28f847fbe3f57d6c2c32b98c1431d",
-                "reference": "b1bf9b3ab3b28f847fbe3f57d6c2c32b98c1431d",
-                "shasum": ""
-            },
-            "require": {
-                "kriswallsmith/assetic": "^1.4.0",
-                "php": "^5.6 || ^7.0",
-                "psr/container": "^1.0",
-                "psr/http-message": "^1.0",
-                "zendframework/zend-stdlib": "^3.1.0"
-            },
-            "require-dev": {
-                "phpmd/phpmd": "@stable",
-                "phpunit/phpunit": "^5.7",
-                "squizlabs/php_codesniffer": "~3.0",
-                "zendframework/zend-diactoros": "^1.4.0",
-                "zendframework/zend-servicemanager": "^3.1.1"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "AssetManager\\Core\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-2-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Wesley Overdijk",
-                    "email": "r.w.overdijk@gmail.com",
-                    "homepage": "http://blog.spoonx.nl/"
-                },
-                {
-                    "name": "Marco Pivetta",
-                    "email": "ocramius@gmail.com",
-                    "homepage": "http://ocramius.github.com/"
-                },
-                {
-                    "name": "Westin Shafer",
-                    "email": "shafer_w2002@yahoo.com.com"
-                }
-            ],
-            "description": "Asset Manager Core Module",
-            "homepage": "https://github.com/RWOverdijk/AssetManager",
-            "keywords": [
-                "asset",
-                "asset manager",
-                "middleware",
-                "psr7"
-            ],
-            "time": "2017-09-21T22:54:52+00:00"
         },
         {
             "name": "zendframework/zend-authentication",
@@ -3415,58 +3032,6 @@
                 "zf"
             ],
             "time": "2018-04-09T13:21:36+00:00"
-        },
-        {
-            "name": "zendframework/zend-diactoros",
-            "version": "1.7.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/zendframework/zend-diactoros.git",
-                "reference": "bf26aff803a11c5cc8eb7c4878a702c403ec67f1"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/zendframework/zend-diactoros/zipball/bf26aff803a11c5cc8eb7c4878a702c403ec67f1",
-                "reference": "bf26aff803a11c5cc8eb7c4878a702c403ec67f1",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^5.6 || ^7.0",
-                "psr/http-message": "^1.0"
-            },
-            "provide": {
-                "psr/http-message-implementation": "1.0"
-            },
-            "require-dev": {
-                "ext-dom": "*",
-                "ext-libxml": "*",
-                "phpunit/phpunit": "^5.7.16 || ^6.0.8",
-                "zendframework/zend-coding-standard": "~1.0"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.7.x-dev",
-                    "dev-develop": "1.8.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Zend\\Diactoros\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-2-Clause"
-            ],
-            "description": "PSR HTTP Message implementations",
-            "homepage": "https://github.com/zendframework/zend-diactoros",
-            "keywords": [
-                "http",
-                "psr",
-                "psr-7"
-            ],
-            "time": "2018-02-26T15:44:50+00:00"
         },
         {
             "name": "zendframework/zend-escaper",
@@ -4629,55 +4194,6 @@
                 "zf"
             ],
             "time": "2018-05-01T21:53:20+00:00"
-        },
-        {
-            "name": "zendframework/zend-psr7bridge",
-            "version": "0.2.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/zendframework/zend-psr7bridge.git",
-                "reference": "86c0b53b0c6381391c4add4a93a56e51d5c74605"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/zendframework/zend-psr7bridge/zipball/86c0b53b0c6381391c4add4a93a56e51d5c74605",
-                "reference": "86c0b53b0c6381391c4add4a93a56e51d5c74605",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.5",
-                "psr/http-message": "^1.0",
-                "zendframework/zend-diactoros": "^1.1",
-                "zendframework/zend-http": "^2.5"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.7",
-                "squizlabs/php_codesniffer": "^2.3"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.0-dev",
-                    "dev-develop": "1.1-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Zend\\Psr7Bridge\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "description": "PSR-7 <-> Zend\\Http bridge",
-            "homepage": "https://github.com/zendframework/zend-psr7bridge",
-            "keywords": [
-                "http",
-                "psr",
-                "psr-7"
-            ],
-            "time": "2016-05-10T21:44:39+00:00"
         },
         {
             "name": "zendframework/zend-router",
@@ -6254,6 +5770,56 @@
             "time": "2018-04-11T04:50:36+00:00"
         },
         {
+            "name": "psr/http-message",
+            "version": "1.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/php-fig/http-message.git",
+                "reference": "f6561bf28d520154e4b0ec72be95418abe6d9363"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/php-fig/http-message/zipball/f6561bf28d520154e4b0ec72be95418abe6d9363",
+                "reference": "f6561bf28d520154e4b0ec72be95418abe6d9363",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Psr\\Http\\Message\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "PHP-FIG",
+                    "homepage": "http://www.php-fig.org/"
+                }
+            ],
+            "description": "Common interface for HTTP messages",
+            "homepage": "https://github.com/php-fig/http-message",
+            "keywords": [
+                "http",
+                "http-message",
+                "psr",
+                "psr-7",
+                "request",
+                "response"
+            ],
+            "time": "2016-08-06T14:39:51+00:00"
+        },
+        {
             "name": "sebastian/code-unit-reverse-lookup",
             "version": "1.0.1",
             "source": {
@@ -7191,6 +6757,59 @@
             "time": "2016-04-25T20:58:11+00:00"
         },
         {
+            "name": "zendframework/zend-diactoros",
+            "version": "1.7.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/zendframework/zend-diactoros.git",
+                "reference": "741e7a571836f038de731105f4742ca8a164e43a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/zendframework/zend-diactoros/zipball/741e7a571836f038de731105f4742ca8a164e43a",
+                "reference": "741e7a571836f038de731105f4742ca8a164e43a",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^5.6 || ^7.0",
+                "psr/http-message": "^1.0"
+            },
+            "provide": {
+                "psr/http-message-implementation": "1.0"
+            },
+            "require-dev": {
+                "ext-dom": "*",
+                "ext-libxml": "*",
+                "phpunit/phpunit": "^5.7.16 || ^6.0.8",
+                "zendframework/zend-coding-standard": "~1.0"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.7.x-dev",
+                    "dev-develop": "1.8.x-dev",
+                    "dev-release-2.0": "2.0.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Zend\\Diactoros\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "description": "PSR HTTP Message implementations",
+            "homepage": "https://github.com/zendframework/zend-diactoros",
+            "keywords": [
+                "http",
+                "psr",
+                "psr-7"
+            ],
+            "time": "2018-05-29T16:53:08+00:00"
+        },
+        {
             "name": "zendframework/zend-dom",
             "version": "2.7.1",
             "source": {
@@ -7999,6 +7618,55 @@
             "time": "2018-04-30T19:15:33+00:00"
         },
         {
+            "name": "zendframework/zend-psr7bridge",
+            "version": "0.2.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/zendframework/zend-psr7bridge.git",
+                "reference": "86c0b53b0c6381391c4add4a93a56e51d5c74605"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/zendframework/zend-psr7bridge/zipball/86c0b53b0c6381391c4add4a93a56e51d5c74605",
+                "reference": "86c0b53b0c6381391c4add4a93a56e51d5c74605",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.5",
+                "psr/http-message": "^1.0",
+                "zendframework/zend-diactoros": "^1.1",
+                "zendframework/zend-http": "^2.5"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.7",
+                "squizlabs/php_codesniffer": "^2.3"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "1.0-dev",
+                    "dev-develop": "1.1-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Zend\\Psr7Bridge\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "description": "PSR-7 <-> Zend\\Http bridge",
+            "homepage": "https://github.com/zendframework/zend-psr7bridge",
+            "keywords": [
+                "http",
+                "psr",
+                "psr-7"
+            ],
+            "time": "2016-05-10T21:44:39+00:00"
+        },
+        {
             "name": "zendframework/zend-server",
             "version": "2.8.0",
             "source": {
@@ -8629,7 +8297,6 @@
     "stability-flags": {
         "kokspflanze/bjy-authorize": 20,
         "goalio/goalio-rememberme": 20,
-        "wshafer/assetmanager": 10,
         "roave/security-advisories": 20
     },
     "prefer-stable": false,

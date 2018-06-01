@@ -155,55 +155,63 @@ return [
             __DIR__ . '/../view',
         ],
     ],
-    'asset_manager' => array(
-        'resolver_configs' => array(
-            'collections' => array(
-                'js/basic.js' => array(
+    'asset_manager' => [
+        'resolver_configs' => [
+            'collections' => [
+                'js/basic.js' => [
                     'js/jquery.min.js',
                     'js/bootstrap.min.js',
                     'js/basic-include.js',
-                ),
-                'css/basic.css' => array(
+                ],
+                'css/basic.css' => [
                     'css/bootstrap.min.css',
                     'css/flag-icon.min.css',
                     'css/font-awesome.min.css',
-                ),
-            ),
-            'paths' => array(
+                ],
+            ],
+            'paths' => [
 //                 'photos' => __DIR__ . '/../../../../data/foto',
-                __NAMESPACE__ => __DIR__ . '/../public',
-            ),
-//             'map' => array(
+                __NAMESPACE__ => __DIR__ . '/../public', //__NAMESPACE__ => __DIR__ . '/../public',
+                //__DIR__ . '/../../../public',
+            ],
+//             'map' => [
 //                 'specific-path.css' => __DIR__ . '/some/particular/file.css',
-//             ),
-        ),
-        'caching' => array(
-            'css/basic.css' => array(
+//             ],
+        ],
+        'caching' => [
+            'default' => [ //cache everything by default
+                // Your service or invokable goes here
                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => array(
-                    'dir' => 'public', // path/to/cache
-                ),
-            ),
-            'js/basic.js' => array(
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => array(
-                    'dir' => 'public', // path/to/cache
-                ),
-            ),
-        ),
-//         'filters' => array(
-//             'js/d.js' => array(
-//                 array(
+                'options' => [
+                    'dir' => 'public',
+                ],
+            ],
+//             'css/basic.css' => [
+//                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
+//                 'options' => [
+//                     'dir' => 'public', // path/to/cache
+//                 ],
+//             ],
+//             'js/basic.js' => [
+//                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
+//                 'options' => [
+//                     'dir' => 'public', // path/to/cache
+//                 ],
+//             ],
+        ],
+//         'filters' => [
+//             'js/d.js' => [
+//                 [
 //                     // Note: You will need to require the classes used for the filters yourself.
 //                     'filter' => 'JSMin',
-//                 ),
-//             ),
-//         ),
-        'view_helper' => array(
+//                 ],
+//             ],
+//         ],
+        'view_helper' => [
             // Note: You will need to require the factory used for the cache yourself.
 //             'cache'        => 'Application\Cache\Redis',
-        ),
-    ),
+        ],
+    ],
     'bjyauthorize' => [
         'guards' => [
             Route::class => [
