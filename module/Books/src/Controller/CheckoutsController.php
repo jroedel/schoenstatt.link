@@ -2,7 +2,7 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Mvc\Controller\Plugin\FlashMessenger;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Books\Model\LibraryTable;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;

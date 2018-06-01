@@ -22,7 +22,7 @@ class ClipboardButton extends AbstractHelper
     public function clipboardWidget($label, $content, $buttonText)
     {
         if (!$this->scriptIncluded) {
-            $this->view->headScript()->appendFile($this->view->basePath() . '/'. $this->view->asset('js/clipboard.min.js'));
+            $this->view->headScript()->appendFile($this->view->basePath() . '/js/clipboard.min.js');
             $this->scriptIncluded = true;
         }
         $randVal = Rand::getInteger(10000, 99999);

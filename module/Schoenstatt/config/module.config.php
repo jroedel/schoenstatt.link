@@ -37,6 +37,7 @@ use Schoenstatt\Controller\RolesController;
 use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use SionModel\Controller\LazyControllerFactory;
 use SionModel\Controller\SionControllerFactory;
+use Zend\ServiceManager\Proxy\LazyServiceFactory;
 
 $leagueRoles = [
     [
@@ -91,7 +92,6 @@ $federationRoles = [
         'shouldAlwaysBeFilled' => false,
     ],
 ];
-
 return [
     'controllers' => [
 //         'factories' => [
@@ -127,6 +127,46 @@ return [
             ImportFatherForm::class                 => ImportFatherFormFactory::class,
             'Schoenstatt\PersonTagsValueOptions'    => PersonTagsValueOptionsFactory::class,
             AssociationKindsService::class          => AssociationKindsServiceFactory::class,
+        ],
+        'lazy_services' => [
+            // Mapping services to their class names is required
+            // since the ServiceManager is not a declarative DIC.
+            'class_map' => [
+                ImportFatherForm::class => ImportFatherForm::class,
+                PatresGateway::class => PatresGateway::class,
+                SchoenstattTable::class => SchoenstattTable::class,
+                PersonForm::class => PersonForm::class,
+                AdvancedSearchForm::class => AdvancedSearchForm::class,
+                AssignmentForm::class => AssignmentForm::class,
+                AssociationForm::class => AssociationForm::class,
+                RoleForm::class => RoleForm::class,
+            ],
+        ],
+        'delegators' => [
+            ImportFatherForm::class => [
+                LazyServiceFactory::class,
+            ],
+            PatresGateway::class => [
+                LazyServiceFactory::class,
+            ],
+            SchoenstattTable::class => [
+                LazyServiceFactory::class,
+            ],
+            PersonForm::class => [
+                LazyServiceFactory::class,
+            ],
+            AdvancedSearchForm::class => [
+                LazyServiceFactory::class,
+            ],
+            AssignmentForm::class => [
+                LazyServiceFactory::class,
+            ],
+            AssociationForm::class => [
+                LazyServiceFactory::class,
+            ],
+            RoleForm::class => [
+                LazyServiceFactory::class,
+            ],
         ],
     ],
     'view_manager' => [
@@ -1817,144 +1857,6 @@ return [
             ],
         ],
     ],
-    'asset_manager' => [
-        'resolver_configs' => [
-            'collections' => [
-                'js/markdown-form-en.js' => [
-//                     'js/commonmark.js',
-                    'js/markdown.js',
-                    'js/to-markdown.js',
-                    'js/bootstrap-markdown.js',
-                ],
-                'js/markdown-form-es.js' => [
-//                     'js/commonmark.js',
-                    'js/markdown.js',
-                    'js/to-markdown.js',
-                    'js/bootstrap-markdown.js',
-                    'js/bootstrap-markdown.es.js',
-                ],
-                'js/markdown-form-de.js' => [
-//                     'js/commonmark.js',
-                    'js/markdown.js',
-                    'js/to-markdown.js',
-                    'js/bootstrap-markdown.js',
-                    'js/bootstrap-markdown.de.js',
-                ],
-                'js/markdown-form-pt.js' => [
-//                     'js/commonmark.js',
-                    'js/markdown.js',
-                    'js/to-markdown.js',
-                    'js/bootstrap-markdown.js',
-                    'js/bootstrap-markdown.es.js',
-                ],
-                'js/role-create.js' => [
-                    'js/jquery-ui.min.js',
-                    'js/jquery.validate.min.js',
-                ],
-                'js/person-edit.js' => [
-                    'js/jquery-ui.min.js',
-                    'js/jquery.validate.min.js',
-                    'js/selectize.min.js',
-                    'js/fathers-father-edit.js',
-                ],
-                'js/selectize-validation-pack.js' => [
-                    'js/jquery-ui.min.js',
-                    'js/jquery.validate.min.js',
-                    'js/selectize.min.js',
-                ],
-                'js/living-situation-edit.js' => [
-                    'js/jquery-ui.min.js',
-                    'js/jquery.validate.min.js',
-                ],
-                'js/advanced-search.js' => [
-                    'js/selectize.min.js',
-                    'js/advanced-search-custom.js',
-                ],
-            ],
-            'paths' => [
-                'Patres' => __DIR__ . '/../public',
-            ],
-        ],
-        'caching' => [
-            'js/markdown-form-en.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/markdown-form-es.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/markdown-form-de.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/markdown-form-pt.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/selectize-validation-pack.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/role-create.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/person-edit.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/advanced-search.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/clipboard.min.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-        ],
-        'filters' => [
-            'js/markdown-form-en.js' => [
-                [
-                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
-                ],
-            ],
-            'js/markdown-form-es.js' => [
-                [
-                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
-                ],
-            ],
-            'js/markdown-form-de.js' => [
-                [
-                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
-                ],
-            ],
-            'js/markdown-form-pt.js' => [
-                [
-                    'filter' => 'SionModel\\Filter\\JShrinkFilter',
-                ],
-            ],
-        ],
-    ],
-
     'bjyauthorize' => [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [

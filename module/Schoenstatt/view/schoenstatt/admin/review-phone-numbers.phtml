@@ -1,7 +1,7 @@
 <?php 
 use JTranslate\View\Helper\CountryName;
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset('js/bootstrap-sortable.js'));
-$this->headLink()->appendStylesheet($this->basePath() . '/'. $this->asset('css/bootstrap-sortable.css'));
+$this->headScript()->appendFile($this->basePath() . '/js/gen-bootstrap-sortable.min.js');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-sortable.css');
 $pageTitle = 'Person phone numbers';
 $this->headTitle($pageTitle);?>
 <h1><?php echo $this->translate($pageTitle);?></h1>

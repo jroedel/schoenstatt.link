@@ -10,7 +10,7 @@ use SionModel\Problem\EntityProblem;
 use SionModel\Service\ProblemService;
 use Zend\View\Model\JsonModel;
 use Books\Form\InactivationForm;
-use Zend\Mvc\Controller\Plugin\FlashMessenger;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
 use Books\Mailing\BooksMailer;

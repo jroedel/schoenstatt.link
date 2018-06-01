@@ -1,8 +1,8 @@
 <?php
 use Schoenstatt\View\Helper\FormatPerson;
 use Schoenstatt\Model\SchoenstattTable;
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset('js/bootstrap-sortable.js'));
-$this->headLink()->appendStylesheet($this->basePath() . '/'. $this->asset('css/bootstrap-sortable.css'));
+$this->headScript()->appendFile($this->basePath() . '/js/gen-bootstrap-sortable.min.js');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-bootstrap-sortable.min.css');
 $columnNames = [
     'name' => 'Name',
     'email' => 'Email',

@@ -1,4 +1,6 @@
 <?php
+namespace Books;
+
 use Zend\Db\Adapter\Adapter;
 use Books\Service\LibraryControllerFactory;
 use Books\Controller\PublicationsController;
@@ -1683,53 +1685,6 @@ return [
                 ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
             ],
         ],
-    ],
-    'asset_manager' => [
-        'resolver_configs' => [
-            'collections' => [
-                'js/checkout.js' => [
-                    'js/multiple-checkouts.js',
-                    'js/selectize.min.js',
-                ],
-                'js/checkin.js' => [
-                    'js/multiple-checkouts.js',
-                ],
-                'js/book-form.js' => [
-                    'js/jquery-ui.min.js',
-                    'js/selectize.min.js',
-                ],
-            ],
-            'paths' => [
-                'Books' => __DIR__ . '/../public',
-            ],
-        ],
-        'caching' => [
-            'js/checkout.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/checkin.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-            'js/book-form.js' => [
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public', // path/to/cache
-                ],
-            ],
-        ],
-//         'filters' => [
-//             'js/checkout.js' => [
-//                 [
-//                     'filter' => 'SionModel\\Filter\\JShrinkFilter',
-//                 ],
-//             ],
-//         ],
     ],
     'view_manager' => [
         'template_map' => include __DIR__ . '/template_map.config.php',
