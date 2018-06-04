@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     'About half of the work to maintain a reliable, centralized source of information depends on programmers who can provide the easy-to-use tools to submit and access the data.' => 'About half of the work to maintain a reliable, centralized source of information depends on programmers who can provide the easy-to-use tools to submit and access the data.',
     'Are you a developer?' => 'Are you a developer?',
     'Are you a Kentenich scholar?' => 'Are you a Kentenich scholar?',
@@ -23,4 +23,4 @@ return array(
     'translation edits' => 'translation edits',
     'Username' => 'Username',
     'We need your help!' => 'We need your help!',
-);
+];

@@ -23,15 +23,14 @@ $modules = [
     'Zend\Navigation',
     'Zend\Mvc\Plugin\Identity',
     'Zend\Mvc\Plugin\FlashMessenger',
-    //'Zend\Mvc\I18n',
+    'Zend\Mvc\I18n',
     'Zend\Validator',
     'MaglMarkdown',
-    'TwbBundle',
     'ZfSnapGeoip',
     'ZfcUser',
     'BjyAuthorize',
     'SlmLocale',
-    'GoalioRememberMe',
+    //'GoalioRememberMe',
     'JUser',
     'SionModel',
     'JTranslate',
@@ -42,6 +41,7 @@ $modules = [
     'Books',
     'Schoenstatt',
     'Application',
+    'TwbBundle',
 ];
 $modules = array_merge($toolsOrNot, $modules);
 return $modules;

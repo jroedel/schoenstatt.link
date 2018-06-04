@@ -65,36 +65,6 @@ return [
                     ],
                 ],
             ],
-            // The following is a route to simplify getting started creating
-            // new controllers and actions without needing to create a new
-            // module. Simply drop new controllers in, and you can access them
-            // using the path /application/:controller/:action
-//             'application' => [
-//                 'type'    => Literal::class,
-//                 'options' => [
-//                     'route'    => '/application',
-//                     'defaults' => [
-//                         '__NAMESPACE__' => 'Application\Controller',
-//                         'controller'    => 'Index',
-//                         'action'        => 'index',
-//                     ],
-//                 ],
-//                 'may_terminate' => true,
-//                 'child_routes' => [
-//                     'default' => [
-//                         'type'    => 'Segment',
-//                         'options' => [
-//                             'route'    => '/[:controller[/:action]]',
-//                             'constraints' => [
-//                                 'controller' => '[a-zA-Z][a-zA-Z0-9_-]*',
-//                                 'action'     => '[a-zA-Z][a-zA-Z0-9_-]*',
-//                             ],
-//                             'defaults' => [
-//                             ],
-//                         ],
-//                     ],
-//                 ],
-//             ],
         ],
     ],
     'service_manager' => [
@@ -155,63 +125,6 @@ return [
             __DIR__ . '/../view',
         ],
     ],
-    'asset_manager' => [
-        'resolver_configs' => [
-            'collections' => [
-                'js/basic.js' => [
-                    'js/jquery.min.js',
-                    'js/bootstrap.min.js',
-                    'js/basic-include.js',
-                ],
-                'css/basic.css' => [
-                    'css/bootstrap.min.css',
-                    'css/flag-icon.min.css',
-                    'css/font-awesome.min.css',
-                ],
-            ],
-            'paths' => [
-//                 'photos' => __DIR__ . '/../../../../data/foto',
-                __NAMESPACE__ => __DIR__ . '/../public', //__NAMESPACE__ => __DIR__ . '/../public',
-                //__DIR__ . '/../../../public',
-            ],
-//             'map' => [
-//                 'specific-path.css' => __DIR__ . '/some/particular/file.css',
-//             ],
-        ],
-        'caching' => [
-            'default' => [ //cache everything by default
-                // Your service or invokable goes here
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => [
-                    'dir' => 'public',
-                ],
-            ],
-//             'css/basic.css' => [
-//                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
-//                 'options' => [
-//                     'dir' => 'public', // path/to/cache
-//                 ],
-//             ],
-//             'js/basic.js' => [
-//                 'cache'     => 'AssetManager\\Cache\\FilePathCache',
-//                 'options' => [
-//                     'dir' => 'public', // path/to/cache
-//                 ],
-//             ],
-        ],
-//         'filters' => [
-//             'js/d.js' => [
-//                 [
-//                     // Note: You will need to require the classes used for the filters yourself.
-//                     'filter' => 'JSMin',
-//                 ],
-//             ],
-//         ],
-        'view_helper' => [
-            // Note: You will need to require the factory used for the cache yourself.
-//             'cache'        => 'Application\Cache\Redis',
-        ],
-    ],
     'bjyauthorize' => [
         'guards' => [
             Route::class => [
@@ -220,6 +133,11 @@ return [
                 ['route' => 'sitemap', 'roles' => ['guest', 'user']],
                 ['route' => 'acknowledgements', 'roles' => ['guest', 'user']],
             ],
+        ],
+    ],
+    'view_helpers' => [
+        'aliases' => [
+            'formElement' => 'TwbBundle\Form\View\Helper\TwbBundleFormElement',
         ],
     ],
 ];

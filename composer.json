@@ -17,7 +17,7 @@
         "tedivm/jshrink": "^1.1",
         "voku/html2text": "^3.4",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
-        "neilime/zf2-twb-bundle": "^3.0",
+        "neilime/zf2-twb-bundle": "3.*@stable",
         "maglnet/magl-markdown": "~1.1",
         "zfc-datagrid/zfc-datagrid": "^1.4",
         "phpoffice/phpexcel": "^1.8",
@@ -37,7 +37,8 @@
         "roave/security-advisories": "dev-master",
         "zendframework/zend-mvc-form": "^1.0",
         "jroedel/zf-snap-geoip": "^3.0",
-        "ocramius/proxy-manager": "^2.1"
+        "ocramius/proxy-manager": "^2.1",
+        "zendframework/zend-mvc-plugin-identity": "^1.1"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

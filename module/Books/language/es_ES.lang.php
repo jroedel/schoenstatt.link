@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     '$2' => '$2',
     '$3' => '$3',
     '%s - Overdue notice' => '%s - Notificación de libros debidos',
@@ -114,6 +114,7 @@ return array(
     'ex. Revista Vínculo 2014-10' => 'ej. Revista Vínculo 2014-10',
     'Field' => 'Campo',
     'File path' => 'Ruta del archivo',
+    'Filiation' => 'Filial',
     'Follow %s on Twitter' => 'Sigue %s en Twitter',
     'Fr.' => 'P.',
     'General' => 'Colección general',
@@ -258,4 +259,4 @@ return array(
     'Worksheet' => 'Hoja',
     'Yes' => 'Sí',
     '—The Schoenstatt Link Team' => '—El equipo de Schoenstatt Link',
-);
+];
