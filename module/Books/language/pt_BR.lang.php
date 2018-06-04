@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     '$2' => '$2',
     '$3' => '$3',
     '(none)' => '(nenhum)',
@@ -11,17 +11,21 @@ return array(
     'Admin tags' => 'Tags (apenas para o administrador)',
     'Advanced options' => 'Opções avançadas',
     'Author' => 'Autor',
+    'Barcode' => 'Codigorz de barra',
     'Book' => 'Livro',
+    'Call number' => 'Número de chamada',
     'Cancel' => 'Cancelar',
     'Colegio Mayor' => 'Colegio Mayor',
     'Contact person' => 'Pessoa de contato',
     'Data problems' => 'Problemas de dados',
     'Dear %s,' => 'Querido %s,',
     'Delete' => 'Excluir',
+    'Due on' => 'Data de Devolução',
     'Email' => 'E-mail',
     'English' => 'Inglês',
     'ex. Bibliotheca Sion' => 'ex. Biblioteca de Sião',
     'Field' => 'Campo',
+    'Filiation' => 'Filial',
     'Fr.' => 'Pe.',
     'German' => 'Alemão',
     'Information' => 'Informação',
@@ -41,14 +45,17 @@ return array(
     'Sign in' => 'Entrar',
     'Spanish' => 'Espanhol',
     'Superiors' => 'Superiores',
+    'The following is the list of books checked out under your name for the <strong>%s</strong> library. Please take the time to renew overdue books online, or inform the librarian of any lost books.' => 'A seguir, você encontrará uma lista de livros emprestados no seu nome na biblioteca <strong>%s</strong>. Por favor, reserve um momento para renovar seus empréstimos vencidos, ou informe o encarregado da biblioteca caso tenha perdido algum livro.',
     'Title' => 'Título',
     'URL 1' => 'URL 1',
     'URL 2' => 'URL 2',
     'URL 3' => 'URL 3',
     'Username' => 'Usuário',
     'View changes' => 'Ver actualizações recentes',
+    'View on website' => 'Ver no Website',
     'View the recent changes made to the database.' => 'Ver actualizações recentes da base de dados.',
     'Who\'s checking out?' => 'Quem quer pedir o livro?',
     'Wikipedia' => 'Wikipedia',
     'Yes' => 'Sim',
-);
+    '—The Schoenstatt Link Team' => '— A Equipe do Schoenstatt Link',
+];

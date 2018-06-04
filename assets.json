@@ -1,22 +1,22 @@
 [
 {
     "type": "js",
-    "watch": ["public/js/jquery.min.js", "public/js/bootstrap.min.js", "public/js/basic-include.js"],
-    "pack": ["public/js/jquery.min.js", "public/js/bootstrap.min.js", "public/js/basic-include.js"],
+    "watch": ["public/js/basic-include.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
+    "pack": ["public/js/basic-include.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
     "output": "public/js/gen-basic.js",
     "minify": true
 },
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js"],
     "output": "public/js/gen-ui-validate.js",
     "minify": true
 },
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js"],
     "output": "public/js/gen-validate-selectize.js",
     "minify": true
 },
@@ -87,36 +87,36 @@
 
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-en.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-en.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-en.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-en.js"],
     "output": "public/js/gen-validate-selectize-markdown-en.js",
     "minify": true
 },
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-de.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-de.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-de.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-de.js"],
     "output": "public/js/gen-validate-selectize-markdown-de.js",
     "minify": true
 },
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-es.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-es.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-es.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-es.js"],
     "output": "public/js/gen-validate-selectize-markdown-es.js",
     "minify": true
 },
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-pt.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-pt.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-pt.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-pt.js"],
     "output": "public/js/gen-validate-selectize-markdown-pt.js",
     "minify": true
 },
 {
     "type": "js",
-    "watch": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-fr.js"],
-    "pack": ["public/js/jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-fr.js"],
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-fr.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/selectize.min.js", "public/js/gen-markdown-form-fr.js"],
     "output": "public/js/gen-validate-selectize-markdown-fr.js",
     "minify": true
 },
@@ -186,8 +186,8 @@
 
 {
     "type": "css",
-    "watch": ["public/css/bootstrap.min.css", "public/css/flag-icon.min.css", ""],
-    "pack": ["public/css/jquery-ui.min.css", "public/css/selectize.bootstrap3.css"],
+    "watch": ["public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "pack": ["public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
     "output": "public/css/gen-basic.css",
     "minify": true
 },

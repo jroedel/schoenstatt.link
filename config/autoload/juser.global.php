@@ -1,10 +1,12 @@
 <?php
+use Schoenstatt\Model\SchoenstattTable;
+
 return [
     'juser' => [
-        'person_provider' => 'Schoenstatt\Model\SchoenstattTable',
+        'person_provider' => SchoenstattTable::class,
     ],
     'zfcuser' => [
-        'zend_db_adapter' => 'Zend\Db\Adapter\Adapter',
+        'zend_db_adapter' => Zend\Db\Adapter\Adapter::class,
 
         'enable_default_entities' => false,
 
@@ -39,11 +41,26 @@ return [
         'allowed_login_states' => [1],
     ],
     'slm_locale' => [
-        'default' => 'en-US',
+        'default' => 'en_US',
 
         'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR'],
 
-        'strategies' => ['uripath', 'cookie', 'acceptlanguage'],
+        'strategies' => [
+            [
+                'name' => \SlmLocale\Strategy\UriPathStrategy::class,
+                'options' => [
+                    'redirect_when_found' => true,
+                    'aliases' => [
+                        'en' => 'en_US',
+                        'es' => 'es_ES',
+                        'pt' => 'pt_BR',
+                        'de' => 'de_DE',
+                    ],
+                ]
+            ],
+            'cookie', 
+            'acceptlanguage'
+        ],
 
         'aliases' => [
             'en' => 'en_US',

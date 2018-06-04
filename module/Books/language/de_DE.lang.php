@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     '$2' => '$2',
     '$3' => '$3',
     '(none)' => '(keine)',
@@ -23,6 +23,7 @@ return array(
     'English' => 'Englisch',
     'ex. Bibliotheca Sion' => 'Bsp. Sionsbibliothek',
     'Field' => 'Feld',
+    'Filiation' => 'Filiale',
     'Fr.' => 'P.',
     'German' => 'Deutsch',
     'Information' => 'Information',
@@ -53,4 +54,4 @@ return array(
     'Who\'s checking out?' => 'Wer möchte das Buch entleihen?',
     'Wikipedia' => 'Wikipedia',
     'Yes' => 'Ja',
-);
+];
