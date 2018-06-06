@@ -760,7 +760,7 @@ ORDER BY `Publisher`";
     protected function preprocessPublication($data, $entityData, $action)
     {
         //don't allow the mainPublicationId to be set to itself, also, correct it
-        if (isset($data['mainPublicationId']) &&
+        if (isset($data['mainPublicationId']) && isset($entityData['publicationId']) &&
             $data['mainPublicationId'] == $entityData['publicationId']
         ) {
             $data['mainPublicationId'] = null;
