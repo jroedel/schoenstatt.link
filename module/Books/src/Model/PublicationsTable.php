@@ -261,6 +261,7 @@ ORDER BY `Publisher`";
      */
     public function searchPublications($query)
     {
+        //@todo we're not searching authors described by author personId's
         $filter = new ToAscii();
         if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
@@ -311,9 +312,12 @@ ORDER BY `Publisher`";
                     continue;
                 }
             }
-
+            $authorText = $publication['authorsText']; //authorsText is an array
+            if (is_array($authorText)) {
+                $authorText = implode(';', $authorText);
+            }
             if (isset($query['search']) &&
-                false === stripos($filter->filter($publication['authorsText']), $query['search']) &&
+                false === stripos($filter->filter($authorText), $query['search']) &&
                 false === stripos($filter->filter($publication['title']), $query['search']) &&
                 false === stripos($filter->filter($publication['bookEdition']), $query['search']) &&
                 false === stripos($filter->filter($publication['description']), $query['search']) &&
