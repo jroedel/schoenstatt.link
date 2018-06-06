@@ -93,7 +93,7 @@ class LibrariesController extends SionController
         $schTable = $this->services[SchoenstattTable::class];
         $persons = $schTable->getUnlinkedPersons();
         foreach ($books as $bookId => $book) {
-            if (!is_null($book['checkedOutBy']) && key_exists($book['checkedOutBy'], $persons)) {
+            if (isset($book['checkedOutBy']) && key_exists($book['checkedOutBy'], $persons)) {
                 $books[$bookId]['checkedOutBy'] = $persons[$book['checkedOutBy']]['fullFriendlyName'];
             }
         }
