@@ -214,16 +214,15 @@ return [
 //             LibrariesController::class      => LibrariesController::class,
 //             BooksController::class          => BooksController::class,
 //             CheckoutsController::class      => CheckoutsController::class,
-//             BorrowersController::class      => BorrowersController::class,
 //             CollectionsController::class    => CollectionsController::class,
 //             LibraryImportsController::class => LibraryImportsController::class,
+//             BorrowersController::class      => BorrowersController::class,
 //         ],
-        'factories' => [
+         'factories' => [
              PublicationsController::class   => SionControllerFactory::class,
              LibrariesController::class      => SionControllerFactory::class,
              BooksController::class          => SionControllerFactory::class,
              CheckoutsController::class      => SionControllerFactory::class,
-             BorrowersController::class      => SionControllerFactory::class,
              CollectionsController::class    => SionControllerFactory::class,
              LibraryImportsController::class => SionControllerFactory::class,
         ],
@@ -1514,7 +1513,7 @@ return [
                 'table_key'                                 => 'PersonId',
                 'entity_key_field'                          => 'personId',
                 'sion_model_class'                          => SchoenstattTable::class,
-                'sion_controllers'                          => [BorrowersController::class],
+                'sion_controllers'                          => [],//BorrowersController::class],
                 'controller_services'                       => [
                     
                 ],

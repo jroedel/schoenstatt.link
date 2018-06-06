@@ -10,6 +10,22 @@ use Carbon\Carbon;
 
 class BorrowersController extends AbstractActionController
 {
+    /** @var SchoenstattTable $schoenstattTable */
+    protected $schoenstattTable;
+    
+    /** @var LibraryTable $libraryTable */
+    protected $libraryTable;
+    
+    /** @var PatresGateway $patresGateway */
+    protected $patresGateway;
+    
+    public function __construct(SchoenstattTable $schoenstattTable, LibraryTable $libraryTable, PatresGateway $patresGateway)
+    {
+        $this->schoenstattTable = $schoenstattTable;
+        $this->libraryTable = $libraryTable;
+        $this->patresGateway = $patresGateway;
+    }
+    
     /**
      * @todo start using the person table to look up person information. The same person
      *      should be able to be used as an author, movement role, or a borrower
@@ -23,14 +39,13 @@ class BorrowersController extends AbstractActionController
             $this->getOutOfHere();
         }
 
-        $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $schTable */
-        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $schTable = $this->schoenstattTable;
         $person = $schTable->getSimplePerson($id);
 
         //get the checkouts
         /** @var LibraryTable $table */
-        $table = $sm->get('Books\Model\LibraryTable');
+        $table = $this->libraryTable;
         $entities = $table->getCheckoutsForPerson($id);
 
         if (empty($entities)) {
@@ -52,13 +67,12 @@ class BorrowersController extends AbstractActionController
     {
         //already fixed, we will disable to prevent problems
         return;
-        $sm = $this->getServiceLocator();
         /** @var SchoenstattTable $schTable */
-        $schTable = $sm->get('Schoenstatt\Model\SchoenstattTable');
+        $schTable = $this->schoenstattTable;
         /** @var PatresGateway $gateway */
-        $gateway = $sm->get('PatresGateway');
+        $gateway = $this->patresGateway;
         /** @var LibraryTable $table */
-        $table = $sm->get('Books\Model\LibraryTable');
+        $table = $this->libraryTable;
 
         $lastCheckoutIdToUpdate = 148;
         $limitDate = Carbon::create(2017, 8, 14, 14, 00, 00);

@@ -38,7 +38,8 @@
         "zendframework/zend-mvc-form": "^1.0",
         "jroedel/zf-snap-geoip": "^3.0",
         "ocramius/proxy-manager": "^2.1",
-        "zendframework/zend-mvc-plugin-identity": "^1.1"
+        "zendframework/zend-mvc-plugin-identity": "^1.1",
+        "zendframework/zend-mvc-i18n": "^1.1"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
