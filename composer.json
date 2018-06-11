@@ -24,7 +24,7 @@
     	"neilime/zf2-mobile-detect": "^2.2",
         "kokspflanze/bjy-authorize": "dev-master",
     	"goalio/goalio-rememberme": "dev-master",
-        "zf-commons/zfc-user": "^3.0",
+        "zf-commons/zfc-user": "3.x@dev",
         "matriphe/iso-639": "^1.0",
 		"cakephp/utility": "^3.2.0",
         "mledoze/countries": "^1.8",
@@ -63,6 +63,10 @@
 	   {
 	     "type": "vcs",
 	     "url": "https://github.com/jroedel/ZfSnapGeoip"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/ZfcUser"
 	   }
 	],
 	"autoload": {
