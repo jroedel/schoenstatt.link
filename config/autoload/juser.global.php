@@ -13,10 +13,15 @@ return [
         'enable_registration' => false,
 
         'use_registration_form_captcha' => true,
+        
+        'use_login_form_captcha' => true,
 
         'form_captcha_options' => [
-                'class'   => 'figlet',
+                'class'   => 'image',
                 'options' => [
+                        'font'      => './data/fonts/OpenSans-Regular.ttf',
+                        'imgDir'   => 'public/img/captcha/',
+                        'imgUrl'   => '/img/captcha/',
                         'wordLen'    => 5,
                         'expiration' => 300,
                         'timeout'    => 300,
@@ -25,8 +30,6 @@ return [
         'enable_display_name' => true,
 
         'enable_username' => true,
-
-        'auth_identity_fields' => [ 'username', 'email' ],
 
         'login_redirect_route' => 'welcome',
 
