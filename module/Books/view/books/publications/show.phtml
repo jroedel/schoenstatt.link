@@ -1,4 +1,15 @@
-<?php
+<!-- <span class='Z3988' title='url_ver=Z39.88-2004&amp;ctx_ver=Z39.88-2004&amp;rfr_id=info%3Asid%2Fzotero.org%3A2&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=The%20Jewel%20of%20Purity&amp;rft.place=Waukesha%2C%20WI%2C%20USA&amp;rft.publisher=Schoenstatt%20Sisters%20of%20Mary&amp;rft.edition=2&amp;rft.aufirst=Josef&amp;rft.aulast=Kentenich&amp;rft.au=Josef%20Kentenich&amp;rft.au=Jonathan%20Niehaus&amp;rft.date=1993&amp;rft.tpages=103&amp;rft.language=en'></span>
+ --><?php
+$encoded = "url_ver=Z39.88-2004&amp;ctx_ver=Z39.88-2004&amp;rfr_id=info:sid/zotero.org:2&amp;rft_val_fmt=info:ofi/fmt:kev:mtx:book&amp;rft.genre=book&amp;rft.btitle=The Jewel of Purity&amp;rft.place=Waukesha, WI, USA&amp;rft.publisher=Schoenstatt Sisters of Mary&amp;rft.edition=2&amp;rft.aufirst=Josef&amp;rft.aulast=Kentenich&amp;rft.au=Josef Kentenich&amp;rft.au=Jonathan Niehaus&amp;rft.date=1993&amp;rft.tpages=103&amp;rft.language=en";
+//var_dump(md5($encoded));
+$text = urldecode($encoded);
+$text = str_replace('&amp;', '&', $text);
+//echo $this->escapeHtml($text).'<br>';
+$reencoded = urlencode($text);
+//echo $this->escapeHtml($reencoded);
+//var_dump(md5($reencoded));
+$coinsText = $this->coins('publication', $this->entity);
+//var_dump($coinsText);
 $object = $this->entity;
 //@todo add edition information and author into meta description
 $this->headMeta()->appendName('description',
@@ -17,4 +28,5 @@ if ($this->isAllowed('route/publications/publication/edit')) {
         'changes' => $this->changes,
         'panelTitle' => 'Change log'
     ]);
-}?>
+}
+echo $coinsText;?>

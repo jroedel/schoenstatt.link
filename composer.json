@@ -41,7 +41,8 @@
         "zendframework/zend-mvc-plugin-identity": "^1.1",
         "zendframework/zend-mvc-i18n": "^1.1",
         "zendframework/zend-captcha": "^2.8",
-        "zendframework/zend-text": "^2.7"
+        "zendframework/zend-text": "^2.7",
+        "talis/niso-openurl": "dev-master"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
@@ -67,6 +68,10 @@
 	   {
 	     "type": "vcs",
 	     "url": "https://github.com/jroedel/ZfcUser"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/php-niso-openurl"
 	   }
 	],
 	"autoload": {

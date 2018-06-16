@@ -50,6 +50,7 @@ use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
+use Books\View\Helper\Coins;
 
 return [
     'books' => [
@@ -278,6 +279,7 @@ return [
             'formatPublication'             => FormatPublicationFactory::class,
         ],
         'invokables' => [
+            'coins'                         => Coins::class,
             'formatPublicationUrlObject'    => FormatPublicationUrlObject::class,
             'formatField'                   => FormatField::class,
             'booksJsonLd'                   => BooksJsonLd::class,
