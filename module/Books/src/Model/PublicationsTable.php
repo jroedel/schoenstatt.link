@@ -515,7 +515,7 @@ ORDER BY `Publisher`";
                 $authorsAll[] = 'p'.$authorPerson5Id;
             }
 
-            $authorsText = $this->filterDbArray($row['Authors']);
+            $authorsText = $this->filterDbArray($row['Authors'], '; ');
             foreach ($authorsText as $author) {
                 $authorsAll[] = $author;
             }

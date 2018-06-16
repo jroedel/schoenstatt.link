@@ -59,3 +59,6 @@ Header set Cache-Control "public,max-age=2592000"
 </filesMatch>
 #ExpiresActive On
 #ExpiresByType image/svg+xml A2592000
+
+# secure cookies
+Header always edit Set-Cookie (.*) "$1; HTTPOnly; Secure; SameSite=lax"
