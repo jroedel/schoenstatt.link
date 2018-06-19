@@ -22,7 +22,7 @@ class BooksJsonLd extends AbstractHelper
         'bookCoverFile'                 => 'image',
         'isAccessibleForFree'           => 'isAccessibleForFree',
         'keywords'                      => 'keywords',
-        'title'                         => 'name',
+        'title'                         => 'name', //should this be title?
         'numberOfPages'                 => 'numberOfPages',
         'publisher'                     => 'publisher',
         'translatorPersonId'            => 'translator',
