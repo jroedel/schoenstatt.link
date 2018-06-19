@@ -7,8 +7,10 @@ use OpenURL\ContextObject;
 
 class Coins extends AbstractHelper
 {
+    const RFR_ID           = 'info:sid/zotero.org:2';
+    
     public static $fieldPropertyMap = [
-        'name'                  => 'rft.btitle',
+        'title'                 => 'rft.btitle',
         'authorText'            => 'rft.au',
         'inLanguage'            => 'rft.language',
         'numberOfPages'         => 'rft.tpages',
@@ -21,7 +23,6 @@ class Coins extends AbstractHelper
         //'rft.aufirst'                   => '',
         //'rft.aulast'                    => '',
         //'bookFormatTypeUrl'             => 'bookFormat',
-        //'copyrightYear'                 => 'copyrightYear',
         //'description'                   => 'description',
         //'genre'                         => 'genre',
         //'illustrator'                   => 'illustrator',
@@ -37,6 +38,7 @@ class Coins extends AbstractHelper
 
     public function __invoke($entityType, $object)
     {
+        //return "<span class='Z3988' title='url_ver=Z39.88-2004&amp;ctx_ver=Z39.88-2004&amp;rfr_id=info%3Asid%2Fzotero.org%3A2&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Abook&amp;rft.genre=book&amp;rft.btitle=Concilio%20Vaticano%20II.&amp;rft.place=Bogot%C3%A1&amp;rft.publisher=Ediciones%20Paulinas&amp;rft.edition=Tercera%20edici%C3%B3n.&amp;rft.series=Colecci%C3%B3n%20Iglesia%20en%20el%20mundo%20%3B%204&amp;rft.aulast=Concilio%20Vaticano%20(2o&amp;rft.au=Concilio%20Vaticano%20(2o&amp;rft.date=1966&amp;rft.tpages=731&amp;rft.language=spa'></span>";
         $openUrlObj = null;
         switch ($entityType) {
             case 'publication':
@@ -56,9 +58,7 @@ class Coins extends AbstractHelper
     public function generateCoinsAttributes($publication)
     {
         $coinsArray = [
-            'url_ver' => 'Z39.88-2004',
-            'ctx_ver' => 'Z39.88-2004',
-            'rfr_id'  => 'info:sid/schoenstatt.link:'.$publication['publicationId'],
+            'rfr_id'  => self::RFR_ID,
             'rft_val_fmt' => 'info:ofi/fmt:kev:mtx:book',
             'rft.genre' => 'book', //@todo update
         ];
@@ -67,7 +67,6 @@ class Coins extends AbstractHelper
         foreach (self::$fieldPropertyMap as $field => $property) {
             switch ($field) {
                 case 'authorText':
-                    var_dump($publication['authorsText']);
                     if (!empty($publication['authorPersons'])) {
                         // @todo this
                     } elseif (isset($publication['authorsText'])) {
@@ -99,12 +98,12 @@ class Coins extends AbstractHelper
 //                     }
 //                     break;
                 case 'url':
-                    $book->url($this->view->localeUrl('en_US', 'publications/publication', ['publication_id' => $publication['publicationId']])->__toString());
+//                    $book->url($this->view->localeUrl('en_US', 'publications/publication', ['publication_id' => $publication['publicationId']])->__toString());
 //                 case 'keywords':
 //                     if (!empty($publication[$field])) {
 //                         $book->$property(implode(',', $publication[$field]));
 //                     }
-//                     break;
+                     break;
                 case 'containedIn':
                     //isBasedOnUrl too
                     ;
@@ -146,4 +145,3 @@ class Coins extends AbstractHelper
         return $coinsArray;
     }
 }
-

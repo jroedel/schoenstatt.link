@@ -29,7 +29,10 @@ return [
         'dsn'            => 'mysql:dbname='.$dbParams['database'].';host='.$dbParams['hostname'],
         'driver_options' => [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;']
     ],
-    
+    'view_manager' => [
+        'display_not_found_reason' => false,
+        'display_exceptions'       => false,
+    ],
     'sion_model' => [
         'max_items_to_cache' => 1,
         'api_keys' => ['xxxxxxxxxxxxxxxxxxxxxx'],
