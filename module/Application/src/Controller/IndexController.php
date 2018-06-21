@@ -81,7 +81,7 @@ class IndexController extends AbstractActionController
 
         $pagesByLanguage = [];
 
-        $table = $publicationsTable;
+        $table = $this->publicationsTable;
         $publications = $table->getUnlinkedPublications();
         foreach ($publications as $publicationId => $object) {
             if ($object['resourceId'] == 'publication_public' && true === $object['isRevisedWithBookInHand']) {
