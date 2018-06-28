@@ -14,7 +14,7 @@ return [
 
         'use_registration_form_captcha' => true,
         
-        'use_login_form_captcha' => true,
+        'use_login_form_captcha' => false,
 
         'form_captcha_options' => [
                 'class'   => 'image',
@@ -71,41 +71,6 @@ return [
             'pt' => 'pt_BR',
             'de' => 'de_DE',
         ],
-    ],
-    /**
-     * GoalioRememberMe Configuration
-     */
-    'goaliorememberme' => [
-
-        /**
-         * RememberMe Model Entity Class
-    *
-    * Name of Entity class to use. Useful for using your own entity class
-    * instead of the default one provided. Default is ZfcUser\Entity\User.
-    */
-        //'remember_me_entity_class' => 'GoalioRememberMe\Entity\RememberMe',
-
-        /**
-         * Remember me cookie expire time
-    *
-    * How long will the user be remembered for, in seconds?
-    *
-    * Default value: 2592000 seconds = 30 days
-    * Accepted values: the number of seconds the user should be remembered
-    */
-        'cookie_expire' => 2592000,
-
-        /**
-         * Remember me cookie domain
-    *
-    * Default value: null (current domain]
-        * Accepted values: a string containing the domain (example.com], subdomains (sub.example.com] or the all subdomains qualifier (.example.com]
-            */
-        //'cookie_domain' => null,
-
-        /**
-         * End of GoalioRememberMe configuration
-        */
     ],
     'bjyauthorize' => [
 

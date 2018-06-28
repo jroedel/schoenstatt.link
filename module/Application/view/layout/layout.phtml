@@ -1,5 +1,7 @@
 <?php use Zend\Math\Rand;
 use Zend\Uri\Uri;
+use ZfcUser\Form\Login;
+use ZfcUser\Options\ModuleOptions;
 echo $this->doctype(); ?>
 <html lang="<?php echo Locale::getPrimaryLanguage(Locale::getDefault()); ?>">
     <head>
@@ -101,7 +103,9 @@ echo $this->doctype(); ?>
                         ->setUlClass('nav navbar-nav')
                         ->render();
                     $username = $this->zfcUserDisplayName();
-                    if (!$username) :?>
+                    if (!$username) :
+                    $form = new Login(null, new ModuleOptions());
+                    $form->prepare();?>
                     <form class="navbar-form navbar-right" method="post" action="<?php echo $this->url('zfcuser/login');?>">
                         <div class="form-group">
                           <input name="identity" placeholder="<?php echo $this->translate('Username');?>" class="form-control" type="text">
@@ -109,7 +113,9 @@ echo $this->doctype(); ?>
                         <div class="form-group">
                           <input name="credential" placeholder="<?php echo $this->translate('Password');?>" class="form-control" type="password">
                         </div>
-                        <input name="remember_me" value="1" type="hidden">
+                        <div class="form-group">
+                        <?php echo $this->formRow($form->get('security'));?>
+                        </div>
                         <button type="submit" class="btn btn-success"><?php echo $this->translate('Sign in');?></button>
                     </form>
                     <?php else:?>

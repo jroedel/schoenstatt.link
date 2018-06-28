@@ -17,6 +17,7 @@ if ($inDevelopment) {
     $toolsOrNot[] = 'ZendDeveloperTools';
 }
 $modules = [
+    'BeaucalInvalidSession',
     'Zend\Router',
     'Zend\I18n',
     'Zend\Form',
@@ -30,7 +31,6 @@ $modules = [
     'ZfcUser',
     'BjyAuthorize',
     'SlmLocale',
-    //'GoalioRememberMe',
     'JUser',
     'SionModel',
     'JTranslate',
