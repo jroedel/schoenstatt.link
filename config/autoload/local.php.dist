@@ -37,6 +37,10 @@ return [
         'max_items_to_cache' => 1,
         'api_keys' => ['xxxxxxxxxxxxxxxxxxxxxx'],
     ],
+    'books' => [
+        'files_api_key' => 'xxxxxxxxxxxxxx',
+        'files_api_url' => 'https://script.google.com/macros/s/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/exec',
+    ],
     'schoenstatt' => [
         'api_keys' => [
             'xxxxxxxxxxxxxxxxxxxxx',
