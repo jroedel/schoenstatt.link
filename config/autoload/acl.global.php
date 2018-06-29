@@ -7,6 +7,7 @@ return [
         'resource_providers' => [
             'BjyAuthorize\Provider\Resource\Config' => [
                 'personal_information' => [], //admin columns of fathers
+                'publication_files' => [],
             ],
         ],
 
@@ -21,6 +22,8 @@ return [
                 'allow' => [
                     //patres_details
 //                     [['patres_poweruser', 'patres_moderator_general', 'patres_course_moderator'], 'patres_details'],
+                    //who can see files attached to publications
+                    [['administrator'], 'publication_files'],
                 ],
             ],
         ],

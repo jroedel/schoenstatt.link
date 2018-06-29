@@ -1,0 +1,22 @@
+<?php
+return [
+    // cache options have to be compatible with Zend\Cache\StorageFactory::factory
+    'cache_options' => [
+        'adapter' => [
+            'name'    => 'filesystem',
+            'ttl'       => 60*60, //1 hour
+            // With a namespace we can indicate the same type of items
+            // -> So we can simple use the db id as cache key
+            //'options' => [
+            //    'namespace' => 'JTranslate'
+            //],
+        ],
+        'plugins' => [
+            // Don't throw exceptions on cache errors
+            //'exception_handler' => [
+            //    'throw_exceptions' => false
+                //],
+                'Serializer'
+        ],
+    ],
+];

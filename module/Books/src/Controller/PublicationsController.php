@@ -9,6 +9,7 @@ use Books\Form\PublicationsSearchForm;
 use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
 use Zend\Form\Element\Select;
+use Books\Service\DriveGateway;
 
 class PublicationsController extends SionController
 {
@@ -23,6 +24,14 @@ class PublicationsController extends SionController
             /** @var FilesTable $filesTable */
             $filesTable = $this->services[FilesTable::class];
             $entityObject['bookCoverFile'] = $filesTable->getFile($bookCoverFileId);
+            $view->setVariable('entity', $entityObject); 
+        }
+        /** @var DriveGateway $gateway */
+        $gateway = $this->services[DriveGateway::class];
+        $gateway->getCache()->flush();
+        $publicationFiles = $this->isAllowed('publication_files') ? $gateway->getPublicationFiles() : null;
+        if (isset($publicationFiles) && isset($publicationFiles[$entityObject['publicationId']])) {
+            $entityObject['files'] = $publicationFiles[$entityObject['publicationId']];
             $view->setVariable('entity', $entityObject);
         }
         return $view;
@@ -58,6 +67,9 @@ class PublicationsController extends SionController
         $languages  = $this->services['Books\LanguagesValueOptions'];
         $objects    = $table->searchPublications(['inLanguage' => $language]);
         $form = $this->services[PublicationsSearchForm::class];
+        /** @var DriveGateway $gateway */
+        $gateway = $this->services[DriveGateway::class];
+        $publicationFiles = $this->isAllowed('publication_files') ? $gateway->getPublicationFiles() : null;
         $view = new ViewModel([
             'form'      => $form,
             'language'  => $language,
@@ -65,6 +77,7 @@ class PublicationsController extends SionController
             'entity'    => $entity,
             'entitySpec'=> $entitySpec,
             'objects'   => $objects,
+            'files'     => $publicationFiles,
         ]);
         return $view;
     }

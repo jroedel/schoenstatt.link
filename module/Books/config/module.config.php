@@ -53,6 +53,9 @@ use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Books\View\Helper\Coins;
 use Books\Form;
 use Books\Model;
+use Books\Service\DriveGateway;
+use Books\Service\DriveGatewayFactory;
+use Books\View\Helper\FileSize;
 
 return [
     'books' => [
@@ -251,6 +254,7 @@ return [
             'Books\AuthorsValueOptions'     => AuthorsValueOptionsService::class,
             'Books\LanguagesValueOptions'   => LanguagesValueOptionsFactory::class,
             BooksMailer::class              => BooksMailerFactory::class,
+            DriveGateway::class             => DriveGatewayFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -283,6 +287,7 @@ return [
         ],
         'invokables' => [
             'coins'                         => Coins::class,
+            'fileSize'                      => FileSize::class,
             'formatPublicationUrlObject'    => FormatPublicationUrlObject::class,
             'formatField'                   => FormatField::class,
             'booksJsonLd'                   => BooksJsonLd::class,
@@ -1389,6 +1394,7 @@ return [
                     FilesTable::class,
                     PublicationsSearchForm::class,
                     'Books\LanguagesValueOptions',
+                    DriveGateway::class
                 ],
                 'get_object_function' 					=> 'getPublication',
                 'get_objects_function'               	=> 'getPublications',

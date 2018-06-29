@@ -732,6 +732,8 @@ ORDER BY `Publisher`";
                 'translatedFromPublication' => null,
                 'bookCoverFileId'           => null,
                 'bookCoverFile'             => null,
+                
+                'files'                     => [],
             ];
         return $processedRow;
     }

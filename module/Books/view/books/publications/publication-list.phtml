@@ -17,7 +17,9 @@ $columnNames = [
     'publicationId' => 'Publication Id',
     'language'  => 'Language',
 ];
+$files = isset($this->files) ? $this->files : null;
 ?>
+<div class="responsive-table">
 <table class="table">
 <tr><?php foreach ($columns as $key => $column) :
     if (!isset($columnNames[$column])) {
@@ -49,7 +51,12 @@ switch ($column) {
 		]);?></td>
     	<?php break;
     case 'title':?>
-		<td><?php echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);?></td>
+		<td><?php //@todo move this to the formatPublication View helper
+		echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);
+		if (isset($files) && isset($files[$entity['publicationId']])) {
+		    echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
+		        $this->translate('Downloadable files available'));
+		}?></td>
     	<?php break;
     case 'edition':?>
 		<td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>
@@ -68,3 +75,4 @@ switch ($column) {
 endforeach;
 endforeach; ?></tr>
 </table>
+</div>
