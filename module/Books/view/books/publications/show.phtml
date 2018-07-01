@@ -12,7 +12,7 @@ if ($this->isAllowed('route/publications/publication/create-new-edition')):?>
 <p><a class="btn btn-default" href="<?php echo $this->url('publications/publication/create-new-edition', [], [], true);?>"><?php
 echo $this->translate('Add another edition');?></a></p>
 <?php endif;
-if (!empty($object['files']) && $this->isAllowed('publication_files')) {
+if (!empty($object['files']) && $this->isAllowed('publication_drive')) {
     echo $this->partial('books/files/files-list-panel', [
         'files' => $object['files'],
         'columns' => ['fileName', 'notes', 'size', 'mimeType'],

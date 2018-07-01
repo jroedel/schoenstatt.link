@@ -29,7 +29,7 @@ class PublicationsController extends SionController
         /** @var DriveGateway $gateway */
         $gateway = $this->services[DriveGateway::class];
         $gateway->getCache()->flush();
-        $publicationFiles = $this->isAllowed('publication_files') ? $gateway->getPublicationFiles() : null;
+        $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
         if (isset($publicationFiles) && isset($publicationFiles[$entityObject['publicationId']])) {
             $entityObject['files'] = $publicationFiles[$entityObject['publicationId']];
             $view->setVariable('entity', $entityObject);
@@ -69,7 +69,7 @@ class PublicationsController extends SionController
         $form = $this->services[PublicationsSearchForm::class];
         /** @var DriveGateway $gateway */
         $gateway = $this->services[DriveGateway::class];
-        $publicationFiles = $this->isAllowed('publication_files') ? $gateway->getPublicationFiles() : null;
+        $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
         $view = new ViewModel([
             'form'      => $form,
             'language'  => $language,
