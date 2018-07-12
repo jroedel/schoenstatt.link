@@ -56,6 +56,7 @@ use Books\Model;
 use Books\Service\DriveGateway;
 use Books\Service\DriveGatewayFactory;
 use Books\View\Helper\FileSize;
+use Books\Service\LibraryInfoFactory;
 
 return [
     'books' => [
@@ -125,6 +126,13 @@ return [
             'libraries/library/mass-checkout'=> [
                 'label' => "Mass book checkouts",
                 'description' => 'Register offline checkout notices.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
+            'libraries/library/inactivate-books'=> [
+                'label' => "Mass book inactivation",
+                'description' => 'Inactivate books in bulk.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
@@ -284,6 +292,7 @@ return [
     'view_helpers' => [
         'factories' => [
             'formatPublication'             => FormatPublicationFactory::class,
+            'libraryInfo'                   => LibraryInfoFactory::class
         ],
         'invokables' => [
             'coins'                         => Coins::class,

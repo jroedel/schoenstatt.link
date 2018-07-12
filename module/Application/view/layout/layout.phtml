@@ -44,33 +44,33 @@ echo $this->doctype(); ?>
         }
 
         echo $this->headLink()
-	       ->prependStylesheet($this->basePath() . '/css/gen-basic.css');
+           ->prependStylesheet($this->basePath() . '/css/gen-basic.css');
 //                         ->prependStylesheet($this->basePath('css/style.css'))
 //                         ->prependStylesheet($this->basePath('css/bootstrap-theme.min.css'))
 //                         ->prependStylesheet($this->basePath('css/bootstrap.min.css')) ?>
 
-    	<!-- ****** faviconit.com favicons ****** -->
-    	<link rel="shortcut icon" href="/favicon.ico">
-    	<link rel="icon" sizes="16x16 32x32 64x64" href="/favicon.ico">
-    	<link rel="icon" type="image/png" sizes="196x196" href="/favicon-192.png">
-    	<link rel="icon" type="image/png" sizes="160x160" href="/favicon-160.png">
-    	<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
-    	<link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
-    	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
-    	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
-    	<link rel="apple-touch-icon" href="/favicon-57.png">
-    	<link rel="apple-touch-icon" sizes="114x114" href="/favicon-114.png">
-    	<link rel="apple-touch-icon" sizes="72x72" href="/favicon-72.png">
-    	<link rel="apple-touch-icon" sizes="144x144" href="/favicon-144.png">
-    	<link rel="apple-touch-icon" sizes="60x60" href="/favicon-60.png">
-    	<link rel="apple-touch-icon" sizes="120x120" href="/favicon-120.png">
-    	<link rel="apple-touch-icon" sizes="76x76" href="/favicon-76.png">
-    	<link rel="apple-touch-icon" sizes="152x152" href="/favicon-152.png">
-    	<link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
-    	<meta name="msapplication-TileColor" content="#FFFFFF">
-    	<meta name="msapplication-TileImage" content="/favicon-144.png">
-    	<meta name="msapplication-config" content="/browserconfig.xml">
-    	<!-- ****** faviconit.com favicons ****** -->
+        <!-- ****** faviconit.com favicons ****** -->
+        <link rel="shortcut icon" href="/favicon.ico">
+        <link rel="icon" sizes="16x16 32x32 64x64" href="/favicon.ico">
+        <link rel="icon" type="image/png" sizes="196x196" href="/favicon-192.png">
+        <link rel="icon" type="image/png" sizes="160x160" href="/favicon-160.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+        <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+        <link rel="apple-touch-icon" href="/favicon-57.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/favicon-114.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/favicon-72.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/favicon-144.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/favicon-60.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/favicon-120.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/favicon-76.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/favicon-152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+        <meta name="msapplication-TileColor" content="#FFFFFF">
+        <meta name="msapplication-TileImage" content="/favicon-144.png">
+        <meta name="msapplication-config" content="/browserconfig.xml">
+        <!-- ****** faviconit.com favicons ****** -->
         <!-- Le styles -->
 
         <!-- Scripts -->
@@ -87,7 +87,7 @@ echo $this->doctype(); ?>
             <div class="container">
                 <div class="navbar-header">
                     <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse"
-                    	aria-expanded="false" aria-controls=".navbar">
+                        aria-expanded="false" aria-controls=".navbar">
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
@@ -119,71 +119,93 @@ echo $this->doctype(); ?>
                         <button type="submit" class="btn btn-success"><?php echo $this->translate('Sign in');?></button>
                     </form>
                     <?php else:?>
-    				<ul class="nav navbar-nav pull-right">
-    					<?php
-    					$routeName = $this->routeName();
-    					if (0 != strcmp($routeName, 'assignments/search') &&
-					        0 != strcmp($routeName, 'assignments') &&
-					        0 != strcmp($routeName, 'publications/search') &&
-					        0 != strcmp($routeName, 'publications') &&
-					        0 != strcmp($routeName, 'schoenstatt') &&
-			                0 != strcmp($routeName, 'welcome')
-				        ) :
-				            $shouldAddSearch = false;
-					        if (false === strpos($routeName, 'publication') &&
-				                $this->isAllowed('route/assignments/search')
-			                ) {
-					            $searchUrl = $this->url('assignments/search');
-					            $placeholder = 'Search contacts';
-					            $shouldAddSearch = true;
-			                } elseif ($this->isAllowed('route/publications/search')) {
-					            $searchUrl = $this->url('publications/search');
-					            $placeholder = 'Search publications';
-					            $shouldAddSearch = true;
-    					    }
-					       if ($shouldAddSearch):?>
-        					<li class="">
-        						<form class="navbar-form"
-        							action="<?php echo $searchUrl; ?>" method="get"
-        							role="search">
-        							<div class="input-group">
-        								<input type="text" class="form-control" name="search"
-        									placeholder="<?php echo $this->translate($placeholder, 'Application');?>">
-            							<span class="input-group-btn">
-            								<button class="btn btn-info" type="submit">
-            									<i class="glyphicon glyphicon-search"></i>
-            								</button>
-            							</span>
-        							</div>
-        						</form>
-        					</li>
-    						<?php endif;
-    					endif;?>
-    					<li><a href="<?php echo $this->url('zfcuser/logout');?>"><?php
-    					echo $this->translate("Logout", 'Application');?></a></li>
-    				</ul>
-    			<?php endif;?>
+                    <ul class="nav navbar-nav pull-right">
+                        <?php
+                        $routeName = $this->routeName();
+                        
+                        //get library info
+                        $libraryInfo = null;
+                        if (false !== strpos($routeName, 'libraries/library/') || 
+                            false !== strpos($routeName, 'books/') ||
+                            false !== strpos($routeName, 'checkouts/') ||
+                            false !== strpos($routeName, 'library-imports/')
+                        ) {
+                            $libraryInfo = $this->libraryInfo();
+                        }
+                        if (0 != strcmp($routeName, 'assignments/search') &&
+                            0 != strcmp($routeName, 'assignments') &&
+                            0 != strcmp($routeName, 'publications/search') &&
+                            0 != strcmp($routeName, 'publications') &&
+                            0 != strcmp($routeName, 'schoenstatt') &&
+                            0 != strcmp($routeName, 'welcome') &&
+                            0 != strcmp($routeName, 'libraries/library')
+                        ) :
+                        $shouldAddSearch = false;
+                        if ((false !== strpos($routeName, 'libraries/library/') || 
+                                false !== strpos($routeName, 'books/') || 
+                                false !== strpos($routeName, 'checkouts/') ||
+                                false !== strpos($routeName, 'library-imports/')) &&
+                            $this->isAllowed('route/libraries/library') && 
+                            isset($libraryInfo) && isset($libraryInfo['resourceId']) &&
+                            $this->isAllowed($libraryInfo['resourceId'], 'show')
+                        ) {
+                            $searchUrl = $this->url('libraries/library', ['library_id' => $libraryInfo['libraryId']]);
+                            $placeholder = sprintf($this->translate("Search %s"), $this->escapeHtml($libraryInfo['name']));
+                            $shouldAddSearch = true;
+                        } elseif (false === strpos($routeName, 'publication') &&
+                            $this->isAllowed('route/assignments/search')
+                        ) {
+                            $searchUrl = $this->url('assignments/search');
+                            $placeholder = 'Search contacts';
+                            $shouldAddSearch = true;
+                        } elseif ($this->isAllowed('route/publications/search')) {
+                            $searchUrl = $this->url('publications/search');
+                            $placeholder = 'Search publications';
+                            $shouldAddSearch = true;
+                        }
+                        if ($shouldAddSearch):?>
+                            <li class="">
+                                <form class="navbar-form"
+                                    action="<?php echo $searchUrl; ?>" method="get"
+                                    role="search">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="search"
+                                            placeholder="<?php echo $this->translate($placeholder, 'Application');?>">
+                                        <span class="input-group-btn">
+                                            <button class="btn btn-info" type="submit">
+                                                <i class="glyphicon glyphicon-search"></i>
+                                            </button>
+                                        </span>
+                                    </div>
+                                </form>
+                            </li>
+                            <?php endif;
+                        endif;?>
+                        <li><a href="<?php echo $this->url('zfcuser/logout');?>"><?php
+                        echo $this->translate("Logout", 'Application');?></a></li>
+                    </ul>
+                <?php endif;?>
                 </div><!--/.nav-collapse -->
             </div>
         </nav>
         <div class="container" role="main">
-        	<div class="row">
-            	<div id="langs" class="pull-right" data-toggle="tooltip" data-placement="bottom"
-            	data-container="body" data-original-title="<?php echo $this->translate("Current:", 'Application').
-    					' '.Locale::getDefault();?>">
-    				<?php $en = ['us', 'gb'];
-    				      $es = ['ar', 'es', 'cl', 'mx'];
-    				      $de = ['de', 'ch'];
-    				      $pt = ['pt', 'br'];?>
-                	<a href="<?php echo $this->localeUrl('en_US');?>"><span class="flag-icon flag-icon-<?php echo $en[Rand::getInteger(0, 1)]; ?>"></span></a>
-                	<a href="<?php echo $this->localeUrl('es_ES');?>"><span class="flag-icon flag-icon-<?php echo $es[Rand::getInteger(0, 3)]; ?>"></span></a>
-                	<a href="<?php echo $this->localeUrl('de_DE');?>"><span class="flag-icon flag-icon-<?php echo $de[Rand::getInteger(0, 1)]; ?>"></span></a>
-                	<a href="<?php echo $this->localeUrl('pt_BR');?>"><span class="flag-icon flag-icon-<?php echo $pt[Rand::getInteger(0, 1)]; ?>"></span></a>
-            	</div>
-    		</div>
+            <div class="row">
+                <div id="langs" class="pull-right" data-toggle="tooltip" data-placement="bottom"
+                data-container="body" data-original-title="<?php echo $this->translate("Current:", 'Application').
+                        ' '.Locale::getDefault();?>">
+                    <?php $en = ['us', 'gb'];
+                          $es = ['ar', 'es', 'cl', 'mx'];
+                          $de = ['de', 'ch'];
+                          $pt = ['pt', 'br'];?>
+                    <a href="<?php echo $this->localeUrl('en_US');?>"><span class="flag-icon flag-icon-<?php echo $en[Rand::getInteger(0, 1)]; ?>"></span></a>
+                    <a href="<?php echo $this->localeUrl('es_ES');?>"><span class="flag-icon flag-icon-<?php echo $es[Rand::getInteger(0, 3)]; ?>"></span></a>
+                    <a href="<?php echo $this->localeUrl('de_DE');?>"><span class="flag-icon flag-icon-<?php echo $de[Rand::getInteger(0, 1)]; ?>"></span></a>
+                    <a href="<?php echo $this->localeUrl('pt_BR');?>"><span class="flag-icon flag-icon-<?php echo $pt[Rand::getInteger(0, 1)]; ?>"></span></a>
+                </div>
+            </div>
             <?php
-    		$flash = $this->flashMessenger();
-    		$flash->setMessageOpenFormat('<div%s>
+            $flash = $this->flashMessenger();
+            $flash->setMessageOpenFormat('<div%s>
          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
              &times;
          </button>
@@ -198,13 +220,13 @@ echo $this->doctype(); ?>
          echo $this->nowMessenger();
 
          echo $this->content; ?>
-        	<div class="footer">
-        		<hr>
+            <div class="footer">
+                <hr>
                 <p class="text-center">© Schoenstatt Data Initiative 2017 <?php
                 if ($this->isAllowed('welcome')):?>
-                	| <a href="<?php echo $this->url('welcome')?>"><?php echo $this->translate('About');?></a>
-            	<?php endif;?></p>
-        	</div>
+                    | <a href="<?php echo $this->url('welcome')?>"><?php echo $this->translate('About');?></a>
+                <?php endif;?></p>
+            </div>
         </div> <!-- /container -->
 <?php
 $this->inlineScript()->captureStart();
