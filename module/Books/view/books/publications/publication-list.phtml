@@ -53,9 +53,19 @@ switch ($column) {
     case 'title':?>
 		<td><?php //@todo move this to the formatPublication View helper
 		echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);
-		if (isset($files) && isset($files[$entity['publicationId']])) {
-		    echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
-		        $this->translate('Downloadable files available'));
+		if (isset($files)) {
+		    if (isset($files[$entity['publicationId']])) {
+    		    echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
+    		        $this->translate('Downloadable files available'));
+		    } elseif (!empty($entity['subEditions'])) {
+                foreach ($entity['subEditions'] as $key => $value) {
+                    if (isset($files[$key])) {
+                        echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
+                            $this->translate('Downloadable files available'));
+                        break;
+                    }
+                }
+		    }
 		}?></td>
     	<?php break;
     case 'edition':?>
