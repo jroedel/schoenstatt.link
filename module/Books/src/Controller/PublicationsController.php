@@ -33,8 +33,17 @@ class PublicationsController extends SionController
         try {
             $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
         } catch (\Exception $e) { }
-        if (isset($publicationFiles) && isset($publicationFiles[$entityObject['publicationId']])) {
-            $entityObject['files'] = $publicationFiles[$entityObject['publicationId']];
+        if (isset($publicationFiles)) {
+            if (isset($publicationFiles[$entityObject['publicationId']])) {
+                $entityObject['files'] = $publicationFiles[$entityObject['publicationId']];
+            }
+            if (isset($entityObject['subEditions']) && is_array($entityObject['subEditions'])) {
+                foreach ($entityObject['subEditions'] as $key => $value) {
+                    if (isset($publicationFiles[$key])) {
+                        $entityObject['files'] = array_merge($entityObject['files'], $publicationFiles[$key]);
+                    }
+                }
+            }
             $view->setVariable('entity', $entityObject);
         }
         return $view;

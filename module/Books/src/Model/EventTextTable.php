@@ -2,6 +2,7 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
+use Zend\Db\Sql\Where;
 
 class EventTextTable extends SionTable
 {
@@ -9,7 +10,7 @@ class EventTextTable extends SionTable
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, array $config)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
-        $this->config = $libraryConfig;
+        $this->config = $config;
     }
     
     
@@ -20,16 +21,9 @@ class EventTextTable extends SionTable
      */
     protected function processEventRow($row)
     {
-        $id = $this->filterDbId($row['book_id']);
-        $authorText = $this->filterDbString($row['author']);
-        $authors = $this->filterDbArray($authorText);
-        $authorsPrettyText = implode('; ', $authors);
-        $title = $this->filterDbString($row['title']);
-        $name = $authorsPrettyText . ($authorText ? ' - ' : '') . $title;
-        $libraryId = $this->filterDbId($row['library_id']);
-        $isActive = $this->filterDbBool($row['is_active']);
+        $id = $this->filterDbId($row['EventId']);
         $processedRow = [
-            'eventId'               => $this->filterDbId($row['EventId']),
+            'eventId'               => $id,
             'titleEn'               => $row['TitleEn'],
             'titleEs'               => $row['TitleEs'],
             'titleDe'               => $row['TitleDe'],
@@ -51,10 +45,10 @@ class EventTextTable extends SionTable
             'adminTags'             => $row['AdminTags'],
             'audienceText'          => $row['AudienceText'],
             'abbreviationEn'        => $row['AbbreviationEn'],
-            'abbreviationEs'        => $row['AbbreviationEs'],
+//            'abbreviationEs'        => $row['AbbreviationEs'],
             'abbreviationDe'        => $row['AbbreviationDe'],
-            'abbreviationPt'        => $row['AbbreviationPt'],
-            'abbreviationFr'        => $row['AbbreviationFr'],
+//            'abbreviationPt'        => $row['AbbreviationPt'],
+//            'abbreviationFr'        => $row['AbbreviationFr'],
             'aclResourceId'         => $row['AclResourceId'],
             'publicNotes'           => $row['PublicNotes'],
             'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
@@ -73,44 +67,150 @@ class EventTextTable extends SionTable
         return $processedRow;
     }
     
-    /**
-     * Retrieve an array of book records. There are 3 possibilities of
-     * selecting books. If the $bookIds parameter isn't empty, only these Ids will be retrieved.
-     * If libraryId member is set, all books from that library, books from any/all libraries.
-     * @param array $bookIds
-     * @return array
-     */
-    protected function getUnlinkedBooks(array $bookIds = [])
+    public function searchEvents($query, $options = [])
     {
-        $libraryId = $this->getLibraryId();
-        $cacheKey = !isset($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
-        if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
-            return $cache;
+        $queryParameters = [
+            'title', 'search', //'startDate', 'endDate', 'period'
+        ];
+        $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
+        
+        $fieldMap = $this->getEntitySpecification('event')->updateColumns;
+        
+        $gateway = $this->getTableGateway('jk_events');
+        $select = $this->getEventSelectPrototype();
+        $where = new Where();
+        
+        //Prepare the libraryId predicate
+//         $libraryClause = null;
+//         if (isset($query['libraryId'])) {
+//             if (is_array($query['libraryId'])) {
+//                 $libaries = [];
+//                 foreach ($query['libraryId'] as $value) {
+//                     if (is_numeric($value) && !in_array($value, $libaries)) {
+//                         $libaries[] = $value;
+//                     }
+//                 }
+//                 if (count($libaries) === 1) {
+//                     $query['libraryId'] = $libaries[0];
+//                 } elseif (count($libraries) > 1) {
+//                     $libraryClause = new In($fieldMap['libraryId'], $libaries);
+//                 }
+//             }
+//             if (is_numeric($query['libraryId'])) {
+//                 $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $query['libraryId']);
+//             }
+//         } elseif (isset($libraryId)) { //if the caller didn't specify a libraryId query param, set the current library
+//             $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $libraryId);
+//         }
+//         if (isset($libraryClause)) {
+//             $where->addPredicate($libraryClause, PredicateSet::OP_AND);
+//         }
+        
+        //Prepare the search predicate
+        if (isset($query['search'])) {
+            $search = $query['search'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $searchClause = new Predicate();
+            $searchClause->addPredicates([
+                new Like($fieldMap['titleEn'], $searchLike),
+                new Like($fieldMap['titleEs'], $searchLike),
+                new Like($fieldMap['titleDe'], $searchLike),
+                new Like($fieldMap['titlePt'], $searchLike),
+                new Like($fieldMap['titleFr'], $searchLike),
+                //new Operator($fieldMap['withinLibraryId'], Operator::OPERATOR_EQUAL_TO, $search),
+            ], PredicateSet::OP_OR);
+            $where->addPredicate($searchClause);
         }
         
-        $gateway = $this->getTableGateway('lib_books');
-        $where = [];
-        if (!empty($bookIds)) {
-            $where['book_id'] = $bookIds;
-        }
-        if (isset($libraryId)) {
-            $select = $this->getBookSelectPrototype();
-            $where['library_id'] = $libraryId;
-            $select->where($where);
-            $results = $gateway->selectWith($select);
-        } else {
-            $select = $this->getBookSelectPrototype();
-            if (!empty($where)) {
-                $select->where($where);
-            }
-            $results = $gateway->selectWith($select);
-        }
+        // Prepare collectionId predicate, could be used to search for a period
+//         if (isset($query['collectionId'])) {
+//             $collectionIdClause = null;
+//             if (is_array($query['collectionId'])) {
+//                 $collections = [];
+//                 foreach ($query['collectionId'] as $value) {
+//                     if (is_numeric($value) && !in_array($value, $collections)) {
+//                         $collections[] = $value;
+//                     }
+//                 }
+//                 if (count($collections) === 1) {
+//                     $query['collectionId'] = $collections[0];
+//                 } elseif (count($collections) > 1) {
+//                     $collectionIdClause= new In($fieldMap['collectionId'], $collections);
+//                 }
+//             }
+//             if (is_numeric($query['collectionId'])) {
+//                 $collectionIdClause= new Operator($fieldMap['collectionId'], Operator::OPERATOR_EQUAL_TO, $query['collectionId']);
+//             }
+//             if (isset($collectionIdClause)) {
+//                 $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
+//             }
+//         }
+        
+        //Prepare category predicate
+//         if (isset($query['category'])) {
+//             $categoryClause = null;
+//             if (is_array($query['category'])) {
+//                 $categories = [];
+//                 foreach ($query['category'] as $value) {
+//                     if (0 !== strlen($value) && !in_array($value, $categories)) {
+//                         $categories[] = $value;
+//                     }
+//                 }
+//                 if (count($categories) === 1) {
+//                     $query['category'] = $categories[0];
+//                 } elseif (count($categories) > 1) {
+//                     $categoryClause= new In($fieldMap['category'], $categories);
+//                 }
+//             }
+//             if (is_string($query['category']) && 0 !== strlen($query['category'])) {
+//                 $categoryClause = new Operator($fieldMap['category'], Operator::OPERATOR_EQUAL_TO, $query['category']);
+//             }
+//             if (isset($categoryClause)) {
+//                 $where->addPredicate($categoryClause, PredicateSet::OP_AND);
+//             }
+//         }
+        
+        //Prepare title predicate
+//         if (isset($query['title']) && 0 !== strlen($query['title'])) {
+//             $search = $query['title'];
+//             $searchLike = sprintf("%%%s%%",$search);
+//             $titleClause = new Operator($fieldMap['title'], Operator::OPERATOR_EQUAL_TO, $query['title']);
+//             $where->addPredicate($titleClause, PredicateSet::OP_AND);
+//         }
+        
+        //Prepare isActive predicate, default to true unless caller sets it to null
+//         if (!array_key_exists('isActive', $query) ||
+//             (!is_bool($query['isActive']) && null !== $query['isActive'])
+//         ) {
+//             $query['isActive'] = true;
+//         }
+//         if (isset($query['isActive'])) {
+//             $isActiveClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
+//             $where->addPredicate($isActiveClause, PredicateSet::OP_AND);
+//         }
+        
+        //Set the where clause
+        $select->where($where);
+        
+        $results = $gateway->selectWith($select);
         $entities = [];
+//         $eventsToGrab = [];
         foreach ($results as $row) {
             $processedRow = $this->processBookRow($row);
-            $entities[$processedRow['bookId']] = $processedRow;
+//             if (isset($processedRow['currentCheckoutId'])) {
+//                 $eventsToGrab[$processedRow['eventId']] = $processedRow['currentCheckoutId'];
+//             }
+            $entities[$processedRow['eventId']] = $processedRow;
         }
-        $this->cacheEntityObjects($cacheKey, $entities, ['book']);
+        
+        //grab checkouts to fill them in to entities
+//         $checkouts = $this->getCheckouts(array_values($eventsToGrab));
+//         foreach ($eventsToGrab as $bookId => $checkoutId) {
+//             if (isset($checkouts[$checkoutId])) {
+//                 $entities[$bookId]['currentCheckout'] = $checkouts[$checkoutId];
+//             }
+//         }
+        
         return $entities;
     }
     
@@ -128,7 +228,8 @@ class EventTextTable extends SionTable
                 'Country', 'OriginalLanguage', 'DescriptionEn', 'DescriptionEs', 'DescriptionDe', 
                 'DescriptionPt', 'DescriptionFr', 'StartDate', 'DurationInDays', 'Accuracy', 
                 'BestTextQuality', 'Place', 'Tags', 'AdminTags', 'AudienceText', 'AbbreviationEn', 
-                'AbbreviationEs', 'AbbreviationDe', 'AbbreviationPt', 'AbbreviationFr', 'AclResourceId', 
+//                'AbbreviationEs', 'AbbreviationPt', 'AbbreviationFr', 
+                'AbbreviationDe', 'AclResourceId', 
                 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminNotes', 'AdminNotesUpdatedOn', 
                 'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'LegacySource', 
                 'LegacyFile', 'LegacyFileDateModified'
@@ -141,5 +242,4 @@ class EventTextTable extends SionTable
         
         return clone $select;
     }
-    
 }
