@@ -1215,6 +1215,7 @@ return [
                 'controller_services'                       => [
                     'Books\BorrowersValueOptions',
                     PublicationsTable::class,
+                    LibraryTable::class,
                 ],
                 'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
