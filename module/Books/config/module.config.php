@@ -1404,7 +1404,8 @@ return [
                     FilesTable::class,
                     PublicationsSearchForm::class,
                     'Books\LanguagesValueOptions',
-                    DriveGateway::class
+                    DriveGateway::class,
+                    LibraryTable::class,
                 ],
                 'get_object_function' 					=> 'getPublication',
                 'get_objects_function'               	=> 'getPublications',

@@ -10,6 +10,7 @@ use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
 use Zend\Form\Element\Select;
 use Books\Service\DriveGateway;
+use Books\Model\LibraryTable;
 
 class PublicationsController extends SionController
 {
@@ -46,6 +47,32 @@ class PublicationsController extends SionController
             }
             $view->setVariable('entity', $entityObject);
         }
+        
+        //get library results
+        /** @var LibraryTable $libraryTable */
+        $libraryTable = $this->services[LibraryTable::class];
+        $libraries = $libraryTable->getUnlinkedLibraries();
+        //check which libraries the user has access to
+        foreach ($libraries as $libraryId => $library) {
+            if (!$this->isAllowed($library['resourceId'], 'show')) {
+                unset($libraries[$libraryId]);
+            }
+        }
+        //gather the publicationIds to search for
+        $publicationIds = [$entityObject['publicationId']];
+        if (isset($entityObject['subEditions']) && is_array($entityObject['subEditions']) && !empty($entityObject['subEditions'])) {
+            $publicationIds = array_merge($publicationIds, $entityObject['subEditions']);
+        }
+        //search the viewable libraries for pubId's related to this item (including subeditions)
+        $libraryBooks = $libraryTable->searchBooks(['libraryId' => array_keys($libraries), 'publicationId' => $publicationIds]);
+        foreach ($libraryBooks as $bookId => $book) {
+            if (isset($libraries[$book['libraryId']])) {
+                $libraryBooks[$bookId]['library'] = &$libraries[$book['libraryId']];
+            }
+        }
+        $view->setVariable('libraryBooks', $libraryBooks);
+        $view->setVariable('libraries', $libraries);
+        
         return $view;
     }
 

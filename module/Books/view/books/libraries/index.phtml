@@ -16,7 +16,7 @@ $this->headTitle($headText);?>
 	<a href="<?php echo $this->url('libraries/library', ['library_id' => $libraryId]);?>" class="list-group-item">
     	<span class="badge"><?php echo $this->escapeHtml($library['bookCount']); ?></span>
     <h4 class="list-group-item-heading"><?php echo $this->formatEntity('library', $library, ['displayEditPencil' => false, 'displayAsLink' => false]);?></h4>
-    <?php if (!is_null($library['description'])):?>
+    <?php if (isset($library['description'])):?>
     <p class="list-group-item-text"><?php echo $this->escapeHtml($this->translate($library['description']));?></p>
 	<?php endif;?></a>
 <?php endforeach;?>

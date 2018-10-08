@@ -18,6 +18,10 @@ if (!empty($object['files']) && $this->isAllowed('publication_drive')) {
         'columns' => ['fileName', 'notes', 'size', 'mimeType'],
     ]);
 }
+echo $this->partial('books/books/book-list', [
+    'entities' => $this->libraryBooks,
+    'columns' => ['library', 'book', 'callNumber'], //@todo add library contact info
+]);
 if ($this->isAllowed('route/publications/publication/edit')) {
     echo $this->partial('sion-model/sion-model/entity-changes-panel', [
         'changes' => $this->changes,
