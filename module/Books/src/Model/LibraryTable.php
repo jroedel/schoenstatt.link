@@ -313,7 +313,8 @@ ORDER BY `publisher`";
         $queryParameters = [
             'title', 'author', 'search',
             'isActive', 'isCheckedOut',
-            'collectionId', 'libraryId', 'category'
+            'collectionId', 'libraryId', 'category',
+            'publicationId'
         ];
         $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
 
@@ -327,16 +328,16 @@ ORDER BY `publisher`";
         $libraryClause = null;
         if (isset($query['libraryId'])) {
             if (is_array($query['libraryId'])) {
-                $libaries = [];
+                $libraries = [];
                 foreach ($query['libraryId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $libaries)) {
-                        $libaries[] = $value;
+                    if (is_numeric($value) && !in_array($value, $libraries)) {
+                        $libraries[] = $value;
                     }
                 }
-                if (count($libaries) === 1) {
-                    $query['libraryId'] = $libaries[0];
+                if (count($libraries) === 1) {
+                    $query['libraryId'] = $libraries[0];
                 } elseif (count($libraries) > 1) {
-                    $libraryClause = new In($fieldMap['libraryId'], $libaries);
+                    $libraryClause = new In($fieldMap['libraryId'], $libraries);
                 }
             }
             if (is_numeric($query['libraryId'])) {
@@ -385,6 +386,30 @@ ORDER BY `publisher`";
             }
             if (isset($collectionIdClause)) {
                 $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
+            }
+        }
+        
+        // Prepare publicationId predicate
+        if (isset($query['publicationId'])) {
+            $publicationIdClause = null;
+            if (is_array($query['publicationId'])) {
+                $publications = [];
+                foreach ($query['publicationId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $publications)) {
+                        $publications[] = $value;
+                    }
+                }
+                if (count($publications) === 1) {
+                    $query['publicationId'] = $publications[0];
+                } elseif (count($publications) > 1) {
+                    $publicationIdClause= new In($fieldMap['publicationId'], $publications);
+                }
+            }
+            if (is_numeric($query['publicationId'])) {
+                $publicationIdClause= new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
+            }
+            if (isset($publicationIdClause)) {
+                $where->addPredicate($publicationIdClause, PredicateSet::OP_AND);
             }
         }
 
@@ -447,6 +472,7 @@ ORDER BY `publisher`";
         $results = $gateway->selectWith($select);
         $entities = [];
         $checkoutsToGrab = [];
+        
         foreach ($results as $row) {
             $processedRow = $this->processBookRow($row);
             if (isset($processedRow['currentCheckoutId'])) {
@@ -1550,7 +1576,16 @@ ORDER BY CreatedOn DESC";
         }
 
         $entities = $this->getUnlinkedCheckouts($checkoutIds);
-        $books = $this->getUnlinkedBooks();
+        
+        //ennumerate bookIds to avoid processing ALL books
+        $bookIds = [];
+        foreach ($entities as $checkout) {
+            if (!isset($bookIds[$checkout['bookId']])) {
+                $bookIds[$checkout['bookId']] = true;
+            }
+        }
+        
+        $books = $this->getUnlinkedBooks(array_keys($bookIds));
         $libraries = $this->getUnlinkedLibraries();
 
         foreach ($entities as $entityId => $entity) {
