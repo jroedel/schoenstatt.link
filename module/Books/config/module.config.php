@@ -1766,19 +1766,19 @@ return [
                 ['route' => 'publications/publication/create-new-edition', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
-                ['route' => 'home', 'roles' => ['lib_user']],
-                ['route' => 'libraries', 'roles' => ['lib_user']],
+                ['route' => 'home', 'roles' => ['guest', 'lib_user']],
+                ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
 
                 //@todo define library-specific ACL
 
-                ['route' => 'books/book', 'roles' => ['lib_user']],
+                ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
                 ['route' => 'books/create', 'roles' => ['lib_user']],
 
-                ['route' => 'libraries/library', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/create', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/book-list', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/book-list', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_user']],
@@ -1794,7 +1794,6 @@ return [
                 ['route' => 'borrowers', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/fix-person-id', 'roles' => ['lib_administrator']],
-                ['route' => 'books/book', 'roles' => ['lib_user']],
 
                 ['route' => 'collections/collection/edit', 'roles' => ['lib_user']],
                 ['route' => 'collections/create', 'roles' => ['lib_user']],

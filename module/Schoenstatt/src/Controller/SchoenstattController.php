@@ -103,7 +103,7 @@ class SchoenstattController extends AbstractActionController
             preg_match($reCoordinates, $feature[1], $coordinatesMatch);
             $name = $nameMatch[1];
             if (!isset($name)) {
-                var_dump($nameMatch);
+//                 var_dump($nameMatch);
             }
             $description = isset($descriptionMatch[1]) ? $descriptionMatch[1] : null;
             $styleUrl = isset($styleUrlMatch[1]) ? $styleUrlMatch[1] : null;
