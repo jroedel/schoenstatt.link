@@ -291,7 +291,7 @@ class PublicationsController extends SionController
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
-                var_dump($data);
+//                 var_dump($data);
                 /** @var FilesTable $filesTable */
                 $filesTable = $this->services[FilesTable::class];
                 if (!$newId = $filesTable->createEntity('file', $data)) {

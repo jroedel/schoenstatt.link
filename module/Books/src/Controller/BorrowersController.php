@@ -95,12 +95,12 @@ class BorrowersController extends AbstractActionController
             }
             if (is_null($checkout['personId'])) {
 //                 $schTable->deleteEntity('checkout', $checkoutId);
-                var_dump($checkout);
+//                 var_dump($checkout);
                 continue;
             }
             if (!key_exists($checkout['personId'], $patresToSchPersonMap)) {
                 if (false === $schPersonId = $gateway->importRemotePerson($checkout['personId'], true, ['isBorrower' => true])) {
-                    var_dump("Error importing $checkoutId");
+//                     var_dump("Error importing $checkoutId");
                     continue;
                 }
                 $patresToSchPersonMap[$checkout['personId']] = $schPersonId;

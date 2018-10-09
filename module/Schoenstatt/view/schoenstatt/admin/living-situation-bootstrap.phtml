@@ -16,7 +16,7 @@ foreach ($this->entities as $person) :
 	<tr>
 	<?php foreach ($this->columns as $key => $value) : ?>
 	    <td><?php if (is_object($person[$key])) {
-	        var_dump($person[$key]);
+// 	        var_dump($person[$key]);
 	    } else {
 	    echo $this->escapeHtml($person[$key]);
 	    }?></td>

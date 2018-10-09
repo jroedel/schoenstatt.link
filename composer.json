@@ -42,7 +42,9 @@
         "zendframework/zend-captcha": "^2.8",
         "zendframework/zend-text": "^2.7",
         "talis/niso-openurl": "dev-master",
-        "beaucal/beaucal-invalid-session": "^0.3.0"
+        "beaucal/beaucal-invalid-session": "^0.3.0",
+        "zendframework/zend-mvc-plugin-prg": "^1.1",
+        "swiftmailer/swiftmailer": "^6.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

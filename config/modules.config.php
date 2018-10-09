@@ -24,6 +24,7 @@ $modules = [
     'Zend\Navigation',
     'Zend\Mvc\Plugin\Identity',
     'Zend\Mvc\Plugin\FlashMessenger',
+    'Zend\Mvc\Plugin\Prg',
     'Zend\Mvc\I18n',
     'Zend\Validator',
     'MaglMarkdown',

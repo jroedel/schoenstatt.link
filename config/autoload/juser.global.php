@@ -22,7 +22,9 @@ return [
 
         'enable_default_entities' => false,
 
-        'enable_registration' => false,
+        'enable_registration' => true,
+        
+        'login_after_registration' => true,
 
         'use_registration_form_captcha' => true,
         
@@ -91,12 +93,13 @@ return [
              * access to all routes unless they are specified here.
             */
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'zfcuser/login', 'roles' => ['guest']],
-                ['route' => 'zfcuser/logout', 'roles' => ['user']],
+                ['route' => 'zfcuser/login', 'roles' => ['guest', null]],
+                ['route' => 'zfcuser/logout', 'roles' => ['user', null]],
                 ['route' => 'change-password', 'roles' => ['user']],
 //                 ['route' => 'change-email', 'roles' => ['user']],
-                ['route' => 'register', 'roles' => ['guest']],
-//                 ['route' => 'zfcuser/register', 'roles' => ['guest']],
+                ['route' => 'zfcuser/register', 'roles' => ['guest']],
+                ['route' => 'juser/verify-email', 'roles' => ['guest', 'user', null]],
+                ['route' => 'juser/thanks', 'roles' => ['guest', 'user', null]],
                 ['route' => 'juser', 'roles' => ['administrator']],
                 ['route' => 'juser/user/edit', 'roles' => ['administrator']],
                 ['route' => 'juser/user/delete', 'roles' => ['administrator']],

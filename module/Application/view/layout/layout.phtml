@@ -103,6 +103,7 @@ echo $this->doctype(); ?>
                         ->setUlClass('nav navbar-nav')
                         ->render();
                     $username = $this->zfcUserDisplayName();
+                    $routeName = $this->routeName();
                     if (!$username) :
                     $form = new Login(null, new ModuleOptions());
                     $form->prepare();?>
@@ -117,12 +118,13 @@ echo $this->doctype(); ?>
                         <?php echo $this->formRow($form->get('security'));?>
                         </div>
                         <button type="submit" class="btn btn-success"><?php echo $this->translate('Sign in');?></button>
+                        <?php if ('zfcuser/register' != $routeName):?>
+                        <a class="btn btn-primary" href="<?php echo $this->url('zfcuser/register', [], ['query' => ['redirect' => $this->url('juser/thanks')]]);?>"><?php echo $this->translate('Register');?></a>
+                    	<?php endif;?>
                     </form>
                     <?php else:?>
                     <ul class="nav navbar-nav pull-right">
                         <?php
-                        $routeName = $this->routeName();
-                        
                         //get library info
                         $libraryInfo = null;
                         if (false !== strpos($routeName, 'libraries/library/') || 
