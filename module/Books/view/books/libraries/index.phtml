@@ -12,7 +12,11 @@ $this->headTitle($headText);?>
 <div class="row">
 <div class="col-md-8 col-md-offset-2">
 <div class="list-group">
-<?php foreach ($this->objects as $libraryId => $library) : ?>
+<?php foreach ($this->objects as $libraryId => $library) : 
+    //don't show the libraries the user doesn't have permission to see
+    if (!$this->isAllowed($library['resourceId'], 'show')) {
+        continue;
+    }?>
 	<a href="<?php echo $this->url('libraries/library', ['library_id' => $libraryId]);?>" class="list-group-item">
     	<span class="badge"><?php echo $this->escapeHtml($library['bookCount']); ?></span>
     <h4 class="list-group-item-heading"><?php echo $this->formatEntity('library', $library, ['displayEditPencil' => false, 'displayAsLink' => false]);?></h4>
