@@ -1754,10 +1754,18 @@ ORDER BY CreatedOn DESC";
         foreach ($libraries as $key => $object)
         {
             if (isset($object['viewRole'])) {
-                $allow[] = [[$object['viewRole']], $object['resourceId'], 'show'];
+                $viewRoles = [$object['viewRole']];
+                if ($object['viewRole'] == 'guest') { //if it's free to guests, it should also be open to users.
+                    $viewRoles[] = 'user';
+                }
+                $allow[] = [$viewRoles, $object['resourceId'], 'show'];
             }
             if (isset($object['checkoutBooksRole'])) {
-                $allow[] = [[$object['checkoutBooksRole']], $object['resourceId'], 'checkout'];
+                $roles = [$object['checkoutBooksRole']];
+                if ($object['checkoutBooksRole'] == 'guest') { //if it's free to guests, it should also be open to users.
+                    $roles[] = 'user';
+                }
+                $allow[] = [$roles, $object['resourceId'], 'checkout'];
             }
             /*
              * @todo create a way of adding a list of library administrators from a table
