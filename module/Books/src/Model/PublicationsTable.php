@@ -157,8 +157,15 @@ ORDER BY `Publisher`";
         $entities = $this->getUnlinkedPublications();
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
-            $return[$entityId] = $entityObject['title'].
-                (isset($entityObject['bookEdition']) ? '"'.$entityObject['bookEdition'].'"' : '');
+            $entry = $entityObject['title'];
+            if (isset($entityObject['bookEdition']) || isset($entityObject['copyrightYear'])) {
+                if (isset($entityObject['bookEdition']) && isset($entityObject['copyrightYear'])) {
+                    $entry .= ('['.$entityObject['bookEdition'].', '.$entityObject['copyrightYear']. ']');
+                } else {
+                    $entry .= ('['.$entityObject['bookEdition'].$entityObject['copyrightYear']. ']');
+                }
+            }
+            $return[$entityId] = $entry;
         }
         return $return;
     }
