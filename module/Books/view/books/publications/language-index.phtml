@@ -18,7 +18,7 @@ $this->badge()->setTranslatorEnabled(false); ?>
 <?php foreach ($this->objects as $inLanguage => $count) :?>
 	<a href="<?php echo $this->url('publications/index', ['inLanguage' => $inLanguage]);?>" class="list-group-item">
     	<span class="badge alert-info"><?php echo $this->escapeHtml($count); ?></span>
-    <h4 class="list-group-item-heading"><?php echo $this->escapeHtml(array_key_exists($inLanguage, $this->languages) ? $this->languages[$inLanguage] : $inLanguage);?></h4></a>
+    <h4 class="list-group-item-heading"><?php echo $this->escapeHtml(array_key_exists($inLanguage, $this->languages) ? $this->translate($this->languages[$inLanguage]) : $inLanguage);?></h4></a>
 <?php endforeach;?>
 </div>
 </div>
