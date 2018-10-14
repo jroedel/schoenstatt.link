@@ -368,6 +368,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     'publication_patres' => 'Schoenstatt Fathers',
                 ],
             ],
+            'attributes' => [
+                'value' => 'publication_public',
+            ],
+            
         ]);
         $this->add([
             'name' => 'isAccessibleForFree',
