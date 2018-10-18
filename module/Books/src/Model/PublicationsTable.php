@@ -6,6 +6,7 @@ use SionModel\Filter\ToAscii;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Db\Sql\Select;
 use Zend\Validator\Regex;
+use Zend\Db\Sql\Predicate\Expression;
 
 class PublicationsTable extends SionTable
 {
@@ -250,10 +251,11 @@ ORDER BY `Publisher`";
                 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminNotes', 'AdminNotesUpdatedOn',
                 'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'HasNoISBN',
                 'IsRevisedWithBookInHand', 'PublishDataAsJsonLd', 'IsFormallyPublished',
-                'TranslatedFromPublicationId', 'HasNoExplictEditionNumber', 'EditionNotes', 'CategoryId']);//, 'CurrentCheckouts' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')]);
+                'TranslatedFromPublicationId', 'HasNoExplictEditionNumber', 'EditionNotes', 'CategoryId', 'CategorySortOrder' => new Expression('IF(ISNULL(`SortOrder`), 1000, `SortOrder`)')]);
+            $select->join('sch_pub_categories', 'sch_pub_categories.PublicationCategoryId = sch_publications.CategoryId', ['SortOrder', 'CategoryName', 'CategoryParentId' => 'ParentId'],Select::JOIN_LEFT);
             //         $select->group(['TheMonth', 'TheYear']);
             //         $select->where($predicate->in('ChangedEntity', $tableEntities));
-            $select->order(['Authors', 'InLanguage', 'Title']);
+            $select->order(['CategorySortOrder', 'Authors', 'InLanguage', 'Title']);
         }
 
         return clone $select;
@@ -731,6 +733,10 @@ ORDER BY `Publisher`";
 
                 'illustratorsAll'           => $illustratorsAll,
                 'illustratorPerson'         => null,
+                
+                'categoryName'              => $row['CategoryName'],
+                'categorySort'              => $this->filterDbInt($row['CategorySortOrder']),
+                'categoryParentId'          => $this->filterDbId($row['CategoryParentId']),
 
                 'publisherAssociation'      => null,
                 'isSubEdition'              => isset($mainPublicationId),

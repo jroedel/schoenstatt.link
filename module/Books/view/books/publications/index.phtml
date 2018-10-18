@@ -1,3 +1,11 @@
+<style>
+<!--
+  .affix {
+      top: 35px;
+      z-index: 9999 !important;
+  }
+-->
+</style>
 <?php
 if ($this->language === 'xx') {
     $headText = $this->translate('Schoenstatt Literature without language');
@@ -6,18 +14,44 @@ if ($this->language === 'xx') {
     $headText = sprintf($this->translate($headTextPattern), $this->translate($this->languages[$this->language]));
 }
 $this->headTitle()->setTranslatorEnabled(false);
-$this->headTitle($headText);?>
-<h1><?php echo $headText;?></h1>
+$this->headTitle($headText);
+?>
+
+<h2><?php echo $headText;?></h2>
 <?php echo $this->partial('search-bar', [
     'form' => $this->form,
 ]);
 if ($this->isAllowed('route/publications/create')):?>
 <p><a class="btn btn-primary pull-right" href="<?php echo $this->url('publications/create');?>"><?php echo $this->translate('Add publication');?></a>
-<?php endif;
-echo $this->partial('publication-list', [
-    'objects' => $this->objects,
-    'columns' => [
-        'cover', 'authors', 'title', 'edition',
-    ],
-    'files' => $this->files,
-]);?>
+<?php endif;?>
+
+<div class="row">
+
+<div class="col-md-9">
+<?php 
+foreach ($this->objects as $categoryName => $category) :?>
+<h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->translate($categoryName);?></h2>
+<?php 
+    echo $this->partial('publication-list', [
+        'objects' => $category['objects'],
+        'columns' => [
+            'cover', 'authors', 'title', 'edition',
+        ],
+        'files' => $this->files,
+    ]);
+endforeach;?>
+
+</div>
+
+ <!--Affix start https://www.w3schools.com/bootstrap/bootstrap_ref_js_scrollspy.asp-->
+ <nav class="col-md-3 pull-right" id="sidebar-nav" role="complementary">
+    <ul class="nav nav-pills nav-stacked" data-spy="affix" data-offset-top="275">
+    <?php $firstTime = true;
+    foreach ($this->objects as $categoryName => $category) :?>
+       <li><a href="#<?php echo $this->escapeHtmlAttr($category['bookmark']);?>" <?php if ($firstTime) echo 'class="active"';?>><?php echo $this->escapeHtml($this->translate( $categoryName ));?></a></li>
+       <?php $firstTime = false;
+       endforeach;?>
+    </ul>
+ </nav>
+ <!--Affix end-->
+</div>

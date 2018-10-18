@@ -2,7 +2,9 @@
 use Zend\Uri\Uri;
 use ZfcUser\Form\Login;
 use ZfcUser\Options\ModuleOptions;
-echo $this->doctype(); ?>
+echo $this->doctype();
+$username = $this->zfcUserDisplayName();
+$routeName = $this->routeName();?>
 <html lang="<?php echo Locale::getPrimaryLanguage(Locale::getDefault()); ?>">
     <head>
         <meta charset="utf-8">
@@ -82,7 +84,8 @@ echo $this->doctype(); ?>
         ; ?>
 
     </head>
-    <body>
+    
+    <body <?php if ($routeName == 'publications/index') echo 'data-spy="scroll" data-target="#sidebar-nav" data-offset="35"'; //@todo refactor this hack?>>
         <nav class="navbar navbar-default" role="navigation">
             <div class="container">
                 <div class="navbar-header">
@@ -102,8 +105,6 @@ echo $this->doctype(); ?>
                         ->setMaxDepth(0)
                         ->setUlClass('nav navbar-nav')
                         ->render();
-                    $username = $this->zfcUserDisplayName();
-                    $routeName = $this->routeName();
                     if (!$username) :
                     $form = new Login(null, new ModuleOptions());
                     $form->prepare();?>
