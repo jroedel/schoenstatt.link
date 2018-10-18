@@ -11,6 +11,7 @@ use Books\Form\UploadForm;
 use Zend\Form\Element\Select;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
+use SionModel\Db\Model\PredicatesTable;
 
 class PublicationsController extends SionController
 {
@@ -73,6 +74,16 @@ class PublicationsController extends SionController
         $view->setVariable('libraryBooks', $libraryBooks);
         $view->setVariable('libraries', $libraries);
         
+        //get comments
+        /** @var PredicatesTable $predicates */
+        $predicates = $this->services[PredicatesTable::class];
+        $comments = $predicates->getCommentsForEntity([
+            'objectId' => $publicationIds,
+            'predicate'=> 'comment-publication'
+        ]);
+        
+        $view->setVariable('comments', $comments);
+        
         return $view;
     }
 
@@ -105,6 +116,8 @@ class PublicationsController extends SionController
         $language   = $this->params()->fromRoute('inLanguage');
         $languages  = $this->services['Books\LanguagesValueOptions'];
         $objects    = $table->searchPublications(['inLanguage' => $language]);
+        $objects    = $this->groupPublicationsByCategory($objects);
+        
         $form = $this->services[PublicationsSearchForm::class];
         /** @var DriveGateway $gateway */
         $gateway = $this->services[DriveGateway::class];
@@ -112,6 +125,7 @@ class PublicationsController extends SionController
         try {
             $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
         } catch (\Exception $e) { }
+
         $view = new ViewModel([
             'form'      => $form,
             'language'  => $language,
@@ -122,6 +136,43 @@ class PublicationsController extends SionController
             'files'     => $publicationFiles,
         ]);
         return $view;
+    }
+    
+    protected function groupPublicationsByCategory($objects)
+    {
+        //keyed by the category name, if we did the Id's it might re-sort our array
+        //WARNING, this won't work if child categories aren't sorted properly directly after their parents
+        $categories = [];
+        $noCategoryObjects = [];
+        foreach ($objects as $pubId => $object) {
+            if (isset($object['categoryName'])) {
+                if (!isset($categories[$object['categoryName']])) { //add this group array key
+                    $bookmark = preg_replace("/\s+/", "-",  strtolower(trim($object['categoryName'])));
+                    $bookmark = preg_replace("/[^a-z-]+/", "", $bookmark);
+                    $bookmark = trim($bookmark, '- ');
+                    $categories[$object['categoryName']] = [
+                        'id' => $object['categoryId'],
+                        'name' => $object['categoryName'],
+                        'sort' => $object['categorySort'],
+                        'parentId' => $object['categoryParentId'],
+                        'bookmark' => $bookmark,
+                        'objects' => [],
+                    ];
+                }
+                $categories[$object['categoryName']]['objects'][$pubId] = $object;
+            } else {
+                $noCategoryObjects[$pubId] = $object;
+            }
+        }
+        $categories['Uncategorized'] = [
+            'id' => null,
+            'name' => 'Uncategorized',
+            'sort' => 1000,
+            'parentId' => null,
+            'bookmark' => 'uncategorized',
+            'objects' => $noCategoryObjects,
+        ];
+        return $categories;
     }
 
     /**

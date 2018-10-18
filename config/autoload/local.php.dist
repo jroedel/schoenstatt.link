@@ -21,6 +21,33 @@ $dbParams = [
     ]
 ];
 
+$smtpOptions = [
+    /**
+     * The SMTP authentication identity.
+     * If this is not set, the 'from' option of the message will be used.
+     *
+     * Default value is an empty string
+     */
+    'username' => 'webmaster@schoenstatt.link',
+    
+    /**
+     * The SMTP authentication credential.
+     *
+     * Default value is an empty string
+     */
+    'password' => 'xxxxxxxxxxxxx',
+    
+    /**
+     * This defines the encryption type to be used, 'ssl' or 'tls'.
+     * Null should be used to disable SSL.
+     *
+     * Default value is null
+     */
+    'ssl'   => 'tls',
+    'port'  => 587,
+    'server'=> 'mail.your-server.de',
+];
+
 return [
     'db' => [
         'driver'         => 'Pdo',
@@ -67,31 +94,9 @@ return [
         'default' => [
             
             'smtp_options' => [
-                'connection_config' => [
-                    /**
-                     * The SMTP authentication identity.
-                     * If this is not set, the 'from' option of the message will be used.
-                     *
-                     * Default value is an empty string
-                     */
-                    'username' => 'webmaster@schoenstatt.link',
-                    
-                    /**
-                     * The SMTP authentication credential.
-                     *
-                     * Default value is an empty string
-                     */
-                    'password' => 'xxxxxx',
-                    
-                    /**
-                     * This defines the encryption type to be used, 'ssl' or 'tls'.
-                     * Null should be used to disable SSL.
-                     *
-                     * Default value is null
-                     */
-                    'ssl' => 'ssl',
-                ],
+                'connection_config' => $smtpOptions,
             ],
         ],
     ],
+    'smtp_options' => $smtpOptions,
 ];

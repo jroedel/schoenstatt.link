@@ -15,7 +15,10 @@ echo $this->formElementErrors($form->get('authorsAll'));?>
 </div><?php
 echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('hasNoExplictEditionNumber'));
-echo $this->formRow($form->get('inLanguage'));?>
+echo $this->formRow($form->get('inLanguage'));
+$this->formSelect()->setTranslatorEnabled(true);
+echo $this->formRow($form->get('categoryId'));
+$this->formSelect()->setTranslatorEnabled(false);?>
 <div class="form-group ">
 <?php echo $this->formLabel($form->get('editorsAll'));
 echo $this->formSelectWithoutOptions($form->get('editorsAll'));
@@ -59,7 +62,6 @@ echo $this->formRow($form->get('isRevisedWithBookInHand'));?>
 <?php
 echo $this->formRow($form->get('editionNotes'));
 echo $this->formRow($form->get('publicNotes'));
-echo $this->formRow($form->get('categoryId'));
 echo $this->formRow($form->get('url1'));
 echo $this->formRow($form->get('url1Label'));
 echo $this->formRow($form->get('url2'));

@@ -57,6 +57,7 @@ use Books\Service\DriveGateway;
 use Books\Service\DriveGatewayFactory;
 use Books\View\Helper\FileSize;
 use Books\Service\LibraryInfoFactory;
+use SionModel\Db\Model\PredicatesTable;
 
 return [
     'books' => [
@@ -233,12 +234,12 @@ return [
 //             BorrowersController::class      => BorrowersController::class,
 //         ],
          'factories' => [
-             PublicationsController::class   => SionControllerFactory::class,
-             LibrariesController::class      => SionControllerFactory::class,
-             BooksController::class          => SionControllerFactory::class,
-             CheckoutsController::class      => SionControllerFactory::class,
-             CollectionsController::class    => SionControllerFactory::class,
-             LibraryImportsController::class => SionControllerFactory::class,
+             PublicationsController::class      => SionControllerFactory::class,
+             LibrariesController::class         => SionControllerFactory::class,
+             BooksController::class             => SionControllerFactory::class,
+             CheckoutsController::class         => SionControllerFactory::class,
+             CollectionsController::class       => SionControllerFactory::class,
+             LibraryImportsController::class    => SionControllerFactory::class,
              Controller\EventsController::class => SionControllerFactory::class,
         ],
         'abstract_factories' => [
@@ -1406,6 +1407,7 @@ return [
                     'Books\LanguagesValueOptions',
                     DriveGateway::class,
                     LibraryTable::class,
+                    PredicatesTable::class,
                 ],
                 'get_object_function' 					=> 'getPublication',
                 'get_objects_function'               	=> 'getPublications',
@@ -1813,7 +1815,7 @@ return [
     'view_manager' => [
         'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
-            'library' => __DIR__ . '/../view',
+            __DIR__ . '/../view',
         ],
     ],
 ];
