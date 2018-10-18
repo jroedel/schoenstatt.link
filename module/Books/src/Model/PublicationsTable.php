@@ -7,6 +7,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use Zend\Db\Sql\Select;
 use Zend\Validator\Regex;
 use Zend\Db\Sql\Predicate\Expression;
+use SionModel\Db\Model\PredicatesTable;
 
 class PublicationsTable extends SionTable
 {
@@ -26,6 +27,16 @@ class PublicationsTable extends SionTable
     * @var SchoenstattTable $schoenstattTable
     */
     protected $schoenstattTable;
+    
+    /**f 
+     * @var PredicatesTable $predicatesTable
+     */
+    protected $predicatesTable;
+    
+    /**
+     * @var array $publicationsMemoryCache
+     */
+    protected $publicationsMemoryCache = [];
 
     public function getAuthorsValueOptions()
     {
@@ -237,12 +248,10 @@ ORDER BY `Publisher`";
         if (!isset($select)) {
             $select = new Select('sch_publications');
             //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['PublicationId', 'Title', 'ResourceId', 'AuthorPerson1', 'AuthorPerson2',
-                'AuthorPerson3', 'AuthorPerson4', 'AuthorPerson5', 'Authors', 'AuthorAssociationId1',
-                'AuthorAssociationId2', 'AuthorAssociationId3', 'BookEdition', 'InLanguage', 'Description',
-                'Isbn', 'Translator', 'Illustrator', 'Editor', 'IllustratorId', 'TranslatorId',
-                'Translator2Id', 'Translator3Id', 'EditorId', 'Editor2Id', 'Editor3Id', 'EditorAssociationId1',
-                'NumberOfPages', 'CopyrightYear', 'Publisher', 'PublisherAssociationId', 'PublishingPlace',
+            $select->columns(['PublicationId', 'Title', 'ResourceId', 'Authors', 
+                'BookEdition', 'InLanguage', 'Description',
+                'Isbn', 'Translator', 'Illustrator', 'Editor', 
+                'NumberOfPages', 'CopyrightYear', 'Publisher', 'PublishingPlace',
                 'DatePublished', 'PublishingStatus', 'BookFormatType', 'MainPublicationId', 'VolumeNumber',
                 'ContainedIn', 'ContainedInIsbn', 'Genre', 'PublicTags', 'AdminTags', 'IsAccessableForFree',
                 'IsInternalForPatres', 'IsScientificWork', 'IsAwaitingMerge', 'HasBeenMerged', 'JkQuality',
@@ -252,6 +261,8 @@ ORDER BY `Publisher`";
                 'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'HasNoISBN',
                 'IsRevisedWithBookInHand', 'PublishDataAsJsonLd', 'IsFormallyPublished',
                 'TranslatedFromPublicationId', 'HasNoExplictEditionNumber', 'EditionNotes', 'CategoryId', 'CategorySortOrder' => new Expression('IF(ISNULL(`SortOrder`), 1000, `SortOrder`)')]);
+            //@todo add a boolean expression whether the user likes/watches/has-read each particular book. I think we can do it with a left join
+            
             $select->join('sch_pub_categories', 'sch_pub_categories.PublicationCategoryId = sch_publications.CategoryId', ['SortOrder', 'CategoryName', 'CategoryParentId' => 'ParentId'],Select::JOIN_LEFT);
             //         $select->group(['TheMonth', 'TheYear']);
             //         $select->where($predicate->in('ChangedEntity', $tableEntities));
@@ -387,35 +398,35 @@ ORDER BY `Publisher`";
                 $entities[$entityId]['translatedFromPublication'] = $entities[$entityObject['translatedFromPublicationId']];
             }
 
-            foreach ($entityObject['authorPersonIds'] as $personId) {
-                if (isset($persons[$personId])) {
-                    $entities[$entityId]['authorPersons'][$personId] = $persons[$personId];
-                }
-            }
-            foreach ($entityObject['authorAssociationIds'] as $associationId) {
-                if (isset($associations[$associationId])) {
-                    $entities[$entityId]['authorAssociations'][$associationId] = $associations[$associationId];
-                }
-            }
-            foreach ($entityObject['editorPersonIds'] as $personId) {
-                if (isset($persons[$personId])) {
-                    $entities[$entityId]['editorPersons'][$personId] = $persons[$personId];
-                }
-            }
-            if (isset($associations[$entityObject['editorAssociationId']])) {
-                $entities[$entityId]['editorAssociation'] = $associations[$entityObject['editorAssociationId']];
-            }
-            foreach ($entityObject['translatorPersonIds'] as $personId) {
-                if (isset($persons[$personId])) {
-                    $entities[$entityId]['translatorPersons'][$personId] = $persons[$personId];
-                }
-            }
-            if (isset($persons[$entityObject['illustratorPersonId']])) {
-                $entities[$entityId]['illustratorPerson'] = $persons[$entityObject['illustratorPersonId']];
-            }
-            if (isset($associations[$entityObject['publisherAssociationId']])) {
-                $entities[$entityId]['publisherAssociation'] = $associations[$entityObject['publisherAssociationId']];
-            }
+//             foreach ($entityObject['authorPersonIds'] as $personId) {
+//                 if (isset($persons[$personId])) {
+//                     $entities[$entityId]['authorPersons'][$personId] = $persons[$personId];
+//                 }
+//             }
+//             foreach ($entityObject['authorAssociationIds'] as $associationId) {
+//                 if (isset($associations[$associationId])) {
+//                     $entities[$entityId]['authorAssociations'][$associationId] = $associations[$associationId];
+//                 }
+//             }
+//             foreach ($entityObject['editorPersonIds'] as $personId) {
+//                 if (isset($persons[$personId])) {
+//                     $entities[$entityId]['editorPersons'][$personId] = $persons[$personId];
+//                 }
+//             }
+//             if (isset($associations[$entityObject['editorAssociationId']])) {
+//                 $entities[$entityId]['editorAssociation'] = $associations[$entityObject['editorAssociationId']];
+//             }
+//             foreach ($entityObject['translatorPersonIds'] as $personId) {
+//                 if (isset($persons[$personId])) {
+//                     $entities[$entityId]['translatorPersons'][$personId] = $persons[$personId];
+//                 }
+//             }
+//             if (isset($persons[$entityObject['illustratorPersonId']])) {
+//                 $entities[$entityId]['illustratorPerson'] = $persons[$entityObject['illustratorPersonId']];
+//             }
+//             if (isset($associations[$entityObject['publisherAssociationId']])) {
+//                 $entities[$entityId]['publisherAssociation'] = $associations[$entityObject['publisherAssociationId']];
+//             }
         }
 
         $this->cacheEntityObjects('publications', $entities, ['publication']);
@@ -480,49 +491,49 @@ ORDER BY `Publisher`";
 
             $authorsAll = [];
 
-            $authorAssociationIds = [];
-            $authorAssociation1Id = $this->filterDbId($row['AuthorAssociationId1']);
-            $authorAssociation2Id = $this->filterDbId($row['AuthorAssociationId2']);
-            $authorAssociation3Id = $this->filterDbId($row['AuthorAssociationId3']);
-            if (isset($authorAssociation1Id)) {
-                $authorAssociationIds[] = $authorAssociation1Id;
-                $authorsAll[] = 'a'.$authorAssociation1Id;
-            }
-            if (isset($authorAssociation2Id)) {
-                $authorAssociationIds[] = $authorAssociation2Id;
-                $authorsAll[] = 'a'.$authorAssociation2Id;
-            }
-            if (isset($authorAssociation3Id)) {
-                $authorAssociationIds[] = $authorAssociation3Id;
-                $authorsAll[] = 'a'.$authorAssociation3Id;
-            }
+//             $authorAssociationIds = [];
+//             $authorAssociation1Id = $this->filterDbId($row['AuthorAssociationId1']);
+//             $authorAssociation2Id = $this->filterDbId($row['AuthorAssociationId2']);
+//             $authorAssociation3Id = $this->filterDbId($row['AuthorAssociationId3']);
+//             if (isset($authorAssociation1Id)) {
+//                 $authorAssociationIds[] = $authorAssociation1Id;
+//                 $authorsAll[] = 'a'.$authorAssociation1Id;
+//             }
+//             if (isset($authorAssociation2Id)) {
+//                 $authorAssociationIds[] = $authorAssociation2Id;
+//                 $authorsAll[] = 'a'.$authorAssociation2Id;
+//             }
+//             if (isset($authorAssociation3Id)) {
+//                 $authorAssociationIds[] = $authorAssociation3Id;
+//                 $authorsAll[] = 'a'.$authorAssociation3Id;
+//             }
 
-            $authorPersonIds = [];
-            $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
-            $authorPerson2Id = $this->filterDbId($row['AuthorPerson2']);
-            $authorPerson3Id = $this->filterDbId($row['AuthorPerson3']);
-            $authorPerson4Id = $this->filterDbId($row['AuthorPerson4']);
-            $authorPerson5Id = $this->filterDbId($row['AuthorPerson5']);
-            if (isset($authorPerson1Id)) {
-                $authorPersonIds[] = $authorPerson1Id;
-                $authorsAll[] = 'p'.$authorPerson1Id;
-            }
-            if (isset($authorPerson2Id)) {
-                $authorPersonIds[] = $authorPerson2Id;
-                $authorsAll[] = 'p'.$authorPerson2Id;
-            }
-            if (isset($authorPerson3Id)) {
-                $authorPersonIds[] = $authorPerson3Id;
-                $authorsAll[] = 'p'.$authorPerson3Id;
-            }
-            if (isset($authorPerson4Id)) {
-                $authorPersonIds[] = $authorPerson4Id;
-                $authorsAll[] = 'p'.$authorPerson4Id;
-            }
-            if (isset($authorPerson5Id)) {
-                $authorPersonIds[] = $authorPerson5Id;
-                $authorsAll[] = 'p'.$authorPerson5Id;
-            }
+//             $authorPersonIds = [];
+//             $authorPerson1Id =  $this->filterDbId($row['AuthorPerson1']);
+//             $authorPerson2Id = $this->filterDbId($row['AuthorPerson2']);
+//             $authorPerson3Id = $this->filterDbId($row['AuthorPerson3']);
+//             $authorPerson4Id = $this->filterDbId($row['AuthorPerson4']);
+//             $authorPerson5Id = $this->filterDbId($row['AuthorPerson5']);
+//             if (isset($authorPerson1Id)) {
+//                 $authorPersonIds[] = $authorPerson1Id;
+//                 $authorsAll[] = 'p'.$authorPerson1Id;
+//             }
+//             if (isset($authorPerson2Id)) {
+//                 $authorPersonIds[] = $authorPerson2Id;
+//                 $authorsAll[] = 'p'.$authorPerson2Id;
+//             }
+//             if (isset($authorPerson3Id)) {
+//                 $authorPersonIds[] = $authorPerson3Id;
+//                 $authorsAll[] = 'p'.$authorPerson3Id;
+//             }
+//             if (isset($authorPerson4Id)) {
+//                 $authorPersonIds[] = $authorPerson4Id;
+//                 $authorsAll[] = 'p'.$authorPerson4Id;
+//             }
+//             if (isset($authorPerson5Id)) {
+//                 $authorPersonIds[] = $authorPerson5Id;
+//                 $authorsAll[] = 'p'.$authorPerson5Id;
+//             }
 
             $authorsText = $this->filterDbArray($row['Authors'], '; ');
             foreach ($authorsText as $author) {
@@ -530,27 +541,27 @@ ORDER BY `Publisher`";
             }
 
             $editorsAll = [];
-            $editorPersonIds = [];
-            $editorPerson1Id = $this->filterDbId($row['EditorId']);
-            $editorPerson2Id = $this->filterDbId($row['Editor2Id']);
-            $editorPerson3Id = $this->filterDbId($row['Editor3Id']);
-            $editorAssociationId= $this->filterDbId($row['EditorAssociationId1']);
+//             $editorPersonIds = [];
+//             $editorPerson1Id = $this->filterDbId($row['EditorId']);
+//             $editorPerson2Id = $this->filterDbId($row['Editor2Id']);
+//             $editorPerson3Id = $this->filterDbId($row['Editor3Id']);
+//             $editorAssociationId= $this->filterDbId($row['EditorAssociationId1']);
             $editorText = $this->filterDbArray($row['Editor']);
-            if (isset($editorPerson1Id)) {
-                $editorPersonIds[] = $editorPerson1Id;
-                $editorsAll[] = 'p'.$editorPerson1Id;
-            }
-            if (isset($editorPerson2Id)) {
-                $editorPersonIds[] = $editorPerson2Id;
-                $editorsAll[] = 'p'.$editorPerson2Id;
-            }
-            if (isset($editorPerson3Id)) {
-                $editorPersonIds[] = $editorPerson3Id;
-                $editorsAll[] = 'p'.$editorPerson3Id;
-            }
-            if (isset($editorAssociationId)) {
-                $editorsAll[] = 'a'.$editorAssociationId;
-            }
+//             if (isset($editorPerson1Id)) {
+//                 $editorPersonIds[] = $editorPerson1Id;
+//                 $editorsAll[] = 'p'.$editorPerson1Id;
+//             }
+//             if (isset($editorPerson2Id)) {
+//                 $editorPersonIds[] = $editorPerson2Id;
+//                 $editorsAll[] = 'p'.$editorPerson2Id;
+//             }
+//             if (isset($editorPerson3Id)) {
+//                 $editorPersonIds[] = $editorPerson3Id;
+//                 $editorsAll[] = 'p'.$editorPerson3Id;
+//             }
+//             if (isset($editorAssociationId)) {
+//                 $editorsAll[] = 'a'.$editorAssociationId;
+//             }
             if (isset($editorText)) {
                 foreach ($editorText as $value) {
                     $editorsAll[] = $value;
@@ -558,23 +569,23 @@ ORDER BY `Publisher`";
             }
 
             $translatorsAll = [];
-            $translatorPersonIds = [];
-            $translatorPerson1Id = $this->filterDbId($row['TranslatorId']);
-            $translatorPerson2Id = $this->filterDbId($row['Translator2Id']);
-            $translatorPerson3Id = $this->filterDbId($row['Translator3Id']);
-            $translatorText = $this->filterDbArray($row['Translator']);
-            if (isset($translatorPerson1Id)) {
-                $translatorPersonIds[] = $translatorPerson1Id;
-                $translatorsAll[] = 'p'.$translatorPerson1Id;
-            }
-            if (isset($translatorPerson2Id)) {
-                $translatorPersonIds[] = $translatorPerson2Id;
-                $translatorsAll[] = 'p'.$translatorPerson2Id;
-            }
-            if (isset($translatorPerson3Id)) {
-                $translatorPersonIds[] = $translatorPerson3Id;
-                $translatorsAll[] = 'p'.$translatorPerson3Id;
-            }
+//             $translatorPersonIds = [];
+//             $translatorPerson1Id = $this->filterDbId($row['TranslatorId']);
+//             $translatorPerson2Id = $this->filterDbId($row['Translator2Id']);
+//             $translatorPerson3Id = $this->filterDbId($row['Translator3Id']);
+             $translatorText = $this->filterDbArray($row['Translator']);
+//             if (isset($translatorPerson1Id)) {
+//                 $translatorPersonIds[] = $translatorPerson1Id;
+//                 $translatorsAll[] = 'p'.$translatorPerson1Id;
+//             }
+//             if (isset($translatorPerson2Id)) {
+//                 $translatorPersonIds[] = $translatorPerson2Id;
+//                 $translatorsAll[] = 'p'.$translatorPerson2Id;
+//             }
+//             if (isset($translatorPerson3Id)) {
+//                 $translatorPersonIds[] = $translatorPerson3Id;
+//                 $translatorsAll[] = 'p'.$translatorPerson3Id;
+//             }
             if (isset($translatorText)) {
                 foreach ($translatorText as $value) {
                     $translatorsAll[] = $value;
@@ -582,11 +593,11 @@ ORDER BY `Publisher`";
             }
 
             $illustratorsAll = [];
-            $illustratorPersonId = $this->filterDbId($row['IllustratorId']);
+//             $illustratorPersonId = $this->filterDbId($row['IllustratorId']);
             $illustratorText = $this->filterDbArray($row['Illustrator']);
-            if (isset($illustratorPersonId)) {
-                $illustratorsAll[] = 'p'.$illustratorPersonId;
-            }
+//             if (isset($illustratorPersonId)) {
+//                 $illustratorsAll[] = 'p'.$illustratorPersonId;
+//             }
             if (isset($illustratorText)) {
                 foreach ($illustratorText as $value) {
                     $illustratorsAll[] = $value;
@@ -628,14 +639,14 @@ ORDER BY `Publisher`";
                 'publicationId'             => $id,
                 'title'                     => $row['Title'],
                 'resourceId'                => $resourceId,
-                'authorPerson1Id'           => $authorPerson1Id,
-                'authorPerson2Id'           => $authorPerson2Id,
-                'authorPerson3Id'           => $authorPerson3Id,
-                'authorPerson4Id'           => $authorPerson4Id,
-                'authorPerson5Id'           => $authorPerson5Id,
-                'authorAssociation1Id'      => $authorAssociation1Id,
-                'authorAssociation2Id'      => $authorAssociation2Id,
-                'authorAssociation3Id'      => $authorAssociation3Id,
+//                 'authorPerson1Id'           => $authorPerson1Id,
+//                 'authorPerson2Id'           => $authorPerson2Id,
+//                 'authorPerson3Id'           => $authorPerson3Id,
+//                 'authorPerson4Id'           => $authorPerson4Id,
+//                 'authorPerson5Id'           => $authorPerson5Id,
+//                 'authorAssociation1Id'      => $authorAssociation1Id,
+//                 'authorAssociation2Id'      => $authorAssociation2Id,
+//                 'authorAssociation3Id'      => $authorAssociation3Id,
                 'authorsText'               => $authorsText,
                 'bookEdition'               => $this->filterDbString($row['BookEdition']),
                 'categoryId'                => $categoryId,
@@ -643,21 +654,21 @@ ORDER BY `Publisher`";
                 'inLanguage'                => $inLanguage,
                 'description'               => $this->filterDbString($row['Description']),
                 'isbn'                      => $this->filterDbString($row['Isbn']),
-                'editorPerson1Id'           => $editorPerson1Id,
-                'editorPerson2Id'           => $editorPerson2Id,
-                'editorPerson3Id'           => $editorPerson3Id,
-                'editorAssociationId'       => $editorAssociationId,
+//                 'editorPerson1Id'           => $editorPerson1Id,
+//                 'editorPerson2Id'           => $editorPerson2Id,
+//                 'editorPerson3Id'           => $editorPerson3Id,
+//                 'editorAssociationId'       => $editorAssociationId,
                 'editorsText'               => $editorText,
-                'translatorPerson1Id'       => $translatorPerson1Id,
-                'translatorPerson2Id'       => $translatorPerson2Id,
-                'translatorPerson3Id'       => $translatorPerson3Id,
+//                 'translatorPerson1Id'       => $translatorPerson1Id,
+//                 'translatorPerson2Id'       => $translatorPerson2Id,
+//                 'translatorPerson3Id'       => $translatorPerson3Id,
                 'translatorsText'           => $translatorText,
-                'illustratorPersonId'       => $illustratorPersonId,
+//                 'illustratorPersonId'       => $illustratorPersonId,
                 'illustratorsText'          => $illustratorText,
                 'numberOfPages'             => $this->filterDbInt($row['NumberOfPages']),
                 'copyrightYear'             => $this->filterDbInt($row['CopyrightYear']),
                 'publisher'                 => $this->filterDbString($row['Publisher']),
-                'publisherAssociationId'    => $this->filterDbId($row['PublisherAssociationId']),
+//                 'publisherAssociationId'    => $this->filterDbId($row['PublisherAssociationId']),
                 'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
                 'datePublished'             => $this->filterDbDate($row['DatePublished']),
                 'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
@@ -716,29 +727,29 @@ ORDER BY `Publisher`";
                 'bookFormatTypeUrl'         => $bookFormatTypeUrl,
 
                 'authorsAll'                => $authorsAll,
-                'authorPersonIds'           => $authorPersonIds,
-                'authorAssociationIds'      => $authorAssociationIds,
-                'authorPersons'             => [],
-                'authorAssociations'        => [],
+//                 'authorPersonIds'           => $authorPersonIds,
+//                 'authorAssociationIds'      => $authorAssociationIds,
+//                 'authorPersons'             => [],
+//                 'authorAssociations'        => [],
 
                 'editorsAll'                => $editorsAll,
-                'editorPersons'             => [],
-                'editorPersonIds'           => $editorPersonIds,
-                'editorAssociation'         => null,
+//                 'editorPersons'             => [],
+//                 'editorPersonIds'           => $editorPersonIds,
+//                 'editorAssociation'         => null,
 
                 'translatorsAll'            => $translatorsAll,
-                'translatorPersons'         => [],
-                'translatorPersonIds'       => $translatorPersonIds,
+//                 'translatorPersons'         => [],
+//                 'translatorPersonIds'       => $translatorPersonIds,
                 //translator associations are not allowed
 
                 'illustratorsAll'           => $illustratorsAll,
-                'illustratorPerson'         => null,
+//                 'illustratorPerson'         => null,
                 
                 'categoryName'              => $row['CategoryName'],
                 'categorySort'              => $this->filterDbInt($row['CategorySortOrder']),
                 'categoryParentId'          => $this->filterDbId($row['CategoryParentId']),
 
-                'publisherAssociation'      => null,
+//                 'publisherAssociation'      => null,
                 'isSubEdition'              => isset($mainPublicationId),
                 'mainPublication'           => null,
                 'subEditions'               => [],
@@ -758,13 +769,21 @@ ORDER BY `Publisher`";
      */
     public function getPublication($id)
     {
-        $publications = $this->getPublications();
-
-        if (!isset($publications[$id]) || !($publication = $publications[$id])) {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('sch_publications');
+        }
+        $select = $this->getPublicationsSelectPrototype();
+        $select->where(['PublicationId' => $id]);
+        /** @var ResultSet $result */
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+        
+        if (!isset($results[0])) {
             return null;
         }
-
-        return $publication;
+        $object = $this->processPublicationRow($results[0]);
+        return $object;
     }
 
     /**
@@ -794,40 +813,40 @@ ORDER BY `Publisher`";
         //use key_exists here because nulls or empty arrays should be included
         if (!key_exists('authorsText', $data) && key_exists('authorsAll', $data)) {
             $text = [];
-            $persons = [];
-            $associations = [];
-            if (!isset($entityDetector)) {
-                $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
-            }
+//             $persons = [];
+//             $associations = [];
+//             if (!isset($entityDetector)) {
+//                 $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
+//             }
             if (null !== $data['authorsAll']) {
                 foreach ($data['authorsAll'] as $value) {
-                    if ($entityDetector->isValid($value)) { //we've got a person or association
-                        if ($value[0] == 'p') {
-                            $persons[] = substr($value, 1);
-                        } elseif ($value[0] == 'a') {
-                            $associations[] = substr($value, 1);
-                        }
-                    } else { //we've just a regular text author
+//                     if ($entityDetector->isValid($value)) { //we've got a person or association
+//                         if ($value[0] == 'p') {
+//                             $persons[] = substr($value, 1);
+//                         } elseif ($value[0] == 'a') {
+//                             $associations[] = substr($value, 1);
+//                         }
+//                     } else { //we've just a regular text author
                         $text[] = $value;
-                    }
+//                     }
                 }
             }
             $data['authorsText'] = $text;
-            $data['authorAssociation1Id'] = isset($associations[0]) ? $associations[0] : null;
-            $data['authorAssociation2Id'] = isset($associations[1]) ? $associations[1] : null;
-            $data['authorAssociation3Id'] = isset($associations[2]) ? $associations[2] : null;
-            if (isset($associations[3])) {
-                throw new \Exception('Only 3 author associations are allowed');
-            }
+//             $data['authorAssociation1Id'] = isset($associations[0]) ? $associations[0] : null;
+//             $data['authorAssociation2Id'] = isset($associations[1]) ? $associations[1] : null;
+//             $data['authorAssociation3Id'] = isset($associations[2]) ? $associations[2] : null;
+//             if (isset($associations[3])) {
+//                 throw new \Exception('Only 3 author associations are allowed');
+//             }
 
-            $data['authorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
-            $data['authorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
-            $data['authorPerson3Id'] = isset($persons[2]) ? $persons[2] : null;
-            $data['authorPerson4Id'] = isset($persons[3]) ? $persons[3] : null;
-            $data['authorPerson5Id'] = isset($persons[4]) ? $persons[4] : null;
-            if (isset($persons[5])) {
-                throw new \Exception('Only 5 author persons are allowed');
-            }
+//             $data['authorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
+//             $data['authorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
+//             $data['authorPerson3Id'] = isset($persons[2]) ? $persons[2] : null;
+//             $data['authorPerson4Id'] = isset($persons[3]) ? $persons[3] : null;
+//             $data['authorPerson5Id'] = isset($persons[4]) ? $persons[4] : null;
+//             if (isset($persons[5])) {
+//                 throw new \Exception('Only 5 author persons are allowed');
+//             }
         }
         if (!key_exists('editorsText', $data) && !key_exists('editorPerson1Id', $data) &&
             !key_exists('editorPerson2Id', $data) &&  !key_exists('editorPerson3Id', $data) &&
@@ -835,63 +854,63 @@ ORDER BY `Publisher`";
             key_exists('editorsAll', $data)
         ) {
             $text = [];
-            $persons = [];
-            $associations = [];
+//             $persons = [];
+//             $associations = [];
             if (null !== $data['editorsAll']) {
-                if (!isset($entityDetector)) {
-                    $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
-                }
+//                 if (!isset($entityDetector)) {
+//                     $entityDetector = new Regex('/^(p|a)\d{1,5}$/');
+//                 }
                 foreach ($data['editorsAll'] as $value) {
-                    if ($entityDetector->isValid($value)) { //we've got a person or association
-                        if ($value[0] == 'p') {
-                            $persons[] = substr($value, 1);
-                        } elseif ($value[0] == 'a') {
-                            $associations[] = substr($value, 1);
-                        }
-                    } else { //we've just a regular text author
+//                     if ($entityDetector->isValid($value)) { //we've got a person or association
+//                         if ($value[0] == 'p') {
+//                             $persons[] = substr($value, 1);
+//                         } elseif ($value[0] == 'a') {
+//                             $associations[] = substr($value, 1);
+//                         }
+//                     } else { //we've just a regular text author
                         $text[] = $value;
-                    }
+//                     }
                 }
             }
             $data['editorsText'] = $text;
-            $data['editorAssociationId'] = isset($associations[0]) ? $associations[0] : null;
-            if (isset($associations[1])) {
-                throw new \Exception('Only 1 editor association is allowed');
-            }
+//             $data['editorAssociationId'] = isset($associations[0]) ? $associations[0] : null;
+//             if (isset($associations[1])) {
+//                 throw new \Exception('Only 1 editor association is allowed');
+//             }
 
-            $data['editorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
-            $data['editorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
-            $data['editorPerson3Id'] = isset($persons[2]) ? $persons[2] : null;
-            if (isset($persons[3])) {
-                throw new \Exception('Only 3 editor persons are allowed');
-            }
+//             $data['editorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
+//             $data['editorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
+//             $data['editorPerson3Id'] = isset($persons[2]) ? $persons[2] : null;
+//             if (isset($persons[3])) {
+//                 throw new \Exception('Only 3 editor persons are allowed');
+//             }
         }
         if (!key_exists('translatorsText', $data) && !key_exists('translatorPerson1Id', $data) &&
             !key_exists('translatorPerson2Id', $data) &&  !key_exists('translatorPerson3Id', $data) &&
             key_exists('translatorsAll', $data)
         ) {
             $text = [];
-            $persons = [];
+//             $persons = [];
             if (null !== $data['translatorsAll']) {
-                if (!isset($personDetector)) {
-                    $personDetector= new Regex('/^p\d{1,5}$/');
-                }
+//                 if (!isset($personDetector)) {
+//                     $personDetector= new Regex('/^p\d{1,5}$/');
+//                 }
                 foreach ($data['translatorsAll'] as $value) {
-                    if ($personDetector->isValid($value)) { //we've got a person or association
-                        $persons[] = substr($value, 1);
-                    } else { //we've just a regular text author
+//                     if ($personDetector->isValid($value)) { //we've got a person or association
+//                         $persons[] = substr($value, 1);
+//                     } else { //we've just a regular text author
                         $text[] = $value;
-                    }
+//                     }
                 }
             }
             $data['translatorsText'] = $text;
 
-            $data['translatorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
-            $data['translatorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
-            $data['translatorPerson3Id'] = isset($persons[2]) ? $persons[2] : null;
-            if (isset($persons[3])) {
-                throw new \Exception('Only 3 translator persons are allowed');
-            }
+//             $data['translatorPerson1Id'] = isset($persons[0]) ? $persons[0] : null;
+//             $data['translatorPerson2Id'] = isset($persons[1]) ? $persons[1] : null;
+//             $data['translatorPerson3Id'] = isset($persons[2]) ? $persons[2] : null;
+//             if (isset($persons[3])) {
+//                 throw new \Exception('Only 3 translator persons are allowed');
+//             }
         }
         if (!key_exists('illustratorsText', $data) && !key_exists('illustratorPersonId', $data) &&
             key_exists('illustratorsAll', $data)
@@ -899,23 +918,23 @@ ORDER BY `Publisher`";
             $text = [];
             $persons = [];
             if (null !== $data['illustratorsAll']) {
-                if (!isset($personDetector)) {
-                    $personDetector= new Regex('/^p\d{1,5}$/');
-                }
+//                 if (!isset($personDetector)) {
+//                     $personDetector= new Regex('/^p\d{1,5}$/');
+//                 }
                 foreach ($data['illustratorsAll'] as $value) {
-                    if ($personDetector->isValid($value)) { //we've got a person or association
-                        $persons[] = substr($value, 1);
-                    } else { //we've just a regular text author
+//                     if ($personDetector->isValid($value)) { //we've got a person or association
+//                         $persons[] = substr($value, 1);
+//                     } else { //we've just a regular text author
                         $text[] = $value;
-                    }
+//                     }
                 }
             }
             $data['illustratorsText'] = $text;
 
-            $data['illustratorPersonId'] = isset($persons[0]) ? $persons[0] : null;
-            if (isset($persons[1])) {
-                throw new \Exception('Only one illustrator person is allowed');
-            }
+//             $data['illustratorPersonId'] = isset($persons[0]) ? $persons[0] : null;
+//             if (isset($persons[1])) {
+//                 throw new \Exception('Only one illustrator person is allowed');
+//             }
         }
 
 //         if (isset($data['automaticTitle']) && $data['automaticTitle'] === true) {
@@ -1360,6 +1379,29 @@ WHERE 1";
     public function setSchoenstattTable($schoenstattTable)
     {
         $this->schoenstattTable = $schoenstattTable;
+        return $this;
+    }
+    
+    /**
+     * Get the predicatesTable value
+     * @return PredicatesTable
+     */
+    public function getPredicatesTable()
+    {
+        if (!isset($this->predicatesTable)) {
+            throw new \Exception('Something went wrong, no predicatesTable available');
+        }
+        return $this->predicatesTable;
+    }
+    
+    /**
+     * Set the predicatesTable value
+     * @param PredicatesTable $predicatesTable
+     * @return self
+     */
+    public function setPredicatesTable(PredicatesTable $predicatesTable)
+    {
+        $this->predicatesTable = $predicatesTable;
         return $this;
     }
 }
