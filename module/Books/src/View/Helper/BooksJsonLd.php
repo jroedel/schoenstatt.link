@@ -54,9 +54,10 @@ class BooksJsonLd extends AbstractHelper
         foreach (self::$fieldSchemaPropertyMap as $field => $property) {
             switch ($field) {
                 case 'authorText':
-                    if (!empty($publication['authorPersons'])) {
+//                     if (!empty($publication['authorPersons'])) {
 
-                    } elseif (!is_null($publication['authorsText'])) {
+//                     } else
+                        if (!is_null($publication['authorsText'])) {
                         $authors = $publication['authorsText'];
                         $authorObjects = [];
                         foreach ($authors as $authorName) {
@@ -97,9 +98,10 @@ class BooksJsonLd extends AbstractHelper
                     break;
                 case 'publisher':
                     //first check if we have a publisherAssociation
-                    if (!is_null($publication['publisherAssociation'])) {
-                        $book->publisher($this->view->schoenstattJsonLd('association', $publication['publisherAssociation']));
-                    } elseif (!is_null($publication['publisher'])) {//else, publisher
+//                     if (!is_null($publication['publisherAssociation'])) {
+//                         $book->publisher($this->view->schoenstattJsonLd('association', $publication['publisherAssociation']));
+//                     } else
+                        if (isset($publication['publisher'])) {//else, publisher
                         $publisher = Schema::organization()->name($publication['publisher']);
                         $book->publisher($publisher);
                     }

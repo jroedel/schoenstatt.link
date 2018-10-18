@@ -1,3 +1,4 @@
+#submitted 2018-10-18
 INSERT INTO `sch_pub_categories` (`PublicationCategoryId`, `ParentId`, `CategoryName`, `SortOrder`, `IsPlaceholder`) VALUES (NULL, NULL, 'Compilation texts', '17', b'0'), (NULL, NULL, 'Spirituality', '60', b'0'), (NULL, NULL, 'Education', '70', b'0'), (NULL, NULL, 'Prayer', '80', b'0');
 
 
