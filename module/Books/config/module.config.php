@@ -1455,7 +1455,7 @@ return [
 //                 'touch_json_route'               		=> 'publications/publication/touch',
 //                 'touch_json_route_key'            		=> 'publication_id',
                 'database_bound_data_preprocessor' 		=> 'preprocessPublication',
-//                 'database_bound_data_postprocessor' 	=> 'postprocessEvent',
+                'database_bound_data_postprocessor'     => 'postprocessPublication',
 //                 'moderate_route' 						=> 'events/event/moderate',
 //                 'moderate_route_entity_key' 			=> 'event_id',
 //                 'suggest_form'               			=> 'Project\Form\SuggestEventForm',
