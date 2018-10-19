@@ -76,13 +76,13 @@ class PublicationsController extends SionController
         
         //get comments
         /** @var PredicatesTable $predicates */
-        $predicates = $this->services[PredicatesTable::class];
-        $comments = $predicates->getCommentsForEntity([
-            'objectId' => $publicationIds,
-            'predicate'=> 'comment-publication'
-        ]);
+//         $predicates = $this->services[PredicatesTable::class];
+//         $comments = $predicates->getCommentsForEntity([
+//             'objectId' => $publicationIds,
+//             'predicate'=> 'comment-publication'
+//         ]);
         
-        $view->setVariable('comments', $comments);
+//         $view->setVariable('comments', $comments);
         
         return $view;
     }

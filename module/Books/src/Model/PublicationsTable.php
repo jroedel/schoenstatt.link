@@ -8,6 +8,10 @@ use Zend\Db\Sql\Select;
 use Zend\Validator\Regex;
 use Zend\Db\Sql\Predicate\Expression;
 use SionModel\Db\Model\PredicatesTable;
+use Zend\Db\Sql\Where;
+use Zend\Db\Sql\Predicate\PredicateSet;
+use Zend\Db\Sql\Predicate\Operator;
+use Zend\Db\Sql\Predicate\In;
 
 class PublicationsTable extends SionTable
 {
@@ -36,7 +40,7 @@ class PublicationsTable extends SionTable
     /**
      * @var array $publicationsMemoryCache
      */
-    protected $publicationsMemoryCache = [];
+    protected $unlinkedPublicationsMemoryCache = [];
 
     public function getAuthorsValueOptions()
     {
@@ -279,98 +283,205 @@ ORDER BY `Publisher`";
      * @param mixed[] $query
      * @return mixed[]
      */
-    public function searchPublications($query)
+    public function searchPublications($query, $options = [])
     {
         //@todo we're not searching authors described by author personId's
         $filter = new ToAscii();
         if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
         }
-
-        $searchSubEditions = isset($query['searchSubEditions']) && is_bool($query['searchSubEditions']) ?
-            $query['searchSubEditions'] : false;
-        $displaySubEditions = isset($query['displaySubEditions']) && is_bool($query['displaySubEditions']) ?
-            $query['displaySubEditions'] : false;
-
-        $entities = $this->getPublications();
-        $subEditions = [];
-        $results = [];
-        $count = 0;
-        foreach ($entities as $publicationId => $publication) {
-            //isAvailable
-            if (!$searchSubEditions && $publication['isSubEdition']) {
-                continue;
-            }
-
-            //language
-            if (isset($query['inLanguage']) && is_string($query['inLanguage']) &&
-                $query['inLanguage'] != $publication['inLanguage']
-            ) {
-                continue;
-            }
-            if (isset($query['inLanguage']) && is_array($query['inLanguage']) &&
-                !in_array($publication['inLanguage'], $query['inLanguage'])
-            ) {
-                continue;
-            }
-            //keywords
-            if (isset($query['keywords']) && is_string($query['keywords']) &&
-                !in_array($query['keywords'], $publication['keywords'])
-            ) {
-                continue;
-            }
-            if (isset($query['keywords']) && is_array($query['keywords'])
-            ) {
-                $found = false;
-                foreach ($query['keywords'] as $searchKeyword) {
-                    if (in_array($searchKeyword, $publication['keywords'])) {
-                        $found = true;
-                        break;
+        
+        $queryParameters = [
+            'title', 'authorText', 'search', 'publisher',
+            'description', 'categoryId',
+            'mainPublicationId', 'translatedFromPublicationId', 'publicationId'
+        ];
+        $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
+        
+        $fieldMap = $this->getEntitySpecification('publication')->updateColumns;
+        $fieldMap['category'] = 'CategoryName';
+        
+        $gateway = $this->getTableGateway('sch_publications');
+        $select = $this->getPublicationsSelectPrototype();
+        $where = new Where();
+        
+        $combination = (isset($options['orCombination']) && $options['orCombination']) ? PredicateSet::OP_OR : PredicateSet::OP_AND;
+        
+        //Prepare the search predicate
+        if (isset($query['search'])) {
+            $search = $query['search'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $searchClause = new Predicate();
+            $searchClause->addPredicates([
+                new Like($fieldMap['title'], $searchLike),
+                new Like($fieldMap['authorText'], $searchLike),
+                new Like($fieldMap['category'], $searchLike),
+                new Like($fieldMap['publisher'], $searchLike),
+                new Like($fieldMap['description'], $searchLike),
+            ], PredicateSet::OP_OR);
+            $where->addPredicate($searchClause);
+        }
+        
+        // Prepare collectionId predicate
+        if (isset($query['categoryId'])) {
+            $categoryIdClause = null;
+            if (is_array($query['categoryId'])) {
+                $categories = [];
+                foreach ($query['categoryId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $categories)) {
+                        $categories[] = $value;
                     }
                 }
-                if (!$found) {
-                    continue;
+                if (count($categories) === 1) {
+                    $query['categoryId'] = $categories[0];
+                } elseif (count($categories) > 1) {
+                    $categoryIdClause= new In($fieldMap['categoryId'], $categories);
                 }
             }
-            $authorText = $publication['authorsText']; //authorsText is an array
-            if (is_array($authorText)) {
-                $authorText = implode(';', $authorText);
+            if (is_numeric($query['categoryId'])) {
+                $categoryIdClause= new Operator($fieldMap['categoryId'], Operator::OPERATOR_EQUAL_TO, $query['categoryId']);
             }
-            if (isset($query['search']) &&
-                false === stripos($filter->filter($authorText), $query['search']) &&
-                false === stripos($filter->filter($publication['title']), $query['search']) &&
-                false === stripos($filter->filter($publication['bookEdition']), $query['search']) &&
-                false === stripos($filter->filter($publication['description']), $query['search']) &&
-                false === stripos($filter->filter($publication['publisher']), $query['search']) &&
-                false === stripos($filter->filter($publication['volumeNumber']), $query['search'])
-            ) {
-                continue;
-            }
-            $count++;
-            if (isset($query['maxResults']) && is_numeric($query['maxResults']) &&
-                $count > $query['maxResults']
-            ) {
-                break;
-            }
-            if ($displaySubEditions || !$publication['isSubEdition']) {
-                $results[$publicationId] = $publication;
-            } else {
-                $subEditions[$publicationId] = $publication;
+            if (isset($categoryIdClause)) {
+                $where->addPredicate($categoryIdClause, $combination);
             }
         }
-        //add the subEdition or the mainEdition depending on $displaySubEditions
-        foreach ($subEditions as $publicationId => $publication) {
-            if (isset($publication['mainPublicationId']) &&
-                isset($entities[$publication['mainPublicationId']])
-            ) {
-                if (!$displaySubEditions && !isset($results[$publication['mainPublicationId']])) {
-                    $results[$publication['mainPublicationId']] = $entities[$publication['mainPublicationId']];
-                } elseif ($displaySubEditions) {
-                    $results[$publicationId] = $publication;
+        
+        // Prepare publicationId predicate
+        if (isset($query['publicationId'])) {
+            $publicationIdClause = null;
+            if (is_array($query['publicationId'])) {
+                $publications = [];
+                foreach ($query['publicationId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $publications)) {
+                        $publications[] = $value;
+                    }
+                }
+                if (count($publications) === 1) {
+                    $query['publicationId'] = $publications[0];
+                } elseif (count($publications) > 1) {
+                    $publicationIdClause= new In($fieldMap['publicationId'], $publications);
                 }
             }
+            if (is_numeric($query['publicationId'])) {
+                $publicationIdClause= new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
+            }
+            if (isset($publicationIdClause)) {
+                $where->addPredicate($publicationIdClause, $combination);
+            }
         }
-        return $results;
+        
+        
+        // Prepare publicationId predicate
+        if (isset($query['publicationId'])) {
+            $publicationIdClause = null;
+            if (is_array($query['publicationId'])) {
+                $publications = [];
+                foreach ($query['publicationId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $publications)) {
+                        $publications[] = $value;
+                    }
+                }
+                if (count($publications) === 1) {
+                    $query['publicationId'] = $publications[0];
+                } elseif (count($publications) > 1) {
+                    $publicationIdClause= new In($fieldMap['publicationId'], $publications);
+                }
+            }
+            if (is_numeric($query['publicationId'])) {
+                $publicationIdClause= new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
+            }
+            if (isset($publicationIdClause)) {
+                $where->addPredicate($publicationIdClause, $combination);
+            }
+        }
+        
+        // Prepare mainPublicationId predicate
+        if (isset($query['mainPublicationId'])) {
+            $mainPublicationIdClause = null;
+            if (is_array($query['mainPublicationId'])) {
+                $mainPublications = [];
+                foreach ($query['mainPublicationId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $mainPublications)) {
+                        $mainPublications[] = $value;
+                    }
+                }
+                if (count($mainPublications) === 1) {
+                    $query['mainPublicationId'] = $mainPublications[0];
+                } elseif (count($mainPublications) > 1) {
+                    $mainPublicationIdClause= new In($fieldMap['mainPublicationId'], $mainPublications);
+                }
+            }
+            if (is_numeric($query['mainPublicationId'])) {
+                $mainPublicationIdClause= new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['mainPublicationId']);
+            }
+            if (isset($mainPublicationIdClause)) {
+                $where->addPredicate($mainPublicationIdClause, $combination);
+            }
+        }
+        
+        // Prepare translatedFromPublicationId predicate
+        if (isset($query['translatedFromPublicationId'])) {
+            $translatedFromPublicationIdClause = null;
+            if (is_array($query['translatedFromPublicationId'])) {
+                $translatedFromPublications = [];
+                foreach ($query['translatedFromPublicationId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $translatedFromPublications)) {
+                        $translatedFromPublications[] = $value;
+                    }
+                }
+                if (count($translatedFromPublications) === 1) {
+                    $query['translatedFromPublicationId'] = $translatedFromPublications[0];
+                } elseif (count($translatedFromPublications) > 1) {
+                    $translatedFromPublicationIdClause= new In($fieldMap['translatedFromPublicationId'], $translatedFromPublications);
+                }
+            }
+            if (is_numeric($query['translatedFromPublicationId'])) {
+                $translatedFromPublicationIdClause= new Operator($fieldMap['translatedFromPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['translatedFromPublicationId']);
+            }
+            if (isset($translatedFromPublicationIdClause)) {
+                $where->addPredicate($translatedFromPublicationIdClause, $combination);
+            }
+        }
+        
+        //Prepare title predicate
+        if (isset($query['title']) && 0 !== strlen($query['title'])) {
+            $search = $query['title'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $titleClause = new Operator($fieldMap['title'], Operator::OPERATOR_EQUAL_TO, $query['title']);
+            $where->addPredicate($titleClause, $combination);
+        }
+        
+        //Prepare author predicate
+        if (isset($query['authorText']) && 0 !== strlen($query['authorText'])) {
+            $search = $query['authorText'];
+            $searchLike = sprintf("%%%s%%",$search);
+            $authorClause= new Operator($fieldMap['authorText'], Operator::OPERATOR_EQUAL_TO, $query['authorText']);
+            $where->addPredicate($authorClause, $combination);
+        }
+        
+        //@todo check if this really works
+        //Prepare isSubEdition predicate, by default, don't filter
+        if (isset($options['noSubEditions']) && $options['noSubEditions']) {
+            $noSubEditionClause= new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, 'NULL');
+            $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
+        }
+            
+        //Set the where clause
+        $select->where($where);
+        
+        $results = $gateway->selectWith($select);
+        $entities = [];
+        
+        foreach ($results as $row) {
+            $processedRow = $this->processPublicationRow($row);
+            $entities[$processedRow['publicationId']] = $processedRow;
+        }
+        
+        if (!isset($options['noLink']) || !$options['noLink']) {
+            $this->linkPublications($entities);
+        }
+        
+        return $entities;
     }
 
     public function getPublications()
@@ -460,17 +571,23 @@ ORDER BY `Publisher`";
         $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
         return $entities;
     }
+    
     /**
+     * @todo this function could first check if the publicationId is in the memory cache and just return a reference
      * @return mixed[]
      */
-    protected function processPublicationRow($row)
+    protected function &processPublicationRow($row)
     {
         static $categories;
+        $id = $this->filterDbId($row['PublicationId']);
+        
+        if (isset($this->unlinkedPublicationsMemoryCache[$id])) {
+            return $this->unlinkedPublicationsMemoryCache[$id];
+        }
 
         if (!isset($categories)) {
             $categories = $this->getCategories();
         }
-            $id = $this->filterDbId($row['PublicationId']);
             //process URLs
             $unprocessedUrls = [
                 ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
@@ -752,16 +869,129 @@ ORDER BY `Publisher`";
 //                 'publisherAssociation'      => null,
                 'isSubEdition'              => isset($mainPublicationId),
                 'mainPublication'           => null,
-                'subEditions'               => [],
+                'subEditions'               => [], //list of publications
+                'translations'              => [], //list of publications
                 'translatedFromPublication' => null,
                 'bookCoverFileId'           => null,
                 'bookCoverFile'             => null,
                 
                 'files'                     => [],
             ];
+        $this->unlinkedPublicationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
     }
 
+    /**
+     * Link up the mainPublication and the translatedFromPublication to a publication object
+     * @param array $object
+     * @param bool $noLookup don't do any searching, just use what's in the memoryCache
+     */
+    protected function linkPublication(?array &$object, $noLookup = false)
+    {
+        $objectId = $object['publicationId'];
+        $interestingIds = [$object['publicationId']]; //this allows us get the sub editions of the object
+       
+        //@todo work with the memcache
+        
+        if (isset($object['mainPublicationId']) &&
+            $object['mainPublicationId'] != $objectId
+        ) {
+            $interestingIds[] = $object['mainPublicationId'];
+        }
+        if (isset($object['translatedFromPublicationId']) &&
+            $object['translatedFromPublicationId'] != $objectId
+        ) {
+            $interestingIds[] = $object['translatedFromPublicationId'];
+        }
+        
+        //see if we can get the publications we're looking for
+        $results = $this->searchPublications([
+            'mainPublicationId' => $objectId,
+            'translatedFromPublicationId' => $objectId,
+            'publicationId' => $interestingIds,
+        ], ['orCombination' => true]);
+        
+        
+        if (isset($object['mainPublicationId']) &&
+            $object['mainPublicationId'] != $object['publicationId'] &&
+            isset($results[$object['mainPublicationId']])
+        ) {
+            $object['mainPublication'] = $results[$object['mainPublicationId']];
+        }
+        if (isset($object['translatedFromPublicationId']) &&
+            $object['translatedFromPublicationId'] != $object['publicationId'] &&
+            isset($results[$object['translatedFromPublicationId']])
+        ) {
+            $object['translatedFromPublication'] = $results[$object['translatedFromPublicationId']];
+        }
+        
+        //check for subEditions and translations
+        foreach ($results as $resultId => $result) {
+            if ($result['mainPublicationId'] == $objectId) {
+                $object['subEditions'][$resultId] = &$results[$resultId];
+            }
+            if ($result['translatedFromPublicationId'] == $objectId) {
+                $object['translations'][$resultId] = &$results[$resultId];
+            }
+        }
+    }
+    
+    protected function linkPublications(array &$objects)
+    {
+        $objectIds = array_keys($objects);
+        
+        //collect list of "interesting" publicationIds
+        $interestingIds = []; //starting point
+        foreach ($objects as $entityId => $object) {
+            if (isset($object['mainPublicationId']) &&
+                $object['mainPublicationId'] != $entityId
+            ) {
+                $interestingIds[] = $object['mainPublicationId'];
+            }
+            if (isset($object['translatedFromPublicationId']) &&
+                $object['translatedFromPublicationId'] != $entityId
+            ) {
+                $interestingIds[] = $object['translatedFromPublicationId'];
+            }
+        }
+        
+        //search for all these publicationIds
+        $results = $this->searchPublications([
+            'mainPublicationId' => $objectIds,
+            'translatedFromPublicationId' => $objectIds,
+            'publicationId' => $interestingIds,
+        ], ['orCombination' => true, 'noLink' => true]);
+        
+        //link 'em up
+        foreach ($objects as $entityId => $object) {
+            if (isset($object['mainPublicationId']) &&
+                $object['mainPublicationId'] != $entityId &&
+                isset($results[$object['mainPublicationId']])
+            ) {
+                $objects[$entityId]['mainPublication'] = &$results[$object['mainPublicationId']];
+//                 $objects[$object['mainPublicationId']]['subEditions'][$entityId] = &$entities[$entityId];
+            }
+            if (isset($object['translatedFromPublicationId']) &&
+                $object['translatedFromPublicationId'] != $entityId &&
+                isset($results[$object['translatedFromPublicationId']])
+            ) {
+                $objects[$entityId]['translatedFromPublication'] = &$results[$object['translatedFromPublicationId']];
+            }
+        }
+        
+        //check for subEditions and translations
+        foreach ($results as $resultId => $result) {
+            if (in_array($result['mainPublicationId'], $objectIds)) {
+                $objects[$result['mainPublicationId']]['subEditions'][$resultId] = &$results[$resultId];
+            }
+            if (in_array($result['translatedFromPublicationId'], $objectIds)) {
+                $objects[$result['translatedFromPublicationId']]['translations'][$resultId] = &$results[$resultId];
+            }
+        }
+        
+        //no return, by ref
+    }
+    
     /**
      *
      * @param int $id
@@ -783,6 +1013,8 @@ ORDER BY `Publisher`";
             return null;
         }
         $object = $this->processPublicationRow($results[0]);
+        $this->linkPublication($object);
+        
         return $object;
     }
 
