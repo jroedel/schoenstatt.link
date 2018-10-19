@@ -293,7 +293,7 @@ ORDER BY `Publisher`";
         
         $queryParameters = [
             'title', 'authorText', 'search', 'publisher',
-            'description', 'categoryId',
+            'description', 'categoryId', 'inLanguage',
             'mainPublicationId', 'translatedFromPublicationId', 'publicationId'
         ];
         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
@@ -370,31 +370,6 @@ ORDER BY `Publisher`";
             }
         }
         
-        
-        // Prepare publicationId predicate
-        if (isset($query['publicationId'])) {
-            $publicationIdClause = null;
-            if (is_array($query['publicationId'])) {
-                $publications = [];
-                foreach ($query['publicationId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $publications)) {
-                        $publications[] = $value;
-                    }
-                }
-                if (count($publications) === 1) {
-                    $query['publicationId'] = $publications[0];
-                } elseif (count($publications) > 1) {
-                    $publicationIdClause= new In($fieldMap['publicationId'], $publications);
-                }
-            }
-            if (is_numeric($query['publicationId'])) {
-                $publicationIdClause= new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
-            }
-            if (isset($publicationIdClause)) {
-                $where->addPredicate($publicationIdClause, $combination);
-            }
-        }
-        
         // Prepare mainPublicationId predicate
         if (isset($query['mainPublicationId'])) {
             $mainPublicationIdClause = null;
@@ -443,20 +418,28 @@ ORDER BY `Publisher`";
             }
         }
         
+        //@todo this should be LIKE
         //Prepare title predicate
         if (isset($query['title']) && 0 !== strlen($query['title'])) {
             $search = $query['title'];
             $searchLike = sprintf("%%%s%%",$search);
-            $titleClause = new Operator($fieldMap['title'], Operator::OPERATOR_EQUAL_TO, $query['title']);
+            $titleClause = new Like($fieldMap['title'], $searchLike);
             $where->addPredicate($titleClause, $combination);
         }
         
+        //@todo this should be LIKE
         //Prepare author predicate
         if (isset($query['authorText']) && 0 !== strlen($query['authorText'])) {
             $search = $query['authorText'];
             $searchLike = sprintf("%%%s%%",$search);
-            $authorClause= new Operator($fieldMap['authorText'], Operator::OPERATOR_EQUAL_TO, $query['authorText']);
+            $titleClause = new Like($fieldMap['authorText'], $searchLike);
             $where->addPredicate($authorClause, $combination);
+        }
+        
+        //Prepare inLanguage predicate
+        if (isset($query['inLanguage']) && 0 !== strlen($query['inLanguage'])) {
+            $inLanguageClause = new Operator($fieldMap['inLanguage'], Operator::OPERATOR_EQUAL_TO, $query['inLanguage']);
+            $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
         }
         
         //@todo check if this really works
