@@ -12,6 +12,8 @@ use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Predicate\In;
+use Zend\Db\Sql\Update;
+use Zend\Db\Sql\Predicate\IsNull;
 
 class PublicationsTable extends SionTable
 {
@@ -445,7 +447,7 @@ ORDER BY `Publisher`";
         //@todo check if this really works
         //Prepare isSubEdition predicate, by default, don't filter
         if (isset($options['noSubEditions']) && $options['noSubEditions']) {
-            $noSubEditionClause= new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, 'NULL');
+            $noSubEditionClause= new IsNull($fieldMap['mainPublicationId']);
             $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
         }
             
@@ -1156,6 +1158,45 @@ ORDER BY `Publisher`";
 //             $data['title'] = null;
 //         }
         return $data;
+    }
+    
+    /**
+     * Update the categories of all related books at the same time
+     * @param array $data
+     * @param array $newEntityData
+     * @param string $action
+     */
+    protected function postprocessPublication($data, $newEntityData, $action)
+    {
+        if ($action == self::ENTITY_ACTION_SUGGEST || !isset($newEntityData['categoryId']) ||
+            ($action == self::ENTITY_ACTION_UPDATE && isset($newEntityData['categoryId']) && isset($data['categoryId']) &&
+            $newEntityData['categoryId'] == $data['categoryId'])
+        ) {
+            return;
+        }
+        
+        $categoryId = $newEntityData['categoryId'];
+        $publicationId = $newEntityData['publicationId'];
+        $mainPublicationId = $newEntityData['mainPublicationId'];
+        $translatedFromPublicationId = $newEntityData['translatedFromPublicationId'];
+        
+        //put all the connected books in the same category
+        $gateway = $this->getTableGateway('sch_publications');
+        $where = new Where();
+        if (isset($mainPublicationId)) {
+            $clause = new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $mainPublicationId);
+            $where->addPredicate($clause, PredicateSet::OP_OR);
+        }
+        if (isset($translatedFromPublicationId)) {
+            $clause= new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $translatedFromPublicationId);
+            $where->addPredicate($clause, PredicateSet::OP_OR);
+        }
+        
+        $clause= new Operator('MainPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
+        $where->addPredicate($clause, PredicateSet::OP_OR);
+        $clause= new Operator('TranslatedFromPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
+        $where->addPredicate($clause, PredicateSet::OP_OR);
+        $gateway->update(['CategoryId' => $categoryId], $where);
     }
 
     public function getCategories()

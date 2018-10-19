@@ -115,7 +115,7 @@ class PublicationsController extends SionController
         $entitySpec = $this->getEntitySpecification();
         $language   = $this->params()->fromRoute('inLanguage');
         $languages  = $this->services['Books\LanguagesValueOptions'];
-        $objects    = $table->searchPublications(['inLanguage' => $language]);
+        $objects    = $table->searchPublications(['inLanguage' => $language], ['noSubEditions' => true]);
         $objects    = $this->groupPublicationsByCategory($objects);
         
         $form = $this->services[PublicationsSearchForm::class];
@@ -244,20 +244,13 @@ class PublicationsController extends SionController
 
         if ($form->isValid()) {
             $notAllowed = [];
-//             if (!$this->isAllowed('book_teo', 'read')) {
-//                 $notAllowed[] = '\'DigitaSión Teo\'';
-//                 $notAllowed[] = '\'DigitaSión Fil\'';
-//             }
-//             if (!$this->isAllowed('book_sch', 'read')) {
-//                 $notAllowed[] = '\'DigitaSión Sch\'';
-//             }
             $data = $form->getData();
 
             if (!empty($data)) {
                 /** @var PublicationsTable $table */
                 $table = $this->getSionTable();
-//                 $data['notAllowed'] = $notAllowed;
                 $data['maxResults'] = self::MAX_SEARCH_RESULTS;
+                //@todo modify searchPublications call to include options with noSubEditions
                 $entities = $table->searchPublications($data);
                 if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {
                     $this->nowMessenger()->addMessage("More than the max number of publications match your search. Only the first 300 results shown.", NowMessenger::NAMESPACE_INFO);
