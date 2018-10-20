@@ -1410,10 +1410,10 @@ return [
                     PredicatesTable::class,
                 ],
                 'get_object_function' 					=> 'getPublication',
-                'get_objects_function'               	=> 'getPublications',
+                'get_objects_function'               	=> 'getUnlinkedPublications',
                 'format_view_helper'                    => 'formatPublication',
                 'required_columns_for_creation' 		=> [
-                    'title'
+                    'title', 'inLanguage', 'resourceId'
                 ],
                 'name_field'               				=> 'title',
                 'name_field_is_translateable'           => false,

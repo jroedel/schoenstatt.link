@@ -243,13 +243,16 @@ class PublicationsController extends SionController
         $entities = null;
 
         if ($form->isValid()) {
-            $notAllowed = [];
             $data = $form->getData();
 
             if (!empty($data)) {
                 /** @var PublicationsTable $table */
                 $table = $this->getSionTable();
-                $data['maxResults'] = self::MAX_SEARCH_RESULTS;
+                $options = [];
+                $options['maxResults'] = self::MAX_SEARCH_RESULTS;
+                if (!isset($data['showEditionsSeparately']) || $data['showEditionsSeparately'] != '1') {
+                    $options['noSubEditions'] = true;
+                }
                 //@todo modify searchPublications call to include options with noSubEditions
                 $entities = $table->searchPublications($data);
                 if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {

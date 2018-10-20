@@ -28,6 +28,8 @@ class PublicationsTable extends SionTable
         self::BOOK_FORMAT_TYPE_AUDIOBOOKFORMAT => 'http://schema.org/AudiobookFormat',
         self::BOOK_FORMAT_TYPE_EBOOK => 'http://schema.org/EBook',
     ];
+    
+    const DEFAULT_RESULTS_PER_PAGE = 25;
 
     /**
     * @var SchoenstattTable $schoenstattTable
@@ -279,9 +281,7 @@ ORDER BY `Publisher`";
     }
 
     /**
-     * Search for books. Returns a list of publications. The query parameters are:
-     * search(string), maxResults(int), displaySubEditions(bool), searchSubEditions(bool),
-     * author(string|int|array[or], inLanguage(string|array[or])
+     * Search for publications. Returns a list of publications.
      * @param mixed[] $query
      * @return mixed[]
      */
@@ -296,7 +296,8 @@ ORDER BY `Publisher`";
         $queryParameters = [
             'title', 'authorText', 'search', 'publisher',
             'description', 'categoryId', 'inLanguage',
-            'mainPublicationId', 'translatedFromPublicationId', 'publicationId'
+            'mainPublicationId', 'translatedFromPublicationId', 'publicationId',
+            'resourceId' //@todo finish this (we should be limiting on the search action)
         ];
         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
         
@@ -453,6 +454,15 @@ ORDER BY `Publisher`";
             
         //Set the where clause
         $select->where($where);
+        
+        if (isset($options['maxResults']) && is_numeric($options['maxResults'])) {
+            $select->limit($options['maxResults']);
+        }
+        
+        if (isset($options['page']) && is_numeric($options['page'])) {
+            $resultsPerPage = isset($options['resultsPerPage']) && is_numeric($options['resultsPerPage']) ? $options['resultsPerPage'] : self::DEFAULT_RESULTS_PER_PAGE;
+            $select->offset($options['page'] * $resultsPerPage);
+        }
         
         $results = $gateway->selectWith($select);
         $entities = [];
