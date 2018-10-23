@@ -54,9 +54,10 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
     <div class="col-md-6">
           <p><strong><?php echo $this->translate('Author(s)');?>:</strong></p>
           <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
-      if (!empty($object['subEditions'])):?>
+      $otherEditions = array_merge($object['subEditions'], $object['translations']);
+      if (!empty($otherEditions)):?>
       <p><strong><?php echo $this->translate('Other editions');?>:</strong></p><?php
-      foreach ($object['subEditions'] as $subId => $subPublication) :?>
+      foreach ($otherEditions as $subId => $subPublication) :?>
           <p><?php echo $this->formatEntity('publication', $subPublication);
           echo ' ';
           echo $this->formatEntity('publication', $subPublication, ['display' => FormatPublication::DISPLAY_EDITION]);?></p>

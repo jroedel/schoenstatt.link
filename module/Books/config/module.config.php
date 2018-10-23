@@ -224,15 +224,6 @@ return [
         ],
     ],
      'controllers' => [
-//         'invokables' => [
-//             PublicationsController::class   => PublicationsController::class,
-//             LibrariesController::class      => LibrariesController::class,
-//             BooksController::class          => BooksController::class,
-//             CheckoutsController::class      => CheckoutsController::class,
-//             CollectionsController::class    => CollectionsController::class,
-//             LibraryImportsController::class => LibraryImportsController::class,
-//             BorrowersController::class      => BorrowersController::class,
-//         ],
          'factories' => [
              PublicationsController::class      => SionControllerFactory::class,
              LibrariesController::class         => SionControllerFactory::class,
@@ -1815,7 +1806,7 @@ return [
     'view_manager' => [
         'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
-            __DIR__ . '/../view',
+            __NAMESPACE__ => __DIR__ . '/../view',
         ],
     ],
 ];

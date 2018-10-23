@@ -232,14 +232,6 @@ $routeName = $this->routeName();?>
             </div>
         </div> <!-- /container -->
 <?php
-$this->inlineScript()->captureStart();
-echo <<<JS
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip();
-})
-JS;
- $this->inlineScript()->captureEnd();
-
  echo $this->inlineScript(); ?>
     </body>
 </html>

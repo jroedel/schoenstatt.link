@@ -124,7 +124,7 @@ return [
         'exception_template'       => 'error/index',
         'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
-            __DIR__ . '/../view',
+            __NAMESPACE__ => __DIR__ . '/../view',
         ],
     ],
     'bjyauthorize' => [
