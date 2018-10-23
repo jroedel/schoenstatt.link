@@ -884,6 +884,8 @@ ORDER BY `Publisher`";
     protected function linkPublication(?array &$object, $noLookup = false)
     {
         $objectId = $object['publicationId'];
+        $translatedFromPublicationId = $object['translatedFromPublicationId'];
+        $language = $object['inLanguage'];
         $interestingIds = [$object['publicationId']]; //this allows us get the sub editions of the object
        
         //@todo work with the memcache
@@ -902,7 +904,7 @@ ORDER BY `Publisher`";
         //see if we can get the publications we're looking for
         $results = $this->searchPublications([
             'mainPublicationId' => $objectId,
-            'translatedFromPublicationId' => $objectId,
+            'translatedFromPublicationId' => isset($translatedFromPublicationId) ? [$objectId, $translatedFromPublicationId] : $objectId, //this fetches books that were also translated from the same original
             'publicationId' => $interestingIds,
         ], ['orCombination' => true]);
         
@@ -925,7 +927,17 @@ ORDER BY `Publisher`";
             if ($result['mainPublicationId'] == $objectId) {
                 $object['subEditions'][$resultId] = &$results[$resultId];
             }
-            if ($result['translatedFromPublicationId'] == $objectId) {
+            //if this is a translation of the book in question
+            elseif ($result['translatedFromPublicationId'] == $objectId) {
+                $object['translations'][$resultId] = &$results[$resultId];
+            } 
+            //@todo add the following logic also to the linkPublications function?
+            //if this is a book translated from the same original as the book in question
+            elseif (isset($translatedFromPublicationId) && $result['translatedFromPublicationId'] == $translatedFromPublicationId) {
+                $object['translations'][$resultId] = &$results[$resultId];
+            }
+            //if this is a subEdition of a book also translated from the same original
+            elseif (isset($translatedFromPublicationId) && $result['mainPublicationId'] == $translatedFromPublicationId) {
                 $object['translations'][$resultId] = &$results[$resultId];
             }
         }

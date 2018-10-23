@@ -1,4 +1,6 @@
 <?php
+use Schoenstatt\Model\SchoenstattTable;
+
 return [
     'sion_model' => [
 		/**
@@ -29,7 +31,7 @@ return [
 		* If this key is set, it will be used to prime the SionForm with persons for suggestions.
 		* The class must implement the SionModel\Person\PersonProviderInterface
 		*/
-		'person_provider' => 'Schoenstatt\Model\SchoenstattTable',
+		'person_provider' => SchoenstattTable::class,
 
         'route_permission_checking_enabled' => true,
 

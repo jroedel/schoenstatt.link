@@ -30,7 +30,7 @@ if ($this->isAllowed('route/publications/create')):?>
 <div class="col-md-9">
 <?php 
 foreach ($this->objects as $categoryName => $category) :?>
-<h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->translate($categoryName);?></h2>
+<h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->escapeHtml($this->translate($categoryName));?></h2>
 <?php 
     echo $this->partial('publication-list', [
         'objects' => $category['objects'],
