@@ -23,6 +23,7 @@ use JTranslate\Model\TranslationsTable;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Cache\Storage\StorageInterface;
 use Zend\Cache\StorageFactory;
+use Application\View\GdprStrategy;
 
 return [
     'router' => [
@@ -79,6 +80,7 @@ return [
             'navigation' => DefaultNavigationFactory::class,
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
+            GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required

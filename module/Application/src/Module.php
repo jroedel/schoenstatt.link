@@ -12,14 +12,19 @@ namespace Application;
 use Zend\Mvc\ModuleRouteListener;
 use Zend\Mvc\MvcEvent;
 use Zend\Session\ManagerInterface;
+use ZfSnapGeoip\Service\Geoip;
+use Zend\Http\Response;
+use Zend\View\Model\ViewModel;
+use Application\View\GdprStrategy;
 
 class Module
 {
     public function onBootstrap(MvcEvent $e)
     {
-        $eventManager        = $e->getApplication()->getEventManager();
-        $moduleRouteListener = new ModuleRouteListener();
-        $moduleRouteListener->attach($eventManager);
+        $app = $e->getApplication();
+        $sm = $app->getServiceManager();
+        $strategy = $sm->get(GdprStrategy::class);
+        $strategy->attach($app->getEventManager());
     }
     
     public function getConfig()
