@@ -12,6 +12,9 @@
  */
 
 return [
+    'schoenstatt' => [
+        'gdpr_template' => 'application/index/gdpr',
+    ],
     'navigation' => [
         // navigation with name default
         'default' => [
