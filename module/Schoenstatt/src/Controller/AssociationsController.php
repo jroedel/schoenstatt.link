@@ -55,16 +55,16 @@ class AssociationsController extends SionController
             $form = $view->getVariable('form');
             $haveSetSomething = false;
             $countries = $form->get('country')->getValueOptions();
-            if  (!is_null($countryParam) && key_exists($countryParam, $countries)) {
+            if (!is_null($countryParam) && key_exists($countryParam, $countries)) {
                 $form->get('country')->setValue($countryParam);
                 $haveSetSomething = true;
             }
             $parents = $form->get('parentId')->getValueOptions();
-            if  (!is_null($parentParam) && key_exists($parentParam, $parents)) {
+            if (!is_null($parentParam) && key_exists($parentParam, $parents)) {
                 $form->get('parentId')->setValue($parentParam);
                 $haveSetSomething = true;
             }
-            if  (!is_null($nameParam)) {
+            if (!is_null($nameParam)) {
                 $filter = new StripTags();
                 $form->get('name')->setValue($filter->filter($nameParam));
                 $haveSetSomething = true;
@@ -145,32 +145,61 @@ class AssociationsController extends SionController
         return new JsonModel(['updated' => $return]);
         return; //disable to prevent duplicate records being inserted
         $toImport = [
-            ['name' => 'Schoenstatt Movement of Argentina', 'country' => 'AR', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Australia', 'country' => 'AU', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Brazil', 'country' => 'BR', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Burundi', 'country' => 'BI', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Chile', 'country' => 'CL', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Germany', 'country' => 'DE', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Ecuador', 'country' => 'EC', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of India-Kerala', 'country' => 'IN', 'publicNotes' => 'No national presidium', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of India-Tamil Nadu', 'country' => 'IN', 'publicNotes' => 'No national presidium', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Mexico', 'country' => 'MX', 'publicNotes' => 'No national presidium', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Austria', 'country' => 'AT', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Paraguay', 'country' => 'PT', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Poland', 'country' => 'PL', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Portugal', 'country' => 'PT', 'publicNotes' => 'National presidium works, but is not yet approved by the general presidium', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Switzerland', 'country' => 'CH', 'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Spain', 'country' => 'ES', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Czech Republic', 'country' => 'CZ', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of USA-North', 'country' => 'US', 'publicNotes' => 'A regional presidium', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Colombia', 'country' => 'CO', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Cuba', 'country' => 'CU', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Peru', 'country' => 'PE', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of South Africa', 'country' => 'ZA', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of USA-South', 'country' => 'US', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of England', 'country' => 'GB', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Italy', 'country' => 'IT', 'publicNotes' => 'Not official, it was a creation through the general presidium, that hasn\'t continued since the time of Fr. Ludovico Tedeschi.', 'kind' => 'sch-national-movement',],
-            ['name' => 'Schoenstatt Movement of Croatia', 'country' => 'HR', 'publicNotes' => null, 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Argentina', 'country' => 'AR',
+                'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Australia', 'country' => 'AU', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Brazil', 'country' => 'BR', 'publicNotes' => 'Formally constituted',
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Burundi', 'country' => 'BI', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Chile', 'country' => 'CL', 'publicNotes' => 'Formally constituted',
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Germany', 'country' => 'DE',
+                'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Ecuador', 'country' => 'EC', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of India-Kerala', 'country' => 'IN',
+                'publicNotes' => 'No national presidium', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of India-Tamil Nadu', 'country' => 'IN',
+                'publicNotes' => 'No national presidium', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Mexico', 'country' => 'MX',
+                'publicNotes' => 'No national presidium', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Austria', 'country' => 'AT', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Paraguay', 'country' => 'PT', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Poland', 'country' => 'PL', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Portugal', 'country' => 'PT',
+                'publicNotes' => 'National presidium works, but is not yet approved by the general presidium',
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Switzerland', 'country' => 'CH',
+                'publicNotes' => 'Formally constituted', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Spain', 'country' => 'ES', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Czech Republic', 'country' => 'CZ', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of USA-North', 'country' => 'US',
+                'publicNotes' => 'A regional presidium', 'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Colombia', 'country' => 'CO', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Cuba', 'country' => 'CU', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Peru', 'country' => 'PE', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of South Africa', 'country' => 'ZA', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of USA-South', 'country' => 'US', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of England', 'country' => 'GB', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Italy', 'country' => 'IT',
+                'publicNotes' => 'Not official, it was a creation through the general presidium, '
+                .'that hasn\'t continued since the time of Fr. Ludovico Tedeschi.',
+                'kind' => 'sch-national-movement',],
+            ['name' => 'Schoenstatt Movement of Croatia', 'country' => 'HR', 'publicNotes' => null,
+                'kind' => 'sch-national-movement',],
         ];
 
         /** @var SchoenstattTable $table */

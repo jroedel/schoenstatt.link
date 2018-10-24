@@ -1,6 +1,8 @@
 <?php
 namespace Books\View\Helper;
+
 use Zend\View\Helper\AbstractHelper;
+
 /**
  * File Size View Helper
  *
@@ -22,6 +24,6 @@ class FileSize extends AbstractHelper
             '%01.1f %s',
             $value / pow(1024, $power),
             $sizes[$power]
-            );
+        );
     }
 }

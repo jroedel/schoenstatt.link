@@ -27,7 +27,7 @@ if (! class_exists(Application::class)) {
         . "- Type `composer install` if you are developing locally.\n"
         . "- Type `vagrant ssh -c 'composer install'` if you are using Vagrant.\n"
         . "- Type `docker-compose run zf composer install` if you are using Docker.\n"
-        );
+    );
 }
 
 // Retrieve configuration

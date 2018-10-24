@@ -103,7 +103,7 @@ class Coins extends AbstractHelper
 //                     if (!empty($publication[$field])) {
 //                         $book->$property(implode(',', $publication[$field]));
 //                     }
-                     break;
+                    break;
                 case 'containedIn':
                     //isBasedOnUrl too
                     ;

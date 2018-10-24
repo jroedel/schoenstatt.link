@@ -28,19 +28,19 @@ class PublicationsTable extends SionTable
         self::BOOK_FORMAT_TYPE_AUDIOBOOKFORMAT => 'http://schema.org/AudiobookFormat',
         self::BOOK_FORMAT_TYPE_EBOOK => 'http://schema.org/EBook',
     ];
-    
+
     const DEFAULT_RESULTS_PER_PAGE = 25;
 
     /**
     * @var SchoenstattTable $schoenstattTable
     */
     protected $schoenstattTable;
-    
-    /**f 
+
+    /**f
      * @var PredicatesTable $predicatesTable
      */
     protected $predicatesTable;
-    
+
     /**
      * @var array $publicationsMemoryCache
      */
@@ -256,9 +256,9 @@ ORDER BY `Publisher`";
         if (!isset($select)) {
             $select = new Select('sch_publications');
             //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['PublicationId', 'Title', 'ResourceId', 'Authors', 
+            $select->columns(['PublicationId', 'Title', 'ResourceId', 'Authors',
                 'BookEdition', 'InLanguage', 'Description',
-                'Isbn', 'Translator', 'Illustrator', 'Editor', 
+                'Isbn', 'Translator', 'Illustrator', 'Editor',
                 'NumberOfPages', 'CopyrightYear', 'Publisher', 'PublishingPlace',
                 'DatePublished', 'PublishingStatus', 'BookFormatType', 'MainPublicationId', 'VolumeNumber',
                 'ContainedIn', 'ContainedInIsbn', 'Genre', 'PublicTags', 'AdminTags', 'IsAccessableForFree',
@@ -270,8 +270,8 @@ ORDER BY `Publisher`";
                 'IsRevisedWithBookInHand', 'PublishDataAsJsonLd', 'IsFormallyPublished',
                 'TranslatedFromPublicationId', 'HasNoExplictEditionNumber', 'EditionNotes', 'CategoryId', 'CategorySortOrder' => new Expression('IF(ISNULL(`SortOrder`), 1000, `SortOrder`)')]);
             //@todo add a boolean expression whether the user likes/watches/has-read each particular book. I think we can do it with a left join
-            
-            $select->join('sch_pub_categories', 'sch_pub_categories.PublicationCategoryId = sch_publications.CategoryId', ['SortOrder', 'CategoryName', 'CategoryParentId' => 'ParentId'],Select::JOIN_LEFT);
+
+            $select->join('sch_pub_categories', 'sch_pub_categories.PublicationCategoryId = sch_publications.CategoryId', ['SortOrder', 'CategoryName', 'CategoryParentId' => 'ParentId'], Select::JOIN_LEFT);
             //         $select->group(['TheMonth', 'TheYear']);
             //         $select->where($predicate->in('ChangedEntity', $tableEntities));
             $select->order(['CategorySortOrder', 'Authors', 'InLanguage', 'Title']);
@@ -292,7 +292,7 @@ ORDER BY `Publisher`";
         if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);
         }
-        
+
         $queryParameters = [
             'title', 'authorText', 'search', 'publisher',
             'description', 'categoryId', 'inLanguage',
@@ -300,20 +300,20 @@ ORDER BY `Publisher`";
             'resourceId' //@todo finish this (we should be limiting on the search action)
         ];
         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
-        
+
         $fieldMap = $this->getEntitySpecification('publication')->updateColumns;
         $fieldMap['category'] = 'CategoryName';
-        
+
         $gateway = $this->getTableGateway('sch_publications');
         $select = $this->getPublicationsSelectPrototype();
         $where = new Where();
-        
+
         $combination = (isset($options['orCombination']) && $options['orCombination']) ? PredicateSet::OP_OR : PredicateSet::OP_AND;
-        
+
         //Prepare the search predicate
         if (isset($query['search'])) {
             $search = $query['search'];
-            $searchLike = sprintf("%%%s%%",$search);
+            $searchLike = sprintf("%%%s%%", $search);
             $searchClause = new Predicate();
             $searchClause->addPredicates([
                 new Like($fieldMap['title'], $searchLike),
@@ -324,7 +324,7 @@ ORDER BY `Publisher`";
             ], PredicateSet::OP_OR);
             $where->addPredicate($searchClause);
         }
-        
+
         // Prepare collectionId predicate
         if (isset($query['categoryId'])) {
             $categoryIdClause = null;
@@ -348,7 +348,7 @@ ORDER BY `Publisher`";
                 $where->addPredicate($categoryIdClause, $combination);
             }
         }
-        
+
         // Prepare publicationId predicate
         if (isset($query['publicationId'])) {
             $publicationIdClause = null;
@@ -372,7 +372,7 @@ ORDER BY `Publisher`";
                 $where->addPredicate($publicationIdClause, $combination);
             }
         }
-        
+
         // Prepare mainPublicationId predicate
         if (isset($query['mainPublicationId'])) {
             $mainPublicationIdClause = null;
@@ -396,7 +396,7 @@ ORDER BY `Publisher`";
                 $where->addPredicate($mainPublicationIdClause, $combination);
             }
         }
-        
+
         // Prepare translatedFromPublicationId predicate
         if (isset($query['translatedFromPublicationId'])) {
             $translatedFromPublicationIdClause = null;
@@ -420,62 +420,62 @@ ORDER BY `Publisher`";
                 $where->addPredicate($translatedFromPublicationIdClause, $combination);
             }
         }
-        
+
         //@todo this should be LIKE
         //Prepare title predicate
         if (isset($query['title']) && 0 !== strlen($query['title'])) {
             $search = $query['title'];
-            $searchLike = sprintf("%%%s%%",$search);
+            $searchLike = sprintf("%%%s%%", $search);
             $titleClause = new Like($fieldMap['title'], $searchLike);
             $where->addPredicate($titleClause, $combination);
         }
-        
+
         //@todo this should be LIKE
         //Prepare author predicate
         if (isset($query['authorText']) && 0 !== strlen($query['authorText'])) {
             $search = $query['authorText'];
-            $searchLike = sprintf("%%%s%%",$search);
+            $searchLike = sprintf("%%%s%%", $search);
             $titleClause = new Like($fieldMap['authorText'], $searchLike);
             $where->addPredicate($authorClause, $combination);
         }
-        
+
         //Prepare inLanguage predicate
         if (isset($query['inLanguage']) && 0 !== strlen($query['inLanguage'])) {
             $inLanguageClause = new Operator($fieldMap['inLanguage'], Operator::OPERATOR_EQUAL_TO, $query['inLanguage']);
             $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
         }
-        
+
         //@todo check if this really works
         //Prepare isSubEdition predicate, by default, don't filter
         if (isset($options['noSubEditions']) && $options['noSubEditions']) {
             $noSubEditionClause= new IsNull($fieldMap['mainPublicationId']);
             $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
         }
-            
+
         //Set the where clause
         $select->where($where);
-        
+
         if (isset($options['maxResults']) && is_numeric($options['maxResults'])) {
             $select->limit($options['maxResults']);
         }
-        
+
         if (isset($options['page']) && is_numeric($options['page'])) {
             $resultsPerPage = isset($options['resultsPerPage']) && is_numeric($options['resultsPerPage']) ? $options['resultsPerPage'] : self::DEFAULT_RESULTS_PER_PAGE;
             $select->offset($options['page'] * $resultsPerPage);
         }
-        
+
         $results = $gateway->selectWith($select);
         $entities = [];
-        
+
         foreach ($results as $row) {
             $processedRow = $this->processPublicationRow($row);
             $entities[$processedRow['publicationId']] = $processedRow;
         }
-        
+
         if (!isset($options['noLink']) || !$options['noLink']) {
             $this->linkPublications($entities);
         }
-        
+
         return $entities;
     }
 
@@ -566,7 +566,7 @@ ORDER BY `Publisher`";
         $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
         return $entities;
     }
-    
+
     /**
      * @todo this function could first check if the publicationId is in the memory cache and just return a reference
      * @return mixed[]
@@ -575,7 +575,7 @@ ORDER BY `Publisher`";
     {
         static $categories;
         $id = $this->filterDbId($row['PublicationId']);
-        
+
         if (isset($this->unlinkedPublicationsMemoryCache[$id])) {
             return $this->unlinkedPublicationsMemoryCache[$id];
         }
@@ -718,8 +718,7 @@ ORDER BY `Publisher`";
 
             $bookFormatType = $this->filterDbString($row['BookFormatType']);
             $bookFormatTypeUrl = null;
-            if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType]))
-            {
+            if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType])) {
                 $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
             }
             $inLanguage = $this->filterDbString($row['InLanguage']);
@@ -856,7 +855,7 @@ ORDER BY `Publisher`";
 
                 'illustratorsAll'           => $illustratorsAll,
 //                 'illustratorPerson'         => null,
-                
+
                 'categoryName'              => $row['CategoryName'],
                 'categorySort'              => $this->filterDbInt($row['CategorySortOrder']),
                 'categoryParentId'          => $this->filterDbId($row['CategoryParentId']),
@@ -869,11 +868,11 @@ ORDER BY `Publisher`";
                 'translatedFromPublication' => null,
                 'bookCoverFileId'           => null,
                 'bookCoverFile'             => null,
-                
+
                 'files'                     => [],
             ];
-        $this->unlinkedPublicationsMemoryCache[$id] = &$processedRow;
-        return $processedRow;
+            $this->unlinkedPublicationsMemoryCache[$id] = &$processedRow;
+            return $processedRow;
     }
 
     /**
@@ -887,9 +886,9 @@ ORDER BY `Publisher`";
         $translatedFromPublicationId = $object['translatedFromPublicationId'];
         $language = $object['inLanguage'];
         $interestingIds = [$object['publicationId']]; //this allows us get the sub editions of the object
-       
+
         //@todo work with the memcache
-        
+
         if (isset($object['mainPublicationId']) &&
             $object['mainPublicationId'] != $objectId
         ) {
@@ -900,15 +899,15 @@ ORDER BY `Publisher`";
         ) {
             $interestingIds[] = $object['translatedFromPublicationId'];
         }
-        
+
         //see if we can get the publications we're looking for
         $results = $this->searchPublications([
             'mainPublicationId' => $objectId,
             'translatedFromPublicationId' => isset($translatedFromPublicationId) ? [$objectId, $translatedFromPublicationId] : $objectId, //this fetches books that were also translated from the same original
             'publicationId' => $interestingIds,
         ], ['orCombination' => true]);
-        
-        
+
+
         if (isset($object['mainPublicationId']) &&
             $object['mainPublicationId'] != $object['publicationId'] &&
             isset($results[$object['mainPublicationId']])
@@ -921,32 +920,33 @@ ORDER BY `Publisher`";
         ) {
             $object['translatedFromPublication'] = $results[$object['translatedFromPublicationId']];
         }
-        
+
         //check for subEditions and translations
         foreach ($results as $resultId => $result) {
             if ($result['mainPublicationId'] == $objectId) {
                 $object['subEditions'][$resultId] = &$results[$resultId];
-            }
-            //if this is a translation of the book in question
-            elseif ($result['translatedFromPublicationId'] == $objectId) {
+            } elseif ($result['translatedFromPublicationId'] == $objectId) {
+                //if this is a translation of the book in question
                 $object['translations'][$resultId] = &$results[$resultId];
-            } 
-            //@todo add the following logic also to the linkPublications function?
-            //if this is a book translated from the same original as the book in question
-            elseif (isset($translatedFromPublicationId) && $result['translatedFromPublicationId'] == $translatedFromPublicationId) {
+            } elseif (isset($translatedFromPublicationId)
+                && $result['translatedFromPublicationId'] == $translatedFromPublicationId
+            ) {
+                //@todo add the following logic also to the linkPublications function?
+                //if this is a book translated from the same original as the book in question
                 $object['translations'][$resultId] = &$results[$resultId];
-            }
-            //if this is a subEdition of a book also translated from the same original
-            elseif (isset($translatedFromPublicationId) && $result['mainPublicationId'] == $translatedFromPublicationId) {
+            } elseif (isset($translatedFromPublicationId)
+                && $result['mainPublicationId'] == $translatedFromPublicationId
+            ) {
+                //if this is a subEdition of a book also translated from the same original
                 $object['translations'][$resultId] = &$results[$resultId];
             }
         }
     }
-    
+
     protected function linkPublications(array &$objects)
     {
         $objectIds = array_keys($objects);
-        
+
         //collect list of "interesting" publicationIds
         $interestingIds = []; //starting point
         foreach ($objects as $entityId => $object) {
@@ -961,14 +961,14 @@ ORDER BY `Publisher`";
                 $interestingIds[] = $object['translatedFromPublicationId'];
             }
         }
-        
+
         //search for all these publicationIds
         $results = $this->searchPublications([
             'mainPublicationId' => $objectIds,
             'translatedFromPublicationId' => $objectIds,
             'publicationId' => $interestingIds,
         ], ['orCombination' => true, 'noLink' => true]);
-        
+
         //link 'em up
         foreach ($objects as $entityId => $object) {
             if (isset($object['mainPublicationId']) &&
@@ -985,7 +985,7 @@ ORDER BY `Publisher`";
                 $objects[$entityId]['translatedFromPublication'] = &$results[$object['translatedFromPublicationId']];
             }
         }
-        
+
         //check for subEditions and translations
         foreach ($results as $resultId => $result) {
             if (in_array($result['mainPublicationId'], $objectIds)) {
@@ -995,10 +995,10 @@ ORDER BY `Publisher`";
                 $objects[$result['translatedFromPublicationId']]['translations'][$resultId] = &$results[$resultId];
             }
         }
-        
+
         //no return, by ref
     }
-    
+
     /**
      *
      * @param int $id
@@ -1015,13 +1015,13 @@ ORDER BY `Publisher`";
         /** @var ResultSet $result */
         $result = $gateway->selectWith($select);
         $results = $result->toArray();
-        
+
         if (!isset($results[0])) {
             return null;
         }
         $object = $this->processPublicationRow($results[0]);
         $this->linkPublication($object);
-        
+
         return $object;
     }
 
@@ -1181,7 +1181,7 @@ ORDER BY `Publisher`";
 //         }
         return $data;
     }
-    
+
     /**
      * Update the categories of all related books at the same time
      * @param array $data
@@ -1190,18 +1190,19 @@ ORDER BY `Publisher`";
      */
     protected function postprocessPublication($data, $newEntityData, $action)
     {
-        if ($action == self::ENTITY_ACTION_SUGGEST || !isset($newEntityData['categoryId']) ||
-            ($action == self::ENTITY_ACTION_UPDATE && isset($newEntityData['categoryId']) && isset($data['categoryId']) &&
-            $newEntityData['categoryId'] == $data['categoryId'])
+        if ($action == self::ENTITY_ACTION_SUGGEST || !isset($newEntityData['categoryId'])
+            || ($action == self::ENTITY_ACTION_UPDATE && isset($newEntityData['categoryId'])
+            && isset($data['categoryId'])
+            && $newEntityData['categoryId'] == $data['categoryId'])
         ) {
             return;
         }
-        
+
         $categoryId = $newEntityData['categoryId'];
         $publicationId = $newEntityData['publicationId'];
         $mainPublicationId = $newEntityData['mainPublicationId'];
         $translatedFromPublicationId = $newEntityData['translatedFromPublicationId'];
-        
+
         //put all the connected books in the same category
         $gateway = $this->getTableGateway('sch_publications');
         $where = new Where();
@@ -1213,7 +1214,7 @@ ORDER BY `Publisher`";
             $clause= new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $translatedFromPublicationId);
             $where->addPredicate($clause, PredicateSet::OP_OR);
         }
-        
+
         $clause= new Operator('MainPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
         $where->addPredicate($clause, PredicateSet::OP_OR);
         $clause= new Operator('TranslatedFromPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
@@ -1377,7 +1378,8 @@ ORDER BY `Publisher`";
                 'publishingPlace'           => $this->filterDbString($row['ort']),
                 'datePublished'             => $dateFromYear,
                 'publishingStatus'          => $this->filterDbString($row['herausgabe']),
-                'bookFormatType'            => $row['herausgabe'] == 'digital' ? self::BOOK_FORMAT_TYPE_EBOOK : self::BOOK_FORMAT_TYPE_PAPERBACK,
+                'bookFormatType'            => $row['herausgabe'] == 'digital'
+                    ? self::BOOK_FORMAT_TYPE_EBOOK : self::BOOK_FORMAT_TYPE_PAPERBACK,
                 'genre'                     => null,
                 'url1'                      => $download,
                 'url1Label'                 => isset($download) ? 'Download' : null,
@@ -1545,8 +1547,7 @@ WHERE 1";
             ];
         }
 
-        if (!$simulate)
-        {
+        if (!$simulate) {
             foreach ($entities as $key => $data) {
                 if (isset($data['title'])) {
                     $this->createEntity('publication', $data);
@@ -1593,7 +1594,6 @@ WHERE 1";
         //4. Insert new authors
 
         //5. Update publication records
-
     }
 
     protected function whichKentenichPeriod($date)
@@ -1631,9 +1631,9 @@ WHERE 1";
         }
         if (isset($dateIntStr)) {
             if (mb_substr($dateIntStr, 4) == '0000') {
-                $dateIntStr = mb_substr($dateIntStr, 0,4).'0101';
+                $dateIntStr = mb_substr($dateIntStr, 0, 4).'0101';
             } elseif (mb_substr($dateIntStr, 6) == '00') {
-                $dateIntStr = mb_substr($dateIntStr, 0,6).'01';
+                $dateIntStr = mb_substr($dateIntStr, 0, 6).'01';
             }
             $dateIntStr = date_create_from_format('Ymd', $dateIntStr);
         }
@@ -1659,7 +1659,7 @@ WHERE 1";
         $this->schoenstattTable = $schoenstattTable;
         return $this;
     }
-    
+
     /**
      * Get the predicatesTable value
      * @return PredicatesTable
@@ -1671,7 +1671,7 @@ WHERE 1";
         }
         return $this->predicatesTable;
     }
-    
+
     /**
      * Set the predicatesTable value
      * @param PredicatesTable $predicatesTable

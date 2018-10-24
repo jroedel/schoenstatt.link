@@ -21,31 +21,31 @@ class BookFormFactory extends ISO639 implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var LibraryTable $table **/
-		$table = $container->get ( 'Books\Model\LibraryTable' );
+        $table = $container->get('Books\Model\LibraryTable');
 
-		/** @var \Zend\Router\RouteMatch $routeMatch */
-		$routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
-		$libraryId = $routeMatch->getParam('library_id');
-		if (!isset($libraryId)) {
-		    $bookId = $routeMatch->getParam('book_id');
-		    $object = $table->getSimpleBook($bookId);
-		    $libraryId = isset($object['libraryId']) ? $object['libraryId'] : null;
-		}
-		if (isset($libraryId)) {
-		    $table->setLibraryId($libraryId);
-		} else {
-		    throw new \Exception('A BookForm instance can only be formed with reference to a particular library.');
-		}
-		$libraryOptions = $table->getLibraryOptions();
+        /** @var \Zend\Router\RouteMatch $routeMatch */
+        $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
+        $libraryId = $routeMatch->getParam('library_id');
+        if (!isset($libraryId)) {
+            $bookId = $routeMatch->getParam('book_id');
+            $object = $table->getSimpleBook($bookId);
+            $libraryId = isset($object['libraryId']) ? $object['libraryId'] : null;
+        }
+        if (isset($libraryId)) {
+            $table->setLibraryId($libraryId);
+        } else {
+            throw new \Exception('A BookForm instance can only be formed with reference to a particular library.');
+        }
+        $libraryOptions = $table->getLibraryOptions();
 
-		$authors = $table->getAuthorsValueOptions($libraryId);
-		$collections = $table->getCollectionValueOptions($libraryId);
-		$publishers = $table->getPublishersValueOptions();
-		$config = $container->get('Books\Config');
+        $authors = $table->getAuthorsValueOptions($libraryId);
+        $collections = $table->getCollectionValueOptions($libraryId);
+        $publishers = $table->getPublishersValueOptions();
+        $config = $container->get('Books\Config');
 
-		$languages = $this->getLanguageValueOptions();
-		$keywords = $table->getKeywordsValueOptions();
-		$adminTags = $table->getAdminKeywordsValueOptions();
+        $languages = $this->getLanguageValueOptions();
+        $keywords = $table->getKeywordsValueOptions();
+        $adminTags = $table->getAdminKeywordsValueOptions();
         $categories = $table->getCategoryValueOptions();
 
         /** @var PublicationsTable */
@@ -57,13 +57,13 @@ class BookFormFactory extends ISO639 implements FactoryInterface
         $form->get('publicationId')->setValueOptions($allEditions);
         $form->get('authors')->setValueOptions($authors);
         $form->get('collectionId')->setValueOptions($collections);
-		$form->get('keywords')->setValueOptions($keywords);
-		$form->get('publisher')->setValueOptions($publishers);
-		$form->get('category')->setValueOptions($categories);
-		$form->get('adminTags')->setValueOptions($adminTags);
+        $form->get('keywords')->setValueOptions($keywords);
+        $form->get('publisher')->setValueOptions($publishers);
+        $form->get('category')->setValueOptions($categories);
+        $form->get('adminTags')->setValueOptions($adminTags);
 
-		$form->setLibraryOptions($libraryOptions);
-		return $form;
+        $form->setLibraryOptions($libraryOptions);
+        return $form;
     }
 
     /**

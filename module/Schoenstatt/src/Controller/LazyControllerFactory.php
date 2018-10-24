@@ -9,8 +9,8 @@ class LazyControllerFactory implements AbstractFactoryInterface
 {
     public function canCreate(ContainerInterface $container, $requestedName)
     {
-        list( $module, ) = explode( '\\', __NAMESPACE__, 2 );
-        return strstr( $requestedName, $module . '\Controller') !== false;
+        list( $module, ) = explode('\\', __NAMESPACE__, 2);
+        return strstr($requestedName, $module . '\Controller') !== false;
     }
     
     /**
@@ -39,15 +39,11 @@ class LazyControllerFactory implements AbstractFactoryInterface
     {
         $class = new \ReflectionClass($requestedName);
         $parentLocator = $container->getServiceLocator();
-        if( $constructor = $class->getConstructor() )
-        {
-            if( $params = $constructor->getParameters() )
-            {
+        if ($constructor = $class->getConstructor()) {
+            if ($params = $constructor->getParameters()) {
                 $parameter_instances = [];
-                foreach( $params as $p )
-                {
-                    
-                    if( $p->getClass() ) {
+                foreach ($params as $p) {
+                    if ($p->getClass()) {
                         $cn = $p->getClass()->getName();
                         if (array_key_exists($cn, $this->aliases)) {
                             $cn = $this->aliases[$cn];
@@ -55,18 +51,16 @@ class LazyControllerFactory implements AbstractFactoryInterface
                         
                         try {
                             $parameter_instances[] = $parentLocator->get($cn);
-                        }
-                        catch (\Exception $x) {
+                        } catch (\Exception $x) {
                             echo __CLASS__
                             . " couldn't create an instance of $cn to satisfy the constructor for $requestedName.";
                             exit;
                         }
-                    }
-                    else{
-                        if( $p->isArray() && $p->getName() == 'config' )
+                    } else {
+                        if ($p->isArray() && $p->getName() == 'config') {
                             $parameter_instances[] = $parentLocator->get('config');
+                        }
                     }
-                    
                 }
                 return $class->newInstanceArgs($parameter_instances);
             }

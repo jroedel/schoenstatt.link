@@ -10,14 +10,14 @@ class BooksController extends SionController
 {
     public function createAction()
     {
-        $resourceId = 'library_'.$this->params ()->fromRoute ( 'library_id' );
+        $resourceId = 'library_'.$this->params()->fromRoute('library_id');
         if (!$this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
         
         $request = $this->getRequest();
-        if ($request->isGet ()) {
+        if ($request->isGet()) {
             $copyBook = $this->params()->fromQuery('copyBook');
             if (isset($copyBook) && is_numeric($copyBook)) {
                 /** @var \Books\Model\LibraryTable $table */
@@ -35,7 +35,7 @@ class BooksController extends SionController
                             $form->get('callNumber')->setValue($copyBookObj['callNumber']);
                         }
                         //only copy the collectionId if they're in the same library
-                        if ($copyBookObj['libraryId'] == $this->params ()->fromRoute ( 'library_id' )) {
+                        if ($copyBookObj['libraryId'] == $this->params()->fromRoute('library_id')) {
                             $form->get('collectionId')->setValue($copyBookObj['collectionId']);
                         }
                         $form->get('bookEdition')->setValue($copyBookObj['bookEdition']);
@@ -80,6 +80,5 @@ class BooksController extends SionController
 
     public function searchAction()
     {
-
     }
 }

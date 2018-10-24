@@ -6,36 +6,36 @@ use Zend\InputFilter\InputFilterProviderInterface;
 
 class SearchForm extends Form implements InputFilterProviderInterface
 {
-	public function __construct($name = null)
-	{
-		// we want to ignore the name passed
-		parent::__construct('search');
-		$this->setAttribute('method', 'GET');
+    public function __construct($name = null)
+    {
+        // we want to ignore the name passed
+        parent::__construct('search');
+        $this->setAttribute('method', 'GET');
 
-		$this->add([
-		    'name' => 'search',
-		    'type' => 'Text',
-		    'options' => [
-		        'label' => '',
-		    ],
-		    'attributes' => [
-		        'required' => false,
-		        'class' => 'input-lg search-query',
-		        'placeholder' => 'Search',
-		        'size' => 50,
-		    ],
-		]);
-		$this->add([
-		    'name' => 'category',
-		    'type' => 'Text',
-		    'options' => [
-		        'label' => '',
-		    ],
-		    'attributes' => [
-		        'required' => false,
-		        'size' => 50,
-		    ],
-		]);
+        $this->add([
+            'name' => 'search',
+            'type' => 'Text',
+            'options' => [
+                'label' => '',
+            ],
+            'attributes' => [
+                'required' => false,
+                'class' => 'input-lg search-query',
+                'placeholder' => 'Search',
+                'size' => 50,
+            ],
+        ]);
+        $this->add([
+            'name' => 'category',
+            'type' => 'Text',
+            'options' => [
+                'label' => '',
+            ],
+            'attributes' => [
+                'required' => false,
+                'size' => 50,
+            ],
+        ]);
         $this->add([
             'name' => 'libraryId',
             'type' => 'Hidden',
@@ -55,36 +55,36 @@ class SearchForm extends Form implements InputFilterProviderInterface
             ],
         ]);
 
-		$this->add([
-			'name' => 'submit',
-			'type' => 'Submit',
-			'attributes' => [
-				'value' => 'Search',
-				'id' => 'submit',
-				'class' => 'btn-primary'
-			],
-		]);
-	}
+        $this->add([
+            'name' => 'submit',
+            'type' => 'Submit',
+            'attributes' => [
+                'value' => 'Search',
+                'id' => 'submit',
+                'class' => 'btn-primary'
+            ],
+        ]);
+    }
 
-	public function getInputFilterSpecification()
-	{
-		return [
-		    'search' => [
-		        'required' => false,
-		        'filters' => [
-		            ['name' => 'StringTrim'],
-		            ['name' => 'ToNull'],
-		        ],
-		        'validators' => [
-		            [
+    public function getInputFilterSpecification()
+    {
+        return [
+            'search' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull'],
+                ],
+                'validators' => [
+                    [
                         'name' => 'StringLength',
                         'options' => [
                             'min' => 3,
                             'encoding' => 'UTF-8',
                         ],
-	                ],
-		        ],
-		    ],
+                    ],
+                ],
+            ],
             'libraryId' => [
                 'required' => false,
                 'filters' => [
@@ -96,16 +96,16 @@ class SearchForm extends Form implements InputFilterProviderInterface
                     ],
                 ],
             ],
-		    'collectionId' => [
-		        'required' => false,
-		        'filters' => [
-		            ['name' => 'ToNull',
-		                'options' => [
-		                    'type' => \Zend\Filter\ToNull::TYPE_STRING,
-		                ],
-		            ],
-		        ],
-		    ],
-		];
-	}
+            'collectionId' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
 }

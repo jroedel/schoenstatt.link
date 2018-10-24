@@ -25,6 +25,6 @@ class FormatPublicationUrlObject extends FormatUrlObject
             $format = "<a href=\"%s\">%s</a>";
         }
         $return = sprintf($format, $url['url'], $label);
-    	return $return;
+        return $return;
     }
 }

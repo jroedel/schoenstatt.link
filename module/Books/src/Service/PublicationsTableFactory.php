@@ -25,12 +25,12 @@ class PublicationsTableFactory implements FactoryInterface
         
         $authService = $container->get('zfcuser_auth_service');
         $user = $authService->getIdentity();
-		$actingUserId = $user ? $user->id : null;
+        $actingUserId = $user ? $user->id : null;
 
-		$table = new PublicationsTable($dbAdapter, $container, $actingUserId);
+        $table = new PublicationsTable($dbAdapter, $container, $actingUserId);
 
-		$schTable = $container->get(SchoenstattTable::class);
-		$table->setSchoenstattTable($schTable);
-		return $table;
+        $schTable = $container->get(SchoenstattTable::class);
+        $table->setSchoenstattTable($schTable);
+        return $table;
     }
 }

@@ -11,7 +11,7 @@ class Module
     {
         //auto-set text domain for all view scripts
         $e->getApplication()->getEventManager()->getSharedManager()
-        ->attach(AbstractActionController::class, 'dispatch', function($e) {
+        ->attach(AbstractActionController::class, 'dispatch', function ($e) {
             $routeMatch = $e->getRouteMatch();
             if (isset($routeMatch)) {
                 $libraryId = $routeMatch->getParam('library_id');

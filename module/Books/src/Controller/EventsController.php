@@ -39,15 +39,15 @@ class EventsController extends SionController
                     $this->nowMessenger()->addMessage("More than the max number of publications match your search. Only the first 300 results shown.", NowMessenger::NAMESPACE_INFO);
                 }
             }
-    }
+        }
     
-    if (is_array($entities) && empty($entities)) {
-        $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
-    }
+        if (is_array($entities) && empty($entities)) {
+            $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
+        }
     
-    return new ViewModel([
+        return new ViewModel([
         'entities'  => $entities,
         'form'      => $form,
-    ]);
-}
+        ]);
+    }
 }

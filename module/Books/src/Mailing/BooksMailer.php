@@ -152,8 +152,10 @@ class BooksMailer extends Mailer
                 $this->translator->translate($object['title'], 'Schoenstatt', $locale).' ' :
                 '').$object['firstName'];
             if (!isset($localizedSubject[$locale])) {
-                $localizedSubject[$locale] = sprintf($this->translator->translate($subjectBase, $textDomain, $locale),
-                    $this->translator->translate($library['name'], $textDomain, $locale));
+                $localizedSubject[$locale] = sprintf(
+                    $this->translator->translate($subjectBase, $textDomain, $locale),
+                    $this->translator->translate($library['name'], $textDomain, $locale)
+                );
             }
             if (!isset($localizedLibraryName[$locale])) {
                 $localizedLibraryName[$locale] = $this->translator->translate($library['name'], $textDomain, $locale);

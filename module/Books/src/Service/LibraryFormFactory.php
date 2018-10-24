@@ -19,23 +19,23 @@ class LibraryFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-		/** @var SchoenstattTable $schoenstattTable **/
-		$schoenstattTable= $container->get (SchoenstattTable::class);
+        /** @var SchoenstattTable $schoenstattTable **/
+        $schoenstattTable= $container->get(SchoenstattTable::class);
 
-		$persons = $schoenstattTable->getPersonValueOptions();
-		$config = $container->get('Books\Config');
+        $persons = $schoenstattTable->getPersonValueOptions();
+        $config = $container->get('Books\Config');
 
-		$schConfig = $container->get('Schoenstatt\Config');
-		$personValueOptionsOptions = [];
-		foreach ($schConfig['person_value_options_providers'] as $key => $options) {
-		    if (!isset($options['label'])) {
-		        throw new \Exception('person_value_options_providers must have a \'label\' key set');
-		    }
-		    $personValueOptionsOptions[$key] = $options['label'];
-		}
+        $schConfig = $container->get('Schoenstatt\Config');
+        $personValueOptionsOptions = [];
+        foreach ($schConfig['person_value_options_providers'] as $key => $options) {
+            if (!isset($options['label'])) {
+                throw new \Exception('person_value_options_providers must have a \'label\' key set');
+            }
+            $personValueOptionsOptions[$key] = $options['label'];
+        }
 
-		$table = $container->get(LibraryTable::class);
-		$collections = $table->getCollectionValueOptions();
+        $table = $container->get(LibraryTable::class);
+        $collections = $table->getCollectionValueOptions();
 
         $form = new LibraryForm();
         $form->get('filiationId')->setValueOptions($config['library_filiation_options']);
@@ -46,6 +46,6 @@ class LibraryFormFactory implements FactoryInterface
         $form->get('checkoutPersonListKind')->setValueOptions($personValueOptionsOptions);
         $form->get('checkoutBooksRole')->setValueOptions(LibraryTable::LIBRARY_GENERAL_ROLE_OPTIONS);
         $form->get('viewRole')->setValueOptions(LibraryTable::LIBRARY_GENERAL_ROLE_OPTIONS);
-		return $form;
+        return $form;
     }
 }

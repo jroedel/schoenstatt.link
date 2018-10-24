@@ -45,8 +45,11 @@ class PatresGateway
      * @param bool $importPersonIfNotFound
      * @param array $options May specify changes to be made to the person record in SchoenstattTable
      */
-    public function getSchoenstattPersonFromPatresPersonId($patresPersonId, $importPersonIfNotFound = false,  $options = [])
-    {
+    public function getSchoenstattPersonFromPatresPersonId(
+        $patresPersonId,
+        $importPersonIfNotFound = false,
+        $options = []
+    ) {
         $table = $this->getSchoenstattTable();
         if (false === $personData = $this->getPersonInSchoenstattTable($patresPersonId)) {
             if ($importPersonIfNotFound) {
@@ -84,7 +87,8 @@ class PatresGateway
         $response = $client->send();
 
         if (200 != $response->getStatusCode()) {
-            throw new \Exception('Failed to retrieve list of fathers from Patres. Status code: '. $response->getStatusCode());
+            throw new \Exception('Failed to retrieve list of fathers from Patres. Status code: '
+                . $response->getStatusCode());
         }
         $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
         if (!isset($data['data'])) {
@@ -110,8 +114,12 @@ class PatresGateway
         $this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options);
 
         $table = $this->getSchoenstattTable();
-        if (0 !== count($currentPersonList = $table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true)))
-        {
+        if (0 !== count($currentPersonList = $table->searchPersons(
+            ['dataSource' => 'patres-sion', 'dataSourceId' => $personId],
+            false,
+            true
+        ))
+        ) {
             //@todo warn the user that existing data will be overwritten
             $currentPerson = current($currentPersonList);
             $currentPersonId = $currentPerson['personId'];
@@ -162,11 +170,13 @@ class PatresGateway
         $response = $client->send();
 
         if (200 != $response->getStatusCode()) {
-            throw new \Exception('Request for information on father \''.$personId.'\' failed. Status code: '.$response->getStatusCode());
+            throw new \Exception('Request for information on father \''.$personId.'\' failed. Status code: '
+                .$response->getStatusCode());
         }
         $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
         if (!isset($data['data'])) {
-            throw new \Exception('Request for information on father \''.$personId.'\' failed. No information returned.');
+            throw new \Exception('Request for information on father \''.$personId
+                .'\' failed. No information returned.');
         }
         $person = $data['data'];
         if (isset($person['bishopDate'])) {
@@ -196,8 +206,12 @@ class PatresGateway
      */
     public function getPersonInSchoenstattTable($personId)
     {
-        if (0 === count($currentPersonList = $this->getSchoenstattTable()->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true)))
-        {
+        if (0 === count($currentPersonList = $this->getSchoenstattTable()->searchPersons(
+            ['dataSource' => 'patres-sion', 'dataSourceId' => $personId],
+            false,
+            true
+        ))
+        ) {
             return false;
         }
         $currentPerson = current($currentPersonList);

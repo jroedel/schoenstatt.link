@@ -23,17 +23,17 @@ class SchoenstattTableFactory implements FactoryInterface
     {
         $dbAdapter = $container->get(Adapter::class);
 
-        $config = $container->get ( 'Config' );
+        $config = $container->get('Config');
 
-		/** @var  User $userService **/
-		$userService = $container->get('zfcuser_user_service');
-		$user = $userService->getAuthService()->getIdentity();
-		$actingUserId = $user ? $user->id : null;
+        /** @var  User $userService **/
+        $userService = $container->get('zfcuser_user_service');
+        $user = $userService->getAuthService()->getIdentity();
+        $actingUserId = $user ? $user->id : null;
 
-		/** @var \JTranslate\Model\CountriesInfo */
-		$countriesInfo = $container->get(CountriesInfo::class);
+        /** @var \JTranslate\Model\CountriesInfo */
+        $countriesInfo = $container->get(CountriesInfo::class);
 
-		$table = new SchoenstattTable($dbAdapter, $container, $actingUserId, $config['schoenstatt'], $countriesInfo);
-		return $table;
+        $table = new SchoenstattTable($dbAdapter, $container, $actingUserId, $config['schoenstatt'], $countriesInfo);
+        return $table;
     }
 }

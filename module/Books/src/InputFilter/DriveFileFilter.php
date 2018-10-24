@@ -34,7 +34,7 @@ class DriveFileFilter extends InputFilter
             'required'   => true,
             'validators' => [],
             'filters' => [
-                ['name' => \Zend\Filter\StripNewlines::class], 
+                ['name' => \Zend\Filter\StripNewlines::class],
                 ['name' => \Zend\Filter\StripTags::class],
             ],
         ]);

@@ -92,7 +92,7 @@ class GdprStrategy implements ListenerAggregateInterface
         $addressRecord = $geoip->lookup($ip);
         if ($this->isGDPRCountry($addressRecord->getCountryCode())) {
 //             $result = $event->getResult();
-            $response = $event->getResponse();
+            $response = $event->getResponse(); //@todo create a new response so there aren't any cookies
             // Common view variables
 //             $viewVariables = array(
 //                 'error' => $event->getParam('error'),
@@ -108,7 +108,14 @@ class GdprStrategy implements ListenerAggregateInterface
             $response->setContent("Sorry, we haven't yet implemented GDPR standards for schoenstatt.link. Please email webmaster@schoenstatt.link if you have any questions. Sorry for the inconvienence.");
             return $response;
         }
+        return;
+        // Do nothing if the result is a response object
+        $result = $event->getResult();
+        $response = $event->getResponse();
         
+        if ($result instanceof Response || ($response && !$response instanceof HttpResponse)) {
+            return;
+        }
     }
     
     protected static function isGDPRCountry($countryCode)

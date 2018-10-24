@@ -20,19 +20,19 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var PublicationsTable $table **/
-		$table = $container->get (PublicationsTable::class);
+        $table = $container->get(PublicationsTable::class);
 
-		$authors = $table->getAuthorsValueOptions();
-		$authorsOnlyPersons = $table->getAuthorsNoAssociationsValueOptions();
-		$publishers = $table->getPublishersValueOptions();
-		$config = $container->get('Books\Config');
+        $authors = $table->getAuthorsValueOptions();
+        $authorsOnlyPersons = $table->getAuthorsNoAssociationsValueOptions();
+        $publishers = $table->getPublishersValueOptions();
+        $config = $container->get('Books\Config');
 
-		$languages = $this->getLanguageValueOptions();//$config['language_value_options'];
+        $languages = $this->getLanguageValueOptions();//$config['language_value_options'];
 
-		$bookFormats = $config['book_format_type_value_options'];
-		$urlLabels = $config['url_label_value_options'];
-		$keywords = $table->getKeywordsValueOptions();
-// 		$adminTags = $table->getPersonAdminTags();
+        $bookFormats = $config['book_format_type_value_options'];
+        $urlLabels = $config['url_label_value_options'];
+        $keywords = $table->getKeywordsValueOptions();
+//      $adminTags = $table->getPersonAdminTags();
         $editions = $table->getEditionValueOptions(true);
         $allEditions = $table->getEditionValueOptions(false);
 
@@ -46,15 +46,15 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $form->get('editorsAll')->setValueOptions($authors);
         $form->get('translatorsAll')->setValueOptions($authorsOnlyPersons);
         $form->get('illustratorsAll')->setValueOptions($authorsOnlyPersons);
-		$form->get('keywords')->setValueOptions($keywords);
-		$form->get('publisher')->setValueOptions($publishers);
-		$form->get('bookFormatType')->setValueOptions($bookFormats);
-		$form->get('url1Label')->setValueOptions($urlLabels);
-		$form->get('url2Label')->setValueOptions($urlLabels);
-		$form->get('url3Label')->setValueOptions($urlLabels);
-		$form->get('categoryId')->setValueOptions($categories);
-// 		$form->get('adminTags')->setValueOptions($adminTags);
-		return $form;
+        $form->get('keywords')->setValueOptions($keywords);
+        $form->get('publisher')->setValueOptions($publishers);
+        $form->get('bookFormatType')->setValueOptions($bookFormats);
+        $form->get('url1Label')->setValueOptions($urlLabels);
+        $form->get('url2Label')->setValueOptions($urlLabels);
+        $form->get('url3Label')->setValueOptions($urlLabels);
+        $form->get('categoryId')->setValueOptions($categories);
+//      $form->get('adminTags')->setValueOptions($adminTags);
+        return $form;
     }
 
     /**

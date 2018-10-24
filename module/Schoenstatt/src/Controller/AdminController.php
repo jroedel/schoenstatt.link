@@ -17,6 +17,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\PatresGateway;
 use SionModel\Service\ProblemService;
 use Schoenstatt\Form\ImportFatherForm;
+
 // use Patres\Form\ModerateGenericForm;
 // use Patres\Mailing\Mailer;
 // use Schoenstatt\Form\PersonForm;
@@ -31,9 +32,12 @@ class AdminController extends AbstractActionController
     protected $importFatherForm;
     protected $schoenstattTable;
     
-    public function __construct(TranslationsTable $translationsTable, ProblemService $problemService, 
-        ImportFatherForm $importFatherForm, SchoenstattTable $schoenstattTable)
-    {
+    public function __construct(
+        TranslationsTable $translationsTable,
+        ProblemService $problemService,
+        ImportFatherForm $importFatherForm,
+        SchoenstattTable $schoenstattTable
+    ) {
         $this->translationsTable = $translationsTable;
         $this->problemService = $problemService;
         $this->importFatherForm = $importFatherForm;
@@ -75,22 +79,24 @@ class AdminController extends AbstractActionController
     {
         $form = $this->importFatherForm;
         $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
+        if ($request->isPost()) {
+            $data = $request->getPost()->toArray();
             $form->setData($data);
             if ($form->isValid()) { //here the sent personId will be checked against the haystack
                 $personId = $form->getData()['personId'];
                 /** @var \Schoenstatt\Service\PatresGateway $patresGateway */
                 $patresGateway = $sm->get(PatresGateway::class);
-                if (false === $patresGateway->importRemotePerson($personId))
-                {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Person already exists in the database.' );
+                if (false === $patresGateway->importRemotePerson($personId)) {
+                    $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                        ->addMessage('Person already exists in the database.');
                 } else {
                     //$form = $sm->get('Schoenstatt\Form\ImportFatherForm'); why was this here?
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_SUCCESS )->addMessage ( 'Person successfully imported.' );
+                    $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_SUCCESS)
+                        ->addMessage('Person successfully imported.');
                 }
             } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                    ->addMessage('Error in form submission, please review.');
             }
         }
         return new ViewModel([
@@ -129,5 +135,4 @@ class AdminController extends AbstractActionController
             'simulate'  => $simulate,
         ]);
     }
-
 }

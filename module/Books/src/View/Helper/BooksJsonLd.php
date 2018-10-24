@@ -57,7 +57,7 @@ class BooksJsonLd extends AbstractHelper
 //                     if (!empty($publication['authorPersons'])) {
 
 //                     } else
-                        if (!is_null($publication['authorsText'])) {
+                    if (!is_null($publication['authorsText'])) {
                         $authors = $publication['authorsText'];
                         $authorObjects = [];
                         foreach ($authors as $authorName) {
@@ -101,7 +101,7 @@ class BooksJsonLd extends AbstractHelper
 //                     if (!is_null($publication['publisherAssociation'])) {
 //                         $book->publisher($this->view->schoenstattJsonLd('association', $publication['publisherAssociation']));
 //                     } else
-                        if (isset($publication['publisher'])) {//else, publisher
+                    if (isset($publication['publisher'])) {//else, publisher
                         $publisher = Schema::organization()->name($publication['publisher']);
                         $book->publisher($publisher);
                     }

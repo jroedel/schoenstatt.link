@@ -10,14 +10,14 @@ class ClipboardButton extends AbstractHelper
 {
     protected $buttonIds = [];
     protected $scriptIncluded = false;
-	public function __construct()
-	{
-	}
+    public function __construct()
+    {
+    }
 
-	public function __invoke()
-	{
-	    return $this;
-	}
+    public function __invoke()
+    {
+        return $this;
+    }
 
     public function clipboardWidget($label, $content, $buttonText)
     {
@@ -37,7 +37,8 @@ class ClipboardButton extends AbstractHelper
 	<label for=\"$textareaId\">$label</label>
     <textarea id=\"$textareaId\" rows=\"3\" class=\"form-control\">$content</textarea>
 </div>
-<button class=\"btn btn-default btn-clipboard\" id=\"$buttonId\" data-clipboard-target=\"#$textareaId\">$buttonText</button>";
+<button class=\"btn btn-default btn-clipboard\" id=\"$buttonId\" 
+data-clipboard-target=\"#$textareaId\">$buttonText</button>";
         echo $return;
     }
 
@@ -51,7 +52,11 @@ $(function() {
 var \$emailParent = $(\"#emails\").parent();
 var clipboard = new Clipboard('.btn-clipboard'); ";
         foreach ($this->buttonIds as $value) {
-            $return.=sprintf("$(\"#%s\").click(function() { $(\"#%s\").parent().show();});", $value['button'], $value['textarea']);
+            $return.=sprintf(
+                "$(\"#%s\").click(function() { $(\"#%s\").parent().show();});",
+                $value['button'],
+                $value['textarea']
+            );
         }
         $return.="});</script>";
         return $return;
