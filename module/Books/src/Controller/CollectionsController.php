@@ -8,7 +8,7 @@ class CollectionsController extends SionController
 {
     public function createAction()
     {
-        $libraryId = $this->params ()->fromRoute ( 'library_id' );
+        $libraryId = $this->params()->fromRoute('library_id');
         $resourceId = 'library_'.$libraryId;
         if (!$this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();

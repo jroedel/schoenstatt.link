@@ -20,6 +20,6 @@ class CollectionFormFactory implements FactoryInterface
     {
         $form = new CollectionForm();
         $form->get('mainShowDisplay')->setValueOptions(LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS);
-		return $form;
+        return $form;
     }
 }

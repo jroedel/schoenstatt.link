@@ -109,7 +109,7 @@ class EventTextTable extends SionTable
         //Prepare the search predicate
         if (isset($query['search'])) {
             $search = $query['search'];
-            $searchLike = sprintf("%%%s%%",$search);
+            $searchLike = sprintf("%%%s%%", $search);
             $searchClause = new Predicate();
             $searchClause->addPredicates([
                 new Like($fieldMap['titleEn'], $searchLike),
@@ -224,14 +224,14 @@ class EventTextTable extends SionTable
         if (!isset($select)) {
             $select = new Select('events');
             //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['EventId', 'TitleEn', 'TitleEs', 'TitleDe', 'TitlePt', 'TitleFr', 
-                'Country', 'OriginalLanguage', 'DescriptionEn', 'DescriptionEs', 'DescriptionDe', 
-                'DescriptionPt', 'DescriptionFr', 'StartDate', 'DurationInDays', 'Accuracy', 
-                'BestTextQuality', 'Place', 'Tags', 'AdminTags', 'AudienceText', 'AbbreviationEn', 
-//                'AbbreviationEs', 'AbbreviationPt', 'AbbreviationFr', 
-                'AbbreviationDe', 'AclResourceId', 
-                'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminNotes', 'AdminNotesUpdatedOn', 
-                'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'LegacySource', 
+            $select->columns(['EventId', 'TitleEn', 'TitleEs', 'TitleDe', 'TitlePt', 'TitleFr',
+                'Country', 'OriginalLanguage', 'DescriptionEn', 'DescriptionEs', 'DescriptionDe',
+                'DescriptionPt', 'DescriptionFr', 'StartDate', 'DurationInDays', 'Accuracy',
+                'BestTextQuality', 'Place', 'Tags', 'AdminTags', 'AudienceText', 'AbbreviationEn',
+//                'AbbreviationEs', 'AbbreviationPt', 'AbbreviationFr',
+                'AbbreviationDe', 'AclResourceId',
+                'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminNotes', 'AdminNotesUpdatedOn',
+                'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'LegacySource',
                 'LegacyFile', 'LegacyFileDateModified'
                 //'admin_notes_updated_by', 'current_checkout_id' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')
             ]);

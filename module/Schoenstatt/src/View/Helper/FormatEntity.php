@@ -23,7 +23,7 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
      */
     public function __invoke($entityType, $data, array $options = [])
     {
-    	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
+        $editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : true;
         $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : true;
         $finalMarkup = '';
         switch ($entityType) {

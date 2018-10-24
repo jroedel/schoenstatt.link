@@ -95,7 +95,8 @@ class PersonsController extends SionController
     public function createPerson($data, $form)
     {
         if (!$data['firstName'] && !$data['lastName']) {
-            $this->nowMessenger()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Either a first name or a last name is required.' );
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                ->addMessage('Either a first name or a last name is required.');
             return new ViewModel([
                 'form' => $form,
             ]);
@@ -104,10 +105,11 @@ class PersonsController extends SionController
         $table = $this->getSionTable();
         $entity = $this->getEntity();
         if (!($newId = $table->createEntity($entity, $data))) {
-            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                ->addMessage('Error in form submission, please review.');
         } else {
-            $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-            ->addMessage ( ucwords($entity).' successfully created.' );
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+            ->addMessage(ucwords($entity).' successfully created.');
             $this->redirectAfterCreate((int) $newId);
         }
     }
@@ -140,8 +142,7 @@ class PersonsController extends SionController
         foreach ($urlConfig as $key => $values) {
             if (isset($values[$deviceType]) &&
                 isset($values['userKey']) &&
-                !is_null($person[$values['userKey']]))
-            {
+                !is_null($person[$values['userKey']])) {
                 $url = [
                     'label' => $values['label'],
                     'url'   => sprintf($values[$deviceType], $person[$values['userKey']]),

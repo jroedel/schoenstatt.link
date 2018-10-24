@@ -59,7 +59,7 @@ class DriveGateway
      * @param bool $importPersonIfNotFound
      * @param array $options May specify changes to be made to the person record in SchoenstattTable
      */
-    public function getSchoenstattPersonFromPatresPersonId($patresPersonId, $importPersonIfNotFound = false,  $options = [])
+    public function getSchoenstattPersonFromPatresPersonId($patresPersonId, $importPersonIfNotFound = false, $options = [])
     {
         $table = $this->getSchoenstattTable();
         if (false === $personData = $this->getPersonInSchoenstattTable($patresPersonId)) {
@@ -98,8 +98,7 @@ class DriveGateway
         $this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options);
 
         $table = $this->getSchoenstattTable();
-        if (0 !== count($currentPersonList = $table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true)))
-        {
+        if (0 !== count($currentPersonList = $table->searchPersons(['dataSource' => 'patres-sion', 'dataSourceId' => $personId], false, true))) {
             //@todo warn the user that existing data will be overwritten
             $currentPerson = current($currentPersonList);
             $currentPersonId = $currentPerson['personId'];
@@ -249,7 +248,7 @@ class DriveGateway
     }
 
     /**
-     * 
+     *
      * @throws \Exception
      * @return string
      */
@@ -268,7 +267,7 @@ class DriveGateway
     }
 
     /**
-     * 
+     *
      * @param string $filesApiUrl
      * @return string
      */

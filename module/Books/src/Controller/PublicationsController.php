@@ -26,7 +26,7 @@ class PublicationsController extends SionController
             /** @var FilesTable $filesTable */
             $filesTable = $this->services[FilesTable::class];
             $entityObject['bookCoverFile'] = $filesTable->getFile($bookCoverFileId);
-            $view->setVariable('entity', $entityObject); 
+            $view->setVariable('entity', $entityObject);
         }
         /** @var DriveGateway $gateway */
         $gateway = $this->services[DriveGateway::class];
@@ -34,7 +34,8 @@ class PublicationsController extends SionController
         $publicationFiles = null;
         try {
             $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
-        } catch (\Exception $e) { }
+        } catch (\Exception $e) {
+        }
         if (isset($publicationFiles)) {
             if (isset($publicationFiles[$entityObject['publicationId']])) {
                 $entityObject['files'] = $publicationFiles[$entityObject['publicationId']];
@@ -93,8 +94,11 @@ class PublicationsController extends SionController
         $table      = $this->getSionTable();
         $entity     = $this->getEntity();
         $entitySpec = $this->getEntitySpecification();
-        $objects    = $table->getPublicationLanguageCounts($this->isAllowed('publication_user', 'show'),
-            $this->isAllowed('publication_institute', 'show'), $this->isAllowed('publication_patres', 'show'));
+        $objects    = $table->getPublicationLanguageCounts(
+            $this->isAllowed('publication_user', 'show'),
+            $this->isAllowed('publication_institute', 'show'),
+            $this->isAllowed('publication_patres', 'show')
+        );
         $form = $this->services[PublicationsSearchForm::class];
         $languages = $this->services['Books\LanguagesValueOptions'];
         $view = new ViewModel([
@@ -124,7 +128,8 @@ class PublicationsController extends SionController
         $publicationFiles = null;
         try {
             $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
-        } catch (\Exception $e) { }
+        } catch (\Exception $e) {
+        }
 
         $view = new ViewModel([
             'form'      => $form,
@@ -147,7 +152,7 @@ class PublicationsController extends SionController
         foreach ($objects as $pubId => $object) {
             if (isset($object['categoryName'])) {
                 if (!isset($categories[$object['categoryName']])) { //add this group array key
-                    $bookmark = preg_replace("/\s+/", "-",  strtolower(trim($object['categoryName'])));
+                    $bookmark = preg_replace("/\s+/", "-", strtolower(trim($object['categoryName'])));
                     $bookmark = preg_replace("/[^a-z-]+/", "", $bookmark);
                     $bookmark = trim($bookmark, '- ');
                     $categories[$object['categoryName']] = [

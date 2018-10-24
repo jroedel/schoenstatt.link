@@ -34,7 +34,7 @@ class BorrowersController extends AbstractActionController
     public function showAction()
     {
         //get the parameter
-        $id = ( int ) $this->params ()->fromRoute ( 'person_id' );
+        $id = ( int ) $this->params()->fromRoute('person_id');
         if (!$id) {
             $this->getOutOfHere();
         }
@@ -123,6 +123,6 @@ class BorrowersController extends AbstractActionController
     {
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
         ->addMessage('Person not found.');
-        $this->redirect ()->toRoute ( 'libraries');
+        $this->redirect()->toRoute('libraries');
     }
 }

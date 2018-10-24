@@ -29,7 +29,7 @@ class IndexController extends AbstractActionController
     protected $publicationsTable;
     
     /**
-     * 
+     *
      * @var SchoenstattTable $schoenstattTable
      */
     protected $schoenstattTable;
@@ -110,7 +110,8 @@ class IndexController extends AbstractActionController
 
         // Explicitly set type to text/xml, otherwise it's text/html
         $this->getResponse()->getHeaders()->addHeaderLine(
-            'Content-Type', 'text/xml'
+            'Content-Type',
+            'text/xml'
         );
         // Only render the sitemap helper, without any layout
         $viewModel = new ViewModel();

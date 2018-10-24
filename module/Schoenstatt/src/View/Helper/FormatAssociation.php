@@ -25,9 +25,9 @@ class FormatAssociation extends AbstractHelper
     public function __invoke($data, array $options = [])
     {
         $display = isset($options['display']) ? $options['display'] : 'name';
-    	$editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : $display=='name';
-    	$showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : false;
-    	$displayAsLink = isset($options['displayAsLink']) ? (bool)$options['displayAsLink'] : $display=='name';
+        $editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : $display=='name';
+        $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : false;
+        $displayAsLink = isset($options['displayAsLink']) ? (bool)$options['displayAsLink'] : $display=='name';
         $finalMarkup = '';
 
         if (isset($data['isDeleted']) && $data['isDeleted']) {
@@ -40,7 +40,7 @@ class FormatAssociation extends AbstractHelper
                 case self::DISPLAY_NAME:
                     if ($data['formattedName']) {
                         $text = $data['formattedName'];
-                    } else if ($data['isNameTranslateable']) {
+                    } elseif ($data['isNameTranslateable']) {
                         $text = $this->view->translate($data['name'], 'Schoenstatt');
                     } else {
                         $text = $data['name'];
@@ -65,17 +65,23 @@ class FormatAssociation extends AbstractHelper
         $permissionToViewLink = $this->view->isAllowed('route/associations/association');
 
         if ($displayAsLink && $permissionToViewLink) {
-            $url = $this->view->url('associations/association',
-                ['association_id' => $data['associationId']]);
-            $finalMarkup .= sprintf('<a href="%s">%s</a>',
+            $url = $this->view->url(
+                'associations/association',
+                ['association_id' => $data['associationId']]
+            );
+            $finalMarkup .= sprintf(
+                '<a href="%s">%s</a>',
                 $url,
-                    $text);
+                $text
+            );
         } else {
             $finalMarkup .= $text;
         }
         if ($showLabelOption && isset($this->associationTypeLabels[$data['kind']])) {
-            $finalMarkup .= '&nbsp;'.$this->view->label($this->associationTypeLabels[$data['kind']],
-                'label-info');
+            $finalMarkup .= '&nbsp;'.$this->view->label(
+                $this->associationTypeLabels[$data['kind']],
+                'label-info'
+            );
         }
         if ($editPencilOption) {
             $finalMarkup .= $this->view->editPencil('association', $data['associationId']);

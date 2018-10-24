@@ -22,16 +22,16 @@ class AssignmentFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-		$table = $container->get ( 'Schoenstatt\Model\SchoenstattTable' );
+        $table = $container->get('Schoenstatt\Model\SchoenstattTable');
 
-		$associations = $table->getAssociationValueOptions();
+        $associations = $table->getAssociationValueOptions();
 
-		$persons = $table->getPersonValueOptions();
-		$roleTitlesValueOptions = $table->getJavascriptRoleTitleValueOptions();
+        $persons = $table->getPersonValueOptions();
+        $roleTitlesValueOptions = $table->getJavascriptRoleTitleValueOptions();
 
-		$form = new AssignmentForm($roleTitlesValueOptions);
-		$form->get('associationId')->setValueOptions($associations);
-		$form->get('personId')->setValueOptions($persons);
-		return $form;
+        $form = new AssignmentForm($roleTitlesValueOptions);
+        $form->get('associationId')->setValueOptions($associations);
+        $form->get('personId')->setValueOptions($persons);
+        return $form;
     }
 }

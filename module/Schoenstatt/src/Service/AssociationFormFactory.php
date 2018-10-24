@@ -23,26 +23,26 @@ class AssociationFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-		$table = $container->get (SchoenstattTable::class );
+        $table = $container->get(SchoenstattTable::class);
 
-		$associations = $table->getAssociationValueOptions();
+        $associations = $table->getAssociationValueOptions();
 
-		/** @var AssociationKindsService $kindsService */
-		$kindsService = $container->get(AssociationKindsService::class);
-		$kinds = $kindsService->getValueOptions();
+        /** @var AssociationKindsService $kindsService */
+        $kindsService = $container->get(AssociationKindsService::class);
+        $kinds = $kindsService->getValueOptions();
 
-		$countryNames = $container->get ( 'CountryValueOptions' );
+        $countryNames = $container->get('CountryValueOptions');
 
-		/** @var FormElementManagerV2Polyfill $formManager */
-		$formManager = $container->get('FormElementManager');
-		/** @var \Schoenstatt\Form\AssociationForm $form */
-		$form = $formManager->get(AssociationForm::class, [], true);
+        /** @var FormElementManagerV2Polyfill $formManager */
+        $formManager = $container->get('FormElementManager');
+        /** @var \Schoenstatt\Form\AssociationForm $form */
+        $form = $formManager->get(AssociationForm::class, [], true);
 
-		$form->get('parentId')->setValueOptions($associations);
-		$form->get('kind')->setValueOptions($kinds);
-		$form->get('country')->setValueOptions($countryNames);
-		$form->get('post1Country')->setValueOptions($countryNames);
-		$form->get('post2Country')->setValueOptions($countryNames);
-		return $form;
+        $form->get('parentId')->setValueOptions($associations);
+        $form->get('kind')->setValueOptions($kinds);
+        $form->get('country')->setValueOptions($countryNames);
+        $form->get('post1Country')->setValueOptions($countryNames);
+        $form->get('post2Country')->setValueOptions($countryNames);
+        return $form;
     }
 }

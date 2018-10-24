@@ -21,7 +21,10 @@ use SionModel\Db\GeoPoint;
 use Zend\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
 
-class SchoenstattTable extends SionTable implements ProblemProviderInterface, PersonValueOptionsProviderInterface, ResourceProviderInterface
+class SchoenstattTable extends SionTable implements
+    ProblemProviderInterface,
+    PersonValueOptionsProviderInterface,
+    ResourceProviderInterface
 {
     const DEFAULT_PLACE_FORMAT = ':zip :cityState';
 
@@ -118,8 +121,13 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
 
     protected $countryLanguageMap = [];
 
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $schoenstattConfig, $countriesInfo)
-    {
+    public function __construct(
+        AdapterInterface $dbAdapter,
+        $serviceLocator,
+        $actingUserId,
+        $schoenstattConfig,
+        $countriesInfo
+    ) {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $schoenstattConfig;
         $this->translator = $serviceLocator->get('translator');
@@ -241,23 +249,24 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         static $select;
         if (!isset($select)) {
             $select = new Select('sch_associations');
-            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
+            //'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
             $select->columns(['AssociationId', 'AssociationName', 'Parent', 'Kind', 'OverrideNameFormat',
-'Country', 'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
-'IsActive', 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminTags',
-'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy', 'Email', 'Email2',
-'EmailsUpdatedOn', 'EmailsUpdatedBy', 'Phone1', 'Phone1Label', 'Phone2', 'Phone2Label',
-'Phone3', 'Phone3Label', 'PhonesUpdatedOn', 'PhonesUpdatedBy', 'Url1', 'Url1Label',
-'Url2', 'Url2Label', 'Url3', 'Url3Label', 'FacebookUrl', 'TwitterUser', 'InstagramUser',
-'Post1Street1', 'Post1Street2', 'Post1CityState', 'Post1Zip', 'Post1Country',
-'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country',
-'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
-'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
-'GeoPoint' => new Expression('AsText(`Location`)'), 'Latitude', 'Longitude',
-'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
-'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
-'VisitorsInformationPt', 'VisitorsInformationFr',
-'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr']);
+            'Country', 'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
+            'IsActive', 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminTags',
+            'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy', 'Email', 'Email2',
+            'EmailsUpdatedOn', 'EmailsUpdatedBy', 'Phone1', 'Phone1Label', 'Phone2', 'Phone2Label',
+            'Phone3', 'Phone3Label', 'PhonesUpdatedOn', 'PhonesUpdatedBy', 'Url1', 'Url1Label',
+            'Url2', 'Url2Label', 'Url3', 'Url3Label', 'FacebookUrl', 'TwitterUser', 'InstagramUser',
+            'Post1Street1', 'Post1Street2', 'Post1CityState', 'Post1Zip', 'Post1Country',
+            'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country',
+            'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
+            'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
+            'GeoPoint' => new Expression('AsText(`Location`)'), 'Latitude', 'Longitude',
+            'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
+            'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
+            'VisitorsInformationPt', 'VisitorsInformationFr',
+            'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr']);
             //         $select->group(['TheMonth', 'TheYear']);
             //         $select->where($predicate->in('ChangedEntity', $tableEntities));
 //             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
@@ -336,7 +345,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     }
 
 
-    static protected function associationCompare($a, $b)
+    protected static function associationCompare($a, $b)
     {
         if ($a['sort'] == $b['sort']) {
             return strcmp($a['name'], $b['name']);
@@ -368,19 +377,22 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
         if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
             $phones[] = [
                 'number' => $phone1,
-                'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
+                'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label']))
+                    ? $phone1Label : 'Other',
             ];
         }
         if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
             $phones[] = [
                 'number' => $phone2,
-                'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
+                'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label']))
+                    ? $phone2Label : 'Other',
             ];
         }
         if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
             $phones[] = [
                 'number' => $phone3,
-                'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
+                'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label']))
+                    ? $phone3Label : 'Other',
             ];
         }
 
@@ -428,7 +440,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                     isset($this->countryNameTranslations[$token][$locale])
                 ) {
                     $token = $this->countryNameTranslations[$token][$locale];
-                } else if ($isTranslatorReady) {
+                } elseif ($isTranslatorReady) {
                     $token = $this->translator->translate($token, 'Schoenstatt');
                 }
             }
@@ -481,7 +493,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
             'isSubDiocesan'         => $associationKindSpec->isSubDiocesanAssociation,
             'resourceId'            => 'association_'.$id,
             'roles'                 => [],
-            'assignments'			=> [],
+            'assignments'           => [],
             'mainRole'              => null,
             'mainAssignment'        => null,
             'mainPerson'            => null,
@@ -600,8 +612,7 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
     protected function associationPostprocessor($data, $newData, $entityAction)
     {
         //if we're creating a diocesan movement, check if auto-creation of any league branches were requested
-        if ($entityAction === SionTable::ENTITY_ACTION_CREATE)
-        {
+        if ($entityAction === SionTable::ENTITY_ACTION_CREATE) {
             if (!isset($newData['associationId'])) {
                 throw new \Exception('There was an unexpectedly no associationId on a new association');
             }
@@ -672,7 +683,8 @@ class SchoenstattTable extends SionTable implements ProblemProviderInterface, Pe
                 'isMainRole'                => isset($role['isMainRole']) ? $role['isMainRole'] : false,
                 'isMainContact'             => isset($role['isMainContact']) ? $role['isMainContact'] : false,
                 'isSinglePosition'          => isset($role['isSinglePosition']) ? $role['isSinglePosition'] : false,
-                'shouldAlwaysBeFilled'      => isset($role['shouldAlwaysBeFilled']) ? $role['shouldAlwaysBeFilled'] : false,
+                'shouldAlwaysBeFilled'      => isset($role['shouldAlwaysBeFilled'])
+                    ? $role['shouldAlwaysBeFilled'] : false,
                 'sort'                      => isset($role['sort']) ? $role['sort'] : 100,
                 'isActive'                  => true,
             ];
@@ -748,7 +760,7 @@ ORDER BY `LastName`, `FirstName`";
 
         //sort list beforehand to not mess up the array key
         $sort = [];
-        foreach($results as $k=>$v) {
+        foreach ($results as $k => $v) {
             $sort['LastName'][$k] = $v['LastName'];
         }
         # sort by event_type desc and then title asc
@@ -756,7 +768,8 @@ ORDER BY `LastName`, `FirstName`";
 
         $entities = [];
         $possibleLocales = ['en'=>'en_US', 'de'=>'de_DE','es'=>'es_ES','pt'=>'pt_BR', 'fr'=>'fr_FR'];
-        $language3to2Map = ['eng'=>'en','deu'=>'de','spa'=>'es','por'=>'pt', 'gsw'=>'de', 'fra'=>'fr', //real language conversions
+                           //real language conversions
+        $language3to2Map = ['eng'=>'en','deu'=>'de','spa'=>'es','por'=>'pt', 'gsw'=>'de', 'fra'=>'fr',
             //similar language conversions
             'bar'=>'de',
             'pol'=>'de',
@@ -807,7 +820,7 @@ ORDER BY `LastName`, `FirstName`";
                 $personTagConfig = $this->config['person_tags'];
                 //sort tag config according to sort order
                 $sort = [];
-                foreach($personTagConfig as $k=>$v) {
+                foreach ($personTagConfig as $k => $v) {
                     $sort['sort'][$k] = $v['sort'];
                 }
                 # sort by event_type desc and then title asc
@@ -818,7 +831,7 @@ ORDER BY `LastName`, `FirstName`";
                     if (!isset($tagConfig['title'])) { //exclude tags without titles
                         continue;
                     }
-                    if (in_array($tag, $personTags) ) {
+                    if (in_array($tag, $personTags)) {
                         $titles[] = $tagConfig['title'];
                     }
                 }
@@ -843,19 +856,22 @@ ORDER BY `LastName`, `FirstName`";
             if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
                 $phones[] = [
                     'number' => $phone1,
-                    'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label'])) ? $phone1Label : 'Other',
+                    'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label']))
+                        ? $phone1Label : 'Other',
                 ];
             }
             if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
                 $phones[] = [
                     'number' => $phone2,
-                    'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label'])) ? $phone2Label : 'Other',
+                    'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label']))
+                        ? $phone2Label : 'Other',
                 ];
             }
             if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
                 $phones[] = [
                     'number' => $phone3,
-                    'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label'])) ? $phone3Label : 'Other',
+                    'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label']))
+                        ? $phone3Label : 'Other',
                 ];
             }
 
@@ -870,7 +886,8 @@ ORDER BY `LastName`, `FirstName`";
             $country = $this->filterDbString($row['Country']);
 
             $primaryLocale = $this->filterDbString($row['PrimaryLocale']);
-            if (!isset($primaryLocale) || !isset($possibleLocales[$primaryLocale]) && isset($country)) { //not a valid locale, find another
+            //not a valid locale, find another
+            if (!isset($primaryLocale) || !isset($possibleLocales[$primaryLocale]) && isset($country)) {
                 if (isset($this->countryLanguageMap[$country])) {
                     $primaryLocale = $this->countryLanguageMap[$country];
                 } else {
@@ -1172,7 +1189,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
         $sort = [];
-        foreach($entities as $k=>$v) {
+        foreach ($entities as $k => $v) {
             $sort['associationSort'][$k] = $v['associationSort'];
             $sort['personSort'][$k] = $v['personSort'];
         }
@@ -1242,7 +1259,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 $entities[$assignmentId]['person'] = $persons[$assignment['personId']];
                 $entities[$assignmentId]['personSort'] = $persons[$assignment['personId']]['sort'];
                 $entities[$assignmentId]['association'] = $associations[$assignment['associationId']];
-                $entities[$assignmentId]['associationSort'] = $this->strPad($associations[$assignment['associationId']]['sort'], 4, '0', STR_PAD_LEFT).
+                $entities[$assignmentId]['associationSort'] =
+                    $this->strPad($associations[$assignment['associationId']]['sort'], 4, '0', STR_PAD_LEFT).
                     $associations[$assignment['associationId']]['formattedName'];
             }
         }
@@ -1350,12 +1368,18 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
          * * acceptingMerePersons: !associationKind && !associationCountry && !roleTitle
          * * acceptingMereAssociations: !roleTitle
          */
-        $onlyMainRoles = isset($query['onlyMainRoles']) && is_bool($query['onlyMainRoles']) ? $query['onlyMainRoles'] : false;
-        $includeInactive = isset($query['includeInactive']) && is_bool($query['includeInactive']) ? $query['includeInactive'] : false;
-        $onlyAssignments = (isset($query['onlyAssignments']) && is_bool($query['onlyAssignments']) ? $query['onlyAssignments'] : false) || $onlyMainRoles;
-        $showPeopleWithoutActiveAssignment = isset($query['showPeopleWithoutActiveAssignment']) && is_bool($query['showPeopleWithoutActiveAssignment']) ? $query['showPeopleWithoutActiveAssignment'] : false;
+        $onlyMainRoles = isset($query['onlyMainRoles']) && is_bool($query['onlyMainRoles'])
+            ? $query['onlyMainRoles'] : false;
+        $includeInactive = isset($query['includeInactive']) && is_bool($query['includeInactive'])
+            ? $query['includeInactive'] : false;
+        $onlyAssignments = (isset($query['onlyAssignments']) && is_bool($query['onlyAssignments'])
+                ? $query['onlyAssignments'] : false) || $onlyMainRoles;
+        $showPeopleWithoutActiveAssignment = isset($query['showPeopleWithoutActiveAssignment'])
+            && is_bool($query['showPeopleWithoutActiveAssignment'])
+            ? $query['showPeopleWithoutActiveAssignment'] : false;
 
-        $bypassRequiredParams = isset($options['bypassRequiredParams']) ? (bool)$options['bypassRequiredParams'] : false;
+        $bypassRequiredParams = isset($options['bypassRequiredParams'])
+            ? (bool)$options['bypassRequiredParams'] : false;
 
         $oneOfRequiredParams = ['search', 'associationKind', 'associationCountry',
             'personName', 'roleTitle'
@@ -1389,7 +1413,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $searchAssociationKind = isset($query['associationKind']) && is_string($query['associationKind']);
         $searchAssociationCountry = isset($query['associationCountry']) && is_string($query['associationCountry']);
         $searchRoleTitle = isset($query['roleTitle']) && is_array($query['roleTitle']);
-        $searchPersonName = isset($query['personName']) && isset($query['personName']) && is_string($query['personName']);
+        $searchPersonName = isset($query['personName']) && isset($query['personName'])
+            && is_string($query['personName']);
 
         $acceptingMerePersons = !$onlyAssignments && !$searchAssociationCountry && !$searchAssociationKind
             && !$searchRoleTitle;
@@ -1463,7 +1488,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $hasAssignmentFailed = false;
             $hasPersonFailed = false;
             $hasAssociationFailed = false;
-            //This a special type of test for when a criterion is enough to oust a mere person/association, but not a full assignment
+            //This a special type of test for when a criterion is enough to oust a mere person/association,
+            //but not a full assignment
             $hasMerePersonFailed = false;
             $hasMereAssociationFailed = false;
 
@@ -1479,8 +1505,10 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                     (false === stripos($assignment['association']['name'], $query['search']) &&
                      false === stripos($assignment['association']['formattedName'], $query['search']))) &&
                 (!isset($assignment['roleTitle']) || false === stripos($assignment['roleTitle'], $query['search'])) &&
-                (!isset($assignment['formattedRoleTitle']) || false === stripos($assignment['formattedRoleTitle'], $query['search'])) &&
-                (!isset($assignment['person']) || (false === stripos($assignment['person']['searchName'], $query['search'])))
+                (!isset($assignment['formattedRoleTitle'])
+                    || false === stripos($assignment['formattedRoleTitle'], $query['search'])) &&
+                (!isset($assignment['person'])
+                    || (false === stripos($assignment['person']['searchName'], $query['search'])))
             ) {
                 continue;
             }
@@ -1513,7 +1541,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             //2. AssociationCriteria
 
             //2.1 isActive
-            if (!$isMerePerson && !$includeInactive && isset($assignment['association']) && !empty($assignment['association']) &&
+            if (!$isMerePerson && !$includeInactive && isset($assignment['association'])
+                && !empty($assignment['association']) &&
                 !$assignment['association']['isActive']
             ) {
                 $hasAssociationFailed = true;
@@ -1718,8 +1747,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $return = [];
         foreach ($persons as $personId => $person) {
             if (isset($query['search']) &&
-               false === stripos($person['searchName'], $query['search']))
-            {
+               false === stripos($person['searchName'], $query['search'])) {
                 continue;
             }
             if (isset($query['personName']) &&
@@ -1734,15 +1762,13 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 continue;
             }
             if (isset($query['category']) &&
-                !in_array($person['category'], $query['category']))
-            {
+                !in_array($person['category'], $query['category'])) {
                 continue;
             }
             if (isset($query['dataSource']) &&
                 isset($query['dataSourceId']) &&
                 ($query['dataSource'] != $person['dataSource'] ||
-                $query['dataSourceId'] != $person['dataSourceId']))
-            {
+                $query['dataSourceId'] != $person['dataSourceId'])) {
                 continue;
             }
             $return[$personId] = $person;
@@ -1909,7 +1935,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         return array_merge($this->getPersonProblems($minimumSeverity), $this->getAssociationProblems($minimumSeverity));
     }
 
-    public function getPersonProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
+    public function getPersonProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         $persons = $this->getPersons();
 
@@ -1930,7 +1956,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         return [];
     }
 
-    public function getAssociationProblems($minimumSeverity = EntityProblem::SEVERITY_INFO )
+    public function getAssociationProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         $associations = $this->getAssociations();
         $problems = [];
@@ -1965,7 +1991,8 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
 //         $predicate = new Where();
         $gateway = $this->getTableGateway('trans_translations');
         $select = new Select('trans_translations');
-        $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+        $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
+            'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
         $select->group(['TheMonth', 'TheYear']);
 //         $select->where($predicate->in('ChangedEntity', $tableEntities));
         $select->order('TheYear, TheMonth');
@@ -1978,7 +2005,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
                     ) {
                         $key = (string)($row['TheYear'] * 100 + $row['TheMonth']);
                         $months[$key] = $this->filterDbInt($row['Count']);
-                    }
+            }
         }
         return $months;
     }
@@ -2008,8 +2035,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
 
         //transform to object BjyAuthorize will understand
         $allow = [];
-        foreach ($result as $key => $rule)
-        {
+        foreach ($result as $key => $rule) {
             $allow[$person['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
         }
 

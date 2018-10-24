@@ -19,14 +19,14 @@ class BooksMailerFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $table = $container->get ( 'Books\Model\LibraryTable' );
+        $table = $container->get('Books\Model\LibraryTable');
         /** @var SchoenstattTable $schTable */
         $schTable = $container->get('Schoenstatt\Model\SchoenstattTable');
-		$translator = $container->get ( 'translator' );
-		$mailService = $container->get ( 'acmailer.mailservice.default' );
-		$config = $container->get ( 'Config' );
+        $translator = $container->get('translator');
+        $mailService = $container->get('acmailer.mailservice.default');
+        $config = $container->get('Config');
 
-		$mailer = new BooksMailer( $mailService, $translator, $config, $table, $schTable);
-		return $mailer;
+        $mailer = new BooksMailer($mailService, $translator, $config, $table, $schTable);
+        return $mailer;
     }
 }

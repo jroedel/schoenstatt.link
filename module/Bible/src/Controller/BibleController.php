@@ -14,11 +14,11 @@ use Bible\Model\Verse;
 class BibleController extends AbstractActionController
 {
     /**
-     * 
+     *
      * @var SionTable
      */
-	protected $verseTable;
-	
+    protected $verseTable;
+    
     public function indexAction()
     {
         $translation = $this->params('translation');
@@ -39,8 +39,12 @@ class BibleController extends AbstractActionController
         $chapter = $this->params('chapter');
         $where = new Where();
         $where->equalTo('translation_id', $translation);
-        if (!is_null($chapter)) $where->equalTo('chapter', $chapter);
-        if (!is_null($book)) $where->equalTo('book_id', $book);
+        if (!is_null($chapter)) {
+            $where->equalTo('chapter', $chapter);
+        }
+        if (!is_null($book)) {
+            $where->equalTo('book_id', $book);
+        }
         $select = function (Select $select) use ($where) {
             $select->where($where);
             $select->order('book_id, chapter, verse');
@@ -64,8 +68,9 @@ class BibleController extends AbstractActionController
         $where = new Where();
         $where->equalTo('book_id', $book)
               ->equalTo('chapter', $chapter);
-        if (!is_null($verse))
+        if (!is_null($verse)) {
             $where->equalTo('verse', $verse);
+        }
         $select = function (Select $select) use ($where) {
             $w = clone $where;
             $select->where($w->equalTo('translation_id', 'bnt'));
@@ -122,104 +127,104 @@ class BibleController extends AbstractActionController
     {
         return array(
            'Gen' => 'Genesis',
-'Exo' => 'Exodus',
-'Lev' => 'Leviticus',
-'Num' => 'Numbers',
-'Deu' => 'Deuteronomy',
-'Jos' => 'Joshua',
-'Jdg' => 'Judges',
-'Rut' => 'Ruth',
-'1Sa' => '1 Samuel',
-'2Sa' => '2 Samuel',
-'1Ki' => '1 Kings',
-'2Ki' => '2 Kings',
-'1Ch' => '1 Chronicles',
-'2Ch' => '2 Chronicles',
-'Ezr' => 'Ezra',
-'Neh' => 'Nehemiah',
-'Est' => 'Esther',
-'Job' => 'Job',
-'Psa' => 'Psalm',
-'Pro' => 'Proverbs',
-'Ecc' => 'Ecclesiastes',
-'Sol' => 'Song of Solomon',
-'Isa' => 'Isaiah',
-'Jer' => 'Jeremiah',
-'Lam' => 'Lamentations',
-'Eze' => 'Ezekiel',
-'Dan' => 'Daniel',
-'Hos' => 'Hosea',
-'Joe' => 'Joel',
-'Amo' => 'Amos',
-'Oba' => 'Obadiah',
-'Jon' => 'Jonah',
-'Mic' => 'Micah',
-'Nah' => 'Nahum',
-'Hab' => 'Habakkuk',
-'Zep' => 'Zephaniah',
-'Hag' => 'Haggai',
-'Zec' => 'Zechariah',
-'Mal' => 'Malachi',
-'Mat' => 'Matthew',
-'Mar' => 'Mark',
-'Luk' => 'Luke',
-'Joh' => 'John',
-'Act' => 'Acts',
-'Rom' => 'Romans',
-'1Co' => '1 Corinthians',
-'2Co' => '2 Corinthians',
-'Gal' => 'Galatians',
-'Eph' => 'Ephesians',
-'Phi' => 'Philippians',
-'Col' => 'Colossians',
-'1Th' => '1 Thessalonians',
-'2Th' => '2 Thessalonians',
-'1Ti' => '1 Timothy',
-'2Ti' => '2 Timothy',
-'Tit' => 'Titus',
-'Phm' => 'Philemon',
-'Heb' => 'Hebrews',
-'Jam' => 'James',
-'1Pe' => '1 Peter',
-'2Pe' => '2 Peter',
-'1Jo' => '1 John',
-'2Jo' => '2 John',
-'3Jo' => '3 John',
-'Jud' => 'Jude',
-'Rev' => 'Revelation',
-'1Es' => '1 Esdras',
-'Jdt' => 'Judith',
-'Tob' => 'Tobit',
-'1Ma' => '1 Maccabees',
-'2Ma' => '2 Maccabees',
-'3Ma' => '3 Maccabees',
-'4Ma' => '4 Maccabees',
-'Ode' => 'Odes',
-'Wis' => 'Wisdom',
-'Sir' => 'Sirach',
-'Sip' => 'Sip',
-'Pss' => 'Psalms of Solomon',
-'Bar' => 'Baruch',
-'Epj' => 'Epistle of Jeremiah',
-'Sus' => 'Susanna',
-'Bel' => 'Bel',
-'Pra' => 'Prayer of Azariah',
-'Dng' => 'Daniel (Greek)',
-'Prm' => 'Prayer of Manasseh',
-'Psx' => 'Psalm(151)',
-'Lao' => 'Laodiceans',
-'4Es' => '4 Esdras',
-'Esg' => 'Esther (Greek)',
-'Jsa' => 'Joshua (A)',
-'Jda' => 'Judges (A)',
-'Tbs' => 'Tobit (S)',
-'Sut' => 'Susanna (TH)',
-'Dat' => 'Daniel (TH)',
-'Bet' => 'Bel (TH)',
-'WCF' => 'WCF',
-'WLC' => 'WLC',
-'WSC' => 'WSC',
-);
+        'Exo' => 'Exodus',
+        'Lev' => 'Leviticus',
+        'Num' => 'Numbers',
+        'Deu' => 'Deuteronomy',
+        'Jos' => 'Joshua',
+        'Jdg' => 'Judges',
+        'Rut' => 'Ruth',
+        '1Sa' => '1 Samuel',
+        '2Sa' => '2 Samuel',
+        '1Ki' => '1 Kings',
+        '2Ki' => '2 Kings',
+        '1Ch' => '1 Chronicles',
+        '2Ch' => '2 Chronicles',
+        'Ezr' => 'Ezra',
+        'Neh' => 'Nehemiah',
+        'Est' => 'Esther',
+        'Job' => 'Job',
+        'Psa' => 'Psalm',
+        'Pro' => 'Proverbs',
+        'Ecc' => 'Ecclesiastes',
+        'Sol' => 'Song of Solomon',
+        'Isa' => 'Isaiah',
+        'Jer' => 'Jeremiah',
+        'Lam' => 'Lamentations',
+        'Eze' => 'Ezekiel',
+        'Dan' => 'Daniel',
+        'Hos' => 'Hosea',
+        'Joe' => 'Joel',
+        'Amo' => 'Amos',
+        'Oba' => 'Obadiah',
+        'Jon' => 'Jonah',
+        'Mic' => 'Micah',
+        'Nah' => 'Nahum',
+        'Hab' => 'Habakkuk',
+        'Zep' => 'Zephaniah',
+        'Hag' => 'Haggai',
+        'Zec' => 'Zechariah',
+        'Mal' => 'Malachi',
+        'Mat' => 'Matthew',
+        'Mar' => 'Mark',
+        'Luk' => 'Luke',
+        'Joh' => 'John',
+        'Act' => 'Acts',
+        'Rom' => 'Romans',
+        '1Co' => '1 Corinthians',
+        '2Co' => '2 Corinthians',
+        'Gal' => 'Galatians',
+        'Eph' => 'Ephesians',
+        'Phi' => 'Philippians',
+        'Col' => 'Colossians',
+        '1Th' => '1 Thessalonians',
+        '2Th' => '2 Thessalonians',
+        '1Ti' => '1 Timothy',
+        '2Ti' => '2 Timothy',
+        'Tit' => 'Titus',
+        'Phm' => 'Philemon',
+        'Heb' => 'Hebrews',
+        'Jam' => 'James',
+        '1Pe' => '1 Peter',
+        '2Pe' => '2 Peter',
+        '1Jo' => '1 John',
+        '2Jo' => '2 John',
+        '3Jo' => '3 John',
+        'Jud' => 'Jude',
+        'Rev' => 'Revelation',
+        '1Es' => '1 Esdras',
+        'Jdt' => 'Judith',
+        'Tob' => 'Tobit',
+        '1Ma' => '1 Maccabees',
+        '2Ma' => '2 Maccabees',
+        '3Ma' => '3 Maccabees',
+        '4Ma' => '4 Maccabees',
+        'Ode' => 'Odes',
+        'Wis' => 'Wisdom',
+        'Sir' => 'Sirach',
+        'Sip' => 'Sip',
+        'Pss' => 'Psalms of Solomon',
+        'Bar' => 'Baruch',
+        'Epj' => 'Epistle of Jeremiah',
+        'Sus' => 'Susanna',
+        'Bel' => 'Bel',
+        'Pra' => 'Prayer of Azariah',
+        'Dng' => 'Daniel (Greek)',
+        'Prm' => 'Prayer of Manasseh',
+        'Psx' => 'Psalm(151)',
+        'Lao' => 'Laodiceans',
+        '4Es' => '4 Esdras',
+        'Esg' => 'Esther (Greek)',
+        'Jsa' => 'Joshua (A)',
+        'Jda' => 'Judges (A)',
+        'Tbs' => 'Tobit (S)',
+        'Sut' => 'Susanna (TH)',
+        'Dat' => 'Daniel (TH)',
+        'Bet' => 'Bel (TH)',
+        'WCF' => 'WCF',
+        'WLC' => 'WLC',
+        'WSC' => 'WSC',
+        );
     }
     public function getCodes()
     {
@@ -326,20 +331,24 @@ class BibleController extends AbstractActionController
     /**
      * Appends the keys of the first array of $array onto $key
      * and appends the values of the element of $array onto $text
-     * then shifts the first element off and 
+     * then shifts the first element off and
      * @param unknown $text
      * @param array $array
      */
     private function codeHelper($key, $text, array $arrays)
     {
-        if (is_null($arrays))
+        if (is_null($arrays)) {
             throw \Exception("HELP, my arrays is null");
-        if ($arrays === array())
+        }
+        if ($arrays === array()) {
             return array($key => $text);
-        if (!is_array($arrays[0]))
+        }
+        if (!is_array($arrays[0])) {
             throw \Exception("HELP my arrays isn't an array");
-        if ($arrays[0] === array())
+        }
+        if ($arrays[0] === array()) {
             throw \Exception("HELP");
+        }
         
         $return = array();
         $cArray = array_shift($arrays);
@@ -360,8 +369,7 @@ class BibleController extends AbstractActionController
         foreach ($file as $line) {
             if (preg_match($preg, $line, $cline)) {
                 $parsed[] = $cline;
-            }
-            else {
+            } else {
                 $unParsed[] = $cline;
             }
         }
@@ -674,8 +682,7 @@ class BibleController extends AbstractActionController
                 '(' => ',',
         );
         foreach ($rules as $r => $value) {
-            if (strlen($value))
-            {
+            if (strlen($value)) {
                 $replaced = str_replace($r, $value, $replaced);
             }
         }

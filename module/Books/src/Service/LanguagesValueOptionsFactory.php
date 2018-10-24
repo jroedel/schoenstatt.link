@@ -17,9 +17,9 @@ class LanguagesValueOptionsFactory extends ISO639 implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-		$languages = $this->getLanguageValueOptions();
-		$languages['xx'] = '(none)';
-		return $languages;
+        $languages = $this->getLanguageValueOptions();
+        $languages['xx'] = '(none)';
+        return $languages;
     }
 
     /**

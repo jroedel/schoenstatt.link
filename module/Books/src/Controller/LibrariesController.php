@@ -174,7 +174,7 @@ class LibrariesController extends SionController
 
         foreach ($problemCounts as $severity => $value) {
             if ($value === 0) {
-                unset ($problemCounts[$severity]);
+                unset($problemCounts[$severity]);
             }
         }
         return $problemCounts;
@@ -228,8 +228,8 @@ class LibrariesController extends SionController
         $form = new InactivationForm();
 
         $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
+        if ($request->isPost()) {
+            $data = $request->getPost()->toArray();
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
@@ -237,20 +237,22 @@ class LibrariesController extends SionController
                 $table = $this->getSionTable();
                 try {
                     if (is_array($badValues = $table->inactivateWithinLibraryBooks($libraryId, $data))) {
-                        $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-                        ->addMessage (sprintf("There was a problem with one or more of the books: (%s) Please try again.",
-                            implode(', ', $badValues)));
+                        $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                        ->addMessage(sprintf(
+                            "There was a problem with one or more of the books: (%s) Please try again.",
+                            implode(', ', $badValues)
+                        ));
                     } else {
-                        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-                        ->addMessage ('Books successfully inactivated.' );
-                        $this->redirect ()->toRoute ('libraries/library/admin', ['library_id' => $libraryId]);
+                        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+                        ->addMessage('Books successfully inactivated.');
+                        $this->redirect()->toRoute('libraries/library/admin', ['library_id' => $libraryId]);
                     }
                 } catch (\Exception $e) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-                    ->addMessage ($e->getMessage());
+                    $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                    ->addMessage($e->getMessage());
                 }
             } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
             }
         }
         return new ViewModel([
@@ -336,11 +338,11 @@ class LibrariesController extends SionController
      */
     protected function getLibraryId()
     {
-        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
+        $id = ( int ) $this->params()->fromRoute('library_id');
         if (!$id) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Library not found.');
-            $this->redirect ()->toRoute ( 'libraries');
+            $this->redirect()->toRoute('libraries');
         }
         return $id;
     }

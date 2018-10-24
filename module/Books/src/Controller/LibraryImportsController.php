@@ -111,8 +111,7 @@ class LibraryImportsController extends SionController
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
         //first thing is to figure out if it has already been imported
-        if (isset($object['booksCreated']) || isset($object['booksUpdated']) || isset($object['booksInactivated']))
-        {
+        if (isset($object['booksCreated']) || isset($object['booksUpdated']) || isset($object['booksInactivated'])) {
             $form->get('filePath')->setAttribute('disabled', true);
             $form->get('worksheet')->setAttribute('disabled', true);
             $form->get('isCompleteImport')->setAttribute('disabled', true);
@@ -135,8 +134,8 @@ class LibraryImportsController extends SionController
             $shouldSimulate = !$request->isPost() || null === $request->getPost('import');
             $objects = $this->importSpreadsheetFile($object['filePath'], $object['worksheet'], $fieldsMap, $shouldSimulate, $object['isCompleteImport']);
         } else {
-            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-                ->addMessage ("File not found.");
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                ->addMessage("File not found.");
         }
         //do stats on the objects
         $stats = [
@@ -353,7 +352,7 @@ class LibraryImportsController extends SionController
                 if (isset($params['collectionId'])) {
                     unset($params['collectionId']);
                 }
-            } elseif (isset($params['collection']) && !isset($params['collectionId']) ) {//we need to lookup the collectionId for the rows
+            } elseif (isset($params['collection']) && !isset($params['collectionId'])) {//we need to lookup the collectionId for the rows
                 if (isset($preexistingCollectionMap[$params['collection']])) {
                     $params['collectionId'] = $preexistingCollectionMap[$params['collection']];
                 } elseif (!in_array($params['collection'], $collectionInsertsQueued)) {
@@ -445,10 +444,12 @@ class LibraryImportsController extends SionController
         if (!empty($duplicateWithinLibraryIds)) {
             $simulate = true; //inform the calling function, we weren't able to persist
             //this breaks the idea of the function a little, but there's no better way to let the user know
-            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-            ->addMessage (sprintf("File not imported due to duplicate withinLibraryIds: %s.",
-                implode(',', $duplicateWithinLibraryIds)));
-        } else if (!$simulate) {
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+            ->addMessage(sprintf(
+                "File not imported due to duplicate withinLibraryIds: %s.",
+                implode(',', $duplicateWithinLibraryIds)
+            ));
+        } elseif (!$simulate) {
             //free up a little memory
             unset($rows);
             unset($bookLookup);
@@ -495,7 +496,7 @@ class LibraryImportsController extends SionController
                         'name'      => $transaction['collection'],
                     ];
                     //this should return the new key
-                    $newKey = $table->createEntity('collection', $params , [], false);
+                    $newKey = $table->createEntity('collection', $params, [], false);
                     $transactions[$key]['result'] = $newKey;
                     $newCollectionsMap[$transaction['collection']] = $newKey;
                     break;

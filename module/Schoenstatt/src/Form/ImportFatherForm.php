@@ -31,9 +31,9 @@ class ImportFatherForm extends SionForm implements InputFilterProviderInterface
         ]);
     }
 
-	public function getInputFilterSpecification()
-	{
-		return [
+    public function getInputFilterSpecification()
+    {
+        return [
             'personId' => [
                 'required' => false,
                 'filters' => [
@@ -41,6 +41,6 @@ class ImportFatherForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToNull'],
                 ],
             ],
-		];
-	}
+        ];
+    }
 }

@@ -55,8 +55,8 @@ class CheckoutsController extends SionController
             }
         }
         if (!empty($badValues)) {
-            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-                ->addMessage ('The following book id\'s are invalid: '.implode(', ', $badValues).' Please try again.');
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                ->addMessage('The following book id\'s are invalid: '.implode(', ', $badValues).' Please try again.');
             return;
         }
 
@@ -75,15 +75,17 @@ class CheckoutsController extends SionController
 
         //checkout books
         if (true !== $badValues = $table->checkoutWithinLibraryBooks($libraryId, $data)) {
-            $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-            ->addMessage (sprintf("There was a problem checking out one of the books: (%s) Any other books have been checked out. Please try again.",
-                implode(', ', $badValues)));
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+            ->addMessage(sprintf(
+                "There was a problem checking out one of the books: (%s) Any other books have been checked out. Please try again.",
+                implode(', ', $badValues)
+            ));
             return;
         }
 
         //if all went well redirect to the borrower's page
-        $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-            ->addMessage ('Books successfully checked out.' );
+        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+            ->addMessage('Books successfully checked out.');
         $this->redirect()->toRoute('borrowers/borrower', ['person_id' => $data['personId']]);
     }
 
@@ -127,22 +129,22 @@ class CheckoutsController extends SionController
         $form = new CheckinForm();
 
         $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
+        if ($request->isPost()) {
+            $data = $request->getPost()->toArray();
             $form->setData($data);
             if ($form->isValid()) {
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
                 if (!($return = $table->checkinWithinLibraryBooks($libraryId, $data['withinLibraryIds']))) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                    $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
                 } else {
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-                        ->addMessage ('Books successfully checked in.' );
-                    $this->redirect ()->toRoute ('checkouts/library', ['library_id' => $libraryId]);
+                    $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+                        ->addMessage('Books successfully checked in.');
+                    $this->redirect()->toRoute('checkouts/library', ['library_id' => $libraryId]);
                 }
             } else {
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
             }
         }
         return new ViewModel([
@@ -164,8 +166,8 @@ class CheckoutsController extends SionController
         $personValueOptions = $this->services['Books\FathersObjects'];
 
         $request = $this->getRequest();
-        if ($request->isPost ()) {
-            $data = $request->getPost ()->toArray ();
+        if ($request->isPost()) {
+            $data = $request->getPost()->toArray();
             //add value options for validation purposes
             /** @var Select $personIdSelect */
             $personIdSelect = $form->get('checkout')->getTargetElement()->get('personId');
@@ -186,18 +188,20 @@ class CheckoutsController extends SionController
                     }
                 }
                 if (!empty($badValues)) {
-                    $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )
-                        ->addMessage (sprintf("There was a problem checking out one or more of the books: (%s) Any other books have been checked out. Please try again.",
-                            implode(', ', $badValues)));
+                    $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                        ->addMessage(sprintf(
+                            "There was a problem checking out one or more of the books: (%s) Any other books have been checked out. Please try again.",
+                            implode(', ', $badValues)
+                        ));
                 } else {
-                    $this->flashMessenger ()->setNamespace ( FlashMessenger::NAMESPACE_SUCCESS )
-                    ->addMessage ('Books successfully checked out.' );
-                    $this->redirect ()->toRoute ('checkouts/library/current', ['library_id' => $libraryId]);
+                    $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+                    ->addMessage('Books successfully checked out.');
+                    $this->redirect()->toRoute('checkouts/library/current', ['library_id' => $libraryId]);
                 }
             } else {
                 //eliminate value options to use the javascript options; this reduces page size
                 $personIdSelect->setValueOptions([]);
-                $this->nowMessenger ()->setNamespace ( NowMessenger::NAMESPACE_ERROR )->addMessage ( 'Error in form submission, please review.' );
+                $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
             }
         }
         return new ViewModel([
@@ -213,11 +217,11 @@ class CheckoutsController extends SionController
      */
     protected function getLibraryId()
     {
-        $id = ( int ) $this->params ()->fromRoute ( 'library_id' );
+        $id = ( int ) $this->params()->fromRoute('library_id');
         if (!$id) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Library not found.');
-            $this->redirect ()->toRoute ( 'libraries');
+            $this->redirect()->toRoute('libraries');
         }
         return $id;
     }

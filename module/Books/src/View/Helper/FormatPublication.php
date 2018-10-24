@@ -35,8 +35,7 @@ class FormatPublication extends FormatEntity
                 $options['display'] === self::DISPLAY_TITLE ||
                 $options['display'] === self::DISPLAY_EDITION ||
                 $options['display'] === self::DISPLAY_TRANSLATORS ||
-                $options['display'] === self::DISPLAY_ILLUSTRATORS)
-            {
+                $options['display'] === self::DISPLAY_ILLUSTRATORS) {
                 $displayOption = $options['display'];
             } else {
                 $displayOption = self::DISPLAY_TITLE;
@@ -136,12 +135,12 @@ class FormatPublication extends FormatEntity
 //             $linkFormat = '<a href="%s">%s</a>';
 //             $url = $this->view->url('publications/publication', array('publication_id' => $object['publicationId']));
             if ($escapeMainText) {
-               $mainText = $this->view->escapeHtml($mainText);
+                $mainText = $this->view->escapeHtml($mainText);
             }
             $finalMarkup .= $this->wrapAsLink('publication', $data, $mainText);
         } else {
             if ($escapeMainText) {
-               $finalMarkup .= $this->view->escapeHtml($mainText);
+                $finalMarkup .= $this->view->escapeHtml($mainText);
             } else {
                 $finalMarkup .= $mainText;
             }
@@ -176,8 +175,10 @@ class FormatPublication extends FormatEntity
             $finalMarkup .= $this->view->editPencil('publication', $data['publicationId']);
         }
         if ($showHandChecked && $data['isRevisedWithBookInHand']) {
-            $finalMarkup .= sprintf('&nbsp;<span class="fa fa-check-circle-o fa-3 text-success" title="%s"></span>',
-                $this->view->translate('Information has been hand checked'));
+            $finalMarkup .= sprintf(
+                '&nbsp;<span class="fa fa-check-circle-o fa-3 text-success" title="%s"></span>',
+                $this->view->translate('Information has been hand checked')
+            );
         }
         return $finalMarkup;
     }

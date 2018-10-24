@@ -23,20 +23,20 @@ class RoleFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-		$table = $container->get ( SchoenstattTable::class);
-		/** @var \Zend\I18n\Translator\Translator $translator */
-		$translator = $container->get ( 'translator' );
+        $table = $container->get(SchoenstattTable::class);
+        /** @var \Zend\I18n\Translator\Translator $translator */
+        $translator = $container->get('translator');
 
-		$associations = $table->getAssociationValueOptions();
-		$roleTitles = $table->getRoleTitleValueOptions($translator);
+        $associations = $table->getAssociationValueOptions();
+        $roleTitles = $table->getRoleTitleValueOptions($translator);
 
-		/** @var FormElementManagerV2Polyfill $formManager */
-		$formManager = $container->get('FormElementManager');
-		/** @var RoleForm $form */
-		$form = $formManager->get(RoleForm::class, [], true);
+        /** @var FormElementManagerV2Polyfill $formManager */
+        $formManager = $container->get('FormElementManager');
+        /** @var RoleForm $form */
+        $form = $formManager->get(RoleForm::class, [], true);
 
-		$form->get('associationId')->setValueOptions($associations);
-		$form->get('roleTitle')->setValueOptions($roleTitles);
-		return $form;
+        $form->get('associationId')->setValueOptions($associations);
+        $form->get('roleTitle')->setValueOptions($roleTitles);
+        return $form;
     }
 }

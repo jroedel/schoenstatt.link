@@ -20,14 +20,14 @@ class LibraryInfoFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-		/** @var LibraryTable $table **/
-		$table= $container->get (LibraryTable::class );
+        /** @var LibraryTable $table **/
+        $table= $container->get(LibraryTable::class);
 
-		$routeMatch = $container->get('application')->getMvcEvent()->getRouteMatch();
-		
-		$helper = new LibraryInfo();
-		$helper->setLibraryTable($table);
-		$helper->setRouteMatch($routeMatch);
-		return $helper;
+        $routeMatch = $container->get('application')->getMvcEvent()->getRouteMatch();
+        
+        $helper = new LibraryInfo();
+        $helper->setLibraryTable($table);
+        $helper->setRouteMatch($routeMatch);
+        return $helper;
     }
 }

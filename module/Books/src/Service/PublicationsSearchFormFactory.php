@@ -17,10 +17,10 @@ class PublicationsSearchFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-		$languages = $container->get('Books\LanguagesValueOptions');
+        $languages = $container->get('Books\LanguagesValueOptions');
 
-		$form = new PublicationsSearchForm();
-		$form->get('inLanguage')->setValueOptions($languages);
-		return $form;
+        $form = new PublicationsSearchForm();
+        $form->get('inLanguage')->setValueOptions($languages);
+        return $form;
     }
 }

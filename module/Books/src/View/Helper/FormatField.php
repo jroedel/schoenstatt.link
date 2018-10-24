@@ -21,69 +21,69 @@ class FormatField extends AbstractHelper
      */
     public function __invoke($label, $value, $options = [])
     {
-//     	$linkOption = isset($options['link']) ? (bool)$options['link'] : $displayOption == self::DISPLAY_TITLE;
-//     	$editPencilOption = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : $displayOption == self::DISPLAY_TITLE;
-//     	$showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
+//      $linkOption = isset($options['link']) ? (bool)$options['link'] : $displayOption == self::DISPLAY_TITLE;
+//      $editPencilOption = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : $displayOption == self::DISPLAY_TITLE;
+//      $showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
 
-    	$displayOnlyIfNotNull = isset($options['displayOnlyIfNotNull']) ? (bool)$options['displayOnlyIfNotNull'] :
-    	   false;
-    	$wrapMarkup = isset($options['wrapMarkup']) ? $options['wrapMarkup'] :
-    	   '<p>%s</p>';
-    	$labelMarkup = isset($options['labelMarkup']) ? $options['labelMarkup'] :
-    	   '<strong>%s</strong>: ';
-    	$translateLabel = isset($options['translateLabel']) ? (bool)$options['translateLabel'] :
-    	   true;
+        $displayOnlyIfNotNull = isset($options['displayOnlyIfNotNull']) ? (bool)$options['displayOnlyIfNotNull'] :
+           false;
+        $wrapMarkup = isset($options['wrapMarkup']) ? $options['wrapMarkup'] :
+           '<p>%s</p>';
+        $labelMarkup = isset($options['labelMarkup']) ? $options['labelMarkup'] :
+           '<strong>%s</strong>: ';
+        $translateLabel = isset($options['translateLabel']) ? (bool)$options['translateLabel'] :
+           true;
 
-    	if ($displayOnlyIfNotNull && (is_null($value) || empty($value))) {
-    	    return '';
-    	}
+        if ($displayOnlyIfNotNull && (is_null($value) || empty($value))) {
+            return '';
+        }
 
-    	if (isset($options['displayOnlyWithPermission']) && !is_null($options['displayOnlyWithPermission']) &&
-    	    !$this->view->isAllowed($options['displayOnlyWithPermission'])
+        if (isset($options['displayOnlyWithPermission']) && !is_null($options['displayOnlyWithPermission']) &&
+            !$this->view->isAllowed($options['displayOnlyWithPermission'])
         ) {
-    	    return '';
-    	}
+            return '';
+        }
 
-    	$finalMarkup = '';
+        $finalMarkup = '';
 
-    	if (!is_null($label)) {
-    	    if ($translateLabel) {
-    	        $label = $this->view->translate($label);
-    	    }
-    	    $finalMarkup .= sprintf($labelMarkup, $this->view->escapeHtml($label));
-    	}
-//     	switch ($displayOption) {
-//     	    case 'authors': //@todo make it work when we have real authors
-//     	        $mainText = $object['authors'];
-//     	       break;
-//     	    case 'title':
-//     	        $mainText = $object['title'];
-//     	        break;
-//     	}
+        if (!is_null($label)) {
+            if ($translateLabel) {
+                $label = $this->view->translate($label);
+            }
+            $finalMarkup .= sprintf($labelMarkup, $this->view->escapeHtml($label));
+        }
+//      switch ($displayOption) {
+//          case 'authors': //@todo make it work when we have real authors
+//              $mainText = $object['authors'];
+//             break;
+//          case 'title':
+//              $mainText = $object['title'];
+//              break;
+//      }
 
-    	if ($value instanceof \DateTime) {
+        if ($value instanceof \DateTime) {
             //@todo make format configurable
-    	    $finalMarkup .= $this->view->dateFormat($value, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::NONE);
-    	} elseif (is_array($value)) {
-    	    $finalMarkup .= implode(', ', $value);
-    	} else {
-    	   $finalMarkup .= $this->view->escapeHtml($value);
-    	}
+            $finalMarkup .= $this->view->dateFormat($value, \IntlDateFormatter::MEDIUM, \IntlDateFormatter::NONE);
+        } elseif (is_array($value)) {
+            $finalMarkup .= implode(', ', $value);
+        } else {
+            $finalMarkup .= $this->view->escapeHtml($value);
+        }
 
-//     	if ($showLabels) {
-//     	    if (isset($person['labels']) && is_array($person['labels'])) {
-//     	        foreach ($person['labels'] as $label) {
-//     	           $finalMarkup .= ' '. $this->view->label($label, 'label-info');
-//     	        }
-//     	    }
-//     	}
-//     	if ($editPencilOption) { //permissions are checked in editPencil
-//     		$finalMarkup .= $this->view->editPencil('publication', $object['publicationId']);
-//     	}
+//      if ($showLabels) {
+//          if (isset($person['labels']) && is_array($person['labels'])) {
+//              foreach ($person['labels'] as $label) {
+//                 $finalMarkup .= ' '. $this->view->label($label, 'label-info');
+//              }
+//          }
+//      }
+//      if ($editPencilOption) { //permissions are checked in editPencil
+//          $finalMarkup .= $this->view->editPencil('publication', $object['publicationId']);
+//      }
 
-    	if (!is_null($wrapMarkup)) {
-    	    $finalMarkup = sprintf($wrapMarkup, $finalMarkup);
-    	}
-    	return $finalMarkup;
+        if (!is_null($wrapMarkup)) {
+            $finalMarkup = sprintf($wrapMarkup, $finalMarkup);
+        }
+        return $finalMarkup;
     }
 }

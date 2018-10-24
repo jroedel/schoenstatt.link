@@ -29,13 +29,13 @@ class LanguageChooser extends AbstractHelper
             if (key_exists($theLanguage, $availableLanguages)) {
                 return $theLanguage;
             }
-	       return $availableLanguages[0];
+            return $availableLanguages[0];
         }
         foreach ($this->languageChooser[$theLanguage] as $value) {
             if (in_array($value, $availableLanguages)) {
                 return $value;
             }
         }
-    	return $availableLanguages[0];
+        return $availableLanguages[0];
     }
 }

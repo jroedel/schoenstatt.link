@@ -75,7 +75,7 @@ return [
                     ],
                 ]
             ],
-            'cookie', 
+            'cookie',
             'acceptlanguage'
         ],
 
@@ -109,5 +109,5 @@ return [
                 ['route' => 'juser/create-role', 'roles' => ['administrator']],
             ],
         ],
-	],
+    ],
 ];
