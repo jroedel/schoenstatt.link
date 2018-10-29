@@ -23,12 +23,12 @@ class GdprStrategy implements ListenerAggregateInterface
      * @var string
      */
     protected $template;
-    
+
     /**
      * @var callable[] An array with callback functions or methods.
      */
     protected $listeners = array();
-    
+
     /**
      * @param string $template name of the template to use on unauthorized requests
      */
@@ -36,7 +36,7 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $this->template = (string)$template;
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -44,7 +44,7 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
     }
-    
+
     /**
      * {@inheritDoc}
      */
@@ -56,7 +56,7 @@ class GdprStrategy implements ListenerAggregateInterface
             }
         }
     }
-    
+
     /**
      * @param string $template
      */
@@ -64,7 +64,7 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $this->template = (string)$template;
     }
-    
+
     /**
      * @return string
      */
@@ -72,7 +72,7 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         return $this->template;
     }
-    
+
     /**
      * Callback used when a dispatch error occurs. Modifies the
      * response object with an according error if the application
@@ -86,11 +86,18 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $app = $event->getApplication();
         $sm = $app->getServiceManager();
+        $config = $sm->get('Config');
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $exceptions = isset($config['schoenstatt']['gdpr_ip_address_exceptions'])
+            ? $config['schoenstatt']['gdpr_ip_address_exceptions'] : [];
+        if (in_array($ip, $exceptions)) {
+            return; //don't think about blocking
+        }
         /** @var Geoip $geoip */
         $geoip = $sm->get(Geoip::class);
-        $ip = $_SERVER['REMOTE_ADDR'];
         $addressRecord = $geoip->lookup($ip);
-        if ($this->isGDPRCountry($addressRecord->getCountryCode())) {
+        $countryCode = $addressRecord->getCountryCode();
+        if ($this->isGDPRCountry($countryCode)) {
 //             $result = $event->getResult();
             $response = $event->getResponse(); //@todo create a new response so there aren't any cookies
             // Common view variables
@@ -98,10 +105,10 @@ class GdprStrategy implements ListenerAggregateInterface
 //                 'error' => $event->getParam('error'),
 //                 'identity' => $event->getParam('identity'),
 //             );
-            
+
 //             $model = new ViewModel($viewVariables);
 //             $response = $response ?: new HttpResponse();
-            
+
 //             $model->setTemplate($this->getTemplate());
 //             $event->getViewModel()->addChild($model);
             $response->setStatusCode(403);
@@ -112,12 +119,12 @@ class GdprStrategy implements ListenerAggregateInterface
         // Do nothing if the result is a response object
         $result = $event->getResult();
         $response = $event->getResponse();
-        
+
         if ($result instanceof Response || ($response && !$response instanceof HttpResponse)) {
             return;
         }
     }
-    
+
     protected static function isGDPRCountry($countryCode)
     {
         static $countries;
