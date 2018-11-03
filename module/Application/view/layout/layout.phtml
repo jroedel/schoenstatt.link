@@ -2,6 +2,7 @@
 use Zend\Uri\Uri;
 use ZfcUser\Form\Login;
 use ZfcUser\Options\ModuleOptions;
+use Carbon\Carbon;
 echo $this->doctype();
 $username = $this->zfcUserDisplayName();
 $routeName = $this->routeName();?>
@@ -84,7 +85,7 @@ $routeName = $this->routeName();?>
         ; ?>
 
     </head>
-    
+
     <body <?php if ($routeName == 'publications/index') echo 'data-spy="scroll" data-target="#sidebar-nav" data-offset="35"'; //@todo refactor this hack?>>
         <nav class="navbar navbar-default" role="navigation">
             <div class="container">
@@ -128,7 +129,7 @@ $routeName = $this->routeName();?>
                         <?php
                         //get library info
                         $libraryInfo = null;
-                        if (false !== strpos($routeName, 'libraries/library/') || 
+                        if (false !== strpos($routeName, 'libraries/library/') ||
                             false !== strpos($routeName, 'books/') ||
                             false !== strpos($routeName, 'checkouts/') ||
                             false !== strpos($routeName, 'library-imports/')
@@ -144,11 +145,11 @@ $routeName = $this->routeName();?>
                             0 != strcmp($routeName, 'libraries/library')
                         ) :
                         $shouldAddSearch = false;
-                        if ((false !== strpos($routeName, 'libraries/library/') || 
-                                false !== strpos($routeName, 'books/') || 
+                        if ((false !== strpos($routeName, 'libraries/library/') ||
+                                false !== strpos($routeName, 'books/') ||
                                 false !== strpos($routeName, 'checkouts/') ||
                                 false !== strpos($routeName, 'library-imports/')) &&
-                            $this->isAllowed('route/libraries/library') && 
+                            $this->isAllowed('route/libraries/library') &&
                             isset($libraryInfo) && isset($libraryInfo['resourceId']) &&
                             $this->isAllowed($libraryInfo['resourceId'], 'show')
                         ) {
@@ -225,10 +226,8 @@ $routeName = $this->routeName();?>
          echo $this->content; ?>
             <div class="footer">
                 <hr>
-                <p class="text-center">© Schoenstatt Data Initiative 2017 <?php
-                if ($this->isAllowed('welcome')):?>
-                    | <a href="<?php echo $this->url('welcome')?>"><?php echo $this->translate('About', 'Application');?></a>
-                <?php endif;?></p>
+                <p class="text-center"><a href="https://creativecommons.org/licenses/by-sa/3.0/">
+                <img src="/img/CC-BY-SA_icon-88.png" alt="Cc-by-sa"/></a></p>
             </div>
         </div> <!-- /container -->
 <?php

@@ -77,6 +77,17 @@ return [
             35  => 'Novitiate Tuparenda',
             7   => 'Bellavista - casa central',
         ],
+        'publication_resource_id_options' => [
+            'publication_public'    => 'Public',
+            'publication_user'      => 'Authenticated users',
+            'publication_institute' => 'Institute users',
+            'publication_brothers'  => 'Brothers of Mary',
+            'publication_families'  => 'Institute of Families',
+            'publication_ladies'    => 'Ladies of Schoenstatt',
+            'publication_patres'    => 'Schoenstatt Fathers',
+            'publication_sisters'   => 'Sisters of Mary',
+        ],
+        'publication_resource_id_default_option' => 'publication_public',
         'language_value_options' => [
             'en' => 'English',
             'es' => 'Spanish',
@@ -960,14 +971,14 @@ return [
                 'enable_delete_action'                      => true,
                 'delete_route_key'                          => 'event_id',
                 'delete_action_redirect_route'              => 'events',
-                
+
                 'acl_resource_id_field'                     => 'aclResourcesId',
                 'acl_show_permission'                       => 'show',
                 'acl_edit_permission'                       => 'edit',
                 'acl_suggest_permission'                    => 'suggest',
                 'acl_moderate_permission'                   => 'moderate',
                 'acl_delete_permission'                     => 'delete',
-                
+
                 'update_columns'                            => [
                     'eventId' => 'EventId',
                     'titleEn' => 'TitleEn',
@@ -1280,7 +1291,7 @@ return [
                     'publicationId'             => 'publication_id',
                     'isActive'                  => 'is_active',
 
-                    'copyrightYear'             => 'copyright_year',
+                    'publishedYear'             => 'copyright_year',
                     'publisher'                 => 'publisher',
                     'publishingPlace'           => 'publisher_place',
                     'isbn'                      => 'isbn',
@@ -1457,40 +1468,29 @@ return [
                 'update_columns' => [
                     'publicationId'             => 'PublicationId',
                     'title'                     => 'Title',
+                    'titleNoAccents'            => 'TitleNoAccents',
+                    'subtitle'                  => 'Subtitle',
+                    'subtitleNoAccents'         => 'SubtitleNoAccents',
                     'resourceId'                => 'ResourceId',
                     'authorsText'               => 'Authors',
+                    'authorsNoAccents'          => 'AuthorsNoAccents',
                     'bookEdition'               => 'BookEdition',
                     'inLanguage'                => 'InLanguage',
                     'categoryId'                => 'CategoryId',
                     'description'               => 'Description',
                     'isbn'                      => 'Isbn',
-
-//                     'authorPerson1Id'           => 'AuthorPerson1',
-//                     'authorPerson2Id'           => 'AuthorPerson2',
-//                     'authorPerson3Id'           => 'AuthorPerson3',
-//                     'authorPerson4Id'           => 'AuthorPerson4',
-//                     'authorPerson5Id'           => 'AuthorPerson5',
-//                     'authorAssociation1Id'      => 'AuthorAssociationId1',
-//                     'authorAssociation2Id'      => 'AuthorAssociationId2',
-//                     'authorAssociation3Id'      => 'AuthorAssociationId3',
-//                     'editorPerson1Id'           => 'EditorId',
-//                     'editorPerson2Id'           => 'Editor2Id',
-//                     'editorPerson3Id'           => 'Editor3Id',
-//                     'editorAssociation1Id'      => 'EditorAssociationId1',
-                    'editorsText'                => 'Editor',
-//                     'translatorPerson1Id'       => 'TranslatorId',
-//                     'translatorPerson2Id'       => 'Translator2Id',
-//                     'translatorPerson3Id'       => 'Translator3Id',
-                    'translatorsText'            => 'Translator',
-//                     'illustratorPerson1Id'      => 'IllustratorId',
-                    'illustratorsText'           => 'Illustrator',
+                    'editorsText'               => 'Editor',
+                    'editorsNoAccents'          => 'EditorNoAccents',
+                    'translatorsText'           => 'Translator',
+                    'illustratorsText'          => 'Illustrator',
 
                     'numberOfPages'             => 'NumberOfPages',
                     'copyrightYear'             => 'CopyrightYear',
+                    'copyrightInfo'             => 'CopyrightInfo',
                     'publisher'                 => 'Publisher',
-//                     'publisherAssociationId'    => 'PublisherAssociationId',
                     'publishingPlace'           => 'PublishingPlace',
                     'datePublished'             => 'DatePublished',
+                    'datePublishedText'         => 'DatePublishedText',
                     'publishingStatus'          => 'PublishingStatus',
                     'bookFormatType'            => 'BookFormatType',
                     'genre'                     => 'Genre',
@@ -1635,7 +1635,7 @@ return [
                 'sion_model_class'                          => SchoenstattTable::class,
                 'sion_controllers'                          => [],//BorrowersController::class],
                 'controller_services'                       => [
-                    
+
                 ],
                 'get_object_function'                       => 'getPerson',
                 'get_objects_function'                      => 'getPersons',
@@ -1698,7 +1698,11 @@ return [
                'book',
                'book_teo',
                'book_sch',
+               'publication_brothers',
+               'publication_families',
+               'publication_ladies',
                'publication_patres',
+               'publication_sisters',
                'publication_institute',
                'publication_user',
                'publication_public',
@@ -1720,6 +1724,26 @@ return [
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'show-admin-info'],
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'edit'],
                     [['pub_patres_moderator', 'pub_general_moderator'], 'publication_patres', 'delete'],
+
+                    [['pub_brothers', 'pub_general_moderator'], 'publication_brothers', 'show'],
+                    [['pub_brothers_moderator', 'pub_general_moderator'], 'publication_brothers', 'show-admin-info'],
+                    [['pub_brothers_moderator', 'pub_general_moderator'], 'publication_brothers', 'edit'],
+                    [['pub_brothers_moderator', 'pub_general_moderator'], 'publication_brothers', 'delete'],
+
+                    [['pub_families', 'pub_general_moderator'], 'publication_families', 'show'],
+                    [['pub_families_moderator', 'pub_general_moderator'], 'publication_families', 'show-admin-info'],
+                    [['pub_families_moderator', 'pub_general_moderator'], 'publication_families', 'edit'],
+                    [['pub_families_moderator', 'pub_general_moderator'], 'publication_families', 'delete'],
+
+                    [['pub_ladies', 'pub_general_moderator'], 'publication_ladies', 'show'],
+                    [['pub_ladies_moderator', 'pub_general_moderator'], 'publication_ladies', 'show-admin-info'],
+                    [['pub_ladies_moderator', 'pub_general_moderator'], 'publication_ladies', 'edit'],
+                    [['pub_ladies_moderator', 'pub_general_moderator'], 'publication_ladies', 'delete'],
+
+                    [['pub_sisters', 'pub_general_moderator'], 'publication_sisters', 'show'],
+                    [['pub_sisters_moderator', 'pub_general_moderator'], 'publication_sisters', 'show-admin-info'],
+                    [['pub_sisters_moderator', 'pub_general_moderator'], 'publication_sisters', 'edit'],
+                    [['pub_sisters_moderator', 'pub_general_moderator'], 'publication_sisters', 'delete'],
 
 
                     [['pub_institute', 'pub_general_moderator'], 'publication_institute', 'show'],
@@ -1761,8 +1785,6 @@ return [
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
-
-                //@todo define library-specific ACL
 
                 ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
