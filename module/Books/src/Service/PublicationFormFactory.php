@@ -37,6 +37,8 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $allEditions = $table->getEditionValueOptions(false);
 
         $categories = $table->getCategoryValueOptions();
+        $resourceIdValueOptions = $config['publication_resource_id_options'];
+        $resourceIdValue = $config['publication_resource_id_default_option'];
 
         $form = new PublicationForm();
         $form->get('inLanguage')->setValueOptions($languages);
@@ -45,7 +47,7 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $form->get('authorsAll')->setValueOptions($authors);
         $form->get('editorsAll')->setValueOptions($authors);
         $form->get('translatorsAll')->setValueOptions($authorsOnlyPersons);
-        $form->get('illustratorsAll')->setValueOptions($authorsOnlyPersons);
+//         $form->get('illustratorsAll')->setValueOptions($authorsOnlyPersons);
         $form->get('keywords')->setValueOptions($keywords);
         $form->get('publisher')->setValueOptions($publishers);
         $form->get('bookFormatType')->setValueOptions($bookFormats);
@@ -53,6 +55,9 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $form->get('url2Label')->setValueOptions($urlLabels);
         $form->get('url3Label')->setValueOptions($urlLabels);
         $form->get('categoryId')->setValueOptions($categories);
+        $form->get('resourceId')->setValueOptions($resourceIdValueOptions)
+            ->setValue($resourceIdValue);
+
 //      $form->get('adminTags')->setValueOptions($adminTags);
         return $form;
     }

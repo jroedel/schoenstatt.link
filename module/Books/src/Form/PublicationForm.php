@@ -3,6 +3,15 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
+use Zend\Filter\ToNull;
+use Zend\Filter\StripTags;
+use SionModel\Filter\ToBit;
+use Zend\Filter\StringToLower;
+use SionModel\Filter\SortArray;
+use Zend\Validator\StringLength;
+use Zend\Filter\StripNewlines;
+use Zend\Filter\StringTrim;
+use Zend\Validator\Regex;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -41,10 +50,11 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'name' => 'bookEdition',
             'type' => 'Text',
             'options' => [
-                'label' => 'Edition',
+                'label' => 'Edition number',
                 'required' => false,
             ],
             'attributes' => [
+                'placeholder' => '1',
                 'maxlength' => '50',
             ],
         ]);
@@ -102,21 +112,21 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'multiple' => true,
             ],
         ]);
-        $this->add([
-            'name' => 'illustratorsAll', //only show persons
-            'type' => 'Select',
-            'options' => [
-                'label' => 'Illustrator',
-                'required' => false,
-                'empty_option' => '',
-                'unselected_value' => '',
-                'disable_inarray_validator' => true,
-            ],
-            'attributes' => [
-                'maxlength' => '500',
-                'multiple' => true,
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'illustratorsAll', //only show persons
+//             'type' => 'Select',
+//             'options' => [
+//                 'label' => 'Illustrator',
+//                 'required' => false,
+//                 'empty_option' => '',
+//                 'unselected_value' => '',
+//                 'disable_inarray_validator' => true,
+//             ],
+//             'attributes' => [
+//                 'maxlength' => '500',
+//                 'multiple' => true,
+//             ],
+//         ]);
 
         $this->add([
             'name' => 'description',
@@ -124,6 +134,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Description',
                 'required' => false,
+                'help-block' => 'Description of the book, helpful to a non-Schoenstatt visitor to the site.',
             ],
             'attributes' => [
                 'rows' => 5,
@@ -151,6 +162,8 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'unselected_value' => '',
                 'disable_inarray_validator' => false,
                 'value_options' => [],
+                'help-block' => 'To avoid showing multiple editions of the same book in the index, please select the'
+                    .' latest edition of this work from the list.'
             ],
         ]);
         $this->add([
@@ -163,6 +176,8 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'unselected_value' => '',
                 'disable_inarray_validator' => false,
                 'value_options' => [],
+                'help-block' => 'The work in the original language from which this book was translated. '
+                    .'If there is more than one edition in the original language, select the newest edition.'
             ],
         ]);
         $this->add([
@@ -180,17 +195,15 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'copyrightYear',
-            'type' => 'Number',
+            'name' => 'datePublishedText',
+            'type' => 'Text',
             'options' => [
-                'label' => 'Copyright year',
+                'label' => 'Published date',
                 'required' => false,
+                'help-block' => 'The year is plenty; if a more specific date is available, use format YYYY-MM-DD'
             ],
             'attributes' => [
-                'min'         => 1800,
-                'max'         => 2025,
-                'step'        => 1,
-                'inclusive'   => true,
+                'placeholder' => '2007',
             ],
         ]);
         $this->add([
@@ -226,6 +239,34 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],
+            ],
+        ]);
+        $this->add([
+            'name' => 'copyrightYear',
+            'type' => 'Number',
+            'options' => [
+                'label' => 'Copyright year',
+                'required' => false,
+                'help-block' => 'The year of the first edition, ie. the creation of the creative work',
+            ],
+            'attributes' => [
+                'min'         => 1800,
+                'max'         => 2025,
+                'step'        => 1,
+                'inclusive'   => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'copyrightInfo',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Copyright info',
+                'required' => false,
+                'help-block' => 'Include information about the copyright owner, contact information, '
+                    .'and under what licence it has been published.',
+            ],
+            'attributes' => [
+                'maxlength' => '500',
             ],
         ]);
 
@@ -312,30 +353,30 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '25',
             ],
         ]);
-        $this->add([
-            'name' => 'containedIn',
-            'type' => 'Text',
-            'options' => [
-                'label' => 'Contained in',
-                'required' => true,
-            ],
-            'attributes' => [
-                'placeholder' => 'ex. Revista Vínculo 2014-10',
-                'maxlength' => '255',
-            ],
-        ]);
-        $this->add([
-            'name' => 'containedInIsbn',
-            'type' => 'Text',
-            'options' => [
-                'label' => 'Contained in ISBN',
-                'required' => false,
-            ],
-            'attributes' => [
-                'placeholder' => 'ex. 9780030426599',
-                'maxlength' => '30',
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'containedIn',
+//             'type' => 'Text',
+//             'options' => [
+//                 'label' => 'Contained in',
+//                 'required' => true,
+//             ],
+//             'attributes' => [
+//                 'placeholder' => 'ex. Revista Vínculo 2014-10',
+//                 'maxlength' => '255',
+//             ],
+//         ]);
+//         $this->add([
+//             'name' => 'containedInIsbn',
+//             'type' => 'Text',
+//             'options' => [
+//                 'label' => 'Contained in ISBN',
+//                 'required' => false,
+//             ],
+//             'attributes' => [
+//                 'placeholder' => 'ex. 9780030426599',
+//                 'maxlength' => '30',
+//             ],
+//         ]);
         $this->add([
             'name' => 'keywords',
             'type' => 'Select',
@@ -346,6 +387,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
                 'value_options' => [],
+                'help-block' => 'Thematic tags regarding the content of the book',
             ],
             'attributes' => [
                 'required' => false,
@@ -357,35 +399,29 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Access level',
-                'required' => false,
+                'required' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
-                'disable_inarray_validator' => true,
-                'value_options' => [
-                    'publication_public' => 'Public',
-                    'publication_user' => 'Authenticated users',
-                    'publication_institute' => 'Institute users',
-                    'publication_patres' => 'Schoenstatt Fathers',
-                ],
+                'value_options' => [], //set in factory
+                'help-block' => 'This defines which users will see this book information listed'
             ],
             'attributes' => [
-                'value' => 'publication_public',
-            ],
-            
-        ]);
-        $this->add([
-            'name' => 'isAccessibleForFree',
-            'type' => 'Checkbox',
-            'options' => [
-                'label' => 'Accessible for free?',
-                'checked_value' => '1',
-                'unchecked_value' => '0',
-                'use_hidden_element' => true,
-            ],
-            'attributes' => [
-                'value'   => '0',
+                'value' => null, //set in factory
             ],
         ]);
+//         $this->add([
+//             'name' => 'isAccessibleForFree',
+//             'type' => 'Checkbox',
+//             'options' => [
+//                 'label' => 'Accessible for free?',
+//                 'checked_value' => '1',
+//                 'unchecked_value' => '0',
+//                 'use_hidden_element' => true,
+//             ],
+//             'attributes' => [
+//                 'value'   => '0',
+//             ],
+//         ]);
         $this->add([
             'name' => 'isScientificWork',
             'type' => 'Checkbox',
@@ -425,19 +461,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'value'   => '0',
             ],
         ]);
-//         $this->add([
-//             'name' => 'publishDataAsJsonLd',
-//             'type' => 'Checkbox',
-//             'options' => [
-//                 'label' => 'Publish data in search engines?',
-//                 'checked_value' => '1',
-//                 'unchecked_value' => '0',
-//                 'use_hidden_element' => true,
-//             ],
-//             'attributes' => [
-//                 'value'   => '0',
-//             ],
-//         ]);
         $this->add([
             'name' => 'isFormallyPublished',
             'type' => 'Checkbox',
@@ -456,34 +479,35 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'name' => 'editionNotes',
             'type' => 'Textarea',
             'options' => [
-                'label' => 'Edition notes',
+                'label' => 'Notes relevant to this particular edition',
                 'required' => false,
             ],
             'attributes' => [
                 'required' => false,
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
-                'rows' => 8,
+                'rows' => 4,
             ],
             'filters' => [
-                ['name' => 'StripTags'],
+                ['name' => StripTags::class],
             ],
         ]);
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
             'type' => 'Textarea',
             'options' => [
-                'label' => 'Public notes',
+                'label' => 'Notes relevant to the whole work (including other editions)',
                 'required' => false,
+                'help-block' => ''
             ],
             'attributes' => [
                 'required' => false,
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
-                'rows' => 8,
+                'rows' => 4,
             ],
             'filters' => [
-                ['name' => 'StripTags'],
+                ['name' => StripTags::class],
             ],
         ]);
         $this->add([
@@ -509,26 +533,26 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
-                'rows' => 8,
+                'rows' => 4,
             ],
         ]);
 
-        $this->add([
-            'name' => 'adminTags',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'Admin tags',
-                'empty_option' => '',
-                'placeholder' => 'Select tags or type new ones...',
-                'unselected_value' => '',
-                'disable_inarray_validator' => true,
-                'value_options' => [],
-            ],
-            'attributes' => [
-                'required' => false,
-                'multiple' => true,
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'adminTags',
+//             'type' => 'Select',
+//             'options' => [
+//                 'label' => 'Admin tags',
+//                 'empty_option' => '',
+//                 'placeholder' => 'Select tags or type new ones...',
+//                 'unselected_value' => '',
+//                 'disable_inarray_validator' => true,
+//                 'value_options' => [],
+//             ],
+//             'attributes' => [
+//                 'required' => false,
+//                 'multiple' => true,
+//             ],
+//         ]);
         $this->add([
             'name' => 'submit',
             'type' => 'Submit',
@@ -547,10 +571,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'title' => [
                 'required' => true,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -558,7 +582,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 300,
@@ -596,10 +620,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'bookEdition' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -607,7 +631,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 50,
@@ -618,16 +642,16 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'hasNoExplictEditionNumber' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'description' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -635,7 +659,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 3000,
@@ -646,7 +670,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'mainPublicationId' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
@@ -656,7 +680,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'translatedFromPublicationId' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
@@ -666,10 +690,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'isbn' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -677,7 +701,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 30,
@@ -691,31 +715,42 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
 //                 'continue_if_empty' => true,
                 'filters' => [
                     ['name' => 'ToInt'],
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
                         ],
                     ],
                 ],
             ],
-            'copyrightYear' => [
+            'datePublishedText' => [
                 'required' => false,
+                'validators' => [
+                    [
+                        'name' => Regex::class,
+                        'options' => [
+                            'pattern' => '/^(?:18|19|20)\d{2,2}(?:-[0-3]\d)?(?:-[0-3]\d)?$/',
+                            'messageTemplates' => [
+                                Regex::NOT_MATCH => 'Please enter a valid date. Remember to add a `0` before single digit month and day numbers.',
+                            ],
+                        ],
+                    ],
+                ],
                 'filters' => [
-                    ['name' => 'ToInt'],
-                    ['name' => 'ToNull',
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
-                        ]
+                        ],
                     ],
                 ],
             ],
             'publisher' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
@@ -723,7 +758,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 255,
@@ -734,10 +769,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'publishingPlace' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -745,7 +780,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 255,
@@ -756,12 +791,44 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'bookFormatType' => [
                 'required' => false,
                 'filters' => [
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+            ],
+            'copyrightYear' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToInt'],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                        ]
+                    ],
+                ],
+            ],
+            'copyrightInfo' => [
+                'required' => false,
+                'filters' => [
                     ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 500,
                         ],
                     ],
                 ],
@@ -769,7 +836,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url1' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -779,10 +846,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url1Label' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -792,7 +859,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url2' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -802,10 +869,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url2Label' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -815,7 +882,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url3' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -825,10 +892,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'url3Label' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -839,10 +906,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'volumeNumber' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -850,7 +917,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 25,
@@ -861,10 +928,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'containedIn' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -872,7 +939,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 255,
@@ -883,10 +950,10 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'containedInIsbn' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -894,7 +961,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 30,
@@ -905,8 +972,8 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'keywords' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StringToLower'],
-                    ['name' => 'SionModel\Filter\SortArray'],
+                    ['name' => StringToLower::class],
+                    ['name' => SortArray::class],
                 ],
             ],
             'resourceId' => [
@@ -915,44 +982,44 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'isAccessibleForFree' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'isScientificWork' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'hasNoISBN' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'isRevisedWithBookInHand' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
 //             'publishDataAsJsonLd' => [
 //                 'required' => false,
 //                 'filters' => [
-//                     ['name' => 'SionModel\Filter\ToBit']
+//                     ['name' => ToBit::class]
 //                 ],
 //             ],
             'isFormallyPublished' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'editionNotes' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -962,8 +1029,8 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'publicNotes' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
@@ -973,7 +1040,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'categoryId' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
@@ -983,8 +1050,8 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'adminNotes' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]
@@ -994,8 +1061,8 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'adminTags' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StringToLower'],
-                    ['name' => 'SionModel\Filter\SortArray'],
+                    ['name' => StringToLower::class],
+                    ['name' => SortArray::class],
                 ],
             ],
         ];

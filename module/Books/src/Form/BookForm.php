@@ -178,10 +178,10 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'copyrightYear',
+            'name' => 'publishedYear',
             'type' => 'Number',
             'options' => [
-                'label' => 'Copyright year',
+                'label' => 'Year published',
             ],
             'attributes' => [
                 'min'         => 1800,

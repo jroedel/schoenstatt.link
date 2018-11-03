@@ -28,40 +28,43 @@ echo $this->formElementErrors($form->get('editorsAll'));?>
 <?php echo $this->formLabel($form->get('translatorsAll'));
 echo $this->formSelectWithoutOptions($form->get('translatorsAll'));
 echo $this->formElementErrors($form->get('translatorsAll'));?>
-</div>
-<div class="form-group ">
-<?php echo $this->formLabel($form->get('illustratorsAll'));
-echo $this->formSelectWithoutOptions($form->get('illustratorsAll'));
-echo $this->formElementErrors($form->get('illustratorsAll'));?>
 </div><?php
 echo $this->formRow($form->get('description'));?>
 <div class="form-group ">
 <?php echo $this->formLabel($form->get('mainPublicationId'));
 echo $this->formSelectWithoutOptions($form->get('mainPublicationId'));
-echo $this->formElementErrors($form->get('mainPublicationId'));?>
+echo $this->formElementErrors($form->get('mainPublicationId'));
+echo sprintf('<p class="help-block">%s</p>', $this->translate($form->get('mainPublicationId')->getOption('help-block')));?>
 </div>
 <div class="form-group ">
 <?php echo $this->formLabel($form->get('translatedFromPublicationId'));
 echo $this->formSelectWithoutOptions($form->get('translatedFromPublicationId'));
-echo $this->formElementErrors($form->get('translatedFromPublicationId'));?>
+echo $this->formElementErrors($form->get('translatedFromPublicationId'));
+echo sprintf('<p class="help-block">%s</p>', $this->translate($form->get('translatedFromPublicationId')->getOption('help-block')));?>
 </div><?php
 echo $this->formRow($form->get('isbn'));
 echo $this->formRow($form->get('hasNoISBN'));
-echo $this->formRow($form->get('copyrightYear'));
+echo $this->formRow($form->get('datePublishedText'));
 echo $this->formRow($form->get('publisher'));
 echo $this->formRow($form->get('publishingPlace'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('bookFormatType'));
 echo $this->formRow($form->get('numberOfPages'));
+$this->formSelect()->setTranslatorEnabled(false);
+echo $this->formRow($form->get('keywords'));
+// echo $this->formRow($form->get('adminTags'));
+$this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('resourceId'));
 echo $this->formRow($form->get('isFormallyPublished'));
-echo $this->formRow($form->get('isAccessibleForFree'));
+// echo $this->formRow($form->get('isAccessibleForFree'));
 echo $this->formRow($form->get('isScientificWork'));
 echo $this->formRow($form->get('isRevisedWithBookInHand'));?>
 <div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php
 echo $this->formRow($form->get('editionNotes'));
 echo $this->formRow($form->get('publicNotes'));
+echo $this->formRow($form->get('copyrightYear'));
+echo $this->formRow($form->get('copyrightInfo'));
 echo $this->formRow($form->get('url1'));
 echo $this->formRow($form->get('url1Label'));
 echo $this->formRow($form->get('url2'));
@@ -69,13 +72,9 @@ echo $this->formRow($form->get('url2Label'));
 echo $this->formRow($form->get('url3'));
 echo $this->formRow($form->get('url3Label'));
 echo $this->formRow($form->get('volumeNumber'));
-echo $this->formRow($form->get('containedIn'));
-echo $this->formRow($form->get('containedInIsbn'));
+// echo $this->formRow($form->get('containedIn'));
+// echo $this->formRow($form->get('containedInIsbn'));
 echo $this->formRow($form->get('adminNotes'));
-$this->formSelect()->setTranslatorEnabled(false);
-echo $this->formRow($form->get('keywords'));
-echo $this->formRow($form->get('adminTags'));
-$this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('security'));
 // var_dump($this->publicationValueOptions);
 $publicationValueOptions = Json::encode($this->publicationValueOptions);
@@ -87,15 +86,15 @@ var publicationOptions = $publicationValueOptions;
 var authorPersons = $authorPersons;
 var authorAssociations = $authorAssociations;
 
-$("select[name='illustratorsAll[]']").selectize({
-    create: true,
-	options: authorPersons,
-	valueField: 'i',
-	labelField: 'n',
-	searchField: 'n',
-    sortField: 'n',
-    delimiter: ';'
-});
+// $("select[name='illustratorsAll[]']").selectize({
+//     create: true,
+// 	options: authorPersons,
+// 	valueField: 'i',
+// 	labelField: 'n',
+// 	searchField: 'n',
+//     sortField: 'n',
+//     delimiter: ';'
+// });
 $("select[name='translatorsAll[]']").selectize({
     create: true,
 	options: authorPersons,
@@ -164,10 +163,10 @@ $("select[name='url3Label']").selectize({
     create: true,
     sortField: 'text'
 });
-$("select[name='adminTags[]']").selectize({
-    create: true,
-    sortField: 'text'
-});
+// $("select[name='adminTags[]']").selectize({
+//     create: true,
+//     sortField: 'text'
+// });
 JS;
 $this->inlineScript()->captureStart();
 echo <<<JS

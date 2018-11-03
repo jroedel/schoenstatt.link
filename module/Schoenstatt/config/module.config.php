@@ -1,4 +1,5 @@
 <?php
+namespace Schoenstatt;
 use SionModel\Problem\EntityProblem;
 use Schoenstatt\Form\PersonForm;
 use Schoenstatt\Service\PersonFormFactory;
@@ -38,6 +39,8 @@ use Zend\Mvc\Controller\LazyControllerAbstractFactory;
 use SionModel\Controller\LazyControllerFactory;
 use SionModel\Controller\SionControllerFactory;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
+use Zend\Router\Http\Segment;
+use Zend\Router\Http\Literal;
 
 $leagueRoles = [
     [
@@ -94,77 +97,63 @@ $federationRoles = [
 ];
 return [
     'controllers' => [
-//         'factories' => [
-//             SchoenstattController::class    => SchoenstattController::class,
-//             PersonsController::class        => PersonsController::class,
-//             AssociationsController::class   => AssociationsController::class,
-//             AdminController::class          => AdminController::class,
-//             AssignmentsController::class    => AssignmentsController::class,
-//             RolesController::class          => RolesController::class,
-        //         ],
-//         'factories' => [
-//             PersonsController::class        => SionControllerFactory::class,
-//             AssignmentsController::class    => SionControllerFactory::class,
-//             AssociationsController::class   => SionControllerFactory::class,
-//             RolesController::class          => SionControllerFactory::class,
-//         ],
         'abstract_factories' => [
             \Schoenstatt\Controller\LazyControllerFactory::class,
         ],
     ],
     'service_manager' => [
         'factories' => [
-            PatresGateway::class                    => PatresGatewayFactory::class,
-            'Schoenstatt\FathersValueOptions'       => FathersValueOptionsService::class,
-            SchoenstattTable::class                 => SchoenstattTableFactory::class,
-            AdvancedSearchForm::class               => AdvancedSearchFormFactory::class,
-            PersonForm::class                       => PersonFormFactory::class,
-            AssignmentForm::class                   => AssignmentFormFactory::class,
-            'Schoenstatt\Form\EditAssignmentForm'   => EditAssignmentFormFactory::class,
-            AssociationForm::class                  => AssociationFormFactory::class,
-            RoleForm::class                         => RoleFormFactory::class,
-            'Schoenstatt\Config'                    => ConfigServiceFactory::class,
-            ImportFatherForm::class                 => ImportFatherFormFactory::class,
-            'Schoenstatt\PersonTagsValueOptions'    => PersonTagsValueOptionsFactory::class,
-            AssociationKindsService::class          => AssociationKindsServiceFactory::class,
+            Service\PatresGateway::class            => Service\PatresGatewayFactory::class,
+            'Schoenstatt\FathersValueOptions'       => Service\FathersValueOptionsService::class,
+            Model\SchoenstattTable::class           => Service\SchoenstattTableFactory::class,
+            Form\AdvancedSearchForm::class          => Service\AdvancedSearchFormFactory::class,
+            Form\PersonForm::class                  => Service\PersonFormFactory::class,
+            Form\AssignmentForm::class              => Service\AssignmentFormFactory::class,
+            'Schoenstatt\Form\EditAssignmentForm'   => Service\EditAssignmentFormFactory::class,
+            Form\AssociationForm::class             => Service\AssociationFormFactory::class,
+            Form\RoleForm::class                    => Service\RoleFormFactory::class,
+            'Schoenstatt\Config'                    => Service\ConfigServiceFactory::class,
+            Form\ImportFatherForm::class            => Service\ImportFatherFormFactory::class,
+            'Schoenstatt\PersonTagsValueOptions'    => Service\PersonTagsValueOptionsFactory::class,
+            Service\AssociationKindsService::class  => Service\AssociationKindsServiceFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
             // since the ServiceManager is not a declarative DIC.
             'class_map' => [
-                ImportFatherForm::class => ImportFatherForm::class,
-                PatresGateway::class => PatresGateway::class,
-                SchoenstattTable::class => SchoenstattTable::class,
-                PersonForm::class => PersonForm::class,
-                AdvancedSearchForm::class => AdvancedSearchForm::class,
-                AssignmentForm::class => AssignmentForm::class,
-                AssociationForm::class => AssociationForm::class,
-                RoleForm::class => RoleForm::class,
+                Form\ImportFatherForm::class => Form\ImportFatherForm::class,
+                Service\PatresGateway::class => Service\PatresGateway::class,
+                Model\SchoenstattTable::class => Model\SchoenstattTable::class,
+                Form\PersonForm::class => Form\PersonForm::class,
+                Form\AdvancedSearchForm::class => Form\AdvancedSearchForm::class,
+                Form\AssignmentForm::class => Form\AssignmentForm::class,
+                Form\AssociationForm::class => Form\AssociationForm::class,
+                Form\RoleForm::class => Form\RoleForm::class,
             ],
         ],
         'delegators' => [
-            ImportFatherForm::class => [
+            Form\ImportFatherForm::class => [
                 LazyServiceFactory::class,
             ],
-            PatresGateway::class => [
+            Service\PatresGateway::class => [
                 LazyServiceFactory::class,
             ],
-            SchoenstattTable::class => [
+            Model\SchoenstattTable::class => [
                 LazyServiceFactory::class,
             ],
-            PersonForm::class => [
+            Form\PersonForm::class => [
                 LazyServiceFactory::class,
             ],
-            AdvancedSearchForm::class => [
+            Form\AdvancedSearchForm::class => [
                 LazyServiceFactory::class,
             ],
-            AssignmentForm::class => [
+            Form\AssignmentForm::class => [
                 LazyServiceFactory::class,
             ],
-            AssociationForm::class => [
+            Form\AssociationForm::class => [
                 LazyServiceFactory::class,
             ],
-            RoleForm::class => [
+            Form\RoleForm::class => [
                 LazyServiceFactory::class,
             ],
         ],
@@ -177,14 +166,14 @@ return [
     ],
     'view_helpers' => [
         'factories' => [
-            'formatEntity'          => FormatEntityFactory::class,
-            'formatAssociation'     => FormatAssociationFactory::class,
+            'formatEntity'          => Service\FormatEntityFactory::class,
+            'formatAssociation'     => Service\FormatAssociationFactory::class,
         ],
         'invokables' => [
-            'clipboardButton'       => ClipboardButton::class,
-            'formatPerson'          => FormatPerson::class,
-            'languageChooser'       => LanguageChooser::class,
-            'schoenstattJsonLd'     => SchoenstattJsonLd::class,
+            'clipboardButton'       => View\Helper\ClipboardButton::class,
+            'formatPerson'          => View\Helper\FormatPerson::class,
+            'languageChooser'       => View\Helper\LanguageChooser::class,
+            'schoenstattJsonLd'     => View\Helper\SchoenstattJsonLd::class,
         ],
     ],
 
@@ -192,13 +181,13 @@ return [
             // Resource providers to be used to load all available resources into Zend\Permissions\Acl\Acl
             // Keys are the provider service names, values are the options to be passed to the provider
             'resource_providers'    => [
-                SchoenstattTable::class => [],
+                Model\SchoenstattTable::class => [],
             ],
 
             // Rule providers to be used to load all available rules into Zend\Permissions\Acl\Acl
             // Keys are the provider service names, values are the options to be passed to the provider
             'rule_providers'        => [
-                SchoenstattTable::class => [],
+                Model\SchoenstattTable::class => [],
             ],
     ],
     'schoenstatt' => [
@@ -929,62 +918,62 @@ return [
     'router' => [
         'routes' => [
             'admin' => [
-                'type'    => 'Segment',
+                'type'    => Segment::class,
                 'options' => [
                     'route'    => '/admin',
                     'defaults' => [
-                        'controller' => AdminController::class,
+                        'controller' => Controller\AdminController::class,
                         'action'     => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'data-problems' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/data-problems',
                             'defaults' => [
-                                'controller' => AdminController::class,
+                                'controller' => Controller\AdminController::class,
                                 'action'     => 'dataProblems',
                             ],
                         ],
                     ],
                     'import-father' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/import-father',
                             'defaults' => [
-                                'controller' => AdminController::class,
+                                'controller' => Controller\AdminController::class,
                                 'action'     => 'importFather',
                             ],
                         ],
                     ],
                     'import-shrines' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/import-shrines',
                             'defaults' => [
-                                'controller' => SchoenstattController::class,
+                                'controller' => Controller\AdminController::class,
                                 'action'     => 'importShrines',
                             ],
                         ],
                     ],
                     'maintenance' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/maintenance',
                             'defaults' => [
-                                'controller' => AdminController::class,
+                                'controller' => Controller\AdminController::class,
                                 'action'     => 'maintenance',
                             ],
                         ],
                     ],
                     'moderate' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/moderate[/:suggestion_id]',
                             'defaults' => [
-                                'controller' => AdminController::class,
+                                'controller' => Controller\AdminController::class,
                                 'action'     => 'moderate',
                             ],
                             'constraints' => [
@@ -996,42 +985,42 @@ return [
                 ],
             ],
             'schoenstatt' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     // Change this to something specific to your module
                     'route'    => '/movement',
                     'defaults' => [
-                        'controller'    => SchoenstattController::class,
+                        'controller'    => Controller\SchoenstattController::class,
                         'action'        => 'index',
                     ],
                 ],
                 'may_terminate' => true,
             ],
             'shrines' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     // Change this to something specific to your module
                     'route'    => '/shrines',
                     'defaults' => [
-                        'controller'    => SchoenstattController::class,
+                        'controller'    => Controller\SchoenstattController::class,
                         'action'        => 'shrines',
                     ],
                 ],
                 'may_terminate' => true,
             ],
             'persons' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     'route'    => '/persons',
                     'defaults' => [
-                        'controller' => PersonsController::class,
+                        'controller' => Controller\PersonsController::class,
                         'action'     => 'search',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'search' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/search',
                             'defaults' => [
@@ -1040,7 +1029,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
@@ -1049,7 +1038,7 @@ return [
                         ],
                     ],
                     'person' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:person_id',
                             'constraints' => [
@@ -1062,7 +1051,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -1072,7 +1061,7 @@ return [
                                 ],
                             ],
                             'suggest' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/suggest',
                                     'defaults' => [
@@ -1081,7 +1070,7 @@ return [
                                 ],
                             ],
                             'moderate' => [
-                                'type'    => 'Segment',
+                                'type'    => Segment::class,
                                 'options' => [
                                     'route'    => '/moderate/:suggestion_id',
                                     'constraints' => [
@@ -1093,7 +1082,7 @@ return [
                                 ],
                             ],
                             'delete' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/delete',
                                     'defaults' => [
@@ -1106,17 +1095,17 @@ return [
                 ],
             ],
             'assignments' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     'route'    => '/assignments',
                     'defaults' => [
-                        'controller' => AssignmentsController::class,
+                        'controller' => Controller\AssignmentsController::class,
                     ],
                 ],
                 'may_terminate' => false,
                 'child_routes' => [
                     'search' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/search',
                             'defaults' => [
@@ -1125,7 +1114,7 @@ return [
                         ],
                     ],
                     'advanced-search' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/advanced-search',
                             'defaults' => [
@@ -1134,7 +1123,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
@@ -1143,7 +1132,7 @@ return [
                         ],
                     ],
                     'assignment' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:assignment_id',
                             'constraints' => [
@@ -1156,7 +1145,7 @@ return [
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -1165,7 +1154,7 @@ return [
                                 ],
                             ],
                             'suggest' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/suggest',
                                     'defaults' => [
@@ -1174,7 +1163,7 @@ return [
                                 ],
                             ],
                             'moderate' => [
-                                'type'    => 'Segment',
+                                'type'    => Segment::class,
                                 'options' => [
                                     'route'    => '/moderate/:suggestion_id',
                                     'constraints' => [
@@ -1186,7 +1175,7 @@ return [
                                 ],
                             ],
                             'delete' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/delete',
                                     'defaults' => [
@@ -1199,18 +1188,18 @@ return [
                 ],
             ],
             'roles' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     'route'    => '/roles',
                     'defaults' => [
-                        'controller' => RolesController::class,
+                        'controller' => Controller\RolesController::class,
                         'action'     => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'create' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
@@ -1219,7 +1208,7 @@ return [
                         ],
                     ],
                     'role' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:role_id',
                             'constraints' => [
@@ -1232,7 +1221,7 @@ return [
                         'may_terminate' => false, //no show action
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -1241,7 +1230,7 @@ return [
                                 ],
                             ],
                             'delete' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/delete',
                                     'defaults' => [
@@ -1254,32 +1243,32 @@ return [
                 ],
             ],
             'associations' => [
-                'type'    => 'Literal',
+                'type'    => Literal::class,
                 'options' => [
                     'route'    => '/associations',
                     'defaults' => [
-                        'controller' => AssociationsController::class,
+                        'controller' => Controller\AssociationsController::class,
                         'action'     => 'index',
                     ],
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
                     'association' => [
-                        'type'    => 'Segment',
+                        'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:association_id',
                             'constraints' => [
                                 'course_id' => '[0-9]{1,5}',
                             ],
                             'defaults' => [
-                                'controller' => AssociationsController::class,
+                                'controller' => Controller\AssociationsController::class,
                                 'action'     => 'show',
                             ],
                         ],
                         'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/edit',
                                     'defaults' => [
@@ -1288,7 +1277,7 @@ return [
                                 ],
                             ],
                             'suggest' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/suggest',
                                     'defaults' => [
@@ -1297,7 +1286,7 @@ return [
                                 ],
                             ],
                             'moderate' => [
-                                'type'    => 'Segment',
+                                'type'    => Segment::class,
                                 'options' => [
                                     'route'    => '/moderate/:suggestion_id',
                                     'constraints' => [
@@ -1309,7 +1298,7 @@ return [
                                 ],
                             ],
                             'create-dioceses' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/create-dioceses',
                                     'defaults' => [
@@ -1318,7 +1307,7 @@ return [
                                 ],
                             ],
                             'delete' => [
-                                'type'    => 'Literal',
+                                'type'    => Literal::class,
                                 'options' => [
                                     'route'    => '/delete',
                                     'defaults' => [
@@ -1329,21 +1318,21 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
-                                'controller' => AssociationsController::class,
+                                'controller' => Controller\AssociationsController::class,
                                 'action'     => 'create',
                             ],
                         ],
                     ],
                     'import' => [
-                        'type'    => 'Literal',
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/import',
                             'defaults' => [
-                                'controller' => AssociationsController::class,
+                                'controller' => Controller\AssociationsController::class,
                                 'action'     => 'import',
                             ],
                         ],
@@ -1354,7 +1343,7 @@ return [
     ],
     'sion_model' => [
         'problem_providers' => [
-            SchoenstattTable::class,
+            Model\SchoenstattTable::class,
         ],
         'problem_specifications' => [
             'person-no-email' => [
@@ -1384,8 +1373,8 @@ return [
                 'table_name'                            => 'sch_persons',
                 'table_key'                             => 'PersonId',
                 'entity_key_field'                      => 'personId',
-                'sion_model_class'                      => SchoenstattTable::class,
-                'sion_controllers'                      => [PersonsController::class],
+                'sion_model_class'                      => Model\SchoenstattTable::class,
+                'sion_controllers'                      => [Controller\PersonsController::class],
                 'controller_services'                   => [
 
                 ],
@@ -1459,12 +1448,12 @@ return [
                 'show_route'                            => 'persons/person',
                 'show_route_key'                        => 'person_id',
                 'show_route_key_field'                  => 'personId',
-                'edit_action_form'                      => PersonForm::class,
+                'edit_action_form'                      => Form\PersonForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
                 'edit_route'                            => 'persons/person/edit',
                 'edit_route_key'                        => 'person_id',
                 'edit_route_key_field'                  => 'personId',
-                'create_action_form'                    => PersonForm::class,
+                'create_action_form'                    => Form\PersonForm::class,
                 'create_action_valid_data_handler'      => 'createPerson',
                 'create_action_redirect_route'          => 'persons/person',
                 'create_action_redirect_route_key'      => 'person_id',
@@ -1562,8 +1551,8 @@ return [
                 'table_name'                            => 'sch_associations',
                 'table_key'                             => 'AssociationId',
                 'entity_key_field'                      => 'associationId',
-                'sion_model_class'                      => SchoenstattTable::class,
-                'sion_controllers'                      => [AssociationsController::class],
+                'sion_model_class'                      => Model\SchoenstattTable::class,
+                'sion_controllers'                      => [Controller\AssociationsController::class],
                 'controller_services'                   => [
                     CountriesInfo::class,
                 ],
@@ -1584,12 +1573,12 @@ return [
                 'show_route'                            => 'associations/association',
                 'show_route_key'                        => 'association_id',
                 'show_route_key_field'                  => 'associationId',
-                'edit_action_form'                      => AssociationForm::class,
+                'edit_action_form'                      => Form\AssociationForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
                 'edit_route'                            => 'associations/association/edit',
                 'edit_route_key'                        => 'association_id',
                 'edit_route_key_field'                  => 'associationId',
-                'create_action_form'                    => AssociationForm::class,
+                'create_action_form'                    => Form\AssociationForm::class,
 //                 'create_action_valid_data_handler'      => 'createAssociation',
                 'create_action_redirect_route'          => 'associations/association',
                 'create_action_redirect_route_key'      => 'association_id',
@@ -1723,8 +1712,8 @@ return [
                 'table_name'                            => 'sch_roles',
                 'table_key'                             => 'RoleId',
                 'entity_key_field'                      => 'roleId',
-                'sion_model_class'                      => SchoenstattTable::class,
-                'sion_controllers'                      => [RolesController::class],
+                'sion_model_class'                      => Model\SchoenstattTable::class,
+                'sion_controllers'                      => [Controller\RolesController::class],
                 'get_object_function'                   => 'getRole',
                 'get_objects_function'                  => 'getRoles',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1746,12 +1735,12 @@ return [
                 'show_route'                            => 'associations/association',
                 'show_route_key'                        => 'association_id',
                 'show_route_key_field'                  => 'associationId',
-                'edit_action_form'                      => RoleForm::class,
+                'edit_action_form'                      => Form\RoleForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
                 'edit_route'                            => 'roles/role/edit',
                 'edit_route_key'                        => 'role_id',
                 'edit_route_key_field'                  => 'roleId',
-                'create_action_form'                    => RoleForm::class,
+                'create_action_form'                    => Form\RoleForm::class,
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'associations/association',
                 'create_action_redirect_route_key'      => 'association_id',
@@ -1791,8 +1780,8 @@ return [
                 'table_name'                            => 'sch_assignments',
                 'table_key'                             => 'AssignmentId',
                 'entity_key_field'                      => 'assignmentId',
-                'sion_model_class'                      => SchoenstattTable::class,
-                'sion_controllers'                      => [AssignmentsController::class],
+                'sion_model_class'                      => Model\SchoenstattTable::class,
+                'sion_controllers'                      => [Controller\AssignmentsController::class],
                 'get_object_function'                   => 'getAssignment',
                 'get_objects_function'                  => 'getAssignments',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1819,7 +1808,7 @@ return [
                 'edit_route'                            => 'assignments/assignment/edit',
                 'edit_route_key'                        => 'assignment_id',
                 'edit_route_key_field'                  => 'assignmentId',
-                'create_action_form'                    => AssignmentForm::class,
+                'create_action_form'                    => Form\AssignmentForm::class,
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'associations/association',
                 'create_action_redirect_route_key'      => 'association_id',
@@ -1894,5 +1883,4 @@ return [
             ],
         ],
     ],
-
 ];
