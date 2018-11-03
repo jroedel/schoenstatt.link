@@ -1,3 +1,5 @@
+#submitted 2018-11-02
+
 ALTER TABLE `predicates` DROP `DescriptionEs`, DROP `DescriptionDe`, DROP `DescriptionPt`, DROP `DescriptionFr`;
 TRUNCATE `relationships`;
 TRUNCATE `predicates`;

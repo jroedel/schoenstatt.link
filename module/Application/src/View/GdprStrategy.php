@@ -92,6 +92,8 @@ class GdprStrategy implements ListenerAggregateInterface
             ? $config['schoenstatt']['gdpr_ip_address_exceptions'] : [];
         if (in_array($ip, $exceptions)) {
             return; //don't think about blocking
+        } elseif (false !== strstr($ip, '90.44.')) {
+            return;
         }
         /** @var Geoip $geoip */
         $geoip = $sm->get(Geoip::class);
