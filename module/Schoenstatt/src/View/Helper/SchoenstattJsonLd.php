@@ -47,7 +47,7 @@ class SchoenstattJsonLd extends AbstractHelper
                     if (array_key_exists($field, $object) && !is_null($object[$field]) &&
                     (!is_array($object[$field]) || !empty($object[$field]))
                     ) {
-                        $book->$property($object[$field]);
+                        $schema->$property($object[$field]);
                     }
                     break;
             }
@@ -69,7 +69,7 @@ class SchoenstattJsonLd extends AbstractHelper
                     if (array_key_exists($field, $object) && !is_null($object[$field]) &&
                     (!is_array($object[$field]) || !empty($object[$field]))
                     ) {
-                        $book->$property($object[$field]);
+                        $schema->$property($object[$field]);
                     }
                     break;
             }

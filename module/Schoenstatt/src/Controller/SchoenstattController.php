@@ -19,13 +19,13 @@ class SchoenstattController extends AbstractActionController
 {
     protected $schoenstattTable;
     protected $schConfig;
-    
+
     public function __construct(SchoenstattTable $schoenstattTable, array $config)
     {
         $this->schoenstattTable = $schoenstattTable;
         $this->schConfig = $config['schoenstatt'];
     }
-    
+
     public function indexAction()
     {
         if (!$this->zfcUserAuthentication()->hasIdentity()) {
@@ -142,19 +142,19 @@ class SchoenstattController extends AbstractActionController
                 } elseif ('Dirección / Cómo llegar' === $match[1]) {
                     preg_match($reZip, $match[2], $zipMatch);
                     if (isset($zipMatch[0])) {
-                        $data['post1Zip'] = $zipMatch[0];
+                        $data['postZip'] = $zipMatch[0];
                     }
                     if (strlen($match[2]) < 200) {
-                        $data['post1Street1'] = $match[2];
+                        $data['postStreet1'] = $match[2];
                     } else {
                         $data['contactNotes'] = $match[2];
                     }
                 } elseif ('Ciudad' === $match[1]) {
-                    $data['post1CityState'] = trim($match[2]);
-                    if (!isset($cityCountryMap[$data['post1CityState']])) {
-                        $cityCountryMap[$data['post1CityState']] = null;
+                    $data['cityState'] = trim($match[2]);
+                    if (!isset($cityCountryMap[$data['cityState']])) {
+                        $cityCountryMap[$data['cityState']] = null;
                     } else {
-                        $data['country'] = strtoupper($cityCountryMap[$data['post1CityState']]);
+                        $data['country'] = strtoupper($cityCountryMap[$data['cityState']]);
                         if (isset($nationalMovementAssociationMap[$data['country']])) {
                             $data['parentId'] = $nationalMovementAssociationMap[$data['country']];
                         }

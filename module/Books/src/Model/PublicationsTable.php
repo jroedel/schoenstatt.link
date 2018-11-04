@@ -1452,6 +1452,49 @@ WHERE 1";
         return $entities;
     }
 
+    /**
+     * Performs some data changes on the publications table:
+     * 1. Fill the 4 `NoAccents` columns
+     */
+    public function fillNoAccentsColumns()
+    {
+        $gateway = $this->getTableGateway('sch_publications');
+        $select = $this->getPublicationsSelectPrototype();
+        $select->where(['InLanguage' => 'es']);
+        $results = $gateway->selectWith($select);
+        $asciiFilter = new ToAscii();
+        $updates = [];
+        foreach ($results as $row) {
+            $id = $row['PublicationId'];
+            $updates[$id] = [
+                'TitleNoAccents' => $asciiFilter->filter($row['Title']),
+                'SubtitleNoAccents' => $asciiFilter->filter($row['Subtitle']),
+                'AuthorsNoAccents' => $asciiFilter->filter($row['Authors']),
+                'EditorNoAccents' => $asciiFilter->filter($row['Editor']),
+            ];
+        }
+        return $updates;
+    }
+    /**
+     * Fill the DatePublishedText column
+     *      Use the DatePublished column if we have data
+     *      If not, use the copyright year
+     */
+    public function fillDatePublished()
+    {
+
+    }
+
+    /**
+     * Remove most CopyrightYear data. Leave the CopyrightYear data in the following two cases:
+     *      a. There's both a DatePublished and CopyrightYear in the database
+     *      b. Data comes from Deutsche Bibliothek
+     */
+    public function clearCopyrightYear()
+    {
+
+    }
+
     public function getAuthors()
     {
         $publications = $this->getUnlinkedPublications();

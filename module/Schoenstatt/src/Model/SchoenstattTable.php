@@ -20,6 +20,7 @@ use Schoenstatt\Service\AssociationKindsService;
 use SionModel\Db\GeoPoint;
 use Zend\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
+use Spatie\SchemaOrg\Schema;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -121,6 +122,8 @@ class SchoenstattTable extends SionTable implements
 
     protected $countryLanguageMap = [];
 
+    protected $addressFieldMap = [];
+
     public function __construct(
         AdapterInterface $dbAdapter,
         $serviceLocator,
@@ -145,6 +148,12 @@ class SchoenstattTable extends SionTable implements
             }
         }
         $this->countriesInfo = $countriesInfo;
+        $this->addressFieldMap = [
+            'street'    => 'streetAddress',
+            'cityState' => 'addressLocality',
+            'zip'       => 'postalCode',
+            'country'   => 'addressCountry',
+        ];
     }
 
     /**
@@ -299,7 +308,7 @@ class SchoenstattTable extends SionTable implements
         return $entities;
     }
 
-    public function getSimpleBook($id)
+    public function getSimpleAssociation($id)
     {
         static $gateway;
         if (!isset($gateway)) {
@@ -372,14 +381,17 @@ class SchoenstattTable extends SionTable implements
             ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
         ];
         $urls = $this::processUrls($unprocessedUrls);
+        $jsonUrl = $this::processJsonUrls($unprocessedUrls);
 
         $phones = [];
+        $jsonTelephone = [];
         if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
             $phones[] = [
                 'number' => $phone1,
                 'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label']))
                     ? $phone1Label : 'Other',
             ];
+            $jsonTelephone[] = $phone1;
         }
         if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
             $phones[] = [
@@ -387,6 +399,9 @@ class SchoenstattTable extends SionTable implements
                 'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label']))
                     ? $phone2Label : 'Other',
             ];
+            if (!in_array($phone2, $jsonTelephone)) {
+                $jsonTelephone[] = $phone2;
+            }
         }
         if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
             $phones[] = [
@@ -394,38 +409,72 @@ class SchoenstattTable extends SionTable implements
                 'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label']))
                     ? $phone3Label : 'Other',
             ];
+            if (!in_array($phone3, $jsonTelephone)) {
+                $jsonTelephone[] = $phone3;
+            }
+        }
+        if (0 === count($jsonTelephone)) {
+            $jsonTelephone = null;
+        } elseif (1 === count($jsonTelephone)) {
+            $jsonTelephone = $jsonTelephone[0];
         }
 
+        $country = $this->filterDbString($row['Country']);
         //abstract address elements
-        $post1Street1   = $this->filterDbString($row['Post1Street1']);
-        $post1Street2   = $this->filterDbString($row['Post1Street2']);
-        $post1CityState = $this->filterDbString($row['Post1CityState']);
-        $post1Zip       = $this->filterDbString($row['Post1Zip']);
-        $post1Country   = $this->filterDbString($row['Post1Country']);
-        $post2Street1   = $this->filterDbString($row['Post2Street1']);
-        $post2Street2   = $this->filterDbString($row['Post2Street2']);
-        $post2CityState = $this->filterDbString($row['Post2CityState']);
-        $post2Zip       = $this->filterDbString($row['Post2Zip']);
-        $post2Country   = $this->filterDbString($row['Post2Country']);
+        $street1   = $this->filterDbString($row['Post1Street1']);
+        $street2   = $this->filterDbString($row['Post1Street2']);
+        $cityState = $this->filterDbString($row['Post1CityState']);
+        $zip       = $this->filterDbString($row['Post1Zip']);
+//         $post1Country   = $this->filterDbString($row['Post1Country']);
+        $postStreet1   = $this->filterDbString($row['Post2Street1']);
+        $postStreet2   = $this->filterDbString($row['Post2Street2']);
+        $postCityState = $this->filterDbString($row['Post2CityState']);
+        $postZip       = $this->filterDbString($row['Post2Zip']);
+//         $post2Country   = $this->filterDbString($row['Post2Country']);
 
-        $postAddresses = [];
-        if (isset($post1Street1) || isset($post1Street2) || isset($post1CityState)) {
-            $postAddresses[] = [
-                'street1'   => $post1Street1,
-                'street2'   => $post1Street2,
-                'cityState' => $post1CityState,
-                'zip'       => $post1Zip,
-                'country'   => $post1Country,
+        $addresses = [];
+        if (isset($street1) || isset($street2) || isset($cityState)) {
+            $addresses[] = [
+                'street1'   => $street1,
+                'street2'   => $street2,
+                'cityState' => $cityState,
+                'zip'       => $zip,
+                'country'   => $country,
             ];
         }
-        if (isset($post2Street1) || isset($post2Street2) || isset($post2CityState)) {
-            $postAddresses[] = [
-                'street1'   => $post2Street1,
-                'street2'   => $post2Street1,
-                'cityState' => $post2CityState,
-                'zip'       => $post2Zip,
-                'country'   => $post2Country,
+        if (isset($postStreet1) || isset($postStreet2) || isset($postCityState)) {
+            $streets = [];
+            if (isset($address['street1'])) {
+                $streets[] = $address['street1'];
+            }
+            if (isset($address['street2'])) {
+                $streets[] = $address['street2'];
+            }
+            $addresses[] = [
+                'street1'   => $postStreet1,
+                'street2'   => $postStreet2,
+                'street'    => implode(' ', $streets),
+                'cityState' => $postCityState,
+                'zip'       => $postZip,
+                'country'   => $country,
             ];
+        }
+
+        $jsonAddress = null;
+        if (count($addresses) > 0) {
+            $jsonAddress = [];
+            foreach ($addresses as $address) {
+                $addressObj = Schema::postalAddress();
+                foreach ($this->addressFieldMap as $field => $property) {
+                    if (isset($address[$field])) {
+                        $addressObj->$property($address[$field]);
+                    }
+                }
+                $jsonAddress[] = $addressObj;
+            }
+            if (1 === count($jsonAddress)) {
+                $jsonAddress = $jsonAddress[0];
+            }
         }
 
         $name = $this->filterDbString($row['AssociationName']);
@@ -452,6 +501,13 @@ class SchoenstattTable extends SionTable implements
                 $formattedName = $name;
             }
         }
+        $geoPoint = $this->filterDbGeoPoint($row['GeoPoint']);
+        $jsonGeo = null;
+        if (isset($geoPoint)) {
+            $jsonGeo = Schema::geoCoordinates();
+            $jsonGeo->latitude($geoPoint->latitude);
+            $jsonGeo->longitude($geoPoint->longitude);
+        }
 
         $processedRow = [
             'associationId'         => $id,
@@ -460,7 +516,7 @@ class SchoenstattTable extends SionTable implements
             'formattedName'         => $formattedName,
             'parentId'              => $this->filterDbId($row['Parent']),
             'kind'                  => $kind,
-            'country'               => $this->filterDbString($row['Country']),
+            'country'               => $country,
             'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
@@ -468,9 +524,9 @@ class SchoenstattTable extends SionTable implements
             'isAuthor'              => $this->filterDbBool($row['IsAuthor']),
             'isActive'              => $this->filterDbBool($row['IsActive']),
 
-            'geoPoint'                  => $this->filterDbGeoPoint($row['GeoPoint']),
-            'latitude'                  => $this->filterDbString($row['Latitude']),
-            'longitude'                 => $this->filterDbString($row['Longitude']),
+            'geoPoint'                  => $geoPoint,
+            'latitude'                  => $this->filterDbString($row['Latitude']), //@deprecated
+            'longitude'                 => $this->filterDbString($row['Longitude']), //@deprecated
             'idealEn'                   => $this->filterDbString($row['IdealEn']),
             'idealEs'                   => $this->filterDbString($row['IdealEs']),
             'idealDe'                   => $this->filterDbString($row['IdealDe']),
@@ -528,20 +584,20 @@ class SchoenstattTable extends SionTable implements
             'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
             'twitterUser'               => $this->filterDbString($row['TwitterUser']),
             'instagramUser'             => $this->filterDbString($row['InstagramUser']),
-            'postAddresses'             => $postAddresses,
-            'post1Street1'              => $post1Street1,
-            'post1Street2'              => $post1Street2,
-            'post1CityState'            => $post1CityState,
-            'post1Zip'                  => $post1Zip,
-            'post1Country'              => $post1Country,
-            'post2Street1'              => $post2Street1,
-            'post2Street2'              => $post2Street2,
-            'post2CityState'            => $post2CityState,
-            'post2Zip'                  => $post2Zip,
-            'post2Country'              => $post2Country,
+            'postAddresses'             => $addresses,
+            'street1'                   => $street1,
+            'street2'                   => $street2,
+            'cityState'                 => $cityState,
+            'zip'                       => $zip,
+//             'post1Country'              => $post1Country,
+            'postStreet1'              => $postStreet1,
+            'postStreet2'              => $postStreet2,
+            'postCityState'            => $postCityState,
+            'postZip'                  => $postZip,
+//             'post2Country'              => $post2Country,
             'contactNotes'              => $this->filterDbString($row['ContactNotes']),
-            //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
-        //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
+//                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
+//                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
 
             'contactInfoUpdatedOn'      => $this->filterDbDate($row['ContactInfoUpdatedOn']),
             'contactInfoUpdatedBy'      => $this->filterDbDate($row['ContactInfoUpdatedBy']),
@@ -556,8 +612,42 @@ class SchoenstattTable extends SionTable implements
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+
+            'jsonAddress'           => $jsonAddress,
+            'jsonTelephone'         => $jsonTelephone,
+            'jsonGeo'               => $jsonGeo,
+            'jsonUrl'               => $jsonUrl,
         ];
         return $processedRow;
+    }
+
+    /**
+     *
+     * @param mixed[] $association
+     * @return \Spatie\SchemaOrg\PlaceOfWorship
+     */
+    public static function getShrineSchema($association)
+    {
+        $fieldMap = [
+            'formattedName' => 'name',
+            'jsonAddress'   => 'address',
+            'jsonTelephone' => 'telephone',
+            'jsonUrl'       => 'url',
+            'jsonGeo'       => 'geo',
+        ];
+        if ($association['kind'] == 'sch-shrine') {
+            $place = Schema::catholicChurch();
+        } elseif ($association['kind'] == 'sch-wayside-shrine') {
+            $place = Schema::placeOfWorship();
+        } else {
+            return null;
+        }
+        foreach ($fieldMap as $field => $property) {
+            if (isset($association[$field])) {
+                $place->$property($association[$field]);
+            }
+        }
+        return $place;
     }
 
     /**
@@ -632,6 +722,7 @@ class SchoenstattTable extends SionTable implements
             }
         }
     }
+
 
     /**
      * Get a list of all non-sub-diocesan associations in a country
