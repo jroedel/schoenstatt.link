@@ -377,6 +377,15 @@ return [
                             ],
                         ],
                     ],
+                    'admin-tasks' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/admin-tasks',
+                            'defaults' => [
+                                'action'     => 'adminTasks',
+                            ],
+                        ],
+                    ],
                     'create' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -1772,6 +1781,7 @@ return [
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
+                ['route' => 'publications/admin-tasks', 'roles' => ['pub_administrator']],
 
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],

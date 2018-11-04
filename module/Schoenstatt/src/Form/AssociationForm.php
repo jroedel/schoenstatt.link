@@ -442,86 +442,86 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'post1Street1',
+            'name' => 'street1',
             'type' => 'Text',
             'options' => [
-                'label' => 'Street line 1 (post1)',
+                'label' => 'Street line 1',
             ],
         ]);
         $this->add([
-            'name' => 'post1Street2',
+            'name' => 'street2',
             'type' => 'Text',
             'options' => [
-                'label' => 'Street line 2 (post1)',
+                'label' => 'Street line 2',
             ],
         ]);
         $this->add([
-            'name' => 'post1CityState',
+            'name' => 'cityState',
             'type' => 'Text',
             'options' => [
-                'label' => 'City/State (post1)',
+                'label' => 'City/State',
             ],
         ]);
         $this->add([
-            'name' => 'post1Zip',
+            'name' => 'zip',
             'type' => 'Text',
             'options' => [
-                'label' => 'Zip/PLZ (post1)',
+                'label' => 'Zip/PLZ',
             ],
         ]);
-        $this->add([
-            'name' => 'post1Country',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'Country (post1)',
-                'empty_option' => '',
-                'unselected_value' => '',
-            ],
-            'attributes' => [
-                'required' => false
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'post1Country',
+//             'type' => 'Select',
+//             'options' => [
+//                 'label' => 'Country (post1)',
+//                 'empty_option' => '',
+//                 'unselected_value' => '',
+//             ],
+//             'attributes' => [
+//                 'required' => false
+//             ],
+//         ]);
 
         $this->add([
-            'name' => 'post2Street1',
+            'name' => 'postStreet1',
             'type' => 'Text',
             'options' => [
-                'label' => 'Street line 1 (post2)',
+                'label' => 'Street line 1 (post)',
             ],
         ]);
         $this->add([
-            'name' => 'post2Street2',
+            'name' => 'postStreet2',
             'type' => 'Text',
             'options' => [
-                'label' => 'Street line 2 (post2)',
+                'label' => 'Street line 2 (post)',
             ],
         ]);
         $this->add([
-            'name' => 'post2CityState',
+            'name' => 'postCityState',
             'type' => 'Text',
             'options' => [
-                'label' => 'City/State (post2)',
+                'label' => 'City/State (post)',
             ],
         ]);
         $this->add([
-            'name' => 'post2Zip',
+            'name' => 'postZip',
             'type' => 'Text',
             'options' => [
-                'label' => 'Zip/PLZ (post2)',
+                'label' => 'Zip/PLZ (post)',
             ],
         ]);
-        $this->add([
-            'name' => 'post2Country',
-            'type' => 'Select',
-            'options' => [
-                'label' => 'Country (post2)',
-                'empty_option' => '',
-                'unselected_value' => '',
-            ],
-            'attributes' => [
-                'required' => false
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'post2Country',
+//             'type' => 'Select',
+//             'options' => [
+//                 'label' => 'Country (post2)',
+//                 'empty_option' => '',
+//                 'unselected_value' => '',
+//             ],
+//             'attributes' => [
+//                 'required' => false
+//             ],
+//         ]);
 
         $this->add([
             'name' => 'contactNotes',

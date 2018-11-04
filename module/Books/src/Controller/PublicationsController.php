@@ -49,7 +49,7 @@ class PublicationsController extends SionController
             }
             $view->setVariable('entity', $entityObject);
         }
-        
+
         //get library results
         /** @var LibraryTable $libraryTable */
         $libraryTable = $this->services[LibraryTable::class];
@@ -74,7 +74,7 @@ class PublicationsController extends SionController
         }
         $view->setVariable('libraryBooks', $libraryBooks);
         $view->setVariable('libraries', $libraries);
-        
+
         //get comments
         /** @var PredicatesTable $predicates */
 //         $predicates = $this->services[PredicatesTable::class];
@@ -82,9 +82,9 @@ class PublicationsController extends SionController
 //             'objectId' => $publicationIds,
 //             'predicate'=> 'comment-publication'
 //         ]);
-        
+
 //         $view->setVariable('comments', $comments);
-        
+
         return $view;
     }
 
@@ -121,7 +121,7 @@ class PublicationsController extends SionController
         $languages  = $this->services['Books\LanguagesValueOptions'];
         $objects    = $table->searchPublications(['inLanguage' => $language], ['noSubEditions' => true]);
         $objects    = $this->groupPublicationsByCategory($objects);
-        
+
         $form = $this->services[PublicationsSearchForm::class];
         /** @var DriveGateway $gateway */
         $gateway = $this->services[DriveGateway::class];
@@ -142,7 +142,7 @@ class PublicationsController extends SionController
         ]);
         return $view;
     }
-    
+
     protected function groupPublicationsByCategory($objects)
     {
         //keyed by the category name, if we did the Id's it might re-sort our array
@@ -415,6 +415,23 @@ class PublicationsController extends SionController
             'entities' => $entities,
         ]);
         $view->setTemplate('books/publications/index');
+        return $view;
+    }
+
+    public function adminTasksAction()
+    {
+        /** @var PublicationsTable $table */
+        $table = $this->getSionTable();
+//         $updates = $table->fillNoAccentsColumns();
+        $updates = [];
+        $updates2 = $table->fillDatePublished();
+        $updates3 = $table->clearCopyrightYear();
+
+        //after performing these updates, delete the DatePublished field in favor of the  DatePublishedText field
+
+        $view = new ViewModel([
+            'updates' => $updates,
+        ]);
         return $view;
     }
 }

@@ -1339,6 +1339,31 @@ return [
                     ],
                 ],
             ],
+            'api-v1' => [
+                'type'    => Literal::class,
+                'options' => [
+                    // Change this to something specific to your module
+                    'route'    => '/api/v1',
+                    'defaults' => [
+//                         'controller'    => Controller\ShrinesApiController::class,
+                    ],
+                ],
+                'may_terminate' => false,
+                'child_routes' => [
+                    'shrines' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/shrines[/:association_id]',
+                            'defaults' => [
+                                'controller' => Controller\ShrinesApiController::class,
+                            ],
+                            'constraints' => [
+                                'person_id' => '[0-9]{1,5}',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ],
     ],
     'sion_model' => [
@@ -1642,8 +1667,8 @@ return [
                     'isActive'                  => 'IsActive',
 
                     'geoPoint'                  => 'Location',
-                    'latitude'                  => 'Latitude',
-                    'longitude'                 => 'Longitude',
+                    'latitude'                  => 'Latitude', //@deprecated
+                    'longitude'                 => 'Longitude', //@deprecated
                     'idealEn'                   => 'IdealEn',
                     'idealEs'                   => 'IdealEs',
                     'idealDe'                   => 'IdealDe',
@@ -1688,16 +1713,16 @@ return [
                     'facebookUrl'               => 'FacebookUrl',
                     'twitterUser'               => 'TwitterUser',
                     'instagramUser'             => 'InstagramUser',
-                    'post1Street1'              => 'Post1Street1',
-                    'post1Street2'              => 'Post1Street2',
-                    'post1CityState'            => 'Post1CityState',
-                    'post1Zip'                  => 'Post1Zip',
-                    'post1Country'              => 'Post1Country',
-                    'post2Street1'              => 'Post2Street1',
-                    'post2Street2'              => 'Post2Street2',
-                    'post2CityState'            => 'Post2CityState',
-                    'post2Zip'                  => 'Post2Zip',
-                    'post2Country'              => 'Post2Country',
+                    'street1'                   => 'Post1Street1',
+                    'street2'                   => 'Post1Street2',
+                    'cityState'                 => 'Post1CityState',
+                    'zip'                       => 'Post1Zip',
+//                     'country'              => 'Post1Country',
+                    'postStreet1'               => 'Post2Street1',
+                    'postStreet2'               => 'Post2Street2',
+                    'postCityState'             => 'Post2CityState',
+                    'postZip'                   => 'Post2Zip',
+                    'postCountry'               => 'Post2Country',
                     'contactNotes'              => 'ContactNotes',
                     'contactInfoUpdatedOn'      => 'ContactInfoUpdatedOn',
                     'contactInfoUpdatedBy'      => 'ContactInfoUpdatedBy',
@@ -1880,6 +1905,9 @@ return [
                 ['route' => 'roles/role', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/role/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/role/delete', 'roles' => ['sch_general_moderator']],
+
+                ['route' => 'api-v1/shrines', 'roles' => ['guest', 'user', null]],
+
             ],
         ],
     ],
