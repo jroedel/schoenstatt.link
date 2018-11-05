@@ -28,18 +28,20 @@ class ShrinesApiController extends AbstractRestfulController
     public function getList()
     {
         $params = $this->params()->fromQuery();
-        if (!isset($params['key'])) {
-            return $this->sendFailedMessage('Please pass the API key as the \'key\' query parameter.');
-        }
-        if (!$this->authenticateApiKey($params['key'])) {
-            return $this->sendFailedMessage('Invalid API key.');
-        }
+//         if (!isset($params['key'])) {
+//             return $this->sendFailedMessage('Please pass the API key as the \'key\' query parameter.');
+//         }
+//         if (!$this->authenticateApiKey($params['key'])) {
+//             return $this->sendFailedMessage('Invalid API key.');
+//         }
         $table = $this->schoenstattTable;
-        $persons = $table->getPersonValueOptions(false, true);
-        unset($persons['']);
+        $shrines = $table->getShrines();
+        $md5 = null;
+        $json = $table->getAssociationListSchema($shrines, $md5);
         return new JsonModel([
-            'data' => $persons,
-        ]);
+            'items' => $json,
+            'md5' => $md5,
+        ], ['prettyPrint' => true]);
     }
 
     public function get($id)
@@ -57,7 +59,7 @@ class ShrinesApiController extends AbstractRestfulController
         $table = $this->schoenstattTable;
 
         $shrine = $table->getAssociation($id);
-        $place = $table::getShrineSchema($shrine);
+        $place = $table->getAssociationSchema($shrine);
 
         if (!isset($place)) {
             return $this->sendFailedMessage('Invalid shrine requested.', 404);
