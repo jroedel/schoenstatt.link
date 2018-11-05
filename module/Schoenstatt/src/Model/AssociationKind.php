@@ -50,6 +50,11 @@ class AssociationKind
      */
     public $isSubDiocesanAssociation = false;
     /**
+     * A class name of a schema type of the Spatie/schema.org library
+     * @var string $schemaType
+     */
+    public $schemaType;
+    /**
      * A list of roles to automatically create when this kind is instantiated
      * @var array
      */

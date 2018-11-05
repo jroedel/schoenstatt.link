@@ -507,6 +507,7 @@ class SchoenstattTable extends SionTable implements
             $jsonGeo = Schema::geoCoordinates();
             $jsonGeo->latitude($geoPoint->latitude);
             $jsonGeo->longitude($geoPoint->longitude);
+            $jsonGeo->addressCountry($country);
         }
 
         $processedRow = [
@@ -623,31 +624,69 @@ class SchoenstattTable extends SionTable implements
 
     /**
      *
-     * @param mixed[] $association
+     * @param mixed[] $object
      * @return \Spatie\SchemaOrg\PlaceOfWorship
      */
-    public static function getShrineSchema($association)
+    public function getAssociationSchema($object)
     {
         $fieldMap = [
             'formattedName' => 'name',
+            'associationId' => 'identifier',
             'jsonAddress'   => 'address',
             'jsonTelephone' => 'telephone',
-            'jsonUrl'       => 'url',
+            'jsonUrl'       => 'sameAs',
             'jsonGeo'       => 'geo',
         ];
-        if ($association['kind'] == 'sch-shrine') {
-            $place = Schema::catholicChurch();
-        } elseif ($association['kind'] == 'sch-wayside-shrine') {
-            $place = Schema::placeOfWorship();
-        } else {
-            return null;
+        $place = null;
+        if (!isset($this->associationKinds[$object['kind']])) {
+            throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
+        $schemaType = $this->associationKinds[$object['kind']]->schemaType;
+        if (!isset($schemaType) || !class_exists($schemaType)) {
+            throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
+        }
+        $schema = new $schemaType;
+        $schema->url("https://schoenstatt.link/en/shrines/".$object['associationId']);
         foreach ($fieldMap as $field => $property) {
-            if (isset($association[$field])) {
-                $place->$property($association[$field]);
+            if (isset($object[$field])) {
+                $schema->$property($object[$field]);
             }
         }
-        return $place;
+        return $schema;
+    }
+
+    public function getAssociationListSchema($objects, &$resultingMd5)
+    {
+        $fieldMap = [
+            'associationId' => 'identifier',
+            'formattedName' => 'name',
+            'jsonGeo'       => 'geo',
+        ];
+        $schemata = [];
+        $md5s = [];
+        foreach ($objects as $associationId => $object) {
+            if (!isset($this->associationKinds[$object['kind']])) {
+                throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
+            }
+            $schemaType = $this->associationKinds[$object['kind']]->schemaType;
+            if (!isset($schemaType) || !class_exists($schemaType)) {
+                throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
+            }
+            $schema = new $schemaType;
+            $schema->url("https://schoenstatt.link/en/shrines/".$object['associationId']);
+            foreach ($fieldMap as $field => $property) {
+                if (isset($object[$field])) {
+                    $schema->$property($object[$field]);
+                }
+            }
+            $array = $schema->toArray();
+            $md5 = md5(json_encode($array));
+            $array['md5'] = $md5;
+            $md5s[] = $md5;
+            $schemata[] = $array;
+        }
+        $resultingMd5 = md5(json_encode($md5s));
+        return $schemata;
     }
 
     /**

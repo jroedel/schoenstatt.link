@@ -41,8 +41,8 @@ class AssociationFormFactory implements FactoryInterface
         $form->get('parentId')->setValueOptions($associations);
         $form->get('kind')->setValueOptions($kinds);
         $form->get('country')->setValueOptions($countryNames);
-        $form->get('post1Country')->setValueOptions($countryNames);
-        $form->get('post2Country')->setValueOptions($countryNames);
+//         $form->get('post1Country')->setValueOptions($countryNames);
+//         $form->get('post2Country')->setValueOptions($countryNames);
         return $form;
     }
 }

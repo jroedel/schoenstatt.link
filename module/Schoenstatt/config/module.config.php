@@ -41,6 +41,11 @@ use SionModel\Controller\SionControllerFactory;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Router\Http\Segment;
 use Zend\Router\Http\Literal;
+use Spatie\SchemaOrg\CatholicChurch;
+use Spatie\SchemaOrg\PlaceOfWorship;
+use Spatie\SchemaOrg\Organization;
+use Spatie\SchemaOrg\EducationalOrganization;
+use Spatie\SchemaOrg\WebSite;
 
 $leagueRoles = [
     [
@@ -260,6 +265,7 @@ return [
                 'sort'  => 100,
                 'label' => 'Schoenstatt movement international structure',
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Member',
@@ -275,6 +281,7 @@ return [
                 'label' => 'Schoenstatt institute',
                 'sort'  => 200,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'General superior',
@@ -314,6 +321,7 @@ return [
                 'sort'  => 250,
                 'label' => 'Federation international structure',
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Member',
@@ -331,6 +339,7 @@ return [
                 'name_format' => 'Schoenstatt Movement of %s',
                 'should_translate_name_parameter' => true,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Movement director',
@@ -364,6 +373,7 @@ return [
                 'name_format' => 'Schoenstatt Movement of %s',
                 'should_translate_name_parameter' => true,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Regional movement director',
@@ -387,6 +397,7 @@ return [
                 'label' => 'Schoenstatt national federation',
                 'sort'  => 499,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-priests-federation' => [
@@ -395,6 +406,7 @@ return [
                 'should_translate_name_parameter' => true,
                 'sort'  => 400,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-family-federation' => [
@@ -402,6 +414,7 @@ return [
                 'name_format' => 'Family federation of %s',
                 'should_translate_name_parameter' => true,
                 'sort'  => 410,
+                'schema_type' => Organization::class,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-mens-federation' => [
@@ -410,6 +423,7 @@ return [
                 'should_translate_name_parameter' => true,
                 'sort'  => 420,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-mothers-federation' => [
@@ -418,6 +432,7 @@ return [
                 'should_translate_name_parameter' => true,
                 'sort'  => 430,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-womens-federation' => [
@@ -426,12 +441,14 @@ return [
                 'should_translate_name_parameter' => true,
                 'sort'  => 440,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => $federationRoles,
             ],
             'sch-national-apostolate' => [
                 'sort'  => 490,
                 'label' => 'Schoenstatt national apostolate',
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -457,6 +474,7 @@ return [
                 'name_format' => 'Schoenstatt Shrine %s',
                 'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => CatholicChurch::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Rector',
@@ -480,6 +498,7 @@ return [
                 'sort'  => 498,
                 'label' => 'Schoenstatt wayside shrine',
                 'is_sub_diocesan_association' => false,
+                'schema_type' => PlaceOfWorship::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Public contact',
@@ -497,6 +516,7 @@ return [
                 'should_translate_name_parameter' => false, //don't translate diocese names, in general
                 'sort'  => 500,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Diocesan coordinator',
@@ -528,6 +548,7 @@ return [
                 'label' => 'Schoenstatt league branch',
                 'sort'  => 699,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-family-league-branch' => [
@@ -536,6 +557,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 610,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-mothers-league-branch' => [
@@ -544,6 +566,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 615,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-mens-league-branch' => [
@@ -552,6 +575,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 620,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-womens-league-branch' => [
@@ -560,6 +584,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 630,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-young-mens-league-branch' => [
@@ -568,6 +593,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 640,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-young-womens-league-branch' => [
@@ -576,6 +602,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 650,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-professionals-branch' => [
@@ -584,6 +611,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 660,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-madrugadores-branch' => [
@@ -592,6 +620,7 @@ return [
                 'should_translate_name_parameter' => false,
                 'sort'  => 670,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => $leagueRoles,
             ],
             'sch-diocesan-pilgrim-movement' => [
@@ -600,6 +629,7 @@ return [
                 'name_format' => 'Pilgrim movement of %s',
                 'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -633,6 +663,7 @@ return [
                 'name_format' => 'Diocesan Pilgrim Mother of %s',
                 'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -666,6 +697,7 @@ return [
                 'name_format' => 'Shrine ministry of %s',
                 'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -697,6 +729,7 @@ return [
                 'sort'  => 695,
                 'label' => 'Schoenstatt diocesan apostolate',
                 'is_sub_diocesan_association' => true,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Coordinator',
@@ -728,6 +761,7 @@ return [
                 'label' => 'Schoenstatt school',
                 'sort'  => 700,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => EducationalOrganization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Principal',
@@ -775,6 +809,7 @@ return [
                 'label' => 'Schoenstatt website',
                 'sort'  => 720,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => WebSite::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Movement contact',
@@ -790,6 +825,7 @@ return [
                 'label' => 'Schoenstatt magazine',
                 'sort'  => 740,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Movement contact',
@@ -805,6 +841,7 @@ return [
                 'label' => 'Other Schoenstatt entity',
                 'sort'  => 800,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Movement contact',
@@ -820,6 +857,7 @@ return [
                 'label' => 'Legal entity',
                 'sort'  => 900,
                 'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'President',
@@ -1581,7 +1619,7 @@ return [
                 'controller_services'                   => [
                     CountriesInfo::class,
                 ],
-                'get_object_function'                   => 'getSimpleBook',
+                'get_object_function'                   => 'getSimpleAssociation',
                 'get_objects_function'                  => 'getAssociations',
                 'name_field'                            => 'associationName',
                 'name_field_is_translateable'           => false,
@@ -1656,7 +1694,7 @@ return [
                     'associationId'             => 'AssociationId',
                     'name'                      => 'AssociationName',
                     'overrideNameFormat'        => 'OverrideNameFormat',
-                    'parentId'                    => 'Parent',
+                    'parentId'                  => 'Parent',
                     'kind'                      => 'Kind',
                     'country'                   => 'Country',
                     'foundationDate'            => 'FoundationDate',
