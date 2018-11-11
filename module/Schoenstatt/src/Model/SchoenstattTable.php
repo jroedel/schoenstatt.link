@@ -261,6 +261,7 @@ class SchoenstattTable extends SionTable implements
             //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
             //'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
             $select->columns(['AssociationId', 'AssociationName', 'Parent', 'Kind', 'OverrideNameFormat',
+            'InternalName', 'IsInternalNameTranslateable',
             'Country', 'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
             'IsActive', 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminTags',
             'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy', 'Email', 'Email2',
@@ -275,7 +276,7 @@ class SchoenstattTable extends SionTable implements
             'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
             'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
             'VisitorsInformationPt', 'VisitorsInformationFr',
-            'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr']);
+            'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr', 'SchemaOrgJsonMd5']);
             //         $select->group(['TheMonth', 'TheYear']);
             //         $select->where($predicate->in('ChangedEntity', $tableEntities));
 //             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
@@ -374,6 +375,7 @@ class SchoenstattTable extends SionTable implements
         $associationKindSpec = $this->associationKinds[$kind];
 
         $id = $this->filterDbId($row['AssociationId']);
+        $identifier = 'SL'.($id+10000).'A';
         //process URLs
         $unprocessedUrls = [
             ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
@@ -381,7 +383,12 @@ class SchoenstattTable extends SionTable implements
             ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
         ];
         $urls = $this::processUrls($unprocessedUrls);
-        $jsonUrl = $this::processJsonUrls($unprocessedUrls);
+        $jsonSameAs = $this::processJsonUrls($unprocessedUrls);
+        if ('sch-shrine' == $kind) {
+            $jsonUrl = "https://schoenstatt.link/en/shrines/".$id;
+        } else {
+            $jsonUrl = "https://schoenstatt.link/en/associations/".$id;
+        }
 
         $phones = [];
         $jsonTelephone = [];
@@ -501,6 +508,25 @@ class SchoenstattTable extends SionTable implements
                 $formattedName = $name;
             }
         }
+
+        $internalName = $row['InternalName'];
+        $isInternalNameTranslateable = $this->filterDbBool($row['IsInternalNameTranslateable']);
+        $internalDisplayName = null;
+        if (isset($internalName)) {
+            if ($isInternalNameTranslateable && $isTranslatorReady) {
+                $internalDisplayName = $this->translator->translate($internalName, 'Schoenstatt');
+            } else {
+                $internalDisplayName = $internalName;
+            }
+        } else {
+            $internalDisplayName = $formattedName;
+        }
+
+        $jsonAlternateName = null;
+        if ($internalDisplayName !== $formattedName) {
+            $jsonAlternateName = $internalDisplayName;
+        }
+
         $geoPoint = $this->filterDbGeoPoint($row['GeoPoint']);
         $jsonGeo = null;
         if (isset($geoPoint)) {
@@ -512,9 +538,11 @@ class SchoenstattTable extends SionTable implements
 
         $processedRow = [
             'associationId'         => $id,
+            'identifier'            => $identifier,
             'name'                  => $name,
             'overrideNameFormat'    => $overrideNameFormat,
-            'formattedName'         => $formattedName,
+            'internalName'              => $internalName,
+            'isInternalNameTranslateable' => $isInternalNameTranslateable,
             'parentId'              => $this->filterDbId($row['Parent']),
             'kind'                  => $kind,
             'country'               => $country,
@@ -548,7 +576,6 @@ class SchoenstattTable extends SionTable implements
 
             'sort'                  => $associationKindSpec->sort,
             'isSubDiocesan'         => $associationKindSpec->isSubDiocesanAssociation,
-            'resourceId'            => 'association_'.$id,
             'roles'                 => [],
             'assignments'           => [],
             'mainRole'              => null,
@@ -562,46 +589,43 @@ class SchoenstattTable extends SionTable implements
             /**
              * Contact fields
              */
-            'email'                     => $this->filterEmailString($row['Email']),
-            'email2'                    => $this->filterEmailString($row['Email2']),
-            'emailsUpdatedOn'           => $this->filterDbDate($row['EmailsUpdatedOn']),
-            'emailsUpdatedBy'           => $this->filterDbId($row['EmailsUpdatedBy']),
-            'phones'                    => $phones,
-            'phone1'                    => $phone1,
-            'phone1Label'               => $this->filterDbString($row['Phone1Label']),
-            'phone2'                    => $phone2,
-            'phone2Label'               => $this->filterDbString($row['Phone2Label']),
-            'phone3'                    => $phone3,
-            'phone3Label'               => $this->filterDbString($row['Phone3Label']),
-            'phonesUpdatedOn'           => $this->filterDbDate($row['PhonesUpdatedOn']),
-            'phonesUpdatedBy'           => $this->filterDbId($row['PhonesUpdatedBy']),
-            'urls'                      => $urls,
-            'url1'                      => $this->filterDbString($row['Url1']),
-            'url1Label'                 => $this->filterDbString($row['Url1Label']),
-            'url2'                      => $this->filterDbString($row['Url2']),
-            'url2Label'                 => $this->filterDbString($row['Url2Label']),
-            'url3'                      => $this->filterDbString($row['Url3']),
-            'url3Label'                 => $this->filterDbString($row['Url3Label']),
-            'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
-            'twitterUser'               => $this->filterDbString($row['TwitterUser']),
-            'instagramUser'             => $this->filterDbString($row['InstagramUser']),
-            'postAddresses'             => $addresses,
-            'street1'                   => $street1,
-            'street2'                   => $street2,
-            'cityState'                 => $cityState,
-            'zip'                       => $zip,
+            'email'                 => $this->filterEmailString($row['Email']),
+            'email2'                => $this->filterEmailString($row['Email2']),
+            'emailsUpdatedOn'       => $this->filterDbDate($row['EmailsUpdatedOn']),
+            'emailsUpdatedBy'       => $this->filterDbId($row['EmailsUpdatedBy']),
+            'phone1'                => $phone1,
+            'phone1Label'           => $this->filterDbString($row['Phone1Label']),
+            'phone2'                => $phone2,
+            'phone2Label'           => $this->filterDbString($row['Phone2Label']),
+            'phone3'                => $phone3,
+            'phone3Label'           => $this->filterDbString($row['Phone3Label']),
+            'phonesUpdatedOn'       => $this->filterDbDate($row['PhonesUpdatedOn']),
+            'phonesUpdatedBy'       => $this->filterDbId($row['PhonesUpdatedBy']),
+            'url1'                  => $this->filterDbString($row['Url1']),
+            'url1Label'             => $this->filterDbString($row['Url1Label']),
+            'url2'                  => $this->filterDbString($row['Url2']),
+            'url2Label'             => $this->filterDbString($row['Url2Label']),
+            'url3'                  => $this->filterDbString($row['Url3']),
+            'url3Label'             => $this->filterDbString($row['Url3Label']),
+            'facebookUrl'           => $this->filterDbString($row['FacebookUrl']),
+            'twitterUser'           => $this->filterDbString($row['TwitterUser']),
+            'instagramUser'         => $this->filterDbString($row['InstagramUser']),
+            'street1'               => $street1,
+            'street2'               => $street2,
+            'cityState'             => $cityState,
+            'zip'                   => $zip,
 //             'post1Country'              => $post1Country,
-            'postStreet1'              => $postStreet1,
-            'postStreet2'              => $postStreet2,
-            'postCityState'            => $postCityState,
-            'postZip'                  => $postZip,
+            'postStreet1'           => $postStreet1,
+            'postStreet2'           => $postStreet2,
+            'postCityState'         => $postCityState,
+            'postZip'               => $postZip,
 //             'post2Country'              => $post2Country,
-            'contactNotes'              => $this->filterDbString($row['ContactNotes']),
+            'contactNotes'          => $this->filterDbString($row['ContactNotes']),
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
 
-            'contactInfoUpdatedOn'      => $this->filterDbDate($row['ContactInfoUpdatedOn']),
-            'contactInfoUpdatedBy'      => $this->filterDbDate($row['ContactInfoUpdatedBy']),
+            'contactInfoUpdatedOn'  => $this->filterDbDate($row['ContactInfoUpdatedOn']),
+            'contactInfoUpdatedBy'  => $this->filterDbDate($row['ContactInfoUpdatedBy']),
 
             'publicNotes'           => $this->filterDbString($row['PublicNotes']),
             'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
@@ -614,9 +638,19 @@ class SchoenstattTable extends SionTable implements
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
 
+            'schemaOrgJsonMd5'      => $row['SchemaOrgJsonMd5'],
+
+            'postAddresses'         => $addresses,
+            'resourceId'            => 'association_'.$id,
+            'phones'                => $phones,
+            'urls'                  => $urls,
+            'formattedName'         => $formattedName,
+            'internalDisplayName'   => $internalDisplayName,
+            'jsonAlternateName'     => $jsonAlternateName,
             'jsonAddress'           => $jsonAddress,
             'jsonTelephone'         => $jsonTelephone,
             'jsonGeo'               => $jsonGeo,
+            'jsonSameAs'            => $jsonSameAs,
             'jsonUrl'               => $jsonUrl,
         ];
         return $processedRow;
@@ -625,19 +659,20 @@ class SchoenstattTable extends SionTable implements
     /**
      *
      * @param mixed[] $object
-     * @return \Spatie\SchemaOrg\PlaceOfWorship
+     * @return \Spatie\SchemaOrg\PlaceOfWorship|\Spatie\SchemaOrg\Organization
      */
     public function getAssociationSchema($object)
     {
         $fieldMap = [
-            'formattedName' => 'name',
-            'associationId' => 'identifier',
-            'jsonAddress'   => 'address',
-            'jsonTelephone' => 'telephone',
-            'jsonUrl'       => 'sameAs',
-            'jsonGeo'       => 'geo',
+            'formattedName'     => 'name',
+            'jsonAlternateName' => 'alternateName',
+            'identifier'        => 'identifier',
+            'jsonAddress'       => 'address',
+            'jsonTelephone'     => 'telephone',
+            'jsonSameAs'        => 'sameAs',
+            'jsonGeo'           => 'geo',
+            'jsonUrl'           => 'url',
         ];
-        $place = null;
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
@@ -646,7 +681,6 @@ class SchoenstattTable extends SionTable implements
             throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
         }
         $schema = new $schemaType;
-        $schema->url("https://schoenstatt.link/en/shrines/".$object['associationId']);
         foreach ($fieldMap as $field => $property) {
             if (isset($object[$field])) {
                 $schema->$property($object[$field]);
@@ -655,15 +689,20 @@ class SchoenstattTable extends SionTable implements
         return $schema;
     }
 
-    public function getAssociationListSchema($objects, &$resultingMd5)
+    public function getAssociationListSchema($objects, &$resultingMd5s)
     {
         $fieldMap = [
-            'associationId' => 'identifier',
-            'formattedName' => 'name',
-            'jsonGeo'       => 'geo',
+            'formattedName'     => 'name',
+            'jsonAlternateName' => 'alternateName',
+            'identifier'        => 'identifier',
+            'jsonAddress'       => 'address',
+            'jsonTelephone'     => 'telephone',
+            'jsonSameAs'        => 'sameAs',
+            'jsonGeo'           => 'geo',
+            'jsonUrl'           => 'url',
         ];
         $schemata = [];
-        $md5s = [];
+        $resultingMd5s = [];
         foreach ($objects as $associationId => $object) {
             if (!isset($this->associationKinds[$object['kind']])) {
                 throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
@@ -679,13 +718,10 @@ class SchoenstattTable extends SionTable implements
                     $schema->$property($object[$field]);
                 }
             }
+            $resultingMd5s[$associationId] = $object['schemaOrgJsonMd5'];
             $array = $schema->toArray();
-            $md5 = md5(json_encode($array));
-            $array['md5'] = $md5;
-            $md5s[] = $md5;
             $schemata[] = $array;
         }
-        $resultingMd5 = md5(json_encode($md5s));
         return $schemata;
     }
 
@@ -746,7 +782,7 @@ class SchoenstattTable extends SionTable implements
                 throw new \Exception('There was an unexpectedly no associationId on a new association');
             }
             $this->createAssociatedRoles($newData['associationId'], $newData['kind']);
-            if ($newData['kind'] == 'sch-diocesan-movement') {
+            if ($newData['kind'] === 'sch-diocesan-movement') {
                 foreach ($data as $key => $value) {
                     if (isset(self::ADD_LEAGUE_KINDS[$key]) && $value) {
                         $branchData = [
@@ -760,8 +796,32 @@ class SchoenstattTable extends SionTable implements
                 }
             }
         }
+        //Set the MD5 sum
+        $schema = $this->getAssociationSchema($newData);
+        $array = $schema->toArray();
+        $md5 = md5(json_encode($array));
+        $adapter = $this->getTableGateway('sch_associations');
+        $adapter->update(['SchemaOrgJsonMd5' => $md5], ['AssociationId' => $newData['associationId']]);
     }
 
+    /**
+     * Update the SchemaOrgJsonMd5 with the latest schema digests
+     */
+    public function updateAssociationMd5s()
+    {
+        //@todo afterwards, do all associations, not just shrines
+        $associations = $this->getShrines();
+        $return = [];
+        foreach ($associations as $associationId => $object) {
+            $schema = $this->getAssociationSchema($object);
+            $array = $schema->toArray();
+            $md5 = md5(json_encode($array));
+            $return[$object['associationId']] = $md5;
+            $adapter = $this->getTableGateway('sch_associations');
+            $adapter->update(['SchemaOrgJsonMd5' => $md5], ['AssociationId' => $object['associationId']]);
+        }
+        return $return;
+    }
 
     /**
      * Get a list of all non-sub-diocesan associations in a country
@@ -1808,6 +1868,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 //         foreach ($shrineResults as $assignment) {
 //             $shrines[$assignment['associationId']] = $assignment;
 //         }
+        //@todo we should just select the rows we need
         $objects = $this->getAssociations();
         $shrines = [];
         foreach ($objects as $associationId => $object) {
@@ -1862,7 +1923,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             if (!is_array($query['status'])) {
                 unset($query['status']);
             } else {
-                $statusAcceptNull == in_array('none', $query['status']);
+                $statusAcceptNull = in_array('none', $query['status']);
             }
         }
         $filter = new ToAscii();
@@ -2100,7 +2161,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
                     $mainRoleCount++;
                 }
             }
-            if ($mainRoleCount === 0 && $association['kind'] == 'sch-national-movement') {
+            if ($mainRoleCount === 0 && $association['kind'] === 'sch-national-movement') {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_ASSOCIATION_NO_MAIN_ROLE)
                     ->setData($association);

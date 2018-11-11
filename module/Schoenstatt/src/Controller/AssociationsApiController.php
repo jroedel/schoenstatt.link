@@ -5,11 +5,12 @@ use Zend\Mvc\Controller\AbstractRestfulController;
 use Zend\View\Model\JsonModel;
 use Patres\Model\PatresTable;
 use Schoenstatt\Model\SchoenstattTable;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
-class ShrinesApiController extends AbstractRestfulController
+class AssociationsApiController extends AbstractRestfulController
 {
     /**
-     * @var SchoenstattTable $patresTable
+     * @var SchoenstattTable $schoenstattTable
      */
     protected $schoenstattTable;
 
@@ -20,7 +21,7 @@ class ShrinesApiController extends AbstractRestfulController
 
     public function __construct(SchoenstattTable $schoenstattTable, array $config)
     {
-        $this->setIdentifierName('association_id');
+        $this->setIdentifierName('sw_id');
         $this->schoenstattTable = $schoenstattTable;
         $this->config = $config;
     }
@@ -36,18 +37,25 @@ class ShrinesApiController extends AbstractRestfulController
 //         }
         $table = $this->schoenstattTable;
         $shrines = $table->getShrines();
-        $md5 = null;
-        $json = $table->getAssociationListSchema($shrines, $md5);
+        $md5s = null;
+        $json = $table->getAssociationListSchema($shrines, $md5s);
+        $md5 = md5(json_encode($md5s));
         return new JsonModel([
-            'items' => $json,
-            'md5' => $md5,
+            'items'         => $json,
+            'locale'    => \Locale::getDefault(),
+            'md5'           => $md5,
+            'objectMd5s'    => $md5s,
         ], ['prettyPrint' => true]);
     }
 
     public function get($id)
     {
         if (!$id) {
-            return $this->sendFailedMessage('Invalid person requested.');
+            return $this->sendFailedMessage('Invalid association requested.');
+        }
+        $id = $this->processSiteWideIdentifier($id);
+        if (false === $id) {
+            return $this->sendFailedMessage('Invalid association requested.');
         }
 //         $params = $this->params()->fromQuery();
 //         if (!isset($params['key'])) {
@@ -64,7 +72,13 @@ class ShrinesApiController extends AbstractRestfulController
         if (!isset($place)) {
             return $this->sendFailedMessage('Invalid shrine requested.', 404);
         }
-        $view = new JsonModel($place->toArray(), ['prettyPrint' => true]);
+        $return = [
+            'apiUrl'    => 'https://schoenstatt.link/api/v1/associations/'.$shrine['identifier'],
+            'locale'    => \Locale::getDefault(),
+            'md5'       => $shrine['schemaOrgJsonMd5'],
+            'object'    => $place->toArray(),
+        ];
+        $view = new JsonModel($return, ['prettyPrint' => true]);
         return $view;
     }
 
@@ -95,5 +109,22 @@ class ShrinesApiController extends AbstractRestfulController
             }
         }
         return $result;
+    }
+
+    protected function processSiteWideIdentifier($identifier)
+    {
+        static $validator;
+        static $filter;
+        if (!isset($validator)) {
+            $validator = new SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION);
+        }
+        if (!$validator->isValid($identifier)) {
+            return false;
+        }
+
+        if (!isset($filter)) {
+            $filter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION);
+        }
+        return $filter->filter($identifier);
     }
 }

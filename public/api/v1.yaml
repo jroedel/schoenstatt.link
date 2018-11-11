@@ -1,0 +1,202 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: Schoenstatt Link
+  license:
+    name: Proprietary
+servers:
+  - url: 'https://schoenstatt.link/api/v1'
+paths:
+  /associations:
+    get:
+      summary: List all associations
+      operationId: listAssociations
+      tags:
+        - associations
+      responses:
+        '200':
+          description: An array of associations
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Associations'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /associations/findByKind:
+    get:
+      summary: List associations of the kind(s) specified
+      operationId: findAssociationsByKind
+      tags:
+        - associations
+      parameters:
+        - $ref: '#/components/parameters/association-kind'
+      responses:
+        '200':
+          description: An array of associations
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Associations'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/associations/{associationId}':
+    get:
+      summary: Info for a specific association
+      operationId: showAssociationById
+      tags:
+        - associations
+      parameters:
+        - name: associationId
+          in: path
+          required: true
+          description: The id of the association to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Associations'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/users/login':
+    post:
+      summary: Login
+      operationId: createAssociation
+      tags:
+        - users
+      responses:
+        '201':
+          description: Null response
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  parameters:
+    association-kind:
+      name: kind
+      in: query
+      description: The type of associations to return
+      required: true
+      schema:
+        type: string
+        enum: [sch-movement-international-structure, sch-institute, sch-federation-international-structure, sch-national-movement, sch-regional-organization, sch-national-federation, sch-national-priests-federation, sch-national-family-federation, sch-national-mens-federation, sch-national-mothers-federation, sch-national-womens-federation, sch-national-apostolate, sch-shrine, sch-wayside-shrine, sch-diocesan-movement, sch-league-branch, sch-family-league-branch, sch-mothers-league-branch, sch-mens-league-branch, sch-womens-league-branch, sch-young-mens-league-branch, sch-young-womens-league-branch, sch-professionals-branch, sch-madrugadores-branch, sch-diocesan-pilgrim-movement, sch-diocesan-pilgrim-mother, sch-shrine-ministry, sch-diocesan-apostolate, sch-school, sch-website, sch-magazine, sch-other, legal-entity]
+  schemas:
+    Association:
+      oneOf:
+      - $ref: '#/components/schemas/PlaceOfWorship'
+      - $ref: '#/components/schemas/Organization'
+    Associations:
+      type: array
+      items:
+        $ref: '#/components/schemas/Association'
+    Organization:
+      allOf:
+        - $ref: '#/components/schemas/Thing'
+    PlaceOfWorship:
+      allOf:
+        - $ref: '#/components/schemas/Thing'
+    Thing:
+      properties:
+        name:
+          type: string
+        alternateName:
+          description: An alias for the item.
+          type: string
+        address:
+          $ref: '#/components/schemas/PostalAddress'
+        telephone:
+          description: The telephone number.
+          type: string
+        sameAs:
+          description: URL of a reference Web page that unambiguously indicates the item
+            s identity. E.g. the URL of the item s Wikipedia page, Wikidata entry, or
+            official website.
+          type: string
+        url:
+          description: URL of the item.
+          type: string
+        geo:
+          $ref: '#/components/schemas/GeoCoordinates'
+        identifier:
+          description: The identifier property represents any kind of identifier for any
+            kind of Thing, such as ISBNs, GTIN codes, UUIDs etc. Schema.org provides dedicated
+            properties for representing many of these, either as textual strings or as
+            URL (URI) links. See background notes for more details.
+    GeoCoordinates:
+      description: The geographic coordinates of a place or event.
+      properties:
+        latitude:
+          description: The latitude of a location. For example 37.42242 (WGS 84).
+          type: number
+          format: float
+        longitude:
+          description: The longitude of a location. For example -122.08585 (WGS 84).
+          type: number
+          format: float
+        addressCountry:
+          description: The country. For example, USA. You can also provide the two-letter
+            ISO 3166-1 alpha-2 country code.
+    PostalAddress:
+      description: The mailing address.
+      properties:
+        streetAddress:
+          description: The street address. For example, 1600 Amphitheatre Pkwy.
+          type: string
+        addressCountry:
+          description: The country. Two-letter
+            ISO 3166-1 alpha-2 country code.
+        addressRegion:
+          description: The region. For example, CA.
+          type: string
+        postalCode:
+          description: The postal code. For example, 94043.
+          type: string
+        addressLocality:
+          description: The locality. For example, Mountain View.
+          type: string
+        description:
+          description: A description of the item.
+          type: string
+    Error:
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header

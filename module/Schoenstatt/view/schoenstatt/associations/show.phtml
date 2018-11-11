@@ -1,6 +1,12 @@
 <?php
 $object = $this->entity;
-if (!is_null($object['formattedName'])) {
+$publicName = null;
+if (isset($object['internalDisplayName'])) {
+    $name = $object['internalDisplayName'];
+    if ($object['internalDisplayName'] !== $object['formattedName']) {
+        $publicName = $object['formattedName'];
+    }
+} elseif (isset($object['formattedName'])) {
     $name = $object['formattedName'];
 } else {
     $name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
@@ -8,6 +14,7 @@ if (!is_null($object['formattedName'])) {
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($name);?>
 <h1><?php echo $this->escapeHtml($name);?></h1>
+<?php if (isset($publicName)):?><p>(<?php echo $this->escapeHtml($publicName);?>)</p><?php endif;?>
 <p><?php echo $this->formatEntity('association', $object, ['display' => 'kind']);?></p>
 <div class="row">
 <div class="col-md-9">
