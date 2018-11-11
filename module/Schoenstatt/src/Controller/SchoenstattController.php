@@ -52,6 +52,11 @@ class SchoenstattController extends AbstractActionController
         ]);
     }
 
+    public function v1Action()
+    {
+        return [];
+    }
+
     public function shrinesAction()
     {
         if (!$this->zfcUserAuthentication()->hasIdentity()) {

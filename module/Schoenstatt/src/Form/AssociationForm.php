@@ -20,8 +20,12 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             'name' => 'name',
             'type' => 'Text',
             'options' => [
-                'label' => 'Association name',
+                'label' => 'Name for the public',
                 'required' => true,
+                'help-block' => 'This is the name that would be published in Google Maps (if applicable). '
+                    .'Several association types include `name formats` that insert this field within a commonly '
+                    .'used format, for example `Schoenstatt movement of [name]`. This simplifies mass translation, '
+                    .'but can be overridden below.',
             ],
             'attributes' => [
                 'placeholder' => 'ex. Schoenstatt Fathers',
@@ -37,6 +41,9 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'unchecked_value' => '0',
                 'use_hidden_element' => true,
             ],
+            'attributes' => [
+                'value' => '0',
+            ],
         ]);
         $this->add([
             'name' => 'overrideNameFormat',
@@ -49,6 +56,35 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             ],
             'attributes' => [
                 'value'   => '0',
+            ],
+        ]);
+        $this->add([
+            'name' => 'internalName',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Name within Schoenstatt',
+                'required' => false,
+                'help-block' => 'This is the name that would be that will be shown to most users of the page '
+                    .'(supposing most users are Schoenstatters). This field has no name formats as the '
+                    .'public name field does. If the internal name would be the same as the public name, '
+                    .'please leave blank.',
+            ],
+            'attributes' => [
+                'placeholder' => 'ex. Exile Shrine',
+                'maxlength' => '200',
+            ],
+        ]);
+        $this->add([
+            'name' => 'isInternalNameTranslateable',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Should the internal name be translated?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value' => '1',
             ],
         ]);
         $this->add([
@@ -657,6 +693,34 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
             'isNameTranslateable' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
+                ],
+            ],
+            'internalName' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 200,
+                        ],
+                    ],
+                ],
+            ],
+            'isInternalNameTranslateable' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']

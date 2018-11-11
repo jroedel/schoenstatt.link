@@ -3,6 +3,7 @@ namespace Schoenstatt\Service;
 
 use Zend\I18n\Translator\TranslatorInterface;
 use Schoenstatt\Model\AssociationKind;
+use Zend\Mvc\I18n\Translator;
 
 class AssociationKindsService
 {
@@ -12,6 +13,9 @@ class AssociationKindsService
      */
     protected $associationKinds = [];
 
+    /**
+     * @var Translator $translator
+     */
     protected $translator;
 
     public function __construct($associationKindSpecifications, TranslatorInterface $translator)

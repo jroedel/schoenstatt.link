@@ -1365,6 +1365,15 @@ return [
                             ],
                         ],
                     ],
+                    'do-work' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/do-work',
+                            'defaults' => [
+                                'action'     => 'doWork',
+                            ],
+                        ],
+                    ],
                     'import' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -1383,20 +1392,22 @@ return [
                     // Change this to something specific to your module
                     'route'    => '/api/v1',
                     'defaults' => [
-//                         'controller'    => Controller\ShrinesApiController::class,
+                        'controller'    => Controller\SchoenstattController::class,
+                        'action' => 'v1',
                     ],
                 ],
-                'may_terminate' => false,
+                'may_terminate' => true,
                 'child_routes' => [
-                    'shrines' => [
+                    'associations' => [
                         'type'    => Segment::class,
                         'options' => [
-                            'route'    => '/shrines[/:association_id]',
+                            'route'    => '/associations[/:sw_id]',
                             'defaults' => [
-                                'controller' => Controller\ShrinesApiController::class,
+                                'action' => null,
+                                'controller' => Controller\AssociationsApiController::class,
                             ],
                             'constraints' => [
-                                'person_id' => '[0-9]{1,5}',
+                                'sw_id' => 'SL[12][0-9]{4,4}A',
                             ],
                         ],
                     ],
@@ -1694,13 +1705,15 @@ return [
                     'associationId'             => 'AssociationId',
                     'name'                      => 'AssociationName',
                     'overrideNameFormat'        => 'OverrideNameFormat',
+                    'isNameTranslateable'       => 'IsNameTranslateable',
+                    'internalName'              => 'InternalName',
+                    'isInternalNameTranslateable' => 'IsInternalNameTranslateable',
                     'parentId'                  => 'Parent',
                     'kind'                      => 'Kind',
                     'country'                   => 'Country',
                     'foundationDate'            => 'FoundationDate',
                     'suppressionDate'           => 'SuppressionDate',
                     'isLifeCommunity'           => 'IsLifeCommunity',
-                    'isNameTranslateable'       => 'IsNameTranslateable',
                     'isAuthor'                  => 'IsAuthor',
                     'isActive'                  => 'IsActive',
 
@@ -1932,6 +1945,7 @@ return [
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'associations/create', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
+                ['route' => 'associations/do-work', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/association/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/association/moderate', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/association/suggest', 'roles' => ['sch_user']],
@@ -1944,7 +1958,8 @@ return [
                 ['route' => 'roles/role/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/role/delete', 'roles' => ['sch_general_moderator']],
 
-                ['route' => 'api-v1/shrines', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v1', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v1/associations', 'roles' => ['guest', 'user', null]],
 
             ],
         ],

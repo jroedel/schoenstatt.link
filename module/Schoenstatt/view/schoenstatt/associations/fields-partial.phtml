@@ -11,7 +11,14 @@ echo $this->formHidden($form->get('associationId'));?>
     echo $this->formElement($form->get('overrideNameFormat'));
     echo $this->formElementErrors($form->get('overrideNameFormat')).'<br>';
     echo $this->formElement($form->get('isNameTranslateable'));
-    echo $this->formElementErrors($form->get('isNameTranslateable')).'<br>';
+    echo $this->formElementErrors($form->get('isNameTranslateable'));?>
+</div>
+<div class="form-group ">
+    <?php echo $this->formLabel($form->get('internalName'));
+    echo $this->formElement($form->get('internalName'));
+    echo $this->formElementErrors($form->get('internalName'));
+    echo $this->formElement($form->get('isInternalNameTranslateable'));
+    echo $this->formElementErrors($form->get('isInternalNameTranslateable')).'<br>';
     echo $this->formElement($form->get('isLifeCommunity'));
     echo $this->formElementErrors($form->get('isLifeCommunity')).'<br>';
     echo $this->formElement($form->get('isActive'));

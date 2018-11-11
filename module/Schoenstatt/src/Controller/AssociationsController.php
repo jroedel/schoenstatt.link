@@ -15,6 +15,7 @@ use SionModel\Controller\SionController;
 use Zend\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
 use Zend\Filter\StripTags;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 class AssociationsController extends SionController
 {
@@ -74,6 +75,13 @@ class AssociationsController extends SionController
             }
         }
         return $view;
+    }
+
+    public function doWorkAction()
+    {
+        $table = $this->getSionTable();
+        $result = $table->updateAssociationMd5s();
+        return ['result' => $result];
     }
 
     public function createDiocesesAction()
