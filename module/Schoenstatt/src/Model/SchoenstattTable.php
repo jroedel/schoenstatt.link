@@ -502,8 +502,8 @@ class SchoenstattTable extends SionTable implements
             ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
             ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
         ];
-        $urls = $this::processUrls($unprocessedUrls);
-        $jsonSameAs = $this::processJsonUrls($unprocessedUrls);
+        $urls = SionTable::processUrls($unprocessedUrls);
+        $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls);
         if ('sch-shrine' == $kind) {
             $jsonUrl = "https://schoenstatt.link/en/shrines/".$id;
         } else {
@@ -1114,7 +1114,7 @@ ORDER BY `LastName`, `FirstName`";
                 ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
                 ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
             ];
-            $urls = $this::processUrls($unprocessedUrls);
+            $urls = SionModel::processUrls($unprocessedUrls);
 
             $today = new \DateTime(null, $tz);
             $isLiving = !isset($deathDate);
