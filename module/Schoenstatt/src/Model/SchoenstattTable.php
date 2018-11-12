@@ -21,6 +21,10 @@ use SionModel\Db\GeoPoint;
 use Zend\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
 use Spatie\SchemaOrg\Schema;
+use Zend\Db\Sql\Predicate\Operator;
+use Zend\Db\Sql\Where;
+use Zend\Db\Sql\Predicate\PredicateSet;
+use Zend\Db\Sql\Predicate\In;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -114,6 +118,12 @@ class SchoenstattTable extends SionTable implements
     * @var AssociationKind[] $associationKinds
     */
     protected $associationKinds;
+
+    /**
+     * @var array $unlinkedAssociationsMemoryCache
+     */
+    protected $unlinkedAssociationsMemoryCache = [];
+
 
     /**
     * @var CountriesInfo $countriesInfo
@@ -309,6 +319,111 @@ class SchoenstattTable extends SionTable implements
         return $entities;
     }
 
+
+    public function searchAssociations($query, $options = [])
+    {
+
+        $fieldMap = $this->getEntitySpecification('association')->updateColumns;
+
+        $gateway = $this->getTableGateway('sch_associations');
+        $select = $this->getAssociationSelectPrototype();
+        $where = new Where();
+
+        $combination = (isset($options['orCombination']) && $options['orCombination']) ? PredicateSet::OP_OR : PredicateSet::OP_AND;
+
+        // Prepare associationId predicate
+        if (isset($query['associationId'])) {
+            $associationIdClause = null;
+            if (is_array($query['associationId'])) {
+                $associations = [];
+                foreach ($query['associationId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $associations)) {
+                        $associations[] = $value;
+                    }
+                }
+                if (count($associations) === 1) {
+                    $query['associationId'] = $associations[0];
+                } elseif (count($associations) > 1) {
+                    $associationIdClause= new In($fieldMap['associationId'], $associations);
+                }
+            }
+            if (is_numeric($query['associationId'])) {
+                $associationIdClause= new Operator($fieldMap['associationId'], Operator::OPERATOR_EQUAL_TO, $query['associationId']);
+            }
+            if (isset($associationIdClause)) {
+                $where->addPredicate($associationIdClause, $combination);
+            }
+        }
+
+        //prepare associationKind predicate
+        if (isset($query['kind'])) {
+            $associationKindClause= new Operator($fieldMap['kind'], Operator::OPERATOR_EQUAL_TO, $query['kind']);
+        }
+        if (isset($associationKindClause)) {
+            $where->addPredicate($associationKindClause, $combination);
+        }
+
+        //Set the where clause
+        $select->where($where);
+
+        if (isset($options['maxResults']) && is_numeric($options['maxResults'])) {
+            $select->limit($options['maxResults']);
+        }
+
+        if (isset($options['page']) && is_numeric($options['page'])) {
+            $resultsPerPage = isset($options['resultsPerPage']) && is_numeric($options['resultsPerPage']) ? $options['resultsPerPage'] : self::DEFAULT_RESULTS_PER_PAGE;
+            $select->offset($options['page'] * $resultsPerPage);
+        }
+
+        $results = $gateway->selectWith($select);
+        $entities = [];
+
+        foreach ($results as $row) {
+            $processedRow = $this->processAssociationRow($row);
+            $entities[$processedRow['associationId']] = $processedRow;
+        }
+
+        if (!isset($options['noLink']) || !$options['noLink']) {
+            $this->linkAssociations($entities);
+            $this->sortAssociationRowData($entities);
+        }
+
+        return $entities;
+    }
+
+    protected function linkAssociations(array &$objects)
+    {
+        $objectIds = array_keys($objects);
+
+        //collect list of "interesting" associationIds
+        $interestingIds = []; //starting point
+        foreach ($objects as $entityId => $object) {
+            if (isset($object['parentId']) &&
+                $object['parentId'] != $entityId
+            ) {
+                $interestingIds[] = $object['parentId'];
+            }
+        }
+
+        //search for all these publicationIds
+        $results = $this->searchAssociations([
+            'parentId' => $objectIds,
+            'associationId' => $interestingIds,
+        ], ['orCombination' => true, 'noLink' => true]);
+
+
+        foreach ($objects as $entityId => $entity) {
+            if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
+                $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
+                $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];
+            }
+        }
+
+        $this->connectEntityRolesAndAssignments('association', $entities);
+
+        //no return, by ref
+    }
+
     public function getSimpleAssociation($id)
     {
         static $gateway;
@@ -351,7 +466,7 @@ class SchoenstattTable extends SionTable implements
 
     protected function sortAssociationRowData(&$results)
     {
-        uasort($results, ['Schoenstatt\Model\SchoenstattTable', 'associationCompare']);
+        uasort($results, [SchoenstattTable::class, 'associationCompare']);
     }
 
 
@@ -365,6 +480,12 @@ class SchoenstattTable extends SionTable implements
 
     protected function processAssociationRow($row)
     {
+        $id = $this->filterDbId($row['AssociationId']);
+
+        if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
+            return $this->unlinkedAssociationsMemoryCache[$id];
+        }
+
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
         $areCountryTranslationsReady = isset($this->countryNameTranslations);
         $locale = $this->getLocale();
@@ -374,7 +495,6 @@ class SchoenstattTable extends SionTable implements
         }
         $associationKindSpec = $this->associationKinds[$kind];
 
-        $id = $this->filterDbId($row['AssociationId']);
         $identifier = 'SL'.($id+10000).'A';
         //process URLs
         $unprocessedUrls = [
@@ -653,6 +773,7 @@ class SchoenstattTable extends SionTable implements
             'jsonSameAs'            => $jsonSameAs,
             'jsonUrl'               => $jsonUrl,
         ];
+        $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
     }
 
@@ -810,7 +931,7 @@ class SchoenstattTable extends SionTable implements
     public function updateAssociationMd5s()
     {
         //@todo afterwards, do all associations, not just shrines
-        $associations = $this->getShrines();
+        $associations = $this->getAssociations();
         $return = [];
         foreach ($associations as $associationId => $object) {
             $schema = $this->getAssociationSchema($object);

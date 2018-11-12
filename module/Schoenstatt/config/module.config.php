@@ -1411,6 +1411,16 @@ return [
                             ],
                         ],
                     ],
+                    'find-by-kind' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/associations/findByKind',
+                            'defaults' => [
+                                'controller' => Controller\AssociationsApiController::class,
+                                'action'     => 'findByKind',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ],
@@ -1945,7 +1955,7 @@ return [
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'associations/create', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
-                ['route' => 'associations/do-work', 'roles' => ['sch_administrator']],
+                ['route' => 'associations/do-work', 'roles' => ['guest', 'user', null]], //uses api key authorization
                 ['route' => 'associations/association/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/association/moderate', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/association/suggest', 'roles' => ['sch_user']],
@@ -1960,6 +1970,7 @@ return [
 
                 ['route' => 'api-v1', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/associations', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v1/find-by-kind', 'roles' => ['guest', 'user', null]],
 
             ],
         ],

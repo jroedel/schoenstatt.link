@@ -36,9 +36,9 @@ class AssociationsApiController extends AbstractRestfulController
 //             return $this->sendFailedMessage('Invalid API key.');
 //         }
         $table = $this->schoenstattTable;
-        $shrines = $table->getShrines();
+        $objects = $table->getAssociations();
         $md5s = null;
-        $json = $table->getAssociationListSchema($shrines, $md5s);
+        $json = $table->getAssociationListSchema($objects, $md5s);
         $md5 = md5(json_encode($md5s));
         return new JsonModel([
             'items'         => $json,
@@ -66,20 +66,43 @@ class AssociationsApiController extends AbstractRestfulController
 //         }
         $table = $this->schoenstattTable;
 
-        $shrine = $table->getAssociation($id);
-        $place = $table->getAssociationSchema($shrine);
+        $object = $table->getAssociation($id);
+        $place = $table->getAssociationSchema($object);
 
         if (!isset($place)) {
             return $this->sendFailedMessage('Invalid shrine requested.', 404);
         }
         $return = [
-            'apiUrl'    => 'https://schoenstatt.link/api/v1/associations/'.$shrine['identifier'],
+            'apiUrl'    => 'https://schoenstatt.link/api/v1/associations/'.$object['identifier'],
             'locale'    => \Locale::getDefault(),
-            'md5'       => $shrine['schemaOrgJsonMd5'],
+            'md5'       => $object['schemaOrgJsonMd5'],
             'object'    => $place->toArray(),
         ];
         $view = new JsonModel($return, ['prettyPrint' => true]);
         return $view;
+    }
+
+    public function findByKindAction()
+    {
+        $kind = $this->params()->fromQuery('kind');
+        if (!isset($kind)) {
+            return $this->sendFailedMessage('Please pass a `kind` parameter.');
+        }
+        $kinds = array_keys($this->config['schoenstatt']['association_kinds']);
+        if (!in_array($kind, $kinds)) {
+            return $this->sendFailedMessage('Please pass a valid `kind` parameter.');
+        }
+        $table = $this->schoenstattTable;
+        $objects = $table->searchAssociations(['kind' => $kind]);
+        $md5s = null;
+        $json = $table->getAssociationListSchema($objects, $md5s);
+        $md5 = md5(json_encode($md5s));
+        return new JsonModel([
+            'items'         => $json,
+            'locale'        => \Locale::getDefault(),
+            'md5'           => $md5,
+            'objectMd5s'    => $md5s,
+        ], ['prettyPrint' => true]);
     }
 
     protected function sendFailedMessage($message, $statusCode = 401)

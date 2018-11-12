@@ -16,6 +16,7 @@ use Zend\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
 use Zend\Filter\StripTags;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use BjyAuthorize\Exception\UnAuthorizedException;
 
 class AssociationsController extends SionController
 {
@@ -79,6 +80,18 @@ class AssociationsController extends SionController
 
     public function doWorkAction()
     {
+        $key = $this->params()->fromQuery('key', null);
+        if (!isset($key)) {
+            throw new UnAuthorizedException();
+        }
+        $config = $this->config['sion_model'];
+        $apiKeys = isset($config['api_keys']) && is_array($config['api_keys']) ? $config['api_keys'] : [];
+        if (!in_array($key, $apiKeys)) {
+            throw new UnAuthorizedException();
+        }
+        /**
+         * @var SchoenstattTable $table
+         */
         $table = $this->getSionTable();
         $result = $table->updateAssociationMd5s();
         return ['result' => $result];
