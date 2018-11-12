@@ -1114,7 +1114,7 @@ ORDER BY `LastName`, `FirstName`";
                 ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
                 ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
             ];
-            $urls = SionModel::processUrls($unprocessedUrls);
+            $urls = SionTable::processUrls($unprocessedUrls);
 
             $today = new \DateTime(null, $tz);
             $isLiving = !isset($deathDate);

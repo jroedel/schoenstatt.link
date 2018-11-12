@@ -24,10 +24,10 @@ class AssociationsController extends SionController
     {
         $view = parent::showAction();
         //set nationalOrganizations
+        /** @var SchoenstattTable $table */
+        $table = $this->getSionTable();
         $association = $view->getVariable('entity');
         if ($association['kind'] == 'sch-national-movement' && !is_null($association['country'])) {
-            /** @var SchoenstattTable $table */
-            $table = $this->getSionTable();
             $nationalOrganizations = $table->getNationalAssociations($association['country']);
             if (key_exists($association['associationId'], $nationalOrganizations)) {
                 unset($nationalOrganizations[$association['associationId']]);
@@ -35,6 +35,8 @@ class AssociationsController extends SionController
             $association['nationalOrganizations'] = $nationalOrganizations;
             $view->setVariable('entity', $association);
         }
+        $schema = $table->getAssociationSchema($association);
+        $view->setVariable('schema', $schema);
 
         return $view;
     }

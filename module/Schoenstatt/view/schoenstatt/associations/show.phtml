@@ -1,4 +1,6 @@
 <?php
+use Spatie\SchemaOrg\Thing;
+
 $object = $this->entity;
 $publicName = null;
 if (isset($object['internalDisplayName'])) {
@@ -324,3 +326,9 @@ if ($this->isAllowed('route/associations/association/edit')) {
     echo $this->translate("Edit details")?></a>
 <?php endif;?>
 </div></div>
+<?php if (isset($this->schema)):
+    $schema = $this->schema;
+    if ($schema instanceof Thing) {
+        echo $schema->toScript();
+    }
+endif;?>
