@@ -25,6 +25,7 @@ use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
+use Spatie\SchemaOrg\Organization;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -505,10 +506,11 @@ class SchoenstattTable extends SionTable implements
         $urls = SionTable::processUrls($unprocessedUrls);
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls);
         if ('sch-shrine' == $kind) {
-            $jsonUrl = "https://schoenstatt.link/en/shrines/".$id;
+            $jsonIdentifier = "https://schoenstatt.link/en/shrines/".$identifier;
         } else {
-            $jsonUrl = "https://schoenstatt.link/en/associations/".$id;
+            $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
         }
+        $jsonApiUrl = "https://schoenstatt.link/en/api/v1/associations/".$identifier;
 
         $phones = [];
         $jsonTelephone = [];
@@ -766,12 +768,13 @@ class SchoenstattTable extends SionTable implements
             'urls'                  => $urls,
             'formattedName'         => $formattedName,
             'internalDisplayName'   => $internalDisplayName,
+            'jsonIdentifier'        => "https://schoenstatt.link/en/associations/".$identifier,
             'jsonAlternateName'     => $jsonAlternateName,
             'jsonAddress'           => $jsonAddress,
             'jsonTelephone'         => $jsonTelephone,
             'jsonGeo'               => $jsonGeo,
             'jsonSameAs'            => $jsonSameAs,
-            'jsonUrl'               => $jsonUrl,
+            'jsonApiUrl'            => $jsonApiUrl,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
@@ -780,19 +783,19 @@ class SchoenstattTable extends SionTable implements
     /**
      *
      * @param mixed[] $object
-     * @return \Spatie\SchemaOrg\PlaceOfWorship|\Spatie\SchemaOrg\Organization
+     * @return \Spatie\SchemaOrg\Thing
      */
     public function getAssociationSchema($object)
     {
         $fieldMap = [
             'formattedName'     => 'name',
             'jsonAlternateName' => 'alternateName',
-            'identifier'        => 'identifier',
+            'jsonIdentifier'    => 'identifier',
             'jsonAddress'       => 'address',
             'jsonTelephone'     => 'telephone',
             'jsonSameAs'        => 'sameAs',
             'jsonGeo'           => 'geo',
-            'jsonUrl'           => 'url',
+            'jsonApiUrl'        => 'apiUrl',
         ];
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
@@ -804,7 +807,7 @@ class SchoenstattTable extends SionTable implements
         $schema = new $schemaType;
         foreach ($fieldMap as $field => $property) {
             if (isset($object[$field])) {
-                $schema->$property($object[$field]);
+                $schema->setProperty($property, $object[$field]);
             }
         }
         return $schema;

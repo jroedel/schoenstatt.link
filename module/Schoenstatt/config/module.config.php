@@ -1294,9 +1294,9 @@ return [
                     'association' => [
                         'type'    => Segment::class,
                         'options' => [
-                            'route'    => '/:association_id',
+                            'route'    => '/SL10:association_id:A',
                             'constraints' => [
-                                'course_id' => '[0-9]{1,5}',
+                                ':association_id' => '[0-9]{1,5}',
                             ],
                             'defaults' => [
                                 'controller' => Controller\AssociationsController::class,
