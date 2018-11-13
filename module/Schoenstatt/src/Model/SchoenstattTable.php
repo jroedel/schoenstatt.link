@@ -82,6 +82,18 @@ class SchoenstattTable extends SionTable implements
         'addFamilyBranch' => 'sch-family-league-branch',
     ];
 
+    const ASSOCIATION_SCHEMA_FIELD_MAP = [
+        'formattedName'     => 'name',
+        'jsonAlternateName' => 'alternateName',
+        'jsonIdentifier'    => 'identifier',
+        'jsonAddress'       => 'address',
+        'jsonTelephone'     => 'telephone',
+        'jsonSameAs'        => 'sameAs',
+        'jsonGeo'           => 'geo',
+        'jsonApiUrl'        => 'apiUrl',
+        'publicNotes'       => 'description',
+    ];
+
     /**
      * Schoenstatt config
      * @var mixed[]
@@ -572,6 +584,8 @@ class SchoenstattTable extends SionTable implements
 
     protected function processAssociationRow($row)
     {
+        static $twitterUrlPattern;
+        static $instagramUrlPattern;
         $id = $this->filterDbId($row['AssociationId']);
 
         if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
@@ -592,14 +606,35 @@ class SchoenstattTable extends SionTable implements
         $associationKindSpec = $this->associationKinds[$kind];
 
         $identifier = 'SL'.($id+10000).'A';
+
         //process URLs
         $unprocessedUrls = [
             ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
             ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
             ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
         ];
+
+        $facebookUrl = $this->filterDbString($row['FacebookUrl']);
+        $twitterUser = $this->filterDbString($row['TwitterUser']);
+        $instagramUser = $this->filterDbString($row['InstagramUser']);
+        if (isset($facebookUrl)) {
+            $unprocessedUrls[] = ['url' => $facebookUrl, 'label' => 'Facebook'];
+        }
+        if (isset($twitterUser)) {
+            if (!isset($twitterUrlPattern)) {
+                $twitterUrlPattern = "https://twitter.com/%s";
+            }
+            $unprocessedUrls[] = ['url' => sprintf($twitterUrlPattern, $twitterUser), 'label' => 'Twitter'];
+        }
+        if (isset($instagramUser)) {
+            if (!isset($instagramUrlPattern)) {
+                $instagramUrlPattern = "https://instagram.com/%s";
+            }
+            $unprocessedUrls[] = ['url' => sprintf($instagramUrlPattern, $instagramUser), 'label' => 'Instagram'];
+        }
+
         $urls = SionTable::processUrls($unprocessedUrls);
-        $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls);
+        $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
         if ('sch-shrine' == $kind) {
             $jsonIdentifier = "https://schoenstatt.link/en/shrines/".$identifier;
         } else {
@@ -749,7 +784,9 @@ class SchoenstattTable extends SionTable implements
             $jsonGeo = Schema::geoCoordinates();
             $jsonGeo->latitude($geoPoint->latitude);
             $jsonGeo->longitude($geoPoint->longitude);
-            $jsonGeo->addressCountry($country);
+            if (isset($country)) {
+                $jsonGeo->addressCountry($country);
+            }
         }
 
         $processedRow = [
@@ -824,9 +861,9 @@ class SchoenstattTable extends SionTable implements
             'url2Label'             => $this->filterDbString($row['Url2Label']),
             'url3'                  => $this->filterDbString($row['Url3']),
             'url3Label'             => $this->filterDbString($row['Url3Label']),
-            'facebookUrl'           => $this->filterDbString($row['FacebookUrl']),
-            'twitterUser'           => $this->filterDbString($row['TwitterUser']),
-            'instagramUser'         => $this->filterDbString($row['InstagramUser']),
+            'facebookUrl'           => $facebookUrl,
+            'twitterUser'           => $twitterUser,
+            'instagramUser'         => $instagramUser,
             'street1'               => $street1,
             'street2'               => $street2,
             'cityState'             => $cityState,
@@ -882,16 +919,6 @@ class SchoenstattTable extends SionTable implements
      */
     public function getAssociationSchema($object)
     {
-        $fieldMap = [
-            'formattedName'     => 'name',
-            'jsonAlternateName' => 'alternateName',
-            'jsonIdentifier'    => 'identifier',
-            'jsonAddress'       => 'address',
-            'jsonTelephone'     => 'telephone',
-            'jsonSameAs'        => 'sameAs',
-            'jsonGeo'           => 'geo',
-            'jsonApiUrl'        => 'apiUrl',
-        ];
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
@@ -900,7 +927,7 @@ class SchoenstattTable extends SionTable implements
             throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
         }
         $schema = new $schemaType;
-        foreach ($fieldMap as $field => $property) {
+        foreach (self::ASSOCIATION_SCHEMA_FIELD_MAP as $field => $property) {
             if (isset($object[$field])) {
                 $schema->setProperty($property, $object[$field]);
             }
@@ -910,16 +937,6 @@ class SchoenstattTable extends SionTable implements
 
     public function getAssociationListSchema($objects, &$resultingMd5s)
     {
-        $fieldMap = [
-            'formattedName'     => 'name',
-            'jsonAlternateName' => 'alternateName',
-            'identifier'        => 'identifier',
-            'jsonAddress'       => 'address',
-            'jsonTelephone'     => 'telephone',
-            'jsonSameAs'        => 'sameAs',
-            'jsonGeo'           => 'geo',
-            'jsonUrl'           => 'url',
-        ];
         $schemata = [];
         $resultingMd5s = [];
         foreach ($objects as $associationId => $object) {
@@ -932,7 +949,7 @@ class SchoenstattTable extends SionTable implements
             }
             $schema = new $schemaType;
             $schema->url("https://schoenstatt.link/en/shrines/".$object['associationId']);
-            foreach ($fieldMap as $field => $property) {
+            foreach (self::ASSOCIATION_SCHEMA_FIELD_MAP as $field => $property) {
                 if (isset($object[$field])) {
                     $schema->$property($object[$field]);
                 }
