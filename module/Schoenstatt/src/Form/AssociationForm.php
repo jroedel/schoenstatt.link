@@ -16,6 +16,15 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
 
     public function init()
     {
+        $urlLabels = [
+            'Blog' => 'Blog',
+            'G+' => 'G+',
+            'Information' => 'Information',
+            'Map' => 'Map',
+            'Media' => 'Media',
+            'Personal website' => 'Personal website',
+        ];
+
         $this->add([
             'name' => 'name',
             'type' => 'Text',
@@ -84,7 +93,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'use_hidden_element' => true,
             ],
             'attributes' => [
-                'value' => '1',
+                'value' => '0',
             ],
         ]);
         $this->add([
@@ -382,13 +391,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'empty_option' => '',
                 'disable_inarray_validator' => true,
                 'unselected_value' => '',
-                'value_options' => [
-                    'Blog' => 'Blog',
-                    'G+' => 'G+',
-                    'Personal website' => 'Personal website',
-                    'Map' => 'Map',
-                    'Information' => 'Information',
-                ],
+                'value_options' => $urlLabels,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -417,13 +420,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'disable_inarray_validator' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
-                'value_options' => [
-                    'Blog' => 'Blog',
-                    'G+' => 'G+',
-                    'Personal website' => 'Personal website',
-                    'Map' => 'Map',
-                    'Information' => 'Information',
-                ],
+                'value_options' => $urlLabels,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -452,13 +449,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'disable_inarray_validator' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
-                'value_options' => [
-                    'Blog' => 'Blog',
-                    'G+' => 'G+',
-                    'Personal website' => 'Personal website',
-                    'Map' => 'Map',
-                    'Information' => 'Information',
-                ],
+                'value_options' => $urlLabels,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -572,7 +563,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             'name' => 'publicNotes',
             'type' => 'Textarea',
             'options' => [
-                'label' => 'Public notes',
+                'label' => 'Description',
                 'required' => false,
             ],
             'attributes' => [
