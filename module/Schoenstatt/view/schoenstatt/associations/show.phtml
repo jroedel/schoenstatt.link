@@ -49,6 +49,7 @@ $this->headTitle($name);?>
             }?></p>
             <?php
             if (isset($object['geoPoint'])) :
+                //https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
                 //'http://www.openstreetmap.org/?lat=%s&lon=%s&zoom=15&layers=M'
                 $geoUrlFormat = 'https://www.openstreetmap.org/?mlat=%s&mlon=%s#map=14/%s/%s&layers=N';
                 $mapUrl = sprintf(
