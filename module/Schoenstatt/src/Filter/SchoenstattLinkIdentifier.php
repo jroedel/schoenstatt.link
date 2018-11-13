@@ -5,17 +5,28 @@ use Zend\Filter\AbstractFilter;
 
 class SchoenstattLinkIdentifier extends AbstractFilter
 {
+    const ENTITY_ASSOCIATION = 'association';
+    const ENTITY_PERSON  = 'person';
+    const ENTITY_PUBLICATION = 'publication';
+
     protected $pattern;
 
     protected $baseNumber;
 
-    public function __construct($entityType)
+    public function __construct($entityType = null)
     {
-        if (!isset(\Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType])) {
+        if (isset($entityType)
+            && !isset(\Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType])
+        ) {
             throw new \Exception("Invalid entity type `$entityType`");
         }
-        $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType];
-        $this->baseNumber = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_STARTING_NUMBER[$entityType];
+        $this->entityType = $entityType;
+        if (!isset($entityType)) {
+            $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::GENERAL_REGEX;
+        } else {
+            $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType];
+            $this->baseNumber = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_STARTING_NUMBER[$entityType];
+        }
     }
 
     public function filter($value)
@@ -29,7 +40,18 @@ class SchoenstattLinkIdentifier extends AbstractFilter
 
         if (isset($matches) && isset($matches[1]) && isset($matches[1][0])) {
             $number = (int)$matches[1][0];
-            return $number-$this->baseNumber;
+            if (isset($this->baseNumber)) {
+                $baseNumber = $this->baseNumber;
+            } else {
+                if (isset($matches[1]) && isset($matches[2][0])) {
+                    $entityTypeAbbr = $matches[2][0];
+                    $entityType = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_TYPE_ABBRS[$entityTypeAbbr];
+                    $baseNumber = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_STARTING_NUMBER[$entityType];
+                } else {
+                    throw \Exception('We should never be here.');
+                }
+            }
+            return $number-$baseNumber;
         }
     }
 }
