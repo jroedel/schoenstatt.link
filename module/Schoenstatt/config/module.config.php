@@ -498,6 +498,8 @@ return [
             'sch-wayside-shrine' => [
                 'sort'  => 498,
                 'label' => 'Schoenstatt wayside shrine',
+                'name_format' => 'Schoenstatt wayside shrine %s',
+                'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => false,
                 'schema_type' => PlaceOfWorship::class,
                 'default_roles' => [
@@ -1966,7 +1968,7 @@ return [
                 ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'associations/create', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/do-work', 'roles' => ['guest', 'user', null]], //uses api key authorization

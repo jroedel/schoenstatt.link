@@ -61,6 +61,12 @@ class AssociationsController extends SionController
         /** @var SchoenstattTable $table */
         $table = $this->getSionTable();
         $association = $view->getVariable('entity');
+        if (!$this->zfcUserAuthentication()->hasIdentity()
+            && $association['kind'] !== 'sch-shrine'
+            && $association['kind'] !== 'sch-wayside-shrine'
+        ) {
+            return $this->redirect()->toRoute('welcome');
+        }
         if ($association['kind'] == 'sch-national-movement' && !is_null($association['country'])) {
             $nationalOrganizations = $table->getNationalAssociations($association['country']);
             if (key_exists($association['associationId'], $nationalOrganizations)) {

@@ -22,25 +22,25 @@ class IndexController extends AbstractActionController
      * @var Navigation $navigation
      */
     protected $navigation;
-    
+
     /**
      * @var PublicationsTable $publicationsTable
      */
     protected $publicationsTable;
-    
+
     /**
      *
      * @var SchoenstattTable $schoenstattTable
      */
     protected $schoenstattTable;
-    
+
     public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable)
     {
         $this->navigation = $navigation;
         $this->publicationsTable = $publicationsTable;
         $this->schoenstattTable = $schoenstattTable;
     }
-    
+
     public function indexAction()
     {
         $changeCounts = $this->get6MonthsChanges();
@@ -107,6 +107,18 @@ class IndexController extends AbstractActionController
             ]);
         }
 
+        $shrinesPage = $navigation->findOneBy('route', 'shrines');
+
+        $shrines = $this->schoenstattTable->getShrines();
+
+        foreach ($shrines as $associationId => $object) {
+            $url = $this->url()->fromRoute('associations/association', ['sw_id' => $object['identifier']]);
+            $shrinesPage->addPage([
+                'label' => $object['formattedName'],
+                'uri' => $url,
+                'id'    => 'assoc_'.$object['identifier'],
+            ]);
+        }
 
         // Explicitly set type to text/xml, otherwise it's text/html
         $this->getResponse()->getHeaders()->addHeaderLine(
