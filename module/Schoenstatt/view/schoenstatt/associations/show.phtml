@@ -117,12 +117,12 @@ $this->headTitle($name);?>
         <div class="col-xs-6">
             <?php if ($this->isAllowed('route/associations/association/edit')): ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
-                    echo $this->url('associations/association/edit', array('association_id' => $entity['associationId']));?>">
+                    echo $this->url('associations/association/edit', ['sw_id' => $entity['identifier']]);?>">
                     <?php echo $this->translate('Edit association');?></a>
                 </span>
             <?php elseif ($this->isAllowed('route/associations/association/suggest')):?>
                 <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('associations/association/suggest', array('association_id' => $entity['associationId']));?>">
+                    echo $this->url('associations/association/suggest', ['sw_id' => $entity['identifier']]);?>">
                     <?php echo $this->translate('Suggest change');?></a>
                 </span>
             <?php endif;?>
@@ -322,7 +322,7 @@ if ($this->isAllowed('route/associations/association/edit')) {
 <div class="row"><div class="col-md-12">
 <?php if ($this->isAllowed('route/associations/association/edit')): ?>
       <a class="btn btn-primary" href="<?php echo $this->url('associations/association/edit',
-          ['association_id' => $object['associationId']]);?>"><?php
+          ['sw_id' => $object['identifier']]);?>"><?php
     echo $this->translate("Edit details")?></a>
 <?php endif;?>
 </div></div>

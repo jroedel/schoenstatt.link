@@ -26,6 +26,7 @@ use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
 use Spatie\SchemaOrg\Organization;
+use Schoenstatt\Filter\SchoenstattLinkIdentifier;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -135,6 +136,11 @@ class SchoenstattTable extends SionTable implements
 
     protected $addressFieldMap = [];
 
+    protected $swFilter;
+
+    protected $swValidator;
+    protected $swValidators = [];
+
     public function __construct(
         AdapterInterface $dbAdapter,
         $serviceLocator,
@@ -165,6 +171,51 @@ class SchoenstattTable extends SionTable implements
             'zip'       => 'postalCode',
             'country'   => 'addressCountry',
         ];
+        $this->swFilter = new SchoenstattLinkIdentifier();
+        $this->swValidator = new \Schoenstatt\Validator\SchoenstattLinkIdentifier();
+    }
+
+    /**
+     *
+     * {@inheritDoc}
+     * @see \SionModel\Db\Model\SionTable::existsEntity()
+     */
+    public function existsEntity($entity, $id)
+    {
+        if ('association' === $entity && is_string($id) && substr( $id, 0, 2 ) === "SL") {
+            $id = $this->filterSwId($id, 'association');
+        }
+        return parent::existsEntity($entity, $id);
+    }
+    /**
+     * Validate and filter a site-wide identifier. Return false if it's not valid.
+     *
+     * @param string $swId
+     * @param string $entityType
+     * @return boolean|number
+     */
+    public function filterSwId($swId, $entityType = null)
+    {
+        //first validate
+        if (!isset($entityType)) {
+            if (!$this->swValidator->isValid($swId)) {
+                return false;
+            }
+        } else {
+            if (!isset($this->swValidators[$entityType])) {
+                $this->swValidators[$entityType] = new \Schoenstatt\Validator\SchoenstattLinkIdentifier($entityType);
+            }
+            if (!$this->swValidators[$entityType]->isValid($swId)) {
+                return false;
+            }
+        }
+
+        //then filter
+        $id = $this->swFilter->filter($swId);
+        if ($id < 0) {
+            return false;
+        }
+        return $id;
     }
 
     /**
@@ -425,6 +476,25 @@ class SchoenstattTable extends SionTable implements
         //no return, by ref
     }
 
+    /**
+     * A proxy for getSimpleAssociation, first translating the swId to a normal associationId
+     * @param string $swId
+     * @return null|mixed[]
+     */
+    public function getSimpleAssociationBySwId($swId)
+    {
+        if (false === ($id = $this->filterSwId($swId))) {
+            return null;
+        }
+        return $this->getSimpleAssociation($id);
+    }
+
+    /**
+     * Get an association array without linking it to related objects
+     *
+     * @param int $id
+     * @return mixed[]
+     */
     public function getSimpleAssociation($id)
     {
         static $gateway;

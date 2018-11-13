@@ -20,6 +20,21 @@ use BjyAuthorize\Exception\UnAuthorizedException;
 
 class AssociationsController extends SionController
 {
+    public function sendToNewUrl()
+    {
+        $associationId = $this->params()->fromRoute('association_id');
+        /** @var SchoenstattTable $table */
+        $table = $this->getSionTable();
+        $object = $table->getSimpleAssociation($associationId);
+        if (!isset($object)) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+            ->addMessage(ucwords($this->entity).' not found.');
+            $redirectRoute = 'associations';
+            return $this->redirect()->toRoute($redirectRoute);
+        }
+        return $this->redirect()->toRoute('associations/association', ['sw_id' => $object['identifier']]);
+    }
+
     public function showAction()
     {
         $view = parent::showAction();

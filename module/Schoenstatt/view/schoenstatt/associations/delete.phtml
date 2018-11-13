@@ -4,7 +4,7 @@ $this->headTitle($headText); ?>
 <?php
 $form = $this->form;
 $form->setAttribute('action', $this->url('associations/association/delete',
-		array('association_id' => $this->entityId)));
+    ['sw_id' => $this->entityObject['identifier']]));
 $form->prepare();
 echo $this->form()->openTag($form);
 echo $this->formRow($form->get('security'));

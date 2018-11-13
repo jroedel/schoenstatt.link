@@ -69,7 +69,7 @@ class FormatAssociation extends AbstractHelper
         if ($displayAsLink && $permissionToViewLink) {
             $url = $this->view->url(
                 'associations/association',
-                ['association_id' => $data['associationId']]
+                ['sw_id' => $data['identifier']]
             );
             $finalMarkup .= sprintf(
                 '<a href="%s">%s</a>',

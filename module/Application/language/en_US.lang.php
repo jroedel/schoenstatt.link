@@ -13,6 +13,7 @@ return [
     'Learn more' => 'Learn more',
     'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.' => 'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Founder. Help us by completing our bibliography of Father Kentenich and Schoenstatt in all languages and writing brief book summaries.',
     'publication edits' => 'publication edits',
+    'Register' => 'Register',
     'schoenstatt edits' => 'schoenstatt edits',
     'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!' => 'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!',
     'Schoenstatt Link' => 'Schoenstatt Link',

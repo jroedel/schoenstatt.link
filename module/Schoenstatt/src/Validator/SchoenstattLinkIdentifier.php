@@ -9,7 +9,13 @@ class SchoenstattLinkIdentifier extends Regex
     const ENTITY_PERSON  = 'person';
     const ENTITY_PUBLICATION = 'publication';
 
-    const GENERAL_REGEX = '/^SL([0-9]{5,5})[APL]$/';
+    const ENTITY_TYPE_ABBRS = [
+        'A' => self::ENTITY_ASSOCIATION,
+        'P' => self::ENTITY_PERSON,
+        'L' => self::ENTITY_PUBLICATION,
+    ];
+
+    const GENERAL_REGEX = '/^SL([0-9]{5,5})([APL])$/';
     const ENTITY_REGEXs = [
         self::ENTITY_ASSOCIATION => '/^SL([0-9]{5,5})A$/',
         self::ENTITY_PERSON => '/^SL([0-9]{5,5})P$/',
