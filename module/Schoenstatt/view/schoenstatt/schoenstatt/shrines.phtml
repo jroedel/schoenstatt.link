@@ -2,17 +2,30 @@
 $headText = 'Schoenstatt Shrines';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
-
 <?php
 // echo $this->partial('search-bar', ['form' => $form, 'centerOnPage' => false]);
-echo $this->partial('schoenstatt/associations/associations-table', [
-    'objects' => $this->shrines,
-//     'wrapInPanel' => true,
-//     'showActive' => true,
-//     'showInactive' => false,
-//     'headerText'  => 'Shrines of the world',
-//     'columns'       => ['association'], //'person', 'email', 'telephone'],
-//     'associationFormatOptions' => [
-//         'showLabel' => false,
-//     ],
-]);
+
+//separate by countryRegion
+$regions = [];
+foreach ($this->shrines as $associationId => $object) {
+    if (!isset($regions[$object['countryRegion']])) {
+        $regions[$object['countryRegion']] = [];
+    }
+    $regions[$object['countryRegion']][$associationId] = $object;
+}
+foreach ($regions as $region => $objects) :?>
+<h3><?php echo $this->translate($region);?></h2>
+<?php
+    echo $this->partial('schoenstatt/associations/associations-table', [
+        'objects' => $objects,
+        //     'wrapInPanel' => true,
+    //     'showActive' => true,
+    //     'showInactive' => false,
+    //     'headerText'  => 'Shrines of the world',
+    //     'columns'       => ['association'], //'person', 'email', 'telephone'],
+    //     'associationFormatOptions' => [
+        //         'showLabel' => false,
+    //     ],
+    ]);
+endforeach;?>
+<p><?php echo $this->translate('Initial shrine database courtesy of Matías Fortuño.');?></p>

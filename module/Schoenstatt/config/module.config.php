@@ -1945,7 +1945,7 @@ return [
     'bjyauthorize' => [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'shrines', 'roles' => ['sch_basic', 'sch_user']],
+                ['route' => 'shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
                 ['route' => 'admin/maintenance', 'roles' => ['administrator']],

@@ -166,12 +166,8 @@ class SchoenstattTable extends SionTable implements
         $this->associationKinds = $kindsService->getAssociationKinds();
 
         if (!$this->countryNameTranslations = $this->fetchCachedEntityObjects('country-name-translations')) {
-            if ($serviceLocator->has(CountriesInfo::class)) {
-                /** @var \JTranslate\Model\CountriesInfo $countriesInfo */
-                $countriesInfo = $serviceLocator->get(CountriesInfo::class);
-                $this->countryNameTranslations = $countriesInfo->getCountryNameTranslations();
-                $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
-            }
+            $this->countryNameTranslations = $countriesInfo->getCountryNameTranslations();
+            $this->cacheEntityObjects('country-name-translations', $this->countryNameTranslations);
         }
         $this->countriesInfo = $countriesInfo;
         $this->addressFieldMap = [
@@ -574,6 +570,10 @@ class SchoenstattTable extends SionTable implements
 
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
         $areCountryTranslationsReady = isset($this->countryNameTranslations);
+        $country = $this->filterDbString($row['Country']);
+        $countryInfo = $this->countriesInfo->getCountry($country);
+        $countryRegion = isset($countryInfo) ? $countryInfo->region : null;
+
         $locale = $this->getLocale();
         $kind = $this->filterDbString($row['Kind']);
         if (!isset($this->associationKinds[$kind])) {
@@ -633,7 +633,6 @@ class SchoenstattTable extends SionTable implements
             $jsonTelephone = $jsonTelephone[0];
         }
 
-        $country = $this->filterDbString($row['Country']);
         //abstract address elements
         $street1   = $this->filterDbString($row['Post1Street1']);
         $street2   = $this->filterDbString($row['Post1Street2']);
@@ -753,6 +752,7 @@ class SchoenstattTable extends SionTable implements
             'parentId'              => $this->filterDbId($row['Parent']),
             'kind'                  => $kind,
             'country'               => $country,
+            'countryRegion'         => $countryRegion,
             'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
@@ -2085,6 +2085,16 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 $shrines[$associationId] = $object;
             }
         }
+
+        $sort = [];
+        foreach ($shrines as $k => $v) {
+            $sort['countryRegion'][$k] = $v['countryRegion'];
+            $sort['country'][$k] = $v['country'];
+            $sort['internalDisplayName'][$k] = $v['internalDisplayName'];
+        }
+        # sort by event_type desc and then title asc
+        array_multisort($sort['countryRegion'], SORT_ASC, $sort['country'], SORT_ASC, $sort['internalDisplayName'], SORT_ASC, $shrines);
+
         return $shrines;
     }
 
