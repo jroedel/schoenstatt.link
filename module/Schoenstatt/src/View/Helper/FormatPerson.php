@@ -18,7 +18,7 @@ class FormatPerson extends AbstractHelper
      * available options:
      *  'nameFormat' => $this::FRIENDLY_FIRST_FIRST, (see class consts)
      *  'showTitle' => true,
-     *  'flag' => true,
+     *  'showFlag' => true,
      *  'link' => true,
      *  'editPencil' => false,
      */
@@ -45,7 +45,7 @@ class FormatPerson extends AbstractHelper
             $displayOption = $this::FULL_LAST_FIRST;
         }
         $showTitle = isset($options['showTitle']) ? (bool)$options['showTitle'] : true;
-        $countryOption = isset($options['flag']) ? (bool)$options['flag'] : true;
+        $countryOption = isset($options['showFlag']) ? (bool)$options['showFlag'] : true;
         $linkOption = isset($options['link']) ? (bool)$options['link'] : true;
         $editPencilOption = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : true;
         $showLabels = isset($options['showLabels']) ? (bool)$options['showLabels'] : false;

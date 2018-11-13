@@ -25,3 +25,15 @@ fi
 
 #self update composer
 php composer.phar self-update
+
+############## setup sub modules ################
+
+# TODO clone them to parent directory
+
+# TODO create soft links to the module directory
+
+# create hard links of the phploy password file to their directories
+ln -f .phploy ../zf2-sion-model/.phploy
+ln -f .phploy ../zf2-juser/.phploy
+ln -f .phploy ../zf2-jtranslate/.phploy
+

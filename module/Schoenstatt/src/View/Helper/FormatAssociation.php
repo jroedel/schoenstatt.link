@@ -26,6 +26,7 @@ class FormatAssociation extends AbstractHelper
     {
         $display = isset($options['display']) ? $options['display'] : 'name';
         $editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : $display=='name';
+        $showFlagOption = isset($options['showFlag']) ? (bool)$options['showFlag'] : true;
         $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : false;
         $displayAsLink = isset($options['displayAsLink']) ? (bool)$options['displayAsLink'] : $display=='name';
         $finalMarkup = '';
@@ -38,6 +39,11 @@ class FormatAssociation extends AbstractHelper
         } else {
             switch ($display) {
                 case self::DISPLAY_NAME:
+                    //only show flag if we're looking at display_name
+                    if ($showFlagOption && isset($data['country'])) {
+                        $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
+                    }
+
                     if ($data['internalDisplayName']) {
                         $text = $data['internalDisplayName'];
                     } elseif ($data['formattedName']) {

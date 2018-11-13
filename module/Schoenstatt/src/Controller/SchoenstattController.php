@@ -59,16 +59,8 @@ class SchoenstattController extends AbstractActionController
 
     public function shrinesAction()
     {
-        if (!$this->zfcUserAuthentication()->hasIdentity()) {
-            return $this->redirect()->toRoute('welcome');
-        }
-
         $table = $this->schoenstattTable;
-
         $shrines = $table->getShrines();
-
-//         $form = new SearchForm();
-
         return new ViewModel([
 //             'form'              => $form,
             'shrines'   => $shrines,

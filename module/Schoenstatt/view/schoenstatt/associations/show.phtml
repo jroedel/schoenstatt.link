@@ -1,5 +1,6 @@
 <?php
 use Spatie\SchemaOrg\Thing;
+use SionModel\Db\GeoPoint;
 
 $object = $this->entity;
 $publicName = null;
@@ -46,18 +47,29 @@ $this->headTitle($name);?>
                     echo ', '.$this->email($object['email2']);
                 }
             }?></p>
-            <div class="row">
-            <div class="col-md-12">
-            	<div class="row"><div class="col-md-12">
-            	<?php foreach ($object['urls'] as $urlRow) :?>
-            	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
-            	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
-            	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
-            	</a>&nbsp;
-            	<?php endforeach;?>
-            	</div></div> <!-- Websites row and column -->
-            </div> <!-- Links column -->
-            </div> <!-- Links row -->
+            <?php
+            if (isset($object['geoPoint'])) :
+                //'http://www.openstreetmap.org/?lat=%s&lon=%s&zoom=15&layers=M'
+                $geoUrlFormat = 'https://www.openstreetmap.org/?mlat=%s&mlon=%s#map=14/%s/%s&layers=N';
+                $mapUrl = sprintf(
+                    $geoUrlFormat,
+                    $object['geoPoint']->latitude, $object['geoPoint']->longitude,
+                    $object['geoPoint']->latitude, $object['geoPoint']->longitude
+                );
+                $pi = 3.14;
+                $lat = $object['geoPoint']->latitude;
+                $lon = $object['geoPoint']->longitude;
+                $lat_rad = $lat * ($pi / 180);
+                $zoom = 13;
+                $n = 2 ** $zoom;
+                $x = $n * (($lon + 180) / 360);
+                $y = $n * (1 - (log(tan($lat_rad) + 1/(cos($lat_rad))) / $pi)) / 2;
+                $xtile = floor($x);
+                $ytile = floor($y);
+                $img = "https://a.tile.openstreetmap.org/$zoom/$xtile/$ytile.png";
+                ?>
+                <a href="<?php echo $mapUrl;?>" target="_blank"><img src="<?php echo $img;?>"/></a>
+            <?php endif;?>
         </div>
         <div class="col-md-5">
             <?php foreach ($object['phones'] as $phoneRow) : ?>
@@ -70,16 +82,23 @@ $this->headTitle($name);?>
                 //@todo use diffForHumans view helper
         	    $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?php echo $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
-        	<?php endif;
+        	<?php endif;?>
+        	<?php if (!empty($object['urls'])):?>
+        	<p><strong><?php echo $this->translate("Links"); ?>:</strong>
+            <div class="row">
+            <div class="col-md-12">
+            	<div class="row"><div class="col-md-12">
+            	<?php foreach ($object['urls'] as $urlRow) :?>
+            	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
+            	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
+            	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
+            	</a>&nbsp;
+            	<?php endforeach;?>
+            	</div></div> <!-- Websites row and column -->
+            </div> <!-- Links column -->
+            </div> <!-- Links row -->
+            <?php endif;
         	$addressLabel = null;
-        	if (isset($object['geoPoint'])) :
-        	//'http://www.openstreetmap.org/?lat=%s&lon=%s&zoom=15&layers=M'
-        	   $geoUrlFormat = 'https://www.openstreetmap.org/?mlat=%s&mlon=%s#map=18/%s/%s&layers=N';?>
-        	    <a href="<?php echo sprintf($geoUrlFormat,
-    	            $object['geoPoint']->latitude, $object['geoPoint']->longitude,
-    	            $object['geoPoint']->latitude, $object['geoPoint']->longitude);?>" target="_blank"><?php
-        	       echo $this->translate('View in map');?></a>
-        	<?php endif;
         	if (count($object['postAddresses']) > 1) {
         	    $addressLabel = 'Postal addresses';
         	} elseif (count($object['postAddresses']) == 1) {
