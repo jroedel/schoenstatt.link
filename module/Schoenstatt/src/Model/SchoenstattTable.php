@@ -195,6 +195,7 @@ class SchoenstattTable extends SionTable implements
 
     public function getObject($entity, $id, $failSilently = false)
     {
+        //a hack so that the association/edit action can find the object using site-wide identifiers
         if ('association' === $entity && is_numeric($id)) {
             return $this->getSimpleAssociation($id);
         }
@@ -2090,7 +2091,9 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $objects = $this->getAssociations();
         $shrines = [];
         foreach ($objects as $associationId => $object) {
-            if ('sch-shrine' === $object['kind']) {
+            if ('sch-shrine' === $object['kind']
+                || 'sch-wayside-shrine' === $object['kind']
+            ) {
                 $shrines[$associationId] = $object;
             }
         }
