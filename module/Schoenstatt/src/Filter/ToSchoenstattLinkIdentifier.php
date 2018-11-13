@@ -19,11 +19,11 @@ class ToSchoenstattLinkIdentifier extends AbstractFilter
     {
         if (!isset($entityType)) {
             throw new \Exception("Invalid entity type");
-        } elseif (!isset(\Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType])) {
+        } elseif (!isset(\Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[$entityType])) {
             throw new \Exception("Invalid entity type `$entityType`");
         }
         $this->entityType = $entityType;
-        $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType];
+        $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[$entityType];
         $this->baseNumber = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_STARTING_NUMBER[$entityType];
     }
 

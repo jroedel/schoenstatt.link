@@ -16,7 +16,7 @@ class SchoenstattLinkIdentifier extends Regex
     ];
 
     const GENERAL_REGEX = '/^SL([0-9]{5,5})([APL])$/';
-    const ENTITY_REGEXs = [
+    const ENTITY_REGEXS = [
         self::ENTITY_ASSOCIATION => '/^SL([0-9]{5,5})A$/',
         self::ENTITY_PERSON => '/^SL([0-9]{5,5})P$/',
         self::ENTITY_PUBLICATION => '/^SL([0-9]{5,5})L$/',
@@ -31,10 +31,10 @@ class SchoenstattLinkIdentifier extends Regex
     {
         if (!isset($entityType)) {
             parent::__construct(self::GENERAL_REGEX);
-        } elseif (!isset(self::ENTITY_REGEXs[$entityType])) {
+        } elseif (!isset(self::ENTITY_REGEXS[$entityType])) {
             throw new \Exception("Invalid entity type `$entityType`");
         } else {
-            parent::__construct(self::ENTITY_REGEXs[$entityType]);
+            parent::__construct(self::ENTITY_REGEXS[$entityType]);
         }
     }
 }

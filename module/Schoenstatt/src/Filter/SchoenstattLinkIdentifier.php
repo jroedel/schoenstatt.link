@@ -16,7 +16,7 @@ class SchoenstattLinkIdentifier extends AbstractFilter
     public function __construct($entityType = null)
     {
         if (isset($entityType)
-            && !isset(\Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType])
+            && !isset(\Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[$entityType])
         ) {
             throw new \Exception("Invalid entity type `$entityType`");
         }
@@ -24,7 +24,7 @@ class SchoenstattLinkIdentifier extends AbstractFilter
         if (!isset($entityType)) {
             $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::GENERAL_REGEX;
         } else {
-            $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXs[$entityType];
+            $this->pattern = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[$entityType];
             $this->baseNumber = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_STARTING_NUMBER[$entityType];
         }
     }
