@@ -277,7 +277,7 @@ ORDER BY `Publisher`";
                 'sch_pub_categories.PublicationCategoryId = sch_publications.CategoryId',
                 ['SortOrder', 'CategoryName', 'CategoryParentId' => 'ParentId'],
                 Select::JOIN_LEFT
-                );
+            );
             $select->order(['CategorySortOrder', 'Authors', 'InLanguage', 'Title']);
         }
 
@@ -1482,7 +1482,6 @@ WHERE 1";
      */
     public function fillDatePublished()
     {
-
     }
 
     /**
@@ -1492,7 +1491,6 @@ WHERE 1";
      */
     public function clearCopyrightYear()
     {
-
     }
 
     public function getAuthors()

@@ -126,7 +126,6 @@ class SchoenstattTable extends SionTable implements
      */
     protected $unlinkedAssociationsMemoryCache = [];
 
-
     /**
     * @var CountriesInfo $countriesInfo
     */
@@ -136,9 +135,19 @@ class SchoenstattTable extends SionTable implements
 
     protected $addressFieldMap = [];
 
+    /**
+     * @var SchoenstattLinkIdentifier $swFilter
+     */
     protected $swFilter;
 
+    /**
+     * @var \Schoenstatt\Validator\SchoenstattLinkIdentifier $swValidator
+     */
     protected $swValidator;
+
+    /**
+     * @var \Schoenstatt\Validator\SchoenstattLinkIdentifier[] $swValidators
+     */
     protected $swValidators = [];
 
     public function __construct(
@@ -182,7 +191,7 @@ class SchoenstattTable extends SionTable implements
      */
     public function existsEntity($entity, $id)
     {
-        if ('association' === $entity && is_string($id) && substr( $id, 0, 2 ) === "SL") {
+        if ('association' === $entity && is_string($id) && substr($id, 0, 2) === "SL") {
             $id = $this->filterSwId($id, 'association');
         }
         return parent::existsEntity($entity, $id);
@@ -381,7 +390,8 @@ class SchoenstattTable extends SionTable implements
         $select = $this->getAssociationSelectPrototype();
         $where = new Where();
 
-        $combination = (isset($options['orCombination']) && $options['orCombination']) ? PredicateSet::OP_OR : PredicateSet::OP_AND;
+        $combination = (isset($options['orCombination']) && $options['orCombination'])
+            ? PredicateSet::OP_OR : PredicateSet::OP_AND;
 
         // Prepare associationId predicate
         if (isset($query['associationId'])) {
@@ -400,7 +410,11 @@ class SchoenstattTable extends SionTable implements
                 }
             }
             if (is_numeric($query['associationId'])) {
-                $associationIdClause= new Operator($fieldMap['associationId'], Operator::OPERATOR_EQUAL_TO, $query['associationId']);
+                $associationIdClause= new Operator(
+                    $fieldMap['associationId'],
+                    Operator::OPERATOR_EQUAL_TO,
+                    $query['associationId']
+                );
             }
             if (isset($associationIdClause)) {
                 $where->addPredicate($associationIdClause, $combination);
@@ -423,7 +437,8 @@ class SchoenstattTable extends SionTable implements
         }
 
         if (isset($options['page']) && is_numeric($options['page'])) {
-            $resultsPerPage = isset($options['resultsPerPage']) && is_numeric($options['resultsPerPage']) ? $options['resultsPerPage'] : self::DEFAULT_RESULTS_PER_PAGE;
+            $resultsPerPage = isset($options['resultsPerPage']) && is_numeric($options['resultsPerPage'])
+                ? $options['resultsPerPage'] : self::DEFAULT_RESULTS_PER_PAGE;
             $select->offset($options['page'] * $resultsPerPage);
         }
 
