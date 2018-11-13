@@ -9,6 +9,7 @@ use JTranslate\Model\CountriesInfo;
 use Zend\Filter\StripTags;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use BjyAuthorize\Exception\UnAuthorizedException;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class AssociationsController extends SionController
 {
@@ -25,6 +26,32 @@ class AssociationsController extends SionController
             return $this->redirect()->toRoute($redirectRoute);
         }
         return $this->redirect()->toRoute('associations/association', ['sw_id' => $object['identifier']]);
+    }
+
+//     protected function getEntityIdParam($action = 'show', $default = null)
+//     {
+//         if ('edit' === $action) {
+//             $filter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
+//             return $filter->filter($this->params()->fromRoute('sw_id'));
+//         }
+//     }
+
+    /**
+     *
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::updateEntityPostFormValidation()
+     */
+    public function updateEntityPostFormValidation($id, $data, $form)
+    {
+        $entity = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        /** @var SionTable $table **/
+        $table = $this->getSionTable();
+        $idFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
+        $table->updateEntity($entity, $idFilter->filter($id), $data);
+        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+            ->addMessage(ucfirst($entity).' successfully updated.');
+        $this->redirectAfterEdit($id);
     }
 
     public function showAction()

@@ -92,7 +92,7 @@ class FormatAssociation extends AbstractHelper
             );
         }
         if ($editPencilOption) {
-            $finalMarkup .= $this->view->editPencil('association', $data['associationId']);
+            $finalMarkup .= $this->view->editPencil('association', $data['identifier']);
         }
 
         return $finalMarkup;

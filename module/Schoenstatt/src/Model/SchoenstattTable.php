@@ -192,6 +192,15 @@ class SchoenstattTable extends SionTable implements
         }
         return parent::existsEntity($entity, $id);
     }
+
+    public function getObject($entity, $id, $failSilently = false)
+    {
+        if ('association' === $entity && is_numeric($id)) {
+            return $this->getSimpleAssociation($id);
+        }
+        return parent::getObject($entity, $id, $failSilently);
+    }
+
     /**
      * Validate and filter a site-wide identifier. Return false if it's not valid.
      *
