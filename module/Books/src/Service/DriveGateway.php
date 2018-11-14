@@ -27,12 +27,12 @@ class DriveGateway
      * @var string $filesApiUrl
      */
     protected $filesApiUrl;
-    
+
     /**
      * @var StorageInterface $cache;
      */
     protected $cache;
-    
+
     /**
      * Get associative array of persons from Patres database $personId => $name
      * @throws \Exception
@@ -52,7 +52,7 @@ class DriveGateway
         }
         return $publicationFiles;
     }
-    
+
     /**
      * Given a patres personId, a person from the SchoenstattTable is returned. Person is imported if requested
      * @param number $patresPersonId
@@ -109,7 +109,7 @@ class DriveGateway
         }
         return $newId;
     }
-    
+
     /**
      * Gets info from server and validates data
      * @throws \Exception
@@ -118,8 +118,9 @@ class DriveGateway
     protected function getFilesFromGoogleDrive()
     {
         $cache = $this->getCache();
+
         $result = $cache->getItem(self::FILES_CACHE_KEY, $success);
-        if (! $success) {
+        if (!$success) {
             $key = $this->getApiKey();
             $listUrl = $this->getFilesApiUrl();
             $client = new Client();
@@ -127,7 +128,7 @@ class DriveGateway
             $client->setUri($listUrl);
             $client->setParameterGet(['key' => $key]);
             $response = $client->send();
-            
+
             if (200 != $response->getStatusCode()) {
                 throw new \Exception('Failed to retrieve list of files from Google Drive. Status code: '. $response->getStatusCode());
             }
@@ -171,7 +172,7 @@ class DriveGateway
         $this->personInputFilter = $personInputFilter;
         return $this;
     }
-    
+
     /**
      * Get the cache value
      * @return StorageInterface
@@ -183,7 +184,7 @@ class DriveGateway
         }
         return $this->cache;
     }
-    
+
     /**
      * Set the cache value
      * @param StorageInterface $cache

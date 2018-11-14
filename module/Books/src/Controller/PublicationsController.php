@@ -33,7 +33,6 @@ class PublicationsController extends SionController
         }
         /** @var DriveGateway $gateway */
         $gateway = $this->services[DriveGateway::class];
-        $gateway->getCache()->flush();
         $publicationFiles = null;
         try {
             $publicationFiles = $this->isAllowed('publication_drive') ? $gateway->getPublicationFiles() : null;
