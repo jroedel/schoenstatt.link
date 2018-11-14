@@ -81,7 +81,7 @@ class SchoenstattController extends AbstractActionController
         ->sameAs('https://schoenstatt.link/es/')
         ->name('Schoenstatt Link')
         ->contactPoint((new ContactPoint())
-            ->contactType('information')
+            ->contactType('technical support')
             ->email('webmaster@schoenstatt.link')
             );
         $datasetEn->name('Schoenstatt Shrine Database in English')
