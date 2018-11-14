@@ -18,7 +18,7 @@ class DriveGatewayFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         $config = $container->get('config');
-        $cache = $container->get(StorageInterface::class);
+        $cache = $container->get('Books\Cache');
 
         $gateway = new DriveGateway();
         $gateway->setConfig($config);
