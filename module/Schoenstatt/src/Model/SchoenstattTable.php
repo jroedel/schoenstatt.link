@@ -574,7 +574,6 @@ class SchoenstattTable extends SionTable implements
         uasort($results, [SchoenstattTable::class, 'associationCompare']);
     }
 
-
     protected static function associationCompare($a, $b)
     {
         if ($a['sort'] == $b['sort']) {
@@ -587,6 +586,7 @@ class SchoenstattTable extends SionTable implements
     {
         static $twitterUrlPattern;
         static $instagramUrlPattern;
+        static $languageCode;
         $id = $this->filterDbId($row['AssociationId']);
 
         if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
@@ -606,6 +606,7 @@ class SchoenstattTable extends SionTable implements
         }
         $associationKindSpec = $this->associationKinds[$kind];
 
+        //@todo use the filter
         $identifier = 'SL'.($id+10000).'A';
 
         //process URLs
@@ -637,7 +638,14 @@ class SchoenstattTable extends SionTable implements
         $urls = SionTable::processUrls($unprocessedUrls);
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
         $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
-        $jsonApiUrl = "https://schoenstatt.link/en/api/v1/associations/".$identifier;
+        
+        if (!isset($languageCode)) {
+            $languageCode = \Locale::getPrimaryLanguage(\Locale::getDefault());
+            if (!isset($languageCode) || !in_array($languageCode, ['en', 'es', 'de', 'pt'])) {
+                $languageCode = 'en';
+            }
+        }
+        $jsonApiUrl = "https://schoenstatt.link/$languageCode/api/v1/associations/".$identifier;
 
         $phones = [];
         $jsonTelephone = [];
@@ -680,12 +688,10 @@ class SchoenstattTable extends SionTable implements
         $street2   = $this->filterDbString($row['Post1Street2']);
         $cityState = $this->filterDbString($row['Post1CityState']);
         $zip       = $this->filterDbString($row['Post1Zip']);
-//         $post1Country   = $this->filterDbString($row['Post1Country']);
         $postStreet1   = $this->filterDbString($row['Post2Street1']);
         $postStreet2   = $this->filterDbString($row['Post2Street2']);
         $postCityState = $this->filterDbString($row['Post2CityState']);
         $postZip       = $this->filterDbString($row['Post2Zip']);
-//         $post2Country   = $this->filterDbString($row['Post2Country']);
 
         $addresses = [];
         if (isset($street1) || isset($street2) || isset($cityState)) {
@@ -897,6 +903,7 @@ class SchoenstattTable extends SionTable implements
             'urls'                  => $urls,
             'formattedName'         => $formattedName,
             'internalDisplayName'   => $internalDisplayName,
+            //@todo do the URL better
             'jsonIdentifier'        => "https://schoenstatt.link/en/associations/".$identifier,
             'jsonAlternateName'     => $jsonAlternateName,
             'jsonAddress'           => $jsonAddress,

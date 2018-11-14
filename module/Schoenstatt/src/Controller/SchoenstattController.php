@@ -14,6 +14,10 @@ use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
 use Zend\View\Model\ViewModel;
 use libKML\Placemark;
+use Spatie\SchemaOrg\Dataset;
+use Spatie\SchemaOrg\Organization;
+use Spatie\SchemaOrg\ContactPoint;
+use Spatie\SchemaOrg\DataDownload;
 
 class SchoenstattController extends AbstractActionController
 {
@@ -64,7 +68,55 @@ class SchoenstattController extends AbstractActionController
         return new ViewModel([
 //             'form'              => $form,
             'shrines'   => $shrines,
+            'datasets'          => $this->getShrineDatasets(),
         ]);
+    }
+    
+    public function getShrineDatasets()
+    {
+        $datasets = [];
+        $datasetEn = new Dataset();
+        $creator = new Organization();
+        $creator->url('https://schoenstatt.link/en/')
+        ->sameAs('https://schoenstatt.link/es/')
+        ->name('Schoenstatt Link')
+        ->contactPoint((new ContactPoint())
+            ->contactType('information')
+            ->email('webmaster@schoenstatt.link')
+            );
+        $datasetEn->name('Schoenstatt Shrine Database in English')
+        ->description('Shrine database is a list of the Catholic Chapels belonging '
+            .'to the International Schoenstatt Movement')
+        ->inLanguage('es')
+        ->url('https://schoenstatt.link/en/shrines')
+        ->keywords([
+            'RELIGION > CATHOLIC CHURCH > MOVEMENTS',
+            'RELIGION > CATHOLIC CHURCH > MARIAN SHRINES',
+            'RELIGION > CATHOLIC CHURCH > MARY',
+        ])
+        ->creator($creator)
+        ->distribution((new DataDownload())
+            ->encodingFormat('JSON')
+            ->contentLocation('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine')
+            );
+        $datasetEs = new Dataset();
+        $datasetEs->name('Base de datos de Santuarios de Schoenstatt en Español')
+        ->description('La base de datos de los santuarios es una lista de capillas católicas perteneciente '
+            .'al Movimiento Apostólico de Schoenstatt')
+        ->inLanguage('es')
+        ->url('https://schoenstatt.link/es/shrines')
+        ->keywords([
+            'RELIGIÓN > IGLESIA CATÓLICA > MOVIMIENTOS',
+            'RELIGIÓN > IGLESIA CATÓLICA > SANTUARIOS MARIANOS',
+            'RELIGIÓN > IGLESIA CATÓLICA > MARÍA',
+        ])
+        ->creator($creator)
+        ->distribution((new DataDownload())
+            ->encodingFormat('JSON')
+            ->contentLocation('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine')
+            );
+        $datasets = [$datasetEn->toArray(), $datasetEs->toArray()];
+        return $datasets;
     }
 
     public function importShrinesAction()
