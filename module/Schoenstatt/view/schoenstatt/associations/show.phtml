@@ -57,7 +57,7 @@ $this->headTitle($name);?>
                     $object['geoPoint']->latitude, $object['geoPoint']->longitude,
                     $object['geoPoint']->latitude, $object['geoPoint']->longitude
                 );
-                $pi = 3.14;
+                $pi = 3.14159;
                 $lat = $object['geoPoint']->latitude;
                 $lon = $object['geoPoint']->longitude;
                 $lat_rad = $lat * ($pi / 180);
@@ -70,7 +70,8 @@ $this->headTitle($name);?>
                 $img = "https://a.tile.openstreetmap.org/$zoom/$xtile/$ytile.png";
                 ?>
                 <a href="<?php echo $mapUrl;?>" target="_blank">
-                <img alt="<?php echo $this->translate('Open Street Maps');?>" src="<?php echo $img;?>" height="256" width="256"/></a>
+                <img alt="<?php echo $this->translate('Open Street Maps');?>" src="<?php echo $img;
+                ?>" height="256" width="256"/></a>
             <?php endif;?>
         </div>
         <div class="col-md-5">
