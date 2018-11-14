@@ -38,7 +38,7 @@ class AssociationsApiController extends AbstractRestfulController
         $table = $this->schoenstattTable;
         $objects = $table->getAssociations();
         $md5s = null;
-        $json = $table->getAssociationListSchema($objects, $md5s);
+        $json = $table->getAssociationListSchema($objects, $md5s, true);
         $md5 = md5(json_encode($md5s));
         return new JsonModel([
             'items'         => $json,
@@ -67,7 +67,7 @@ class AssociationsApiController extends AbstractRestfulController
         $table = $this->schoenstattTable;
 
         $object = $table->getAssociation($id);
-        $place = $table->getAssociationSchema($object);
+        $place = $table->getAssociationSchema($object, true);
 
         if (!isset($place)) {
             return $this->sendFailedMessage('Invalid shrine requested.', 404);
@@ -95,7 +95,7 @@ class AssociationsApiController extends AbstractRestfulController
         $table = $this->schoenstattTable;
         $objects = $table->searchAssociations(['kind' => $kind]);
         $md5s = null;
-        $json = $table->getAssociationListSchema($objects, $md5s);
+        $json = $table->getAssociationListSchema($objects, $md5s, true);
         $md5 = md5(json_encode($md5s));
         return new JsonModel([
             'items'         => $json,

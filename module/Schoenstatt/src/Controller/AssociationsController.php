@@ -10,6 +10,8 @@ use Zend\Filter\StripTags;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Zend\Stdlib\ResponseInterface;
+use Schoenstatt\Form\AssociationForm;
 
 class AssociationsController extends SionController
 {
@@ -28,14 +30,6 @@ class AssociationsController extends SionController
         return $this->redirect()->toRoute('associations/association', ['sw_id' => $object['identifier']]);
     }
 
-//     protected function getEntityIdParam($action = 'show', $default = null)
-//     {
-//         if ('edit' === $action) {
-//             $filter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
-//             return $filter->filter($this->params()->fromRoute('sw_id'));
-//         }
-//     }
-
     /**
      *
      * {@inheritDoc}
@@ -47,16 +41,37 @@ class AssociationsController extends SionController
         $entitySpec = $this->getEntitySpecification();
         /** @var SionTable $table **/
         $table = $this->getSionTable();
+
+        //hack to make sure we call updateEntity with the int id
         $idFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
+
         $table->updateEntity($entity, $idFilter->filter($id), $data);
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
             ->addMessage(ucfirst($entity).' successfully updated.');
         $this->redirectAfterEdit($id);
     }
 
+    public function editAction()
+    {
+        $view = parent::editAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
+        $entity = $view->getVariable('entity');
+        if ('sch-shrine' === $entity['kind'] || 'sch-wayside-shrine' === $entity['kind']) {
+            /** @var AssociationForm $form */
+            $form = $view->getVariable('form');
+            $form->get('publicNotes')->setLabel('Visitor information');
+        }
+        return $view;
+    }
+
     public function showAction()
     {
         $view = parent::showAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         //set nationalOrganizations
         /** @var SchoenstattTable $table */
         $table = $this->getSionTable();
@@ -88,6 +103,10 @@ class AssociationsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
+
         //check if we were passed a valid country param and set it in the form
         $countryParam = $this->params()->fromQuery('country');
         $parentParam = $this->params()->fromQuery('parentId');

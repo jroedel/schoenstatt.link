@@ -20,6 +20,9 @@ class PublicationsController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $entityObject = $view->getVariable('entity');
         if (isset($entityObject['bookCoverFileId'])) {
             $bookCoverFileId = $entityObject['bookCoverFileId'];
@@ -188,6 +191,9 @@ class PublicationsController extends SionController
     public function editAction()
     {
         $view = parent::editAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $entityId = $view->getVariable('entityId');
         $this->injectPublicationValueOptions($view, $entityId);
         return $view;
@@ -196,6 +202,9 @@ class PublicationsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $entityId = $view->getVariable('entityId');
         $this->injectPublicationValueOptions($view, $entityId);
         return $view;

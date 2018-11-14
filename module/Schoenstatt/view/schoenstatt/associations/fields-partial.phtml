@@ -8,21 +8,28 @@ echo $this->formHidden($form->get('associationId'));?>
     <?php echo $this->formLabel($form->get('name'));
     echo $this->formElement($form->get('name'));
     echo $this->formElementErrors($form->get('name'));
+    echo $this->helpBlock($form->get('name'));
     echo $this->formElement($form->get('overrideNameFormat'));
-    echo $this->formElementErrors($form->get('overrideNameFormat')).'<br>';
+    echo $this->formElementErrors($form->get('overrideNameFormat'));
+    echo $this->helpBlock($form->get('overrideNameFormat')).'<br>';
     echo $this->formElement($form->get('isNameTranslateable'));
-    echo $this->formElementErrors($form->get('isNameTranslateable'));?>
+    echo $this->formElementErrors($form->get('isNameTranslateable'));
+    echo $this->helpBlock($form->get('isNameTranslateable'));?>
 </div>
 <div class="form-group ">
     <?php echo $this->formLabel($form->get('internalName'));
     echo $this->formElement($form->get('internalName'));
     echo $this->formElementErrors($form->get('internalName'));
+    echo $this->helpBlock($form->get('internalName'));
     echo $this->formElement($form->get('isInternalNameTranslateable'));
-    echo $this->formElementErrors($form->get('isInternalNameTranslateable')).'<br>';
+    echo $this->formElementErrors($form->get('isInternalNameTranslateable'));
+    echo $this->helpBlock($form->get('isInternalNameTranslateable')).'<br>';
     echo $this->formElement($form->get('isLifeCommunity'));
-    echo $this->formElementErrors($form->get('isLifeCommunity')).'<br>';
+    echo $this->formElementErrors($form->get('isLifeCommunity'));
+    echo $this->helpBlock($form->get('isLifeCommunity')).'<br>';
     echo $this->formElement($form->get('isActive'));
-    echo $this->formElementErrors($form->get('isActive'));?>
+    echo $this->formElementErrors($form->get('isActive'));
+    echo $this->helpBlock($form->get('isActive'));?>
 </div>
 <?php
 $this->formSelect()->setTranslatorEnabled(false);

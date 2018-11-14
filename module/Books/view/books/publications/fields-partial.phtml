@@ -34,13 +34,13 @@ echo $this->formRow($form->get('description'));?>
 <?php echo $this->formLabel($form->get('mainPublicationId'));
 echo $this->formSelectWithoutOptions($form->get('mainPublicationId'));
 echo $this->formElementErrors($form->get('mainPublicationId'));
-echo sprintf('<p class="help-block">%s</p>', $this->translate($form->get('mainPublicationId')->getOption('help-block')));?>
+echo $this->helpBlock($form->get('mainPublicationId'));?>
 </div>
 <div class="form-group ">
 <?php echo $this->formLabel($form->get('translatedFromPublicationId'));
 echo $this->formSelectWithoutOptions($form->get('translatedFromPublicationId'));
 echo $this->formElementErrors($form->get('translatedFromPublicationId'));
-echo sprintf('<p class="help-block">%s</p>', $this->translate($form->get('translatedFromPublicationId')->getOption('help-block')));?>
+echo $this->helpBlock($form->get('translatedFromPublicationId'));?>
 </div><?php
 echo $this->formRow($form->get('isbn'));
 echo $this->formRow($form->get('hasNoISBN'));
