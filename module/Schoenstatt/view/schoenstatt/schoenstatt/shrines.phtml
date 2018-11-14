@@ -29,3 +29,13 @@ foreach ($regions as $region => $objects) :?>
     ]);
 endforeach;?>
 <p><?php echo $this->translate('Initial shrine database courtesy of Matías Fortuño.');?></p>
+<?php 
+$datasets = $this->datasets;
+if (isset($datasets) && is_array($datasets) && !empty($datasets)) :?>
+<script type="application/ld+json">
+<?php $json = json_encode($datasets, JSON_PRETTY_PRINT);
+if (false !== $json) {
+    echo $json;
+}?>
+</script>
+<?php endif;?>
