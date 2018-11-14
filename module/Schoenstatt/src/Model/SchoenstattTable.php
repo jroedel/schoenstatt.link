@@ -13,7 +13,6 @@ use Zend\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
-use Zend\Permissions\Acl\Assertion\AssertionAggregate;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
@@ -25,9 +24,7 @@ use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
-use Spatie\SchemaOrg\Organization;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
-use Spatie\SchemaOrg\PlaceOfWorship;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -168,11 +165,11 @@ class SchoenstattTable extends SionTable implements
         $serviceLocator,
         $actingUserId,
         $schoenstattConfig,
-        $countriesInfo
+        $countriesInfo,
+        $translator
     ) {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $schoenstattConfig;
-        $this->translator = $serviceLocator->get('translator');
 
         /** @var AssociationKindsService $kindsService */
         $kindsService = $serviceLocator->get(AssociationKindsService::class);
@@ -275,7 +272,7 @@ class SchoenstattTable extends SionTable implements
      * @param TranslatorInterface $translator
      * @param string $includeInactive
      * @param string $includeNonLifeLongMembership
-     * @return unknown[]
+     * @return string[]
      */
     public function getAssociationValueOptions($includeInactive = false, $includeNonLifeLongMembership = true)
     {
@@ -497,15 +494,21 @@ class SchoenstattTable extends SionTable implements
             'associationId' => $interestingIds,
         ], ['orCombination' => true, 'noLink' => true]);
 
-
-        foreach ($objects as $entityId => $entity) {
-            if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
-                $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
-                $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];
+        //link parents of our objects
+        foreach ($objects as $objectId => $object) {
+            if (isset($object['parentId']) && isset($results[$object['parentId']])) {
+                $objects[$objectId]['parent'] = &$results[$object['parentId']];
+            }
+        }
+        
+        //link children of our objects
+        foreach ($results as $entityId => $entity) {
+            if (isset($entity['parentId']) && isset($objects[$entity['parentId']])) {
+                $objects[$entity['parentId']]['childAssociations'][$entityId] = &$results[$entityId];
             }
         }
 
-        $this->connectEntityRolesAndAssignments('association', $entities);
+        $this->connectEntityRolesAndAssignments('association', $objects);
 
         //no return, by ref
     }
@@ -695,21 +698,31 @@ class SchoenstattTable extends SionTable implements
 
         $addresses = [];
         if (isset($street1) || isset($street2) || isset($cityState)) {
+            //in case we need to put the streets on one line
+            $streets = [];
+            if (isset($street1)) {
+                $streets[] = $street1;
+            }
+            if (isset($street2)) {
+                $streets[] = $street2;
+            }
             $addresses[] = [
                 'street1'   => $street1,
                 'street2'   => $street2,
+                'street'    => $streets,
                 'cityState' => $cityState,
                 'zip'       => $zip,
                 'country'   => $country,
             ];
         }
         if (isset($postStreet1) || isset($postStreet2) || isset($postCityState)) {
+            //in case we need to put the streets on one line
             $streets = [];
-            if (isset($address['street1'])) {
-                $streets[] = $address['street1'];
+            if (isset($postStreet1)) {
+                $streets[] = $postStreet1;
             }
-            if (isset($address['street2'])) {
-                $streets[] = $address['street2'];
+            if (isset($postStreet2)) {
+                $streets[] = $postStreet2;
             }
             $addresses[] = [
                 'street1'   => $postStreet1,
@@ -941,9 +954,6 @@ class SchoenstattTable extends SionTable implements
             $schema->isAccessibleForFree(true);
             $schema->publicAccess(true);
         }
-        if ($forApi && isset($object['jsonApiUrl'])) {
-            $schema->setProperty('apiUrl', $object['jsonApiUrl']);
-        }
         return $schema;
     }
 
@@ -953,6 +963,11 @@ class SchoenstattTable extends SionTable implements
         $resultingMd5s = [];
         foreach ($objects as $associationId => $object) {
             $schema = $this->getAssociationSchema($object, $forApi);
+            
+            //this goes here because we only add it when returning a list of schemata
+            if ($forApi && isset($object['jsonApiUrl'])) {
+                $schema->setProperty('apiUrl', $object['jsonApiUrl']);
+            }
             $resultingMd5s[$associationId] = $object['schemaOrgJsonMd5'];
             $array = $schema->toArray();
             $schemata[] = $array;
@@ -1201,7 +1216,6 @@ ORDER BY `LastName`, `FirstName`";
             'hun'=>'de',
             'ces'=>'de',
         ];
-        $filter = new ToNull();
         $tz = new \DateTimeZone('UTC');
         $today = new \DateTime(null, $tz);
         foreach ($results as $row) {
@@ -1582,9 +1596,6 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $entities       = $this->getAssignments();
         $associations   = $this->getUnlinkedAssociations();
         $persons        = $this->getUnlinkedPersons();
-
-        $associationKindSpecifications =
-            isset($this->config['association_kinds']) ? $this->config['association_kinds'] : [];
 
         //first mark the "found" persons and associations in assignments
         foreach ($entities as $assignmentId => $assignment) {
@@ -2219,7 +2230,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
     {
         $persons = $this->getPersons();
         $phoneNumbers = [];
-        foreach ($persons as $personId => $person) {
+        foreach ($persons as $person) {
             if ($person['isActive'] || $includeInactive) {
                 foreach ($person['phones'] as $phone) {
                     if ($phone['label'] != 'House') {
@@ -2297,7 +2308,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
     {
         $assignments = $this->getAssignments();
         $return = [];
-        foreach ($assignments as $assignmentId => $assignment) {
+        foreach ($assignments as $assignment) {
             if ($assignment['personId'] == $personId) {
                 if (!in_array($assignment['roleTitle'], $return)) {
                     $return[] = $assignment['roleTitle'];
@@ -2378,7 +2389,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         $persons = $this->getPersons();
 
         $problems = [];
-        foreach ($persons as $personId => $person) {
+        foreach ($persons as $person) {
             if (!isset($person['email'])) {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_PERSON_NO_EMAIL)
@@ -2398,7 +2409,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
     {
         $associations = $this->getAssociations();
         $problems = [];
-        foreach ($associations as $associationId => $association) {
+        foreach ($associations as $association) {
             if (!$association['isActive']) {
                 continue;
             }
@@ -2453,10 +2464,10 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         $return = [];
         $persons = $this->getPersons();
         $associations = $this->getAssociations();
-        foreach ($persons as $personId => $person) {
+        foreach ($persons as $person) {
             $return[] = new GenericResource($person['resourceId']);
         }
-        foreach ($associations as $associationId => $association) {
+        foreach ($associations as $association) {
             $return[] = new GenericResource($association['resourceId']);
         }
         return $return;
@@ -2473,11 +2484,11 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
 
         //transform to object BjyAuthorize will understand
         $allow = [];
-        foreach ($result as $key => $rule) {
+        foreach ($persons as $person) {
             $allow[$person['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
         }
 
-        foreach ($associations as $associationId => $association) {
+        foreach ($associations as $association) {
             $allow[$association['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
         }
 

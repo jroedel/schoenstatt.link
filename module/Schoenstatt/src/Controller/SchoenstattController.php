@@ -13,7 +13,6 @@ use Zend\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
 use Zend\View\Model\ViewModel;
-use libKML\Placemark;
 use Spatie\SchemaOrg\Dataset;
 use Spatie\SchemaOrg\Organization;
 use Spatie\SchemaOrg\ContactPoint;
@@ -117,125 +116,6 @@ class SchoenstattController extends AbstractActionController
             );
         $datasets = [$datasetEn->toArray(), $datasetEs->toArray()];
         return $datasets;
-    }
-
-    public function importShrinesAction()
-    {
-        $simulate = '0' !== $this->params()->fromQuery('simulate', '1');
-
-        $file = file_get_contents('data/import/santuarios.kml');
-        //regex to separate Placemarks
-        $re = '/<Placemark>(.*?)<\/Placemark>/mius';
-        $reName = '/<name>(.*?)<\/name>/mius';
-        $reDescription = '/<description>(.*?)<\/description>/mius';
-        $reStyleUrl = '/<styleUrl>(.*?)<\/styleUrl>/mius';
-        $reData = '/<Data name="([^"]*?)">\s*<value>(.+?)<\/value>\s*?<\/Data>/mius';
-        $reCoordinates = '/<coordinates>\s*?([0-9\.-]+),([0-9\.-]+)(?:,([0-9\.-]+))?\s*?<\/coordinates>/mius';
-        $reZip = '/[0-9][0-9\.-]{3,8}[0-9]/u';
-
-        preg_match_all($re, $file, $features, PREG_SET_ORDER, 0);
-
-        $utc = new \DateTimeZone('UTC');
-
-        $cityCountryMap = $this->getCityCountryMap();
-        $nationalMovementAssociationMap = $this->getNationalMovementAssociationMap();
-
-        $dataToImport = [];
-        $icons = [];
-        foreach ($features as $feature) {
-            //regex to separate fields
-            $str = $feature[1];
-            preg_match($reName, $feature[1], $nameMatch);
-            preg_match($reDescription, $feature[1], $descriptionMatch);
-            preg_match($reStyleUrl, $feature[1], $styleUrlMatch);
-            preg_match_all($reData, $feature[1], $dataElements, PREG_SET_ORDER, 0);
-            preg_match($reCoordinates, $feature[1], $coordinatesMatch);
-            $name = $nameMatch[1];
-            if (!isset($name)) {
-//                 var_dump($nameMatch);
-            }
-            $description = isset($descriptionMatch[1]) ? $descriptionMatch[1] : null;
-            $styleUrl = isset($styleUrlMatch[1]) ? $styleUrlMatch[1] : null;
-            $latitude = isset($coordinatesMatch[2]) ? $coordinatesMatch[2] : null;
-            $longitude = isset($coordinatesMatch[1]) ? $coordinatesMatch[1] : null;
-            $data = [
-                'name'      => $name,
-                'kind'      => '#icon-503-DB4436' === $styleUrl ? 'sch-shrine' : 'sch-wayside-shrine',
-                'adminTags' => 'auto-imported',
-            ];
-            if (empty($dataElements)) { //if we don't have data, the description is usually public or null
-                $data['publicNotes'] = $description;
-            } else {
-                $data['adminNotes'] = $description;
-            }
-            foreach ($dataElements as $match) {
-                if ('Lat' === $match[1]) {
-                    if (!isset($latitude)) {
-                        $latitude = $match[2];
-                    }
-                } elseif ('Long' === $match[1]) {
-                    if (!isset($longitude)) {
-                        $longitude = $match[2];
-                    }
-                } elseif ('Fecha Bendición' === $match[1]) {
-                    $foundationDate = \DateTime::createFromFormat('!d/m/Y', $match[2], $utc);
-                    if ($foundationDate) {
-                        $data['foundationDate'] = $foundationDate;
-                    }
-                } elseif ('gx_media_links' === $match[1]) {
-                    $this->addUrlToObject($match[2], 'Media', $data);
-                } elseif ('URL Mapa' === $match[1]) {
-                    $this->addUrlToObject($match[2], 'Map', $data);
-                } elseif ('Web' === $match[1]) {
-                    $this->addUrlToObject($match[2], 'Information', $data);
-                } elseif ('Dirección / Cómo llegar' === $match[1]) {
-                    preg_match($reZip, $match[2], $zipMatch);
-                    if (isset($zipMatch[0])) {
-                        $data['postZip'] = $zipMatch[0];
-                    }
-                    if (strlen($match[2]) < 200) {
-                        $data['postStreet1'] = $match[2];
-                    } else {
-                        $data['contactNotes'] = $match[2];
-                    }
-                } elseif ('Ciudad' === $match[1]) {
-                    $data['cityState'] = trim($match[2]);
-                    if (!isset($cityCountryMap[$data['cityState']])) {
-                        $cityCountryMap[$data['cityState']] = null;
-                    } else {
-                        $data['country'] = strtoupper($cityCountryMap[$data['cityState']]);
-                        if (isset($nationalMovementAssociationMap[$data['country']])) {
-                            $data['parentId'] = $nationalMovementAssociationMap[$data['country']];
-                        }
-                    }
-                } else {
-                    throw new \Exception('We missed a data field');
-                }
-            }
-            //the GeoPoint will get set in the preprocessor
-            $data['latitude'] = $latitude;
-            $data['longitude'] = $longitude;
-
-            //for analysis purposes
-            if (!isset($icons[$styleUrl])) {
-                $icons[$styleUrl] = [$name];
-            } else {
-                $icons[$styleUrl][] = $name;
-            }
-
-            $dataToImport[] = $data;
-        }
-        ksort($cityCountryMap);
-        if (!$simulate) { //import the items
-            $table = $this->schoenstattTable;
-            foreach ($dataToImport as $key => $data) {
-                $dataToImport[$key]['result'] = $table->createEntity('association', $data, false);
-            }
-        }
-        return new ViewModel([
-            'features' => $dataToImport,
-            'simulate'  => $simulate,
-        ]);
     }
 
     protected function getNationalMovementAssociationMap()

@@ -5,8 +5,6 @@ use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
-use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
-use Schoenstatt\Service\AssociationKindsService;
 
 /**
  * Factory responsible of prepping the AssociationForm

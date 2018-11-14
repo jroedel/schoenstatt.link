@@ -3,7 +3,6 @@ namespace Schoenstatt\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Zend\Form\FormElementManager\FormElementManagerV2Polyfill;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\PersonForm;
 

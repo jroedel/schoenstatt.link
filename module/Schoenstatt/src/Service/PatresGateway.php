@@ -156,7 +156,7 @@ class PatresGateway
 
     /**
      * Retrieve and validate person info from Patres database
-     * @param unknown $personId
+     * @param int $personId
      * @throws \Exception
      */
     public function getRemotePerson($personId)
@@ -201,7 +201,7 @@ class PatresGateway
 
     /**
      * Get the person data from the SchoenstattTable, returns false if not found
-     * @param unknown $personId
+     * @param int $personId
      * @return boolean|mixed
      */
     public function getPersonInSchoenstattTable($personId)

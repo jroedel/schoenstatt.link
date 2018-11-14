@@ -3,8 +3,6 @@ namespace Schoenstatt\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Schoenstatt\Form\AssociationForm;
-use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\AssignmentForm;
 
 /**

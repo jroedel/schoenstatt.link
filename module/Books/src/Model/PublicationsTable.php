@@ -5,15 +5,15 @@ use SionModel\Db\Model\SionTable;
 use SionModel\Filter\ToAscii;
 use Schoenstatt\Model\SchoenstattTable;
 use Zend\Db\Sql\Select;
-use Zend\Validator\Regex;
 use Zend\Db\Sql\Predicate\Expression;
 use SionModel\Db\Model\PredicatesTable;
 use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Predicate\In;
-use Zend\Db\Sql\Update;
 use Zend\Db\Sql\Predicate\IsNull;
+use Zend\Db\Sql\Predicate\Predicate;
+use Zend\Db\Sql\Predicate\Like;
 
 class PublicationsTable extends SionTable
 {
@@ -297,13 +297,13 @@ ORDER BY `Publisher`";
             $query['search'] = $filter->filter($query['search']);
         }
 
-        $queryParameters = [
-            'title', 'authorText', 'search', 'publisher',
-            'description', 'categoryId', 'inLanguage',
-            'mainPublicationId', 'translatedFromPublicationId', 'publicationId',
-            'resourceId' //@todo finish this (we should be limiting on the search action)
-        ];
-        $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
+//         $queryParameters = [
+//             'title', 'authorText', 'search', 'publisher',
+//             'description', 'categoryId', 'inLanguage',
+//             'mainPublicationId', 'translatedFromPublicationId', 'publicationId',
+//             'resourceId' //@todo finish this (we should be limiting on the search action)
+//         ];
+//         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
 
         $fieldMap = $this->getEntitySpecification('publication')->updateColumns;
         $fieldMap['category'] = 'CategoryName';
@@ -439,7 +439,7 @@ ORDER BY `Publisher`";
         if (isset($query['authorText']) && 0 !== strlen($query['authorText'])) {
             $search = $query['authorText'];
             $searchLike = sprintf("%%%s%%", $search);
-            $titleClause = new Like($fieldMap['authorText'], $searchLike);
+            $authorClause = new Like($fieldMap['authorText'], $searchLike);
             $where->addPredicate($authorClause, $combination);
         }
 
@@ -490,8 +490,8 @@ ORDER BY `Publisher`";
         }
 
         $entities = $this->getUnlinkedPublications();
-        $persons = $this->schoenstattTable->getUnlinkedPersons();
-        $associations = $this->schoenstattTable->getUnlinkedAssociations();
+//         $persons = $this->schoenstattTable->getUnlinkedPersons();
+//         $associations = $this->schoenstattTable->getUnlinkedAssociations();
 
         foreach ($entities as $entityId => $entityObject) {
             if (isset($entityObject['mainPublicationId']) &&
@@ -687,7 +687,7 @@ ORDER BY `Publisher`";
                 'datePublishedText'         => $row['DatePublishedText'],
                 'publisher'                 => $this->filterDbString($row['Publisher']),
                 'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
-                'datePublished'             => $this->filterDbDate($row['DatePublished']),
+                'datePublished'             => $datePublished,
                 'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
                 'bookFormatType'            => $bookFormatType,
                 'mainPublicationId'         => $mainPublicationId,
@@ -777,7 +777,6 @@ ORDER BY `Publisher`";
     {
         $objectId = $object['publicationId'];
         $translatedFromPublicationId = $object['translatedFromPublicationId'];
-        $language = $object['inLanguage'];
         $interestingIds = [$object['publicationId']]; //this allows us get the sub editions of the object
 
         //@todo work with the memcache
@@ -932,8 +931,8 @@ ORDER BY `Publisher`";
             $data['mainPublicationId'] = null;
         }
 
-        static $entityDetector;
-        static $personDetector;
+//         static $entityDetector;
+//         static $personDetector;
         /*
          * Break out the authorsAll field from the form
          *
@@ -1048,7 +1047,7 @@ ORDER BY `Publisher`";
             key_exists('illustratorsAll', $data)
         ) {
             $text = [];
-            $persons = [];
+//             $persons = [];
             if (null !== $data['illustratorsAll']) {
 //                 if (!isset($personDetector)) {
 //                     $personDetector= new Regex('/^p\d{1,5}$/');
@@ -1178,7 +1177,7 @@ ORDER BY `Publisher`";
      *
      * @param string $simulate
      * @param mixed[] $importData user information regarding this import
-     * @return NULL[][]|number[][]|string[][]|boolean[][]|unknown[][]|\DateTime[][]|mixed[][]
+     * @return mixed[][]
      */
     public function importPublications($simulate = true, $importData = null)
     {
@@ -1522,7 +1521,7 @@ WHERE 1";
 
         //2b. Find last name/first name
 
-        $publicationUpdates = [];
+//         $publicationUpdates = [];
         //3. look for preexisting authors in person table, add them to the list of author links to insert
 
         //4. Insert new authors
@@ -1539,14 +1538,14 @@ WHERE 1";
         static $periodEnd;
         if (!isset($periodEnd)) {
             $periodEnd = [
-                1 => date_create_from_format('Y-m-d', '1913-01-01'),
-                2 => date_create_from_format('Y-m-d', '1920-01-01'),
-                3 => date_create_from_format('Y-m-d', '1925-01-01'),
-                4 => date_create_from_format('Y-m-d', '1942-01-01'),
-                5 => date_create_from_format('Y-m-d', '1946-01-01'),
-                6 => date_create_from_format('Y-m-d', '1952-01-01'),
-                7 => date_create_from_format('Y-m-d', '1966-01-01'),
-                8 => date_create_from_format('Y-m-d', '1969-01-01'),
+                1 => date_create_from_format('Y-m-d', '1913-01-01', $tz),
+                2 => date_create_from_format('Y-m-d', '1920-01-01', $tz),
+                3 => date_create_from_format('Y-m-d', '1925-01-01', $tz),
+                4 => date_create_from_format('Y-m-d', '1942-01-01', $tz),
+                5 => date_create_from_format('Y-m-d', '1946-01-01', $tz),
+                6 => date_create_from_format('Y-m-d', '1952-01-01', $tz),
+                7 => date_create_from_format('Y-m-d', '1966-01-01', $tz),
+                8 => date_create_from_format('Y-m-d', '1969-01-01', $tz),
             ];
         }
         foreach ($periodEnd as $period => $endDate) {

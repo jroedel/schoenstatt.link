@@ -4,7 +4,6 @@ namespace Schoenstatt\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AdvancedSearchForm;
-use Schoenstatt\Model\SchoenstattTable;
 
 /**
  *
@@ -19,7 +18,7 @@ class AdvancedSearchFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var SchoenstattTable $table **/
+        /** @var \Schoenstatt\Model\SchoenstattTable $table **/
         $table = $container->get('Schoenstatt\Model\SchoenstattTable');
         $form = new AdvancedSearchForm();
         $roleTitles = $table->getRoleTitleValueOptions();
