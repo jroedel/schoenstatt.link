@@ -38,7 +38,7 @@ class LibraryImportsController extends SionController
         $this->libraryId = $libraryId;
         return $this;
     }
-    
+
     public function indexAction()
     {
         $libraryId = $this->getLibraryId();
@@ -59,6 +59,9 @@ class LibraryImportsController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $view->setVariable('libraryId', $libraryId);
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
@@ -108,6 +111,9 @@ class LibraryImportsController extends SionController
         $object = $this->getEntityObject($importId);
         $this->setLibraryId($object['libraryId']);
         $view = parent::editAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         /** @var ImportForm $form */
         $form = $view->getVariable('form');
         //first thing is to figure out if it has already been imported

@@ -78,6 +78,9 @@ class AssignmentsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $form = null;
 
         if ($this->getRequest()->isGet()) {

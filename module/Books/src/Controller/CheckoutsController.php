@@ -24,6 +24,9 @@ class CheckoutsController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         if (isset($view)) {
             //@todo In the SionController function, I should automatically retrieve all route params and add them to the view
             $view->setVariable('libraryId', $libraryId);

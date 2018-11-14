@@ -69,7 +69,8 @@ $this->headTitle($name);?>
                 $ytile = floor($y);
                 $img = "https://a.tile.openstreetmap.org/$zoom/$xtile/$ytile.png";
                 ?>
-                <a href="<?php echo $mapUrl;?>" target="_blank"><img src="<?php echo $img;?>"/></a>
+                <a href="<?php echo $mapUrl;?>" target="_blank">
+                <img alt="<?php echo $this->translate('Open Street Maps');?>" src="<?php echo $img;?>" height="256" width="256"/></a>
             <?php endif;?>
         </div>
         <div class="col-md-5">

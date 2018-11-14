@@ -14,6 +14,9 @@ class CollectionsController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $view->setVariable('libraryId', $libraryId);
         return $view;
     }

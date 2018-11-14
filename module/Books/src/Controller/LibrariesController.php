@@ -22,6 +22,9 @@ class LibrariesController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         $entityObject = $view->getVariable('entity');
         $params = $this->params()->fromQuery();
         if (isset($entityObject['libraryId'])) {

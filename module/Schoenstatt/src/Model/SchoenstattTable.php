@@ -27,6 +27,7 @@ use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
 use Spatie\SchemaOrg\Organization;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
+use Spatie\SchemaOrg\PlaceOfWorship;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -90,7 +91,7 @@ class SchoenstattTable extends SionTable implements
         'jsonTelephone'     => 'telephone',
         'jsonSameAs'        => 'sameAs',
         'jsonGeo'           => 'geo',
-        'jsonApiUrl'        => 'apiUrl',
+//         'jsonApiUrl'        => 'apiUrl',
         'publicNotes'       => 'description',
     ];
 
@@ -635,11 +636,7 @@ class SchoenstattTable extends SionTable implements
 
         $urls = SionTable::processUrls($unprocessedUrls);
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
-        if ('sch-shrine' == $kind) {
-            $jsonIdentifier = "https://schoenstatt.link/en/shrines/".$identifier;
-        } else {
-            $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
-        }
+        $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
         $jsonApiUrl = "https://schoenstatt.link/en/api/v1/associations/".$identifier;
 
         $phones = [];
@@ -917,7 +914,7 @@ class SchoenstattTable extends SionTable implements
      * @param mixed[] $object
      * @return \Spatie\SchemaOrg\Thing
      */
-    public function getAssociationSchema($object)
+    public function getAssociationSchema($object, $forApi = false)
     {
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
@@ -932,28 +929,23 @@ class SchoenstattTable extends SionTable implements
                 $schema->setProperty($property, $object[$field]);
             }
         }
+        //mark shrines as free public places
+        if ('sch-shrine' === $object['kind'] || 'sch-wayside-shrine' === $object['kind'] && $object['isActive']) {
+            $schema->isAccessibleForFree(true);
+            $schema->publicAccess(true);
+        }
+        if ($forApi && isset($object['jsonApiUrl'])) {
+            $schema->setProperty('apiUrl', $object['jsonApiUrl']);
+        }
         return $schema;
     }
 
-    public function getAssociationListSchema($objects, &$resultingMd5s)
+    public function getAssociationListSchema($objects, &$resultingMd5s, $forApi = false)
     {
         $schemata = [];
         $resultingMd5s = [];
         foreach ($objects as $associationId => $object) {
-            if (!isset($this->associationKinds[$object['kind']])) {
-                throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
-            }
-            $schemaType = $this->associationKinds[$object['kind']]->schemaType;
-            if (!isset($schemaType) || !class_exists($schemaType)) {
-                throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
-            }
-            $schema = new $schemaType;
-            $schema->url("https://schoenstatt.link/en/shrines/".$object['associationId']);
-            foreach (self::ASSOCIATION_SCHEMA_FIELD_MAP as $field => $property) {
-                if (isset($object[$field])) {
-                    $schema->$property($object[$field]);
-                }
-            }
+            $schema = $this->getAssociationSchema($object, $forApi);
             $resultingMd5s[$associationId] = $object['schemaOrgJsonMd5'];
             $array = $schema->toArray();
             $schemata[] = $array;

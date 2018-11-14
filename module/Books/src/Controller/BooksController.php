@@ -15,7 +15,10 @@ class BooksController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
-        
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
+
         $request = $this->getRequest();
         if ($request->isGet()) {
             $copyBook = $this->params()->fromQuery('copyBook');
@@ -61,6 +64,9 @@ class BooksController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
         $entity = $table->getBook($view->getVariable('entityId'));
