@@ -10,7 +10,7 @@ use Books\InputFilter\DriveFileFilter;
 
 class DriveGateway
 {
-    protected const FILES_CACHE_KEY = 'drive-gateway-files';
+    protected const FILES_CACHE_KEY = 'drive-gateway-files-json';
     protected const CONFIG_KEY_API_KEY = 'files_api_key';
     protected const CONFIG_KEY_FILES_API_URL = 'files_api_url';
     /**
@@ -118,8 +118,7 @@ class DriveGateway
     protected function getFilesFromGoogleDrive()
     {
         $cache = $this->getCache();
-
-        $result = $cache->getItem(self::FILES_CACHE_KEY, $success);
+        $json = $cache->getItem(self::FILES_CACHE_KEY, $success);
         if (!$success) {
             $key = $this->getApiKey();
             $listUrl = $this->getFilesApiUrl();
@@ -132,20 +131,22 @@ class DriveGateway
             if (200 != $response->getStatusCode()) {
                 throw new \Exception('Failed to retrieve list of files from Google Drive. Status code: '. $response->getStatusCode());
             }
-            $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
-            if (!is_array($data)) {
-                throw new \Exception('Failed to retrieve list of files from Google Drive. No data returned');
-            }
-            $result = [];
-            $fileInputFilter = new DriveFileFilter();
-            foreach ($data as $file) {
-                $fileInputFilter->setData($file);
-                if ($fileInputFilter->isValid()) {
-                    $purified = $fileInputFilter->getValues();
-                    $result[] = $purified;
-                } //simply ignore invalid rows @todo log them somewhere
-            }
-            $cache->setItem(self::FILES_CACHE_KEY, $result);
+            $json = $response->getBody();
+            //best to cache the JSON instead of serializing afterwards, plus it gets re-validated
+            $cacheResult = $cache->setItem(self::FILES_CACHE_KEY, $json);
+        }
+        $data = Json::decode($json, Json::TYPE_ARRAY);
+        if (!is_array($data)) {
+            throw new \Exception('Failed to retrieve list of files from Google Drive. No data returned');
+        }
+        $result = [];
+        $fileInputFilter = new DriveFileFilter();
+        foreach ($data as $file) {
+            $fileInputFilter->setData($file);
+            if ($fileInputFilter->isValid()) {
+                $purified = $fileInputFilter->getValues();
+                $result[] = $purified;
+            } //simply ignore invalid rows @todo log them somewhere
         }
         return $result;
     }
