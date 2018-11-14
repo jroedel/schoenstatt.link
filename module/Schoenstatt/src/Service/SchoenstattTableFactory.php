@@ -32,8 +32,12 @@ class SchoenstattTableFactory implements FactoryInterface
 
         /** @var \JTranslate\Model\CountriesInfo */
         $countriesInfo = $container->get(CountriesInfo::class);
-
-        $table = new SchoenstattTable($dbAdapter, $container, $actingUserId, $config['schoenstatt'], $countriesInfo);
+        
+        $plugins = $container->get('ViewHelperManager');
+        $translateViewHelper = $plugins->get('translate');
+        $translator = $translateViewHelper->getTranslator();
+        
+        $table = new SchoenstattTable($dbAdapter, $container, $actingUserId, $config['schoenstatt'], $countriesInfo, $translator);
         return $table;
     }
 }

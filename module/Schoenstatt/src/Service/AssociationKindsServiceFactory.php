@@ -3,7 +3,6 @@ namespace Schoenstatt\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Zend\I18n\View\Helper\Translate;
 
 /**
  * Factory responsible of constructing the central collection of AssociationKind specs

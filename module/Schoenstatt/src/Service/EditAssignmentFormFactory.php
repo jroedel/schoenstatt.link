@@ -4,7 +4,6 @@ namespace Schoenstatt\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AssignmentForm;
-use Schoenstatt\Model\SchoenstattTable;
 
 /**
  * Factory responsible of prepping the AssignmentForm

@@ -3,15 +3,12 @@ namespace Books\Controller;
 
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Books\Model\PublicationsTable;
 use SionModel\Controller\SionController;
 use Books\Form\PublicationsSearchForm;
 use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
-use Zend\Form\Element\Select;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
-use SionModel\Db\Model\PredicatesTable;
 
 class PublicationsController extends SionController
 {
@@ -259,15 +256,14 @@ class PublicationsController extends SionController
             $data = $form->getData();
 
             if (!empty($data)) {
-                /** @var PublicationsTable $table */
+                /** @var \Books\Model\PublicationsTable $table */
                 $table = $this->getSionTable();
                 $options = [];
                 $options['maxResults'] = self::MAX_SEARCH_RESULTS;
                 if (!isset($data['showEditionsSeparately']) || $data['showEditionsSeparately'] != '1') {
                     $options['noSubEditions'] = true;
                 }
-                //@todo modify searchPublications call to include options with noSubEditions
-                $entities = $table->searchPublications($data);
+                $entities = $table->searchPublications($data, $options);
                 if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {
                     $this->nowMessenger()->addMessage("More than the max number of publications match your search. Only the first 300 results shown.", NowMessenger::NAMESPACE_INFO);
                 }
@@ -294,8 +290,6 @@ class PublicationsController extends SionController
     {
         /** @var PublicationsTable $table */
         $table      = $this->getSionTable();
-        $entity     = $this->getEntity();
-        $entitySpec = $this->getEntitySpecification();
         $id         = (Int)$this->getEntityIdParam('show');
         $object     = $this->getEntityObject($id);
 
