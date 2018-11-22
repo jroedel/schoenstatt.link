@@ -1,0 +1,44 @@
+<?php
+namespace Books\Controller;
+
+use SionModel\Controller\SionController;
+use Zend\Stdlib\ResponseInterface;
+use Books\Model\EventTextTable;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+
+class BlogController extends SionController
+{
+//     public function createAction()
+//     {
+//         $libraryId = $this->params()->fromRoute('library_id');
+//         $resourceId = 'library_'.$libraryId;
+//         if (!$this->isAllowed($resourceId, 'administrate')) {
+//             throw new UnAuthorizedException();
+//         }
+//         $view = parent::createAction();
+//         if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+//             return $view;
+//         }
+//         $view->setVariable('libraryId', $libraryId);
+//         return $view;
+//     }
+    public function showAction()
+    {
+        $view = parent::showAction();
+        if ($view instanceof ResponseInterface) {
+            return $view;
+        }
+        $object = $view->getVariable('entity');
+        if ($object['kind'] !== EventTextTable::TEXT_KIND_BLOG) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_INFO)
+                ->addMessage('Blog entry not found');
+            return $this->redirect()->toRoute('blog');
+        }
+    }
+    
+    public function getEntityObject($id)
+    {
+        $object = $this->getSionTable()->getBlogPost($id);
+        return $this->object[$id] = $object;
+    }
+}

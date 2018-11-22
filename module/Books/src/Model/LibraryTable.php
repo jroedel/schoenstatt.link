@@ -1194,7 +1194,7 @@ ORDER BY `LibraryName`";
      * Get a Library instance for a given libraryId
      * @param number $libraryId
      * @throws \InvalidArgumentException
-     * @return \Books\Model\Library
+     * @return \Books\Model\LibraryOptions
      */
     public function getLibraryOptions($libraryId = null)
     {

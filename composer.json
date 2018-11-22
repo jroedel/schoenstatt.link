@@ -44,7 +44,8 @@
         "talis/niso-openurl": "dev-master",
         "beaucal/beaucal-invalid-session": "^0.3.0",
         "zendframework/zend-mvc-plugin-prg": "^1.1",
-        "swiftmailer/swiftmailer": "^6.0"
+        "swiftmailer/swiftmailer": "^6.0",
+        "cocur/slugify": "^3.1"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

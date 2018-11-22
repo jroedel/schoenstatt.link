@@ -4,9 +4,7 @@ namespace Books\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Matriphe\ISO639\ISO639;
-use Books\Model\LibraryTable;
 use Books\Form\BookForm;
-use Books\Model\PublicationsTable;
 
 /**
  * @author Jeff Roedel <webmaster@schoenstatt.link>
@@ -41,7 +39,6 @@ class BookFormFactory extends ISO639 implements FactoryInterface
         $authors = $table->getAuthorsValueOptions($libraryId);
         $collections = $table->getCollectionValueOptions($libraryId);
         $publishers = $table->getPublishersValueOptions();
-        $config = $container->get('Books\Config');
 
         $languages = $this->getLanguageValueOptions();
         $keywords = $table->getKeywordsValueOptions();

@@ -1,24 +1,20 @@
 <?php
 namespace Schoenstatt\Controller;
 
-use Schoenstatt\Model\SchoenstattTable;
 use Zend\View\Model\JsonModel;
 use SionModel\Controller\SionController;
 use Zend\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
 use Zend\Filter\StripTags;
-use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Zend\Stdlib\ResponseInterface;
-use Schoenstatt\Form\AssociationForm;
 
 class AssociationsController extends SionController
 {
     public function sendToNewUrl()
     {
         $associationId = $this->params()->fromRoute('association_id');
-        /** @var SchoenstattTable $table */
+        /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $this->getSionTable();
         $object = $table->getSimpleAssociation($associationId);
         if (!isset($object)) {
@@ -38,7 +34,6 @@ class AssociationsController extends SionController
     public function updateEntityPostFormValidation($id, $data, $form)
     {
         $entity = $this->getEntity();
-        $entitySpec = $this->getEntitySpecification();
         /** @var SionTable $table **/
         $table = $this->getSionTable();
 
