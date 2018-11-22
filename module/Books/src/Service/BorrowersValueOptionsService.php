@@ -3,7 +3,6 @@ namespace Books\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Schoenstatt\Model\SchoenstattTable;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
@@ -19,7 +18,7 @@ class BorrowersValueOptionsService implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var SchoenstattTable $table */
+        /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $container->get('Schoenstatt\Model\SchoenstattTable');
         $persons = $table->getUnlinkedPersons();
         $valueOptions = [];

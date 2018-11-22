@@ -4,8 +4,6 @@ namespace Books\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\LibraryTable;
-use Books\Form\SearchForm;
-use Zend\Router\RouteMatch;
 use Books\View\Helper\LibraryInfo;
 
 /**

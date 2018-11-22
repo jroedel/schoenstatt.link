@@ -3,9 +3,7 @@ namespace Books\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Books\Model\LibraryTable;
 use Books\Form\CheckoutForm;
-use Zend\Mvc\Application;
 
 /**
  * @author Jeff Roedel <webmaster@schoenstatt.link>
@@ -19,11 +17,11 @@ class CheckoutFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var LibraryTable $table **/
+        /** @var \Books\Model\LibraryTable $table **/
         $table = $container->get('Books\Model\LibraryTable');
 
         /**
-         * @var Application $application
+         * @var \Zend\Mvc\Application $application
          */
         $application = $container->get('Application');
         $routeMatch = $application->getMvcEvent()->getRouteMatch();

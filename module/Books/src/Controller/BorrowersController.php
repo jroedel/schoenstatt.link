@@ -7,6 +7,7 @@ use Zend\View\Model\ViewModel;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\PatresGateway;
 use Carbon\Carbon;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class BorrowersController extends AbstractActionController
 {

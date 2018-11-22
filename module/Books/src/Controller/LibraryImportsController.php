@@ -2,9 +2,7 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Books\Form\ImportForm;
 use Books\Model\LibraryTable;
-use Books\Model\LibraryOptions;
 use JTranslate\Controller\Plugin\NowMessenger;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Books\Model\PublicationsTable;
@@ -227,7 +225,7 @@ class LibraryImportsController extends SionController
      * @param bool $simulate Passing byReference lets us tell the calling function that we weren't able to persist
      * @param bool $deleteMissingRowsFromDatabase
      * @throws \Exception
-     * @return array[]|string[][]|boolean[][]|unknown[][]|number[][]|\Books\Model\number[][]
+     * @return mixed[]
      */
     public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, &$simulate = true, $deleteMissingRowsFromDatabase = false)
     {

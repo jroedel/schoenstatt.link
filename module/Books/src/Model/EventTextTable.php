@@ -3,9 +3,26 @@ namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
 use Zend\Db\Sql\Where;
+use Zend\Db\Sql\Predicate\Like;
+use Zend\Db\Sql\Predicate\Predicate;
+use Zend\Db\Sql\Predicate\PredicateSet;
+use Zend\Db\Sql\Select;
+use Zend\Db\Adapter\AdapterInterface;
+use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
+use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
+use Zend\Permissions\Acl\Resource\GenericResource;
+use Schoenstatt\Filter\BlogPostUserIdFilter;
 
-class EventTextTable extends SionTable
+class EventTextTable extends SionTable implements
+    ResourceProviderInterface,
+    RuleProviderInterface
 {
+    const TEXT_KIND_BLOG = 'blog';
+    
+    /**
+     * @var array $config
+     */
+    protected $config;
     
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, array $config)
     {
@@ -69,10 +86,10 @@ class EventTextTable extends SionTable
     
     public function searchEvents($query, $options = [])
     {
-        $queryParameters = [
-            'title', 'search', //'startDate', 'endDate', 'period'
-        ];
-        $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
+//         $queryParameters = [
+//             'title', 'search', //'startDate', 'endDate', 'period'
+//         ];
+//         $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
         
         $fieldMap = $this->getEntitySpecification('event')->updateColumns;
         
@@ -241,5 +258,223 @@ class EventTextTable extends SionTable
         }
         
         return clone $select;
+    }
+    
+    /**
+     * Manipulate a database book row into a standardized row
+     * @param array $row
+     * @return array[]
+     */
+    protected function processTextRow($row)
+    {
+        $id = $this->filterDbId($row['TextId']);
+        $processedRow = [
+            'textId'                => $id,
+            'title'                 => $row['Title'],
+            'kind'                  => $row['TextKind'],
+            'language'              => $row['Language'],
+            'slug'                  => $row['Slug'],
+            'isDraft'               => $this->filterDbBool($row['IsDraft']),
+            'markdownText'          => $row['MarkdownText'],
+            'htmlText'              => $row['HtmlText'],
+            'plainText'             => $row['PlainText'],
+            'wordCount'             => $this->filterDbInt($row['WordCount']),
+            'jkTextQuality'         => $row['JkTextQuality'],
+            'tags'                  => $this->filterDbArray($row['Tags']),
+            'adminTags'             => $this->filterDbArray($row['AdminTags']),
+            'aclResourceId'         => $row['AclResourceId'],
+            'publicNotes'           => $row['PublicNotes'],
+            'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
+            'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
+            'adminNotes'            => $row['AdminNotes'],
+            'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
+            'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
+            'legacyEventId'         => $row['LegacyEventId'],
+            'legacyFile'            => $row['LegacyFile'],
+            'legacyPathDate'        => $row['LegacyPathDate'],
+            'legacyFileDateModified'=> $row['LegacyFileDateModified'],
+            'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
+            'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+            'createdOn'             => $this->filterDbDate($row['CreatedOn']),
+            'createdBy'             => $this->filterDbId($row['CreatedBy']),
+        ];
+        return $processedRow;
+    }
+    
+    /**
+     * Process checkout data before putting into the database. Sets checkedOutOn and checkedOutBy.
+     * @param mixed[] $data
+     * @param mixed[] $entityData
+     * @return mixed[]
+     */
+    protected function preprocessText($data, $entityData, $action)
+    {
+        //generate slug
+        static $slugFilter;
+        if (!isset($slugFilter)) {
+            $slugFilter;
+        }
+        
+        //generate HTML
+        
+        //generate plain text
+        
+        //generate resourceId when creating blog posts
+        if (self::ENTITY_ACTION_CREATE === $action && !isset($data['resourceId'])) {
+            $kind = isset($data['kind']) ? $data['kind'] : null;
+            if (isset($kind) && self::TEXT_KIND_BLOG === $kind) {
+                if (isset($this->actingUserId)) {
+                    $userId = $this->actingUserId;
+                    $data['resourceId'] = "blog_post_$userId";
+                } else {
+                    $data['resourceId'] = "blog_post";
+                }
+            }
+        }
+    }
+    
+    /**
+     *
+     * @param int $id
+     * @return mixed[]
+     */
+    public function getText($id)
+    {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGateway('texts');
+        }
+        $select = $this->getTextSelectPrototype();
+        $select->where(['TextId' => $id]);
+        /** @var ResultSet $result */
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+        
+        if (!isset($results[0])) {
+            return null;
+        }
+        $object = $this->processTextRow($results[0]);
+//         $this->linkPublication($object);
+        
+        return $object;
+    }
+    
+    /**
+     * Get an array of publications
+     * @param array $ids
+     * @return array
+     */
+    public function getUnlinkedTexts(array $ids = [])
+    {
+        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-texts'))) {
+            return $cache;
+        }
+        $gateway = $this->getTableGateway('texts');
+        $select = $this->getTextSelectPrototype();
+        if (!empty($ids)) {
+            $select->where(['TextId' => $ids]);
+        }
+        $results = $gateway->selectWith($select);
+        
+        $entities = [];
+        foreach ($results as $row) {
+            $processedRow = $this->processTextRow($row);
+            $id = $processedRow['textId'];
+            $entities[$id] = $processedRow;
+        }
+        
+        $this->cacheEntityObjects('unlinked-texts', $entities, ['text']);
+        return $entities;
+    }
+    /**
+     * Get a standardized select object to retrieve records from the database
+     * @return \Zend\Db\Sql\Select
+     */
+    protected function getTextSelectPrototype()
+    {
+        static $select;
+        if (!isset($select)) {
+            $select = new Select('texts');
+            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
+            $select->columns(['TextId', 'Title', 'TextKind', 'Language', 'Slug', 'IsDraft',
+                'MarkdownText', 'HtmlText', 'PlainText',
+                'WordCount', 'JkTextQuality', 'Tags', 'AdminTags', 'AclResourceId', 'PublicNotes',
+                'PublicNotesUpdatedBy', 'PublicNotesUpdatedOn', 'AdminNotes', 'AdminNotesUpdatedBy',
+                'AdminNotesUpdatedOn', 'LegacyEventId', 'LegacyFile', 'LegacyPathDate', 'LegacyFileDateModified',
+                'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy'
+                //'admin_notes_updated_by', 'current_checkout_id' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')
+            ]);
+            //         $select->group(['TheMonth', 'TheYear']);
+            //         $select->where($predicate->in('ChangedEntity', $tableEntities));
+            $select->order(['UpdatedOn']);
+        }
+        
+        return clone $select;
+    }
+    
+    /**
+     * Create a resource for each blog user, in the format "blog_post_3", where 3 is the userId
+     * Each resource will be a child of the "blog_post" resource
+     * @return \Zend\Permissions\Acl\Resource\GenericResource[]
+     */
+    public function getResources()
+    {
+        $cacheKey = 'event-text-resources';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+        
+        $sql = "SELECT DISTINCT `AclResourceId` FROM `texts` ORDER BY AclResourceId";
+        $results = $this->fetchSome(null, $sql, null);
+        
+        $return = [
+            'blog_post' => [],
+        ];
+        foreach ($results as $row) {
+            $resourceId = $this->filterDbString($row['AclResourceId']);
+            if (isset($resourceId)) {
+                if (false !== strpos($resourceId, 'blog_post_')) {
+                    $return['blog_post'][] = new GenericResource($resourceId);
+                } else {
+                    $return[] = new GenericResource($resourceId);
+                }
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $return, ['text']);
+        return $return;
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @see \BjyAuthorize\Provider\Rule\ProviderInterface::getRules()
+     * Format of the allow key is [['role1', 'role2'], 'resourceId', 'permission']
+     */
+    public function getRules()
+    {
+        $resources = $this->getResources();
+        $allow = [ // blog admins can do whatever to whichever post
+            [['blog_administrator'], 'blog_post', 'show'],
+            [['blog_administrator'], 'blog_post', 'edit'],
+            [['blog_administrator'], 'blog_post', 'delete'],
+        ];
+        if (!isset($resources['blog_post']) || !is_array($resources['blog_post']) || empty($resources['blog_post'])) {
+            return ['allow' => $allow];
+        }
+        $blogPosts = $resources['blog_post'];
+        $userIdFilter = new BlogPostUserIdFilter();
+        
+        foreach ($blogPosts as $postResource) {
+            //check if post is public
+            $allow[] = [['user'], $postResource, 'show'];
+            
+            //extract userId
+            $userId = $userIdFilter->filter($postResource);
+            
+            if (is_numeric($userId)) {
+                //set permissions for individual user
+                $allow[] = [["user_$userId"], $postResource, 'show'];
+            }
+        }
+        return ['allow' => $allow];
     }
 }

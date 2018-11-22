@@ -1,7 +1,6 @@
 <?php
 namespace Books\Service;
 
-use Schoenstatt\Model\SchoenstattTable;
 use Zend\InputFilter\InputFilterInterface;
 use Zend\Http\Client;
 use Zend\Json\Json;
@@ -113,11 +112,12 @@ class DriveGateway
     /**
      * Gets info from server and validates data
      * @throws \Exception
-     * @return mixed|void|array|stdClass|boolean|NULL|string|number|mixed[]|void[]|boolean[]|NULL[]|string[]|number[]|array[]|stdClass[]
+     * @return mixed
      */
     protected function getFilesFromGoogleDrive()
     {
         $cache = $this->getCache();
+        $success = null;
         $json = $cache->getItem(self::FILES_CACHE_KEY, $success);
         if (!$success) {
             $key = $this->getApiKey();
@@ -133,7 +133,7 @@ class DriveGateway
             }
             $json = $response->getBody();
             //best to cache the JSON instead of serializing afterwards, plus it gets re-validated
-            $cacheResult = $cache->setItem(self::FILES_CACHE_KEY, $json);
+            $cache->setItem(self::FILES_CACHE_KEY, $json);
         }
         $data = Json::decode($json, Json::TYPE_ARRAY);
         if (!is_array($data)) {

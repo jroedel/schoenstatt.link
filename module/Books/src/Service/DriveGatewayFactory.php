@@ -3,7 +3,6 @@ namespace Books\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Zend\Cache\Storage\StorageInterface;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>

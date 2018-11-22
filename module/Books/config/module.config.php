@@ -2,45 +2,17 @@
 namespace Books;
 
 use Zend\Db\Adapter\Adapter;
-use Books\Service\LibraryControllerFactory;
-use Books\Controller\PublicationsController;
-use Books\Controller\LibrariesController;
-use Books\Controller\BooksController;
-use Books\Controller\CheckoutsController;
-use Books\Controller\BorrowersController;
-use Books\Controller\CollectionsController;
-use Books\Controller\LibraryImportsController;
 use Zend\Router\Http\Literal;
 use Zend\Router\Http\Segment;
-use Books\Service\ConfigServiceFactory;
-use Books\Service\PublicationsTableFactory;
 use Books\Model\PublicationsTable;
-use Books\Service\LibraryTableServiceFactory;
 use Books\Model\LibraryTable;
 use Books\Form\SearchForm;
-use Books\Service\SearchFormFactory;
-use Books\Service\LibraryFormFactory;
 use Books\Form\LibraryForm;
 use Books\Form\CollectionForm;
-use Books\Service\CollectionFormFactory;
-use Books\Service\CheckoutFormFactory;
-use Books\Service\PublicationsSearchFormFactory;
 use Books\Form\PublicationsSearchForm;
 use Books\Form\BookForm;
-use Books\Service\BookFormFactory;
-use Books\Service\FathersObjectsFactory;
-use Books\Service\BorrowersValueOptionsService;
-use Books\Service\AuthorsValueOptionsService;
-use Books\Service\LanguagesValueOptionsFactory;
-use Books\Service\BooksMailerFactory;
 use Books\Mailing\BooksMailer;
-use Books\Service\PublicationFormFactory;
 use Books\Form\PublicationForm;
-use Books\Service\FormatPublicationFactory;
-use Books\View\Helper\FormatPublicationUrlObject;
-use Books\View\Helper\FormatField;
-use Books\View\Helper\BooksJsonLd;
-use Books\View\Helper\FormSelectWithoutOptions;
 use Books\Form\ImportForm;
 use Schoenstatt\Model\SchoenstattTable;
 use BjyAuthorize\Guard\Route;
@@ -50,13 +22,7 @@ use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
-use Books\View\Helper\Coins;
-use Books\Form;
-use Books\Model;
 use Books\Service\DriveGateway;
-use Books\Service\DriveGatewayFactory;
-use Books\View\Helper\FileSize;
-use Books\Service\LibraryInfoFactory;
 use SionModel\Db\Model\PredicatesTable;
 
 return [
@@ -235,38 +201,30 @@ return [
         ],
     ],
      'controllers' => [
-         'factories' => [
-             PublicationsController::class      => SionControllerFactory::class,
-             LibrariesController::class         => SionControllerFactory::class,
-             BooksController::class             => SionControllerFactory::class,
-             CheckoutsController::class         => SionControllerFactory::class,
-             CollectionsController::class       => SionControllerFactory::class,
-             LibraryImportsController::class    => SionControllerFactory::class,
-             Controller\EventsController::class => SionControllerFactory::class,
-         ],
          'abstract_factories' => [
             \Books\Controller\LazyControllerFactory::class,
          ],
      ],
     'service_manager' => [
         'factories' => [
-            'Books\Cache'                   => Service\CacheFactory::class,
-            'Books\Config'                  => Service\ConfigServiceFactory::class,
-            PublicationsTable::class        => Service\PublicationsTableFactory::class,
-            LibraryTable::class             => Service\LibraryTableServiceFactory::class,
-            SearchForm::class               => Service\SearchFormFactory::class,
-            LibraryForm::class              => Service\LibraryFormFactory::class,
-            CollectionForm::class           => Service\CollectionFormFactory::class,
-            'Books\Form\CreateCheckoutForm' => Service\CheckoutFormFactory::class,
-            PublicationForm::class          => Service\PublicationFormFactory::class,
-            PublicationsSearchForm::class   => Service\PublicationsSearchFormFactory::class,
-            BookForm::class                 => Service\BookFormFactory::class,
-            'Books\FathersObjects'          => Service\FathersObjectsFactory::class,
-            'Books\BorrowersValueOptions'   => Service\BorrowersValueOptionsService::class,
-            'Books\AuthorsValueOptions'     => Service\AuthorsValueOptionsService::class,
-            'Books\LanguagesValueOptions'   => Service\LanguagesValueOptionsFactory::class,
-            BooksMailer::class              => Service\BooksMailerFactory::class,
-            DriveGateway::class             => Service\DriveGatewayFactory::class,
+            'Books\Cache'                       => Service\CacheFactory::class,
+            'Books\Config'                      => Service\ConfigServiceFactory::class,
+            Model\PublicationsTable::class      => Service\PublicationsTableFactory::class,
+            Model\LibraryTable::class           => Service\LibraryTableServiceFactory::class,
+            Model\EventTextTable::class         => Service\EventTextTableFactory::class,
+            Form\SearchForm::class              => Service\SearchFormFactory::class,
+            Form\LibraryForm::class             => Service\LibraryFormFactory::class,
+            Form\CollectionForm::class          => Service\CollectionFormFactory::class,
+            'Books\Form\CreateCheckoutForm'     => Service\CheckoutFormFactory::class,
+            Form\PublicationForm::class         => Service\PublicationFormFactory::class,
+            Form\PublicationsSearchForm::class  => Service\PublicationsSearchFormFactory::class,
+            Form\BookForm::class                => Service\BookFormFactory::class,
+            'Books\FathersObjects'              => Service\FathersObjectsFactory::class,
+            'Books\BorrowersValueOptions'       => Service\BorrowersValueOptionsService::class,
+            'Books\AuthorsValueOptions'         => Service\AuthorsValueOptionsService::class,
+            'Books\LanguagesValueOptions'       => Service\LanguagesValueOptionsFactory::class,
+            Mailing\BooksMailer::class          => Service\BooksMailerFactory::class,
+            Service\DriveGateway::class         => Service\DriveGatewayFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -295,16 +253,16 @@ return [
     ],
     'view_helpers' => [
         'factories' => [
-            'formatPublication'             => FormatPublicationFactory::class,
-            'libraryInfo'                   => LibraryInfoFactory::class
+            'formatPublication'             => Service\FormatPublicationFactory::class,
+            'libraryInfo'                   => Service\LibraryInfoFactory::class
         ],
         'invokables' => [
-            'coins'                         => Coins::class,
-            'fileSize'                      => FileSize::class,
-            'formatPublicationUrlObject'    => FormatPublicationUrlObject::class,
-            'formatField'                   => FormatField::class,
-            'booksJsonLd'                   => BooksJsonLd::class,
-            'formSelectWithoutOptions'      => FormSelectWithoutOptions::class,
+            'coins'                         => View\Helper\Coins::class,
+            'fileSize'                      => View\Helper\FileSize::class,
+            'formatPublicationUrlObject'    => View\Helper\FormatPublicationUrlObject::class,
+            'formatField'                   => View\Helper\FormatField::class,
+            'booksJsonLd'                   => View\Helper\BooksJsonLd::class,
+            'formSelectWithoutOptions'      => View\Helper\FormSelectWithoutOptions::class,
         ],
     ],
     'known_issues' => [ //possible keys: description, completed
@@ -333,7 +291,7 @@ return [
                 'options' => [
                     'route'    => '/literature',
                     'defaults' => [
-                        'controller' => PublicationsController::class,
+                        'controller' => Controller\PublicationsController::class,
                         'action'     => 'languageIndex',
                     ],
                 ],
@@ -493,7 +451,7 @@ return [
                 'options' => [
                     'route'    => '/books',
                     'defaults' => [
-                        'controller' => BooksController::class,
+                        'controller' => Controller\BooksController::class,
                     ],
                 ],
                 'may_terminate' => false,
@@ -541,7 +499,7 @@ return [
                 'options' => [
                     'route'    => '/libraries',
                     'defaults' => [
-                        'controller' => LibrariesController::class,
+                        'controller' => Controller\LibrariesController::class,
                         'action'     => 'index',
                     ],
                 ],
@@ -584,7 +542,7 @@ return [
                                     'route'    => '/checkout',
                                     'defaults' => [
                                         'action'     => 'create',
-                                        'controller' => CheckoutsController::class,
+                                        'controller' => Controller\CheckoutsController::class,
                                     ],
                                 ],
                             ],
@@ -594,7 +552,7 @@ return [
                                     'route'    => '/checkin',
                                     'defaults' => [
                                         'action'     => 'checkin',
-                                        'controller' => CheckoutsController::class,
+                                        'controller' => Controller\CheckoutsController::class,
                                     ],
                                 ],
                             ],
@@ -604,7 +562,7 @@ return [
                                     'route'    => '/mass-checkout',
                                     'defaults' => [
                                         'action'     => 'massCheckout',
-                                        'controller' => CheckoutsController::class,
+                                        'controller' => Controller\CheckoutsController::class,
                                     ],
                                 ],
                             ],
@@ -614,7 +572,7 @@ return [
                                     'route'    => '/label-management',
                                     'defaults' => [
                                         'action'     => 'labelManagement',
-                                        'controller' => LibrariesController::class,
+                                        'controller' => Controller\LibrariesController::class,
                                     ],
                                 ],
                             ],
@@ -624,7 +582,7 @@ return [
                                     'route'    => '/batch-operations',
                                     'defaults' => [
                                         'action'     => 'batchOperations',
-                                        'controller' => LibrariesController::class,
+                                        'controller' => Controller\LibrariesController::class,
                                     ],
                                 ],
                             ],
@@ -634,7 +592,7 @@ return [
                                     'route'    => '/send-book-notices',
                                     'defaults' => [
                                         'action'     => 'sendBookNotices',
-                                        'controller' => LibrariesController::class,
+                                        'controller' => Controller\LibrariesController::class,
                                     ],
                                 ],
                             ],
@@ -644,7 +602,7 @@ return [
                                     'route'    => '/inactivate-books',
                                     'defaults' => [
                                         'action'     => 'inactivateBooks',
-                                        'controller' => LibrariesController::class,
+                                        'controller' => Controller\LibrariesController::class,
                                     ],
                                 ],
                             ],
@@ -702,7 +660,7 @@ return [
                 'options' => [
                     'route'    => '/borrowers',
                     'defaults' => [
-                        'controller'=> BorrowersController::class,
+                        'controller'=> Controller\BorrowersController::class,
                         'action'    => 'index',
                     ],
                 ],
@@ -736,7 +694,7 @@ return [
                 'options' => [
                     'route'    => '/library-imports',
                     'defaults' => [
-                        'controller'=> LibraryImportsController::class,
+                        'controller'=> Controller\LibraryImportsController::class,
                     ],
                 ],
                 'may_terminate' => false,
@@ -805,7 +763,7 @@ return [
                 'options' => [
                     'route'    => '/checkouts',
                     'defaults' => [
-                        'controller'=> CheckoutsController::class,
+                        'controller'=> Controller\CheckoutsController::class,
                         'action'    => 'index',
                     ],
                 ],
@@ -877,7 +835,7 @@ return [
                 'options' => [
                     'route'    => '/collections',
                     'defaults' => [
-                        'controller' => CollectionsController::class,
+                        'controller' => Controller\CollectionsController::class,
                     ],
                 ],
                 'may_terminate' => false,
@@ -910,6 +868,49 @@ return [
                             'constraints' => [
                                 'library_id' => '[0-9]{1,3}',
                             ],
+                            'defaults' => [
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'blog' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/blog',
+                    'defaults' => [
+                        'controller' => Controller\BlogController::class,
+                        'action' => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'blog-post' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/posts/:text_id',
+                            'constraints' => [
+                                'text_id' => '[0-9]{1,5}',
+                            ],
+                        ],
+                        'may_terminate' => false,
+                        'child_routes' => [
+                            'edit' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/edit',
+                                    'defaults' => [
+                                        'action'     => 'edit',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'create' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/create',
                             'defaults' => [
                                 'action'     => 'create',
                             ],
@@ -1038,7 +1039,7 @@ return [
                 'table_key'                             => 'LibraryId',
                 'entity_key_field'                      => 'libraryId',
                 'sion_model_class'                      => LibraryTable::class,
-                'sion_controllers'                      => [LibrariesController::class],
+                'sion_controllers'                      => [Controller\LibrariesController::class],
                 'controller_services'                   => [
                     SearchForm::class,
                     'Books\BorrowersValueOptions',
@@ -1140,7 +1141,7 @@ return [
                 'table_key'                                 => 'ImportId',
                 'entity_key_field'                          => 'importId',
                 'sion_model_class'                          => LibraryTable::class,
-                'sion_controllers'                          => [LibraryImportsController::class],
+                'sion_controllers'                          => [Controller\LibraryImportsController::class],
                 'controller_services'                       => [
                     PublicationsTable::class,
                 ],
@@ -1224,7 +1225,7 @@ return [
                 'table_key'                                 => 'book_id',
                 'entity_key_field'                          => 'bookId',
                 'sion_model_class'                          => LibraryTable::class,
-                'sion_controllers'                          => [BooksController::class],
+                'sion_controllers'                          => [Controller\BooksController::class],
                 'controller_services'                       => [
                     'Books\BorrowersValueOptions',
                     PublicationsTable::class,
@@ -1330,7 +1331,7 @@ return [
                 'table_key'                             => 'CheckoutId',
                 'entity_key_field'                      => 'checkoutId',
                 'sion_model_class'                      => LibraryTable::class,
-                'sion_controllers'                      => [CheckoutsController::class],
+                'sion_controllers'                      => [Controller\CheckoutsController::class],
                 'controller_services'                   => [
                     PatresGateway::class,
                     SchoenstattTable::class,
@@ -1412,7 +1413,7 @@ return [
                 'table_key'                             => 'PublicationId',
                 'entity_key_field'                      => 'publicationId',
                 'sion_model_class'                      => PublicationsTable::class,
-                'sion_controllers'                      => [PublicationsController::class],
+                'sion_controllers'                      => [Controller\PublicationsController::class],
                 'controller_services'                   => [
                     FilesTable::class,
                     PublicationsSearchForm::class,
@@ -1556,7 +1557,7 @@ return [
                 'table_key'                                 => 'CollectionId',
                 'entity_key_field'                          => 'collectionId',
                 'sion_model_class'                          => LibraryTable::class,
-                'sion_controllers'                          => [CollectionsController::class],
+                'sion_controllers'                          => [Controller\CollectionsController::class],
                 'controller_services'                       => [],
                 'get_object_function'                       => 'getSimpleCollection',
                 'get_objects_function'                      => 'getUnlinkedCollections',
@@ -1697,6 +1698,96 @@ return [
                 'update_columns'                            => [
                 ],
             ],
+            'text' => [
+                'name'                                      => 'text',
+                'table_name'                                => 'texts',
+                'table_key'                                 => 'TextId',
+                'entity_key_field'                          => 'textId',
+                'sion_model_class'                          => Model\EventTextTable::class,
+                'sion_controllers'                          => [Controller\BlogController::class],//BorrowersController::class],
+                'controller_services'                       => [
+                    
+                ],
+                'get_object_function'                       => 'getText',
+                'get_objects_function'                      => 'getUnlinkedTexts',
+                //                 'format_view_helper'                        => 'formatEvent',
+                'required_columns_for_creation'             => [
+                    'title',
+                    'kind',
+                    'inLanguage',
+                ],
+                'name_field'                                => 'title',
+                'name_field_is_translateable'               => true,
+//                 'country_field'                             => 'country',
+                'text_columns'                              => ['markdownText', 'htmlText', 'plainText'],
+//                 'many_to_one_update_columns'                => [
+    //                     'email'    => 'contactInfo',
+    //                     'cell'    => 'contactInfo',
+    //                 ],
+                'report_changes'                            => true,
+                //                 'index_route'                               => 'events',
+//                 'index_template'                            => 'project/events/index',
+                'default_route_key'                         => 'text_id',
+                //                 'show_action_template'                      => 'project/events/show',
+                'show_route'                                => 'texts/text',
+                'show_route_key'                            => 'text_id',
+                'show_route_key_field'                      => 'textId',
+                'edit_action_form'                          => Form\BlogForm::class,
+//                 'edit_action_template'                      => 'project/events/edit',
+                'edit_route'                                => 'blog/blog-post/edit',
+                'edit_route_key'                            => 'text_id',
+                'edit_route_key_field'                      => 'textId',
+                'create_action_form'                        => Form\BlogForm::class,
+//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
+                'create_action_redirect_route'              => 'blog/blog-post',
+                'create_action_redirect_route_key'          => 'text_id',
+                'create_action_redirect_route_key_field'    => 'textId',
+//                 'create_action_template'                    => 'project/events/create',
+//                 'touch_default_field'                       => 'eventId',
+//                 'touch_route_key'                           => 'event_id',
+//                 'touch_field_route_key'                     => 'event_id',
+//                 'touch_json_route'                          => 'events/event/touch',
+//                 'touch_json_route_key'                      => 'event_id',
+                'database_bound_data_preprocessor'          => 'preprocessText',
+//                 'database_bound_data_postprocessor'         => 'postprocessEvent',
+//                 'moderate_route'                            => 'events/event/moderate',
+//                 'moderate_route_entity_key'                 => 'event_id',
+//                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                      => true,
+//                 'delete_action_acl_resource'                => 'event_:id',
+//                 'delete_action_acl_permission'              => 'delete',
+                'delete_action_redirect_route'              => 'blog',
+                'update_columns'                            => [
+                    'textId' => 'TextId',
+                    'title' => 'Title',
+                    'kind' => 'TextKind',
+                    'inLanguage' => 'Language',
+                    'slug' => 'Slug',
+                    'isDraft' => 'IsDraft',
+                    'markdownText' => 'MarkdownText',
+                    'htmlText' => 'HtmlText',
+                    'plainText' => 'PlainText',
+                    'wordCount' => 'WordCount',
+                    'jkTextQuality' => 'JkTextQuality',
+                    'tags' => 'Tags',
+                    'adminTags' => 'AdminTags',
+                    'aclResourceId' => 'AclResourceId',
+                    'publicNotes' => 'PublicNotes',
+                    'publicNotesUpdatedBy' => 'PublicNotesUpdatedBy',
+                    'publicNotesUpdatedOn' => 'PublicNotesUpdatedOn',
+                    'adminNotes' => 'AdminNotes',
+                    'adminNotesUpdatedBy' => 'AdminNotesUpdatedBy',
+                    'adminNotesUpdatedOn' => 'AdminNotesUpdatedOn',
+                    'legacyEventId' => 'LegacyEventId',
+                    'legacyFile' => 'LegacyFile',
+                    'legacyPathDate' => 'LegacyPathDate',
+                    'legacyFileDateModified' => 'LegacyFileDateModified',
+                    'updatedOn' => 'UpdatedOn',
+                    'updatedBy' => 'UpdatedBy',
+                    'createdOn' => 'CreatedOn',
+                    'createdBy' => 'CreatedBy',
+                ],
+            ],
         ],
     ],
 
@@ -1704,22 +1795,24 @@ return [
         // resource providers provide a list of resources that will be tracked
         // in the ACL. like roles, they can be hierarchical
         'resource_providers' => [
-           \BjyAuthorize\Provider\Resource\Config::class => [
-               'book',
-               'book_teo',
-               'book_sch',
-               'publication_brothers',
-               'publication_families',
-               'publication_ladies',
-               'publication_patres',
-               'publication_sisters',
-               'publication_institute',
-               'publication_user',
-               'publication_public',
-               'view_checkout_person', //see who has a library book
-           ],
-           LibraryTable::class => LibraryTable::class
-         ],
+            \BjyAuthorize\Provider\Resource\Config::class => [
+                'book',
+                'book_teo',
+                'book_sch',
+                'publication_brothers',
+                'publication_families',
+                'publication_ladies',
+                'publication_patres',
+                'publication_sisters',
+                'publication_institute',
+                'publication_user',
+                'publication_public',
+                'view_checkout_person', //see who has a library book
+                // 'blog_post', this is added in the EventTextTable class
+            ],
+            Model\LibraryTable::class => Model\LibraryTable::class,
+            Model\EventTextTable::class => Model\EventTextTable::class,
+        ],
 
         /* rules can be specified here with the format:
          * array(roles (array), resource, array(privilege (array|string), assertion))
@@ -1775,7 +1868,8 @@ return [
                     [['lib_patres'], 'view_checkout_person'],
                 ],
             ],
-            LibraryTable::class => LibraryTable::class
+            Model\LibraryTable::class => Model\LibraryTable::class,
+            Model\EventTextTable::class => Model\EventTextTable::class,
         ],
         'guards' => [
             Route::class => [
@@ -1796,6 +1890,14 @@ return [
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
+                
+                ['route' => 'blog', 'roles' => ['guest', 'user']],
+                ['route' => 'blog/create', 'roles' => ['blog_contributor']],
+                ['route' => 'blog/blog-post', 'roles' => ['user']],
+                ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
+                ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
+//                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_moderator']],
+//                 ['route' => 'blog/create', 'roles' => ['blog_moderator']],
 
                 ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],

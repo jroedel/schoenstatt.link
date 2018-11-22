@@ -3,7 +3,6 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
-use Books\Model\LibraryOptions;
 
 class EventForm extends SionForm implements InputFilterProviderInterface
 {
