@@ -225,6 +225,7 @@ return [
             'Books\LanguagesValueOptions'       => Service\LanguagesValueOptionsFactory::class,
             Mailing\BooksMailer::class          => Service\BooksMailerFactory::class,
             Service\DriveGateway::class         => Service\DriveGatewayFactory::class,
+            Form\BlogForm::class                => Service\BlogFormFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -893,8 +894,11 @@ return [
                             'constraints' => [
                                 'text_id' => '[0-9]{1,5}',
                             ],
+                            'defaults' => [
+                                'action' => 'show',
+                            ],
                         ],
-                        'may_terminate' => false,
+                        'may_terminate' => true,
                         'child_routes' => [
                             'edit' => [
                                 'type'    => Literal::class,

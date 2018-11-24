@@ -5,6 +5,7 @@ use SionModel\Controller\SionController;
 use Zend\Stdlib\ResponseInterface;
 use Books\Model\EventTextTable;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use SionModel\Form\CommentForm;
 
 class BlogController extends SionController
 {
@@ -34,11 +35,27 @@ class BlogController extends SionController
                 ->addMessage('Blog entry not found');
             return $this->redirect()->toRoute('blog');
         }
+        $commentForm = new CommentForm();
+        $commentUrl = $this->url()->fromRoute('comments/create', [
+            'kind' => \SionModel\Db\Model\PredicatesTable::COMMENT_KIND_COMMENT,
+            'entity' => 'text',
+            'entity_id' => $object['textId'],
+        ]);
+        $commentForm->setAttribute('action', $commentUrl);
+        $view->setVariable('commentForm', $commentForm);
+        $view->setTemplate('books/blog/show');
+        return $view;
+    }
+    
+    public function saveDraftAction()
+    {
+        //the idea here is to create a new text (kind=blog-draft) 
+        //every minute or so we could in theory get a lost post back
     }
     
     public function getEntityObject($id)
     {
-        $object = $this->getSionTable()->getBlogPost($id);
+        $object = $this->getSionTable()->getText($id);
         return $this->object[$id] = $object;
     }
 }

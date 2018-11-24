@@ -1082,8 +1082,8 @@ ORDER BY `Publisher`";
      */
     protected function postprocessPublication($data, $newEntityData, $action)
     {
-        if ($action == self::ENTITY_ACTION_SUGGEST || !isset($newEntityData['categoryId'])
-            || ($action == self::ENTITY_ACTION_UPDATE && isset($newEntityData['categoryId'])
+        if ($action === self::ENTITY_ACTION_SUGGEST || !isset($newEntityData['categoryId'])
+            || ($action === self::ENTITY_ACTION_UPDATE && isset($newEntityData['categoryId'])
             && isset($data['categoryId'])
             && $newEntityData['categoryId'] == $data['categoryId'])
         ) {

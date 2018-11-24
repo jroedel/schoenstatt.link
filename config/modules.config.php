@@ -27,7 +27,7 @@ $modules = [
     'Zend\Mvc\Plugin\Prg',
     'Zend\Mvc\I18n',
     'Zend\Validator',
-    'MaglMarkdown',
+//     'MaglMarkdown',
     'ZfSnapGeoip',
     'ZfcUser',
     'BjyAuthorize',

@@ -59,7 +59,15 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Original language',
                 'empty_option' => '',
                 'unselected_value' => '',
-                'value_options' => [],
+                'value_options' => [
+                    'en' => 'English',
+                    'de' => 'German',
+                    'pt' => 'Portuguese',
+                    'es' => 'Spanish',
+                ],
+            ],
+            'attributes' => [
+                'value' => 'en',
             ],
         ]);
         $this->add([

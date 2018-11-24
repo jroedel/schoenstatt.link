@@ -12,24 +12,46 @@ use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterfac
 use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
 use Schoenstatt\Filter\BlogPostUserIdFilter;
+use Cocur\Slugify\Slugify;
+use voku\Html2Text\Html2Text;
 
 class EventTextTable extends SionTable implements
     ResourceProviderInterface,
     RuleProviderInterface
 {
+    //kind of text for blog posts
     const TEXT_KIND_BLOG = 'blog';
+    //kind of text for saving blog drafts
+    const TEXT_KIND_BLOG_DRAFT = 'blog-draft';
+    //kind of text for translating blog posts
+    const TEXT_KIND_BLOG_TRANSLATION = 'blog-translation';
     
     /**
      * @var array $config
      */
     protected $config;
     
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, array $config)
+    /**
+     * @var string[] $usernames
+     */
+    protected $usernames;
+    
+    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, array $config, $usernames)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $config;
+        $this->usernames = $usernames;
     }
     
+    /**
+     * Returns a list of existing text tags according to the kind of text
+     * @param string|array $kind
+     * @return array
+     */
+    public function getTextTagsOptions($kind = '')
+    {
+        return [];
+    }
     
     /**
      * Manipulate a database book row into a standardized row
@@ -39,6 +61,7 @@ class EventTextTable extends SionTable implements
     protected function processEventRow($row)
     {
         $id = $this->filterDbId($row['EventId']);
+        
         $processedRow = [
             'eventId'               => $id,
             'titleEn'               => $row['TitleEn'],
@@ -268,11 +291,16 @@ class EventTextTable extends SionTable implements
     protected function processTextRow($row)
     {
         $id = $this->filterDbId($row['TextId']);
+        $createdBy = $this->filterDbId($row['CreatedBy']);
+        $createdByUsername = null;
+        if (isset($createdBy) && isset($this->usernames[$createdBy])) {
+            $createdByUsername = $this->usernames[$createdBy];
+        }
         $processedRow = [
             'textId'                => $id,
             'title'                 => $row['Title'],
             'kind'                  => $row['TextKind'],
-            'language'              => $row['Language'],
+            'inLanguage'            => $row['Language'],
             'slug'                  => $row['Slug'],
             'isDraft'               => $this->filterDbBool($row['IsDraft']),
             'markdownText'          => $row['MarkdownText'],
@@ -297,28 +325,49 @@ class EventTextTable extends SionTable implements
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             'createdOn'             => $this->filterDbDate($row['CreatedOn']),
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
+            
+            'createdByUsername'     => $createdByUsername,
         ];
         return $processedRow;
     }
     
     /**
-     * Process checkout data before putting into the database. Sets checkedOutOn and checkedOutBy.
+     * Process text data before putting into the database.
      * @param mixed[] $data
      * @param mixed[] $entityData
      * @return mixed[]
      */
     protected function preprocessText($data, $entityData, $action)
     {
-        //generate slug
         static $slugFilter;
-        if (!isset($slugFilter)) {
-            $slugFilter;
+        static $mdParser;
+        static $html2Text;
+        static $now;
+        //generate slug
+        if (!isset($data['slug']) && isset($data['title'])) {
+            if (!isset($slugFilter)) {
+                $slugFilter = new Slugify();
+            }
+            $data['slug'] = $slugFilter->slugify($data['title']);
+            //@todo check here that the slug doesn't exist, if it does try adding different numbers until it works
         }
         
-        //generate HTML
-        
-        //generate plain text
-        
+        if (isset($data['markdownText'])) {
+            //generate HTML
+            if (!isset($mdParser)) {
+                $parsedown = new \Parsedown();
+                $parsedown->setSafeMode(true);
+            }
+            $data['htmlText'] = $parsedown->text($data['markdownText']);
+            
+            //generate plain text
+            if (!isset($html2Text)) {
+                $html2Text = new Html2Text();
+            }
+            $html2Text->setHtml($data['htmlText']);
+            $data['plainText'] = $html2Text->getText();
+        }
+
         //generate resourceId when creating blog posts
         if (self::ENTITY_ACTION_CREATE === $action && !isset($data['resourceId'])) {
             $kind = isset($data['kind']) ? $data['kind'] : null;
@@ -331,6 +380,20 @@ class EventTextTable extends SionTable implements
                 }
             }
         }
+        
+        //if changing blog post from draft to published, reset the creation date
+        if (self::ENTITY_ACTION_UPDATE === $action 
+            && $entityData['isDraft'] 
+            && isset($data['isDraft']) 
+            && !$data['isDraft']
+        ) {
+            if (!isset($now)) {
+                $now = (new \DateTime(null, new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
+            }
+            $data['createdOn'] = $now;
+        }
+        
+        return $data;
     }
     
     /**

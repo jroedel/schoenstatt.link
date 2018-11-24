@@ -4,6 +4,7 @@ namespace Books\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\EventTextTable;
+use JUser\Model\UserTable;
 
 /**
  * Factory responsible of priming the EventTextTableFactory service
@@ -25,8 +26,12 @@ class EventTextTableFactory implements FactoryInterface
         $authService = $container->get('zfcuser_auth_service');
         $user = $authService->getIdentity();
         $actingUserId = $user ? $user->id : null;
+        
+        /** @var UserTable $userTable */
+        $userTable = $container->get(UserTable::class);
+        $userNames = $userTable->getUserNames();
 
-        $table = new EventTextTable($dbAdapter, $container, $actingUserId, $config);
+        $table = new EventTextTable($dbAdapter, $container, $actingUserId, $config, $userNames);
 
 //         $schTable = $container->get(SchoenstattTable::class);
 //         $table->setSchoenstattTable($schTable);

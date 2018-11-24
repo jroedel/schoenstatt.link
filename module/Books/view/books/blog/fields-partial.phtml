@@ -5,12 +5,20 @@ $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
 $this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
 
 $form = $this->form;
+// $elements = $form->getElements();
+// foreach ($elements as $name => $element) {
+//     if (!$element->isValid()) {
+//         echo $name;
+//     }
+// }
+
 echo $this->formRow($form->get('title'));
 echo $this->formRow($form->get('markdownText'));
 echo $this->formRow($form->get('inLanguage'));
 echo $this->formRow($form->get('tags'));
 echo $this->formRow($form->get('isDraft'));
 echo $this->formRow($form->get('kind'));
+echo $this->formRow($form->get('security'));
 echo $this->formRow($form->get('submit'));
 $jsScript = <<<JS
 $("select[name='tags[]']").selectize({
