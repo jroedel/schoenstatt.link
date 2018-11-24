@@ -1,4 +1,7 @@
 <?php
+use Application\Service\DbAdapterServiceFactory;
+use Zend\Db\Adapter\Adapter;
+
 /**
  * Global Configuration Override
  *
@@ -47,7 +50,7 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            'Zend\Db\Adapter\Adapter' => 'Application\Service\DbAdapterServiceFactory',
+            Adapter::class => DbAdapterServiceFactory::class,
         ],
     ],
 ];

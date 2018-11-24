@@ -3,7 +3,8 @@ namespace Books\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Books\Form\BookForm;
+use Books\Model\EventTextTable;
+use Books\Form\BlogForm;
 
 /**
  * @author Jeff Roedel <webmaster@schoenstatt.link>
@@ -17,15 +18,13 @@ class BlogFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var LibraryTable $table **/
-        $table = $container->get('Books\Model\LibraryTable');
+        /** @var EventTextTable $table **/
+        $table = $container->get(EventTextTable::class);
 
-        $languages = $this->getLanguageValueOptions();
-        $keywords = $table->getKeywordsValueOptions();
+        $keywords = $table->getTextTagsOptions(EventTextTable::TEXT_KIND_BLOG);
 
-        $form = new BookForm();
-        $form->get('inLanguage')->setValueOptions($languages);
-        $form->get('keywords')->setValueOptions($keywords);
+        $form = new BlogForm();
+        $form->get('tags')->setValueOptions($keywords);
         return $form;
     }
 

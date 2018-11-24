@@ -41,6 +41,9 @@ return [
                 ['route' => 'sion-model/phpinfo', 'roles' => ['sch_administrator']],
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
                 ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
+                
+                
+                ['route' => 'comments/create', 'roles' => ['user']],
             ],
         ],
     ],

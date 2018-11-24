@@ -81,8 +81,7 @@ class SchoenstattController extends AbstractActionController
         ->name('Schoenstatt Link')
         ->contactPoint((new ContactPoint())
             ->contactType('technical support')
-            ->email('webmaster@schoenstatt.link')
-            );
+            ->email('webmaster@schoenstatt.link'));
         $datasetEn->name('Schoenstatt Shrine Database in English')
         ->description('Shrine database is a list of the Catholic Chapels belonging '
             .'to the International Schoenstatt Movement')
@@ -96,8 +95,7 @@ class SchoenstattController extends AbstractActionController
         ->creator($creator)
         ->distribution((new DataDownload())
             ->encodingFormat('JSON')
-            ->contentLocation('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine')
-            );
+            ->contentLocation('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine'));
         $datasetEs = new Dataset();
         $datasetEs->name('Base de datos de Santuarios de Schoenstatt en Español')
         ->description('La base de datos de los santuarios es una lista de capillas católicas perteneciente '
@@ -112,8 +110,7 @@ class SchoenstattController extends AbstractActionController
         ->creator($creator)
         ->distribution((new DataDownload())
             ->encodingFormat('JSON')
-            ->contentLocation('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine')
-            );
+            ->contentLocation('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine'));
         $datasets = [$datasetEn->toArray(), $datasetEs->toArray()];
         return $datasets;
     }

@@ -18,7 +18,6 @@
         "voku/html2text": "^3.4",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
         "neilime/zf2-twb-bundle": "3.*@stable",
-        "maglnet/magl-markdown": "~1.1",
         "zfc-datagrid/zfc-datagrid": "^1.4",
         "phpoffice/phpexcel": "^1.8",
     	"neilime/zf2-mobile-detect": "^2.2",
@@ -45,7 +44,8 @@
         "beaucal/beaucal-invalid-session": "^0.3.0",
         "zendframework/zend-mvc-plugin-prg": "^1.1",
         "swiftmailer/swiftmailer": "^6.0",
-        "cocur/slugify": "^3.1"
+        "cocur/slugify": "^3.1",
+        "erusev/parsedown": "^1.7"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

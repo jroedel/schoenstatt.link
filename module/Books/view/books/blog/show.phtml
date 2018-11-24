@@ -1,0 +1,33 @@
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
+$object = $this->entity;?>
+<h1><?php echo $this->escapeHtml($this->entity['title']);?></h1>
+
+<p><i class="fa fa-user"></i> <?php echo sprintf($this->translate('by %s'), $object['createdByUsername']);
+?>  <i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php echo $this->diffForHumans($this->entity['updatedOn']);?></p>
+<p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php 
+foreach ($object['tags'] as $tag) : ?>
+<a href=""><span class="badge badge-info"><?php echo $this->escapeHtml($tag); //@todo translate this later?></span></a> 
+<?php endforeach;?></p>
+<hr>
+<?php
+echo $this->entity['htmlText'];?>
+<hr>
+    <!-- the comment box -->
+<?php if (isset($this->commentForm)) {
+    echo $this->partial('sion-model/comments/create', [
+        'form' => $this->commentForm,
+    ]);
+}?>
+
+    <hr>
+
+    <!-- the comments -->
+    <h3><i class="fa fa-comment"></i> User One says:
+        <small> 9:41 PM on August 24, 2014</small>
+    </h3>
+    <p>Excellent post! Thank You the great article, it was useful!</p>
+
+    <h3><i class="fa fa-comment"></i> User Two says:
+        <small> 9:47 PM on August 24, 2014</small>
+    </h3>
+    <p>Excellent post! Thank You the great article, it was useful!</p>
