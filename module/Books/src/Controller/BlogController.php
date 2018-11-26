@@ -35,14 +35,6 @@ class BlogController extends SionController
                 ->addMessage('Blog entry not found');
             return $this->redirect()->toRoute('blog');
         }
-        $commentForm = new CommentForm();
-        $commentUrl = $this->url()->fromRoute('comments/create', [
-            'kind' => \SionModel\Db\Model\PredicatesTable::COMMENT_KIND_COMMENT,
-            'entity' => 'text',
-            'entity_id' => $object['textId'],
-        ]);
-        $commentForm->setAttribute('action', $commentUrl);
-        $view->setVariable('commentForm', $commentForm);
         $view->setTemplate('books/blog/show');
         return $view;
     }

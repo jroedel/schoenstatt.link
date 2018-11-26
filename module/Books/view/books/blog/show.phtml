@@ -17,17 +17,7 @@ echo $this->entity['htmlText'];?>
     echo $this->partial('sion-model/comments/create', [
         'form' => $this->commentForm,
     ]);
-}?>
-
-    <hr>
-
-    <!-- the comments -->
-    <h3><i class="fa fa-comment"></i> User One says:
-        <small> 9:41 PM on August 24, 2014</small>
-    </h3>
-    <p>Excellent post! Thank You the great article, it was useful!</p>
-
-    <h3><i class="fa fa-comment"></i> User Two says:
-        <small> 9:47 PM on August 24, 2014</small>
-    </h3>
-    <p>Excellent post! Thank You the great article, it was useful!</p>
+}
+echo $this->partial('sion-model/comments/comments-list', [
+    'comments' => $this->comments,
+]);?>
