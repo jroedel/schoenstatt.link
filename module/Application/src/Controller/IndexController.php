@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Zend\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
+use Books\Model\EventTextTable;
 
 class IndexController extends AbstractActionController
 {
@@ -29,23 +30,33 @@ class IndexController extends AbstractActionController
     protected $publicationsTable;
 
     /**
-     *
      * @var SchoenstattTable $schoenstattTable
      */
     protected $schoenstattTable;
+    
+    /**
+     * @var EventTextTable $eventTextTable
+     */
+    protected $eventTextTable;
 
-    public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable)
+    public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable, EventTextTable $eventTextTable)
     {
         $this->navigation = $navigation;
         $this->publicationsTable = $publicationsTable;
         $this->schoenstattTable = $schoenstattTable;
+        $this->eventTextTable = $eventTextTable;
     }
 
     public function indexAction()
     {
         $changeCounts = $this->get6MonthsChanges();
+        $blogPosts = $this->eventTextTable->getTexts(
+            ['kind' => EventTextTable::TEXT_KIND_BLOG], 
+            ['limit' => 5]
+            );
         return new ViewModel([
             'changeCounts' => $changeCounts,
+            'blogPosts' => $blogPosts,
         ]);
     }
 

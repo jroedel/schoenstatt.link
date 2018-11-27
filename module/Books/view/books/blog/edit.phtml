@@ -4,7 +4,7 @@ $headText = 'Edit blog post';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('blogs/blog-post/edit',
+$form->setAttribute('action', $this->url('blog/blog-post/edit',
     ['text_id' => $this->entityId]));
 $form->prepare();
 echo $this->form()->openTag($form);
