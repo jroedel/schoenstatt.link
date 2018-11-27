@@ -153,9 +153,15 @@ var myChart = new Chart(ctx, {
   <!-- Example row of columns -->
   <div class="row">
     <div class="col-md-4">
-      <h2><?php echo $this->translate("Are you a Kentenich scholar?");?></h2>
-      <p><?php echo $this->translate("Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.");?></p>
-      <p><a class="btn btn-default" href="mailto:webmaster@schoenstatt.link" role="button"><?php echo $this->translate('Contact us');?> »</a></p>
+      <h2><?php echo $this->translate("Latest blog posts");?></h2>
+<?php 
+if (isset($this->blogPosts) && is_array($this->blogPosts)) :
+    foreach ($this->blogPosts as $post) :?>
+      <p><strong><a href="<?php echo $this->url('blog/blog-post', ['text_id' => $post['textId']]);?>"><?php echo $this->translate($post['title']);?></a></strong></p>
+      <?php 
+    endforeach;
+endif;?>
+      <!-- <p><a class="btn btn-default" href="mailto:webmaster@schoenstatt.link" role="button"><?php echo $this->translate('Contact us');?> »</a></p> -->
     </div>
     <div class="col-md-4">
       <h2><?php echo $this->translate("Are you bilingual?");?></h2>

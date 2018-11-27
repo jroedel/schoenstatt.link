@@ -1,3 +1,5 @@
+#submitted 2018-11-26
+
 CREATE TABLE `texts` (
 `TextId` INT NOT NULL AUTO_INCREMENT,
 `TextKind` varchar(50) NOT NULL,

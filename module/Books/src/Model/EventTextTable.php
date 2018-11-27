@@ -14,6 +14,8 @@ use Zend\Permissions\Acl\Resource\GenericResource;
 use Schoenstatt\Filter\BlogPostUserIdFilter;
 use Cocur\Slugify\Slugify;
 use voku\Html2Text\Html2Text;
+use Zend\Db\Sql\Predicate\Operator;
+use Zend\Db\Sql\Predicate\In;
 
 class EventTextTable extends SionTable implements
     ResourceProviderInterface,
@@ -199,7 +201,7 @@ class EventTextTable extends SionTable implements
 //                 if (count($categories) === 1) {
 //                     $query['category'] = $categories[0];
 //                 } elseif (count($categories) > 1) {
-//                     $categoryClause= new In($fieldMap['category'], $categories);
+//                     $categoryClaus$queryFullTexte= new In($fieldMap['category'], $categories);
 //                 }
 //             }
 //             if (is_string($query['category']) && 0 !== strlen($query['category'])) {
@@ -303,9 +305,9 @@ class EventTextTable extends SionTable implements
             'inLanguage'            => $row['Language'],
             'slug'                  => $row['Slug'],
             'isDraft'               => $this->filterDbBool($row['IsDraft']),
-            'markdownText'          => $row['MarkdownText'],
-            'htmlText'              => $row['HtmlText'],
-            'plainText'             => $row['PlainText'],
+            'markdownText'          => isset($row['MarkdownText']) ? $row['MarkdownText'] : null,
+            'htmlText'              => isset($row['HtmlText']) ? $row['HtmlText'] : null,
+            'plainText'             => isset($row['PlainText']) ? $row['PlainText'] : null,
             'wordCount'             => $this->filterDbInt($row['WordCount']),
             'jkTextQuality'         => $row['JkTextQuality'],
             'tags'                  => $this->filterDbArray($row['Tags']),
@@ -396,6 +398,50 @@ class EventTextTable extends SionTable implements
         return $data;
     }
     
+    public function getTexts($query = [], $options = [])
+    {
+        $entitySpec = $this->getEntitySpecification('text');
+        $fieldMap = $entitySpec->updateColumns;
+        $gateway = $this->getTableGateway($entitySpec->tableName);
+        $select = $this->getTextSelectPrototype();
+        $where = new Where();
+        
+        $queryFullText = isset($options['fullText']) ? (bool)$options['fullText'] : false;
+        if (!$queryFullText) {
+            $columns = array_values($fieldMap);
+            $columns = array_diff(
+                $columns,
+                [$fieldMap['markdownText'], $fieldMap['htmlText'], $fieldMap['plainText']]
+                );
+            $select->columns($columns);
+        }
+        if (isset($query['kind'])) {
+            if (is_string($query['kind'])) {
+            $kindClause = new Operator($fieldMap['kind'], Operator::OPERATOR_EQUAL_TO, $query['kind']);
+            } elseif (is_array($query['kind'])) {
+                $kindClause = new In($fieldMap['kind'], $query['kind']);
+            }
+            $where->addPredicate($kindClause);
+        }
+        
+        if (isset($options['limit'])) {
+            $select->limit($options['limit']);
+        }
+        
+        $select->where($where);
+        $results = $gateway->selectWith($select);
+        
+        $objects = [];
+        foreach ($results as $row) {
+            $processedRow = $this->processTextRow($row);
+            $id = $processedRow['textId'];
+            $objects[$id] = $processedRow;
+        }
+        
+//         $this->cacheEntityObjects('unlinked-publications', $objects, ['publication']);
+        return $objects;
+    }
+    
     /**
      *
      * @param int $id
@@ -457,19 +503,11 @@ class EventTextTable extends SionTable implements
     {
         static $select;
         if (!isset($select)) {
-            $select = new Select('texts');
-            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['TextId', 'Title', 'TextKind', 'Language', 'Slug', 'IsDraft',
-                'MarkdownText', 'HtmlText', 'PlainText',
-                'WordCount', 'JkTextQuality', 'Tags', 'AdminTags', 'AclResourceId', 'PublicNotes',
-                'PublicNotesUpdatedBy', 'PublicNotesUpdatedOn', 'AdminNotes', 'AdminNotesUpdatedBy',
-                'AdminNotesUpdatedOn', 'LegacyEventId', 'LegacyFile', 'LegacyPathDate', 'LegacyFileDateModified',
-                'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy'
-                //'admin_notes_updated_by', 'current_checkout_id' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')
-            ]);
-            //         $select->group(['TheMonth', 'TheYear']);
-            //         $select->where($predicate->in('ChangedEntity', $tableEntities));
-            $select->order(['UpdatedOn']);
+            $entitySpec = $this->getEntitySpecification('text');
+            $select = new Select($entitySpec->tableName);
+            $fieldMap = $entitySpec->updateColumns;
+            $select->columns(array_values($fieldMap));
+            $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
         }
         
         return clone $select;
