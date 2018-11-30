@@ -5,24 +5,9 @@ use SionModel\Controller\SionController;
 use Zend\Stdlib\ResponseInterface;
 use Books\Model\EventTextTable;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use SionModel\Form\CommentForm;
 
 class BlogController extends SionController
 {
-//     public function createAction()
-//     {
-//         $libraryId = $this->params()->fromRoute('library_id');
-//         $resourceId = 'library_'.$libraryId;
-//         if (!$this->isAllowed($resourceId, 'administrate')) {
-//             throw new UnAuthorizedException();
-//         }
-//         $view = parent::createAction();
-//         if ($view instanceof \Zend\Stdlib\ResponseInterface) {
-//             return $view;
-//         }
-//         $view->setVariable('libraryId', $libraryId);
-//         return $view;
-//     }
     public function showAction()
     {
         $view = parent::showAction();

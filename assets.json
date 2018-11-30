@@ -1,8 +1,8 @@
 [
 {
     "type": "js",
-    "watch": ["public/js/basic-include.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
-    "pack": ["public/js/basic-include.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
+    "watch": ["public/js/basic-include.js", "public/js/jquery-eu-cookie-law-popup.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
+    "pack": ["public/js/basic-include.js", "public/js/jquery-eu-cookie-law-popup.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
     "output": "public/js/gen-basic.js",
     "minify": true
 },
@@ -186,8 +186,8 @@
 
 {
     "type": "css",
-    "watch": ["public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
-    "pack": ["public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "watch": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "pack": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
     "output": "public/css/gen-basic.css",
     "minify": true
 },

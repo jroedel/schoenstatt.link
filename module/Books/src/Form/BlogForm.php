@@ -100,19 +100,6 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
 
-//         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
-//             'name' => 'adminNotes',
-//             'type' => 'Textarea',
-//             'options' => [
-//                 'label' => 'Admin notes',
-//             ],
-//             'attributes' => [
-//                 'required' => false,
-//                 'data-provide' => 'markdown',
-//                 'data-parser' => 'CommonMark',
-//                 'rows' => 8,
-//             ],
-//         ]);
         $this->add([
             'name' => 'kind',
             'type' => 'Hidden',
@@ -195,17 +182,6 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-//             'adminNotes' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => 'StripTags'],
-//                     ['name' => 'ToNull',
-//                         'options' => [
-//                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
-//                         ]
-//                     ],
-//                 ],
-//             ],
         ];
     }
 }

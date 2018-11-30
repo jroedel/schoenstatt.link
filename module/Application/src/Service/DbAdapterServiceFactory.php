@@ -1,7 +1,6 @@
 <?php
 namespace Application\Service;
 
-use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 
@@ -20,10 +19,10 @@ class DbAdapterServiceFactory implements FactoryInterface
      * @param  string             $requestedName
      * @param  null|array         $options
      * @return object
-     * @throws ServiceNotFoundException if unable to resolve the service.
-     * @throws ServiceNotCreatedException if an exception is raised when
+     * @throws \Exception if unable to resolve the service.
+     * @throws \Exception if an exception is raised when
      *     creating a service.
-     * @throws ContainerException if any other error occurs
+     * @throws \Exception if any other error occurs
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
@@ -38,7 +37,7 @@ class DbAdapterServiceFactory implements FactoryInterface
             if (php_sapi_name() == 'cli') {
                 $logger = new \Zend\Log\Logger();
                 // write queries profiling info to stdout in CLI mode
-                $writer = new Zend\Log\Writer\Stream('php://output');
+                $writer = new \Zend\Log\Writer\Stream('php://output');
                 $logger->addWriter($writer, \Zend\Log\Logger::DEBUG);
                 $adapter->setProfiler(new \BjyProfiler\Db\Profiler\LoggingProfiler($logger));
             } else {
