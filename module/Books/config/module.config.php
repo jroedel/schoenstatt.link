@@ -264,6 +264,7 @@ return [
             'formatField'                   => View\Helper\FormatField::class,
             'booksJsonLd'                   => View\Helper\BooksJsonLd::class,
             'formSelectWithoutOptions'      => View\Helper\FormSelectWithoutOptions::class,
+            'markdown'                      => View\Helper\Markdown::class,
         ],
     ],
     'known_issues' => [ //possible keys: description, completed

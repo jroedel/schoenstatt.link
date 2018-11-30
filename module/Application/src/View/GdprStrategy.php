@@ -11,11 +11,10 @@ namespace Application\View;
 use Zend\EventManager\EventManagerInterface;
 use Zend\EventManager\ListenerAggregateInterface;
 use Zend\Http\Response as HttpResponse;
-use Zend\Mvc\Application;
 use Zend\Mvc\MvcEvent;
 use Zend\Stdlib\ResponseInterface as Response;
-use Zend\View\Model\ViewModel;
 use ZfSnapGeoip\Service\Geoip;
+use Zend\Session\SessionManager;
 
 class GdprStrategy implements ListenerAggregateInterface
 {
@@ -42,7 +41,9 @@ class GdprStrategy implements ListenerAggregateInterface
      */
     public function attach(EventManagerInterface $events, $priority = 1)
     {
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
+        //2018-11-29 disable European blocker
+//         $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
+        $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, array($this, 'onFinish'), 5000);
     }
 
     /**
@@ -100,19 +101,8 @@ class GdprStrategy implements ListenerAggregateInterface
         $addressRecord = $geoip->lookup($ip);
         $countryCode = $addressRecord->getCountryCode();
         if ($this->isGDPRCountry($countryCode)) {
-//             $result = $event->getResult();
-            $response = $event->getResponse(); //@todo create a new response so there aren't any cookies
-            // Common view variables
-//             $viewVariables = array(
-//                 'error' => $event->getParam('error'),
-//                 'identity' => $event->getParam('identity'),
-//             );
-
-//             $model = new ViewModel($viewVariables);
-//             $response = $response ?: new HttpResponse();
-
-//             $model->setTemplate($this->getTemplate());
-//             $event->getViewModel()->addChild($model);
+            /** @var \Zend\Http\PhpEnvironment\Response $response */
+            $response = $event->getResponse();
             $response->setStatusCode(403);
             $response->setContent("Sorry, we haven't yet implemented GDPR standards for schoenstatt.link. Please email webmaster@schoenstatt.link if you have any questions. Sorry for the inconvienence.");
             return $response;
@@ -124,6 +114,26 @@ class GdprStrategy implements ListenerAggregateInterface
 
         if ($result instanceof Response || ($response && !$response instanceof HttpResponse)) {
             return;
+        }
+    }
+    
+    public function onFinish(MvcEvent $event)
+    {
+        $app = $event->getApplication();
+        $sm = $app->getServiceManager();
+        if (!isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) || 'true' !== $_COOKIE['EU_COOKIE_LAW_CONSENT']) {
+            header_remove('Set-Cookie');
+            /** @var \Zend\Session\ManagerInterface $sessionManager */
+            $sessionManager = $sm->get(SessionManager::class);
+            //expire session
+            $sessionManager->expireSessionCookie();
+            //delete slm_locale cookie
+            setcookie(
+                'slm_locale', // session name
+                '', // value
+                $_SERVER['REQUEST_TIME'] - 42000,
+                '/'
+                );
         }
     }
 

@@ -58,6 +58,16 @@ return [
                     ],
                 ],
             ],
+            'privacy' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/privacy',
+                    'defaults' => [
+                        'controller' => IndexController::class,
+                        'action'     => 'privacy',
+                    ],
+                ],
+            ],
             'acknowledgements' => [
                 'type' => Literal::class,
                 'options' => [
@@ -139,6 +149,7 @@ return [
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
                 ['route' => 'sitemap', 'roles' => ['guest', 'user']],
                 ['route' => 'acknowledgements', 'roles' => ['guest', 'user']],
+                ['route' => 'privacy', 'roles' => ['guest', 'user']],
             ],
         ],
     ],

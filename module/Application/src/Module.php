@@ -9,12 +9,7 @@
 
 namespace Application;
 
-use Zend\Mvc\ModuleRouteListener;
 use Zend\Mvc\MvcEvent;
-use Zend\Session\ManagerInterface;
-use ZfSnapGeoip\Service\Geoip;
-use Zend\Http\Response;
-use Zend\View\Model\ViewModel;
 use Application\View\GdprStrategy;
 
 class Module
