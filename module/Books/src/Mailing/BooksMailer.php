@@ -38,8 +38,6 @@ class BooksMailer extends Mailer
      */
     public function sendBookNotices($libraryId, $onlyIfBorrowerHasOverdueBook = true, $simulate = false, array $borrowerSubset = [], $maxAttempts = 3)
     {
-        $initialLocale = $this->translator->getLocale();
-
         $libraryTable = $this->getLibraryTable();
         $checkouts = $libraryTable->getCheckoutsForLibrary($libraryId, 'current');
         $borrowersToContact = [];
@@ -138,7 +136,6 @@ class BooksMailer extends Mailer
         ];
 
         $mailService = $this->getMailService();
-        $timeZone = new \DateTimeZone('UTC');
         $asciiFilter = new ToAscii();
 
 //         $debugCount = 0;
@@ -147,7 +144,7 @@ class BooksMailer extends Mailer
 //                 break;
 //             }
 //             $debugCount++;
-            $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : Locale::getDefault();
+            $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : \Locale::getDefault();
             $salutation = (isset($object['title']) ?
                 $this->translator->translate($object['title'], 'Schoenstatt', $locale).' ' :
                 '').$object['firstName'];

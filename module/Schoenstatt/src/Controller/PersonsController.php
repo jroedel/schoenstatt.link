@@ -13,7 +13,6 @@ use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Zend\View\Model\ViewModel;
 use Schoenstatt\Form\PersonForm;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
 use SionModel\Controller\SionController;
 
@@ -37,7 +36,7 @@ class PersonsController extends SionController
 //             $data['exMembers'] = false;
 //             unset($data['showPhotos']);
             if (!empty($data)) {
-                /** @var SchoenstattTable $table */
+                /** @var \Schoenstatt\Model\SchoenstattTable $table */
                 $table = $this->getSionTable();
                 $persons = $table->searchPersons($data);
             }
@@ -71,10 +70,12 @@ class PersonsController extends SionController
             return $this->redirect()->toRoute('persons');
         }
 
-        $mobileDetect = $this->mobileDetect(); //Retrieve "\Mobile_Detect" object
+        /** @var MobileDetect $mobileDetect */
+//         $mobileDetect = $this->mobileDetect(); //Retrieve "\Mobile_Detect" object
 
-        $deviceType = $mobileDetect->isAndroidOS() ? 'android' :
-            $mobileDetect->isiOS() ? 'ios' : 'default'; //android, ios, default
+//         $deviceType = $mobileDetect->isAndroidOS() ? 'android' :
+//             $mobileDetect->isiOS() ? 'ios' : 'default'; //android, ios, default
+        $deviceType = 'default';
         $this->addUserNamesToUrlList($person, $deviceType); //$person is ByRef
 
         $table->registerVisit('person', $person['personId']);
@@ -117,8 +118,8 @@ class PersonsController extends SionController
     /**
      * @todo DRY this up to SionModel
      *
-     * @param unknown $person
-     * @param unknown $deviceType
+     * @param mixed[] $person
+     * @param string $deviceType
      */
     protected function addUserNamesToUrlList(&$person, $deviceType)
     {

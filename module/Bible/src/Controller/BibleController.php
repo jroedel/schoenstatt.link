@@ -9,7 +9,6 @@ use SionModel\Db\Model\SionTable;
 
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
-use Bible\Model\Verse;
 
 class BibleController extends AbstractActionController
 {
@@ -332,7 +331,7 @@ class BibleController extends AbstractActionController
      * Appends the keys of the first array of $array onto $key
      * and appends the values of the element of $array onto $text
      * then shifts the first element off and
-     * @param unknown $text
+     * @param string $text
      * @param array $array
      */
     private function codeHelper($key, $text, array $arrays)
