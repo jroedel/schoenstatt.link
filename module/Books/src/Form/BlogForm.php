@@ -161,7 +161,7 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
             'tags' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StringToLower'],
+//                     ['name' => 'StringToLower'],
                     ['name' => 'SionModel\Filter\SortArray'],
                 ],
             ],

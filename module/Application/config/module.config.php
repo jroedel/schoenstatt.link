@@ -15,14 +15,11 @@ use Zend\Navigation\Service\DefaultNavigationFactory;
 use Zend\I18n\Translator\TranslatorServiceFactory;
 use Zend\Log\LoggerAbstractServiceFactory;
 use Zend\Cache\Service\StorageCacheAbstractServiceFactory;
-use Zend\ServiceManager\Factory\InvokableFactory;
 use BjyAuthorize\Guard\Route;
-use SionModel\Controller\LazyControllerFactory;
 use SionModel\Service\ProblemService;
 use JTranslate\Model\TranslationsTable;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Cache\Storage\StorageInterface;
-use Zend\Cache\StorageFactory;
 use Application\View\GdprStrategy;
 
 return [
