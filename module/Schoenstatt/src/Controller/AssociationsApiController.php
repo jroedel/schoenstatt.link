@@ -3,7 +3,6 @@ namespace Schoenstatt\Controller;
 
 use Zend\Mvc\Controller\AbstractRestfulController;
 use Zend\View\Model\JsonModel;
-use Patres\Model\PatresTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
