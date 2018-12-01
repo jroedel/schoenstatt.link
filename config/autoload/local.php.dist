@@ -102,4 +102,8 @@ return [
         ],
     ],
     'smtp_options' => $smtpOptions,
+    'session_config' => [
+    	'cookie_secure' => true,
+    	'cookie_http_only' => true,
+    ],
 ];

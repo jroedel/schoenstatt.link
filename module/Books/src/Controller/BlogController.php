@@ -35,4 +35,31 @@ class BlogController extends SionController
         $object = $this->getSionTable()->getText($id);
         return $this->object[$id] = $object;
     }
+    
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::redirectAfterEdit()
+     */
+    public function redirectAfterEdit($id, $data = [], $form = null)
+    {
+        return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $id]);
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::redirectAfterCreate()
+     */
+    public function redirectAfterCreate($newId, $data = [], $form = null)
+    {
+        return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $newId]);
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::redirectAfterDelete()
+     */
+    protected function redirectAfterDelete($actionWasSuccessful = true)
+    {
+        return $this->redirect()->toRoute('blog');
+    }
 }

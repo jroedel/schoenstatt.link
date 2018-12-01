@@ -1898,7 +1898,7 @@ return [
                 
                 ['route' => 'blog', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/create', 'roles' => ['blog_contributor']],
-                ['route' => 'blog/blog-post', 'roles' => ['user']],
+                ['route' => 'blog/blog-post', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
                 ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
 //                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_moderator']],
