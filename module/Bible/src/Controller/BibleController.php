@@ -2,31 +2,23 @@
 namespace Bible\Controller;
 
 use Zend\Db\Sql\Where;
-
 use Zend\Db\Sql\Select;
-
 use SionModel\Db\Model\SionTable;
-
-use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
+use SionModel\Controller\SionController;
 
-class BibleController extends AbstractActionController
+class BibleController extends SionController
 {
-    /**
-     *
-     * @var SionTable
-     */
-    protected $verseTable;
-    
     public function indexAction()
     {
         $translation = $this->params('translation');
-        $sql = "SELECT book_id, MAX(chapter) AS LastChapter FROM bib_verses WHERE translation_id = ? GROUP BY book_id";
-        $books = $this->getVerseTable()->fetchSome(null, $sql, array($translation), true);
+        /** @var \Bible\Model\BibleTable $table */
+        $table = $this->getSionTable();
+        $books = $table->getBooks($translation);
         return new ViewModel(array(
             'translation' => $translation,
             'books' => $books,
-            'bookAbbrev' => $this->getBookAbbrev(),
+            'bookAbbrev' => $table->getBookAbbrev(),
             'translAbbrev' => $this->getTranslAbbrev()
         ));
     }
@@ -36,22 +28,16 @@ class BibleController extends AbstractActionController
         $translation = $this->params('translation');
         $book = $this->params('book');
         $chapter = $this->params('chapter');
-        $where = new Where();
-        $where->equalTo('translation_id', $translation);
-        if (!is_null($chapter)) {
-            $where->equalTo('chapter', $chapter);
-        }
-        if (!is_null($book)) {
-            $where->equalTo('book_id', $book);
-        }
-        $select = function (Select $select) use ($where) {
-            $select->where($where);
-            $select->order('book_id, chapter, verse');
-        };
-        $verses = $this->getVerseTable()->fetchSome($select);
-
+        /** @var \Bible\Model\BibleTable $table */
+        $table = $this->getSionTable();
+        $verses = $table->getVerses([
+            'translation' => $translation,
+            'book' => $book,
+            'chapter' => $chapter,
+        ]);
         return new ViewModel(array(
             'verses' => $verses,
+            'possibleVerses' => $table->getPossibleVerses(),
             'bookAbbrev' => $this->getBookAbbrev(),
             'translAbbrev' => $this->getTranslAbbrev()
         ));
@@ -67,7 +53,7 @@ class BibleController extends AbstractActionController
         $where = new Where();
         $where->equalTo('book_id', $book)
               ->equalTo('chapter', $chapter);
-        if (!is_null($verse)) {
+        if (isset($verse)) {
             $where->equalTo('verse', $verse);
         }
         $select = function (Select $select) use ($where) {
@@ -75,27 +61,29 @@ class BibleController extends AbstractActionController
             $select->where($w->equalTo('translation_id', 'bnt'));
             $select->order('verse');
         };
-        $verses = $this->getVerseTable()->fetchSome($select, null, null, true);
+        /** @var \Bible\Model\BibleTable $table */
+        $table = $this->getSionTable();
+        $verses = $table->fetchSome($select, null, null, true);
         $select = function (Select $select) use ($where) {
             $w = clone $where;
             $select->where($w->equalTo('translation_id', 'bnm'));
             $select->order('verse');
         };
-        $versesBnm = $this->getVerseTable()->fetchSome($select, null, null, true);
+        $versesBnm = $table->fetchSome($select, null, null, true);
     
         $select = function (Select $select) use ($where) {
             $w = clone $where;
             $select->where($w->equalTo('translation_id', 'nab'));
             $select->order('verse');
         };
-        $versesNab = $this->getVerseTable()->fetchSome($select, null, null, true);
+        $versesNab = $table->fetchSome($select, null, null, true);
         
         $select = function (Select $select) use ($where) {
             $w = clone $where;
             $select->where($w->equalTo('translation_id', 'lba'));
             $select->order('verse');
         };
-        $versesLba = $this->getVerseTable()->fetchSome($select, null, null, true);
+        $versesLba = $table->fetchSome($select, null, null, true);
         
         $verses = SionTable::keyArray($verses, 'verse', true);
         $versesBnm = SionTable::keyArray($versesBnm, 'verse', true);
@@ -117,114 +105,14 @@ class BibleController extends AbstractActionController
     
     public function getTranslAbbrev()
     {
-        return array(
+        return [
            'bnt' => 'Greek Bible',
            'nab' => 'English Bible',
-           'lba' => 'Biblia en español');
+           'lba' => 'Biblia en español'
+        ];
     }
-    public function getBookAbbrev()
-    {
-        return array(
-           'Gen' => 'Genesis',
-        'Exo' => 'Exodus',
-        'Lev' => 'Leviticus',
-        'Num' => 'Numbers',
-        'Deu' => 'Deuteronomy',
-        'Jos' => 'Joshua',
-        'Jdg' => 'Judges',
-        'Rut' => 'Ruth',
-        '1Sa' => '1 Samuel',
-        '2Sa' => '2 Samuel',
-        '1Ki' => '1 Kings',
-        '2Ki' => '2 Kings',
-        '1Ch' => '1 Chronicles',
-        '2Ch' => '2 Chronicles',
-        'Ezr' => 'Ezra',
-        'Neh' => 'Nehemiah',
-        'Est' => 'Esther',
-        'Job' => 'Job',
-        'Psa' => 'Psalm',
-        'Pro' => 'Proverbs',
-        'Ecc' => 'Ecclesiastes',
-        'Sol' => 'Song of Solomon',
-        'Isa' => 'Isaiah',
-        'Jer' => 'Jeremiah',
-        'Lam' => 'Lamentations',
-        'Eze' => 'Ezekiel',
-        'Dan' => 'Daniel',
-        'Hos' => 'Hosea',
-        'Joe' => 'Joel',
-        'Amo' => 'Amos',
-        'Oba' => 'Obadiah',
-        'Jon' => 'Jonah',
-        'Mic' => 'Micah',
-        'Nah' => 'Nahum',
-        'Hab' => 'Habakkuk',
-        'Zep' => 'Zephaniah',
-        'Hag' => 'Haggai',
-        'Zec' => 'Zechariah',
-        'Mal' => 'Malachi',
-        'Mat' => 'Matthew',
-        'Mar' => 'Mark',
-        'Luk' => 'Luke',
-        'Joh' => 'John',
-        'Act' => 'Acts',
-        'Rom' => 'Romans',
-        '1Co' => '1 Corinthians',
-        '2Co' => '2 Corinthians',
-        'Gal' => 'Galatians',
-        'Eph' => 'Ephesians',
-        'Phi' => 'Philippians',
-        'Col' => 'Colossians',
-        '1Th' => '1 Thessalonians',
-        '2Th' => '2 Thessalonians',
-        '1Ti' => '1 Timothy',
-        '2Ti' => '2 Timothy',
-        'Tit' => 'Titus',
-        'Phm' => 'Philemon',
-        'Heb' => 'Hebrews',
-        'Jam' => 'James',
-        '1Pe' => '1 Peter',
-        '2Pe' => '2 Peter',
-        '1Jo' => '1 John',
-        '2Jo' => '2 John',
-        '3Jo' => '3 John',
-        'Jud' => 'Jude',
-        'Rev' => 'Revelation',
-        '1Es' => '1 Esdras',
-        'Jdt' => 'Judith',
-        'Tob' => 'Tobit',
-        '1Ma' => '1 Maccabees',
-        '2Ma' => '2 Maccabees',
-        '3Ma' => '3 Maccabees',
-        '4Ma' => '4 Maccabees',
-        'Ode' => 'Odes',
-        'Wis' => 'Wisdom',
-        'Sir' => 'Sirach',
-        'Sip' => 'Sip',
-        'Pss' => 'Psalms of Solomon',
-        'Bar' => 'Baruch',
-        'Epj' => 'Epistle of Jeremiah',
-        'Sus' => 'Susanna',
-        'Bel' => 'Bel',
-        'Pra' => 'Prayer of Azariah',
-        'Dng' => 'Daniel (Greek)',
-        'Prm' => 'Prayer of Manasseh',
-        'Psx' => 'Psalm(151)',
-        'Lao' => 'Laodiceans',
-        '4Es' => '4 Esdras',
-        'Esg' => 'Esther (Greek)',
-        'Jsa' => 'Joshua (A)',
-        'Jda' => 'Judges (A)',
-        'Tbs' => 'Tobit (S)',
-        'Sut' => 'Susanna (TH)',
-        'Dat' => 'Daniel (TH)',
-        'Bet' => 'Bel (TH)',
-        'WCF' => 'WCF',
-        'WLC' => 'WLC',
-        'WSC' => 'WSC',
-        );
-    }
+    
+    
     public function getCodes()
     {
         $nouns = array(
@@ -363,9 +251,10 @@ class BibleController extends AbstractActionController
         
         $file = file($translation.".txt");
         $preg = "/(?P<book>\\w{3,3}) (?P<chapter>\\d\\d{0,2}):(?P<verse>\\d\\d{0,2}) {1,2}(?P<text>.*)/iu";
-        $i = 0;
-        $unParsed = array();
+        $unParsed = [];
+        $parsed = [];
         foreach ($file as $line) {
+            $cline = null;
             if (preg_match($preg, $line, $cline)) {
                 $parsed[] = $cline;
             } else {
@@ -377,7 +266,8 @@ class BibleController extends AbstractActionController
             $verses = array();
             $imported = 0;
             $failed = 0;
-            $table = $this->getVerseTable();
+            /** @var \Bible\Model\BibleTable $table */
+            $table = $this->getSionTable();
             foreach ($parsed as $verse) {
                 $data = array(
                     'translation_id' => $translation,
@@ -406,280 +296,268 @@ class BibleController extends AbstractActionController
         ));
     }
     
-    /**
-     * @return SionTable
-     */
-    public function getVerseTable()
-    {
-        if (!$this->verseTable) {
-            $sm = $this->getServiceLocator();
-            $this->verseTable = $sm->get('Bible\Model\VerseTable');
-        }
-        return $this->verseTable;
-    }
-    
     private function transcode($text)
     {
         $replaced = $text;
-        static $rules = array(
-                'Ξ' => '[',
-                'Π' => ']',
-                '~A' => 'Ἁ',
-                '~E' => 'Ἑ',
-                '~I' => 'Ἱ ',
-                '~O' => 'Ὁ',
-                '~H' => 'Ἡ',
-                '~U' => 'Ὑ',
-                '~R' => 'Ῥ',
-                '~W' => 'Ὡ',
-                'i?' => 'ϊ',
-                'u?' => 'ϋ',
-                'a,|' => 'ᾴ',
-                'h,|' => 'ῄ',
-                'w,|' => 'ῴ',
-                'a|,' => 'ᾴ',
-                'h|,' => 'ῄ',
-                'w|,' => 'ῴ',
-                'a.|' => 'ᾲ',
-                'h.|' => 'ῂ',
-                'w.|' => 'ῲ',
-                'a|.' => 'ᾲ',
-                'h|.' => 'ῂ',
-                'w|.' => 'ῲ',
-                'a/|' => 'ᾷ',
-                'h/|' => 'ῇ',
-                'w/|' => 'ῷ',
-                'a|/' => 'ᾷ',
-                'h|/' => 'ῇ',
-                'w|/' => 'ῷ',
-                'av|' => 'ᾀ',
-                'hv|' => 'ᾐ',
-                'wv|' => 'ᾠ',
-                'a|v' => 'ᾀ',
-                'h|v' => 'ᾐ',
-                'w|v' => 'ᾠ',
-                'a;|' => 'ᾄ',
-                'h;|' => 'ᾔ',
-                'w;|' => 'ᾤ',
-                'a|;' => 'ᾄ',
-                'h|;' => 'ᾔ',
-                'w|;' => 'ᾤ',
-                'a\'|' => 'ᾂ',
-                'h\'|' => 'ᾒ',
-                'w\'|' => 'ᾢ',
-                'a|\'' => 'ᾂ',
-                'h|\'' => 'ᾒ',
-                'w|\'' => 'ᾢ',
-                'a=|' => 'ᾆ',
-                'h=|' => 'ᾖ',
-                'w=|' => 'ᾦ',
-                'a|=' => 'ᾆ',
-                'h|=' => 'ᾖ',
-                'w|=' => 'ᾦ',
-                'a`|' => 'ᾁ',
-                'h`|' => 'ᾑ',
-                'w`|' => 'ᾡ',
-                'a|`' => 'ᾁ',
-                'h|`' => 'ᾑ',
-                'w|`' => 'ᾡ',
-                'a[|' => 'ᾅ',
-                'h[|' => 'ᾕ',
-                'w[|' => 'ᾥ',
-                'a|[' => 'ᾅ',
-                'h|[' => 'ᾕ',
-                'w|[' => 'ᾥ',
-                'a|]' => 'ᾃ',
-                'h|]' => 'ᾓ',
-                'w|]' => 'ᾣ',
-                'a]|' => 'ᾃ',
-                'h]|' => 'ᾓ',
-                'w]|' => 'ᾣ',
-                'a-|' => 'ᾇ',
-                'h-|' => 'ᾗ',
-                'w-|' => 'ᾧ',
-                'a|-' => 'ᾇ',
-                'h|-' => 'ᾗ',
-                'w|-' => 'ᾧ',
-                'A|' => 'ᾼ',
-                'H|' => 'ῌ',
-                'W|' => 'ῼ',
-                'a|' => 'ᾳ',
-                'h|' => 'ῃ',
-                'w|' => 'ῳ',
-                'av' => 'ἀ',
-                'ev' => 'ἐ',
-                'iv' => 'ἰ',
-                'ov' => 'ὀ',
-                'uv' => 'ὐ',
-                'hv' => 'ἠ',
-                'wv' => 'ὠ',
-                'a/' => 'ᾶ',
-                'i/' => 'ῖ',
-                'u/' => 'ῦ',
-                'h/' => 'ῆ',
-                'w/' => 'ῶ',
-                'A,' => 'Ά',
-                'E,' => 'Έ',
-                'I,' => 'Ί',
-                'O,' => 'Ό',
-                'U,' => 'Ύ',
-                'H,' => 'Ή',
-                'W,' => 'Ώ',
-                'a,' => 'ά',
-                'e,' => 'έ',
-                'i,' => 'ί',
-                'o,' => 'ό',
-                'u,' => 'ύ',
-                'h,' => 'ή',
-                'w,' => 'ώ',
-                'VA' => 'Ἀ',
-                'VE' => 'Ἐ',
-                'VI' => 'Ἰ',
-                'VO' => 'Ὀ',
-                'VH' => 'Ἠ',
-                'VW' => 'Ὠ',
-                '{A' => 'Ἅ',
-                '{E' => 'Ἕ',
-                '{I' => 'Ἵ',
-                '{O' => 'Ὅ',
-                '{U' => 'Ὕ',
-                '{H' => 'Ἥ',
-                '{W' => 'Ὥ',
-                'a=' => 'ἆ',
-                'i=' => 'ἶ',
-                'u=' => 'ὖ',
-                'h=' => 'ἦ',
-                'w=' => 'ὦ',
-                '}A' => 'Ἃ',
-                '}E' => 'Ἓ',
-                '}I' => 'Ἳ',
-                '}O' => 'Ὃ',
-                '}U' => 'Ὓ',
-                '}H' => 'Ἣ',
-                '}W' => 'Ὣ',
-                ':A' => 'Ἄ',
-                ':E' => 'Ἔ',
-                ':I' => 'Ἴ',
-                ':O' => 'Ὄ',
-                ':H' => 'Ἤ',
-                ':W' => 'Ὤ',
-                'a`' => 'ἁ',
-                'e`' => 'ἑ',
-                'i`' => 'ἱ',
-                'o`' => 'ὁ',
-                'u`' => 'ὑ',
-                'h`' => 'ἡ',
-                'w`' => 'ὡ',
-                'a;' => 'ἄ',
-                'e;' => 'ἔ',
-                'i;' => 'ἴ',
-                'o;' => 'ὄ',
-                'u;' => 'ὔ',
-                'h;' => 'ἤ',
-                'w;' => 'ὤ',
-                'a[' => 'ἅ',
-                'e[' => 'ἕ',
-                'i[' => 'ἵ',
-                'o[' => 'ὅ',
-                'u[' => 'ὕ',
-                'h[' => 'ἥ',
-                'w[' => 'ὥ',
-                'a]' => 'ἃ',
-                'e]' => 'ἓ',
-                'i]' => 'ἳ',
-                'o]' => 'ὃ',
-                'u]' => 'ὓ',
-                'h]' => 'ἣ',
-                'w]' => 'ὣ',
-                'a.' => 'ὰ',
-                'e.' => 'ὲ',
-                'i.' => 'ὶ',
-                'o.' => 'ὸ',
-                'u.' => 'ὺ',
-                'h.' => 'ὴ',
-                'w.' => 'ὼ',
-                'a\'' => 'ἂ',
-                'e\'' => 'ἒ',
-                'i\'' => 'ἲ',
-                'o\'' => 'ὂ',
-                'u\'' => 'ὒ',
-                'h\'' => 'ἢ',
-                'w\'' => 'ὢ',
-                'a-' => 'ἇ',
-                'i-' => 'ἷ',
-                'u-' => 'ὗ',
-                'h-' => 'ἧ',
-                'w-' => 'ὧ',
-    
-                'A' => 'Α',
-                'E' => 'Ε',
-                'I' => 'Ι',
-                'O' => 'Ο',
-                'U' => 'Υ',
-                'H' => 'Η',
-                'W' => 'Ω',
-                'a' => 'α',
-                'e' => 'ε',
-                'i' => 'ι',
-                'o' => 'ο',
-                'u' => 'υ',
-                'h' => 'η',
-                'w' => 'ω',
-                '\\' => '·',
-                ')' => '.',
-                '!' => '+',
-                '@' => '[',
-                '#' => ']',
-                '$' => '(',
-                '%' => ')',
-                '^' => '*',
-                '&' => '-',
-                '*' => ';',
-                'Î' => '[',
-                'Ð' => ']',
-                'Å' => '.',
-                'V' => '\'',
-                'È' => ';',
-                'Ε' => '.',
-    
-    
-                'B' => 'Β',
-                'b' => 'β',
-                'C' => 'Χ',
-                'c' => 'χ',
-                'D' => 'Δ',
-                'd' => 'δ',
-                'F' => 'Φ',
-                'f' => 'φ',
-                'G' => 'Γ',
-                'g' => 'γ',
-                'j' => 'ς',
-                'K' => 'Κ',
-                'k' => 'κ',
-                'L' => 'Λ',
-                'l' => 'λ',
-                'M' => 'Μ',
-                'm' => 'μ',
-                'N' => 'Ν',
-                'n' => 'ν',
-                'P' => 'Π',
-                'p' => 'π',
-                'Q' => 'Θ',
-                'q' => 'θ',
-                'R' => 'Ρ',
-                'r' => 'ρ',
-                'S' => 'Σ',
-                's' => 'σ',
-                'T' => 'Τ',
-                't' => 'τ',
-                'X' => 'Ξ',
-                'x' => 'ξ',
-                'Y' => 'Ψ',
-                'y' => 'ψ',
-                'Z' => 'Ζ',
-                'z' => 'ζ',
-                '(' => ',',
-        );
+        static $rules = [
+            'Ξ' => '[',
+            'Π' => ']',
+            '~A' => 'Ἁ',
+            '~E' => 'Ἑ',
+            '~I' => 'Ἱ ',
+            '~O' => 'Ὁ',
+            '~H' => 'Ἡ',
+            '~U' => 'Ὑ',
+            '~R' => 'Ῥ',
+            '~W' => 'Ὡ',
+            'i?' => 'ϊ',
+            'u?' => 'ϋ',
+            'a,|' => 'ᾴ',
+            'h,|' => 'ῄ',
+            'w,|' => 'ῴ',
+            'a|,' => 'ᾴ',
+            'h|,' => 'ῄ',
+            'w|,' => 'ῴ',
+            'a.|' => 'ᾲ',
+            'h.|' => 'ῂ',
+            'w.|' => 'ῲ',
+            'a|.' => 'ᾲ',
+            'h|.' => 'ῂ',
+            'w|.' => 'ῲ',
+            'a/|' => 'ᾷ',
+            'h/|' => 'ῇ',
+            'w/|' => 'ῷ',
+            'a|/' => 'ᾷ',
+            'h|/' => 'ῇ',
+            'w|/' => 'ῷ',
+            'av|' => 'ᾀ',
+            'hv|' => 'ᾐ',
+            'wv|' => 'ᾠ',
+            'a|v' => 'ᾀ',
+            'h|v' => 'ᾐ',
+            'w|v' => 'ᾠ',
+            'a;|' => 'ᾄ',
+            'h;|' => 'ᾔ',
+            'w;|' => 'ᾤ',
+            'a|;' => 'ᾄ',
+            'h|;' => 'ᾔ',
+            'w|;' => 'ᾤ',
+            'a\'|' => 'ᾂ',
+            'h\'|' => 'ᾒ',
+            'w\'|' => 'ᾢ',
+            'a|\'' => 'ᾂ',
+            'h|\'' => 'ᾒ',
+            'w|\'' => 'ᾢ',
+            'a=|' => 'ᾆ',
+            'h=|' => 'ᾖ',
+            'w=|' => 'ᾦ',
+            'a|=' => 'ᾆ',
+            'h|=' => 'ᾖ',
+            'w|=' => 'ᾦ',
+            'a`|' => 'ᾁ',
+            'h`|' => 'ᾑ',
+            'w`|' => 'ᾡ',
+            'a|`' => 'ᾁ',
+            'h|`' => 'ᾑ',
+            'w|`' => 'ᾡ',
+            'a[|' => 'ᾅ',
+            'h[|' => 'ᾕ',
+            'w[|' => 'ᾥ',
+            'a|[' => 'ᾅ',
+            'h|[' => 'ᾕ',
+            'w|[' => 'ᾥ',
+            'a|]' => 'ᾃ',
+            'h|]' => 'ᾓ',
+            'w|]' => 'ᾣ',
+            'a]|' => 'ᾃ',
+            'h]|' => 'ᾓ',
+            'w]|' => 'ᾣ',
+            'a-|' => 'ᾇ',
+            'h-|' => 'ᾗ',
+            'w-|' => 'ᾧ',
+            'a|-' => 'ᾇ',
+            'h|-' => 'ᾗ',
+            'w|-' => 'ᾧ',
+            'A|' => 'ᾼ',
+            'H|' => 'ῌ',
+            'W|' => 'ῼ',
+            'a|' => 'ᾳ',
+            'h|' => 'ῃ',
+            'w|' => 'ῳ',
+            'av' => 'ἀ',
+            'ev' => 'ἐ',
+            'iv' => 'ἰ',
+            'ov' => 'ὀ',
+            'uv' => 'ὐ',
+            'hv' => 'ἠ',
+            'wv' => 'ὠ',
+            'a/' => 'ᾶ',
+            'i/' => 'ῖ',
+            'u/' => 'ῦ',
+            'h/' => 'ῆ',
+            'w/' => 'ῶ',
+            'A,' => 'Ά',
+            'E,' => 'Έ',
+            'I,' => 'Ί',
+            'O,' => 'Ό',
+            'U,' => 'Ύ',
+            'H,' => 'Ή',
+            'W,' => 'Ώ',
+            'a,' => 'ά',
+            'e,' => 'έ',
+            'i,' => 'ί',
+            'o,' => 'ό',
+            'u,' => 'ύ',
+            'h,' => 'ή',
+            'w,' => 'ώ',
+            'VA' => 'Ἀ',
+            'VE' => 'Ἐ',
+            'VI' => 'Ἰ',
+            'VO' => 'Ὀ',
+            'VH' => 'Ἠ',
+            'VW' => 'Ὠ',
+            '{A' => 'Ἅ',
+            '{E' => 'Ἕ',
+            '{I' => 'Ἵ',
+            '{O' => 'Ὅ',
+            '{U' => 'Ὕ',
+            '{H' => 'Ἥ',
+            '{W' => 'Ὥ',
+            'a=' => 'ἆ',
+            'i=' => 'ἶ',
+            'u=' => 'ὖ',
+            'h=' => 'ἦ',
+            'w=' => 'ὦ',
+            '}A' => 'Ἃ',
+            '}E' => 'Ἓ',
+            '}I' => 'Ἳ',
+            '}O' => 'Ὃ',
+            '}U' => 'Ὓ',
+            '}H' => 'Ἣ',
+            '}W' => 'Ὣ',
+            ':A' => 'Ἄ',
+            ':E' => 'Ἔ',
+            ':I' => 'Ἴ',
+            ':O' => 'Ὄ',
+            ':H' => 'Ἤ',
+            ':W' => 'Ὤ',
+            'a`' => 'ἁ',
+            'e`' => 'ἑ',
+            'i`' => 'ἱ',
+            'o`' => 'ὁ',
+            'u`' => 'ὑ',
+            'h`' => 'ἡ',
+            'w`' => 'ὡ',
+            'a;' => 'ἄ',
+            'e;' => 'ἔ',
+            'i;' => 'ἴ',
+            'o;' => 'ὄ',
+            'u;' => 'ὔ',
+            'h;' => 'ἤ',
+            'w;' => 'ὤ',
+            'a[' => 'ἅ',
+            'e[' => 'ἕ',
+            'i[' => 'ἵ',
+            'o[' => 'ὅ',
+            'u[' => 'ὕ',
+            'h[' => 'ἥ',
+            'w[' => 'ὥ',
+            'a]' => 'ἃ',
+            'e]' => 'ἓ',
+            'i]' => 'ἳ',
+            'o]' => 'ὃ',
+            'u]' => 'ὓ',
+            'h]' => 'ἣ',
+            'w]' => 'ὣ',
+            'a.' => 'ὰ',
+            'e.' => 'ὲ',
+            'i.' => 'ὶ',
+            'o.' => 'ὸ',
+            'u.' => 'ὺ',
+            'h.' => 'ὴ',
+            'w.' => 'ὼ',
+            'a\'' => 'ἂ',
+            'e\'' => 'ἒ',
+            'i\'' => 'ἲ',
+            'o\'' => 'ὂ',
+            'u\'' => 'ὒ',
+            'h\'' => 'ἢ',
+            'w\'' => 'ὢ',
+            'a-' => 'ἇ',
+            'i-' => 'ἷ',
+            'u-' => 'ὗ',
+            'h-' => 'ἧ',
+            'w-' => 'ὧ',
+
+            'A' => 'Α',
+            'E' => 'Ε',
+            'I' => 'Ι',
+            'O' => 'Ο',
+            'U' => 'Υ',
+            'H' => 'Η',
+            'W' => 'Ω',
+            'a' => 'α',
+            'e' => 'ε',
+            'i' => 'ι',
+            'o' => 'ο',
+            'u' => 'υ',
+            'h' => 'η',
+            'w' => 'ω',
+            '\\' => '·',
+            ')' => '.',
+            '!' => '+',
+            '@' => '[',
+            '#' => ']',
+            '$' => '(',
+            '%' => ')',
+            '^' => '*',
+            '&' => '-',
+            '*' => ';',
+            'Î' => '[',
+            'Ð' => ']',
+            'Å' => '.',
+            'V' => '\'',
+            'È' => ';',
+            'Ε' => '.',
+
+
+            'B' => 'Β',
+            'b' => 'β',
+            'C' => 'Χ',
+            'c' => 'χ',
+            'D' => 'Δ',
+            'd' => 'δ',
+            'F' => 'Φ',
+            'f' => 'φ',
+            'G' => 'Γ',
+            'g' => 'γ',
+            'j' => 'ς',
+            'K' => 'Κ',
+            'k' => 'κ',
+            'L' => 'Λ',
+            'l' => 'λ',
+            'M' => 'Μ',
+            'm' => 'μ',
+            'N' => 'Ν',
+            'n' => 'ν',
+            'P' => 'Π',
+            'p' => 'π',
+            'Q' => 'Θ',
+            'q' => 'θ',
+            'R' => 'Ρ',
+            'r' => 'ρ',
+            'S' => 'Σ',
+            's' => 'σ',
+            'T' => 'Τ',
+            't' => 'τ',
+            'X' => 'Ξ',
+            'x' => 'ξ',
+            'Y' => 'Ψ',
+            'y' => 'ψ',
+            'Z' => 'Ζ',
+            'z' => 'ζ',
+            '(' => ',',
+        ];
         foreach ($rules as $r => $value) {
             if (strlen($value)) {
                 $replaced = str_replace($r, $value, $replaced);

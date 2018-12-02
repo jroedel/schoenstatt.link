@@ -38,7 +38,7 @@ $modules = [
     'Neilime\MobileDetect',
 //    'ZfcDatagrid',
 //    'AcMailer', Should we upgrade to v7 or switch to a web service?
-//     'Bible',
+    'Bible',
     'Books',
     'Schoenstatt',
     'Application',
