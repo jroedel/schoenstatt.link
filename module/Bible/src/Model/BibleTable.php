@@ -8,7 +8,7 @@ use Zend\Db\Sql\Predicate\In;
 
 class BibleTable extends SionTable
 {
-    //@todo make a kind of search function here
+    //@todo this should all be covered by the SionModel::queryObjects function!
     public function getVerses($query = [], $options = [])
     {
         $entitySpec = $this->getEntitySpecification('bible-verse');

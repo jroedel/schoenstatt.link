@@ -45,7 +45,8 @@
         "zendframework/zend-mvc-plugin-prg": "^1.1",
         "swiftmailer/swiftmailer": "^6.0",
         "cocur/slugify": "^3.1",
-        "erusev/parsedown": "^1.7"
+        "erusev/parsedown": "^1.7",
+        "erusev/parsedown-extra": "^0.7.1"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
