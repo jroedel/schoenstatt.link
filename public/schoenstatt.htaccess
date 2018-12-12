@@ -11,9 +11,6 @@ RewriteRule ^(.*)$ https://schoenstatt\.link/$1 [R,L]
 SetEnv HTTPS on
 Header set Strict-Transport-Security "max-age=15768000; preload" env=HTTPS
 
-# CSP policy
-Header add Content-Security-Policy "default-src 'none'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self'; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none';"
-
 # protect against non-scripts being run
 Header add X-Content-Type-Options nosniff
 
