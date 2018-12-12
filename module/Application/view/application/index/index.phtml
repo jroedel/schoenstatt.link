@@ -1,4 +1,4 @@
-<?php $this->headScript()->appendFile($this->basePath('js/Chart.bundle.min.js'));
+<?php $this->inlineScript()->appendFile('/js/Chart.bundle.min.js', 'text/javascript', ['nonce' => $GLOBALS['inline-nonce']]);
 $schCounts = $this->changeCounts['schoenstatt'];
 $pubCounts = $this->changeCounts['publications'];
 $transCounts = $this->changeCounts['translations'];
@@ -95,15 +95,27 @@ foreach ($untranslatedMonths as $value) {
                 'rgba(153, 102, 255, 0.2)',
                 'rgba(255, 159, 64, 0.2)'
 -->
-<script>
+<?php 
+/*
+$vars = [
+    'months' => $months,
+    'schLabel' => $this->translate('schoenstatt edits'),
+    'schCounts' => $schCounts,
+    'pubLabel' => $this->translate('publication edits'),
+    'pubCounts' => $pubCounts,
+    'tranLabel' => $this->translate('translation edits'),
+    'tranCounts' => $schCounts,
+];
+$varEncoded = json_encode($vars);
+$jsScript = <<<JS
 var ctx = document.getElementById("myChart").getContext('2d');
 var myChart = new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: [<?php echo implode(',', $months);?>],
+        labels: vars['month'],
         datasets: [{
-            label: '<?php echo $this->translate('schoenstatt edits');?>',
-            data: [<?php echo implode(',', $schCounts);?>],
+            label: vars['schLabel'],
+            data: vars['schCounts'],
             backgroundColor:
                 'rgba(75, 192, 192, 0.2)',
             borderColor:
@@ -111,8 +123,8 @@ var myChart = new Chart(ctx, {
             borderWidth: 1
         },
         {
-            label: '<?php echo $this->translate('publication edits');?>',
-            data: [<?php echo implode(',', $pubCounts);?>],
+            label: vars['pubLabel'],
+            data: vars['pubCounts'],
             backgroundColor:
                 'rgba(54, 162, 235, 0.2)',
             borderColor:
@@ -120,8 +132,8 @@ var myChart = new Chart(ctx, {
             borderWidth: 1
         },
         {
-            label: '<?php echo $this->translate('translation edits');?>',
-            data: [<?php echo implode(',', $transCounts);?>],
+            label: vars['tranLabel'],
+            data: vars['tranCounts'],
             backgroundColor:
                 'rgba(255, 206, 86, 0.2)',
             borderColor:
@@ -144,7 +156,18 @@ var myChart = new Chart(ctx, {
         }
     }
 });
-</script>
+JS;
+
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+var vars = $varEncoded;
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();
+*/
+?>
     	</div>
     </div>
   </div>

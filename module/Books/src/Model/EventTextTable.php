@@ -384,9 +384,9 @@ class EventTextTable extends SionTable implements
         }
         
         //if changing blog post from draft to published, reset the creation date
-        if (self::ENTITY_ACTION_UPDATE === $action 
-            && $entityData['isDraft'] 
-            && isset($data['isDraft']) 
+        if (self::ENTITY_ACTION_UPDATE === $action
+            && $entityData['isDraft']
+            && isset($data['isDraft'])
             && !$data['isDraft']
         ) {
             if (!isset($now)) {
@@ -412,12 +412,12 @@ class EventTextTable extends SionTable implements
             $columns = array_diff(
                 $columns,
                 [$fieldMap['markdownText'], $fieldMap['htmlText'], $fieldMap['plainText']]
-                );
+            );
             $select->columns($columns);
         }
         if (isset($query['kind'])) {
             if (is_string($query['kind'])) {
-            $kindClause = new Operator($fieldMap['kind'], Operator::OPERATOR_EQUAL_TO, $query['kind']);
+                $kindClause = new Operator($fieldMap['kind'], Operator::OPERATOR_EQUAL_TO, $query['kind']);
             } elseif (is_array($query['kind'])) {
                 $kindClause = new In($fieldMap['kind'], $query['kind']);
             }

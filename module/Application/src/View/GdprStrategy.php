@@ -15,6 +15,9 @@ use Zend\Mvc\MvcEvent;
 use Zend\Stdlib\ResponseInterface as Response;
 use ZfSnapGeoip\Service\Geoip;
 use Zend\Session\SessionManager;
+use Zend\View\Model\ViewModel;
+use Application\Controller\IndexController;
+use Zend\Router\Http\RouteMatch;
 
 class GdprStrategy implements ListenerAggregateInterface
 {
@@ -41,8 +44,7 @@ class GdprStrategy implements ListenerAggregateInterface
      */
     public function attach(EventManagerInterface $events, $priority = 1)
     {
-        //2018-11-29 disable European blocker
-//         $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
+        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
         $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, array($this, 'onFinish'), 5000);
     }
 
@@ -85,43 +87,22 @@ class GdprStrategy implements ListenerAggregateInterface
      */
     public function onRoute(MvcEvent $event)
     {
-        $app = $event->getApplication();
-        $sm = $app->getServiceManager();
-        $config = $sm->get('Config');
-        $ip = $_SERVER['REMOTE_ADDR'];
-        $exceptions = isset($config['schoenstatt']['gdpr_ip_address_exceptions'])
-            ? $config['schoenstatt']['gdpr_ip_address_exceptions'] : [];
-        if (in_array($ip, $exceptions)) {
-            return; //don't think about blocking
-        } elseif (false !== strstr($ip, '90.44.')) {
-            return;
+        $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
+        $route = $event->getRouteMatch();
+        if (!$hasConsented && 'zfcuser/login' === $route->getMatchedRouteName()) {
+            $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
+            $newMatch->setMatchedRouteName('sign-in-no-cookies');
+            $event->setRouteMatch($newMatch);
         }
-        /** @var Geoip $geoip */
-        $geoip = $sm->get(Geoip::class);
-        $addressRecord = $geoip->lookup($ip);
-        $countryCode = $addressRecord->getCountryCode();
-        if ($this->isGDPRCountry($countryCode)) {
-            /** @var \Zend\Http\PhpEnvironment\Response $response */
-            $response = $event->getResponse();
-            $response->setStatusCode(403);
-            $response->setContent("Sorry, we haven't yet implemented GDPR standards for schoenstatt.link. Please email webmaster@schoenstatt.link if you have any questions. Sorry for the inconvienence.");
-            return $response;
-        }
-        return;
-        // Do nothing if the result is a response object
-        $result = $event->getResult();
-        $response = $event->getResponse();
-
-        if ($result instanceof Response || ($response && !$response instanceof HttpResponse)) {
-            return;
-        }
+        return $event;
     }
     
     public function onFinish(MvcEvent $event)
     {
         $app = $event->getApplication();
         $sm = $app->getServiceManager();
-        if (!isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) || 'true' !== $_COOKIE['EU_COOKIE_LAW_CONSENT']) {
+        $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
+        if (!$hasConsented) {
             header_remove('Set-Cookie');
             /** @var \Zend\Session\ManagerInterface $sessionManager */
             $sessionManager = $sm->get(SessionManager::class);
@@ -133,7 +114,7 @@ class GdprStrategy implements ListenerAggregateInterface
                 '', // value
                 $_SERVER['REQUEST_TIME'] - 42000,
                 '/'
-                );
+            );
         }
     }
 

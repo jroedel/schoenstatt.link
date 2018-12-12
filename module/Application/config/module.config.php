@@ -75,6 +75,16 @@ return [
                     ],
                 ],
             ],
+            'sign-in-no-cookies' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/sign-in-no-cookies',
+                    'defaults' => [
+                        'controller' => IndexController::class,
+                        'action'     => 'signInNoCookies',
+                    ],
+                ],
+            ],
         ],
     ],
     'service_manager' => [

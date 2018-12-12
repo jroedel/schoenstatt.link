@@ -1,9 +1,7 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\Form\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Uri\Uri;
 use Zend\Filter\ToNull;
 use SionModel\Form\SionForm;
 
@@ -746,7 +744,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                         'name' => 'StringLength',
                         'options' => [
                             'encoding' => 'UTF-8',
-                            'max' => 2,
+                            'max' => 6,
                         ],
                     ],
                 ],

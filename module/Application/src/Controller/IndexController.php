@@ -51,9 +51,9 @@ class IndexController extends AbstractActionController
     {
         $changeCounts = $this->get6MonthsChanges();
         $blogPosts = $this->eventTextTable->getTexts(
-            ['kind' => EventTextTable::TEXT_KIND_BLOG], 
+            ['kind' => EventTextTable::TEXT_KIND_BLOG],
             ['limit' => 5]
-            );
+        );
         return new ViewModel([
             'changeCounts' => $changeCounts,
             'blogPosts' => $blogPosts,
@@ -62,17 +62,22 @@ class IndexController extends AbstractActionController
 
     public function developersAction()
     {
-        return new ViewModel([]);
+        return new ViewModel();
     }
     
     public function acknowledgementsAction()
     {
-        return new ViewModel([]);
+        return new ViewModel();
     }
     
     public function privacyAction()
     {
-        return new ViewModel([]);
+        return new ViewModel();
+    }
+    
+    public function signInNoCookiesAction()
+    {
+        return new ViewModel();
     }
 
     public function sitemapAction()

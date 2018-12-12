@@ -11,7 +11,6 @@ namespace Schoenstatt\Controller;
 
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
 use SionModel\Controller\SionController;
 use Schoenstatt\Form\AdvancedSearchForm;
@@ -32,7 +31,7 @@ class AssignmentsController extends SionController
         if ($form->isValid()) {
             $data = $form->getData();
 //             if (!empty($data)) {
-                /** @var SchoenstattTable $table */
+                /** @var \Schoenstatt\Model\SchoenstattTable $table */
                 $table = $this->getSionTable();
                 $entities = $table->searchEntities($data, ['bypassRequiredParams' => true]);
 //             }

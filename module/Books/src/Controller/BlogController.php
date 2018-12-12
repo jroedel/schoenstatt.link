@@ -26,7 +26,7 @@ class BlogController extends SionController
     
     public function saveDraftAction()
     {
-        //the idea here is to create a new text (kind=blog-draft) 
+        //the idea here is to create a new text (kind=blog-draft)
         //every minute or so we could in theory get a lost post back
     }
     

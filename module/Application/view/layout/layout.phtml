@@ -3,6 +3,7 @@ use Zend\Uri\Uri;
 use ZfcUser\Form\Login;
 use ZfcUser\Options\ModuleOptions;
 use Carbon\Carbon;
+use Zend\View\Helper\HeadScript;
 echo $this->doctype();
 $username = $this->zfcUserDisplayName();
 $routeName = $this->routeName();?>
@@ -224,6 +225,6 @@ $routeName = $this->routeName();?>
         </div> <!-- /container -->
         <div class="eupopup eupopup-bottomright"></div>
 <?php
- echo $this->inlineScript(); ?>
+echo $this->inlineScript(); ?>
     </body>
 </html>

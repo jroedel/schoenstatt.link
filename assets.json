@@ -29,6 +29,13 @@
 },
 {
     "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/publications-search-bar.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/publications-search-bar.js"],
+    "output": "public/js/gen-publications-search-bar.js",
+    "minify": true
+},
+{
+    "type": "js",
     "watch": ["public/js/_selectize.min.js", "public/js/books-multiple-checkouts.js"],
     "pack": ["public/js/_selectize.min.js", "public/js/books-multiple-checkouts.js"],
     "output": "public/js/gen-books-checkouts.js",
@@ -186,8 +193,8 @@
 
 {
     "type": "css",
-    "watch": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
-    "pack": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "watch": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/style.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "pack": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/style.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
     "output": "public/css/gen-basic.css",
     "minify": true
 },
