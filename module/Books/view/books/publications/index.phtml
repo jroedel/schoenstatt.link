@@ -1,12 +1,5 @@
-<style>
-<!--
-  .affix {
-      top: 35px;
-      z-index: 9999 !important;
-  }
--->
-</style>
 <?php
+$this->headLink()->appendStylesheet($this->basePath() . '/css/publications-index.css');
 if ($this->language === 'xx') {
     $headText = $this->translate('Schoenstatt Literature without language');
 } elseif (array_key_exists($this->language, $this->languages)) {

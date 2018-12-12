@@ -33,7 +33,7 @@ class ClipboardButton extends AbstractHelper
             'button'    => $buttonId,
         ];
 
-        $return = "<div class=\"form-group\" style=\"display: none;\">
+        $return = "<div class=\"form-group hide\">
 	<label for=\"$textareaId\">$label</label>
     <textarea id=\"$textareaId\" rows=\"3\" class=\"form-control\">$content</textarea>
 </div>
@@ -42,6 +42,10 @@ data-clipboard-target=\"#$textareaId\">$buttonText</button>";
         echo $return;
     }
 
+    /**
+     * @todo rewrite using inlineScript view helper
+     * @return string
+     */
     public function writeScript()
     {
         if (empty($this->buttonIds)) {
@@ -59,6 +63,7 @@ var clipboard = new Clipboard('.btn-clipboard'); ";
             );
         }
         $return.="});</script>";
+        
         return $return;
     }
 }

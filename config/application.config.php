@@ -6,7 +6,7 @@
  * @see https://docs.zendframework.com/tutorials/advanced-config/#environment-specific-application-configuration
  */
 $env = getenv('APP_ENV') ?: 'production';
-$inDevelopment = $env != 'production';
+$inDevelopment = $env !== 'production';
 return [
     // Retrieve list of modules used in this application.
     'modules' => require __DIR__ . '/modules.config.php',

@@ -1780,6 +1780,9 @@ return [
                 'entity_key_field'                      => 'roleId',
                 'sion_model_class'                      => Model\SchoenstattTable::class,
                 'sion_controllers'                      => [Controller\RolesController::class],
+                'controller_services'                   => [
+                    
+                ],
                 'get_object_function'                   => 'getRole',
                 'get_objects_function'                  => 'getRoles',
 //                 'format_view_helper'                    => 'formatEvent',
@@ -1848,6 +1851,9 @@ return [
                 'entity_key_field'                      => 'assignmentId',
                 'sion_model_class'                      => Model\SchoenstattTable::class,
                 'sion_controllers'                      => [Controller\AssignmentsController::class],
+                'controller_services'                   => [
+                    Form\AdvancedSearchForm::class,
+                ],
                 'get_object_function'                   => 'getAssignment',
                 'get_objects_function'                  => 'getAssignments',
 //                 'format_view_helper'                    => 'formatEvent',

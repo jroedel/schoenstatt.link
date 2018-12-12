@@ -5,12 +5,6 @@ $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
 $this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
 
 $form = $this->form;
-// $elements = $form->getElements();
-// foreach ($elements as $name => $element) {
-//     if (!$element->isValid()) {
-//         echo $name;
-//     }
-// }
 
 echo $this->formRow($form->get('title'));
 echo $this->formRow($form->get('markdownText'));

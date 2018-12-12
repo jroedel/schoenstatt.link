@@ -57,6 +57,13 @@ SetEnv "APP_ENV" "production"
 <filesMatch ".(svg|ico|pdf|flv|jpeg|png|gif|js|css|swf)$">
 Header set Cache-Control "public,max-age=2592000"
 </filesMatch>
+
+#Only cache css for 1 day
+<Files gen-basic.css>
+Header unset Cache-Control
+Header set Cache-Control "public,max-age=86400"
+</Files>
+
 #ExpiresActive On
 #ExpiresByType image/svg+xml A2592000
 
