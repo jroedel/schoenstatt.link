@@ -56,7 +56,7 @@ $object = $this->object;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Year published', $object['publishedYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
