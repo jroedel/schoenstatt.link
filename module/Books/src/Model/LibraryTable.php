@@ -694,7 +694,7 @@ ORDER BY `publisher`";
             'updatedBy'             => $this->filterDbId($row['updated_by']),
             'createdOn'             => $this->filterDbDate($row['created_at']),
             'createdBy'             => $this->filterDbId($row['created_by']),
-            'copyrightYear'         => $this->filterDbInt($row['copyright_year']),
+            'publishedYear'         => $this->filterDbInt($row['copyright_year']),
             'publisher'             => $this->filterDbString($row['publisher']),
             'publishingPlace'       => $this->filterDbString($row['publisher_place']),
             'isbn'                  => $this->filterDbString($row['isbn']),
