@@ -353,19 +353,6 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'isPublicallyListed',
-            'type' => 'Checkbox',
-            'options' => [
-                'label' => 'Is publically listed?',
-                'checked_value' => '1',
-                'unchecked_value' => '0',
-                'use_hidden_element' => true,
-            ],
-            'attributes' => [
-                'value'   => '0',
-            ],
-        ]);
-        $this->add([
             'name' => 'checkoutPersonListKind',
             'type' => 'Select',
             'options' => [
@@ -742,12 +729,6 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
             'enableCheckouts' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
-                ],
-            ],
-            'isPublicallyListed' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToBit']

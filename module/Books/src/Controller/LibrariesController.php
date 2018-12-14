@@ -131,7 +131,7 @@ class LibrariesController extends SionController
             $pages['admin/website-status']['badges'] = [count($this->getKnownIssues())];
         }
 
-        if (isset($pages['sion-model/data-problems'])) {
+        if (isset($pages['libraries/library/data-problems'])) {
             $problemCounts = $this->getProblemCounts();
             $pages['sion-model/data-problems']['badges'] = $problemCounts;
         }
@@ -141,16 +141,30 @@ class LibrariesController extends SionController
             $pages['library-imports/library']['badges'] = [count($importCount)];
         }
 
-        if (isset($pages['sion-model/auto-fix-data-problems'])) {
-            /** @var ProblemService $problemService */
-            $problemService = $this->services[ProblemService::class];
-            $problems = $problemService->getCurrentProblems();
-            $autoFixProblems = $problemService->autoFixProblems();
-            $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
-        }
+//         if (isset($pages['sion-model/auto-fix-data-problems'])) {
+//             /** @var ProblemService $problemService */
+//             $problemService = $this->services[ProblemService::class];
+//             $problems = $problemService->getCurrentProblems();
+//             $autoFixProblems = $problemService->autoFixProblems();
+//             $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
+//         }
         $view->setVariables([
             'pages' => $pages,
         ]);
+        return $view;
+    }
+    
+    public function dataProblemsAction()
+    {
+        /** @var LibraryTable $table */
+        $table = $this->getSionTable();
+        $libraryId = $this->getLibraryId();
+        $object = $table->getSimpleLibrary($libraryId);
+        $problems = array_merge($table->getLibraryProblems($object), $table->getLibraryBookProblems($libraryId));
+        $view = new ViewModel([
+            'problems' => $problems,
+        ]);
+        $view->setTemplate('sion-model/sion-model/data-problems');
         return $view;
     }
 
@@ -160,9 +174,12 @@ class LibrariesController extends SionController
      */
     protected function getProblemCounts()
     {
-        /** @var ProblemService $problemService */
-        $problemService = $this->services[ProblemService::class];
-        $problems = $problemService->getCurrentProblems();
+        /** @var LibraryTable $table */
+        $table = $this->getSionTable();
+        $libraryId = $this->getLibraryId();
+        $object = $table->getSimpleLibrary($libraryId);
+        $problems = array_merge($table->getLibraryProblems($object), $table->getLibraryBookProblems($libraryId));
+        
         $problemCounts = [
             EntityProblem::SEVERITY_ERROR => 0,
             EntityProblem::SEVERITY_WARNING => 0,

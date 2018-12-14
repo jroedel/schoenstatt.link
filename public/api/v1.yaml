@@ -7,6 +7,56 @@ info:
 servers:
   - url: 'https://schoenstatt.link/api/v1'
 paths:
+  /books:
+    get:
+      summary: List all books in a library
+      operationId: listBooks
+      tags:
+        - books
+      responses:
+        '200':
+          description: An array of books
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Books'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/libraries/{libraryId}':
+    get:
+      summary: Info for a specific library
+      operationId: showLibraryById
+      tags:
+        - libraries
+      parameters:
+        - name: libraryId
+          in: path
+          required: true
+          description: The id of the library to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Library'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /associations:
     get:
       summary: List all associations
@@ -83,7 +133,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/users/login':
+  /users/login:
     post:
       summary: Login
       operationId: createAssociation
@@ -107,12 +157,125 @@ components:
       required: true
       schema:
         type: string
-        enum: [sch-movement-international-structure, sch-institute, sch-federation-international-structure, sch-national-movement, sch-regional-organization, sch-national-federation, sch-national-priests-federation, sch-national-family-federation, sch-national-mens-federation, sch-national-mothers-federation, sch-national-womens-federation, sch-national-apostolate, sch-shrine, sch-wayside-shrine, sch-diocesan-movement, sch-league-branch, sch-family-league-branch, sch-mothers-league-branch, sch-mens-league-branch, sch-womens-league-branch, sch-young-mens-league-branch, sch-young-womens-league-branch, sch-professionals-branch, sch-madrugadores-branch, sch-diocesan-pilgrim-movement, sch-diocesan-pilgrim-mother, sch-shrine-ministry, sch-diocesan-apostolate, sch-school, sch-website, sch-magazine, sch-other, legal-entity]
+        enum:
+          - sch-movement-international-structure
+          - sch-institute
+          - sch-federation-international-structure
+          - sch-national-movement
+          - sch-regional-organization
+          - sch-national-federation
+          - sch-national-priests-federation
+          - sch-national-family-federation
+          - sch-national-mens-federation
+          - sch-national-mothers-federation
+          - sch-national-womens-federation
+          - sch-national-apostolate
+          - sch-shrine
+          - sch-wayside-shrine
+          - sch-diocesan-movement
+          - sch-league-branch
+          - sch-family-league-branch
+          - sch-mothers-league-branch
+          - sch-mens-league-branch
+          - sch-womens-league-branch
+          - sch-young-mens-league-branch
+          - sch-young-womens-league-branch
+          - sch-professionals-branch
+          - sch-madrugadores-branch
+          - sch-diocesan-pilgrim-movement
+          - sch-diocesan-pilgrim-mother
+          - sch-shrine-ministry
+          - sch-diocesan-apostolate
+          - sch-school
+          - sch-website
+          - sch-magazine
+          - sch-other
+          - legal-entity
   schemas:
+    Book:
+      properties:
+        withinLibraryId:
+          type: number
+    Books:
+      type: array
+      items:
+        $ref: '#/components/schemas/Book'
+    Library:
+      properties:
+        libraryId:
+          type: number
+        name:
+          type: string
+        description:
+          type: string
+        requireCallNumbers:
+          type: boolean
+        callNumberHelpText:
+          type: string
+        callNumberExplanation:
+          type: string
+        callNumberPlaceholder:
+          type: string
+        callNumberRegex:
+          type: string
+        filiationId:
+          type: number
+        contactPersonId:
+          type: number
+        contactEmail:
+          type: string
+        mainShowDisplay:
+          type: string
+          enum:
+            - show-categories
+            - show-collections
+            - show-collections-categories
+        useCollections:
+          type: boolean
+        allowCollectionlessBooks:
+          type: boolean
+        mainCollectionId:
+          type: number
+        labelLine1:
+          type: string
+        labelLine2:
+          type: string
+        labelLine3:
+          type: string
+        barcodeText:
+          type: string
+        enableCheckouts:
+          type: string
+        defaultCheckoutTimePeriodInDays:
+          type: number
+        checkoutPersonListKind:
+          type: string
+          enum:
+            - 1
+            - 2
+            - 3
+        defaultCheckoutPersonId:
+          type: number
+        isActive:
+          type: boolean
+        adminNotes:
+          type: string
+        nextWithinLibraryId:
+          type: number
+        bookCount:
+          type: number
+        collections:
+          type: object
+        contactPerson:
+          type: object
+    Libraries:
+      type: array
+      items:
+        $ref: '#/components/schemas/Library'
     Association:
       oneOf:
-      - $ref: '#/components/schemas/PlaceOfWorship'
-      - $ref: '#/components/schemas/Organization'
+        - $ref: '#/components/schemas/PlaceOfWorship'
+        - $ref: '#/components/schemas/Organization'
     Associations:
       type: array
       items:
@@ -136,9 +299,10 @@ components:
           description: The telephone number.
           type: string
         sameAs:
-          description: URL of a reference Web page that unambiguously indicates the item
-            s identity. E.g. the URL of the item s Wikipedia page, Wikidata entry, or
-            official website.
+          description: >-
+            URL of a reference Web page that unambiguously indicates the item s
+            identity. E.g. the URL of the item s Wikipedia page, Wikidata entry,
+            or official website.
           type: string
         url:
           description: URL of the item.
@@ -146,10 +310,12 @@ components:
         geo:
           $ref: '#/components/schemas/GeoCoordinates'
         identifier:
-          description: The identifier property represents any kind of identifier for any
-            kind of Thing, such as ISBNs, GTIN codes, UUIDs etc. Schema.org provides dedicated
-            properties for representing many of these, either as textual strings or as
-            URL (URI) links. See background notes for more details.
+          description: >-
+            The identifier property represents any kind of identifier for any
+            kind of Thing, such as ISBNs, GTIN codes, UUIDs etc. Schema.org
+            provides dedicated properties for representing many of these, either
+            as textual strings or as URL (URI) links. See background notes for
+            more details.
     GeoCoordinates:
       description: The geographic coordinates of a place or event.
       properties:
@@ -162,25 +328,25 @@ components:
           type: number
           format: float
         addressCountry:
-          description: The country. For example, USA. You can also provide the two-letter
+          description: >-
+            The country. For example, USA. You can also provide the two-letter
             ISO 3166-1 alpha-2 country code.
     PostalAddress:
       description: The mailing address.
       properties:
         streetAddress:
-          description: The street address. For example, 1600 Amphitheatre Pkwy.
+          description: 'The street address. For example, 1600 Amphitheatre Pkwy.'
           type: string
         addressCountry:
-          description: The country. Two-letter
-            ISO 3166-1 alpha-2 country code.
+          description: The country. Two-letter ISO 3166-1 alpha-2 country code.
         addressRegion:
-          description: The region. For example, CA.
+          description: 'The region. For example, CA.'
           type: string
         postalCode:
-          description: The postal code. For example, 94043.
+          description: 'The postal code. For example, 94043.'
           type: string
         addressLocality:
-          description: The locality. For example, Mountain View.
+          description: 'The locality. For example, Mountain View.'
           type: string
         description:
           description: A description of the item.
