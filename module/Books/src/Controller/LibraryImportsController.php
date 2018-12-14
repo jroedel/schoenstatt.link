@@ -85,12 +85,12 @@ class LibraryImportsController extends SionController
     private function getColegioMayorLibraryFieldsMap()
     {
         return [
-            'authorText'            => 'Autor',
+            'authorText'        => 'Autor',
             'title'             => 'Titulo',
             'callNumber'        => 'Lomo',
             'category'          => 'Categoría',
-            'numberOfPages'             => 'Páginas',
-            'inLanguage'          => 'Idioma',
+            'numberOfPages'     => 'Páginas',
+            'inLanguage'        => 'Idioma',
             'withinLibraryId'   => 'ID',
             'copyrightYear'     => 'Año',
             'publisher'         => 'Editorial',
@@ -98,7 +98,7 @@ class LibraryImportsController extends SionController
             'isbn'              => 'ISBN',
             'publicationId'     => 'PubID',
             'keywords'          => 'Categorías',
-            'bookEdition'           => 'Edition',
+            'bookEdition'       => 'Edition',
             'collection'        => 'Biblioteca',
         ];
     }

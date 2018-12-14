@@ -288,6 +288,36 @@ return [
     ],
     'router' => [
         'routes' => [
+            'api-v1' => [
+                'child_routes' => [
+                    'libraries' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/libraries[/:library_id]',
+                            'defaults' => [
+                                'action' => null,
+                                'controller' => Controller\LibrariesApiController::class,
+                            ],
+                            'constraints' => [
+                                'library_id' => '[0-9]{1,3}',
+                            ],
+                        ],
+                    ],
+                    'books' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/books[/:book_id]',
+                            'defaults' => [
+                                'action' => null,
+                                'controller' => Controller\BooksApiController::class,
+                            ],
+                            'constraints' => [
+                                'book_id' => '[0-9]{1,3}',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'publications' => [
                 'type'    => Literal::class,
                 'options' => [
@@ -1126,7 +1156,6 @@ return [
                     'defaultCheckoutPersonId' => 'DefaultCheckoutPersonId',
                     'defaultCheckoutTimePeriodInDays' => 'DefaultCheckoutTimePeriodInDays',
                     'enableCheckouts'       => 'EnableCheckouts',
-                    'isPublicallyListed'    => 'IsPublicallyListed',
                     'checkoutPersonListKind'=> 'CheckoutPersonListKind',
                     'checkoutBooksRole'     => 'CheckoutBooksRole',
                     'viewRole'              => 'ViewRole',
@@ -1878,6 +1907,9 @@ return [
         ],
         'guards' => [
             Route::class => [
+                ['route' => 'api-v1/libraries', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/books', 'roles' => ['guest', 'user']],
+                
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
