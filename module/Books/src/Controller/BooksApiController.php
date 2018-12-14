@@ -29,7 +29,7 @@ class BooksApiController extends AbstractRestfulController
     {
         $params = $this->params()->fromQuery();
         $table = $this->libraryTable;
-        $objects = $table->searchBooks($params);
+        $objects = array_values($table->searchBooks($params));
         LibrariesApiController::jsonSerializeDateTimeObjects($objects);
         return new JsonModel([
             'items'         => $objects,
