@@ -561,7 +561,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            'copyrightYear' => [
+            'publishedYear' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'ToInt'],
