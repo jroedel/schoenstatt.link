@@ -16,8 +16,13 @@ use Zend\Db\Sql\Predicate\In;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
+use SionModel\Problem\EntityProblem;
+use SionModel\Problem\ProblemProviderInterface;
 
-class LibraryTable extends SionTable implements ResourceProviderInterface, RuleProviderInterface
+class LibraryTable extends SionTable implements 
+    ResourceProviderInterface, 
+    RuleProviderInterface,
+    ProblemProviderInterface
 {
     const IMPORT_STATUS_PENDING = 'pending';
     const IMPORT_STATUS_COMPLETED = 'completed';
@@ -59,6 +64,23 @@ class LibraryTable extends SionTable implements ResourceProviderInterface, RuleP
         'lib_institute' => 'Institute members',
         'lib_patres'    => 'Patres',
     ];
+    
+    const SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION = 'collection-abbreviation';
+    const SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS = 'regex-parameters';
+    
+    const SORT_TEXT_FORMAT_PARAMETER_ORDER = [
+        self::SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION,
+        self::SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS,
+    ];
+    
+    const PROBLEM_BOOK_MISSING_CALL_NUMBER = 'book-missing-call-number';
+    const PROBLEM_BOOK_INVALID_CALL_NUMBER = 'book-invalid-call-number';
+    const PROBLEM_LIBRARY_MISSING_CALL_NUMBER_FORMAT = 'library-missing-call-number-format';
+    const PROBLEM_LIBRARY_INVALID_CALL_NUMBER_FORMAT = 'library-invalid-call-number-format';
+    const PROBLEM_LIBRARY_MISSING_SORT_TEXT_FORMAT = 'library-missing-sort-text-format';
+    const PROBLEM_COLLECTION_MISSING_CALL_NUMBER_FORMAT = 'collection-missing-call-number-format';
+    const PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT = 'collection-invalid-call-number-format';
+    const PROBLEM_COLLECTION_MISSING_SORT_TEXT_FORMAT = 'collection-missing-sort-text-format';
 
     /** @var UserTable $userTable */
     protected $userTable;
@@ -1091,7 +1113,7 @@ ORDER BY `publisher`";
 `UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
 `CallNumberRegex`, `EnforceCallNumberRegex`, `CheckoutBooksRole`, `ViewRole`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
 `BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
-`DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `IsPublicallyListed`, `CheckoutPersonListKind`,
+`DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `CheckoutPersonListKind`,
 `IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`,
 `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
 (SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount,
@@ -1113,9 +1135,12 @@ ORDER BY `LibraryName`";
                 'libraryId'             => $id,
                 'name'                  => $this->filterDbString($row['LibraryName']),
                 'description'           => $this->filterDbString($row['Description']),
+                'requireCallNumbers'    => $this->filterDbBool($row['RequireCallNumbers']),
                 'callNumberHelpText'    => $this->filterDbString($row['CallNumberHelpText']),
                 'callNumberExplanation' => $this->filterDbString($row['CallNumberExplanation']),
                 'callNumberPlaceholder' => $this->filterDbString($row['CallNumberPlaceholder']),
+                'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
+                'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
                 'filiationId'           => $this->filterDbId($row['FiliationId']),
                 'contactPersonId'       => $this->filterDbId($row['ContactPerson']),
                 'contactEmail'          => $this->filterEmailString($row['ContactEmail']),
@@ -1123,25 +1148,19 @@ ORDER BY `LibraryName`";
                 'useCollections'        => $this->filterDbBool($row['UseCollections']),
                 'allowCollectionlessBooks'=> $this->filterDbBool($row['AllowCollectionlessBooks']),
                 'mainCollectionId'      => $this->filterDbId($row['MainCollectionId']),
-                'requireCallNumbers'    => $this->filterDbBool($row['RequireCallNumbers']),
-                'callNumberPlaceholder' => $this->filterDbString($row['CallNumberPlaceholder']),
-                'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
-                'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
-                'checkoutPersonListKind'=> $this->filterDbString($row['CheckoutPersonListKind']),
-                'checkoutBooksRole'     => $this->filterDbString($row['CheckoutBooksRole']),
                 'viewRole'              => $this->filterDbString($row['ViewRole']),
                 'labelLine1'            => $this->filterDbString($row['LabelLine1']),
                 'labelLine2'            => $this->filterDbString($row['LabelLine2']),
                 'labelLine3'            => $this->filterDbString($row['LabelLine3']),
                 'barcodeText'           => $this->filterDbString($row['BarcodeText']),
+                'enableCheckouts'       => $this->filterDbBool($row['EnableCheckouts']),
+                'defaultCheckoutTimePeriodInDays' => $this->filterDbInt($row['DefaultCheckoutTimePeriodInDays']),
+                'checkoutBooksRole'     => $this->filterDbString($row['CheckoutBooksRole']),
                 'createCheckoutsIfCheckingInANonCheckedOutBook' => $this->filterDbBool(
                     $row['CreateCheckoutsIfCheckingInANonCheckedOutBook']
-                ),
-                'defaultCheckoutPersonId' => $this->filterDbId($row['DefaultCheckoutPersonId']),
-                'defaultCheckoutTimePeriodInDays' => $this->filterDbInt($row['DefaultCheckoutTimePeriodInDays']),
-                'enableCheckouts'       => $this->filterDbBool($row['EnableCheckouts']),
-                'isPublicallyListed'    => $this->filterDbBool($row['IsPublicallyListed']),
+                    ),
                 'checkoutPersonListKind'=> $this->filterDbString($row['CheckoutPersonListKind']),
+                'defaultCheckoutPersonId' => $this->filterDbId($row['DefaultCheckoutPersonId']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),
                 'adminNotes'            => $this->filterDbString($row['AdminNotes']),
                 'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
@@ -1375,6 +1394,35 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
         }
         $this->removeDependentCacheItems('book'); //refresh the cache
         return empty($badValues) ? true : $badValues;
+    }
+    
+    public function getBookSortText($book, $useNewCallNumber = false)
+    {
+        static $libraries;
+        if (!isset($libraries)) {
+            $libraries = $this->getUnlinkedLibraries();
+        }
+        $callNumber = $useNewCallNumber ? $book['newCallNumber'] : $book['callNumber'];
+        if (!isset($callNumber)) {
+            return '';
+        }
+        $libraryId = $book['libraryId'];
+        /** @var LibraryOptions $libraryOptions */
+        $libraryOptions = $libraries['options'];
+        $regex = null;
+        if (isset($book['collectionId']) && isset($libraryOptions->collections[$book['collectionId']])) {
+            $regex = $libraryOptions->collections[$book['collectionId']]->callNumberRegex;
+        } else {
+            $regex = $libraryOptions->callNumberRegex;
+        }
+        // we've got some valid regex
+        if (isset($regex) && false !== @preg_match($regex, null)) {
+            
+        }
+//         const SORT_TEXT_FORMAT_PARAMETER_ORDER = [
+//             self::SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION,
+//             self::SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS,
+//         ];
     }
 
     /**
@@ -1773,6 +1821,122 @@ ORDER BY CreatedOn DESC";
             }
         }
         return $data;
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Problem\ProblemProviderInterface::getProblems()
+     */
+    public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
+    {
+        return array_merge($this->getLibraryProblems($minimumSeverity), $this->getCollectionProblems($minimumSeverity));
+    }
+    
+    public function getLibraryBookProblems($libraryId, $minimumSeverity = EntityProblem::SEVERITY_INFO)
+    {
+//         $persons = $this->getPersons();
+        
+        $problems = [];
+//         foreach ($persons as $person) {
+//             if (!isset($person['email'])) {
+//                 $obj = clone $this->entityProblemPrototype;
+//                 $obj->setProblem(self::PROBLEM_PERSON_NO_EMAIL)
+//                 ->setData($person);
+//                 $problems[] = $obj;
+//             }
+//         }
+        return $problems;
+    }
+    
+    public function getLibrariesProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
+    {
+        $problems = [];
+        //look for configuration problems
+        $objects = $this->getUnlinkedLibraries();
+        foreach ($objects as $object) {
+            $problems = array_merge($problems, $this->getLibraryProblems($object, $minimumSeverity));
+        }
+        return $problems;
+    }
+    
+    public function getLibraryProblems(array $libraryObject, $minimumSeverity = EntityProblem::SEVERITY_INFO)
+    {
+        $problems = [];
+        /** @var \Books\Model\LibraryOptions $libraryOptions */
+        $libraryOptions = $libraryObject['options'];
+        if ($libraryOptions->requireCallNumbers
+            && $libraryOptions->enforceCallNumberRegex
+            && !isset($libraryOptions->callNumberRegex)
+            //don't throw a problem if they require collections
+            && ( $libraryOptions->allowCollectionlessBooks
+                || empty($libraryOptions->collections))
+        ) {
+            $obj = clone $this->entityProblemPrototype;
+            $obj->setProblem(self::PROBLEM_LIBRARY_MISSING_CALL_NUMBER_FORMAT)
+            ->setData($libraryObject);
+            $problems[] = $obj;
+        } else {
+            $regex = $libraryOptions->callNumberRegex;
+            if (isset($regex) && false !== @preg_match($regex, null)) {
+                $obj = clone $this->entityProblemPrototype;
+                $obj->setProblem(self::PROBLEM_LIBRARY_INVALID_CALL_NUMBER_FORMAT)
+                ->setData($libraryObject);
+                $problems[] = $obj;
+            }
+        }
+        $collectionsProblems = $this->getLibraryCollectionProblems($libraryObject, $minimumSeverity);
+        $problems = array_merge($problems, $collectionsProblems);
+        return $problems;
+    }
+    
+    public function getCollectionProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
+    {
+        $problems = [];
+        //look for configuration problems
+        $objects = $this->getUnlinkedLibraries();
+        foreach ($objects as $object) {
+            $problems = $this->getLibraryCollectionProblems($object['options']);
+        }
+        return $problems;
+    }
+    
+    protected function getLibraryCollectionProblems(array $libraryObject, $minimumSeverity = EntityProblem::SEVERITY_INFO)
+    {
+        $problems = [];
+        /** @var \Books\Model\LibraryOptions $libraryOptions */
+        $libraryOptions = $libraryObject['options'];
+        
+        $libraryHasRegex = isset($libraryOptions->callNumberRegex);
+        foreach ($libraryOptions->collections as $collection) {
+            if ($libraryHasRegex
+                && $collection->requireCallNumbers
+                && $collection->enforceCallNumberRegex
+                && !isset($collection->callNumberRegex)
+            ) {
+                $obj = clone $this->entityProblemPrototype;
+                $obj->setProblem(self::PROBLEM_COLLECTION_MISSING_CALL_NUMBER_FORMAT)
+                ->setData($collection);
+                $problems[] = $obj;
+            }
+            $regex = $collection->callNumberRegex;
+            if (isset($regex) && false !== @preg_match($regex, null)) {
+                $obj = clone $this->entityProblemPrototype;
+                $obj->setProblem(self::PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT)
+                ->setData($collection);
+                $problems[] = $obj;
+            }
+        }
+        
+        return $problems;
+    }
+    
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Problem\ProblemProviderInterface::autoFixProblems()
+     */
+    public function autoFixProblems($simulate = true)
+    {
+        return [];
     }
 
     public function getResources()

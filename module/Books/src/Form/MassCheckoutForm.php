@@ -6,7 +6,6 @@ use Zend\InputFilter\InputFilterProviderInterface;
 
 class MassCheckoutForm extends SionForm implements InputFilterProviderInterface
 {
-
     public function __construct()
     {
         parent::__construct('checkout');

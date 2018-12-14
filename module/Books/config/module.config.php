@@ -174,14 +174,17 @@ return [
 //                 'label' => "Manage translations",
 //                 'description' => 'Update database translations',
 //             ],
-            'sion-model/data-problems'  => [
+            'libraries/library/data-problems'  => [
                 'label' => "Data problems",
                 'description' => 'Review potential problems with the data in the database.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
             ],
-            'sion-model/auto-fix-data-problems' => [
-                'label' => "Auto-fix data problems",
-                'description' => 'Try to automatically fix some of the data problems.',
-            ],
+//             'sion-model/auto-fix-data-problems' => [
+//                 'label' => "Auto-fix data problems",
+//                 'description' => 'Try to automatically fix some of the data problems.',
+//             ],
 //             'admin/website-status'      => [
 //                 'label' => "Website status",
 //                 'description' => 'Known issues or upcoming plans.',
@@ -644,6 +647,15 @@ return [
                                     'route'    => '/admin',
                                     'defaults' => [
                                         'action'     => 'admin',
+                                    ],
+                                ],
+                            ],
+                            'data-problems' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/data-problems',
+                                    'defaults' => [
+                                        'action'     => 'dataProblems',
                                     ],
                                 ],
                             ],
@@ -1952,6 +1964,7 @@ return [
                 ['route' => 'libraries/library/send-book-notices', 'roles' => ['user', 'guest']], //controller action has additional protection
                 ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/data-problems', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_user']],
                 ['route' => 'libraries/import', 'roles' => ['lib_user']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_user']],

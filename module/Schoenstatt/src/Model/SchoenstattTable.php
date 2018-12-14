@@ -2379,6 +2379,10 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         return 0;
     }
 
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Problem\ProblemProviderInterface::getProblems()
+     */
     public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         return array_merge($this->getPersonProblems($minimumSeverity), $this->getAssociationProblems($minimumSeverity));
@@ -2400,6 +2404,10 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
         return $problems;
     }
 
+    /**
+     * {@inheritDoc}
+     * @see \SionModel\Problem\ProblemProviderInterface::autoFixProblems()
+     */
     public function autoFixProblems($simulate = true)
     {
         return [];
