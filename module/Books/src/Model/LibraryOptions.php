@@ -131,15 +131,15 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $enableCheckouts = false;
     /**
-     * Should this library be listed without authentication?
-     * @var bool $defaultCheckoutTimePeriodInDays
-     */
-    public $isPublicallyListed = false;
-    /**
      * Which list of borrowers should we show?
      * @var string $defaultCheckoutTimePeriodInDays
      */
     public $checkoutPersonListKind = self::DEFAULT_CHECKOUT_PERSON_LIST_KIND;
+    /**
+     * Resource Id
+     * @var string
+     */
+    public $resourceId;
     /**
      * @var bool $isActive
      */
