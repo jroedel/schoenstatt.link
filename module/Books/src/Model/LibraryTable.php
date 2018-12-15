@@ -19,6 +19,7 @@ use Zend\Permissions\Acl\Resource\GenericResource;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
 use Zend\Db\Sql\Predicate\IsNull;
+use Zend\Db\Sql\Predicate\IsNotNull;
 
 class LibraryTable extends SionTable implements 
     ResourceProviderInterface, 
@@ -339,10 +340,10 @@ ORDER BY `publisher`";
             'collectionId', 'libraryId', 'category',
             'publicationId'
         ];
-        $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
-
+        $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'onlyPendingBooks'];
+        $onlyPendingBooks = isset($options['onlyPendingBooks']) ? (bool) $options['onlyPendingBooks'] : false;
+        
         $fieldMap = $this->getEntitySpecification('book')->updateColumns;
-
         $gateway = $this->getTableGateway('lib_books');
         $select = $this->getBookSelectPrototype();
         $where = new Where();
@@ -518,6 +519,12 @@ ORDER BY `publisher`";
         if (isset($query['isActive'])) {
             $isActiveClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
             $where->addPredicate($isActiveClause, PredicateSet::OP_AND);
+        }
+        
+        //Prepare onlyPendingBooks
+        if ($onlyPendingBooks) {
+            $pendingBooksClause = new IsNotNull($fieldMap['newCallNumber']);
+            $where->addPredicate($pendingBooksClause, PredicateSet::OP_AND);
         }
 
         //@todo Prepare isCheckedOut

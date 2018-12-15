@@ -25,6 +25,7 @@ use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
+use Zend\Router\Http\Method;
 
 return [
     'books' => [
@@ -316,7 +317,32 @@ return [
                                 'controller' => Controller\BooksApiController::class,
                             ],
                             'constraints' => [
-                                'book_id' => '[0-9]{1,3}',
+                                'book_id' => '[0-9]{1,8}',
+                            ],
+                        ],
+                    ],
+                    'pending-labels' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'     => '/libraries/:library_id/pending-labels',
+                            'defaults'  => [
+                                'controller' => Controller\LibrariesApiController::class,
+                                'action'     => 'pendingLabels',
+                            ],
+                            'constraints' => [
+                                'library_id' => '[0-9]{1,3}',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'finish-pending-labels' => [
+                                'type'    => Method::class,
+                                'options' => [
+                                    'verb'      => 'delete',
+                                    'defaults'  => [
+                                        'action'     => 'finishPendingLabels',
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -1971,6 +1997,9 @@ return [
         'guards' => [
             Route::class => [
                 ['route' => 'api-v1/libraries', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/pending-labels', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/pending-labels/finish-pending-labels', 'roles' => ['guest', 'user']],
+                
                 ['route' => 'api-v1/books', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
