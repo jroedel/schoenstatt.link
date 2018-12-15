@@ -1192,7 +1192,6 @@ return [
                 'update_columns' => [
                     'libraryId'             => 'LibraryId',
                     'name'                  => 'LibraryName',
-                    'abbreviation'          => 'Abbreviation',
                     'description'           => 'Description',
                     'sortTextFormat'        => 'SortTextFormat',
                     'callNumberPlaceholder' => 'CallNumberPlaceholder',
