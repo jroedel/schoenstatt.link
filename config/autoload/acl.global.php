@@ -39,6 +39,8 @@ return [
                 ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
                 ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['sch_administrator']],
                 ['route' => 'sion-model/phpinfo', 'roles' => ['sch_administrator']],
+                ['route' => 'sion-model/auto-fix-data-problems', 'roles' => ['lib_administrator']],
+                
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
                 ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
                 

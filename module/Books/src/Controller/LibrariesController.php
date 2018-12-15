@@ -132,22 +132,21 @@ class LibrariesController extends SionController
         }
 
         if (isset($pages['libraries/library/data-problems'])) {
-            $problemCounts = $this->getProblemCounts();
-            $pages['sion-model/data-problems']['badges'] = $problemCounts;
+//             $problemCounts = $this->getProblemCounts();
+//             $pages['sion-model/data-problems']['badges'] = $problemCounts;
         }
 
         if (isset($pages['library-imports/library'])) {
             $importCount = $table->getLibraryImports();
             $pages['library-imports/library']['badges'] = [count($importCount)];
         }
-
-//         if (isset($pages['sion-model/auto-fix-data-problems'])) {
-//             /** @var ProblemService $problemService */
-//             $problemService = $this->services[ProblemService::class];
-//             $problems = $problemService->getCurrentProblems();
-//             $autoFixProblems = $problemService->autoFixProblems();
-//             $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
-//         }
+        if (isset($pages['sion-model/auto-fix-data-problems'])) {
+            /** @var ProblemService $problemService */
+            $problemService = $this->services[ProblemService::class];
+            $problems = $problemService->getCurrentProblems();
+            $autoFixProblems = $problemService->autoFixProblems();
+            $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
+        }
         $view->setVariables([
             'pages' => $pages,
         ]);

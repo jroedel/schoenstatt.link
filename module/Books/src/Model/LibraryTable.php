@@ -18,6 +18,7 @@ use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
+use Zend\Db\Sql\Predicate\IsNull;
 
 class LibraryTable extends SionTable implements 
     ResourceProviderInterface, 
@@ -92,10 +93,10 @@ class LibraryTable extends SionTable implements
      */
     protected $libraryId;
 
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $libraryConfig)
+    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $config)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
-        $this->config = $libraryConfig;
+        $this->config = $config;
     }
 
     public function getLibraryValueOptions()
@@ -486,11 +487,20 @@ ORDER BY `publisher`";
         //Prepare author predicate
         if (isset($query['authorText']) && 0 !== strlen($query['author'])) {
             $search = $query['author'];
-            $searchLike = sprintf("%%%s%%", $search);
-            $authorClause= new Operator($fieldMap['authorText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
+            $authorClause = new Operator($fieldMap['authorText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
             $where->addPredicate($authorClause, PredicateSet::OP_AND);
         }
-
+        
+        //Prepare sortText predicate
+        if (array_key_exists('sortText', $query)) {
+            if (!isset($query['sortText'])) {
+                $sortTextClause = new IsNull($fieldMap['sortText']);
+            } else {
+                $sortTextClause = new Operator($fieldMap['sortText'], Operator::OPERATOR_EQUAL_TO, $query['sortText']);
+            }
+            $where->addPredicate($sortTextClause, PredicateSet::OP_AND);
+        }
+        
         //Prepare isActive predicate, default to true unless caller sets it to null
         if (!array_key_exists('isActive', $query) ||
             (!is_bool($query['isActive']) && null !== $query['isActive'])
@@ -571,20 +581,13 @@ ORDER BY `publisher`";
         static $select;
         if (!isset($select)) {
             $select = new Select('lib_books');
-//$select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
-//'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['book_id', 'library_id', 'collection_id', 'author', 'title', 'edition',
-                'call_number', 'new_call_number', 'category', 'pages', 'lang', 'original_id', 'publication_id',
-                'updated_at', 'created_by', 'created_at', 'updated_by', 'inactivation_reason', 'is_active',
-                'isbn', 'copyright_year', 'publisher', 'publisher_place', 'public_tags', 'admin_tags', 'public_notes',
-                'public_notes_updated_at', 'public_notes_updated_by', 'admin_notes', 'admin_notes_updated_at',
-                'admin_notes_updated_by', 'current_checkout_id' => new Expression(
-                    '(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` '
-                    .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
-                )]);
-//         $select->group(['TheMonth', 'TheYear']);
-//         $select->where($predicate->in('ChangedEntity', $tableEntities));
-            $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
+            $columns = array_values($this->config['sion_model']['entities']['book']['update_columns']);
+            $columns['current_checkout_id'] = new Expression(
+                '(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` '
+                .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
+                );
+            $select->columns($columns);
+            $select->order(['library_id', 'sort_text']);
         }
 
         return clone $select;
@@ -701,31 +704,32 @@ ORDER BY `publisher`";
             'collectionId'          => $this->filterDbId($row['collection_id']),
             'authorText'            => $authorText,
             'title'                 => $title,
-            'bookEdition'           => $this->filterDbString($row['edition']),
-            'callNumber'            => $this->filterDbString($row['call_number']),
-            'newCallNumber'         => $this->filterDbString($row['new_call_number']),
-            'category'              => $this->filterDbString($row['category']),
+            'bookEdition'           => $row['edition'],
+            'callNumber'            => $row['call_number'],
+            'newCallNumber'         => $row['new_call_number'],
+            'category'              => $row['category'],
             'numberOfPages'         => $this->filterDbInt($row['pages']),
             'inLanguage'            => $this->filterDbArray($row['lang']),
             'withinLibraryId'       => $this->filterDbId($row['original_id']),
             'libraryId'             => $libraryId,
             'publicationId'         => $this->filterDbId($row['publication_id']),
+            'sortText'              => $row['sort_text'],
             'isActive'              => $isActive,
-            'inactivationReason'    => $this->filterDbString($row['inactivation_reason']),
+            'inactivationReason'    => $row['inactivation_reason'],
             'updatedOn'             => $this->filterDbDate($row['updated_at']),
             'updatedBy'             => $this->filterDbId($row['updated_by']),
             'createdOn'             => $this->filterDbDate($row['created_at']),
             'createdBy'             => $this->filterDbId($row['created_by']),
             'publishedYear'         => $this->filterDbInt($row['copyright_year']),
-            'publisher'             => $this->filterDbString($row['publisher']),
-            'publishingPlace'       => $this->filterDbString($row['publisher_place']),
-            'isbn'                  => $this->filterDbString($row['isbn']),
+            'publisher'             => $row['publisher'],
+            'publishingPlace'       => $row['publisher_place'],
+            'isbn'                  => $row['isbn'],
             'keywords'              => $this->filterDbArray($row['public_tags']),
-            'publicNotes'           => $this->filterDbString($row['public_notes']),
+            'publicNotes'           => $row['public_notes'],
             'publicNotesUpdatedOn'  => $this->filterDbDate($row['public_notes_updated_at']),
             'publicNotesUpdatedBy'  => $this->filterDbId($row['public_notes_updated_by']),
             'adminTags'             => $this->filterDbArray($row['admin_tags']),
-            'adminNotes'            => $this->filterDbString($row['admin_notes']), //store source info here
+            'adminNotes'            => $row['admin_notes'], //store source info here
             'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
             'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
 
@@ -753,6 +757,17 @@ ORDER BY `publisher`";
         if (isset($data['authors'])) {
             $data['authorText'] = implode('|', $data['authors']);
         }
+        
+        //update the sortText
+        if (!isset($data['sortText'])) {
+            //make sure we pass everything fresh
+            $completeData = $entityData;
+            foreach ($data as $key => $value) {
+                $completeData[$key] = $value;
+            }
+            $data['sortText'] = $this->getBookSortText($completeData);
+        }
+        
         return $data;
     }
 
@@ -1005,24 +1020,14 @@ ORDER BY `publisher`";
         static $select;
         if (!isset($select)) {
             $select = new Select('lib_libraries');
-            $select->columns(
-                ['LibraryId', 'LibraryName', 'Description', 'CallNumberPlaceholder', 'CallNumberHelpText',
-                'CallNumberExplanation', 'FiliationId', 'ContactPerson', 'ContactEmail', 'MainShowDisplay',
-                'UseCollections', 'AllowCollectionlessBooks', 'MainCollectionId', 'RequireCallNumbers',
-                'CallNumberRegex', 'EnforceCallNumberRegex', 'CheckoutBooksRole', 'ViewRole', 'LabelLine1',
-                'LabelLine2', 'LabelLine3', 'BarcodeText', 'CreateCheckoutsIfCheckingInANonCheckedOutBook',
-                'DefaultCheckoutPersonId', 'DefaultCheckoutTimePeriodInDays', 'EnableCheckouts', 'IsPublicallyListed',
-                'CheckoutPersonListKind', 'IsActive', 'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy',
-                'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy',
-                'BookCount' => new Expression(
-                    '(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = LibraryId))'
-                ),
-                'MaxWithinLibraryId' => new Expression(
-                    '(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = LibraryId))'
-                )]
-            );
-//         $select->group(['TheMonth', 'TheYear']);
-//         $select->where($predicate->in('ChangedEntity', $tableEntities));
+            $columns = array_values($this->config['sion_model']['entities']['library']['update_columns']);
+            $columns['BookCount'] = new Expression(
+                '(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = LibraryId))'
+                );
+            $columns['MaxWithinLibraryId'] = new Expression(
+                '(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = LibraryId))'
+                );
+            $select->columns($columns);
             $select->order(['LibraryName']);
         }
 
@@ -1108,21 +1113,9 @@ ORDER BY `publisher`";
         if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {
             return $cache;
         }
-        $sql = "SELECT `LibraryId`, `LibraryName`, `Description`, `CallNumberPlaceholder`, `CallNumberHelpText`,
-`CallNumberExplanation`, `FiliationId`, `ContactPerson`, `ContactEmail`, `MainShowDisplay`,
-`UseCollections`, `AllowCollectionlessBooks`, `MainCollectionId`, `RequireCallNumbers`,
-`CallNumberRegex`, `EnforceCallNumberRegex`, `CheckoutBooksRole`, `ViewRole`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
-`BarcodeText`, `CreateCheckoutsIfCheckingInANonCheckedOutBook`, `DefaultCheckoutPersonId`,
-`DefaultCheckoutTimePeriodInDays`, `EnableCheckouts`, `CheckoutPersonListKind`,
-`IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`,
-`UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`,
-(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = l.LibraryId)) AS BookCount,
-(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = l.LibraryId)) AS MaxWithinLibraryId
-FROM `lib_libraries` l
-WHERE 1
-ORDER BY `LibraryName`";
-
-        $results = $this->fetchSome(null, $sql, null);
+        $gateway = $this->getTableGateway('lib_libraries');
+        $select = $this->getLibrarySelectPrototype();
+        $results = $gateway->selectWith($select);
 
         $entities = [];
         foreach ($results as $row) {
@@ -1144,6 +1137,7 @@ ORDER BY `LibraryName`";
                 'filiationId'           => $this->filterDbId($row['FiliationId']),
                 'contactPersonId'       => $this->filterDbId($row['ContactPerson']),
                 'contactEmail'          => $this->filterEmailString($row['ContactEmail']),
+                'sortTextFormat'        => $row['SortTextFormat'],
                 'mainShowDisplay'       => $this->filterDbString($row['MainShowDisplay']),
                 'useCollections'        => $this->filterDbBool($row['UseCollections']),
                 'allowCollectionlessBooks'=> $this->filterDbBool($row['AllowCollectionlessBooks']),
@@ -1253,8 +1247,8 @@ ORDER BY `LibraryName`";
         if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-collections'))) {
             return $cache;
         }
-        $sql = "SELECT `CollectionId`, `LibraryId`, `CollectionName`,
-`Description`, `CallNumberRegex`, `CallNumberHelpText`, `CallNumberExplanation`,
+        $sql = "SELECT `CollectionId`, `LibraryId`, `CollectionName`, `Abbreviation`,
+`Description`, `SortTextFormat`, `CallNumberRegex`, `CallNumberHelpText`, `CallNumberExplanation`,
 `MainShowDisplay`, `LabelLine1`, `LabelLine2`, `LabelLine3`,
 `DefaultCheckoutTimePeriodInDays`, `EnforceCallNumberRegex`, `RequireCallNumbers`,
 `IsActive`, `AdminNotes`, `AdminNotesUpdatedOn`, `AdminNotesUpdatedBy`, `UpdatedOn`,
@@ -1273,7 +1267,9 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
                 'collectionId'          => $id,
                 'libraryId'             => $libraryId,
                 'name'                  => $this->filterDbString($row['CollectionName']),
+                'abbreviation'          => $this->filterDbString($row['Abbreviation']),
                 'description'           => $this->filterDbString($row['Description']),
+                'sortTextFormat'        => $this->filterDbString($row['SortTextFormat']),
                 'callNumberRegex'       => $this->filterDbString($row['CallNumberRegex']),
                 'callNumberHelpText'    => $this->filterDbString($row['CallNumberHelpText']),
                 'callNumberExplanation' => $this->filterDbString($row['CallNumberExplanation']),
@@ -1399,30 +1395,67 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
     public function getBookSortText($book, $useNewCallNumber = false)
     {
         static $libraries;
+        //if the regex works, it gets true, else, false
+        static $regexChecks = [];
         if (!isset($libraries)) {
             $libraries = $this->getUnlinkedLibraries();
         }
         $callNumber = $useNewCallNumber ? $book['newCallNumber'] : $book['callNumber'];
         if (!isset($callNumber)) {
-            return '';
+            return null;
         }
         $libraryId = $book['libraryId'];
+        if (!isset($libraries[$libraryId])) {
+            return null;
+        }
         /** @var LibraryOptions $libraryOptions */
-        $libraryOptions = $libraries['options'];
+        $libraryOptions = $libraries[$libraryId]['options'];
+        $collectionOptions = null;
         $regex = null;
         if (isset($book['collectionId']) && isset($libraryOptions->collections[$book['collectionId']])) {
-            $regex = $libraryOptions->collections[$book['collectionId']]->callNumberRegex;
+            $collectionOptions = $libraryOptions->collections[$book['collectionId']];
+            $regex = $collectionOptions->callNumberRegex;
         } else {
             $regex = $libraryOptions->callNumberRegex;
         }
-        // we've got some valid regex
-        if (isset($regex) && false !== @preg_match($regex, null)) {
-            
+        if (!isset($regex)) {
+            return null;
         }
-//         const SORT_TEXT_FORMAT_PARAMETER_ORDER = [
-//             self::SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION,
-//             self::SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS,
-//         ];
+        // we've got some valid regex
+        if (!isset($regexChecks[$regex])) {
+            $regexChecks[$regex] = false !== @preg_match($regex, null);
+        }
+        if (!$regexChecks[$regex]) {
+            return null;
+        }
+        
+        //params to pass to sprintf
+        $params = [];
+        
+        $matches = null;
+        $regexParams = [];
+        $result = preg_match($regex, $callNumber, $matches);
+        if (1 === $result) {
+            $regexParams = array_slice($matches, 1);
+        }
+        
+        foreach (self::SORT_TEXT_FORMAT_PARAMETER_ORDER as $value) {
+            switch ($value) {
+                case self::SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION:
+                    $collectionAbbreviation = '';
+                    if (isset($collectionOptions)) {
+                        $collectionAbbreviation = $collectionOptions->abbreviation;
+                    }
+                    $params[] = $collectionAbbreviation;
+                    break;
+                case self::SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS:
+                    $params = array_merge($params, $regexParams);
+                    break;
+            }
+        }
+        $format = '%1$s%2$-8s%3$04d%4$03d%5$03d';
+        $return = vsprintf($format, $params);
+        return $return;
     }
 
     /**
@@ -1829,7 +1862,7 @@ ORDER BY CreatedOn DESC";
      */
     public function getProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
-        return array_merge($this->getLibraryProblems($minimumSeverity), $this->getCollectionProblems($minimumSeverity));
+        return array_merge($this->getLibrariesProblems($minimumSeverity), $this->getCollectionProblems($minimumSeverity));
     }
     
     public function getLibraryBookProblems($libraryId, $minimumSeverity = EntityProblem::SEVERITY_INFO)
@@ -1895,7 +1928,7 @@ ORDER BY CreatedOn DESC";
         //look for configuration problems
         $objects = $this->getUnlinkedLibraries();
         foreach ($objects as $object) {
-            $problems = $this->getLibraryCollectionProblems($object['options']);
+            $problems = $this->getLibraryCollectionProblems($object);
         }
         return $problems;
     }
@@ -1915,14 +1948,14 @@ ORDER BY CreatedOn DESC";
             ) {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_COLLECTION_MISSING_CALL_NUMBER_FORMAT)
-                ->setData($collection);
+                ->setData($collection->getArrayCopy());
                 $problems[] = $obj;
             }
             $regex = $collection->callNumberRegex;
             if (isset($regex) && false !== @preg_match($regex, null)) {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT)
-                ->setData($collection);
+                ->setData($collection->getArrayCopy());
                 $problems[] = $obj;
             }
         }
@@ -1936,7 +1969,25 @@ ORDER BY CreatedOn DESC";
      */
     public function autoFixProblems($simulate = true)
     {
-        return [];
+        static $tableGateway;
+        $problems = [];
+        $books = $this->searchBooks(['isActive' => true, 'libraryId' => $this->libraryId, 'sortText' => null]);
+        foreach ($books as $object) {
+            $sortText = $this->getBookSortText($object);
+            if (isset($sortText)) {
+                $obj = clone $this->entityProblemPrototype;
+                $obj->setProblem(self::PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT)
+                    ->setData($object);
+                $problems[] = $obj;
+                if (!$simulate) {
+                    if (!isset($tableGateway)) {
+                        $tableGateway = $this->getTableGateway('lib_books');
+                    }
+                    $tableGateway->update(['sort_text' => $sortText], ['book_id' => $object['bookId']]);
+                }
+            }
+        }
+        return $problems;
     }
 
     public function getResources()

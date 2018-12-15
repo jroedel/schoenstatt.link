@@ -24,6 +24,7 @@ use SionModel\Db\Model\FilesTable;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
+use SionModel\Problem\EntityProblem;
 
 return [
     'books' => [
@@ -968,6 +969,51 @@ return [
         ],
     ],
     'sion_model' => [
+        'problem_providers' => [
+            Model\LibraryTable::class,
+        ],
+        'problem_specifications' => [
+            'book-missing-call-number' => [
+                'entity'            => 'book',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'No call number for book',
+            ],
+            'book-invalid-call-number' => [
+                'entity'            => 'book',
+                'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,
+                'text'              => 'Invalid call number for book',
+            ],
+            'library-missing-call-number-format' => [
+                'entity'            => 'library',
+                'defaultSeverity'   => EntityProblem::SEVERITY_WARNING,
+                'text'              => 'No call number format for library',
+            ],
+            'library-invalid-call-number-format' => [
+                'entity'            => 'library',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'Invalid call number format for library',
+            ],
+            'library-missing-sort-text-format' => [
+                'entity'            => 'library',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'No sort text format for library',
+            ],
+            'collection-missing-call-number-format' => [
+                'entity'            => 'collection',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'No call number format for collection',
+            ],
+            'collection-invalid-call-number-format' => [
+                'entity'            => 'collection',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'Invalid call number format for collection',
+            ],
+            'collection-missing-sort-text-format' => [
+                'entity'            => 'collection',
+                'defaultSeverity'   => EntityProblem::SEVERITY_ERROR,
+                'text'              => 'No sort text format for collection',
+            ],
+        ],
         'entities' => [
             /**
              * For more information on entity config:
@@ -1146,7 +1192,9 @@ return [
                 'update_columns' => [
                     'libraryId'             => 'LibraryId',
                     'name'                  => 'LibraryName',
+                    'abbreviation'          => 'Abbreviation',
                     'description'           => 'Description',
+                    'sortTextFormat'        => 'SortTextFormat',
                     'callNumberPlaceholder' => 'CallNumberPlaceholder',
                     'callNumberHelpText'    => 'CallNumberHelpText',
                     'callNumberExplanation' => 'CallNumberExplanation',
@@ -1346,7 +1394,9 @@ return [
                     'withinLibraryId'           => 'original_id',
                     'libraryId'                 => 'library_id',
                     'publicationId'             => 'publication_id',
+                    'sortText'                  => 'sort_text',
                     'isActive'                  => 'is_active',
+                    'inactivationReason'        => 'inactivation_reason',
 
                     'publishedYear'             => 'copyright_year',
                     'publisher'                 => 'publisher',
@@ -1663,11 +1713,13 @@ return [
                     'collectionId'              => 'CollectionId',
                     'libraryId'                 => 'LibraryId',
                     'name'                      => 'CollectionName',
+                    'abbreviation'              => 'Abbreviation',
                     'description'               => 'Description',
                     'callNumberRegex'           => 'CallNumberRegex',
                     'callNumberHelpText'        => 'CallNumberHelpText',
                     'callNumberExplanation'     => 'CallNumberExplanation',
                     'mainShowDisplay'           => 'MainShowDisplay',
+                    'sortTextFormat'        => 'SortTextFormat',
                     'labelLine1'                => 'LabelLine1',
                     'labelLine2'                => 'LabelLine2',
                     'labelLine3'                => 'LabelLine3',

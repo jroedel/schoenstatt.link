@@ -22,7 +22,7 @@ class LibraryTableServiceFactory implements FactoryInterface
     {
         $dbAdapter = $container->get(Adapter::class);
 
-        $config = $container->get('Books\Config');
+        $config = $container->get('Config');
         $authService = $container->get('zfcuser_auth_service');
         $user = $authService->getIdentity();
         $actingUserId = $user ? $user->id : null;
