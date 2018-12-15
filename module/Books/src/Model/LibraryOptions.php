@@ -36,6 +36,12 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $mainShowDisplay;
     /**
+     * A format string to be passed to sprintf to generate each book's sortText
+     * @see https://secure.php.net/manual/en/function.sprintf.php
+     * @var string $sortTextFormat
+     */
+    public $sortTextFormat;
+    /**
      * @todo Does the library use collections?
      * @var bool $useCollections
      */
@@ -177,6 +183,7 @@ class LibraryOptions implements ArraySerializableInterface
         $this->filiationId = isset($array['filiationId']) ? $array['filiationId'] : null;
         $this->contactPersonId = isset($array['contactPersonId']) ? $array['contactPersonId'] : null;
         $this->contactEmail = isset($array['contactEmail']) ? $array['contactEmail'] : null;
+        $this->sortTextFormat = isset($array['sortTextFormat']) ? $array['sortTextFormat'] : null;
         $this->mainShowDisplay = isset($array['mainShowDisplay'])
             ? $array['mainShowDisplay'] : LibraryTable::MAIN_SHOW_DISPLAY_DEFAULT;
         $this->useCollections = isset($array['useCollections']) ? $array['useCollections'] : false;

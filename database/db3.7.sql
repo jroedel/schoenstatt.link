@@ -1,4 +1,4 @@
-
+#SUBMITTED 2018-12-12
 ALTER TABLE `sch_associations` CHANGE `Country` `Country` VARCHAR(6) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL;
 CREATE TABLE IF NOT EXISTS `csp_reports` (
  `id` int(11) NOT NULL AUTO_INCREMENT,

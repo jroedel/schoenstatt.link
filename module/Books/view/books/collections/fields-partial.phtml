@@ -5,11 +5,13 @@ $this->headScript()->appendFile($this->basePath() . "/gen-selectize-markdown-$la
 $form = $this->form;
 echo $this->formRow($form->get('libraryId'));
 echo $this->formRow($form->get('name'));
+echo $this->formRow($form->get('abbreviation'));
 echo $this->formRow($form->get('description'));
 echo $this->formRow($form->get('callNumberRegex'));
 echo $this->formRow($form->get('callNumberHelpText'));
 echo $this->formRow($form->get('callNumberExplanation'));
 echo $this->formRow($form->get('mainShowDisplay'));
+echo $this->formRow($form->get('sortTextFormat'));
 echo $this->formRow($form->get('labelLine1'));
 echo $this->formRow($form->get('labelLine2'));
 echo $this->formRow($form->get('labelLine3'));

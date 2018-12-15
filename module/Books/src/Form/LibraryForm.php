@@ -121,6 +121,21 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'sortTextFormat',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Sort text format',
+                'required' => false,
+                'help-block' => 'Format text to pass to sprintf. See '
+                .'https://secure.php.net/manual/en/function.sprintf.php for more info. The first parameter passed is '
+                .'the collection abbreviation followed by the capture groups of the call number.',
+            ],
+            'attributes' => [
+                'placeholder' => '%1$s%2$-8s%3$04d%4$03d%5$03d',
+                'maxlength' => '255',
+            ],
+        ]);
+        $this->add([
             'name' => 'useCollections',
             'type' => 'Checkbox',
             'options' => [
@@ -530,6 +545,26 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 50,
+                        ],
+                    ],
+                ],
+            ],
+            'sortTextFormat' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 255,
                         ],
                     ],
                 ],

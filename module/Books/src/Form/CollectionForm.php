@@ -29,6 +29,18 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
+            'name' => 'abbreviation',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Abbreviation',
+                'required' => true,
+                'help-block' => 'This abbreviation will help sort search results. Keep it short to preserve database space since it is added to each book.',
+            ],
+            'attributes' => [
+                'maxlength' => '12',
+            ],
+        ]);
+        $this->add([
             'name' => 'description',
             'type' => 'Textarea',
             'options' => [
@@ -76,6 +88,21 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
             ],
             'attributes' => [
                 'maxlength' => '50',
+            ],
+        ]);
+        $this->add([
+            'name' => 'sortTextFormat',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Sort text format',
+                'required' => false,
+                'help-block' => 'Format text to pass to sprintf. See '
+                .'https://secure.php.net/manual/en/function.sprintf.php for more info. The first parameter passed is '
+                .'the collection abbreviation followed by the capture groups of the call number.',
+            ],
+            'attributes' => [
+                'placeholder' => '%1$s%2$-8s%3$04d%4$03d%5$03d',
+                'maxlength' => '255',
             ],
         ]);
         $this->add([
@@ -233,6 +260,28 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            'abbreviation' => [
+                'required' => true,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 12,
+                        ],
+                    ],
+                ],
+            ],
             'description' => [
                 'required' => false,
                 'filters' => [
@@ -317,6 +366,26 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 50,
+                        ],
+                    ],
+                ],
+            ],
+            'sortTextFormat' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 255,
                         ],
                     ],
                 ],
