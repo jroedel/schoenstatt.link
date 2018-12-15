@@ -88,7 +88,7 @@ paths:
       tags:
         - associations
       parameters:
-        - $ref: '#/components/parameters/association-kind'
+        - $ref: '#/components/parameters/associationKind'
       responses:
         '200':
           description: An array of associations
@@ -101,6 +101,54 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Associations'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/libraries/{libraryId}/pendingLabels':
+    get:
+      summary: Get books which have a newCallNumber value
+      operationId: libraries
+      tags:
+        - books
+      parameters:
+        - $ref: '#/components/parameters/libraryId'
+      responses:
+        '200':
+          description: An array of books
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Books'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Replace the callNumber with newCallNumber
+      operationId: libraries
+      tags:
+        - books
+      parameters:
+        - $ref: '#/components/parameters/libraryId'
+        - name: bookId
+          in: query
+          required: true
+          description: A pipe-separated list of bookIds of the books to modify
+          schema:
+            type: string
+            format: \d{1,8}(?:\|\d{1,8})*
+      responses:
+        '200':
+          description: An array of books
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Books'
         default:
           description: unexpected error
           content:
@@ -150,7 +198,14 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   parameters:
-    association-kind:
+    libraryId:
+      name: libraryId
+      in: path
+      description: The identifier of the library
+      required: true
+      schema:
+        type: string
+    associationKind:
       name: kind
       in: query
       description: The type of associations to return
