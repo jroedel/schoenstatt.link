@@ -491,6 +491,14 @@ ORDER BY `publisher`";
             $where->addPredicate($authorClause, PredicateSet::OP_AND);
         }
         
+        //Prepare title predicate
+        if (isset($query['inLanguage']) && 0 !== strlen($query['inLanguage'])) {
+            $search = $query['inLanguage'];
+            $searchLike = sprintf("%%%s%%", $search);
+            $titleClause = new Like($fieldMap['inLanguage'], $query['inLanguage']);
+            $where->addPredicate($titleClause, PredicateSet::OP_AND);
+        }
+        
         //Prepare sortText predicate
         if (array_key_exists('sortText', $query)) {
             if (!isset($query['sortText'])) {

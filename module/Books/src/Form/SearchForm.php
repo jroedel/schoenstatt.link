@@ -11,7 +11,7 @@ class SearchForm extends Form implements InputFilterProviderInterface
         // we want to ignore the name passed
         parent::__construct('search');
         $this->setAttribute('method', 'GET');
-
+        
         $this->add([
             'name' => 'search',
             'type' => 'Text',
@@ -23,6 +23,17 @@ class SearchForm extends Form implements InputFilterProviderInterface
                 'class' => 'input-lg search-query',
                 'placeholder' => 'Search',
                 'size' => 50,
+            ],
+        ]);
+        $this->add([
+            'name' => 'inLanguage',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Language',
+            ],
+            'attributes' => [
+                'required' => false,
+                'size' => 2,
             ],
         ]);
         $this->add([
@@ -80,6 +91,23 @@ class SearchForm extends Form implements InputFilterProviderInterface
                         'name' => 'StringLength',
                         'options' => [
                             'min' => 3,
+                            'encoding' => 'UTF-8',
+                        ],
+                    ],
+                ],
+            ],
+            'inLanguage' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'min' => 2,
+                            'max' => 2,
                             'encoding' => 'UTF-8',
                         ],
                     ],
