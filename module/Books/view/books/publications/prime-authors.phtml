@@ -7,13 +7,13 @@
 </thead>
 <tbody>
 <?php $authors = $this->authors;
-foreach ($authors as $authorText => $publications) :
+foreach ($authors as $authorsText => $publications) :
     $publicationTexts = [];
     foreach ($publications as $publication) {
         $publicationTexts[] = $this->formatEntity('publication', $publication);
     }?>
 <tr>
-	<td><?php echo $this->escapeHtml($authorText);?></td>
+	<td><?php echo $this->escapeHtml($authorsText);?></td>
 	<td><?php echo implode(', ', $publicationTexts);?></td>
 </tr>
 <?php endforeach;?>

@@ -85,7 +85,7 @@ class LibraryImportsController extends SionController
     private function getColegioMayorLibraryFieldsMap()
     {
         return [
-            'authorText'        => 'Autor',
+            'authorsText'       => 'Autor',
             'title'             => 'Titulo',
             'callNumber'        => 'Lomo',
             'category'          => 'Categoría',
@@ -187,7 +187,7 @@ class LibraryImportsController extends SionController
 
             'publicationId',
             'collectionId',
-            'authorText',
+            'authorsText',
             'title',
             'bookEdition',
             'callNumber',
@@ -377,7 +377,7 @@ class LibraryImportsController extends SionController
                     //fill in info from the publication to the books table
                     $params['title'] = $publications[$publicationId]['title'];
                     if (isset($publications[$publicationId]['authorsText'])) {
-                        $params['authorText'] = $publications[$publicationId]['authorsText'];
+                        $params['authorsText'] = $publications[$publicationId]['authorsText'];
                     }
                     if (isset($publications[$publicationId]['copyrightYear'])) {
                         $params['copyrightYear'] = $publications[$publicationId]['copyrightYear'];

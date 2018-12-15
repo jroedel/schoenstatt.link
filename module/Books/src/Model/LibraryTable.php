@@ -133,7 +133,7 @@ class LibraryTable extends SionTable implements
                     break;
                 case self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE:
                 default:
-                    $return[$bookId] = $withinLibraryId.'-'.$book['authorText'].' '.$book['title'];
+                    $return[$bookId] = $withinLibraryId.'-'.$book['authorsText'].' '.$book['title'];
                     break;
             }
         }
@@ -383,7 +383,7 @@ ORDER BY `publisher`";
             $searchLike = sprintf("%%%s%%", $search);
             $searchClause = new Predicate();
             $searchClause->addPredicates([
-                new Like($fieldMap['authorText'], $searchLike),
+                new Like($fieldMap['authorsText'], $searchLike),
                 new Like($fieldMap['title'], $searchLike),
                 new Like($fieldMap['category'], $searchLike),
                 new Like($fieldMap['callNumber'], $searchLike),
@@ -485,9 +485,9 @@ ORDER BY `publisher`";
         }
 
         //Prepare author predicate
-        if (isset($query['authorText']) && 0 !== strlen($query['author'])) {
+        if (isset($query['authorsText']) && 0 !== strlen($query['author'])) {
             $search = $query['author'];
-            $authorClause = new Operator($fieldMap['authorText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
+            $authorClause = new Operator($fieldMap['authorsText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
             $where->addPredicate($authorClause, PredicateSet::OP_AND);
         }
         
@@ -692,17 +692,17 @@ ORDER BY `publisher`";
     protected function processBookRow($row)
     {
         $id = $this->filterDbId($row['book_id']);
-        $authorText = $this->filterDbString($row['author']);
-        $authors = $this->filterDbArray($authorText);
+        $authorsText = $this->filterDbString($row['author']);
+        $authors = $this->filterDbArray($authorsText);
         $authorsPrettyText = implode('; ', $authors);
         $title = $this->filterDbString($row['title']);
-        $name = $authorsPrettyText . ($authorText ? ' - ' : '') . $title;
+        $name = $authorsPrettyText . ($authorsText ? ' - ' : '') . $title;
         $libraryId = $this->filterDbId($row['library_id']);
         $isActive = $this->filterDbBool($row['is_active']);
         $processedRow = [
             'bookId'                => $id,
             'collectionId'          => $this->filterDbId($row['collection_id']),
-            'authorText'            => $authorText,
+            'authorsText'           => $authorsText,
             'title'                 => $title,
             'bookEdition'           => $row['edition'],
             'callNumber'            => $row['call_number'],
@@ -755,7 +755,7 @@ ORDER BY `publisher`";
     protected function preprocessBook($data, $entityData, $action)
     {
         if (isset($data['authors'])) {
-            $data['authorText'] = implode('|', $data['authors']);
+            $data['authorsText'] = implode('|', $data['authors']);
         }
         
         //update the sortText

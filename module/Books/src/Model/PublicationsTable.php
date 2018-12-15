@@ -298,7 +298,7 @@ ORDER BY `Publisher`";
         }
 
 //         $queryParameters = [
-//             'title', 'authorText', 'search', 'publisher',
+//             'title', 'authorsText', 'search', 'publisher',
 //             'description', 'categoryId', 'inLanguage',
 //             'mainPublicationId', 'translatedFromPublicationId', 'publicationId',
 //             'resourceId' //@todo finish this (we should be limiting on the search action)
@@ -321,7 +321,7 @@ ORDER BY `Publisher`";
             $searchClause = new Predicate();
             $searchClause->addPredicates([
                 new Like($fieldMap['title'], $searchLike),
-                new Like($fieldMap['authorText'], $searchLike),
+                new Like($fieldMap['authorsText'], $searchLike),
                 new Like($fieldMap['category'], $searchLike),
                 new Like($fieldMap['publisher'], $searchLike),
                 new Like($fieldMap['description'], $searchLike),
@@ -436,10 +436,10 @@ ORDER BY `Publisher`";
 
         //@todo this should be LIKE
         //Prepare author predicate
-        if (isset($query['authorText']) && 0 !== strlen($query['authorText'])) {
-            $search = $query['authorText'];
+        if (isset($query['authorsText']) && 0 !== strlen($query['authorsText'])) {
+            $search = $query['authorsText'];
             $searchLike = sprintf("%%%s%%", $search);
-            $authorClause = new Like($fieldMap['authorText'], $searchLike);
+            $authorClause = new Like($fieldMap['authorsText'], $searchLike);
             $where->addPredicate($authorClause, $combination);
         }
 

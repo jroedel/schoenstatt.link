@@ -11,7 +11,7 @@ class Coins extends AbstractHelper
     
     public static $fieldPropertyMap = [
         'title'                 => 'rft.btitle',
-        'authorText'            => 'rft.au',
+        'authorsText'           => 'rft.au',
         'inLanguage'            => 'rft.language',
         'numberOfPages'         => 'rft.tpages',
         'bookEdition'           => 'rft.edition',
@@ -66,7 +66,7 @@ class Coins extends AbstractHelper
         //special: author, 'sameAs', translatedFromPublicationId (isBasedOnUrl)
         foreach (self::$fieldPropertyMap as $field => $property) {
             switch ($field) {
-                case 'authorText':
+                case 'authorsText':
                     if (!empty($publication['authorPersons'])) {
                         // @todo this
                     } elseif (isset($publication['authorsText'])) {

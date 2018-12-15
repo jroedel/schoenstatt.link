@@ -8,3 +8,4 @@ ALTER TABLE `lib_collections` ADD UNIQUE( `LibraryId`, `Abbreviation`);
 ALTER TABLE `lib_collections` ADD `SortTextFormat` VARCHAR(255) NULL DEFAULT NULL AFTER `Description`;
 ALTER TABLE `lib_libraries` ADD `SortTextFormat` VARCHAR(255) NULL DEFAULT NULL AFTER `MainShowDisplay`;
 
+ALTER TABLE `lib_books` ADD `sort_text` VARCHAR(100) NULL DEFAULT NULL AFTER `publication_id`;

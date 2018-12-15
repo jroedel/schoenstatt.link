@@ -18,7 +18,7 @@ if (isset($this->publications) && is_array($this->publications)):?><th></th><?ph
     </th><?php endif;?>
 	<td><?php echo $this->escapeHtml($book['withinLibraryId']);?></td>
 	<td><?php echo $this->escapeHtml($book['callNumber']);?></td>
-	<td><?php echo $this->escapeHtml($book['authorText']);?></td>
+	<td><?php echo $this->escapeHtml($book['authorsText']);?></td>
 </tr>
 <?php endforeach;?>
 </table>
