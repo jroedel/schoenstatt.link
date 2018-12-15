@@ -1382,7 +1382,7 @@ return [
                 'update_columns' => [
                     'bookId'                    => 'book_id',
                     'collectionId'              => 'collection_id',
-                    'authorText'                => 'author',
+                    'authorsText'               => 'author',
                     'title'                     => 'title',
                     'bookEdition'               => 'edition',
                     'callNumber'                => 'call_number',
