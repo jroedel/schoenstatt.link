@@ -174,8 +174,13 @@ class LibraryImportsController extends SionController
             'statistics'    => $stats,
         ], false);
     }
-
-    public function redirectAfterEdit($id)
+    
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::redirectAfterEdit()
+     */
+    public function redirectAfterEdit($id, $data = [], $form = null)
     {
         //don't redirect after edit
     }
