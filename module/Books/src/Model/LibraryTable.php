@@ -93,6 +93,12 @@ class LibraryTable extends SionTable implements
      * @var int $libraryId
      */
     protected $libraryId;
+    
+    /**
+     * Used to store an associative array mapping collectionIds to their names, assigned by getCollectionNames
+     * @var string[]
+     */
+    protected $collectionNames;
 
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $config)
     {
@@ -698,6 +704,28 @@ ORDER BY `publisher`";
         $this->cacheEntityObjects($cacheKey, $entities, ['book']);
         return $entities;
     }
+    
+    /**
+     * Get an associative array mapping collectionId to its name
+     * @return string[]
+     */
+    protected function getCollectionNames()
+    {
+        if (isset($this->collectionNames)) {
+            return $this->collectionNames;
+        }
+        $select = $this->getSelectPrototype('collection');
+        $select->columns(['CollectionId', 'CollectionName']);
+        $gateway = $this->getTableGateway('lib_collections');
+        $results = $gateway->selectWith($select);
+        
+        $entities = [];
+        foreach ($results as $row) {
+            $entities[$row['CollectionId']] = $row['CollectionName'];
+        }
+        $this->collectionNames = $entities;
+        return $this->collectionNames;
+    }
 
     /**
      * Manipulate a database book row into a standardized row
@@ -706,17 +734,29 @@ ORDER BY `publisher`";
      */
     protected function processBookRow($row)
     {
+        static $collectionNames;
+        if (!isset($collectionNames)) {
+            $collectionNames = $this->getCollectionNames();
+        }
         $id = $this->filterDbId($row['book_id']);
+        $libraryId = $this->filterDbId($row['library_id']);
         $authorsText = $this->filterDbString($row['author']);
         $authors = $this->filterDbArray($authorsText);
         $authorsPrettyText = implode('; ', $authors);
         $title = $this->filterDbString($row['title']);
         $name = $authorsPrettyText . ($authorsText ? ' - ' : '') . $title;
-        $libraryId = $this->filterDbId($row['library_id']);
         $isActive = $this->filterDbBool($row['is_active']);
+        $collectionId = $this->filterDbId($row['collection_id']);
+        $collectionName = null;
+        if (isset($collectionId) 
+            && isset($collectionNames) 
+            && isset($collectionNames[$collectionId])
+        ) {
+            $collectionName = $collectionNames[$collectionId];
+        }
         $processedRow = [
             'bookId'                => $id,
-            'collectionId'          => $this->filterDbId($row['collection_id']),
+            'collectionId'          => $collectionId,
             'authorsText'           => $authorsText,
             'title'                 => $title,
             'bookEdition'           => $row['edition'],
@@ -757,6 +797,7 @@ ORDER BY `publisher`";
             'currentCheckoutId'     => $this->filterDbId($row['current_checkout_id']),
             'currentCheckout'       => null,
             'library'               => null,
+            'collectionName'        => $collectionName,
         ];
         return $processedRow;
     }

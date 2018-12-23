@@ -5,7 +5,6 @@ use SionModel\Controller\SionController;
 use Books\Form\SearchForm;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Books\Model\LibraryTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Service\ProblemService;
 use Zend\View\Model\JsonModel;
@@ -132,8 +131,8 @@ class LibrariesController extends SionController
         }
 
         if (isset($pages['libraries/library/data-problems'])) {
-//             $problemCounts = $this->getProblemCounts();
-//             $pages['sion-model/data-problems']['badges'] = $problemCounts;
+            $problemCounts = $this->getProblemCounts();
+            $pages['libraries/library/data-problems']['badges'] = $problemCounts;
         }
 
         if (isset($pages['library-imports/library'])) {
@@ -143,7 +142,6 @@ class LibrariesController extends SionController
         if (isset($pages['sion-model/auto-fix-data-problems'])) {
             /** @var ProblemService $problemService */
             $problemService = $this->services[ProblemService::class];
-            $problems = $problemService->getCurrentProblems();
             $autoFixProblems = $problemService->autoFixProblems();
             $pages['sion-model/auto-fix-data-problems']['badges'] = [count($autoFixProblems)];
         }
