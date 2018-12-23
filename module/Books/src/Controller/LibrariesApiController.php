@@ -44,9 +44,7 @@ class LibrariesApiController extends AbstractRestfulController
         $objects = $table->getUnlinkedLibraries();
         
         return new JsonModel([
-            'items'         => $json,
-            'md5'           => $md5,
-            'objectMd5s'    => $md5s,
+            'items'         => $objects,
         ], ['prettyPrint' => false]);
     }
     
@@ -55,7 +53,7 @@ class LibrariesApiController extends AbstractRestfulController
         $table = $this->libraryTable;
         $object = $table->getSimpleLibrary($id);
         self::prepLibraryObject($object);
-        return new JsonModel([$object], ['prettyPrint' => true]);
+        return new JsonModel($object, ['prettyPrint' => true]);
     }
     
     public function pendingLabelsAction()
@@ -66,7 +64,8 @@ class LibrariesApiController extends AbstractRestfulController
         $objects = $table->searchBooks(['libraryId' => $libraryId], ['onlyPendingBooks' => true]);
         $this->jsonSerializeDateTimeObjects($objects);
         return new JsonModel([
-            'items' => $objects,
+            'items' => array_values($objects),
+            'count' => count($objects),
         ], ['prettyPrint' => true]);
     }
     

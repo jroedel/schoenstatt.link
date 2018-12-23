@@ -196,6 +196,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /dictionary/slugify-terms:
+    post:
+      summary: Slugify dictionary terms, no changes made in database
+      operationId: slugifyTerms
+      tags:
+        - dictionary
+      requestBody:
+        description: A list of dictionary terms to slugify
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Terms'
+            example:
+              {"terms":["Abbild", "Abfall", "Abfall ist Zerfall"]}
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Slugs'
+              example:
+                {"slugs": {"Abbild": "abbild", "Abfall": "abfall", "Abfall ist Zerfall": "abfall-ist-zerfall"}}
+        '201':
+          description: Null response
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   parameters:
     libraryId:
@@ -416,6 +447,22 @@ components:
           format: int32
         message:
           type: string
+    Terms:
+      required:
+        - terms
+      properties:
+        terms:
+          type: array
+          items:
+            type: string
+    Slugs:
+      required:
+        - slugs
+      properties:
+        slugs:
+          type: array
+          items:
+            type: string
   securitySchemes:
     api_key:
       type: apiKey
