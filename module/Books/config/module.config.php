@@ -346,6 +346,16 @@ return [
                             ],
                         ],
                     ],
+                    'slugify-terms' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/dictionary/slugify-terms',
+                            'defaults' => [
+                                'controller' => Controller\DictionaryApiController::class,
+                                'action'     => 'slugifyTerms',
+                            ],
+                        ],
+                    ],
                 ],
             ],
             'publications' => [
@@ -2001,6 +2011,7 @@ return [
                 ['route' => 'api-v1/pending-labels/finish-pending-labels', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'api-v1/books', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/slugify-terms', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
