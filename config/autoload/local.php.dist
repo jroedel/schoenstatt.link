@@ -106,4 +106,9 @@ return [
     	'cookie_secure' => true,
     	'cookie_http_only' => true,
     ],
+    'ApiRequest' => [
+        'jwtAuth' => [
+            'cypherKey' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+        ],
+    ],
 ];

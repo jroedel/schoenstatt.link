@@ -26,6 +26,7 @@ use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
 use Zend\Router\Http\Method;
+use Books\Model\DictionaryTable;
 
 return [
     'books' => [
@@ -217,6 +218,7 @@ return [
             Model\PublicationsTable::class      => Service\PublicationsTableFactory::class,
             Model\LibraryTable::class           => Service\LibraryTableServiceFactory::class,
             Model\EventTextTable::class         => Service\EventTextTableFactory::class,
+            Model\DictionaryTable::class        => Service\DictionaryTableFactory::class,
             Form\SearchForm::class              => Service\SearchFormFactory::class,
             Form\LibraryForm::class             => Service\LibraryFormFactory::class,
             Form\CollectionForm::class          => Service\CollectionFormFactory::class,
@@ -353,6 +355,19 @@ return [
                             'defaults' => [
                                 'controller' => Controller\DictionaryApiController::class,
                                 'action'     => 'slugifyTerms',
+                            ],
+                        ],
+                    ],
+                    'dictionary' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/dictionary[/:entry_id]',
+                            'defaults' => [
+                                'action' => null,
+                                'controller' => Controller\DictionaryApiController::class,
+                            ],
+                            'constraints' => [
+                                'entry_id' => '[0-9]{1,8}',
                             ],
                         ],
                     ],
@@ -1921,6 +1936,79 @@ return [
                     'createdBy' => 'CreatedBy',
                 ],
             ],
+            'dictionary-entry' => [
+                'name'                                      => 'dictionary-entry',
+                'table_name'                                => 'sch_dictionary_entries',
+                'table_key'                                 => 'EntryId',
+                'entity_key_field'                          => 'entryId',
+                'sion_model_class'                          => Model\DictionaryTable::class,
+                'sion_controllers'                          => [Controller\DictionaryController::class],//BorrowersController::class],
+                'controller_services'                       => [
+                    DictionaryTable::class,
+                ],
+//                 'get_object_function'                       => 'getText',
+//                 'get_objects_function'                      => 'getUnlinkedTexts',
+                //                 'format_view_helper'                        => 'formatEvent',
+                'required_columns_for_creation'             => [
+                    'key',
+                    'locale',
+                    'entry',
+                ],
+                'name_field'                                => 'key',
+                'name_field_is_translateable'               => false,
+//                 'country_field'                             => 'country',
+//                 'text_columns'                              => ['markdownText', 'htmlText', 'plainText'],
+//                 'many_to_one_update_columns'                => [
+//                     'email'    => 'contactInfo',
+//                     'cell'    => 'contactInfo',
+//                 ],
+                'report_changes'                            => true,
+//                 'index_route'                               => 'events',
+//                 'index_template'                            => 'project/events/index',
+                'default_route_key'                         => 'entry_id',
+//                     'show_action_template'                      => 'project/events/show',
+                'show_route'                                => 'dictionary/entry',
+                'show_route_key'                            => 'entry_id',
+                'show_route_key_field'                      => 'entryId',
+//                 'edit_action_form'                          => Form\BlogForm::class,
+//                 'edit_action_template'                      => 'project/events/edit',
+                'edit_route'                                => 'dictionary/entry/edit',
+                'edit_route_key'                            => 'entry_id',
+                'edit_route_key_field'                      => 'entryId',
+//                 'create_action_form'                        => Form\BlogForm::class,
+//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
+                'create_action_redirect_route'              => 'dictionary/entry',
+                'create_action_redirect_route_key'          => 'entry_id',
+                'create_action_redirect_route_key_field'    => 'entryId',
+//                 'create_action_template'                    => 'project/events/create',
+//                 'touch_default_field'                       => 'eventId',
+//                 'touch_route_key'                           => 'event_id',
+//                 'touch_field_route_key'                     => 'event_id',
+//                 'touch_json_route'                          => 'events/event/touch',
+//                 'touch_json_route_key'                      => 'event_id',
+                'database_bound_data_preprocessor'          => 'preprocessDictionaryEntry',
+                'database_bound_data_postprocessor'         => 'postprocessDictionaryEntry',
+//                 'moderate_route'                            => 'events/event/moderate',
+//                 'moderate_route_entity_key'                 => 'event_id',
+//                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                      => true,
+//                 'delete_action_acl_resource'                => 'event_:id',
+//                 'delete_action_acl_permission'              => 'delete',
+//                 'delete_action_redirect_route'              => 'blog',
+                'update_columns'                            => [
+                    'entryId' => 'EntryId',
+                    'key' => 'KeyDe', 
+                    'slug' => 'Slug',
+                    'locale' => 'Locale', 
+                    'directTranslation' => 'DirectTranslation',
+                    'entry' => 'Entry',
+                    'links' => 'Links',
+                    'updatedOn' => 'UpdatedOn',
+                    'updatedBy' => 'UpdatedBy',
+                    'createdOn' => 'CreatedOn',
+                    'createdBy' => 'CreatedBy',
+                ],
+            ],
         ],
     ],
 
@@ -2011,6 +2099,7 @@ return [
                 ['route' => 'api-v1/pending-labels/finish-pending-labels', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'api-v1/books', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/slugify-terms', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],

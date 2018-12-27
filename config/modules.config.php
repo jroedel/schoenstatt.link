@@ -32,6 +32,7 @@ $modules = [
     'ZfcUser',
     'BjyAuthorize',
     'SlmLocale',
+    'RestApi',
     'JUser',
     'SionModel',
     'JTranslate',
