@@ -330,6 +330,7 @@ return [
                             'defaults'  => [
                                 'controller' => Controller\LibrariesApiController::class,
                                 'action'     => 'pendingLabels',
+                                'isAuthorizationRequired' => true
                             ],
                             'constraints' => [
                                 'library_id' => '[0-9]{1,3}',
@@ -355,6 +356,7 @@ return [
                             'defaults' => [
                                 'controller' => Controller\DictionaryApiController::class,
                                 'action'     => 'slugifyTerms',
+                                'isAuthorizationRequired' => true,
                             ],
                         ],
                     ],

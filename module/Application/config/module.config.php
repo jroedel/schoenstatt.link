@@ -21,10 +21,25 @@ use JTranslate\Model\TranslationsTable;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Cache\Storage\StorageInterface;
 use Application\View\GdprStrategy;
+use Application\Service\JsonPostFactory;
 
 return [
     'router' => [
         'routes' => [
+            'api-v1' => [
+                'child_routes' => [
+                    'login' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/login',
+                            'defaults' => [
+                                'action' => 'login',
+                                'controller' => Controller\UsersApiController::class,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'welcome' => [
                 'type' => Literal::class,
                 'options' => [
@@ -98,6 +113,7 @@ return [
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
+            Authentication\Adapter\JsonPost::class => JsonPostFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -152,6 +168,7 @@ return [
     'bjyauthorize' => [
         'guards' => [
             Route::class => [
+                ['route' => 'api-v1/login', 'roles' => ['guest', 'user']],
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
                 ['route' => 'sitemap', 'roles' => ['guest', 'user']],
