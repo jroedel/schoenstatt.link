@@ -196,6 +196,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /dictionary:
+    get:
+      summary: List all dictionary entries
+      operationId: listDictionaryEntries
+      tags:
+        - dictionary
+      responses:
+        '200':
+          description: An array of dictionary entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictionaryEntries'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /dictionary/slugify-terms:
     post:
       summary: Slugify dictionary terms, no changes made in database
@@ -455,14 +474,52 @@ components:
           type: array
           items:
             type: string
+    Slug:
+      description: A lowercase string representing a unique dictionary term, no spaces, symbols or non-ASCII characters; only hyphens as word separators.
+      type: string
+      format: '[a-z0-9-]+'
     Slugs:
+      type: array
+      items:
+        $ref: '#/components/schemas/Slug'
+    DictionaryEntry:
       required:
-        - slugs
+        - entryId
+        - key
+        - slug
+        - locale
+        - entry
       properties:
-        slugs:
+        entryId:
+          type: integer
+          format: int32
+        key:
+          type: string
+        slug:
+          $ref: '#/components/schemas/Slug'
+        locale:
+          type: string
+          enum:
+            - 'en_US'
+            - 'es_ES'
+            - 'pt_PT'
+            - 'hr_HR'
+            - 'cz_CZ'
+        directTranslation:
+          description: A string that directly translates the key in the specified locale
+          type: string
+        entry:
+          description: The dictionary entry for the given term
+          type: string
+        links:
+          description: A list of associated dictionary entries. Note that, whereas according to the schema there could technically be different links for a single key, the database enforces a same-link policy such that upon updating an entry the links value is copied to all other locales.
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Slug'
+    DictionaryEntries:
+      type: array
+      items:
+        $ref: '#/components/schemas/DictionaryEntry'
   securitySchemes:
     api_key:
       type: apiKey

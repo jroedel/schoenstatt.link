@@ -101,6 +101,16 @@ class DictionaryApiController extends ApiController
         return $this->createResponse();
     }
     
+    /**
+     * This is for replacing the whole online dictionary.
+     * {@inheritDoc}
+     * @see \Zend\Mvc\Controller\AbstractRestfulController::replaceList()
+     */
+    public function replaceList($data)
+    {
+        
+    }
+    
     public function slugifyTermsAction()
     {
         $request = $this->getRequest();
