@@ -361,15 +361,64 @@ return [
                         ],
                     ],
                     'dictionary' => [
-                        'type'    => Segment::class,
+                        'type'    => Literal::class,
                         'options' => [
-                            'route'    => '/dictionary[/:entry_id]',
+                            'route'    => '/dictionary',
                             'defaults' => [
                                 'action' => null,
                                 'controller' => Controller\DictionaryApiController::class,
+                                'isAuthorizationRequired' => true,
                             ],
-                            'constraints' => [
-                                'entry_id' => '[0-9]{1,8}',
+                        ],
+                        'may_terminate' => false,
+                        'child_routes' => [
+                            'list' => [
+                                'type'    => Method::class,
+                                'options' => [
+                                    'verb'      => 'get',
+                                    'defaults'  => [
+                                        'isAuthorizationRequired' => false,
+                                    ],
+                                ],
+                                'may_terminate' => true,
+                                'child_routes' => [
+                                    'entry' => [
+                                        'type'    => Segment::class,
+                                        'options' => [
+                                            'route'     => '/:entry_id',
+                                            'defaults'  => [
+                                                'isAuthorizationRequired' => false,
+                                            ],
+                                            'constraints' => [
+                                                'entry_id' => '[0-9]{1,5}',
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            'create' => [
+                                'type'    => Method::class,
+                                'options' => [
+                                    'verb'      => 'post',
+                                ],
+                            ],
+                            'update' => [
+                                'type'    => Method::class,
+                                'options' => [
+                                    'verb'      => 'put',
+                                ],
+                                'may_terminate' => true,
+                                'child_routes' => [
+                                    'entry' => [
+                                        'type'    => Segment::class,
+                                        'options' => [
+                                            'route'     => '/:entry_id',
+                                            'constraints' => [
+                                                'entry_id' => '[0-9]{1,5}',
+                                            ],
+                                        ],
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -2102,6 +2151,11 @@ return [
                 
                 ['route' => 'api-v1/books', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/dictionary/list', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/dictionary/list/entry', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/dictionary/update', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/dictionary/update/entry', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/dictionary/create', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/slugify-terms', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],

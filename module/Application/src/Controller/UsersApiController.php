@@ -4,6 +4,7 @@ namespace Application\Controller;
 use RestApi\Controller\ApiController;
 use Application\Authentication\Adapter\JsonPost;
 use Carbon\Carbon;
+use Zend\Math\Rand;
 
 class UsersApiController extends ApiController
 {
@@ -29,11 +30,13 @@ class UsersApiController extends ApiController
             $this->apiResponse['message'] = $auth->getMessages()[0];
             return $this->createResponse();
         }
+        $jwtId = Rand::getString(10);
         $expiration = Carbon::now()
             ->addMonths(6);
         $payload = [
-            'id' => $auth->getIdentity()['id'],
-            'expiration' => $expiration->format('Y-m-d\TH:i:s\Z'),
+            'sub' => $auth->getIdentity()['id'],
+            'exp' => $expiration->format('U'), //'Y-m-d\TH:i:s\Z'),
+            'jti' => $jwtId,
         ];
         $jwt = $this->generateJwtToken($payload);
         $this->httpStatusCode = 200;
