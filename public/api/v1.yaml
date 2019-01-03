@@ -5,7 +5,7 @@ info:
   license:
     name: Proprietary
 servers:
-  - url: 'https://schoenstatt.link/api/v1'
+  - url: 'https://schoenstatt.link/en/api/v1'
 paths:
   /books:
     get:
@@ -38,12 +38,7 @@ paths:
       tags:
         - libraries
       parameters:
-        - name: libraryId
-          in: path
-          required: true
-          description: The id of the library to retrieve
-          schema:
-            type: string
+        - $ref: '#/components/parameters/libraryId'
       responses:
         '200':
           description: Expected response to a valid request
@@ -184,11 +179,17 @@ paths:
   /users/login:
     post:
       summary: Login
-      operationId: createAssociation
+      operationId: login
       tags:
         - users
+      requestBody:
+        description: Login credentials
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginCredentials'
       responses:
-        '201':
+        '200':
           description: Null response
         default:
           description: unexpected error
@@ -208,13 +209,73 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/DictionaryEntries'
+                $ref: '#/components/schemas/DictionaryEntriesResponse'
         default:
           description: unexpected error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+    post:
+      summary: Create a new dictionary entry
+      operationId: createDictionaryEntry
+      tags:
+        - dictionary
+      responses:
+        '200':
+          description: Dictionary entry creation was successful
+          content:
+            application/json:
+              schema:
+                $ref: '$/components/schemas/DictionaryEntryResponse'
+        '400':
+          description: Dictionary entry creation was unsuccessful
+          content:
+            application/json:
+              schema:
+                $ref: '$/components/schemas/DictionaryEntryInvalidResponse'
+  '/dictionary/{entryId}':
+    get:
+      summary: Info for a specific dictionary entry
+      operationId: showDictionaryEntryById
+      tags:
+        - dictionary
+      parameters:
+        - $ref: "#/components/parameters/dictionaryEntryId"
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictionaryEntryResponse'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update a dictionary entry
+      tags:
+        - dictionary
+      parameters:
+        - $ref: "#/components/parameters/dictionaryEntryId"
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleResponse'
+        '400':
+          description: Invalid resource field(s)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictionaryEntryInvalidResponse'
+        default:
+          description: unexpected error
   /dictionary/slugify-terms:
     post:
       summary: Slugify dictionary terms, no changes made in database
@@ -255,6 +316,14 @@ components:
       required: true
       schema:
         type: string
+    dictionaryEntryId:
+      name: entryId
+      in: path
+      required: true
+      description: The id of the dictionary entry to referred to
+      schema:
+        type: string
+        format: "[0-9]{1,5}"
     associationKind:
       name: kind
       in: query
@@ -297,6 +366,25 @@ components:
           - sch-other
           - legal-entity
   schemas:
+    LoginCredentials:
+      required:
+        - identity
+        - credential
+      properties:
+        identity:
+          description: Username or email address
+          type: string
+        credential:
+          description: User's password
+          type: string
+      example:
+        {"identity":"user11","credential":"MyS3cur3Pa55w0rd"}
+    SimpleResponse:
+      properties:
+        status:
+          type: string
+          enum:
+            - 'OK'
     Book:
       properties:
         withinLibraryId:
@@ -466,6 +554,21 @@ components:
           format: int32
         message:
           type: string
+    ErrorResponse:
+      required:
+        - status
+        - result
+      properties:
+        status:
+          type: string
+          enum:
+            - 'Bad'
+        result:
+          type: object
+          properties:
+            message:
+              description: The error message
+              type: string
     Terms:
       required:
         - terms
@@ -482,6 +585,17 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Slug'
+    DictionaryEntryResponse:
+      required:
+        - status
+        - result
+      properties:
+        status:
+          type: string
+          enum:
+            - 'OK'
+        result:
+          $ref: '#/components/schemas/DictionaryEntry'
     DictionaryEntry:
       required:
         - entryId
@@ -516,10 +630,51 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Slug'
+    DictionaryEntriesResponse:
+      required:
+        - status
+        - result
+      properties:
+        status:
+          type: string
+          enum:
+            - 'OK'
+        result:
+          $ref: '#/components/schemas/DictionaryEntries'
     DictionaryEntries:
       type: array
       items:
         $ref: '#/components/schemas/DictionaryEntry'
+    DictionaryEntryInvalidResponse:
+      required:
+        - status
+        - result
+      properties:
+        status:
+          type: string
+          enum:
+            - 'NOK'
+        result:
+          properties:
+            invalidFields:
+              $ref: '#/components/schemas/DictionaryInvalidFields'
+    DictionaryInvalidFields:
+      properties:
+        key:
+          $ref: "#/components/schemas/InvalidFieldMessages"
+        locale:
+          $ref: "#/components/schemas/InvalidFieldMessages"
+        directTranslation:
+          $ref: "#/components/schemas/InvalidFieldMessages"
+        entry:
+          $ref: "#/components/schemas/InvalidFieldMessages"
+        links:
+          $ref: "#/components/schemas/InvalidFieldMessages"
+    InvalidFieldMessages:
+      description: Array of validation error messages
+      type: array
+      items:
+        type: string
   securitySchemes:
     api_key:
       type: apiKey

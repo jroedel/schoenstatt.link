@@ -26,20 +26,32 @@ class JsonPost extends Db
             || !$contentType instanceof HeaderInterface 
             || 'application/json' !== $contentType->getFieldValue()
         ) {
-            $e = new AuthenticationResult(
-                AuthenticationResult::FAILURE_UNCATEGORIZED,
-                null,
-                ['Please send a POST request of Content-Type application/json.']
-                );
+            if (isset($e)) {
+                $e->setCode(AuthenticationResult::FAILURE_UNCATEGORIZED)
+                ->setMessages(['Please send a POST request of Content-Type application/json.']);
+                $this->setSatisfied(false);
+            } else {
+                $e = new AuthenticationResult(
+                    AuthenticationResult::FAILURE_UNCATEGORIZED,
+                    null,
+                    ['Please send a POST request of Content-Type application/json.']
+                    );
+            }
             return $e;
         }
         $data = Json::decode($request->getContent(), Json::TYPE_ARRAY);
         if (!isset($data['identity']) || !isset($data['credential'])) {
-            $e = new AuthenticationResult(
-                AuthenticationResult::FAILURE, 
-                null, 
-                ['Please provide a valid json object with identity and credential properties.']
-                );
+            if (isset($e)) {
+                $e->setCode(AuthenticationResult::FAILURE)
+                ->setMessages(['Please provide a valid json object with identity and credential properties.']);
+                $this->setSatisfied(false);
+            } else {
+                $e = new AuthenticationResult(
+                    AuthenticationResult::FAILURE, 
+                    null, 
+                    ['Please provide a valid json object with identity and credential properties.']
+                    );
+            }
             return $e;
         }
         $identity   = $data['identity'];
@@ -63,11 +75,16 @@ class JsonPost extends Db
         }
 
         if (!$userObject) {
-            $e = new AuthenticationResult(
-                AuthenticationResult::FAILURE_IDENTITY_NOT_FOUND,
-                null,
-                ['A record with the supplied identity could not be found.']
-                );
+            if (isset($e)) {
+                $e->setCode(AuthenticationResult::FAILURE_IDENTITY_NOT_FOUND)
+                ->setMessages(['A record with the supplied identity could not be found.']);
+            } else {
+                $e = new AuthenticationResult(
+                    AuthenticationResult::FAILURE_IDENTITY_NOT_FOUND,
+                    null,
+                    ['A record with the supplied identity could not be found.']
+                    );
+            }
             $this->setSatisfied(false);
             return $e;
         }
@@ -75,12 +92,16 @@ class JsonPost extends Db
         if ($this->getOptions()->getEnableUserState()) {
             // Don't allow user to login if state is not in allowed list
             if (!in_array($userObject->getState(), $this->getOptions()->getAllowedLoginStates())) {
-                
-                $e = new AuthenticationResult(
-                    AuthenticationResult::FAILURE_UNCATEGORIZED,
-                    null,
-                    ['A record with the supplied identity is not active.']
-                    );
+                if (isset($e)) {
+                    $e->setCode(AuthenticationResult::FAILURE)
+                    ->setMessages(['A record with the supplied identity is not active.']);
+                } else {
+                    $e = new AuthenticationResult(
+                        AuthenticationResult::FAILURE,
+                        null,
+                        ['A record with the supplied identity is not active.']
+                        );
+                }
                 $this->setSatisfied(false);
                 return $e;
             }
@@ -90,11 +111,16 @@ class JsonPost extends Db
         $bcrypt->setCost($this->getOptions()->getPasswordCost());
         if (!$bcrypt->verify($credential, $userObject->getPassword())) {
             // Password does not match
-            $e = new AuthenticationResult(
-                AuthenticationResult::FAILURE_CREDENTIAL_INVALID,
-                null,
-                ['Supplied credential is invalid.']
-                );
+            if (isset($e)) {
+                $e->setCode(AuthenticationResult::FAILURE_CREDENTIAL_INVALID)
+                ->setMessages(['Supplied credential is invalid.']);
+            } else {
+                $e = new AuthenticationResult(
+                    AuthenticationResult::FAILURE_CREDENTIAL_INVALID,
+                    null,
+                    ['Supplied credential is invalid.']
+                    );
+            }
             $this->setSatisfied(false);
             return $e;
         }
@@ -104,11 +130,17 @@ class JsonPost extends Db
         $this->updateUserPasswordHash($userObject, $credential, $bcrypt);
         $this->setSatisfied(true);
         
-        $e = new AuthenticationResult(
-            AuthenticationResult::SUCCESS,
-            ['id' => $userObject->getId(), 'username' => $userObject->getUsername()],
-            ['Authentication successful.']
-            );
+        if (isset($e)) {
+            $e->setCode(AuthenticationResult::SUCCESS)
+                ->setIdentity($userObject->getId()) //notice the return is different if called by Chain
+                ->setMessages(['Authentication successful.']);
+        } else {
+            $e = new AuthenticationResult(
+                AuthenticationResult::SUCCESS,
+                ['id' => $userObject->getId(), 'username' => $userObject->getUsername()],
+                ['Authentication successful.']
+                );
+        }
         return $e;
     }
     

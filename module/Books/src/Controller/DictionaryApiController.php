@@ -5,6 +5,7 @@ use Cocur\Slugify\Slugify;
 use RestApi\Controller\ApiController;
 use Books\Model\DictionaryTable;
 use Books\Form\DictionaryEntryForm;
+use Books\Exception\DuplicateKeyException;
 
 class DictionaryApiController extends ApiController
 {
@@ -16,6 +17,7 @@ class DictionaryApiController extends ApiController
     public function __construct(DictionaryTable $table)
     {
         $this->table = $table;
+        $this->setIdentifierName('entry_id');
     }
     
     public function getList()
@@ -86,15 +88,30 @@ class DictionaryApiController extends ApiController
         if ($inputFilter->isValid()) {
             $updateData = $inputFilter->getValues();
             $table = $this->getDictionaryTable();
-            $result = $table->createEntity('dictionary-entry', $updateData);
-            $this->httpStatusCode = 200;
-            $this->apiResponse = $result;
+            try {
+                $newId = $table->createEntity('dictionary-entry', $updateData);
+            } catch (DuplicateKeyException $e) {
+                $this->httpStatusCode = 400;
+                $this->apiResponse['invalidFields'] = [
+                    'key' => 'There is already a dictionary entry for the given key and locale'
+                ];
+                return $this->createResponse();
+            }
+            if (isset($newId) && is_numeric($newId) && $newId > 0) {
+                return $this->get($newId);
+            } else {
+                $this->httpStatusCode = 500;
+                $this->apiResponse['error'] = 'Unknown failure.';
+            }
         } else {
-            $this->httpStatusCode = 201;
+            $this->httpStatusCode = 400;
             $invalidInputs = $inputFilter->getInvalidInput();
             $invalidMessages = [];
             foreach ($invalidInputs as $name => $input) {
-                $invalidMessages[$name] = $input->getMessages();
+                //@todo maybe we shouldn't string the array keys so that API users can better
+                //identify the problem without indexing long strings, but we would have
+                //to document each key in the API
+                $invalidMessages[$name] = array_values($input->getMessages());
             }
             $this->apiResponse['invalidFields'] = $invalidMessages;
         }
@@ -134,6 +151,11 @@ class DictionaryApiController extends ApiController
         return $this->createResponse();
     }
     
+    /**
+     * Massage ORM-returned objects for handing over the API
+     * @param mixed $objects
+     * @return mixed
+     */
     protected function prepDictionaryEntries($objects)
     {
         $results = [];
@@ -152,15 +174,28 @@ class DictionaryApiController extends ApiController
         return $object;
     }
     
+    /**
+     * Retrieve an input filter to validate api-submitted dictionary entries
+     * @return \Zend\InputFilter\InputFilterInterface
+     */
     public function getInputFilter()
     {
         if (!isset($this->inputFilter)) {
             $form = new DictionaryEntryForm();
             $this->inputFilter = $form->getInputFilter();
+            $fields = $this->inputFilter->getInputs();
+            if (isset($fields['security'])) {
+                unset($fields['security']);
+            }
+            $fieldsToValidate = array_keys($fields);
+            $this->inputFilter->setValidationGroup($fieldsToValidate);
         }
         return $this->inputFilter;
     }
     
+    /**
+     * @return \Books\Model\DictionaryTable
+     */
     public function getDictionaryTable()
     {
         return $this->table;

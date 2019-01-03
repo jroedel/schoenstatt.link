@@ -43,7 +43,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                 ],
             ],
             'attributes' => [
-                'required' => true,
+                'required' => false,
                 'disabled' => true,
                 'maxlength' => '6',
             ],
@@ -55,7 +55,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                 'label' => 'Key (German)',
             ],
             'attributes' => [
-                'required' => true,
+                'required' => false,
                 'maxlength' => '255',
             ],
         ]);

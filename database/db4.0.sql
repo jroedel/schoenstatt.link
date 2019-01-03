@@ -4,5 +4,6 @@ ALTER TABLE `sch_dictionary_entries` ADD `UpdatedOn` DATETIME NULL DEFAULT NULL 
 ALTER TABLE `sch_dictionary_entries` ADD `Links` VARCHAR(1000) NULL DEFAULT NULL AFTER `Entry`;
 ALTER TABLE `sch_dictionary_entries` ADD `Slug` VARCHAR(255) NOT NULL AFTER `KeyDe`;
 ALTER TABLE `sch_dictionary_entries` ADD UNIQUE( `Slug`, `Locale`);
-INSERT INTO `sch_dictionary_entries` (`EntryId`, `KeyDe`, `Slug`, `Locale`, `DirectTranslation`, `Entry`, `Links`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`) VALUES (NULL, 'Abbild', 'abbild', 'es_ES', NULL, 'trasunto; reflejo; réplica; impronta; copia; representación; retrato; imagen', 'bild', NULL, NULL, NULL, NULL)
+INSERT INTO `sch_dictionary_entries` (`EntryId`, `KeyDe`, `Slug`, `Locale`, `DirectTranslation`, `Entry`, `Links`, `UpdatedOn`, `UpdatedBy`, `CreatedOn`, `CreatedBy`) VALUES (NULL, 'Abbild', 'abbild', 'es_ES', NULL, 'trasunto; reflejo; réplica; impronta; copia; representación; retrato; imagen', 'bild', NULL, NULL, NULL, NULL);
+ALTER TABLE `sch_changes` CHANGE `UpdatedBy` `UpdatedBy` INT(11) NULL DEFAULT NULL;
 

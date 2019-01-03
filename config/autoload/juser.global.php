@@ -21,7 +21,7 @@ return [
         'zend_db_adapter' => Zend\Db\Adapter\Adapter::class,
         
         'auth_adapters' => [
-            50 => \Application\Authentication\Adapter\JsonPost::class,
+//             50 => \Application\Authentication\Adapter\JsonPost::class,
         ],
         
         'enable_default_entities' => false,

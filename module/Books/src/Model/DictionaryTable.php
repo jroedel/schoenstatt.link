@@ -3,6 +3,8 @@ namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
 use Cocur\Slugify\Slugify;
+use Zend\Db\ResultSet\ResultSetInterface;
+use Books\Exception\DuplicateKeyException;
 
 class DictionaryTable extends SionTable
 {
@@ -10,14 +12,24 @@ class DictionaryTable extends SionTable
     {
         //calculate slug
         static $filter;
-        if (!isset($data['entry'])) {
+        if (!isset($data['key'])) {
             return $data;
         }
         if (!isset($filter)) {
             $filter = new Slugify();
         }
-        $slug = $filter->slugify($data['entry']);
+        $slug = $filter->slugify($data['key']);
         $data['slug'] = $slug;
+        
+        //check for a duplicate slug-locale
+        if (self::ENTITY_ACTION_CREATE === $action 
+            && isset($data['slug']) 
+            && isset($data['locale'])
+            && $this->doesDictionaryEntryAlreadyExist($data['slug'], $data['locale'])
+        ) {
+            throw new DuplicateKeyException('There is already a dictionary entry for given key and locale');
+        }
+        
         return $data;
     }
     
@@ -28,6 +40,24 @@ class DictionaryTable extends SionTable
             $gateway = $this->getTableGateway('sch_dictionary_entries');
             $gateway->update(['Links' => $data['links']], ['Slug' => $newEntityData['slug']]);
         }
+    }
+    
+    /**
+     * Check if there's a pre-existing slug-locale pair in the database
+     * @param string $slug
+     * @param string $locale
+     * @return boolean
+     */
+    protected function doesDictionaryEntryAlreadyExist($slug, $locale)
+    {
+        $entitySpec = $this->getEntitySpecification('dictionary-entry');
+        $tableName  = $entitySpec->tableName;
+        $gateway    = $this->getTableGateway($tableName);
+        $result     = $gateway->select(['Slug' => $slug, 'Locale' => $locale]);
+        if (!$result instanceof ResultSetInterface || 0 === $result->count()) {
+            return false;
+        }
+        return true;
     }
     
     /**
