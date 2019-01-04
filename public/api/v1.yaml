@@ -190,7 +190,11 @@ paths:
               $ref: '#/components/schemas/LoginCredentials'
       responses:
         '200':
-          description: Null response
+          description: New JWT login loken
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
         default:
           description: unexpected error
           content:
@@ -219,6 +223,8 @@ paths:
     post:
       summary: Create a new dictionary entry
       operationId: createDictionaryEntry
+      security:
+      - jwtBearer: []
       tags:
         - dictionary
       responses:
@@ -257,6 +263,8 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Update a dictionary entry
+      security:
+      - jwtBearer: []
       tags:
         - dictionary
       parameters:
@@ -379,6 +387,11 @@ components:
           type: string
       example:
         {"identity":"user11","credential":"MyS3cur3Pa55w0rd"}
+    JwtToken:
+      properties:
+        token:
+          description: A JWT token to be passed as authentication using the 'Authorization' HTTP header. The token encodes the userId and expiration date/time, 6 months from the current time.
+          type: string
     SimpleResponse:
       properties:
         status:
@@ -676,7 +689,7 @@ components:
       items:
         type: string
   securitySchemes:
-    api_key:
-      type: apiKey
-      name: api_key
-      in: header
+    jwtBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
