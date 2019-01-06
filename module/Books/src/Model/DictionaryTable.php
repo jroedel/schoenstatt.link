@@ -38,7 +38,7 @@ class DictionaryTable extends SionTable
         //update the links of all the same slug
         if (isset($data['links'])) {
             $gateway = $this->getTableGateway('sch_dictionary_entries');
-            $gateway->update(['Links' => $data['links']], ['Slug' => $newEntityData['slug']]);
+            $gateway->update(['Links' => $this->formatDbArray($data['links'])], ['Slug' => $newEntityData['slug']]);
         }
     }
     
@@ -75,6 +75,7 @@ class DictionaryTable extends SionTable
                 'locale' => $row['Locale'],
                 'directTranslation' => $row['DirectTranslation'],
                 'entry' => $row['Entry'],
+                'isActive' => $this->filterDbBool($row['IsActive']),
                 'links' => $this->filterDbArray($row['Links']),
             ];
         } else {

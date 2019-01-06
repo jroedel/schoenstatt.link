@@ -2054,6 +2054,7 @@ return [
                     'directTranslation' => 'DirectTranslation',
                     'entry' => 'Entry',
                     'links' => 'Links',
+                    'isActive' => 'IsActive',
                     'updatedOn' => 'UpdatedOn',
                     'updatedBy' => 'UpdatedBy',
                     'createdOn' => 'CreatedOn',
