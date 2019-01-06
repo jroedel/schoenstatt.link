@@ -71,6 +71,34 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
             ],
         ]);
         $this->add([
+            'name' => 'links',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Links',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'isActive',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Active?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '1',
+            ],
+        ]);
+        $this->add([
             'name' => 'submit',
             'type' => 'Submit',
             'attributes' => [
@@ -140,6 +168,12 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                     ],
                 ],
             ],
+            'links' => [ //@todo add a validator
+                'required' => false,
+                'filters' => [
+//                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                ],
+            ],
             'entry' => [
                 'required' => true,
                 'filters' => [
@@ -158,6 +192,12 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                             'max' => 1000,
                         ],
                     ],
+                ],
+            ],
+            'isActive' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'SionModel\Filter\ToBit']
                 ],
             ],
         ];
