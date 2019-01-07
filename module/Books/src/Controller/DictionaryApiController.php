@@ -184,19 +184,23 @@ class DictionaryApiController extends ApiController
                 if ($slug !== $entry['slug']) {
                     //slug problem
                     $errors[$entry['slug']] = [
-                        "slug value does not correspond to the key given"
+                        "field" => "slug",
+                        "errorKey" => "miscalculatedSlug",
+                        "message" => "slug value does not correspond to the key given"
                     ];
                 }
                 if (isset($objects[$compositeKey])) {
                     //duplicate slug detected
                     $errors[$slug] = [
-                        "duplicate slug value"
+                        "field" => "slug",
+                        "errorKey" => "duplicateSlug",
+                        "message" => "duplicate slug value"
                     ];
                 }
                 $objects[$compositeKey] = $validData;
                 $slugs[$slug] = true;
             } else {
-                $errors[$entry['slug']] = $inputFilter->getMessages();
+                $errors[$entry['slug']] = $this->formatInputFilterErrors($inputFilter->getMessages());
             }
         }
         
@@ -212,7 +216,9 @@ class DictionaryApiController extends ApiController
                 if (!isset($slugs[$linkSlug])) {
                     //we found a bad link
                     $errors[$entry['slug']] = [
-                        "Invalid links"
+                        "field" => "links",
+                        "errorKey" => "badLink",
+                        "message" => "Invalid links"
                     ];
                 }
             }
@@ -271,6 +277,21 @@ class DictionaryApiController extends ApiController
         $this->httpStatusCode = 200;
         $this->apiResponse['results'] = array_values($objects);
         return $this->createResponse();
+    }
+    
+    protected function formatInputFilterErrors($messages)
+    {
+        $errors = [];
+        foreach ($messages as $field => $error) {
+            foreach ($error as $errorKey => $message) {
+                $errors[] = [
+                    "field" => $field,
+                    "errorKey" => $errorKey,
+                    "message" => $message,
+                ];
+            }
+        }
+        return $errors;
     }
     
     public function slugifyTermsAction()
