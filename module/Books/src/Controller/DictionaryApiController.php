@@ -183,19 +183,19 @@ class DictionaryApiController extends ApiController
                 $validData['itemAction'] = self::REPLACE_LIST_ITEM_ACTION_CREATE;
                 if ($slug !== $entry['slug']) {
                     //slug problem
-                    $errors[$entry['slug']] = [
+                    $errors[$entry['slug']] = [[
                         "field" => "slug",
                         "errorKey" => "miscalculatedSlug",
                         "message" => "slug value does not correspond to the key given"
-                    ];
+                    ]];
                 }
                 if (isset($objects[$compositeKey])) {
                     //duplicate slug detected
-                    $errors[$slug] = [
+                    $errors[$slug] = [[
                         "field" => "slug",
                         "errorKey" => "duplicateSlug",
                         "message" => "duplicate slug value"
-                    ];
+                    ]];
                 }
                 $objects[$compositeKey] = $validData;
                 $slugs[$slug] = true;
@@ -215,11 +215,11 @@ class DictionaryApiController extends ApiController
             foreach ($entry['links'] as $linkSlug) {
                 if (!isset($slugs[$linkSlug])) {
                     //we found a bad link
-                    $errors[$entry['slug']] = [
+                    $errors[$entry['slug']] = [[
                         "field" => "links",
                         "errorKey" => "badLink",
                         "message" => "Invalid links"
-                    ];
+                    ]];
                 }
             }
         }
