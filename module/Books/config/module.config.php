@@ -1022,6 +1022,63 @@ return [
                     ],
                 ],
             ],
+            'dictionary' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/dictionary',
+                    'defaults' => [
+                        'controller' => Controller\DictionaryController::class,
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'entry' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/:entry_id',
+                            'constraints' => [
+                                'entry_id' => '[0-9]{1,5}',
+                            ],
+                        ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'edit' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/edit',
+                                    'defaults' => [
+                                        'action'     => 'edit',
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'create' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/create',
+                            'constraints' => [
+                                'entry_id' => '[0-9]{1,3}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
+                    'inLanguage' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/:inLanguage',
+                            'constraints' => [
+                                'inLanguage' => 'en|es|cz|hu|pt',
+                            ],
+                            'defaults' => [
+                                'action'     => 'inLanguage',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'blog' => [
                 'type' => Literal::class,
                 'options' => [
@@ -2184,7 +2241,14 @@ return [
                 ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
 //                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_moderator']],
 //                 ['route' => 'blog/create', 'roles' => ['blog_moderator']],
-
+                
+                ['route' => 'dictionary', 'roles' => ['guest', 'user']],
+                ['route' => 'dictionary/inLanguage', 'roles' => ['guest', 'user']],
+                ['route' => 'dictionary/entry', 'roles' => ['guest', 'user']],
+                ['route' => 'dictionary/entry/edit', 'roles' => ['guest', 'user']],
+                ['route' => 'dictionary/entry/edit', 'roles' => ['guest', 'user']],
+                ['route' => 'dictionary/create', 'roles' => ['guest', 'user']],
+                
                 ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
                 ['route' => 'books/create', 'roles' => ['lib_user']],

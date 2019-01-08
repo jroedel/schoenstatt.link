@@ -227,6 +227,12 @@ paths:
       - jwtBearer: []
       tags:
         - dictionary
+      requestBody:
+        description: Dictionary entry information
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictionaryEntry'
       responses:
         '200':
           description: Dictionary entry creation was successful
@@ -240,6 +246,34 @@ paths:
             application/json:
               schema:
                 $ref: '$/components/schemas/DictionaryEntryInvalidResponse'
+    put:
+      summary: "Update the whole list of dictionary entries. Entries not included in the list will be inactivated. Slugs must be calculated through the api beforehand. The new list will only be accepted if all the records and slugs checkout. Required fields on each entry: key, slug, locale, entry"
+      operationId: updateDictionaryList
+      security:
+      - jwtBearer: []
+      tags:
+        - dictionary
+      requestBody:
+        description: Dictionary entries list
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DictionaryEntries'
+      responses:
+        '200':
+          description: Expected response to a valid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleResponse'
+        '400':
+          description: Invalid resource field(s)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DictionaryEntryInvalidResponse'
+        default:
+          description: unexpected error
   '/dictionary/{entryId}':
     get:
       summary: Info for a specific dictionary entry
@@ -398,6 +432,21 @@ components:
           type: string
           enum:
             - 'OK'
+    DataValidationProblem:
+      required:
+        - field
+        - errorKey
+        - message
+      properties:
+        field:
+          description: The data field with the validation problem.
+          type: string
+        errorKey:
+          description: A camelCase string that describes the kind of error. It is not unique to the particular field.
+          type: string
+        message:
+          description: A localized message that could be displayed to the user.
+          type: string
     Book:
       properties:
         withinLibraryId:
@@ -611,7 +660,6 @@ components:
           $ref: '#/components/schemas/DictionaryEntry'
     DictionaryEntry:
       required:
-        - entryId
         - key
         - slug
         - locale
@@ -670,24 +718,7 @@ components:
         result:
           properties:
             invalidFields:
-              $ref: '#/components/schemas/DictionaryInvalidFields'
-    DictionaryInvalidFields:
-      properties:
-        key:
-          $ref: "#/components/schemas/InvalidFieldMessages"
-        locale:
-          $ref: "#/components/schemas/InvalidFieldMessages"
-        directTranslation:
-          $ref: "#/components/schemas/InvalidFieldMessages"
-        entry:
-          $ref: "#/components/schemas/InvalidFieldMessages"
-        links:
-          $ref: "#/components/schemas/InvalidFieldMessages"
-    InvalidFieldMessages:
-      description: Array of validation error messages
-      type: array
-      items:
-        type: string
+              $ref: '#/components/schemas/DataValidationProblem'
   securitySchemes:
     jwtBearer:
       type: http
