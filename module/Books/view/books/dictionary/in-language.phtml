@@ -1,7 +1,8 @@
 
 <?php
 foreach ($objects as $entryId => $object) :?>
-<p id=""><strong><?php echo $this->formatEntity('dictionary-entry', $object);?></strong> <?php 
+<p id="<?php echo $this->escapeHtmlAttr($object['slug']);?>"><strong><?php 
+    echo $this->formatEntity('dictionary-entry', $object);?></strong> <?php 
     echo $this->escapeHtml($object['entry']);
     foreach ($object['links'] as $linkSlug) {
         echo " <a href=\"#$linkSlug\">$linkSlug</a> ";
