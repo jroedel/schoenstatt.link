@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Global Configuration 
+ * Global Configuration
  *
  */
 return [

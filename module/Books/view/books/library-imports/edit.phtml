@@ -8,8 +8,7 @@ $headText = 'Configure import';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('library-imports/library-import/edit',
-    ['import_id' => $this->entityId]));
+$form->setAttribute('action', $this->url(null, [], [], true));
 $form->prepare();
 echo $this->form()->openTag($form);
 echo $this->partial('fields-partial', [

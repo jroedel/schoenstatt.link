@@ -21,8 +21,8 @@ use SionModel\Problem\ProblemProviderInterface;
 use Zend\Db\Sql\Predicate\IsNull;
 use Zend\Db\Sql\Predicate\IsNotNull;
 
-class LibraryTable extends SionTable implements 
-    ResourceProviderInterface, 
+class LibraryTable extends SionTable implements
+    ResourceProviderInterface,
     RuleProviderInterface,
     ProblemProviderInterface
 {
@@ -606,7 +606,7 @@ ORDER BY `publisher`";
             $columns['current_checkout_id'] = new Expression(
                 '(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` '
                 .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
-                );
+            );
             $select->columns($columns);
             $select->order(['library_id', 'sort_text']);
         }
@@ -748,8 +748,8 @@ ORDER BY `publisher`";
         $isActive = $this->filterDbBool($row['is_active']);
         $collectionId = $this->filterDbId($row['collection_id']);
         $collectionName = null;
-        if (isset($collectionId) 
-            && isset($collectionNames) 
+        if (isset($collectionId)
+            && isset($collectionNames)
             && isset($collectionNames[$collectionId])
         ) {
             $collectionName = $collectionNames[$collectionId];
@@ -1079,10 +1079,10 @@ ORDER BY `publisher`";
             $columns = array_values($this->config['sion_model']['entities']['library']['update_columns']);
             $columns['BookCount'] = new Expression(
                 '(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = LibraryId))'
-                );
+            );
             $columns['MaxWithinLibraryId'] = new Expression(
                 '(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = LibraryId))'
-                );
+            );
             $select->columns($columns);
             $select->order(['LibraryName']);
         }
@@ -1208,7 +1208,7 @@ ORDER BY `publisher`";
                 'checkoutBooksRole'     => $this->filterDbString($row['CheckoutBooksRole']),
                 'createCheckoutsIfCheckingInANonCheckedOutBook' => $this->filterDbBool(
                     $row['CreateCheckoutsIfCheckingInANonCheckedOutBook']
-                    ),
+                ),
                 'checkoutPersonListKind'=> $this->filterDbString($row['CheckoutPersonListKind']),
                 'defaultCheckoutPersonId' => $this->filterDbId($row['DefaultCheckoutPersonId']),
                 'isActive'              => $this->filterDbBool($row['IsActive']),

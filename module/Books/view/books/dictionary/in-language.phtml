@@ -1,10 +1,22 @@
+<?php
+use Books\Model\DefinedTerm;
+use Cake\Utility\Text;
+?>
 
 <?php
+$objects = $this->objects;
+/** @var DefinedTerm $entrySchema */
+$entrySchema = $objects[1]['schema'];
+echo $entrySchema->toScript();
 foreach ($objects as $entryId => $object) :?>
 <p id="<?php echo $this->escapeHtmlAttr($object['slug']);?>"><strong><?php 
-    echo $this->formatEntity('dictionary-entry', $object);?></strong> <?php 
+    echo $this->formatEntity('dictionary-entry', $object, ['displayAsLink' => false]);?></strong> <?php 
     echo $this->escapeHtml($object['entry']);
     foreach ($object['links'] as $linkSlug) {
-        echo " <a href=\"#$linkSlug\">$linkSlug</a> ";
+        $shortSlug = Text::truncate($linkSlug, 50);
+        echo " <a href=\"#$linkSlug\">$shortSlug</a> ";
     }?></p>
 <?php endforeach;?>
+<script type="application/ld+json">
+<?php echo $this->schemata; ?>
+</script>

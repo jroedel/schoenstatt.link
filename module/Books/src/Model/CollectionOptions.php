@@ -107,40 +107,40 @@ class CollectionOptions implements ArraySerializableInterface
     public function exchangeArray(array $array)
     {
         /** @var LibraryOptions $libraryOptions */
-        $libraryOptions = isset($array['library']) && $array['library'] instanceof LibraryOptions 
+        $libraryOptions = isset($array['library']) && $array['library'] instanceof LibraryOptions
             ? $array['library'] : null;
         $this->libraryOptions = !is_null($libraryOptions) ? $libraryOptions : null;
         $this->collectionId = isset($array['collectionId']) ? $array['collectionId'] : null;
-        $this->libraryId = isset($array['libraryId']) ? $array['libraryId'] 
+        $this->libraryId = isset($array['libraryId']) ? $array['libraryId']
             : ($libraryOptions ? $libraryOptions->libraryId : null);
         $this->name = isset($array['name']) ? $array['name'] : null;
         $this->abbreviation = isset($array['abbreviation']) ? $array['abbreviation'] : null;
         $this->description = isset($array['description']) ? $array['description'] : null;
-        $this->sortTextFormat = isset($array['sortTextFormat']) ? $array['sortTextFormat'] 
+        $this->sortTextFormat = isset($array['sortTextFormat']) ? $array['sortTextFormat']
             : ($libraryOptions ? $libraryOptions->sortTextFormat : null);
-        $this->callNumberHelpText = isset($array['callNumberHelpText']) ? $array['callNumberHelpText'] 
+        $this->callNumberHelpText = isset($array['callNumberHelpText']) ? $array['callNumberHelpText']
             : ($libraryOptions ? $libraryOptions->callNumberHelpText : null);
-        $this->callNumberExplanation = isset($array['callNumberExplanation']) ? $array['callNumberExplanation'] 
+        $this->callNumberExplanation = isset($array['callNumberExplanation']) ? $array['callNumberExplanation']
             : ($libraryOptions ? $libraryOptions->callNumberExplanation : null);
-        $this->mainShowDisplay = isset($array['mainShowDisplay']) ? $array['mainShowDisplay'] 
+        $this->mainShowDisplay = isset($array['mainShowDisplay']) ? $array['mainShowDisplay']
             : LibraryTable::MAIN_SHOW_DISPLAY_DEFAULT;
-        $this->requireCallNumbers = isset($array['requireCallNumbers']) ? $array['requireCallNumbers'] 
+        $this->requireCallNumbers = isset($array['requireCallNumbers']) ? $array['requireCallNumbers']
             : ($libraryOptions ? $libraryOptions->requireCallNumbers : false);
-        $this->callNumberRegex = isset($array['callNumberRegex']) ? $array['callNumberRegex'] 
+        $this->callNumberRegex = isset($array['callNumberRegex']) ? $array['callNumberRegex']
             : ($libraryOptions ? $libraryOptions->callNumberRegex : null);
-        $this->enforceCallNumberRegex= isset($array['enforceCallNumberRegex']) 
-            ? $array['enforceCallNumberRegex'] 
+        $this->enforceCallNumberRegex= isset($array['enforceCallNumberRegex'])
+            ? $array['enforceCallNumberRegex']
             : ($libraryOptions ? $libraryOptions->enforceCallNumberRegex : false);
-        $this->labelLine1 = isset($array['labelLine1']) ? $array['labelLine1'] 
+        $this->labelLine1 = isset($array['labelLine1']) ? $array['labelLine1']
             : ($libraryOptions ? $libraryOptions->labelLine1 : null);
-        $this->labelLine2 = isset($array['labelLine2']) ? $array['labelLine2'] 
+        $this->labelLine2 = isset($array['labelLine2']) ? $array['labelLine2']
             : ($libraryOptions ? $libraryOptions->labelLine2 : null);
-        $this->labelLine3 = isset($array['labelLine3']) ? $array['labelLine3'] 
+        $this->labelLine3 = isset($array['labelLine3']) ? $array['labelLine3']
             : ($libraryOptions ? $libraryOptions->labelLine3 : null);
-        $this->defaultCheckoutTimePeriodInDays = isset($array['defaultCheckoutTimePeriodInDays']) 
-            ? $array['defaultCheckoutTimePeriodInDays'] 
-            : ($libraryOptions 
-                ? $libraryOptions->defaultCheckoutTimePeriodInDays 
+        $this->defaultCheckoutTimePeriodInDays = isset($array['defaultCheckoutTimePeriodInDays'])
+            ? $array['defaultCheckoutTimePeriodInDays']
+            : ($libraryOptions
+                ? $libraryOptions->defaultCheckoutTimePeriodInDays
                 : LibraryTable::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS);
         $this->resourceId = isset($array['resourceId']) ? $array['resourceId'] : null;
         $this->isActive = isset($array['isActive']) ? $array['isActive'] : true;

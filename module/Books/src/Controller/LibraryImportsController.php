@@ -176,7 +176,7 @@ class LibraryImportsController extends SionController
     }
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterEdit()
      */
