@@ -16,6 +16,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
     {
         parent::__construct('dictionary-entry');
         
+        //@todo make a selectize element and fill it with existing keys
         $this->add([
             'name' => 'key',
             'type' => 'Text',
@@ -38,13 +39,13 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                     'es_ES' => 'Spanish',
                     'pt_PT' => 'Portugues (Portugal)',
                     'fr_FR' => 'French',
-                    'cz_CZ' => 'Czech',
+                    'cs_CZ' => 'Czech',
                     'hu_HU' => 'Hungarian',
                 ],
             ],
             'attributes' => [
-                'required' => false,
-                'disabled' => true,
+                'required' => true,
+                'disabled' => false, //@todo how can I block this without disabling it?
                 'maxlength' => '6',
             ],
         ]);
@@ -52,7 +53,8 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
             'name' => 'directTranslation',
             'type' => 'Text',
             'options' => [
-                'label' => 'Key (German)',
+                'label' => 'Direct Translation',
+                'help-block' => 'Translated text that could directly replace the German key text',
             ],
             'attributes' => [
                 'required' => false,
@@ -61,11 +63,13 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
         ]);
         $this->add([
             'name' => 'entry',
-            'type' => 'Text',
+            'type' => 'Textarea',
             'options' => [
                 'label' => 'Dictionary Entry',
             ],
             'attributes' => [
+                'data-provide' => 'markdown',
+                'data-parser' => 'CommonMark',
                 'required' => true,
                 'maxlength' => '1000',
             ],

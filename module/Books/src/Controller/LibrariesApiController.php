@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Books\Controller;
 
 use Zend\Mvc\Controller\AbstractRestfulController;
@@ -9,12 +9,12 @@ use Zend\Validator\Regex;
 class LibrariesApiController extends AbstractRestfulController
 {
     const LIBRARY_API_FIELDS = [
-        'libraryId', 'name', 'description', 'requireCallNumbers', 'callNumberHelpText', 
-        'callNumberExplanation', 'callNumberPlaceholder', 'callNumberRegex', 'filiationId', 
-        'contactPersonId', 'contactEmail', 'mainShowDisplay', 'useCollections', 
-        'allowCollectionlessBooks', 'mainCollectionId', 'labelLine1', 'labelLine2', 
-        'labelLine3', 'barcodeText', 'enableCheckouts', 'defaultCheckoutTimePeriodInDays', 
-        'checkoutPersonListKind', 'defaultCheckoutPersonId', 'isActive', 'adminNotes', 
+        'libraryId', 'name', 'description', 'requireCallNumbers', 'callNumberHelpText',
+        'callNumberExplanation', 'callNumberPlaceholder', 'callNumberRegex', 'filiationId',
+        'contactPersonId', 'contactEmail', 'mainShowDisplay', 'useCollections',
+        'allowCollectionlessBooks', 'mainCollectionId', 'labelLine1', 'labelLine2',
+        'labelLine3', 'barcodeText', 'enableCheckouts', 'defaultCheckoutTimePeriodInDays',
+        'checkoutPersonListKind', 'defaultCheckoutPersonId', 'isActive', 'adminNotes',
         'nextWithinLibraryId', 'bookCount', 'collections', 'contactPerson'
     ];
     

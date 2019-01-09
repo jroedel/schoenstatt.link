@@ -233,6 +233,7 @@ return [
             Mailing\BooksMailer::class          => Service\BooksMailerFactory::class,
             Service\DriveGateway::class         => Service\DriveGatewayFactory::class,
             Form\BlogForm::class                => Service\BlogFormFactory::class,
+            Form\DictionaryEntryForm::class     => Service\DictionaryEntryFormFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -1040,7 +1041,7 @@ return [
                                 'entry_id' => '[0-9]{1,5}',
                             ],
                         ],
-                        'may_terminate' => true,
+                        'may_terminate' => false,
                         'child_routes' => [
                             'edit' => [
                                 'type'    => Literal::class,
@@ -1070,7 +1071,7 @@ return [
                         'options' => [
                             'route'    => '/:inLanguage',
                             'constraints' => [
-                                'inLanguage' => 'en|es|cz|hu|pt',
+                                'inLanguage' => 'en|es|cs|hu|pt|fr',
                             ],
                             'defaults' => [
                                 'action'     => 'inLanguage',
@@ -2078,12 +2079,12 @@ return [
                 'show_route'                                => 'dictionary/entry',
                 'show_route_key'                            => 'entry_id',
                 'show_route_key_field'                      => 'entryId',
-//                 'edit_action_form'                          => Form\BlogForm::class,
+                 'edit_action_form'                          => Form\DictionaryEntryForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'dictionary/entry/edit',
                 'edit_route_key'                            => 'entry_id',
                 'edit_route_key_field'                      => 'entryId',
-//                 'create_action_form'                        => Form\BlogForm::class,
+                 'create_action_form'                        => Form\DictionaryEntryForm::class,
 //                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
                 'create_action_redirect_route'              => 'dictionary/entry',
                 'create_action_redirect_route_key'          => 'entry_id',
@@ -2105,9 +2106,9 @@ return [
 //                 'delete_action_redirect_route'              => 'blog',
                 'update_columns'                            => [
                     'entryId' => 'EntryId',
-                    'key' => 'KeyDe', 
+                    'key' => 'KeyDe',
                     'slug' => 'Slug',
-                    'locale' => 'Locale', 
+                    'locale' => 'Locale',
                     'directTranslation' => 'DirectTranslation',
                     'entry' => 'Entry',
                     'links' => 'Links',

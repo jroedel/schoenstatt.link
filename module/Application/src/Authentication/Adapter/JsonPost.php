@@ -23,7 +23,7 @@ class JsonPost extends Db
         $contentType = $request->getHeader('Content-Type');
         $isPost = 'POST' === $request->getMethod();
         if (!$isPost
-            || !$contentType instanceof HeaderInterface 
+            || !$contentType instanceof HeaderInterface
             || 'application/json' !== $contentType->getFieldValue()
         ) {
             if (isset($e)) {
@@ -35,7 +35,7 @@ class JsonPost extends Db
                     AuthenticationResult::FAILURE_UNCATEGORIZED,
                     null,
                     ['Please send a POST request of Content-Type application/json.']
-                    );
+                );
             }
             return $e;
         }
@@ -47,10 +47,10 @@ class JsonPost extends Db
                 $this->setSatisfied(false);
             } else {
                 $e = new AuthenticationResult(
-                    AuthenticationResult::FAILURE, 
-                    null, 
+                    AuthenticationResult::FAILURE,
+                    null,
                     ['Please provide a valid json object with identity and credential properties.']
-                    );
+                );
             }
             return $e;
         }
@@ -83,7 +83,7 @@ class JsonPost extends Db
                     AuthenticationResult::FAILURE_IDENTITY_NOT_FOUND,
                     null,
                     ['A record with the supplied identity could not be found.']
-                    );
+                );
             }
             $this->setSatisfied(false);
             return $e;
@@ -100,7 +100,7 @@ class JsonPost extends Db
                         AuthenticationResult::FAILURE,
                         null,
                         ['A record with the supplied identity is not active.']
-                        );
+                    );
                 }
                 $this->setSatisfied(false);
                 return $e;
@@ -119,7 +119,7 @@ class JsonPost extends Db
                     AuthenticationResult::FAILURE_CREDENTIAL_INVALID,
                     null,
                     ['Supplied credential is invalid.']
-                    );
+                );
             }
             $this->setSatisfied(false);
             return $e;
@@ -139,7 +139,7 @@ class JsonPost extends Db
                 AuthenticationResult::SUCCESS,
                 ['id' => $userObject->getId(), 'username' => $userObject->getUsername()],
                 ['Authentication successful.']
-                );
+            );
         }
         return $e;
     }

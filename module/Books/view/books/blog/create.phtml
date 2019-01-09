@@ -7,7 +7,7 @@ $this->headTitle($headText); ?>
 
 <?php /** @var \Books\Form\BlogForm $form */
 $form = $this->form;
-$form->setAttribute('action', $this->url('blog/create'));
+$form->setAttribute('action', $this->url(null, [], [], true));
 $form->prepare();
 echo $this->form()->openTag($form);
 echo $this->partial('fields-partial', [

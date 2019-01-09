@@ -4,7 +4,7 @@ $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
 $this->formSelect()->setTranslatorEnabled(false);
-$form->setAttribute('action', $this->url('books/create', [], [], true));
+$form->setAttribute('action', $this->url(null, [], [], true));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', $this->vars);

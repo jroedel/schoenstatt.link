@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Books\Controller;
 
 use Cocur\Slugify\Slugify;
@@ -34,7 +34,7 @@ class DictionaryApiController extends ApiController
     }
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Mvc\Controller\AbstractRestfulController::get()
      */
@@ -54,7 +54,7 @@ class DictionaryApiController extends ApiController
     }
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Mvc\Controller\AbstractRestfulController::update()
      */
@@ -81,7 +81,7 @@ class DictionaryApiController extends ApiController
     }
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Mvc\Controller\AbstractRestfulController::create()
      */
@@ -165,7 +165,7 @@ class DictionaryApiController extends ApiController
                 || !isset($entry['entry'])
             ) {
                 $this->httpStatusCode = 400;
-                $this->apiResponse['message'] = 
+                $this->apiResponse['message'] =
                     "All entries must define the following properties: key, slug, locale, entry";
                 return $this->createResponse();
             }
@@ -302,7 +302,7 @@ class DictionaryApiController extends ApiController
             $this->httpStatusCode = 201;
             $this->apiResponse['message'] = '`terms` property is undefined.';
             return $this->createResponse();
-        }        
+        }
         $this->httpStatusCode = 200;
         $slugify = new Slugify();
         $slugs = [];

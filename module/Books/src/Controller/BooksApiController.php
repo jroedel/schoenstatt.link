@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace Books\Controller;
 
 use Zend\Mvc\Controller\AbstractRestfulController;

@@ -20,7 +20,7 @@ foreach ($map as $field => $column) :?>
 </dl>
 <?php $form = $this->form;
 $this->formSelect()->setTranslatorEnabled(false);
-$form->setAttribute('action', $this->url('library-imports/library/create', ['library_id' => $this->libraryId]));
+$form->setAttribute('action', $this->url(null, [], [], true));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', [

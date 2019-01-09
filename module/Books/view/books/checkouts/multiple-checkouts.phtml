@@ -6,7 +6,7 @@ $headText = 'Book checkout';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('libraries/library/checkout', ['library_id' => $this->libraryId]));
+$form->setAttribute('action', $this->url(null, [], [], true));
 $form->prepare();
 echo $this->form()->openTag($form);
 $this->formSelect()->setTranslatorEnabled(false);
