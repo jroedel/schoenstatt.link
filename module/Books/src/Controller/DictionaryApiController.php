@@ -44,7 +44,7 @@ class DictionaryApiController extends ApiController
         $object = $table->getObject('dictionary-entry', $id);
         if (!isset($object)) {
             $this->apiResponse['message'] = 'Entry not found';
-            $this->httpStatusCode = 201;
+            $this->httpStatusCode = 404; //not found
             return $this->createResponse();
         }
 
@@ -69,13 +69,9 @@ class DictionaryApiController extends ApiController
             $this->httpStatusCode = 200;
             $this->apiResponse = $result;
         } else {
-            $this->httpStatusCode = 201;
-            $invalidInputs = $inputFilter->getInvalidInput();
-            $invalidMessages = [];
-            foreach ($invalidInputs as $name => $input) {
-                $invalidMessages[$name] = $input->getMessages();
-            }
-            $this->apiResponse['invalidFields'] = $invalidMessages;
+            $this->httpStatusCode = 400; //bad request
+            $invalidMessages = $inputFilter->getMessages();
+            $this->apiResponse['invalidFields'] = $this->formatInputFilterErrors($invalidMessages);
         }
         return $this->createResponse();
     }
@@ -95,29 +91,24 @@ class DictionaryApiController extends ApiController
             try {
                 $newId = $table->createEntity('dictionary-entry', $updateData);
             } catch (DuplicateKeyException $e) {
-                $this->httpStatusCode = 400;
-                $this->apiResponse['invalidFields'] = [
-                    'key' => 'There is already a dictionary entry for the given key and locale'
-                ];
+                $this->httpStatusCode = 400; //bad request
+                $this->apiResponse['invalidFields'] = [[
+                    "field" => "key",
+                    "errorKey" => "preexistingKey",
+                    "message" => "There is already a dictionary entry for the given key and locale"
+                ]];
                 return $this->createResponse();
             }
             if (isset($newId) && is_numeric($newId) && $newId > 0) {
                 return $this->get($newId);
             } else {
-                $this->httpStatusCode = 500;
-                $this->apiResponse['error'] = 'Unknown failure.';
+                $this->httpStatusCode = 500; //internal server error
+                $this->apiResponse['message'] = 'Unknown failure.';
             }
         } else {
-            $this->httpStatusCode = 400;
-            $invalidInputs = $inputFilter->getInvalidInput();
-            $invalidMessages = [];
-            foreach ($invalidInputs as $name => $input) {
-                //@todo maybe we shouldn't string the array keys so that API users can better
-                //identify the problem without indexing long strings, but we would have
-                //to document each key in the API
-                $invalidMessages[$name] = array_values($input->getMessages());
-            }
-            $this->apiResponse['invalidFields'] = $invalidMessages;
+            $this->httpStatusCode = 400; //bad request
+            $invalidMessages = $inputFilter->getMessages();
+            $this->apiResponse['invalidFields'] = $this->formatInputFilterErrors($invalidMessages);
         }
         return $this->createResponse();
     }
@@ -130,7 +121,7 @@ class DictionaryApiController extends ApiController
     public function replaceList($data)
     {
         if (!isset($data['entries']) || !is_array($data['entries'])) {
-            $this->httpStatusCode = 400;
+            $this->httpStatusCode = 400; //bad request
             $this->apiResponse['message'] = 'Please send a JSON request body with a array \'entries\' property';
             return $this->createResponse();
         }
@@ -205,7 +196,7 @@ class DictionaryApiController extends ApiController
         }
         
         if (!empty($errors)) {
-            $this->httpStatusCode = 400;
+            $this->httpStatusCode = 400; //bad requests
             $this->apiResponse['invalidInputs'] = $errors;
             return $this->createResponse();
         }
@@ -224,7 +215,7 @@ class DictionaryApiController extends ApiController
             }
         }
         if (!empty($errors)) {
-            $this->httpStatusCode = 400;
+            $this->httpStatusCode = 400; //bad request
             $this->apiResponse['invalidInputs'] = $errors;
             return $this->createResponse();
         }
@@ -267,7 +258,7 @@ class DictionaryApiController extends ApiController
                         $result = $table->updateEntity('dictionary-entry', $object['entryId'], ['isActive' => false]);
                         $objects[$compositeKey]['dbResult'] = $result;
                         break;
-                    default: //who knows what happened here
+                    default:
                         throw new \Exception('We should never be here. Please report this error.');
                         break;
                 }

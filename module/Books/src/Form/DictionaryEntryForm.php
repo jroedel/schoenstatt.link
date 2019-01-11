@@ -54,7 +54,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
             'type' => 'Text',
             'options' => [
                 'label' => 'Direct Translation',
-                'help-block' => 'Translated text that could directly replace the German key text',
+                'help-block' => 'Most probable translated text that could directly replace the German key text',
             ],
             'attributes' => [
                 'required' => false,

@@ -2240,15 +2240,11 @@ return [
                 ['route' => 'blog/blog-post', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
                 ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
-//                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_moderator']],
-//                 ['route' => 'blog/create', 'roles' => ['blog_moderator']],
                 
                 ['route' => 'dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'dictionary/inLanguage', 'roles' => ['guest', 'user']],
-                ['route' => 'dictionary/entry', 'roles' => ['guest', 'user']],
-                ['route' => 'dictionary/entry/edit', 'roles' => ['guest', 'user']],
-                ['route' => 'dictionary/entry/edit', 'roles' => ['guest', 'user']],
-                ['route' => 'dictionary/create', 'roles' => ['guest', 'user']],
+                ['route' => 'dictionary/entry/edit', 'roles' => ['dict_administrator']],
+                ['route' => 'dictionary/create', 'roles' => ['dict_administrator']],
                 
                 ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
