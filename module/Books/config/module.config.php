@@ -27,6 +27,7 @@ use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
 use Zend\Router\Http\Method;
 use Books\Model\DictionaryTable;
+use Zend\Navigation\Navigation;
 
 return [
     'books' => [
@@ -378,7 +379,7 @@ return [
                                 'options' => [
                                     'verb'      => 'get',
                                     'defaults'  => [
-                                        'isAuthorizationRequired' => false,
+                                        'isAuthorizationRequired' => true,
                                     ],
                                 ],
                                 'may_terminate' => true,
@@ -431,7 +432,7 @@ return [
                     'route'    => '/literature',
                     'defaults' => [
                         'controller' => Controller\PublicationsController::class,
-                        'action'     => 'languageIndex',
+                        'action'     => 'literatureHome',
                     ],
                 ],
                 'may_terminate' => true,
@@ -1058,9 +1059,6 @@ return [
                         'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
-                            'constraints' => [
-                                'entry_id' => '[0-9]{1,3}',
-                            ],
                             'defaults' => [
                                 'action'     => 'create',
                             ],
@@ -1071,7 +1069,7 @@ return [
                         'options' => [
                             'route'    => '/:inLanguage',
                             'constraints' => [
-                                'inLanguage' => 'en|es|cs|hu|pt|fr',
+                                'inLanguage' => '[a-z]{2,2}',
                             ],
                             'defaults' => [
                                 'action'     => 'inLanguage',
@@ -2054,6 +2052,7 @@ return [
                 'sion_controllers'                          => [Controller\DictionaryController::class],//BorrowersController::class],
                 'controller_services'                       => [
                     DictionaryTable::class,
+                    Navigation::class,
                 ],
 //                 'get_object_function'                       => 'getText',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',

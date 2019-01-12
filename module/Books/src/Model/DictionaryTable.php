@@ -9,6 +9,7 @@ use Books\Exception\DuplicateKeyException;
 use Zend\View\Helper\ServerUrl;
 use Zend\View\Helper\Url;
 use Zend\Router\RouteStackInterface;
+use Zend\Db\Sql\Select;
 
 class DictionaryTable extends SionTable
 {
@@ -191,7 +192,8 @@ class DictionaryTable extends SionTable
         $select = $this->getSelectPrototype('dictionary-entry');
         $select->columns(['Locale'])
             ->group(['Locale'])
-            ->where(['IsActive' => '1']);
+            ->where(['IsActive' => '1'])
+            ->reset(Select::ORDER);
         
         $gateway = $this->getTableGateway('sch_dictionary_entries');
         $results = $gateway->selectWith($select);
@@ -203,5 +205,19 @@ class DictionaryTable extends SionTable
             $locales[$locale] = $language;
         }
         return $locales;
+    }
+    
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
+     */
+    protected function getSelectPrototype($entity)
+    {
+        $select = parent::getSelectPrototype($entity);
+        if ('dictionary-entry' === $entity) {
+            $select->order(['IsActive' => Select::ORDER_DESCENDING, 'KeyDe']);
+        }
+        return $select;
     }
 }
