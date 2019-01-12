@@ -1,13 +1,12 @@
 <?php
 use Books\Model\DefinedTerm;
 use Cake\Utility\Text;
+// echo $this->navigation()->breadcrumbs();
 ?>
-
+<h1><?php $titleFormat = "Fr. Kentenich dictionary German to %s";
+echo sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));?></h1>
 <?php
 $objects = $this->objects;
-/** @var DefinedTerm $entrySchema */
-$entrySchema = $objects[1]['schema'];
-echo $entrySchema->toScript();
 foreach ($objects as $entryId => $object) :?>
 <p id="<?php echo $this->escapeHtmlAttr($object['slug']);?>"><strong><?php 
     echo $this->formatEntity('dictionary-entry', $object, ['displayAsLink' => false]);?></strong> <?php 
@@ -18,5 +17,5 @@ foreach ($objects as $entryId => $object) :?>
     }?></p>
 <?php endforeach;?>
 <script type="application/ld+json">
-<?php echo $this->schemata; ?>
+<?php echo $this->schemata;?>
 </script>

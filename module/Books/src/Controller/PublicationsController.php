@@ -87,7 +87,7 @@ class PublicationsController extends SionController
         return $view;
     }
 
-    public function languageIndexAction()
+    public function literatureHomeAction()
     {
         /** @var PublicationsTable $table */
         $table      = $this->getSionTable();

@@ -13,6 +13,8 @@ class DictionaryApiController extends ApiController
     const REPLACE_LIST_ITEM_ACTION_UPDATE = 'update';
     const REPLACE_LIST_ITEM_ACTION_INACTIVATE = 'inactivate';
     
+    protected $apiVisitText = 'apiv1';
+    
     /** @var DictionaryTable $table */
     protected $table;
     
@@ -27,6 +29,7 @@ class DictionaryApiController extends ApiController
     public function getList()
     {
         $table = $this->getDictionaryTable();
+        $table->registerVisit("dictionary-$this->apiVisitText");
         $objects = $table->getObjects('dictionary-entry');
         $this->apiResponse['entries'] = $this->prepDictionaryEntries($objects);
         $this->httpStatusCode = 200;
@@ -47,6 +50,7 @@ class DictionaryApiController extends ApiController
             $this->httpStatusCode = 404; //not found
             return $this->createResponse();
         }
+        $table->registerVisit("dictionary-$this->apiVisitText", $id);
 
         $this->apiResponse['entry'] = $this->prepDictionaryEntry($object);
         $this->httpStatusCode = 200;
@@ -324,6 +328,7 @@ class DictionaryApiController extends ApiController
     
     protected function prepDictionaryEntry($object)
     {
+        unset($object['schema']);
         unset($object['createdOn']);
         unset($object['createdBy']);
         unset($object['updatedOn']);
@@ -348,7 +353,6 @@ class DictionaryApiController extends ApiController
                 unset($fields['submit']);
             }
             $this->inputFilter->get('isActive')->setFallbackValue(1);
-//             var_dump($this->inputFilter->get('isActive'));
             $fieldsToValidate = array_keys($fields);
             $this->inputFilter->setValidationGroup($fieldsToValidate);
         }
@@ -360,6 +364,11 @@ class DictionaryApiController extends ApiController
      */
     public function getDictionaryTable()
     {
+        //tell the DictionaryTable who the acting user is according to their token
+        if (is_object($this->tokenPayload) && isset($this->tokenPayload->sub)) {
+            $userId = $this->tokenPayload->sub;
+            $this->table->setActingUserId($userId);
+        }
         return $this->table;
     }
 }

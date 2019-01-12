@@ -21,10 +21,14 @@ class DictionaryController extends SionController
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage('Language not found');
             return $this->redirect()->toRoute('dictionary');
         }
+        $inLanguageName = $table->getLanguageName($inLanguage);
+        
         $dictionarySchema = $table->getDictionarySchema($inLanguage);
         $objects = $table->queryObjects('dictionary-entry', ['locale' => 'es_ES', 'isActive' => true]);
         $schemata = Json::encode($this->combineSchema($dictionarySchema, $objects));
         return new ViewModel([
+            'inLanguage' => $inLanguage,
+            'inLanguageName' => $inLanguageName,
             'schemata' => $schemata,
             'objects' => $objects,
         ]);

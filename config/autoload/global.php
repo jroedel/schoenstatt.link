@@ -35,11 +35,23 @@ return [
                 'label' => 'Literature',
                 'route' => 'publications',
                 'resource' => 'route/publications',
-            ],
-            [
-                'label' => 'Libraries',
-                'route' => 'libraries',
-                'resource' => 'route/libraries',
+                'pages' => [
+                    [
+                        'label' => 'Libraries',
+                        'route' => 'libraries',
+                        'resource' => 'route/libraries',
+                    ], //afterwards we'll add each library
+                    [
+                        'label' => 'Dictionaries',
+                        'route' => 'dictionary',
+                        'resource' => 'route/dictionary',
+                    ], 
+                    [
+                        'label' => 'Libraries',
+                        'route' => 'libraries',
+                        'resource' => 'route/libraries',
+                    ],
+                ],
             ],
             [
                 'label' => 'Admin',
