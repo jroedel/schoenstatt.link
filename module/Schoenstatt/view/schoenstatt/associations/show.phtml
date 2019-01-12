@@ -93,7 +93,7 @@ $this->headTitle($name);?>
             	<div class="row"><div class="col-md-12">
             	<?php foreach ($object['urls'] as $urlRow) :?>
             	<a target="_blank" href="<?php echo $this->escapeHtmlAttr($urlRow['url']);?>">
-            	    <img src="../<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
+            	    <img src="/<?php echo isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
             	    ?>" alt="<?php echo $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
             	</a>&nbsp;
             	<?php endforeach;?>

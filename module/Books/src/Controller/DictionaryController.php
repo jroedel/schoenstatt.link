@@ -6,6 +6,10 @@ use Zend\View\Model\ViewModel;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Spatie\SchemaOrg\BaseType;
 use Zend\Json\Json;
+use Zend\Navigation\Navigation;
+use SionModel\Service\EntitiesService;
+use SionModel\Db\Model\PredicatesTable;
+use SionModel\Db\Model\SionTable;
 
 class DictionaryController extends SionController
 {
@@ -26,6 +30,8 @@ class DictionaryController extends SionController
         $dictionarySchema = $table->getDictionarySchema($inLanguage);
         $objects = $table->queryObjects('dictionary-entry', ['locale' => 'es_ES', 'isActive' => true]);
         $schemata = Json::encode($this->combineSchema($dictionarySchema, $objects));
+        
+        $this->prepNavigation();
         return new ViewModel([
             'inLanguage' => $inLanguage,
             'inLanguageName' => $inLanguageName,
@@ -63,5 +69,24 @@ class DictionaryController extends SionController
     public function redirectAfterCreate($newId, $data = [], $form = null)
     {
         return $this->redirectAfterEdit($newId, $data, $form);
+    }
+    
+    protected function prepNavigation()
+    {
+        /** @var Navigation $nav */
+        $nav = $this->services[Navigation::class];
+        
+        $table = $this->getSionTable();
+        $availableLanguages = $table->getAvailableDictionaryLanguages();
+        $dictionaryPage = $nav->findOneBy('route', 'dictionary');
+        
+        foreach ($availableLanguages as $inLanguage) {
+            $url = $this->url()->fromRoute('dictionary/inLanguage', ['inLanguage' => $inLanguage]);
+            $dictionaryPage->addPage([
+                'label' => $table->getLanguageName($inLanguage),
+                'uri' => $url,
+                'id'    => 'dict_'.$inLanguage,
+            ]);
+        }
     }
 }

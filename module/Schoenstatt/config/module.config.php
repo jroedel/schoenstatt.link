@@ -909,6 +909,10 @@ return [
                 'logo'      => 'img/blogger.png',
                 'label'     => 'Blog',
             ],
+            'map' => [
+                'logo'      => 'img/map.png',
+                'label'     => 'Map',
+            ],
         ],
         'excel_columns' => [
             'fullName'          => 'Name',

@@ -1,7 +1,6 @@
 <?php
-use Books\Model\DefinedTerm;
 use Cake\Utility\Text;
-// echo $this->navigation()->breadcrumbs();
+// echo $this->navigation('default')->breadcrumbs()->setIndent(8);;
 ?>
 <h1><?php $titleFormat = "Fr. Kentenich dictionary German to %s";
 echo sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));?></h1>
