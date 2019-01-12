@@ -1,7 +1,6 @@
 <?php
 namespace Schoenstatt\Model;
 
-use Zend\Filter\ToNull;
 use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;
@@ -320,7 +319,7 @@ class SchoenstattTable extends SionTable implements
         $roles = $this->getUnlinkedRoles();
 
         $valueOptions = [];
-        foreach ($roles as $roleId => $role) {
+        foreach ($roles as $role) {
             if ($includeInactive || $role['isActive']) {
                 if (isset($valueOptions[$role['associationId']])) {
                     if (!isset($valueOptions[$role['associationId']][$role['roleTitle']])) {
@@ -590,6 +589,7 @@ class SchoenstattTable extends SionTable implements
         static $twitterUrlPattern;
         static $instagramUrlPattern;
         static $languageCode;
+        static $urlLabelLogos;
         $id = $this->filterDbId($row['AssociationId']);
 
         if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
@@ -639,8 +639,29 @@ class SchoenstattTable extends SionTable implements
         }
 
         $urls = SionTable::processUrls($unprocessedUrls);
+        if (!isset($urlLabelLogos)) {
+            if (isset($this->config['url_map'])) {
+                if (!is_array($this->config['url_map'])) {
+                    throw new \Exception('url_map config should be an array');
+                }
+                $urlLabelLogos = [];
+                foreach ($this->config['url_map'] as $urlConfig) {
+                    if (isset($urlConfig['label']) && isset($urlConfig['logo'])) {
+                        $urlLabelLogos[$urlConfig['label']] = $urlConfig['logo'];
+                    }
+                }
+            }
+        }
+        if (is_array($urlLabelLogos) && !empty($urlLabelLogos)) {
+            foreach ($urls as $key => $url) {
+                if (isset($urlLabelLogos[$url['label']])) {
+                    $urls[$key]['logo'] = $urlLabelLogos[$url['label']];
+                }
+            }
+        }
+        
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
-        $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
+//         $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
         
         if (!isset($languageCode)) {
             $languageCode = \Locale::getPrimaryLanguage(\Locale::getDefault());
@@ -1062,7 +1083,7 @@ class SchoenstattTable extends SionTable implements
         //@todo afterwards, do all associations, not just shrines
         $associations = $this->getAssociations();
         $return = [];
-        foreach ($associations as $associationId => $object) {
+        foreach ($associations as $object) {
             $schema = $this->getAssociationSchema($object);
             $array = $schema->toArray();
             $md5 = md5(json_encode($array));
@@ -1598,7 +1619,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $persons        = $this->getUnlinkedPersons();
 
         //first mark the "found" persons and associations in assignments
-        foreach ($entities as $assignmentId => $assignment) {
+        foreach ($entities as $assignment) {
             $persons[$assignment['personId']]['found'] = true;
             $associations[$assignment['associationId']]['found'] = true;
         }
@@ -2173,6 +2194,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 unset($query['category']);
             }
         }
+        //@todo why is this variable never again used?
         $statusAcceptNull = true;
         if (isset($query['status'])) {
             if (is_string($query['status'])) {

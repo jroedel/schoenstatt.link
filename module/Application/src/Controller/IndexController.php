@@ -132,7 +132,7 @@ class IndexController extends AbstractActionController
 
         $shrines = $this->schoenstattTable->getShrines();
 
-        foreach ($shrines as $associationId => $object) {
+        foreach ($shrines as $object) {
             $url = $this->url()->fromRoute('associations/association', ['sw_id' => $object['identifier']]);
             $shrinesPage->addPage([
                 'label' => $object['formattedName'],
