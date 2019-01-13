@@ -10,11 +10,14 @@ use Zend\View\Helper\ServerUrl;
 use Zend\View\Helper\Url;
 use Zend\Router\RouteStackInterface;
 use Zend\Db\Sql\Select;
+use Zend\Db\Sql\Expression;
 
 class DictionaryTable extends SionTable
 {
+    
+    const DICTIONARY_TITLE_FORMAT = "Fr. Kentenich dictionary German to %s";
+    
     /**
-     *
      * @var RouteStackInterface $router
      */
     protected $router;
@@ -184,27 +187,34 @@ class DictionaryTable extends SionTable
     }
     
     /**
-     * Returns an associative array mapping locale to the 2-digit ISO639 language codes
+     * Returns an associative array mapping locale to an array of other information
+     * including 2-digit ISO639 language codes
      * @return string[]
      */
     public function getAvailableDictionaryLanguages()
     {
         $select = $this->getSelectPrototype('dictionary-entry');
-        $select->columns(['Locale'])
+        $select->columns(['Locale', 'Count' => new Expression('COUNT(*)')])
             ->group(['Locale'])
             ->where(['IsActive' => '1'])
             ->reset(Select::ORDER);
         
         $gateway = $this->getTableGateway('sch_dictionary_entries');
         $results = $gateway->selectWith($select);
-        $locales = [];
+        $languageNames = $this->getLanguageNames();
+        $dictionaries = [];
         
         foreach ($results as $row) {
             $locale = $row['Locale'];
-            $language = \Locale::getPrimaryLanguage($locale);
-            $locales[$locale] = $language;
+            $inLanguage = \Locale::getPrimaryLanguage($locale);
+            $dictionaries[$locale] = [
+                'locale' => $locale,
+                'inLanguage' => $inLanguage,
+                'inLanguageName' => isset($languageNames[$inLanguage]) ? $languageNames[$inLanguage] : null,
+                'count' => $this->filterDbInt($row['Count']),
+            ];
         }
-        return $locales;
+        return $dictionaries;
     }
     
     /**

@@ -9,6 +9,7 @@ use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
+use Books\Model\DictionaryTable;
 
 class PublicationsController extends SionController
 {
@@ -100,16 +101,39 @@ class PublicationsController extends SionController
         );
         $form = $this->services[PublicationsSearchForm::class];
         $languages = $this->services['Books\LanguagesValueOptions'];
+
+        $dictionaries = $this->getDictionaries();
+        $libraries = $this->getLibraries();
+        
         $view = new ViewModel([
             'form'      => $form,
             'entity'    => $entity,
             'entitySpec'=> $entitySpec,
             'languages' => $languages,
             'objects'   => $objects,
+            'dictionaries' => $dictionaries,
+            'libraries' => $libraries,
         ]);
         return $view;
     }
-
+    
+    protected function getDictionaries()
+    {
+        /** @var DictionaryTable $dictionaryTable */
+        $dictionaryTable = $this->services[DictionaryTable::class];
+        $dictionaries = $dictionaryTable->getAvailableDictionaryLanguages();
+        
+        return $dictionaries;
+    }
+    
+    protected function getLibraries()
+    {
+        /** @var LibraryTable $table */
+        $table = $this->services[LibraryTable::class];
+        $objects = $table->getUnlinkedLibraries();
+        return $objects;
+    }
+    
     public function indexAction()
     {
         /** @var PublicationsTable $table */

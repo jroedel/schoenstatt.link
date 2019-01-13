@@ -1,18 +1,28 @@
 <?php
 use Cake\Utility\Text;
+use Books\Model\DictionaryTable;
 // echo $this->navigation('default')->breadcrumbs()->setIndent(8);;
 ?>
-<h1><?php $titleFormat = "Fr. Kentenich dictionary German to %s";
+<h1><?php $titleFormat = DictionaryTable::DICTIONARY_TITLE_FORMAT;
 echo sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));?></h1>
 <?php
 $objects = $this->objects;
-foreach ($objects as $entryId => $object) :?>
+foreach ($objects as $entryId => $object) :
+if (!$object['isActive'] && !$this->isAllowed('route/dictionary/entry/edit')) {
+    continue;
+}?>
 <p id="<?php echo $this->escapeHtmlAttr($object['slug']);?>"><strong><?php 
+    if (!$object['isActive']) {
+        echo '<del>';
+    }
     echo $this->formatEntity('dictionary-entry', $object, ['displayAsLink' => false]);?></strong> <?php 
     echo $this->escapeHtml($object['entry']);
     foreach ($object['links'] as $linkSlug) {
         $shortSlug = Text::truncate($linkSlug, 50);
         echo " <a href=\"#$linkSlug\">$shortSlug</a> ";
+    }
+    if (!$object['isActive']) {
+        echo '</del>';
     }?></p>
 <?php endforeach;?>
 <script type="application/ld+json">
