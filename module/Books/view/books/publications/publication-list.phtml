@@ -31,7 +31,7 @@ $files = isset($this->files) ? $this->files : null;
 </tr>
 <?php foreach($this->objects as $entityId => $entity) :
 $username = $this->zfcUserDisplayName();
-if (!$this->isAllowed($entity['resourceId'], 'show') || (!$entity['isRevisedWithBookInHand'] && false === $username)) {
+if (!$this->isAllowed($entity['resourceId'], 'show')) {
     continue;
 }?>
 <tr><?php foreach ($columns as $column) :
