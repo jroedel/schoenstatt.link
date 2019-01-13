@@ -21,7 +21,14 @@ class DictionaryController extends SionController
         $table = $this->getSionTable();
         
         $availableLanguages = $table->getAvailableDictionaryLanguages();
-        if (!in_array($inLanguage, $availableLanguages, true)) {
+        $isInLanguageAvailable = false;
+        foreach ($availableLanguages as $dict) {
+            if ($inLanguage === $dict['inLanguage']) {
+                $isInLanguageAvailable = true;
+                break;
+            }
+        }
+        if (!$isInLanguageAvailable) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage('Language not found');
             return $this->redirect()->toRoute('dictionary');
         }
@@ -80,7 +87,8 @@ class DictionaryController extends SionController
         $availableLanguages = $table->getAvailableDictionaryLanguages();
         $dictionaryPage = $nav->findOneBy('route', 'dictionary');
         
-        foreach ($availableLanguages as $inLanguage) {
+        foreach ($availableLanguages as $dict) {
+            $inLanguage = $dict['inLanguage'];
             $url = $this->url()->fromRoute('dictionary/inLanguage', ['inLanguage' => $inLanguage]);
             $dictionaryPage->addPage([
                 'label' => $table->getLanguageName($inLanguage),

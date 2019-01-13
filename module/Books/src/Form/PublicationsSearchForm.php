@@ -21,7 +21,7 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
             'attributes' => [
                 'required' => false,
                 'class' => 'input-lg search-query',
-                'placeholder' => 'Search',
+                'placeholder' => 'Search Catalogs',
                 'size' => 50,
             ],
         ]);

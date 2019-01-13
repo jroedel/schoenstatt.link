@@ -244,6 +244,8 @@ return [
                 SearchForm::class => SearchForm::class,
                 BooksMailer::class => BooksMailer::class,
                 PublicationsTable::class => PublicationsTable::class,
+                DictionaryTable::class => DictionaryTable::class,
+                LibraryTable::class => LibraryTable::class,
             ],
         ],
         'delegators' => [
@@ -257,6 +259,12 @@ return [
                 LazyServiceFactory::class,
             ],
             PublicationsTable::class => [
+                LazyServiceFactory::class,
+            ],
+            DictionaryTable::class => [
+                LazyServiceFactory::class,
+            ],
+            LibraryTable::class => [
                 LazyServiceFactory::class,
             ],
         ],
@@ -1674,6 +1682,7 @@ return [
                     DriveGateway::class,
                     LibraryTable::class,
                     PredicatesTable::class,
+                    DictionaryTable::class,
                 ],
                 'get_object_function'                   => 'getPublication',
                 'get_objects_function'                  => 'getUnlinkedPublications',
