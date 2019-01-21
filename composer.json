@@ -47,7 +47,9 @@
         "cocur/slugify": "^3.1",
         "erusev/parsedown": "^1.7",
         "erusev/parsedown-extra": "^0.7.1",
-        "multidots/zf3-rest-api": "dev-master"
+        "multidots/zf3-rest-api": "dev-master",
+        "spatie/opening-hours": "^2.0",
+        "zfr/zfr-cors": "dev-optimized-cors-preflight"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
@@ -74,6 +76,14 @@
 	   {
 	     "type": "vcs",
 	     "url": "https://github.com/jroedel/ZfcUser"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/boesing/zfr-cors"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/zf3-rest-api"
 	   },
 	   {
 	     "type": "vcs",
