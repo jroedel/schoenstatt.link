@@ -17,6 +17,7 @@ use Zend\Db\Adapter\Adapter;
 return [
     'schoenstatt' => [
         'gdpr_template' => 'application/index/gdpr',
+        'log_path' => 'data/logs/application.log',
     ],
     'navigation' => [
         // navigation with name default

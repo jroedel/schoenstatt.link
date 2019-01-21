@@ -314,6 +314,10 @@ return [
                             'defaults' => [
                                 'action' => null,
                                 'controller' => Controller\LibrariesApiController::class,
+                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
+                                    'allowed_origins' => ['*'],
+                                    'allowed_methods' => ['GET'],
+                                ],
                             ],
                             'constraints' => [
                                 'library_id' => '[0-9]{1,3}',
@@ -327,6 +331,10 @@ return [
                             'defaults' => [
                                 'action' => null,
                                 'controller' => Controller\BooksApiController::class,
+                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
+                                    'allowed_origins' => ['*'],
+                                    'allowed_methods' => ['GET'],
+                                ],
                             ],
                             'constraints' => [
                                 'book_id' => '[0-9]{1,8}',
@@ -378,6 +386,10 @@ return [
                                 'action' => null,
                                 'controller' => Controller\DictionaryApiController::class,
                                 'isAuthorizationRequired' => true,
+                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
+                                    'allowed_origins' => ['*'],
+                                    'allowed_methods' => ['GET'],
+                                ],
                             ],
                         ],
                         'may_terminate' => false,
@@ -387,7 +399,7 @@ return [
                                 'options' => [
                                     'verb'      => 'get',
                                     'defaults'  => [
-                                        'isAuthorizationRequired' => true,
+                                        'isAuthorizationRequired' => false,
                                     ],
                                 ],
                                 'may_terminate' => true,
