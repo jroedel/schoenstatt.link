@@ -9,7 +9,7 @@ RewriteRule ^(.*)$ https://schoenstatt\.link/$1 [R,L]
 
 # Enable HSTS for 6 months, preload into Chrome
 SetEnv HTTPS on
-Header set Strict-Transport-Security "max-age=15768000; preload" env=HTTPS
+Header set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" env=HTTPS
 
 # protect against non-scripts being run
 Header add X-Content-Type-Options nosniff
