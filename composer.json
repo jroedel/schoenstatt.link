@@ -49,7 +49,8 @@
         "erusev/parsedown-extra": "^0.7.1",
         "multidots/zf3-rest-api": "dev-master",
         "spatie/opening-hours": "^2.0",
-        "zfr/zfr-cors": "dev-optimized-cors-preflight"
+        "zfr/zfr-cors": "dev-optimized-cors-preflight",
+        "jmikola/geojson": "1.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

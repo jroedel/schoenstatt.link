@@ -103,6 +103,15 @@ class AssociationsApiController extends AbstractRestfulController
             'objectMd5s'    => $md5s,
         ], ['prettyPrint' => true]);
     }
+    
+    public function shrinesJsonAction()
+    {
+        $table = $this->schoenstattTable;
+        $geoJson = $table->getShrineGeoJson();
+        $serialized = $geoJson->jsonSerialize();
+        $response = $this->getResponse();
+        return new JsonModel($serialized);
+    }
 
     protected function sendFailedMessage($message, $statusCode = 401)
     {

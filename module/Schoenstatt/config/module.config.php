@@ -1405,6 +1405,16 @@ return [
                             ],
                         ],
                     ],
+                    'shrines-json' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/associations/shrines.json',
+                            'defaults' => [
+                                'controller' => Controller\AssociationsApiController::class,
+                                'action'     => 'shrinesJson',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ],
@@ -1961,7 +1971,7 @@ return [
                 ['route' => 'api-v1', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/associations', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/find-by-kind', 'roles' => ['guest', 'user', null]],
-
+                ['route' => 'api-v1/shrines-json', 'roles' => ['guest', 'user', null]],
             ],
         ],
     ],
