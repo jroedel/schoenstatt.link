@@ -24,6 +24,10 @@ use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
+use GeoJson;
+use GeoJson\Feature\Feature;
+use GeoJson\Geometry\Point;
+use GeoJson\Feature\FeatureCollection;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -369,6 +373,29 @@ class SchoenstattTable extends SionTable implements
         }
 
         return clone $select;
+    }
+    
+    public function getShrineGeoJson()
+    {
+        $objects = $this->getShrines();
+        $features = [];
+        $firstTime = true;
+        foreach ($objects as $object) {
+            /** @var GeoPoint $geoPoint */
+            $geoPoint = $object['geoPoint'];
+            if ($firstTime) {
+                $firstTime = false;
+            }
+            if (isset($geoPoint)) {
+                $geometry = new Point([(float)$geoPoint->longitude, (float)$geoPoint->latitude]);
+                $feature = new Feature($geometry, [
+                    'name' => $object['name'],
+                ]);
+                $features[] = $feature;
+            }
+        }
+        $geoJson = new FeatureCollection($features);
+        return $geoJson;
     }
 
     /**
