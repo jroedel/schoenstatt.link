@@ -87,7 +87,10 @@ class AssociationsController extends SionController
         }
         $schema = $table->getAssociationSchema($association);
         $view->setVariable('schema', $schema);
-
+        
+        $changes = $table->getEntityChanges('association', $association['associationId']);
+        $view->setVariable('changes', $changes);
+        
         return $view;
     }
 
