@@ -27,7 +27,7 @@ class AssociationsApiController extends AbstractRestfulController
 
     public function getList()
     {
-        $params = $this->params()->fromQuery();
+//         $params = $this->params()->fromQuery();
 //         if (!isset($params['key'])) {
 //             return $this->sendFailedMessage('Please pass the API key as the \'key\' query parameter.');
 //         }
@@ -109,7 +109,6 @@ class AssociationsApiController extends AbstractRestfulController
         $table = $this->schoenstattTable;
         $geoJson = $table->getShrineGeoJson();
         $serialized = $geoJson->jsonSerialize();
-        $response = $this->getResponse();
         return new JsonModel($serialized);
     }
 

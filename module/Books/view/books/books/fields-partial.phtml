@@ -35,10 +35,8 @@ echo $this->formRow($form->get('adminTags'));
 echo $this->formRow($form->get('isActive'));
 echo $this->formRow($form->get('inactivationReason'));
 echo $this->formRow($form->get('security'));
-$libraryOptionsJson = Json::encode($libraryOptions);
 $nextWithinLibraryId = $libraryOptions->nextWithinLibraryId;
 $jsScript = <<<JS
-libraryOptions = $libraryOptionsJson;
 $("select[name='authors[]']").selectize({
     create: true,
     sortField: 'text',
@@ -79,8 +77,6 @@ $("#book").validate({
 $.validator.addMethod("isbn", function(value, element) {
   return this.optional( element ) || validateIsbn( value );
 }, 'Please enter a valid ISBN number.');
-
-//console.log(libraryOptions);
 JS;
 $this->inlineScript()->captureStart();
 echo <<<JS

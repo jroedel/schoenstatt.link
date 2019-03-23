@@ -191,6 +191,7 @@ class SchoenstattTable extends SionTable implements
         ];
         $this->swFilter = new SchoenstattLinkIdentifier();
         $this->swValidator = new \Schoenstatt\Validator\SchoenstattLinkIdentifier();
+        $this->translator = $translator;
     }
 
     /**
@@ -622,7 +623,6 @@ class SchoenstattTable extends SionTable implements
         if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
             return $this->unlinkedAssociationsMemoryCache[$id];
         }
-
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
         $areCountryTranslationsReady = isset($this->countryNameTranslations);
         $country = $this->filterDbString($row['Country']);
@@ -858,7 +858,7 @@ class SchoenstattTable extends SionTable implements
             'identifier'            => $identifier,
             'name'                  => $name,
             'overrideNameFormat'    => $overrideNameFormat,
-            'internalName'              => $internalName,
+            'internalName'          => $internalName,
             'isInternalNameTranslateable' => $isInternalNameTranslateable,
             'parentId'              => $this->filterDbId($row['Parent']),
             'kind'                  => $kind,

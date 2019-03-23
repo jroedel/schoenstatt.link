@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "0f1ff739233f82806cca5fadaf4921b0",
+    "content-hash": "75e3bcacf23df4093b9d910942fc683f",
     "packages": [
         {
             "name": "beaucal/beaucal-invalid-session",

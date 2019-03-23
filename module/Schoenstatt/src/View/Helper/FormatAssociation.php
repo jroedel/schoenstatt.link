@@ -8,6 +8,7 @@ class FormatAssociation extends AbstractHelper
     protected $associationTypeLabels = [];
 
     const DISPLAY_NAME = 'name';
+    const DISPLAY_INTERNAL_NAME = 'internal-name';
     const DISPLAY_KIND = 'kind';
 
     /**
@@ -43,7 +44,21 @@ class FormatAssociation extends AbstractHelper
                     if ($showFlagOption && isset($data['country'])) {
                         $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
                     }
-
+                    
+                    if ($data['formattedName']) {
+                        $text = $data['formattedName'];
+                    } elseif ($data['isNameTranslateable']) {
+                        $text = $this->view->translate($data['name'], 'Schoenstatt');
+                    } else {
+                        $text = $data['name'];
+                    }
+                    break;
+                case self::DISPLAY_INTERNAL_NAME:
+                    //only show flag if we're looking at display_name
+                    if ($showFlagOption && isset($data['country'])) {
+                        $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
+                    }
+                    
                     if ($data['internalDisplayName']) {
                         $text = $data['internalDisplayName'];
                     } elseif ($data['formattedName']) {
