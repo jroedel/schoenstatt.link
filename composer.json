@@ -68,10 +68,6 @@
 	   },
 	   {
 	     "type": "vcs",
-	     "url": "https://github.com/jroedel/GoalioRememberMe"
-	   },
-	   {
-	     "type": "vcs",
 	     "url": "https://github.com/jroedel/ZfSnapGeoip"
 	   },
 	   {

@@ -119,20 +119,20 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'libraries/library/label-management'=> [
-                'label' => "Label management",
-                'description' => 'Print new call number labels and manage books pending a label change.',
-                'route_parameters' => [
-                    'library_id' => ':libraryId',
-                ],
-            ],
-            'libraries/library/batch-operations'=> [
-                'label' => "Batch book operations",
-                'description' => 'Perform changes to multiple books including inactivation, label printing, or changes to collection, language, or category.',
-                'route_parameters' => [
-                    'library_id' => ':libraryId',
-                ],
-            ],
+//             'libraries/library/label-management'=> [
+//                 'label' => "Label management",
+//                 'description' => 'Print new call number labels and manage books pending a label change.',
+//                 'route_parameters' => [
+//                     'library_id' => ':libraryId',
+//                 ],
+//             ],
+//             'libraries/library/batch-operations'=> [
+//                 'label' => "Batch book operations",
+//                 'description' => 'Perform changes to multiple books including inactivation, label printing, or changes to collection, language, or category.',
+//                 'route_parameters' => [
+//                     'library_id' => ':libraryId',
+//                 ],
+//             ],
 //             'libraries/library/inactivate-books'=> [
 //                 'label' => "Inactivate books",
 //                 'description' => 'Remove books from the library.',
