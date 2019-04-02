@@ -19,23 +19,18 @@ class DhController extends SionController
         $objects = $table->getObjects('dh-page');
         
         $reHeader = '/(?<!\(|\d)(\d{1,4})(?!\)|\d)/';
-        $lastHeaderNumber = 0; //@todo set to 0
+        
+        $lastHeaderNumber = 0;
         $results = [];
-        $pageDhNumbers = [];
         foreach ($objects as $object) {
             $pageNumber = $object['pageNumber'];
-//             if ($pageNumber < 458) { //458
-//                 continue;
-//             }
             $fileName = $object['fileName'];
             $filePath = 'public/dh/'.$fileName;
             if (!file_exists($filePath)) {
                 throw new \Exception('File doesnt exist');
             }
             
-            $fileNameWoExt = substr($fileName, 0, strlen($fileName)-4);
-//             var_dump($filePath);
-//             var_dump($fileNameWoExt);
+            $fileNameWoExt = substr($fileName, 0, strlen($fileName) - 4);
             
             //get image information
             list($width, $height) = getimagesize($filePath);
@@ -73,36 +68,64 @@ class DhController extends SionController
                     }
                 }
             }
-            $pageDhNumbers[$pageNumber] = $headerDhNumber;
             
             //get full text
-            $textFile = $fileNameWoExt.'.txt';
+            $textFile = $fileNameWoExt.'.markdown';
             $textFilePath = 'public/dh/'.$textFile;
-            
-            //remove hyphens
-            
+            $fullText = file_get_contents($textFilePath);
             
             $data = [
+                'pageNumber' => $pageNumber,
                 'widthInPixels' => $width,
                 'heightInPixels' => $height,
                 'headerText' => $headerText,
                 'headerDhNumber' => $headerDhNumber,
-//                 'fullText' => $fullText,
-                'fullTextFileName' => $textFile
+                'fullText' => $fullText,
+                'fullTextFileName' => $textFile,
             ];
 //             var_dump($data);
             
             if ($doIt) {
-                $result = $table->createEntity('dh-page', $data, false);
+                unset($data['pageNumber']);
+                $result = $table->updateEntity('dh-page', $pageNumber, $data, [], false);
+                $data['pageNumber'] = $pageNumber;
                 $data['result'] = $result;
             }
             $results[] = $data;
-//             break;
         }
-        var_dump($pageDhNumbers);
         return new \Zend\View\Model\ViewModel([
             'results' => $results,
         ]);
+    }
+    
+    protected function removeHyphens()
+    {
+        $table = $this->getSionTable();
+        $objects = $table->getObjects('dh-page');
+        
+        $reHyphen = '/-\n([a-záéíóúñ])/';
+        $reHyphenSubst = '\\1';
+        $results = [];
+        foreach ($objects as $object) {
+            $fileName = $object['fileName'];
+            $filePath = 'public/dh/'.$fileName;
+            if (!file_exists($filePath)) {
+                throw new \Exception('File doesnt exist');
+            }
+            
+            $fileNameWoExt = substr($fileName, 0, strlen($fileName) - 4);
+            $textFile = $fileNameWoExt.'.txt';
+            $textFilePath = 'public/dh/'.$textFile;
+            $fullTextFileContents = file_get_contents($textFilePath);
+            
+            $result = preg_replace($reHyphen, $reHyphenSubst, $fullTextFileContents);
+            $newTextFile = 'public/dh/'.$fileNameWoExt.'-nohyphens'.'.txt';
+            file_put_contents($newTextFile, $result);
+            $finalTextFile = $fileNameWoExt.'.markdown';
+            $command = "pandoc -t markdown -o $finalTextFile $newTextFile";
+            $results[] = $command;
+        }
+        return $results;
     }
     
     protected function initialImport()

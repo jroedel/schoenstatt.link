@@ -15,7 +15,8 @@ if (isset($pageNumber)) {
     }
 }
 ?>
-<div class="col-md-12">
+<div class="row">
+<div class="col-sm-12 col-md-10 col-md-offset-1 col-lg-8 col-lg-offset-2">
 <p><span><?php 
 if (isset($previousPage)):
 ?><a href="<?php echo $this->url('dh/page', ['page_number' => $previousPage]);?>"><?php 
@@ -38,4 +39,5 @@ endif;?></span></p>
 echo $this->escapeHtmlAttr($this->entity['fileUrl']);
 ?>"><img src="<?php echo $this->escapeHtmlAttr($this->entity['fileUrl']);?>" alt="DH page <?php 
 echo $this->escapeHtmlAttr($this->entity['pageNumber']);?>" class="img-responsive"/></a>
+</div>
 </div>
