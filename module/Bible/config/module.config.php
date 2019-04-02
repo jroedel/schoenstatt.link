@@ -14,10 +14,45 @@ return [
     'service_manager' => [
         'factories' => [
             Model\BibleTable::class        => Service\BibleTableFactory::class,
+            Model\DhTable::class        => Service\DhTableFactory::class,
         ],
     ],
     'router' => [
         'routes' => [
+            'dh' => [
+                'type'    => Literal::class,
+                'options' => [
+                    'route'    => '/dh',
+                    'defaults' => [
+                        'controller' => Controller\DhController::class,
+                        'action'     => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'page' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/pg/:page_number',
+                            'constraints' => [
+                                'page_number' => '[0-9]{1,4}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
+                            ],
+                        ],
+                    ],
+                    'import' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/import',
+                            'defaults' => [
+                                'action'     => 'import',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'bible' => [
                 'type'    => Literal::class,
                 'options' => [
@@ -159,6 +194,67 @@ return [
                     'text' => 'text',
                 ],
             ],
+            'dh-page' => [
+                'name'                                      => 'dh-page',
+                'table_name'                                => 'bib_dh_page',
+                'table_key'                                 => 'PageNumber',
+                'entity_key_field'                          => 'pageNumber',
+                'sion_model_class'                          => Model\DhTable::class,
+                'sion_controllers'                          => [Controller\DhController::class],//BorrowersController::class],
+                'controller_services'                       => [
+                    
+                ],
+//                 'get_object_function'                       => 'getVerses',
+//                 'get_objects_function'                      => 'getUnlinkedTexts',
+                'row_processor_function'                    => 'processDhRow',
+//                 'format_view_helper'                        => 'formatEvent',
+                'required_columns_for_creation'             => [
+                    'pageNumber',
+                    'fileName',
+                ],
+                'name_field'                                => 'pageNumber',
+                'name_field_is_translateable'               => false,
+                'report_changes'                            => false,
+//                 'index_route'                               => 'dh',
+//                 'index_template'                            => 'project/events/index',
+                'default_route_key'                         => 'page_number',
+//                 'show_action_template'                      => 'project/events/show',
+                'show_route'                                => 'dh',
+                'show_route_key'                            => 'page_number',
+                'show_route_key_field'                      => 'pageNumber',
+//                 'edit_action_form'                          => Form\BlogForm::class,
+//                 'edit_action_template'                      => 'project/events/edit',
+//                 'edit_route'                                => 'blog/blog-post/edit',
+//                 'edit_route_key'                            => 'text_id',
+//                 'edit_route_key_field'                      => 'textId',
+//                 'create_action_form'                        => Form\BlogForm::class,
+//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
+//                 'create_action_redirect_route'              => 'blog/blog-post',
+//                 'create_action_redirect_route_key'          => 'text_id',
+//                 'create_action_redirect_route_key_field'    => 'textId',
+//                 'create_action_template'                    => 'project/events/create',
+//                 'touch_default_field'                       => 'eventId',
+//                 'touch_route_key'                           => 'event_id',
+//                 'touch_field_route_key'                     => 'event_id',
+//                 'touch_json_route'                          => 'events/event/touch',
+//                 'touch_json_route_key'                      => 'event_id',
+//                 'database_bound_data_preprocessor'          => 'preprocessText',
+//                 'database_bound_data_postprocessor'         => 'postprocessEvent',
+//                 'moderate_route'                            => 'events/event/moderate',
+//                 'moderate_route_entity_key'                 => 'event_id',
+//                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
+//                 'enable_delete_action'                      => true,
+//                 'delete_action_acl_resource'                => 'event_:id',
+//                 'delete_action_acl_permission'              => 'delete',
+//                 'delete_action_redirect_route'              => 'blog',
+                'update_columns'                            => [
+                    'pageNumber' => 'PageNumber',
+                    'fileName' => 'FileName',
+                    'headerDhNumber' => 'ReferenceNumber',
+                    'startDhNumber' => 'StartDhNumber',
+                    'endDhNumber' => 'EndDhNumber',
+                ],
+            ],
         ],
     ],
     'bjyauthorize' => [
@@ -169,6 +265,9 @@ return [
                 ['route' => 'bible/text', 'roles' => ['bib_user']],
                 ['route' => 'bible/bnt', 'roles' => ['bib_user']],
                 ['route' => 'bible/bibleimport', 'roles' => ['bib_administrator']],
+                ['route' => 'dh', 'roles' => ['bib_administrator']],
+                ['route' => 'dh/import', 'roles' => ['bib_administrator']],
+                ['route' => 'dh/page', 'roles' => ['bib_administrator']],
             ],
         ],
     ],

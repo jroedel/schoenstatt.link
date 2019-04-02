@@ -1,0 +1,1 @@
+CREATE TABLE `ourlink_db1`.`bib_dh_page` ( `PageNumber` INT NOT NULL , `FileName` VARCHAR(50) NOT NULL , `ReferenceNumber` INT NULL DEFAULT NULL , `StartDhNumber` INT NULL DEFAULT NULL , `EndDhNumber` INT NULL DEFAULT NULL , PRIMARY KEY (`PageNumber`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_unicode_ci;
