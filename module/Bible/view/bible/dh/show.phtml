@@ -33,7 +33,9 @@ else:
 endif;?></span></p>
 <a href="<?php 
 echo $this->escapeHtmlAttr($this->entity['fileUrl']);
-?>"><img src="<?php echo $this->escapeHtmlAttr($this->entity['fileUrl']);?>" alt="DH page <?php 
+?>"><img height="<?php echo $this->escapeHtmlAttr($this->entity['heightInPixels']);
+?>" width="<?php echo $this->escapeHtmlAttr($this->entity['widthInPixels']);
+?>" src="<?php echo $this->escapeHtmlAttr($this->entity['fileUrl']);?>" alt="DH page <?php 
 echo $this->escapeHtmlAttr($this->entity['pageNumber']);?>" class="img-responsive"/></a>
 </div>
 </div>
