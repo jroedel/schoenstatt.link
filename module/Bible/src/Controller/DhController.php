@@ -7,6 +7,20 @@ use Zend\Math\Rand;
 
 class DhController extends SionController
 {
+    
+    protected function getEntityIdParam($action = 'show', $default = null)
+    {
+        if ('show' === $action) {
+            $dhNumber = $this->params()->fromRoute('dh_number');
+            if (isset($dhNumber)) {
+                $table = $this->getSionTable();
+                $pageNumber = $table->lookupProbableDhNumberPage($dhNumber);
+                return $pageNumber;
+            }
+        }
+        return parent::getEntityIdParam($action, $default);
+    }
+    
     public function importAction()
     {
         $really = $this->params()->fromQuery('really') === 'yes';
