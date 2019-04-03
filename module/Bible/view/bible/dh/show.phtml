@@ -23,11 +23,7 @@ if (isset($previousPage)):
     echo $this->translate('Previous page');?></a><?php 
 else:
     echo $this->translate('Previous page');
-endif;?></span><?php 
-//Display the dh number that appears in the header if we have one
-if (isset($this->entity['headerDhNumber'])):?>
-<span class="text-center"><?php echo $this->escapeHtml($this->entity['headerDhNumber']);?></span><?php 
-endif;?>
+endif;?></span>
 <span class="pull-right"><?php 
 if (isset($nextPage)):
 ?><a href="<?php echo $this->url('dh/page', ['page_number' => $nextPage]);?>"><?php 

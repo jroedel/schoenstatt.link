@@ -30,6 +30,18 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'number' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/:dh_number',
+                            'constraints' => [
+                                'dh_number' => '[0-9]{1,4}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'show',
+                            ],
+                        ],
+                    ],
                     'page' => [
                         'type'    => Segment::class,
                         'options' => [
@@ -272,7 +284,8 @@ return [
                 ['route' => 'bible/bibleimport', 'roles' => ['bib_administrator']],
                 ['route' => 'dh', 'roles' => ['bib_administrator']],
                 ['route' => 'dh/import', 'roles' => ['bib_administrator']],
-                ['route' => 'dh/page', 'roles' => ['bib_administrator']],
+                ['route' => 'dh/page', 'roles' => ['bib_user']],
+                ['route' => 'dh/number', 'roles' => ['bib_user']],
             ],
         ],
     ],
