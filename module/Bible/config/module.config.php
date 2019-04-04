@@ -227,7 +227,7 @@ return [
                 'name_field'                                => 'pageNumber',
                 'name_field_is_translateable'               => false,
                 'report_changes'                            => false,
-//                 'index_route'                               => 'dh',
+                'index_route'                               => 'dh',
 //                 'index_template'                            => 'project/events/index',
                 'default_route_key'                         => 'page_number',
 //                 'show_action_template'                      => 'project/events/show',
@@ -289,11 +289,11 @@ return [
             ],
         ],
     ],
-
+    
     'view_manager' => [
         'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
-            'bible' => __DIR__ . '/../view',
+            __NAMESPACE__ => __DIR__ . '/../view',
         ],
     ],
 ];
