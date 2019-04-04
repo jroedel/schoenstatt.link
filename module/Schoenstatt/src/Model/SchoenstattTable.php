@@ -24,7 +24,6 @@ use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
-use GeoJson;
 use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
 use GeoJson\Feature\FeatureCollection;
@@ -2222,17 +2221,17 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
         //@todo why is this variable never again used?
-        $statusAcceptNull = true;
-        if (isset($query['status'])) {
-            if (is_string($query['status'])) {
-                $query['status'] = array($query['status']);
-            }
-            if (!is_array($query['status'])) {
-                unset($query['status']);
-            } else {
-                $statusAcceptNull = in_array('none', $query['status']);
-            }
-        }
+//         $statusAcceptNull = true;
+//         if (isset($query['status'])) {
+//             if (is_string($query['status'])) {
+//                 $query['status'] = array($query['status']);
+//             }
+//             if (!is_array($query['status'])) {
+//                 unset($query['status']);
+//             } else {
+//                 $statusAcceptNull = in_array('none', $query['status']);
+//             }
+//         }
         $filter = new ToAscii();
         if (isset($query['search'])) {
             $query['search'] = $filter->filter($query['search']);

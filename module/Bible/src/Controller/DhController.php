@@ -2,14 +2,31 @@
 namespace Bible\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Mvc\Console\View\ViewModel;
 use Zend\Math\Rand;
+use Zend\View\Model\ViewModel;
 
 class DhController extends SionController
 {
+    public function indexAction()
+    {
+        $objects = [];
+        $search = false;
+        if ($search) {
+            $table = $this->getSionTable();
+            $fields = array_keys($this->getEntitySpecification()->updateColumns);
+            if (($key = array_search('fullText', $fields)) !== false) {
+                unset($fields[$key]);
+            }
+            $objects = $table->getObjects('dh-page', [], ['fields' => $fields]);
+        }
+        return new ViewModel([
+            'objects' => $objects,
+        ]);
+    }
     
     protected function getEntityIdParam($action = 'show', $default = null)
     {
+        //when the user is looking for a particular dh number, run the function to find the pageNumber
         if ('show' === $action) {
             $dhNumber = $this->params()->fromRoute('dh_number');
             if (isset($dhNumber)) {
