@@ -4,9 +4,9 @@ namespace Bible\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use ZfSnapGeoip\Service\Geoip;
-use Bible\Provider\Role\SpecialCountryRoleProvider;
+use Bible\Provider\Rule\SpecialCountryRuleProvider;
 
-class SpecialCountryRoleProviderFactory implements FactoryInterface
+class SpecialCountryRuleProviderFactory implements FactoryInterface
 {
     /**
      * Create an object
@@ -18,7 +18,7 @@ class SpecialCountryRoleProviderFactory implements FactoryInterface
         /** @var Geoip $geoip */
         $geoip = $container->get(Geoip::class);
         
-        $provider = new SpecialCountryRoleProvider($geoip);
+        $provider = new SpecialCountryRuleProvider($geoip);
         return $provider;
     }
 }
