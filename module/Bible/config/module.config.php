@@ -4,6 +4,7 @@ namespace Bible;
 use Zend\Router\Http\Segment;
 use Zend\Router\Http\Literal;
 use BjyAuthorize\Guard\Route;
+use Bible\Provider\Role\SpecialCountryRoleProvider;
 
 return [
 //     'controllers' => [
@@ -15,6 +16,7 @@ return [
         'factories' => [
             Model\BibleTable::class        => Service\BibleTableFactory::class,
             Model\DhTable::class        => Service\DhTableFactory::class,
+            Provider\Role\SpecialCountryRoleProvider::class => Service\SpecialCountryRoleProviderFactory::class,
         ],
     ],
     'router' => [
@@ -72,66 +74,41 @@ return [
                     'defaults' => [
                         'controller' => Controller\BibleController::class,
                         'action'     => 'index',
-                        'translation' => 'bnt',
                     ],
                 ],
-                'may_terminate' => true,
+                'may_terminate' => false, //@todo add an index page
                 'child_routes' => [
-                    'translation' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/:translation',
-                            'constraints' => [
-                                'translation' => '[0-9a-zA-Z]{3,3}',
-                            ],
-                            'defaults' => [
-                                'action'     => 'index',
-                            ],
-                        ],
-                    ],
                     'text' => [
                         'type'    => Segment::class,
                         'may_terminate' => true,
                         'options' => [
-                            'route'    => '/:translation/:book[/:chapter]',
+                            'route'    => '/:book/:chapter',
                             'constraints' => [
-                                'translation' => '[a-zA-Z]{3,3}',
+                                /*
+                                 * If the user comes to book that doesn't exist in their
+                                 * selected translations, add the first translation that 
+                                 * has that book.
+                                 */
                                 'book'        => '[0-9a-zA-Z]{3,3}',
                                 'chapter'     => '[0-9]{1,3}'
                             ],
                             'defaults' => [
-                                'action'     => 'bible',
+                                'action'     => 'text',
                             ],
                         ],
                     ],
-                    'bnt' => [
-                        'type'    => Segment::class,
-                        'may_terminate' => true,
-                        'options' => [
-                            'route'    => '/bnt/:book/:chapter',
-                            'constraints' => [
-                                'book'        => '[0-9a-zA-Z]{3,3}',
-                                'chapter'     => '[0-9]{1,3}'
-                            ],
-                            'defaults' => [
-                                'action'     => 'bnt',
-                                'translation' => 'bnt',
-                            ],
-                        ],
-                    ],
-                    'bibleimport' => [
-                        'type'    => Segment::class,
-                        'may_terminate' => true,
-                        'options' => [
-                            'route'    => '/import/:translation',
-                            'constraints' => [
-                                'translation' => '[a-zA-Z]{3,3}',
-                            ],
-                            'defaults' => [
-                                'action'     => 'import',
-                            ],
-                        ],
-                    ],
+//                     'bible-import' => [
+//                         'type'    => Segment::class,
+//                         'options' => [
+//                             'route'    => '/import/:translation',
+//                             'constraints' => [
+//                                 'translation' => '[a-zA-Z]{3,3}',
+//                             ],
+//                             'defaults' => [
+//                                 'action'     => 'import',
+//                             ],
+//                         ],
+//                     ],
                 ],
             ],
         ],
@@ -275,6 +252,9 @@ return [
         ],
     ],
     'bjyauthorize' => [
+        'role_providers' => [
+            SpecialCountryRoleProvider::class => [],
+        ],
         'guards' => [
             Route::class => [
                 ['route' => 'bible', 'roles' => ['bib_user']],
