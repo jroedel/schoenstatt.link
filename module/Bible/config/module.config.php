@@ -4,7 +4,6 @@ namespace Bible;
 use Zend\Router\Http\Segment;
 use Zend\Router\Http\Literal;
 use BjyAuthorize\Guard\Route;
-use Bible\Provider\Role\SpecialCountryRoleProvider;
 
 return [
 //     'controllers' => [
@@ -16,7 +15,7 @@ return [
         'factories' => [
             Model\BibleTable::class        => Service\BibleTableFactory::class,
             Model\DhTable::class        => Service\DhTableFactory::class,
-            Provider\Role\SpecialCountryRoleProvider::class => Service\SpecialCountryRoleProviderFactory::class,
+            Provider\Rule\SpecialCountryRuleProvider::class => Service\SpecialCountryRuleProviderFactory::class,
         ],
     ],
     'router' => [
@@ -252,8 +251,8 @@ return [
         ],
     ],
     'bjyauthorize' => [
-        'role_providers' => [
-            SpecialCountryRoleProvider::class => [],
+        'rule_providers' => [
+            Provider\Rule\SpecialCountryRuleProvider::class => [],
         ],
         'guards' => [
             Route::class => [
