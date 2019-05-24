@@ -96,6 +96,15 @@ return [
                             ],
                         ],
                     ],
+                    'migrate' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/migrate',
+                            'defaults' => [
+                                'action'     => 'migrate',
+                            ],
+                        ],
+                    ],
 //                     'bible-import' => [
 //                         'type'    => Segment::class,
 //                         'options' => [
@@ -261,6 +270,7 @@ return [
                 ['route' => 'bible/text', 'roles' => ['bib_user']],
                 ['route' => 'bible/bnt', 'roles' => ['bib_user']],
                 ['route' => 'bible/bibleimport', 'roles' => ['bib_administrator']],
+                ['route' => 'bible/migrate', 'roles' => ['bib_administrator']],
                 ['route' => 'dh', 'roles' => ['bib_administrator']],
                 ['route' => 'dh/import', 'roles' => ['bib_administrator']],
                 ['route' => 'dh/page', 'roles' => ['bib_user']],
