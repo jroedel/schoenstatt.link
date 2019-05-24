@@ -5,9 +5,37 @@ use SionModel\Db\Model\SionTable;
 use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\In;
+use Zend\Db\Sql\Select;
 
 class BibleTable extends SionTable
 {
+    
+    /**
+     *
+     * {@inheritDoc}
+     * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
+     */
+    protected function getSelectPrototype($entity)
+    {
+        $select = parent::getSelectPrototype($entity);
+        if ('bible-book' === $entity) {
+            $select->order(['IsActive' => Select::ORDER_DESCENDING, 'KeyDe']);
+        } elseif ('bible-translation' === $entity) {
+            
+        } elseif ('bible-verse' === $entity) {
+            
+        }
+        return $select;
+    }
+    
+    public function processVerseRow($row)
+    {
+        $data = [
+            
+        ];
+        return $data;
+    }
+    
     //@todo this should all be covered by the SionModel::queryObjects function!
     public function getVerses($query = [], $options = [])
     {
@@ -85,6 +113,58 @@ class BibleTable extends SionTable
         }
         ksort($books);
         return $books;
+    }
+    
+    /**
+     * Move data from bib_verses to new table
+     */
+    public function importToNewTable()
+    {
+        $select = new Select('bib_verses');
+        $select->columns([Select::SQL_STAR]);
+        $gateway = $this->getTableGateway('bib_verses');
+        $result = $gateway->selectWith($select);
+        $results = $result->toArray();
+        
+        $bookNumberLookup = $this->getBookNumberLookup();
+        //prepare rows to insert
+        $newRows = [];
+        $i = 0;
+        foreach ($results as $row) {
+            if ($i > 15) {
+                break;
+            }
+            $i++;
+            $bookAbbrev = $row['book_id'];
+            if (!isset($bookNumberLookup[$bookAbbrev])) {
+                throw new \Exception('Unknown book: '.$bookAbbrev);
+            }
+            //create the composite book/chapter/verse id
+            $bookNumber = $bookNumberLookup[$bookAbbrev];
+            $chapterNumber = $row['chapter'];
+            $verseNumber = $row['verse'];
+            $compositeId = sprintf("%1$02d%2$02d%3$02d", $bookNumber, $chapterNumber, $verseNumber);
+//             var_dump($compositeId);
+            $newRows[] = [
+                'translation_id' => $row['translation_id'],
+                'verse_id' => $compositeId,
+                'book_id' => $bookNumber,
+                'chapter' => $chapterNumber,
+                'verse' => $verseNumber,
+                'text' => $row['text'],
+            ];
+        }
+        var_dump($newRows);
+        //insert rows to new table
+//         $destGateway = $this->getTableGatewayForEntity('verse');
+//         foreach ($newRows as $set) {
+//             $destGateway->insert($set);
+//         }
+    }
+    
+    public function getBookNumberLookup()
+    {
+        return ['Mat' => 65];
     }
     
     public function getBookAbbrev()

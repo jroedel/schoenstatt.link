@@ -570,9 +570,6 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'data-parser' => 'CommonMark',
                 'rows' => 8,
             ],
-            'filters' => [
-                ['name' => 'StripTags'],
-            ],
         ]);
 
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
@@ -587,9 +584,6 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
                 'rows' => 8,
-            ],
-            'filters' => [
-                ['name' => 'StripTags'],
             ],
         ]);
 
