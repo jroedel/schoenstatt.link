@@ -7,9 +7,6 @@ use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Spatie\SchemaOrg\BaseType;
 use Zend\Json\Json;
 use Zend\Navigation\Navigation;
-use SionModel\Service\EntitiesService;
-use SionModel\Db\Model\PredicatesTable;
-use SionModel\Db\Model\SionTable;
 
 class DictionaryController extends SionController
 {

@@ -3,7 +3,6 @@ namespace Books\Controller;
 
 use Zend\Mvc\Controller\AbstractRestfulController;
 use Zend\View\Model\JsonModel;
-use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Books\Model\LibraryTable;
 
 class BooksApiController extends AbstractRestfulController

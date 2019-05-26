@@ -3,13 +3,10 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Books\Model\LibraryTable;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\CheckinForm;
 use Books\Form\MassCheckoutForm;
-use Zend\Form\Element\Select;
-use Books\Model\LibraryOptions;
 use Schoenstatt\Service\PatresGateway;
 use Schoenstatt\Model\SchoenstattTable;
 use BjyAuthorize\Exception\UnAuthorizedException;
@@ -139,7 +136,7 @@ class CheckoutsController extends SionController
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-                if (!($return = $table->checkinWithinLibraryBooks($libraryId, $data['withinLibraryIds']))) {
+                if (!($table->checkinWithinLibraryBooks($libraryId, $data['withinLibraryIds']))) {
                     $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
                 } else {
                     $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)

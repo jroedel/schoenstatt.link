@@ -24,7 +24,7 @@ class BibleTable extends SionTable
         } elseif ('bible-translation' === $entity) {
             
         } elseif ('bible-verse' === $entity) {
-            $select->order(['verse_id']);
+            $select->order(['verse_id', 'translation_id']); //perhaps this should be the other way around?
         }
         return $select;
     }
