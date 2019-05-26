@@ -18,9 +18,11 @@ class DictionaryController extends SionController
         $table = $this->getSionTable();
         
         $availableLanguages = $table->getAvailableDictionaryLanguages();
+        $dictionary = null;
         $isInLanguageAvailable = false;
         foreach ($availableLanguages as $dict) {
             if ($inLanguage === $dict['inLanguage']) {
+                $dictionary = $dict;
                 $isInLanguageAvailable = true;
                 break;
             }
@@ -32,7 +34,7 @@ class DictionaryController extends SionController
         $inLanguageName = $table->getLanguageName($inLanguage);
         
         $dictionarySchema = $table->getDictionarySchema($inLanguage);
-        $objects = $table->queryObjects('dictionary-entry', ['locale' => 'es_ES', 'isActive' => true]);
+        $objects = $table->queryObjects('dictionary-entry', ['locale' => $dictionary['locale'], 'isActive' => true]);
         $schemata = Json::encode($this->combineSchema($dictionarySchema, $objects));
         
         $this->prepNavigation();
