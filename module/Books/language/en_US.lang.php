@@ -146,6 +146,7 @@ return [
     'Fr. Kentenich - The Exile (1952-65)' => 'Fr. Kentenich - The Exile (1952-65)',
     'Fr. Kentenich - The Final Years (1965-68)' => 'Fr. Kentenich - The Final Years (1965-68)',
     'Fr. Kentenich - The Growing Movement (1920-1941)' => 'Fr. Kentenich - The Growing Movement (1920-1941)',
+    'Fr. Kentenich dictionary German to %s' => 'Fr. Kentenich dictionary German to %s',
     'General' => 'General Collection',
     'General Collection' => 'General Collection',
     'German' => 'German',

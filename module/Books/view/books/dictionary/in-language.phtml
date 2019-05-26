@@ -2,9 +2,12 @@
 use Cake\Utility\Text;
 use Books\Model\DictionaryTable;
 // echo $this->navigation('default')->breadcrumbs()->setIndent(8);;
+$titleFormat = DictionaryTable::DICTIONARY_TITLE_FORMAT;
+$headText = sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));
+$this->headTitle()->setTranslatorEnabled(false);
+$this->headTitle($headText);
 ?>
-<h1><?php $titleFormat = DictionaryTable::DICTIONARY_TITLE_FORMAT;
-echo sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));?></h1>
+<h1><?php echo $headText;?></h1>
 <?php
 $objects = $this->objects;
 foreach ($objects as $entryId => $object) :

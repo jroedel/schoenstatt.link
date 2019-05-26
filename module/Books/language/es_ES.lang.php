@@ -118,6 +118,7 @@ return [
     'Filiation' => 'Filial',
     'Follow %s on Twitter' => 'Sigue %s en Twitter',
     'Fr.' => 'P.',
+    'Fr. Kentenich dictionary German to %s' => 'Diccionario del P. Kentenich Alemán al %s',
     'General' => 'Colección general',
     'General Collection' => 'Colección general',
     'German' => 'Alemán',
