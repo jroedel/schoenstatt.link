@@ -16,6 +16,7 @@ use Zend\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\EventTextTable;
+use Books\Model\DictionaryTable;
 
 class IndexController extends AbstractActionController
 {
@@ -38,13 +39,19 @@ class IndexController extends AbstractActionController
      * @var EventTextTable $eventTextTable
      */
     protected $eventTextTable;
+    
+    /**
+     * @var DictionaryTable $dictionaryTable
+     */
+    protected $dictionaryTable;
 
-    public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable, EventTextTable $eventTextTable)
+    public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable, EventTextTable $eventTextTable, DictionaryTable $dictionaryTable)
     {
         $this->navigation = $navigation;
         $this->publicationsTable = $publicationsTable;
         $this->schoenstattTable = $schoenstattTable;
         $this->eventTextTable = $eventTextTable;
+        $this->dictionaryTable = $dictionaryTable;
     }
 
     public function indexAction()
@@ -138,6 +145,18 @@ class IndexController extends AbstractActionController
                 'label' => $object['formattedName'],
                 'uri' => $url,
                 'id'    => 'assoc_'.$object['identifier'],
+            ]);
+        }
+        
+        $dictionaryPage = $navigation->findOneBy('route', 'dictionary');
+        
+        $dictionaries = $this->dictionaryTable->getAvailableDictionaryLanguages();
+        foreach ($dictionaries as $object) {
+            $url = $this->url()->fromRoute('dictionary/inLanguage', ['inLanguage' => $object['inLanguage']]);
+            $dictionaryPage->addPage([
+                'label' => sprintf('German to %s Dictionary', $object['inLanguageName']),
+                'uri' => $url,
+                'id'    => 'dict_'.$object['inLanguage'],
             ]);
         }
 
