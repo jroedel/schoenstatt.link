@@ -6,6 +6,7 @@ use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\In;
 use Zend\Db\Sql\Select;
+use Zend\Db\Sql\Predicate\IsNull;
 
 class BibleTable extends SionTable
 {
@@ -19,19 +20,31 @@ class BibleTable extends SionTable
     {
         $select = parent::getSelectPrototype($entity);
         if ('bible-book' === $entity) {
-            $select->order(['IsActive' => Select::ORDER_DESCENDING, 'KeyDe']);
+            $select->order(['order_jerusalem_es']);
         } elseif ('bible-translation' === $entity) {
             
         } elseif ('bible-verse' === $entity) {
-            
+            $select->order(['verse_id']);
         }
         return $select;
     }
     
-    public function processVerseRow($row)
+    public function processBookRow($row)
     {
         $data = [
-            
+            'bookId' => $this->filterDbId($row['book_id']),
+            'name' => $row['name_en'],
+            'nameEs' => $row['name_es'],
+            'nameDe' => $row['name_de'],
+            'namePt' => $row['name_pt'],
+            'nameFr' => $row['name_fr'],
+            'orderJerusalemEn' => $this->filterDbInt($row['order_jerusalem_en']),
+            'orderJerusalemEs' => $this->filterDbInt($row['order_jerusalem_es']),
+            'isNewTestament' => $this->filterDbBool($row['is_new_testament']),
+            'genreId' => $this->filterDbBool($row['genre_id']),
+            'isCanonical' => $this->filterDbBool($row['is_canonical']),
+            'chapterCount' => $this->filterDbInt($row['chapter_count']),
+            'oldBookId' => $row['old_book_id'],
         ];
         return $data;
     }
@@ -88,33 +101,6 @@ class BibleTable extends SionTable
         return $results->toArray();
     }
     
-    public function getBooks($translation = 'nab')
-    {
-        $sql = "SELECT book_id, MAX(chapter) AS last_chapter FROM bib_verses WHERE translation_id = ? GROUP BY book_id";
-        $rows = $this->fetchSome(null, $sql, array($translation), true);
-        //prime the books variable
-        $abbrevs = $this->getBookAbbrev();
-        $books = [];
-        
-        $bookOrder = array_keys($abbrevs);
-        
-        foreach ($rows as $row) {
-            $book = $row['book_id'];
-            $lastChapter = $row['last_chapter'];
-            $bookNumber = array_search($book, $bookOrder, true);
-            if (false === $bookNumber) {
-                throw new \Exception("Stumbled accross an unknown book: `$book`");
-            }
-            $books[$bookNumber] = [
-                'bookName' => $abbrevs[$book],
-                'bookAbbreviation' => $book,
-                'lastChapter' => $lastChapter,
-            ];
-        }
-        ksort($books);
-        return $books;
-    }
-    
     /**
      * Move data from bib_verses to new table
      */
@@ -122,20 +108,22 @@ class BibleTable extends SionTable
     {
         $select = new Select('bib_verses');
         $select->columns([Select::SQL_STAR]);
+        $select->where(new IsNull('verse_id'));
         $gateway = $this->getTableGateway('bib_verses');
         $result = $gateway->selectWith($select);
         $results = $result->toArray();
         
         $bookNumberLookup = $this->getBookNumberLookup();
         //prepare rows to insert
-        $newRows = [];
+        $updates = [];
         $i = 0;
         foreach ($results as $row) {
-            if ($i > 15) {
+            if ($i > 5000) {
                 break;
             }
             $i++;
-            $bookAbbrev = $row['book_id'];
+            $id = $row['id'];
+            $bookAbbrev = $row['book_old_id'];
             if (!isset($bookNumberLookup[$bookAbbrev])) {
                 throw new \Exception('Unknown book: '.$bookAbbrev);
             }
@@ -143,28 +131,31 @@ class BibleTable extends SionTable
             $bookNumber = $bookNumberLookup[$bookAbbrev];
             $chapterNumber = $row['chapter'];
             $verseNumber = $row['verse'];
-            $compositeId = sprintf("%1$02d%2$02d%3$02d", $bookNumber, $chapterNumber, $verseNumber);
+            $compositeId = sprintf("%1$02d%2$03d%3$03d", $bookNumber, $chapterNumber, $verseNumber);
 //             var_dump($compositeId);
-            $newRows[] = [
-                'translation_id' => $row['translation_id'],
+            $updates[$id] = [
                 'verse_id' => $compositeId,
                 'book_id' => $bookNumber,
-                'chapter' => $chapterNumber,
-                'verse' => $verseNumber,
-                'text' => $row['text'],
             ];
         }
-        var_dump($newRows);
+        var_dump($updates);
         //insert rows to new table
-//         $destGateway = $this->getTableGatewayForEntity('verse');
-//         foreach ($newRows as $set) {
-//             $destGateway->insert($set);
-//         }
+        $destGateway = $this->getTableGatewayForEntity('bible-verse');
+        foreach ($updates as $id => $set) {
+            $destGateway->update($set, ['id' => $id]);
+        }
     }
     
     public function getBookNumberLookup()
     {
-        return ['Mat' => 65];
+        $books = $this->getObjects('bible-book');
+        $lookup = [];
+        foreach ($books as $id => $book) {
+            if (isset($book['oldBookId'])) {
+                $lookup[$book['oldBookId']] = $id;
+            }
+        }
+        return $lookup;
     }
     
     public function getBookAbbrev()

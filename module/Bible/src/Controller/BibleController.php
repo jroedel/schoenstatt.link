@@ -8,6 +8,9 @@ use Zend\View\Model\ViewModel;
 use SionModel\Controller\SionController;
 use Bible\Model\BibleTable;
 use Bible\Filter\FromBibleworksMorphosyntacticCode;
+use Zend\Db\Sql\Predicate\Between;
+use Zend\Db\Sql\Predicate\PredicateSet;
+use Zend\Db\Sql\Predicate\In;
 
 class BibleController extends SionController
 {
@@ -41,15 +44,22 @@ class BibleController extends SionController
     public function textAction()
     {
         //figure out what book/chapter we're talking about
-        
+        $book = (int)$this->params()->fromRoute('book');
+        $chapter = (int)$this->params()->fromRoute('chapter');
         //check book/chapter against cached list of book/chapters available
         
         //check what translations we need to grab
-        
+        $translationIds = ['nab'];
         //grab from the db, think that not necessarily each verse will be available in each translation
         //we'll need an object to do a between query
-        $translations = $table->queryObjects('verse', ['translationId' => ['nab'], 'verse' => '']);
+        $min = sprintf("%1$02d%2$03d000", $book, $chapter);
+        $max = sprintf("%1$02d%2$03d000", $book, $chapter+1);
         
+        $verseId = new Between('verse_id', $min, $max);
+        $where = new PredicateSet([$verseId, new In('translation_id', $translationIds)]);
+        $table = $this->getSionTable();
+        $translations = $table->queryObjects('bible-verse', $where);
+        var_dump($translations);
         //pass it all on keyed first by translation then by verse
         /*
          * [
