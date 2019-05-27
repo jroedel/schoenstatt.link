@@ -71,7 +71,7 @@ class BibleTable extends SionTable
     public static function keyVersesByVerseIdAndTranslation($verses)
     {
         $verseTranslations = [];
-        foreach ($verses as $key => $object) {
+        foreach ($verses as $object) {
             $verseId = $object['verseId'];
             $translationId = $object['translation'];
             if (!isset($verseTranslations[$verseId])) {
@@ -80,6 +80,44 @@ class BibleTable extends SionTable
             $verseTranslations[$verseId][$translationId] = $object;
         }
         return $verseTranslations;
+    }
+    
+    protected function processBookAbbreviationRow($row)
+    {
+        $data = [
+            'abbreviationId' => $this->filterDbId($row['id']),
+            'abbreviation' => $row['abbreviation'],
+            'bookId' => $this->filterDbId($row['book_id']),
+            'language' => $row['language'],
+            'isPreferred' => $this->filterDbBool($row['is_preferred']),
+        ];
+        return $data;
+    }
+    
+    /**
+     * Get a simple associative array that maps bible book abbreviations to their respective bookId.
+     * Lower case versions are automatically added
+     * @return int[]
+     */
+    public function getBookAbbreviationMap()
+    {
+        $cacheKey = 'book-abbreviation-map';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+        $objects = $this->getObjects('bible-book-abbreviation');
+        $abbreviationMap = [];
+        foreach ($objects as $object) {
+            $abbreviationMap[strtolower($object['abbreviation'])] = $object['bookId'];
+        }
+        foreach ($abbreviationMap as $key => $value) {
+            $lower = strtolower($key);
+            if (!isset($abbreviationMap[$lower])) {
+                $abbreviationMap[$lower] = $value;
+            }
+        }
+        $this->cacheEntityObjects($cacheKey, $abbreviationMap, ['bible-book-abbreviation']);
+        return $abbreviationMap;
     }
     
     //@todo this should all be covered by the SionModel::queryObjects function!
