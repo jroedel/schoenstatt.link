@@ -44,11 +44,19 @@ class BibleController extends SionController
     public function textAction()
     {
         //figure out what book/chapter we're talking about
-        $bookId = (int)$this->params()->fromRoute('book');
+        $bookId = $this->params()->fromRoute('book');
         $chapter = (int)$this->params()->fromRoute('chapter');
         
-        //check book/chapter against cached list of book/chapters available
+        /** @var BibleTable $table */
         $table = $this->getSionTable();
+        if (!is_numeric($bookId) && is_string($bookId)) {
+            $map = $table->getBookAbbreviationMap();
+            if (!isset($map[$bookId])) {
+                throw new \Exception('Book not found');
+            }
+            $bookId = $map[$bookId];
+        }
+        //check book/chapter against cached list of book/chapters available
         $book = $table->getObject('bible-book', $bookId);
         if (!isset($book)) {
             throw new \Exception('Book not found');
