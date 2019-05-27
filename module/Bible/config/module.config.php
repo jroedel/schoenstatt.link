@@ -133,6 +133,7 @@ return [
                 'controller_services'                       => [
                     
                 ],
+                'row_processor_function'                    => 'processVerseRow',  
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
                 //                 'format_view_helper'                        => 'formatEvent',
@@ -183,8 +184,9 @@ return [
 //                 'delete_action_acl_permission'              => 'delete',
 //                 'delete_action_redirect_route'              => 'blog',
                 'update_columns'                            => [
-                    'verseId' => 'id',
+                    'id' => 'id',
                     'translation' => 'translation_id',
+                    'verseId' => 'verse_id',
                     'book' => 'book_id',
                     'chapter' => 'chapter',
                     'verse' => 'verse',

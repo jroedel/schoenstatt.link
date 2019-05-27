@@ -44,37 +44,50 @@ class BibleController extends SionController
     public function textAction()
     {
         //figure out what book/chapter we're talking about
-        $book = (int)$this->params()->fromRoute('book');
+        $bookId = (int)$this->params()->fromRoute('book');
         $chapter = (int)$this->params()->fromRoute('chapter');
+        
         //check book/chapter against cached list of book/chapters available
+        $table = $this->getSionTable();
+        $book = $table->getObject('bible-book', $bookId);
+        if (!isset($book)) {
+            throw new \Exception('Book not found');
+        } elseif ($chapter < 1 || $chapter > $book['chapterCount']) { //@todo make sure there's no corner cases
+            throw new \Exception('Chapter not found');
+        }
         
         //check what translations we need to grab
-        $translationIds = ['nab'];
+        $translations = ['nab', 'bnt', 'lba'];
         //grab from the db, think that not necessarily each verse will be available in each translation
         //we'll need an object to do a between query
-        $min = sprintf("%1$02d%2$03d000", $book, $chapter);
-        $max = sprintf("%1$02d%2$03d000", $book, $chapter+1);
+        $min = sprintf("%1$02d%2$03d000", $bookId, $chapter);
+        $max = sprintf("%1$02d%2$03d000", $bookId, $chapter+1);
         
         $verseId = new Between('verse_id', $min, $max);
-        $where = new PredicateSet([$verseId, new In('translation_id', $translationIds)]);
-        $table = $this->getSionTable();
-        $translations = $table->queryObjects('bible-verse', $where);
-        var_dump($translations);
-        //pass it all on keyed first by translation then by verse
+        $where = new PredicateSet([$verseId, new In('translation_id', $translations)]);
+        $verses = $table->queryObjects('bible-verse', $where);
+        $verseTranslations = BibleTable::keyVersesByVerseIdAndTranslation($verses);
+        //pass it all on keyed first by verse then by translation
         /*
          * [
-         * 'bnt' => [
-         *      010101 => 'εν αρχε ο λογος',
-         *      010102 => '...',
+         * 01001001 => [
+         *      'nab' => 'In the beginning'
+         *      'bnt' => 'εν αρχε ο λογος',
          *  ],
-         * 'nab' => [
-         *      010101 => 'In the beginning'
-         *      010102 => '...',
+         * 01001002 => [
+         *      'nab' => '...',
+         *      'bnt' => '...',
          *  ],
          */ 
-        return new ViewModel([
+        $view = new ViewModel([
+            'bookId' => $bookId,
+            'chapter' => $chapter,
+            'book' => $book,
             'translations' => $translations,
+            'verseTranslations' => $verseTranslations,
         ]);
+        $view->setTemplate('bible/bible/columns');
+        return $view;
     }
     
     /**
