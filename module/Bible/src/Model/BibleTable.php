@@ -29,6 +29,20 @@ class BibleTable extends SionTable
         return $select;
     }
     
+    public function processVerseRow($row)
+    {
+        $data = [
+            'id' => $this->filterDbId($row['id']),
+            'translation' => $row['translation_id'],
+            'verseId' => $this->filterDbId($row['verse_id']),
+            'book' => $this->filterDbId($row['book_id']),
+            'chapter' => $this->filterDbId($row['chapter']),
+            'verse' => $this->filterDbId($row['verse']),
+            'text' => $row['text'],
+        ];
+        return $data;
+    }
+    
     public function processBookRow($row)
     {
         $data = [
@@ -47,6 +61,25 @@ class BibleTable extends SionTable
             'oldBookId' => $row['old_book_id'],
         ];
         return $data;
+    }
+    
+    /**
+     * Takes an array of verses and double keys them, first my verseId, then by translation in an associative array
+     * @param mixed[] $verses
+     * @return mixed[]
+     */
+    public static function keyVersesByVerseIdAndTranslation($verses)
+    {
+        $verseTranslations = [];
+        foreach ($verses as $key => $object) {
+            $verseId = $object['verseId'];
+            $translationId = $object['translation'];
+            if (!isset($verseTranslations[$verseId])) {
+                $verseTranslations[$verseId] = [];
+            }
+            $verseTranslations[$verseId][$translationId] = $object;
+        }
+        return $verseTranslations;
     }
     
     //@todo this should all be covered by the SionModel::queryObjects function!
