@@ -821,7 +821,7 @@ ORDER BY `Publisher`";
                 //if this is a translation of the book in question
                 $object['translations'][$resultId] = &$results[$resultId];
             } elseif (isset($translatedFromPublicationId)
-                && $result['translatedFromPublicationId'] == $translatedFromPublicationId
+                && $result['translatedFromPublicationId'] == $objectId
             ) {
                 //@todo add the following logic also to the linkPublications function?
                 //if this is a book translated from the same original as the book in question
