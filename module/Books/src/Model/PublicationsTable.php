@@ -815,13 +815,20 @@ ORDER BY `Publisher`";
 
         //check for subEditions and translations
         foreach ($results as $resultId => $result) {
+            if ($resultId == $objectId) { //never add itself to this list
+                continue;
+            }
             if ($result['mainPublicationId'] == $objectId) {
                 $object['subEditions'][$resultId] = &$results[$resultId];
             } elseif ($result['translatedFromPublicationId'] == $objectId) {
                 //if this is a translation of the book in question
                 $object['translations'][$resultId] = &$results[$resultId];
             } elseif (isset($translatedFromPublicationId)
-                && $result['translatedFromPublicationId'] == $objectId
+                //a translation of this book:
+                && ($result['translatedFromPublicationId'] == $objectId
+                    //or another book that translates the same as this one
+                    || $result['translatedFromPublicationId'] == $translatedFromPublicationId
+                    )
             ) {
                 //@todo add the following logic also to the linkPublications function?
                 //if this is a book translated from the same original as the book in question
