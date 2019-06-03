@@ -28,7 +28,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
         <div class="row">
         <div class="col-xs-6">
             <h3 class="panel-title"><?php 
-            if ('book-title-and-link' == $panelTitle) {
+            if ('book-title-and-link' === $panelTitle) {
                 echo $this->formatEntity('publication', $object);
             } else {
                 echo $this->escapeHtml($this->translate('Publication Info'));
@@ -54,7 +54,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
     <div class="col-md-6">
           <p><strong><?php echo $this->translate('Author(s)');?>:</strong></p>
           <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
-      $otherEditions = array_merge($object['subEditions'], $object['translations']);
+          $otherEditions = array_merge($object['subEditions'], $object['translations']);
       if (!empty($otherEditions)):?>
       <p><strong><?php echo $this->translate('Other editions');?>:</strong></p><?php
       foreach ($otherEditions as $subId => $subPublication) :?>
@@ -119,7 +119,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 //     ]);
 // }?>
 
-  <?php if (!is_null($object['publicNotes']) && 0 !== strlen($object['publicNotes'])):?>
+  <?php if (isset($object['publicNotes']) && 0 !== strlen($object['publicNotes'])):?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="notesPanel">
@@ -135,7 +135,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 </div> <!-- notes row -->
 <?php endif;?>
 
-  <?php if (!is_null($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
+  <?php if (isset($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
           $this->isAllowed($object['resourceId'], 'show-admin-info')):?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
