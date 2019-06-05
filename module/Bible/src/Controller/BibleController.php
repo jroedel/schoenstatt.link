@@ -21,16 +21,13 @@ class BibleController extends SionController
      */
     public function indexAction()
     {
-        $translation = $this->params('translation');
+//         $translation = $this->params('translation');
         /** @var \Bible\Model\BibleTable $table */
         $table = $this->getSionTable();
-        $books = $table->getBooks($translation);
-        return new ViewModel(array(
-            'translation' => $translation,
+        $books = $table->getObjects('bible-book');
+        return new ViewModel([
             'books' => $books,
-            'bookAbbrev' => $table->getBookAbbrev(),
-            'translAbbrev' => $this->getTranslAbbrev()
-        ));
+        ]);
     }
     
     /**
