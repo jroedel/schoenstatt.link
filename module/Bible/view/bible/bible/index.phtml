@@ -1,15 +1,15 @@
-<h1><?php echo $this->translate('Translations');?></h1>
-<p><a href="<?php echo $this->url('bible/translation', ['translation' => 'nab'])?>">English Bible</a> /
-<a href="<?php echo $this->url('bible/translation', ['translation' => 'bnt'])?>">New Testament in Greek</a> /
-<a href="<?php echo $this->url('bible/translation', ['translation' => 'lba'])?>">Biblia en español</a></p>
-<h1><?php echo $this->translAbbrev[$this->translation];?></h1>
-<?php foreach ($this->books as $book) :?>
-<h2><?php echo $this->escapeHtml($book['bookName']);?></h2>
-<p><?php for ($chapter = 1; $chapter <= $book['lastChapter']; $chapter++) : ?>
+<?php $this->headTitle('Bible'); 
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());?>
+<h1><?php echo $this->translate('Bible');?></h1>
+<?php foreach ($this->books as $book) :
+    if (isset($book['chapterCount'])):?>
+<h3><?php echo $this->escapeHtml($lang === 'es' ? $book['nameEs'] : $book['name']);?></h3>
+<p><?php for ($chapter = 1; $chapter <= $book['chapterCount']; $chapter++) : ?>
 <a href="<?php echo $this->url('bible/text',
-    ['translation' => $this->translation, 'book' => $book['bookAbbreviation'], 'chapter' => $chapter]
+    ['book' => $book['bookId'], 'chapter' => $chapter]
     );?>">
 <?php echo $chapter;?></a>
 <?php endfor;?></p>
 
-<?php endforeach;?>
+<?php endif;
+endforeach;?>

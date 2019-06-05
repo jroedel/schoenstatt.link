@@ -75,7 +75,7 @@ return [
                         'action'     => 'index',
                     ],
                 ],
-                'may_terminate' => false, //@todo add an index page
+                'may_terminate' => true,
                 'child_routes' => [
                     'text' => [
                         'type'    => Segment::class,
