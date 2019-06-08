@@ -10,6 +10,7 @@ use Books\Form\UploadForm;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
 use Books\Model\DictionaryTable;
+use SionModel\Db\Model\PredicatesTable;
 
 class PublicationsController extends SionController
 {
@@ -74,17 +75,6 @@ class PublicationsController extends SionController
         }
         $view->setVariable('libraryBooks', $libraryBooks);
         $view->setVariable('libraries', $libraries);
-
-        //get comments
-        /** @var PredicatesTable $predicates */
-//         $predicates = $this->services[PredicatesTable::class];
-//         $comments = $predicates->getCommentsForEntity([
-//             'objectId' => $publicationIds,
-//             'predicate'=> 'comment-publication'
-//         ]);
-
-//         $view->setVariable('comments', $comments);
-
         return $view;
     }
 
