@@ -8,9 +8,12 @@ class SpecialCountryRuleProvider implements ProviderInterface
 {
     protected $geoip;
     
-    public function __construct(Geoip $geoip)
+    protected $specialCountries;
+    
+    public function __construct(Geoip $geoip, array $config)
     {
         $this->geoip = $geoip;
+        $this->specialCountries = $config['bible']['special_countries'];
     }
     
     /**
@@ -24,10 +27,12 @@ class SpecialCountryRuleProvider implements ProviderInterface
         $ip = $_SERVER['REMOTE_ADDR'];
         $addressRecord = $this->geoip->lookup($ip);
         $countryCode = $addressRecord->getCountryCode();
-        if ('CL' === $countryCode) {
+        if (in_array($countryCode, $this->specialCountries)) {
             return [ 'allow' => [
                 [['guest', 'bib_user'], 'route/dh/page'],
                 [['guest', 'bib_user'], 'route/dh/number'],
+                [['guest', 'bib_user'], 'route/bible'],
+                [['guest', 'bib_user'], 'route/bible/text'],
             ]];
         }
         return [];

@@ -17,8 +17,9 @@ class SpecialCountryRuleProviderFactory implements FactoryInterface
     {
         /** @var Geoip $geoip */
         $geoip = $container->get(Geoip::class);
+        $config = $container->get('Config');
         
-        $provider = new SpecialCountryRuleProvider($geoip);
+        $provider = new SpecialCountryRuleProvider($geoip, $config);
         return $provider;
     }
 }
