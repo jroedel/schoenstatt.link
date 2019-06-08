@@ -127,7 +127,6 @@ class BibleTable extends SionTable
             if (isset($object['nameFr'])) {
                 $abbreviationMap[strtolower($object['nameFr'])] = $object['bookId'];
             }
-            $abbreviationMap[strtolower($object['abbreviation'])] = $object['bookId'];
         }
         
         $this->cacheEntityObjects($cacheKey, $abbreviationMap, ['bible-book-abbreviation']);
