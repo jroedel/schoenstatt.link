@@ -44,7 +44,6 @@ return [
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
                 ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
                 
-                
                 ['route' => 'comments/create', 'roles' => ['user']],
             ],
         ],
