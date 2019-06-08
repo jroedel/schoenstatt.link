@@ -11,6 +11,13 @@ return [
 //             'Bible\Controller\Bible' => 'Bible\Controller\BibleController',
 //         ],
 //     ],
+    'bible' => [
+        'special_countries' => [
+            'CL',
+            'AR',
+            'PY'
+        ],
+    ],
     'service_manager' => [
         'factories' => [
             Model\BibleTable::class        => Service\BibleTableFactory::class,
