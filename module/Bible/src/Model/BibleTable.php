@@ -105,17 +105,31 @@ class BibleTable extends SionTable
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        $objects = $this->getObjects('bible-book-abbreviation');
         $abbreviationMap = [];
+        
+        $objects = $this->getObjects('bible-book-abbreviation');
         foreach ($objects as $object) {
             $abbreviationMap[strtolower($object['abbreviation'])] = $object['bookId'];
         }
-        foreach ($abbreviationMap as $key => $value) {
-            $lower = strtolower($key);
-            if (!isset($abbreviationMap[$lower])) {
-                $abbreviationMap[$lower] = $value;
+        
+        $objects = $this->getObjects('bible-book');
+        foreach ($objects as $object) {
+            $abbreviationMap[strtolower($object['name'])] = $object['bookId'];
+            if (isset($object['nameEs'])) {
+                $abbreviationMap[strtolower($object['nameEs'])] = $object['bookId'];
             }
+            if (isset($object['nameDe'])) {
+                $abbreviationMap[strtolower($object['nameDe'])] = $object['bookId'];
+            }
+            if (isset($object['namePt'])) {
+                $abbreviationMap[strtolower($object['namePt'])] = $object['bookId'];
+            }
+            if (isset($object['nameFr'])) {
+                $abbreviationMap[strtolower($object['nameFr'])] = $object['bookId'];
+            }
+            $abbreviationMap[strtolower($object['abbreviation'])] = $object['bookId'];
         }
+        
         $this->cacheEntityObjects($cacheKey, $abbreviationMap, ['bible-book-abbreviation']);
         return $abbreviationMap;
     }

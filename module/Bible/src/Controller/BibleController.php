@@ -48,6 +48,7 @@ class BibleController extends SionController
         $table = $this->getSionTable();
         if (!is_numeric($bookId) && is_string($bookId)) {
             $map = $table->getBookAbbreviationMap();
+            $bookId = strtolower($bookId);
             if (!isset($map[$bookId])) {
                 throw new \Exception('Book not found');
             }
