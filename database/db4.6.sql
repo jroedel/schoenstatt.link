@@ -1,3 +1,4 @@
+#submitted 2019-06-08
 INSERT INTO `bib_book_abbreviations`(`abbreviation`, `book_id`, `language`, `is_preferred`) VALUES ('Gn',1,'es',1);
 INSERT INTO `bib_book_abbreviations`(`abbreviation`, `book_id`, `language`, `is_preferred`) VALUES ('Ex',2,'es',1);
 INSERT INTO `bib_book_abbreviations`(`abbreviation`, `book_id`, `language`, `is_preferred`) VALUES ('Lv',3,'es',1);

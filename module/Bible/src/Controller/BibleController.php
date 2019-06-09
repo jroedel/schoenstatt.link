@@ -63,7 +63,7 @@ class BibleController extends SionController
         }
         
         //check what translations we need to grab
-        $translations = ['nab', 'bnt', 'lba'];
+        $translations = ['nab', 'bnt', 'jeresp'];
         //grab from the db, think that not necessarily each verse will be available in each translation
         //we'll need an object to do a between query
         $min = sprintf("%1$02d%2$03d000", $bookId, $chapter);
