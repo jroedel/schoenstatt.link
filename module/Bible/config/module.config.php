@@ -112,6 +112,15 @@ return [
                             ],
                         ],
                     ],
+                    'search' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/search',
+                            'defaults' => [
+                                'action'     => 'search',
+                            ],
+                        ],
+                    ],
 //                     'bible-import' => [
 //                         'type'    => Segment::class,
 //                         'options' => [
@@ -421,6 +430,7 @@ return [
                 ['route' => 'bible', 'roles' => ['bib_user']],
                 ['route' => 'bible/translation', 'roles' => ['bib_user']],
                 ['route' => 'bible/text', 'roles' => ['bib_user']],
+                ['route' => 'bible/search', 'roles' => ['bib_user']],
                 ['route' => 'bible/bnt', 'roles' => ['bib_user']],
                 ['route' => 'bible/bibleimport', 'roles' => ['bib_administrator']],
                 ['route' => 'bible/migrate', 'roles' => ['bib_administrator']],

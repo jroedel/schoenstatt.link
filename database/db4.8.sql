@@ -1,4 +1,4 @@
-
+#submitted 2019-06-09
 ALTER TABLE `bib_books` ADD `alt_id_njb` INT NULL DEFAULT NULL AFTER `alt_id_1`;
 UPDATE `bib_books` SET `alt_id_njb`=3068 WHERE `book_id` = 1;
 UPDATE `bib_books` SET `alt_id_njb`=3069 WHERE `book_id` = 2;

@@ -1,6 +1,7 @@
 <?php $headTitle = $this->book['name'].' '.$this->chapter;
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headTitle);
+// echo $this->partial('search-bar', ['form' => $this->form]);
 ?><h2><?php echo $this->escapeHtml($headTitle);?></h2>
 <?php
 $translationCount = count($this->translations);

@@ -11,6 +11,8 @@ use Bible\Filter\FromBibleworksMorphosyntacticCode;
 use Zend\Db\Sql\Predicate\Between;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
+use Bible\Form\BibleSearchForm;
+use Zend\Db\Sql\Predicate\Like;
 
 class BibleController extends SionController
 {
@@ -25,8 +27,10 @@ class BibleController extends SionController
         /** @var \Bible\Model\BibleTable $table */
         $table = $this->getSionTable();
         $books = $table->getObjects('bible-book');
+        $form = new BibleSearchForm();
         return new ViewModel([
             'books' => $books,
+            'form' => $form,
         ]);
     }
     
@@ -77,6 +81,8 @@ class BibleController extends SionController
         $where = new PredicateSet([$verseId, new In('translation_id', $translations)]);
         $verses = $table->queryObjects('bible-verse', $where);
         $verseTranslations = BibleTable::keyVersesByVerseIdAndTranslation($verses);
+        
+        $form = new BibleSearchForm();
         //pass it all on keyed first by verse then by translation
         /*
          * [
@@ -95,9 +101,38 @@ class BibleController extends SionController
             'book' => $book,
             'translations' => $translations,
             'verseTranslations' => $verseTranslations,
+            'form' => $form,
         ]);
         $view->setTemplate('bible/bible/columns');
         return $view;
+    }
+    
+    public function searchAction()
+    {
+        //verify params
+        $verses = null;
+        $books = [];
+        $form = new BibleSearchForm();
+        $data = $this->params()->fromQuery();
+        if (!empty($data)) {
+            $form->setData($data);
+            if ($form->isValid()) {
+                $data = $form->getData();
+                //fetch list of verses, maybe even group by the verse
+                /** @var BibleTable $table */
+                $table = $this->getSionTable();
+                $searchClause = new Like('text', '%'.$data['search'].'%');
+                $translations = ['njb', 'septnt', 'jeresp'];
+                $where = new PredicateSet([new In('translation_id', $translations), $searchClause]);
+                $verses = $table->getObjects('bible-verse', $where);
+                $books = $table->getObjects('bible-book');
+            }
+        }
+        return new ViewModel([
+            'form' => $form,
+            'verses' => $verses,
+            'books' => $books,
+        ]);
     }
     
     /**
