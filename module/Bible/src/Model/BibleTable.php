@@ -10,9 +10,18 @@ use Zend\Db\Sql\Predicate\IsNull;
 
 class BibleTable extends SionTable
 {
-    
+    const TRANSLATIONS = [
+        'njb' => 'New Jerusalem Bible',
+        'bnt' => 'BW 5 New Testament Greek',
+        'jeresp' => 'Biblia de Jerusalén',
+        'septnt' => 'Septuagint + NT',
+    ];
     /**
      *
+        if ($book['isNewTestament']) {
+            $translations = ['njb', 'bnt', 'jeresp'];
+        } else {
+            $translations = ['njb', 'septnt', 'jeresp'];
      * {@inheritDoc}
      * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
      */

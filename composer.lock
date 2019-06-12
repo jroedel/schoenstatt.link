@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "75e3bcacf23df4093b9d910942fc683f",
+    "content-hash": "8ff6090789a45e9401408892cb0b1c59",
     "packages": [
         {
             "name": "beaucal/beaucal-invalid-session",
@@ -248,6 +248,53 @@
             "description": "Promoting the interoperability of container objects (DIC, SL, etc.)",
             "homepage": "https://github.com/container-interop/container-interop",
             "time": "2017-02-14T19:40:03+00:00"
+        },
+        {
+            "name": "cyberprojekt/libkml",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/w473/libkml.git",
+                "reference": "363fdc014b8a5ebfe410d7d551c32b9032b734b5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/w473/libkml/zipball/363fdc014b8a5ebfe410d7d551c32b9032b734b5",
+                "reference": "363fdc014b8a5ebfe410d7d551c32b9032b734b5",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^6.2",
+                "squizlabs/php_codesniffer": "3.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "KML\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "Apache-2.0"
+            ],
+            "authors": [
+                {
+                    "name": "Jacek Głogosz",
+                    "email": "jacek@cyberprojekt.pl",
+                    "homepage": "http://www.cyberprojekt.pl",
+                    "role": "Developer"
+                },
+                {
+                    "name": "Xavier Carriba",
+                    "homepage": "https://github.com/earelin/php-libkml",
+                    "role": "Developer of original version"
+                }
+            ],
+            "description": "KML Library - libKML maps KML/KMZ data into proper objects that follows the KML specification. The purpose of the library is create KML file from code, parse KML files and convert to another formats maintaining the complete KML information.",
+            "time": "2018-02-13T19:04:18+00:00"
         },
         {
             "name": "doctrine/instantiator",
@@ -9043,7 +9090,8 @@
         "roave/security-advisories": 20,
         "talis/niso-openurl": 20,
         "multidots/zf3-rest-api": 20,
-        "zfr/zfr-cors": 20
+        "zfr/zfr-cors": 20,
+        "cyberprojekt/libkml": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

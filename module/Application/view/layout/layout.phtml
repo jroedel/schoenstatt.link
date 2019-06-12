@@ -142,6 +142,12 @@ $routeName = $this->routeName();?>
                             $searchUrl = $this->url('libraries/library', ['library_id' => $libraryInfo['libraryId']]);
                             $placeholder = sprintf($this->translate("Search %s", 'Application'), $this->escapeHtml($libraryInfo['name']));
                             $shouldAddSearch = true;
+                        } elseif (false !== strpos($routeName, 'bible') &&
+                            $this->isAllowed('route/bible/search')
+                            ) {
+                                $searchUrl = $this->url('bible/search');
+                                $placeholder = 'Search bible';
+                                $shouldAddSearch = $routeName !== 'bible/search';
                         } elseif (false === strpos($routeName, 'publication') &&
                             $this->isAllowed('route/assignments/search')
                         ) {
