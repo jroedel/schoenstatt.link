@@ -107,6 +107,16 @@ class BibleController extends SionController
         return $view;
     }
     
+    public function createGreekReferenceAction()
+    {
+        /** @var BibleTable $table */
+        $table = $this->getSionTable();
+        $rootWords = $table->createGreekReference();
+        return new ViewModel([
+            'rootWords' => $rootWords,
+        ]);
+    }
+    
     public function searchAction()
     {
         //verify params
