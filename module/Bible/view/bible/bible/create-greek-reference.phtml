@@ -1,0 +1,24 @@
+<p>Found <?php echo count($this->rootWords);?> different greek words.</p>
+<table>
+<thead>
+<tr>
+<th>Root</th>
+<th>Part of Speech</th>
+<th>Occurrences</th>
+<th>First verse</th>
+<th>Forms available</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach ($this->rootWords as $object) :?>
+<tr>
+<td><a href="http://www.perseus.tufts.edu/hopper/morph?l=<?php echo urlencode($object['root']);?>&la=greek#lexicon"><?php 
+echo $this->escapeHtml($object['root']);?></a></td>
+<td><?php echo $this->escapeHtml($object['partOfSpeech']);?></td>
+<td><?php echo $this->escapeHtml($object['occurrenceCount']);?></td>
+<td><?php echo $this->escapeHtml($object['firstVerseOccurrence']);?></td>
+<td><?php echo $this->escapeHtml(implode(', ', $object['formsAvailable']));?></td>
+</tr>
+<?php endforeach;?>
+</tbody>
+</table>

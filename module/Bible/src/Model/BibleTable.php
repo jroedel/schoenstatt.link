@@ -7,6 +7,8 @@ use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\In;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Predicate\IsNull;
+use Bible\Filter\FromBibleworksMorphosyntacticCode;
+use Zend\View\Model\ViewModel;
 
 class BibleTable extends SionTable
 {
@@ -251,6 +253,157 @@ class BibleTable extends SionTable
         return $lookup;
     }
     
+    public function createGreekReference()
+    {
+        /*
+         * Tis sould actually be 3 separate steps:
+         * 1. Import reek dictionary
+         * 2. Import reek words
+         * 3. Import verse words 
+         * Greek words:
+            - word_id
+            - Word root
+            - Part of speech
+            - First occurence (link to a bible verse)
+            - Number of occurences
+            - Género (for nouns)
+            - Paradigm part 1 (noun: Ns, adj: Nsm, verb: Aps1)
+            - Paradigm part 2 (noun: Gs, adj: Nsf, verb: aoristo)
+            - Paradigm part 3 (noun: artículo, adj: Nsf, verb: futuro)
+            - Paradigm part 4 (verb: i forget)
+            - FormsAvailable (pipe-separated list of forms)
+            - DictionaryEntryId (for greek dictionary reference)
+            
+            Verse words:
+            - id
+            - verse_id
+            - root_word_id
+            - word (actual word from the text, not the root version)
+            - form (perhaps just the code that we have for the sake of saving space)
+            - order (which number word is it in the sentence; we'll have to learn how to cut contractions off properly)
+         */
+        $verses = $this->getObjects('bible-verse', ['translation' => ['bnt', 'bnm']]);
+        $verseTranslations = self::keyVersesByVerseIdAndTranslation($verses);
+//         $regex = '/(.+)@(.{1,6})/ui';
+        $bntCleanupSubstitution = '/[,.\]\[\(\)·;]/u';
+        $morphoFilter = new FromBibleworksMorphosyntacticCode();
+        $morphoCodes = $morphoFilter->getGrammarCodes();
+        
+        $rootWords = [];
+        $verseWords = [];
+        
+        $i = 0;
+        foreach ($verseTranslations as $verseId => $verse) {
+//             if ($i > 1000) {
+//                 break;
+//             }
+            if (!isset($verse['bnt']) || !isset($verse['bnm'])) {
+                throw new \Exception('Missing entry '.$verseId);
+            }
+            $textBnt = trim($verse['bnt']['text']);
+            $textBnm = trim($verse['bnm']['text']);
+            if ('' === $textBnt || '' === $textBnm) {
+                continue;
+            }
+            $wordsBnt = preg_split("/[ ᾽]+/u", $textBnt);
+            $wordsBnm = preg_split("/[ ᾽]+/u", $textBnm);
+            
+            for ($j = count($wordsBnm)-1; $j >= 0; $j--) {
+                //remove non-words. In Bnm, all should have a '@'
+                if (!is_string($wordsBnm[$j])) {
+                    unset($wordsBnm[$j]);
+                    continue;
+                }
+                $value = $wordsBnm[$j];
+                if (false === strpos($value, '@')) {
+                    var_dump("Removing word '$value' from verse $verseId");
+                    unset($wordsBnm[$j]);
+                }
+            }
+            //cleanup punctuation
+            for ($j = count($wordsBnt)-1; $j >= 0; $j--) {
+                if (!is_string($wordsBnt[$j])) {
+                    unset($wordsBnt[$j]);
+                    continue;
+                }
+                $cleanWord = trim(preg_replace($bntCleanupSubstitution, '', $wordsBnt[$j]));
+                if ('' === $cleanWord) {
+                    unset($wordsBnt[$j]);
+                }
+            }
+            
+            if (count($wordsBnt) !== count($wordsBnm)) {
+                var_dump($textBnt);
+                var_dump($wordsBnt);
+                var_dump($wordsBnm);
+                throw new \Exception('Uneven arrays at '.$verseId);
+            }
+            foreach ($wordsBnm as $wordKey => $wordWithCode) {
+//                 $matches = null;
+//                 preg_match($regex, $wordWithCode, $matches);
+//                 if (!isset($matches[1])) {
+//                     var_dump($textBnt);
+//                     var_dump($textBnm);
+//                     var_dump($wordsBnt);
+//                     var_dump($wordsBnm);
+//                     throw new \Exception('Missing root at '.$verseId);
+//                 }
+//                 $root = $matches[1];
+//                 if (!isset($matches[2])) {
+//                     throw new \Exception('Missing morpho at '.$verseId);
+//                 }
+//                 $code = $matches[2];
+//                 if (!isset($morphoCodes[$code])) {
+//                     var_dump("Missing morpho code '$code' at $verseId");
+// //                     throw new \Exception("Missing morpho code '$code' at $verseId");
+//                 }
+                $word = new GreekWord($wordsBnt[$wordKey], $wordsBnm[$wordKey]);
+                $root = $word->getRoot();
+                if (!isset($rootWords[$root])) {
+                    $rootWords[$root] = [
+                        'root' => $root,
+                        'partOfSpeech' => $word->getPartOfSpeech(),
+                        'occurrenceCount' => 1,
+                        'firstVerseOccurrence' => $verseId,
+                        'formsAvailable' => [$word->getMorphologyCode()],
+                    ];
+                } else {
+                    $rootWords[$root]['occurrenceCount']++;
+                    $morphoCode = $word->getMorphologyCode();
+                    if (!in_array($morphoCode, $rootWords[$root]['formsAvailable'], true)) {
+                        $rootWords[$root]['formsAvailable'][] = $morphoCode;
+                    }
+                }
+            }
+            $i++;
+        }
+        ksort($rootWords);
+        return $rootWords;
+    }
+    
+    protected function processGreekRootRow($row) 
+    {
+        $data = [
+            'rootId' => $this->filterDbId($row['root_id']),
+            'root' => $row['root'],
+            'partOfSpeech' => $row['part_of_speech'],
+            'firstVerseOccurrence' => $row['first_verse_ occurrence'],
+            'occurrenceCount' => $row['occurrence_count'],
+            'gender' => $row['gender'],
+            'paradigmPart1' => $row['paradigm_part_1'],
+            'paradigmPart1' => $row['paradigm_part_2'],
+            'paradigmPart3' => $row['paradigm_part_3'],
+            'paradigmPart4' => $row['paradigm_part_4'],
+            'formsAvailable' => $this->filterDbArray($row['forms_available']),
+            'dictionaryEntryId' => $row['dictionary_entry_id'],
+        ];
+        return $data;
+    }
+    
+    /**
+     * @todo et rid of tis, unecessary
+     * @return string[]
+     */
     public function getBookAbbrev()
     {
         static $abbrevs;
