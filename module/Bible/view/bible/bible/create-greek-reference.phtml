@@ -1,5 +1,9 @@
+<?php
+$this->headScript()->appendFile($this->basePath() . '/js/gen-bootstrap-sortable.min.js');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-bootstrap-sortable.min.css');?>
 <p>Found <?php echo count($this->rootWords);?> different greek words.</p>
-<table>
+<div id="word-list" class="table-responsive">
+<table class="table sortable">
 <thead>
 <tr>
 <th>Root</th>
@@ -10,13 +14,25 @@
 </tr>
 </thead>
 <tbody>
-<?php foreach ($this->rootWords as $object) :?>
+<?php 
+$re = '/(\d\d)(\d\d\d)(\d\d\d)/';
+foreach ($this->rootWords as $object) :?>
 <tr>
 <td><a href="http://www.perseus.tufts.edu/hopper/morph?l=<?php echo urlencode($object['root']);?>&la=greek#lexicon"><?php 
 echo $this->escapeHtml($object['root']);?></a></td>
 <td><?php echo $this->escapeHtml($object['partOfSpeech']);?></td>
 <td><?php echo $this->escapeHtml($object['occurrenceCount']);?></td>
-<td><?php echo $this->escapeHtml($object['firstVerseOccurrence']);?></td>
+<td><?php 
+$matches = null;
+preg_match($re, $object['firstVerseOccurrence'], $matches);
+if (isset($matches)) :?>
+<a href="<?php echo $this->url('bible/text', [
+    'book' => (int)$matches[1], 
+    'chapter' => (int)$matches[2]]).'#'.(int)$matches[3];?>"><?php 
+echo $this->escapeHtml($object['firstVerseOccurrence']);?></a>
+<?php else:
+    echo $this->escapeHtml($object['firstVerseOccurrence']);
+endif;?></td>
 <td><?php echo $this->escapeHtml(implode(', ', $object['formsAvailable']));?></td>
 </tr>
 <?php endforeach;?>
