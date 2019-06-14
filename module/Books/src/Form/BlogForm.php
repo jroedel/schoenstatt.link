@@ -64,6 +64,7 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
                     'de' => 'German',
                     'pt' => 'Portuguese',
                     'es' => 'Spanish',
+                    'it' => 'Italian',
                 ],
             ],
             'attributes' => [

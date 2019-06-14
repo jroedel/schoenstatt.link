@@ -8,11 +8,12 @@ use Zend\View\Helper\AbstractHelper;
 class LanguageChooser extends AbstractHelper
 {
     protected $languageChooser = [
-        'en' => ['en', 'es', 'de', 'pt', 'fr'],
-        'es' => ['es', 'en', 'pt', 'de', 'fr'],
-        'de' => ['de', 'en', 'es', 'pt', 'fr'],
-        'pt' => ['pt', 'es', 'de', 'en', 'fr'],
-        'fr' => ['fr', 'en', 'de', 'es', 'pt'],
+        'en' => ['en', 'es', 'de', 'pt', 'fr', 'it'],
+        'es' => ['es', 'en', 'pt', 'it', 'de', 'fr'],
+        'de' => ['de', 'en', 'es', 'pt', 'fr', 'it'],
+        'pt' => ['pt', 'es', 'de', 'en', 'it', 'fr'],
+        'fr' => ['fr', 'en', 'de', 'es', 'it', 'pt'],
+        'it' => ['it', 'es', 'es', 'pt', 'it', 'de'],
     ];
 
     /**

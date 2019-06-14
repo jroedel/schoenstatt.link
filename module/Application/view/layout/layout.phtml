@@ -19,7 +19,7 @@ $routeName = $this->routeName();?>
 
         <?php //make a link to the canonical (en) page for search engines and alternative links to other languages
         /** @var Uri $canonicalUrl */
-        $languages = ['en' => 'en_US', 'es' => 'es_ES', 'de' => 'de_DE', 'pt' => 'pt_BR'];
+        $languages = ['en' => 'en_US', 'es' => 'es_ES', 'de' => 'de_DE', 'pt' => 'pt_BR', 'it' => 'it_IT'];
         $currentLanguage = Locale::getPrimaryLanguage(Locale::getDefault());
         $requestUri = $this->getHelperPluginManager()->getServiceLocator()->get('request')->getUri();
         foreach ($languages as $languageId => $localeId) {
@@ -204,6 +204,7 @@ $routeName = $this->routeName();?>
                     <a href="<?php echo $this->localeUrl('es_ES');?>"><span class="flag-icon flag-icon-<?php echo $es[Rand::getInteger(0, 3)]; ?>"></span></a>
                     <a href="<?php echo $this->localeUrl('de_DE');?>"><span class="flag-icon flag-icon-<?php echo $de[Rand::getInteger(0, 1)]; ?>"></span></a>
                     <a href="<?php echo $this->localeUrl('pt_BR');?>"><span class="flag-icon flag-icon-<?php echo $pt[Rand::getInteger(0, 1)]; ?>"></span></a>
+                    <a href="<?php echo $this->localeUrl('it_IT');?>"><span class="flag-icon flag-icon-it"></span></a>
                 </div>
             </div>
             <?php

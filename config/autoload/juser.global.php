@@ -67,7 +67,7 @@ return [
     'slm_locale' => [
         'default' => 'en_US',
 
-        'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR'],
+        'supported' => ['en_US', 'es_ES', 'de_DE', 'pt_BR', 'it_IT'],
 
         'strategies' => [
             [
@@ -79,6 +79,7 @@ return [
                         'es' => 'es_ES',
                         'pt' => 'pt_BR',
                         'de' => 'de_DE',
+                        'it' => 'it_IT',
                     ],
                 ]
             ],
@@ -91,6 +92,7 @@ return [
             'es' => 'es_ES',
             'pt' => 'pt_BR',
             'de' => 'de_DE',
+            'it' => 'it_IT',
         ],
     ],
     'bjyauthorize' => [
