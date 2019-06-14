@@ -25,6 +25,11 @@ return [
             Provider\Rule\SpecialCountryRuleProvider::class => Service\SpecialCountryRuleProviderFactory::class,
         ],
     ],
+    'view_helpers' => [
+        'factories' => [
+            'verseFromId' => Service\VerseFromIdFactory::class,
+        ],
+    ],
     'router' => [
         'routes' => [
             'dh' => [
@@ -118,6 +123,15 @@ return [
                             'route'    => '/create-greek-reference',
                             'defaults' => [
                                 'action'     => 'createGreekReference',
+                            ],
+                        ],
+                    ],
+                    'normalize-greek' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/normalize-greek',
+                            'defaults' => [
+                                'action'     => 'normalizeGreek',
                             ],
                         ],
                     ],
@@ -287,6 +301,8 @@ return [
                     'nameFr' => 'name_fr',
                     'orderJerusalemEn' => 'order_jerusalem_en',
                     'orderJerusalemEs' => 'order_jerusalem_es',
+                    'abbreviationJerusalemEn' => 'abbreviation_jerusalem_en',
+                    'abbreviationJerusalemEs' => 'abbreviation_jerusalem_es',
                     'isNewTestament' => 'is_new_testament',
                     'genreId' => 'genre_id',
                     'isCanonical' => 'is_canonical',
@@ -364,6 +380,8 @@ return [
                     'paradigmPart4' => 'paradigm_part_4',
                     'formsAvailable' => 'forms_available',
                     'dictionaryEntryId' => 'dictionary_entry_id',
+                    'johnOccurrenceCount' => 'john_occurrence_count',
+                    'johnFirstVerseOccurrence' => 'john_first_verse_occurrence',
                 ],
             ],
             'bible-book-abbreviation' => [
@@ -513,6 +531,7 @@ return [
                 ['route' => 'bible/text', 'roles' => ['bib_user']],
                 ['route' => 'bible/search', 'roles' => ['bib_user']],
                 ['route' => 'bible/create-greek-reference', 'roles' => ['bib_administrator']],
+                ['route' => 'bible/normalize-greek', 'roles' => ['bib_administrator']],
 //                 ['route' => 'bible/bnt', 'roles' => ['bib_user']],
 //                 ['route' => 'bible/bibleimport', 'roles' => ['bib_administrator']],
                 ['route' => 'bible/migrate', 'roles' => ['bib_administrator']],

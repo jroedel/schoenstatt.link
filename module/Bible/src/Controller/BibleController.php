@@ -13,6 +13,7 @@ use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
 use Bible\Form\BibleSearchForm;
 use Zend\Db\Sql\Predicate\Like;
+use voku\helper\UTF8;
 
 class BibleController extends SionController
 {
@@ -68,7 +69,7 @@ class BibleController extends SionController
         
         //check what translations we need to grab
         if ($book['isNewTestament']) {
-            $translations = ['njb', 'bnt', 'jeresp'];
+            $translations = ['njb', 'bnt2', 'jeresp'];
         } else {
             $translations = ['njb', 'septnt', 'jeresp'];
         }
@@ -117,6 +118,15 @@ class BibleController extends SionController
         ]);
     }
     
+    public function normalizeGreekAction()
+    {
+        /** @var BibleTable $table */
+        $table = $this->getSionTable();
+        $table->normalizeBnmUtf8('bnm', 'bnm2');
+        $table->normalizeBnmUtf8('bnt', 'bnt2');
+        return new ViewModel([]);
+    }
+    
     public function searchAction()
     {
         //verify params
@@ -131,8 +141,8 @@ class BibleController extends SionController
                 //fetch list of verses, maybe even group by the verse
                 /** @var BibleTable $table */
                 $table = $this->getSionTable();
-                $searchClause = new Like('text', '%'.$data['search'].'%');
-                $translations = ['njb', 'septnt', 'jeresp'];
+                $searchClause = new Like('text', '%'.UTF8::filter($data['search']).'%');
+                $translations = ['njb', 'septnt', 'jeresp', 'bnm2'];
                 $where = new PredicateSet([new In('translation_id', $translations), $searchClause]);
                 $verses = $table->getObjects('bible-verse', $where);
                 $books = $table->getObjects('bible-book');
@@ -166,83 +176,6 @@ class BibleController extends SionController
             'bookAbbrev' => $this->getBookAbbrev(),
             'translAbbrev' => $this->getTranslAbbrev()
         ));
-    }
-    
-    /**
-     * Routing currently doesn't allow access to this action @todo revise this function
-     */ 
-    public function bntAction()
-    {
-        //$translation = $this->params('translation');
-        $book = $this->params('book');
-        $chapter = $this->params('chapter');
-        $verse = $this->params('verse');
-        
-        $where = new Where();
-        $where->equalTo('book_id', $book)
-              ->equalTo('chapter', $chapter);
-        if (isset($verse)) {
-            $where->equalTo('verse', $verse);
-        }
-        $select = function (Select $select) use ($where) {
-            $w = clone $where;
-            $select->where($w->equalTo('translation_id', 'bnt'));
-            $select->order('verse');
-        };
-        /** @var \Bible\Model\BibleTable $table */
-        $table = $this->getSionTable();
-        $verses = $table->fetchSome($select, null, null, true);
-        $select = function (Select $select) use ($where) {
-            $w = clone $where;
-            $select->where($w->equalTo('translation_id', 'bnm'));
-            $select->order('verse');
-        };
-        $versesBnm = $table->fetchSome($select, null, null, true);
-    
-        $select = function (Select $select) use ($where) {
-            $w = clone $where;
-            $select->where($w->equalTo('translation_id', 'nab'));
-            $select->order('verse');
-        };
-        $versesNab = $table->fetchSome($select, null, null, true);
-        
-        $select = function (Select $select) use ($where) {
-            $w = clone $where;
-            $select->where($w->equalTo('translation_id', 'lba'));
-            $select->order('verse');
-        };
-        $versesLba = $table->fetchSome($select, null, null, true);
-        
-        $verses = SionTable::keyArray($verses, 'verse', true);
-        $versesBnm = SionTable::keyArray($versesBnm, 'verse', true);
-        $versesNab = SionTable::keyArray($versesNab, 'verse', true);
-        $versesLba = SionTable::keyArray($versesLba, 'verse', true);
-        
-        $morphoFilter = new FromBibleworksMorphosyntacticCode();
-        
-        return new ViewModel(array(
-            'book' => $book,
-            'chapter' => $chapter,
-            'bnt' => $verses,
-            'bnm' => $versesBnm,
-            'nab' => $versesNab,
-            'lba' => $versesLba,
-            'codes' => $morphoFilter->getGrammarCodes(),
-            'bookAbbrev' => $this->getBookAbbrev(),
-            'translAbbrev' => $this->getTranslAbbrev()
-        ));
-    }
-    
-    /**
-     * @todo create a translations table for the information
-     */
-    public function getTranslAbbrev()
-    {
-        return [
-           'bnt' => 'Greek Bible',
-           'nab' => 'English Bible',
-           'lba' => 'Biblia en español'
-        ];
     }
     
     /**

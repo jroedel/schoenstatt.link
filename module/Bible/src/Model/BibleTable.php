@@ -8,13 +8,15 @@ use Zend\Db\Sql\Predicate\In;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Predicate\IsNull;
 use Bible\Filter\FromBibleworksMorphosyntacticCode;
-use Zend\View\Model\ViewModel;
+use voku\helper\UTF8;
 
 class BibleTable extends SionTable
 {
     const TRANSLATIONS = [
         'njb' => 'New Jerusalem Bible',
         'bnt' => 'BW 5 New Testament Greek',
+        'bnm' => 'BW 5 New Testament Greek Morphology',
+        'bnm2' => 'BW 5 New Testament Greek Morphology',
         'jeresp' => 'Biblia de Jerusalén',
         'septnt' => 'Septuagint + NT',
     ];
@@ -64,7 +66,9 @@ class BibleTable extends SionTable
             'namePt' => $row['name_pt'],
             'nameFr' => $row['name_fr'],
             'orderJerusalemEn' => $this->filterDbInt($row['order_jerusalem_en']),
-            'orderJerusalemEs' => $this->filterDbInt($row['order_jerusalem_es']),
+            'orderJerusalemEs' => $this->filterDbInt($row['order_jerusalem_es']), 
+            'abbreviationJerusalemEn' => $row['abbreviation_jerusalem_en'],
+            'abbreviationJerusalemEs' => $row['abbreviation_jerusalem_es'],
             'isNewTestament' => $this->filterDbBool($row['is_new_testament']),
             'genreId' => $this->filterDbBool($row['genre_id']),
             'isCanonical' => $this->filterDbBool($row['is_canonical']),
@@ -282,7 +286,7 @@ class BibleTable extends SionTable
             - form (perhaps just the code that we have for the sake of saving space)
             - order (which number word is it in the sentence; we'll have to learn how to cut contractions off properly)
          */
-        $verses = $this->getObjects('bible-verse', ['translation' => ['bnt', 'bnm']]);
+        $verses = $this->getObjects('bible-verse', ['translation' => ['bnt2', 'bnm2']]);
         $verseTranslations = self::keyVersesByVerseIdAndTranslation($verses);
 //         $regex = '/(.+)@(.{1,6})/ui';
         $bntCleanupSubstitution = '/[,.\]\[\(\)·;]/u';
@@ -297,11 +301,11 @@ class BibleTable extends SionTable
 //             if ($i > 1000) {
 //                 break;
 //             }
-            if (!isset($verse['bnt']) || !isset($verse['bnm'])) {
+            if (!isset($verse['bnt2']) || !isset($verse['bnm2'])) {
                 throw new \Exception('Missing entry '.$verseId);
             }
-            $textBnt = trim($verse['bnt']['text']);
-            $textBnm = trim($verse['bnm']['text']);
+            $textBnt = UTF8::trim($verse['bnt2']['text']);
+            $textBnm = UTF8::trim($verse['bnm2']['text']);
             if ('' === $textBnt || '' === $textBnm) {
                 continue;
             }
@@ -366,6 +370,8 @@ class BibleTable extends SionTable
                         'occurrenceCount' => 1,
                         'firstVerseOccurrence' => $verseId,
                         'formsAvailable' => [$word->getMorphologyCode()],
+                        'johnOccurrenceCount' => 0,
+                        'johnFirstVerseOccurrence' => null,
                     ];
                 } else {
                     $rootWords[$root]['occurrenceCount']++;
@@ -374,11 +380,33 @@ class BibleTable extends SionTable
                         $rootWords[$root]['formsAvailable'][] = $morphoCode;
                     }
                 }
+                if ($verse['bnt2']['book'] == 43) {
+                    $rootWords[$root]['johnOccurrenceCount']++;
+                    if (!isset($rootWords[$root]['johnFirstVerseOccurrence'])) {
+                        $rootWords[$root]['johnFirstVerseOccurrence'] = $verseId;
+                    }
+                }
             }
             $i++;
         }
         ksort($rootWords);
         return $rootWords;
+    }
+    
+    public function normalizeBnmUtf8($sourceTranslation, $destinationTranslation)
+    {
+        $check = $this->getObjects('bible-verse', ['translation' => $destinationTranslation]);
+        if (!empty($check)) {
+            throw new \Exception("Tried creating $destinationTranslation bible again");
+        }
+        $verses = $this->getObjects('bible-verse', ['translation' => $sourceTranslation]);
+        foreach ($verses as $object) {
+            $aNewVerse = $object;
+            unset($aNewVerse['id']);
+            $aNewVerse['translation'] = $destinationTranslation;
+            $aNewVerse['text'] = UTF8::filter($object['text']);
+            $this->createEntity('bible-verse', $aNewVerse);
+        }
     }
     
     protected function processGreekRootRow($row) 
@@ -396,12 +424,14 @@ class BibleTable extends SionTable
             'paradigmPart4' => $row['paradigm_part_4'],
             'formsAvailable' => $this->filterDbArray($row['forms_available']),
             'dictionaryEntryId' => $row['dictionary_entry_id'],
+            'johnOccurrenceCount' => $row['john_occurrence_count'],
+            'johnFirstVerseOccurrence' => $row['john_first_verse_occurrence'],
         ];
         return $data;
     }
     
     /**
-     * @todo et rid of tis, unecessary
+     * @todo get rid of this, unecessary
      * @return string[]
      */
     public function getBookAbbrev()
