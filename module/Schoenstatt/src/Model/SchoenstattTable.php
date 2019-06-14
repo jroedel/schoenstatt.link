@@ -756,7 +756,7 @@ class SchoenstattTable extends SionTable implements
             $addresses[] = [
                 'street1'   => $street1,
                 'street2'   => $street2,
-                'street'    => $streets,
+                'street'    => implode(', ', $streets),
                 'cityState' => $cityState,
                 'zip'       => $zip,
                 'country'   => $country,
@@ -774,7 +774,7 @@ class SchoenstattTable extends SionTable implements
             $addresses[] = [
                 'street1'   => $postStreet1,
                 'street2'   => $postStreet2,
-                'street'    => implode(' ', $streets),
+                'street'    => implode(', ', $streets),
                 'cityState' => $postCityState,
                 'zip'       => $postZip,
                 'country'   => $country,
