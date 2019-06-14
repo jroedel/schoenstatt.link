@@ -64,10 +64,11 @@ return [
             'de' => 'German',
             'fr' => 'French',
             'pl' => 'Polish',
-            'cz' => 'Czhec',
+            'cz' => 'Czech',
             'fr' => 'French',
             'la' => 'Latin',
             'gr' => 'Greek',
+            'it' => 'Italian',
         ],
         'url_label_value_options' => [
             'Download'  => 'Download',

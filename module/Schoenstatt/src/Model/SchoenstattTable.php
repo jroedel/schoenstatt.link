@@ -1254,7 +1254,7 @@ ORDER BY `LastName`, `FirstName`";
         array_multisort($sort['LastName'], SORT_ASC, $results);
 
         $entities = [];
-        $possibleLocales = ['en'=>'en_US', 'de'=>'de_DE','es'=>'es_ES','pt'=>'pt_BR', 'fr'=>'fr_FR'];
+        $possibleLocales = ['en'=>'en_US', 'de'=>'de_DE','es'=>'es_ES','pt'=>'pt_BR', 'fr'=>'fr_FR', 'it' => 'it_IT'];
                            //real language conversions
         $language3to2Map = ['eng'=>'en','deu'=>'de','spa'=>'es','por'=>'pt', 'gsw'=>'de', 'fra'=>'fr',
             //similar language conversions
