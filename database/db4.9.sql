@@ -1,4 +1,4 @@
-
+#submitted 2019-06-13
 CREATE TABLE `ourlink_db1`.`bib_greek_root_words` ( `word_id` INT NOT NULL AUTO_INCREMENT , `root` VARCHAR(100) NOT NULL , `part_of_speech` VARCHAR(50) NULL DEFAULT NULL , `first_verse_ occurrence` INT(8) UNSIGNED ZEROFILL NULL DEFAULT NULL , `occurrence_count` INT NULL DEFAULT NULL , `gender` ENUM('m','f','n') NULL DEFAULT NULL COMMENT 'Only for nouns' , `paradigm_part_1` VARCHAR(100) NULL DEFAULT NULL , `paradigm_part_2` VARCHAR(100) NULL DEFAULT NULL , `paradigm_part_3` VARCHAR(100) NULL DEFAULT NULL , `paradigm_part_4` VARCHAR(100) NULL DEFAULT NULL , `forms_available` VARCHAR(255) NULL DEFAULT NULL COMMENT 'pipe-separated list of forms' , `dictionary_entry_id` INT NULL DEFAULT NULL , PRIMARY KEY (`word_id`), UNIQUE (`root`)) ENGINE = InnoDB CHARSET=utf8 COLLATE utf8_general_ci;
 ALTER TABLE `bib_greek_root_words` CHANGE `word_id` `root_id` INT(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `bib_greek_root_words` ADD `john_occurrence_count` INT NOT NULL DEFAULT '0' AFTER `dictionary_entry_id`, ADD `john_first_verse_occurrence` INT(8) UNSIGNED ZEROFILL NULL DEFAULT NULL AFTER `john_occurrence_count`;

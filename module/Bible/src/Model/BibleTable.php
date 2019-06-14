@@ -286,6 +286,8 @@ class BibleTable extends SionTable
             - form (perhaps just the code that we have for the sake of saving space)
             - order (which number word is it in the sentence; we'll have to learn how to cut contractions off properly)
          */
+        $greekCheck = $this->getObjects('greek-root');
+        $shouldInsertGreek = empty($greekCheck);
         $verses = $this->getObjects('bible-verse', ['translation' => ['bnt2', 'bnm2']]);
         $verseTranslations = self::keyVersesByVerseIdAndTranslation($verses);
 //         $regex = '/(.+)@(.{1,6})/ui';
@@ -363,8 +365,9 @@ class BibleTable extends SionTable
 //                 }
                 $word = new GreekWord($wordsBnt[$wordKey], $wordsBnm[$wordKey]);
                 $root = $word->getRoot();
-                if (!isset($rootWords[$root])) {
-                    $rootWords[$root] = [
+                $lowerRoot = UTF8::strtolower($root);
+                if (!isset($rootWords[$lowerRoot])) {
+                    $rootWords[$lowerRoot] = [
                         'root' => $root,
                         'partOfSpeech' => $word->getPartOfSpeech(),
                         'occurrenceCount' => 1,
@@ -374,22 +377,31 @@ class BibleTable extends SionTable
                         'johnFirstVerseOccurrence' => null,
                     ];
                 } else {
-                    $rootWords[$root]['occurrenceCount']++;
+                    $rootWords[$lowerRoot]['occurrenceCount']++;
                     $morphoCode = $word->getMorphologyCode();
-                    if (!in_array($morphoCode, $rootWords[$root]['formsAvailable'], true)) {
-                        $rootWords[$root]['formsAvailable'][] = $morphoCode;
+                    if (!in_array($morphoCode, $rootWords[$lowerRoot]['formsAvailable'], true)) {
+                        $rootWords[$lowerRoot]['formsAvailable'][] = $morphoCode;
                     }
                 }
                 if ($verse['bnt2']['book'] == 43) {
-                    $rootWords[$root]['johnOccurrenceCount']++;
-                    if (!isset($rootWords[$root]['johnFirstVerseOccurrence'])) {
-                        $rootWords[$root]['johnFirstVerseOccurrence'] = $verseId;
+                    $rootWords[$lowerRoot]['johnOccurrenceCount']++;
+                    if (!isset($rootWords[$lowerRoot]['johnFirstVerseOccurrence'])) {
+                        $rootWords[$lowerRoot]['johnFirstVerseOccurrence'] = $verseId;
                     }
                 }
             }
             $i++;
         }
         ksort($rootWords);
+        if ($shouldInsertGreek) {
+            foreach ($rootWords as $object) {
+                try {
+                $this->createEntity('greek-root', $object);
+                } catch (\Exception $e) {
+                    var_dump($object);
+                }
+            }
+        }
         return $rootWords;
     }
     
@@ -411,21 +423,38 @@ class BibleTable extends SionTable
     
     protected function processGreekRootRow($row) 
     {
+        $root = $row['root'];
+        $partOfSpeech = $row['part_of_speech'];
+        $paradigmPart1 = $row['paradigm_part_1'];
+        $paradigmPart2 = $row['paradigm_part_2'];
+        $paradigmPart3 = $row['paradigm_part_3'];
+        $paradigmPart4 = $row['paradigm_part_4'];
+        $paradigm = null;
+        if (in_array($partOfSpeech, ['noun', 'verb', 'adjective'], TRUE)) {
+            $paradigm = $root.', ' 
+                .(isset($paradigmPart2) ? $paradigmPart2 : '———').', ' 
+                .(isset($paradigmPart3) ? $paradigmPart3 : '———');
+            if ('verb' === $partOfSpeech) {
+                $paradigm .= ', '.(isset($paradigmPart4) ? $paradigmPart4 : '———');
+            }
+        }
         $data = [
             'rootId' => $this->filterDbId($row['root_id']),
-            'root' => $row['root'],
-            'partOfSpeech' => $row['part_of_speech'],
-            'firstVerseOccurrence' => $row['first_verse_ occurrence'],
+            'root' => $root,
+            'partOfSpeech' => $partOfSpeech,
+            'firstVerseOccurrence' => $row['first_verse_occurrence'],
             'occurrenceCount' => $row['occurrence_count'],
             'gender' => $row['gender'],
-            'paradigmPart1' => $row['paradigm_part_1'],
-            'paradigmPart1' => $row['paradigm_part_2'],
-            'paradigmPart3' => $row['paradigm_part_3'],
-            'paradigmPart4' => $row['paradigm_part_4'],
+            'paradigmPart1' => $paradigmPart1,
+            'paradigmPart2' => $paradigmPart2,
+            'paradigmPart3' => $paradigmPart3,
+            'paradigmPart4' => $paradigmPart4,
             'formsAvailable' => $this->filterDbArray($row['forms_available']),
             'dictionaryEntryId' => $row['dictionary_entry_id'],
             'johnOccurrenceCount' => $row['john_occurrence_count'],
             'johnFirstVerseOccurrence' => $row['john_first_verse_occurrence'],
+            
+            'paradigm' => $paradigm,
         ];
         return $data;
     }

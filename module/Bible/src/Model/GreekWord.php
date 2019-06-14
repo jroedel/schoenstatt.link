@@ -2,6 +2,7 @@
 namespace Bible\Model;
 
 use Bible\Filter\FromBibleworksMorphosyntacticCode;
+use voku\helper\UTF8;
 
 class GreekWord
 {
@@ -23,7 +24,7 @@ class GreekWord
         if (!isset($matches)) {
             throw new \Exception("Unrecognized BNM word: $bnmWord");
         }
-        $this->root = $matches[1][0];
+        $this->root = UTF8::filter($matches[1][0]);
         $partOfSpeechCode = $matches[2][0];
         if (!isset($partsOfSpeechCodes[$partOfSpeechCode])) {
             throw new \Exception("Unrecognized part of speech: $partOfSpeechCode");
