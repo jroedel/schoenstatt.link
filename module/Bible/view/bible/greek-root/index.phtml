@@ -1,17 +1,16 @@
 <?php
-use Bible\Filter\FromBibleworksMorphosyntacticCode;
-
 $this->headScript()->appendFile($this->basePath() . '/js/gen-bootstrap-sortable.min.js');
 $this->headLink()->appendStylesheet($this->basePath() . '/css/gen-bootstrap-sortable.min.css');?>
 <div class="row">
 <div class="col-md-12">
-<p>Found <?php echo count($this->rootWords);?> different greek words.</p>
+<p>Found <?php echo count($this->objects);?> different greek words.</p>
 <div id="word-list" class="table-responsive">
 <table class="table sortable">
 <thead>
 <tr>
 <th><?php echo $this->translate('Root');?></th>
 <th><?php echo $this->translate('Part of speech');?></th>
+<th><?php echo $this->translate('Paradigm');?></th>
 <th><?php echo $this->translate('Occurrences');?></th>
 <th><?php echo $this->translate('First verse');?></th>
 <th><?php echo $this->translate('In John');?></th>
@@ -20,14 +19,17 @@ $this->headLink()->appendStylesheet($this->basePath() . '/css/gen-bootstrap-sort
 </thead>
 <tbody>
 <?php 
-$re = '/(\d\d)(\d\d\d)(\d\d\d)/';
 $bibleSearchUrl = $this->url('bible/search');
-$morphoCodes = FromBibleworksMorphosyntacticCode::getGrammarCodes();
-foreach ($this->rootWords as $object) :?>
+foreach ($this->objects as $object) :?>
 <tr>
 <td><a href="http://www.perseus.tufts.edu/hopper/morph?l=<?php echo urlencode($object['root']);?>&la=greek#lexicon"><?php 
-echo $this->escapeHtml($object['root']);?></a></td>
+echo $this->escapeHtml($object['root']);?></a><?php 
+if (isset($object['rootId'])) {
+    echo $this->editPencil('greek-root', $object['rootId']);
+}
+?></td>
 <td><?php echo $this->escapeHtml($object['partOfSpeech']);?></td>
+<td><?php echo $this->escapeHtml($object['paradigm']);?></td>
 <td><?php echo $this->escapeHtml($object['occurrenceCount']);?></td>
 <td><?php echo $this->verseFromId($object['firstVerseOccurrence']);?></td>
 <td><?php echo $this->escapeHtml($object['johnOccurrenceCount']);
@@ -36,7 +38,7 @@ if (isset($object['johnFirstVerseOccurrence'])) {
 }?></td>
 <td><?php foreach ($object['formsAvailable'] as $form) {
     echo sprintf(
-        '<a href="%s?search=%s@%s">%s</a> ', 
+        '<a href="%s?search=%s@%s" target="_blank">%s</a> ', 
         $bibleSearchUrl,
         urlencode($object['root']),
         urlencode($form),

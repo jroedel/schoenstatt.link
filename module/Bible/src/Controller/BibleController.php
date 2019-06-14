@@ -113,9 +113,11 @@ class BibleController extends SionController
         /** @var BibleTable $table */
         $table = $this->getSionTable();
         $rootWords = $table->createGreekReference();
-        return new ViewModel([
-            'rootWords' => $rootWords,
+        $view = new ViewModel([
+            'objects' => $rootWords,
         ]);
+        $view->setTemplate('bible/greek-root/index');
+        return $view;
     }
     
     public function normalizeGreekAction()

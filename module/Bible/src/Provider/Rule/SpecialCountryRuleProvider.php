@@ -34,6 +34,7 @@ class SpecialCountryRuleProvider implements ProviderInterface
                 [['guest', 'bib_user'], 'route/bible'],
                 [['guest', 'bib_user'], 'route/bible/text'],
                 [['guest', 'bib_user'], 'route/bible/search'],
+                [['guest', 'bib_user'], 'route/bible/greek'],
             ]];
         }
         return [];
