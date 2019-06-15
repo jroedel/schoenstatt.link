@@ -365,7 +365,7 @@ class SchoenstattTable extends SionTable implements
             'Phone3', 'Phone3Label', 'PhonesUpdatedOn', 'PhonesUpdatedBy', 'Url1', 'Url1Label',
             'Url2', 'Url2Label', 'Url3', 'Url3Label', 'FacebookUrl', 'TwitterUser', 'InstagramUser',
             'Post1Street1', 'Post1Street2', 'Post1CityState', 'Post1Zip', 'Post1Country',
-            'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country',
+            'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country', 'GooglePlaceId',
             'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
             'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
             'GeoPoint' => new Expression('AsText(`Location`)'), 'Latitude', 'Longitude',
@@ -621,6 +621,7 @@ class SchoenstattTable extends SionTable implements
     {
         static $twitterUrlPattern;
         static $instagramUrlPattern;
+        static $googlePlacePattern;
         static $languageCode;
         static $urlLabelLogos;
         $id = $this->filterDbId($row['AssociationId']);
@@ -654,6 +655,7 @@ class SchoenstattTable extends SionTable implements
         $facebookUrl = $this->filterDbString($row['FacebookUrl']);
         $twitterUser = $this->filterDbString($row['TwitterUser']);
         $instagramUser = $this->filterDbString($row['InstagramUser']);
+        $googlePlaceId = $row['GooglePlaceId'];
         if (isset($facebookUrl)) {
             $unprocessedUrls[] = ['url' => $facebookUrl, 'label' => 'Facebook'];
         }
@@ -668,6 +670,12 @@ class SchoenstattTable extends SionTable implements
                 $instagramUrlPattern = "https://instagram.com/%s";
             }
             $unprocessedUrls[] = ['url' => sprintf($instagramUrlPattern, $instagramUser), 'label' => 'Instagram'];
+        }
+        if (isset($googlePlaceId)) {
+            if (!isset($googlePlacePattern)) {
+                $googlePlacePattern = "https://search.google.com/local/writereview?placeid=%s";
+            }
+            $unprocessedUrls[] = ['url' => sprintf($googlePlacePattern, $googlePlaceId), 'label' => 'Review'];
         }
 
         $urls = SionTable::processUrls($unprocessedUrls);
@@ -968,15 +976,17 @@ class SchoenstattTable extends SionTable implements
             'facebookUrl'           => $facebookUrl,
             'twitterUser'           => $twitterUser,
             'instagramUser'         => $instagramUser,
+            'googlePlaceId'         => $googlePlaceId,
             'street1'               => $street1,
             'street2'               => $street2,
             'cityState'             => $cityState,
             'zip'                   => $zip,
 //             'post1Country'              => $post1Country,
-            'postStreet1'           => $postStreet1,
-            'postStreet2'           => $postStreet2,
-            'postCityState'         => $postCityState,
-            'postZip'               => $postZip,
+            'postStreet1'           => $postStreet1, //@todo deprecated
+            'postStreet2'           => $postStreet2, //@todo deprecated
+            'postCityState'         => $postCityState, //@todo deprecated
+            'postZip'               => $postZip, //@todo deprecated
+            
 //             'post2Country'              => $post2Country,
             'contactNotes'          => $this->filterDbString($row['ContactNotes']),
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),

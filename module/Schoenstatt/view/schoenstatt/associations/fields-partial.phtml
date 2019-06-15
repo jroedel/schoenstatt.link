@@ -70,12 +70,13 @@ echo $this->formRow($form->get('cityState'));
 echo $this->formRow($form->get('zip'));
 $this->formSelect()->setTranslatorEnabled(false);
 // echo $this->formRow($form->get('post1Country'));
-echo $this->formRow($form->get('postStreet1'));
-echo $this->formRow($form->get('postStreet2'));
-echo $this->formRow($form->get('postCityState'));
-echo $this->formRow($form->get('postZip'));
+// echo $this->formRow($form->get('postStreet1'));
+// echo $this->formRow($form->get('postStreet2'));
+// echo $this->formRow($form->get('postCityState'));
+// echo $this->formRow($form->get('postZip'));
 // echo $this->formRow($form->get('post2Country'));
 $this->formSelect()->setTranslatorEnabled(true);
+echo $this->formRow($form->get('googlePlaceId'));
 echo $this->formRow($form->get('contactNotes'));
 echo $this->formRow($form->get('security'));
 $jsScript = <<<JS
