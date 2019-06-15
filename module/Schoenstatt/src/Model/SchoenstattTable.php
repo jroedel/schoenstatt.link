@@ -28,6 +28,8 @@ use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
 use GeoJson\Feature\FeatureCollection;
 use Spatie\SchemaOrg\Event;
+use Spatie\SchemaOrg\Place;
+use Spatie\SchemaOrg\PropertyValue;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -84,6 +86,7 @@ class SchoenstattTable extends SionTable implements
     ];
 
     const ASSOCIATION_SCHEMA_FIELD_MAP = [
+        'jsonId'            => '@id',
         'formattedName'     => 'name',
         'jsonAlternateName' => 'alternateName',
         'jsonDisambiguatingDescription' => 'disambiguatingDescription',
@@ -690,7 +693,6 @@ class SchoenstattTable extends SionTable implements
         }
         
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
-//         $jsonIdentifier = "https://schoenstatt.link/en/associations/".$identifier;
         
         if (!isset($languageCode)) {
             $languageCode = \Locale::getPrimaryLanguage(\Locale::getDefault());
@@ -861,21 +863,34 @@ class SchoenstattTable extends SionTable implements
             }
         }
         
+        //@todo do the URL better
+        $jsonId = "https://schoenstatt.link/en/associations/".$identifier;
+        
         $foundationDate = $this->filterDbDate($row['FoundationDate']);
         $jsonFoundationEvent = null;
         if (isset($foundationDate) && $foundationDate instanceof \DateTimeInterface) {
-            $jsonFoundationEvent = new Event();
-            $jsonFoundationEvent->startDate($foundationDate->format('Y-m-d'));
-            $jsonFoundationEvent->name('foundation');
+            
             if ('sch-shrine' === $kind) {
                 $eventDescription = 'Shrine blessing';
             } else {
                 $eventDescription = 'Foundation';
             }
             if ($isTranslatorReady) {
-                $jsonFoundationEvent->description($this->translator->translate($eventDescription, 'Schoenstatt'));
+                $eventDescription = $this->translator->translate($eventDescription, 'Schoenstatt');
             }
+            $location = new Place();
+            $location->setProperty('@id', $jsonId);
+            
+            $jsonFoundationEvent = new Event();
+            $jsonFoundationEvent->startDate($foundationDate->format('Y-m-d'))
+                ->location($location)
+                ->name('foundation')
+                ->description($eventDescription);
         }
+        
+        $jsonIdentifier = new PropertyValue();
+        $jsonIdentifier->propertyID('Schoenstatt Link ID')
+            ->value($identifier);
 
         $processedRow = [
             'associationId'         => $id,
@@ -988,8 +1003,7 @@ class SchoenstattTable extends SionTable implements
             'urls'                  => $urls,
             'formattedName'         => $formattedName,
             'internalDisplayName'   => $internalDisplayName,
-            //@todo do the URL better
-            'jsonIdentifier'        => "https://schoenstatt.link/en/associations/".$identifier,
+            'jsonId'                => $jsonId,
             'jsonAlternateName'     => $jsonAlternateName,
             'jsonDisambiguatingDescription' => $jsonDisambiguatingDescription,
             'jsonAddress'           => $jsonAddress,
@@ -998,6 +1012,7 @@ class SchoenstattTable extends SionTable implements
             'jsonSameAs'            => $jsonSameAs,
             'jsonApiUrl'            => $jsonApiUrl,
             'jsonFoundationEvent'   => $jsonFoundationEvent,
+            'jsonIdentifier'        => $jsonIdentifier,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
@@ -1041,9 +1056,9 @@ class SchoenstattTable extends SionTable implements
             $schema = $this->getAssociationSchema($object, $forApi);
             
             //this goes here because we only add it when returning a list of schemata
-            if ($forApi && isset($object['jsonApiUrl'])) {
-                $schema->setProperty('apiUrl', $object['jsonApiUrl']);
-            }
+//             if ($forApi && isset($object['jsonApiUrl'])) {
+//                 $schema->setProperty('apiUrl', $object['jsonApiUrl']);
+//             }
             $resultingMd5s[$associationId] = $object['schemaOrgJsonMd5'];
             $array = $schema->toArray();
             $schemata[] = $array;
