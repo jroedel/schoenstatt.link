@@ -27,6 +27,7 @@ use Schoenstatt\Filter\SchoenstattLinkIdentifier;
 use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
 use GeoJson\Feature\FeatureCollection;
+use Spatie\SchemaOrg\Event;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -85,11 +86,13 @@ class SchoenstattTable extends SionTable implements
     const ASSOCIATION_SCHEMA_FIELD_MAP = [
         'formattedName'     => 'name',
         'jsonAlternateName' => 'alternateName',
+        'jsonDisambiguatingDescription' => 'disambiguatingDescription',
         'jsonIdentifier'    => 'identifier',
         'jsonAddress'       => 'address',
         'jsonTelephone'     => 'telephone',
         'jsonSameAs'        => 'sameAs',
         'jsonGeo'           => 'geo',
+        'jsonFoundationEvent'=> 'event',
 //         'jsonApiUrl'        => 'apiUrl',
         'publicNotes'       => 'description',
     ];
@@ -837,8 +840,14 @@ class SchoenstattTable extends SionTable implements
         }
 
         $jsonAlternateName = null;
+        $jsonDisambiguatingDescription = null;
         if ($internalDisplayName !== $formattedName) {
             $jsonAlternateName = $internalDisplayName;
+            $jsonDisambiguatingDescription = $internalDisplayName;
+        } else {
+            $jsonDisambiguatingDescription = ($isNameTranslateable && $isTranslatorReady)
+                ? $this->translator->translate($name, 'Schoenstatt')
+                : $name;
         }
 
         $geoPoint = $this->filterDbGeoPoint($row['GeoPoint']);
@@ -849,6 +858,22 @@ class SchoenstattTable extends SionTable implements
             $jsonGeo->longitude($geoPoint->longitude);
             if (isset($country)) {
                 $jsonGeo->addressCountry($country);
+            }
+        }
+        
+        $foundationDate = $this->filterDbDate($row['FoundationDate']);
+        $jsonFoundationEvent = null;
+        if (isset($foundationDate) && $foundationDate instanceof \DateTimeInterface) {
+            $jsonFoundationEvent = new Event();
+            $jsonFoundationEvent->startDate($foundationDate->format('Y-m-d'));
+            $jsonFoundationEvent->name('foundation');
+            if ('sch-shrine' === $kind) {
+                $eventDescription = 'Shrine blessing';
+            } else {
+                $eventDescription = 'Foundation';
+            }
+            if ($isTranslatorReady) {
+                $jsonFoundationEvent->description($this->translator->translate($eventDescription, 'Schoenstatt'));
             }
         }
 
@@ -863,7 +888,7 @@ class SchoenstattTable extends SionTable implements
             'kind'                  => $kind,
             'country'               => $country,
             'countryRegion'         => $countryRegion,
-            'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
+            'foundationDate'        => $foundationDate,
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
             'isNameTranslateable'   => $isNameTranslateable,
@@ -966,11 +991,13 @@ class SchoenstattTable extends SionTable implements
             //@todo do the URL better
             'jsonIdentifier'        => "https://schoenstatt.link/en/associations/".$identifier,
             'jsonAlternateName'     => $jsonAlternateName,
+            'jsonDisambiguatingDescription' => $jsonDisambiguatingDescription,
             'jsonAddress'           => $jsonAddress,
             'jsonTelephone'         => $jsonTelephone,
             'jsonGeo'               => $jsonGeo,
             'jsonSameAs'            => $jsonSameAs,
             'jsonApiUrl'            => $jsonApiUrl,
+            'jsonFoundationEvent'   => $jsonFoundationEvent,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
@@ -997,7 +1024,9 @@ class SchoenstattTable extends SionTable implements
             }
         }
         //mark shrines as free public places
-        if ('sch-shrine' === $object['kind'] || 'sch-wayside-shrine' === $object['kind'] && $object['isActive']) {
+        if (('sch-shrine' === $object['kind'] || 'sch-wayside-shrine' === $object['kind'])
+            && $object['isActive']
+        ) {
             $schema->isAccessibleForFree(true);
             $schema->publicAccess(true);
         }
