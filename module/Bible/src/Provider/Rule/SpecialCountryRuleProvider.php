@@ -17,7 +17,7 @@ class SpecialCountryRuleProvider implements ProviderInterface
     }
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \BjyAuthorize\Provider\Rule\ProviderInterface::getRules()
      * Format of the allow key is [['role1', 'role2'], 'resourceId', 'permission']

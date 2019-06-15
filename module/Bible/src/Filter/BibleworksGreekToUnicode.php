@@ -8,7 +8,7 @@ class BibleworksGreekToUnicode extends AbstractFilter
     protected $rules;
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Filter\FilterInterface::filter()
      */

@@ -239,7 +239,7 @@ class LibraryImportsController extends SionController
         $sheet = $objPHPExcel->getSheetByName($sheetName);
         $highRow = $sheet->getHighestDataRow();
         $highColumn = $sheet->getHighestDataColumn();
-var_dump($highRow);
+        var_dump($highRow);
         if ($highColumn == 'A' || $highRow == 1) {
             throw new \Exception('No data contained in the spreadsheet.');
         }

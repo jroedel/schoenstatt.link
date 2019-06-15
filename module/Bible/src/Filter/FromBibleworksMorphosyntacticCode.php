@@ -8,7 +8,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
     protected $codes;
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Filter\FilterInterface::filter()
      */
@@ -63,7 +63,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
             ['n' => 'nom.', 'g' => 'gen.', 'd' => 'dat.', 'a' => 'acc.', 'v' => 'voc.'],
             ['m' => 'masc.', 'f' => 'fem.', 'n' => 'neu.'],
             ['s' => 'sing.', 'p' => 'plu.'],
-        ];  
+        ];
         $partShort = [
             ['v' => ''],
             ['p' => 'part.'],

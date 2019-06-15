@@ -91,6 +91,7 @@ class BooksJsonLd extends AbstractHelper
                         'publications/publication',
                         ['publication_id' => $publication['publicationId']]
                     )->__toString());
+                    break;
                 case 'keywords':
                     if (!empty($publication[$field])) {
                         $book->$property(implode(',', $publication[$field]));
