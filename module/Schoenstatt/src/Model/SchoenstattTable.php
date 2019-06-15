@@ -28,7 +28,6 @@ use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
 use GeoJson\Feature\FeatureCollection;
 use Spatie\SchemaOrg\Event;
-use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
 
@@ -1055,14 +1054,14 @@ class SchoenstattTable extends SionTable implements
     {
         $schemata = [];
         $resultingMd5s = [];
-        foreach ($objects as $associationId => $object) {
+        foreach ($objects as $object) {
             $schema = $this->getAssociationSchema($object, $forApi);
             
             //this goes here because we only add it when returning a list of schemata
 //             if ($forApi && isset($object['jsonApiUrl'])) {
 //                 $schema->setProperty('apiUrl', $object['jsonApiUrl']);
 //             }
-            $resultingMd5s[$associationId] = $object['schemaOrgJsonMd5'];
+            $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5'];
             $array = $schema->toArray();
             $schemata[] = $array;
         }
