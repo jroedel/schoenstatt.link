@@ -913,6 +913,10 @@ return [
                 'logo'      => 'img/map.png',
                 'label'     => 'Map',
             ],
+            'review' => [
+                'logo'      => 'img/review.png',
+                'label'     => 'Review',
+            ],
         ],
         'excel_columns' => [
             'fullName'          => 'Name',
@@ -1773,11 +1777,12 @@ return [
                     'cityState'                 => 'Post1CityState',
                     'zip'                       => 'Post1Zip',
 //                     'country'              => 'Post1Country',
-                    'postStreet1'               => 'Post2Street1',
-                    'postStreet2'               => 'Post2Street2',
-                    'postCityState'             => 'Post2CityState',
-                    'postZip'                   => 'Post2Zip',
-                    'postCountry'               => 'Post2Country',
+                    'postStreet1'               => 'Post2Street1', //@todo DEPRECATED
+                    'postStreet2'               => 'Post2Street2', //@todo DEPRECATED
+                    'postCityState'             => 'Post2CityState', //@todo DEPRECATED
+                    'postZip'                   => 'Post2Zip', //@todo DEPRECATED
+                    'postCountry'               => 'Post2Country', //@todo DEPRECATED
+                    'googlePlaceId'             => 'GooglePlaceId',
                     'contactNotes'              => 'ContactNotes',
                     'contactInfoUpdatedOn'      => 'ContactInfoUpdatedOn',
                     'contactInfoUpdatedBy'      => 'ContactInfoUpdatedBy',

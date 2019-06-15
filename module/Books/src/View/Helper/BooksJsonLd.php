@@ -72,7 +72,7 @@ class BooksJsonLd extends AbstractHelper
                 case 'sameAs': //urls
                     $sameAs = [];
                     foreach ($publication['urls'] as $urlObject) {
-                        $sameAs[] = $url['url'];
+                        $sameAs[] = $urlObject['url'];
                     }
                     if (1 === count($sameAs)) {
                         $sameAs = $sameAs[0];
