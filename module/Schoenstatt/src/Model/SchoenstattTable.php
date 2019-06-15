@@ -30,6 +30,7 @@ use GeoJson\Feature\FeatureCollection;
 use Spatie\SchemaOrg\Event;
 use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PropertyValue;
+use Spatie\SchemaOrg\CatholicChurch;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -878,14 +879,16 @@ class SchoenstattTable extends SionTable implements
             if ($isTranslatorReady) {
                 $eventDescription = $this->translator->translate($eventDescription, 'Schoenstatt');
             }
-            $location = new Place();
+            $location = new CatholicChurch();
             $location->setProperty('@id', $jsonId);
             
+            $dateString = $foundationDate->format('Y-m-d');
             $jsonFoundationEvent = new Event();
-            $jsonFoundationEvent->startDate($foundationDate->format('Y-m-d'))
+            $jsonFoundationEvent->name('foundation')
+                ->description($eventDescription)
                 ->location($location)
-                ->name('foundation')
-                ->description($eventDescription);
+                ->startDate($dateString)
+                ->endDate($dateString);
         }
         
         $jsonIdentifier = new PropertyValue();
