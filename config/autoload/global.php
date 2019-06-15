@@ -46,7 +46,7 @@ return [
                         'label' => 'Dictionaries',
                         'route' => 'dictionary',
                         'resource' => 'route/dictionary',
-                    ], 
+                    ],
                     [
                         'label' => 'Libraries',
                         'route' => 'libraries',

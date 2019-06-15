@@ -37,7 +37,14 @@ class SchoenstattTableFactory implements FactoryInterface
         $translateViewHelper = $plugins->get('translate');
         $translator = $translateViewHelper->getTranslator();
         
-        $table = new SchoenstattTable($dbAdapter, $container, $actingUserId, $config['schoenstatt'], $countriesInfo, $translator);
+        $table = new SchoenstattTable(
+            $dbAdapter,
+            $container,
+            $actingUserId,
+            $config['schoenstatt'],
+            $countriesInfo,
+            $translator
+        );
         return $table;
     }
 }

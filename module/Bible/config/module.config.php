@@ -97,7 +97,7 @@ return [
                             'constraints' => [
                                 /*
                                  * If the user comes to book that doesn't exist in their
-                                 * selected translations, add the first translation that 
+                                 * selected translations, add the first translation that
                                  * has that book.
                                  */
                                 'book'        => '[A-Za-z0-9]{1,15}',
@@ -208,7 +208,7 @@ return [
                 'controller_services'                       => [
                     
                 ],
-                'row_processor_function'                    => 'processVerseRow',  
+                'row_processor_function'                    => 'processVerseRow',
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
                 //                 'format_view_helper'                        => 'formatEvent',
@@ -280,7 +280,7 @@ return [
                 ],
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
-                'row_processor_function'                    => 'processBookRow',  
+                'row_processor_function'                    => 'processBookRow',
 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
 //                     'title',

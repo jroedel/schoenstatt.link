@@ -35,7 +35,6 @@ class BibleTable extends SionTable
         if ('bible-book' === $entity) {
             $select->order(['order_jerusalem_es']);
         } elseif ('bible-translation' === $entity) {
-            
         } elseif ('bible-verse' === $entity) {
             $select->order(['verse_id', 'translation_id']); //perhaps this should be the other way around?
         }
@@ -66,7 +65,7 @@ class BibleTable extends SionTable
             'namePt' => $row['name_pt'],
             'nameFr' => $row['name_fr'],
             'orderJerusalemEn' => $this->filterDbInt($row['order_jerusalem_en']),
-            'orderJerusalemEs' => $this->filterDbInt($row['order_jerusalem_es']), 
+            'orderJerusalemEs' => $this->filterDbInt($row['order_jerusalem_es']),
             'abbreviationJerusalemEn' => $row['abbreviation_jerusalem_en'],
             'abbreviationJerusalemEs' => $row['abbreviation_jerusalem_es'],
             'isNewTestament' => $this->filterDbBool($row['is_new_testament']),
@@ -263,7 +262,7 @@ class BibleTable extends SionTable
          * Tis sould actually be 3 separate steps:
          * 1. Import reek dictionary
          * 2. Import reek words
-         * 3. Import verse words 
+         * 3. Import verse words
          * Greek words:
             - word_id
             - Word root
@@ -277,7 +276,7 @@ class BibleTable extends SionTable
             - Paradigm part 4 (verb: i forget)
             - FormsAvailable (pipe-separated list of forms)
             - DictionaryEntryId (for greek dictionary reference)
-            
+
             Verse words:
             - id
             - verse_id
@@ -396,7 +395,7 @@ class BibleTable extends SionTable
         if ($shouldInsertGreek) {
             foreach ($rootWords as $object) {
                 try {
-                $this->createEntity('greek-root', $object);
+                    $this->createEntity('greek-root', $object);
                 } catch (\Exception $e) {
                     var_dump($object);
                 }
@@ -421,7 +420,7 @@ class BibleTable extends SionTable
         }
     }
     
-    protected function processGreekRootRow($row) 
+    protected function processGreekRootRow($row)
     {
         $root = $row['root'];
         $partOfSpeech = $row['part_of_speech'];
@@ -430,9 +429,9 @@ class BibleTable extends SionTable
         $paradigmPart3 = $row['paradigm_part_3'];
         $paradigmPart4 = $row['paradigm_part_4'];
         $paradigm = null;
-        if (in_array($partOfSpeech, ['noun', 'verb', 'adjective'], TRUE)) {
-            $paradigm = $root.', ' 
-                .(isset($paradigmPart2) ? $paradigmPart2 : '———').', ' 
+        if (in_array($partOfSpeech, ['noun', 'verb', 'adjective'], true)) {
+            $paradigm = $root.', '
+                .(isset($paradigmPart2) ? $paradigmPart2 : '———').', '
                 .(isset($paradigmPart3) ? $paradigmPart3 : '———');
             if ('verb' === $partOfSpeech) {
                 $paradigm .= ', '.(isset($paradigmPart4) ? $paradigmPart4 : '———');

@@ -869,7 +869,6 @@ class SchoenstattTable extends SionTable implements
         $foundationDate = $this->filterDbDate($row['FoundationDate']);
         $jsonFoundationEvent = null;
         if (isset($foundationDate) && $foundationDate instanceof \DateTimeInterface) {
-            
             if ('sch-shrine' === $kind) {
                 $eventDescription = 'Shrine blessing';
             } else {
@@ -2225,7 +2224,15 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $sort['internalDisplayName'][$k] = $v['internalDisplayName'];
         }
         # sort by event_type desc and then title asc
-        array_multisort($sort['countryRegion'], SORT_ASC, $sort['country'], SORT_ASC, $sort['internalDisplayName'], SORT_ASC, $shrines);
+        array_multisort(
+            $sort['countryRegion'],
+            SORT_ASC,
+            $sort['country'],
+            SORT_ASC,
+            $sort['internalDisplayName'],
+            SORT_ASC,
+            $shrines
+        );
 
         return $shrines;
     }

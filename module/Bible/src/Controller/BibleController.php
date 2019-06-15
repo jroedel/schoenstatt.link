@@ -38,9 +38,9 @@ class BibleController extends SionController
     /**
      * Phase 1: Only show specific chapters of books. People can link to a particular verse
      * by using the # numeral symbol
-     * 
+     *
      * @todo Phase 2: Change the routing to allow users to show only a particular verse
-     * 
+     *
      * @todo Phase 3: Implement caching somehow
      */
     public function textAction()
@@ -95,7 +95,7 @@ class BibleController extends SionController
          *      'nab' => '...',
          *      'bnt' => '...',
          *  ],
-         */ 
+         */
         $view = new ViewModel([
             'bookId' => $bookId,
             'chapter' => $chapter,
@@ -159,7 +159,7 @@ class BibleController extends SionController
     
     /**
      * Routing currently doesn't allow access to this action @todo revise this function
-     */ 
+     */
     public function bibleAction()
     {
         $translation = $this->params('translation');

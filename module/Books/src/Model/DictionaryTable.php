@@ -218,7 +218,7 @@ class DictionaryTable extends SionTable
     }
     
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
      */
