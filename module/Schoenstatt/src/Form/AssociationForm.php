@@ -512,6 +512,8 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Google place ID',
+                'help-block' => 'Used for linking to the association\'s Google Place, for example, for reviews. '
+                .'Use the <a href="https://developers.google.com/places/place-id">Place ID finder.</a>',
             ],
             'attributes' => [
                 'placeholder' => 'ChIJj61dQgK6j4AR4GeTYWZsKWw',
