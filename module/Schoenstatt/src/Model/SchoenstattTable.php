@@ -630,6 +630,7 @@ class SchoenstattTable extends SionTable implements
         static $googlePlacePattern;
         static $languageCode;
         static $urlLabelLogos;
+        static $openingHoursValidator;
         $id = $this->filterDbId($row['AssociationId']);
 
         if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
@@ -902,11 +903,30 @@ class SchoenstattTable extends SionTable implements
                 ->startDate($dateString)
                 ->endDate($dateString);
         }
-        
-        $jsonIdentifier = new PropertyValue();
-        $jsonIdentifier->propertyID('Schoenstatt Link ID')
+        $siteIdentifier = new PropertyValue();
+        $siteIdentifier->propertyID('Schoenstatt Link ID')
             ->value($identifier);
-
+        if (isset($googlePlaceId)) {
+            $placeIdentifier = new PropertyValue();
+            $placeIdentifier->propertyID('Google Maps Place ID')
+            ->value($googlePlaceId);
+            $jsonIdentifier = [$siteIdentifier, $placeIdentifier];
+        } else {
+            $jsonIdentifier = $siteIdentifier;
+        }
+        
+        $openingHoursJson = $row['OpeningHoursSpecification'];
+        $openingHours = null;
+        if (!isset($openingHoursValidator)) {
+            $openingHoursValidator = new OpeningHoursSpecificationJson();
+        }
+        if ($openingHoursValidator->isValid($openingHoursJson)) {
+            try {
+                $spec = Json::decode($openingHoursJson, Json::TYPE_ARRAY);
+                $openingHours = OpeningHours::create($spec);
+            } catch (\Exception $e) {}
+        }
+        
         $processedRow = [
             'associationId'         => $id,
             'identifier'            => $identifier,
@@ -922,7 +942,7 @@ class SchoenstattTable extends SionTable implements
             'openingHoursHuman'         => $row['OpeningHoursHuman'],
             'openingHoursHumanUpdatedOn'=> $this->filterDbDate($row['OpeningHoursHumanUpdatedOn']),
             'openingHoursHumanUpdatedBy'=> $row['OpeningHoursHumanUpdatedBy'],
-            'openingHoursSpecificationJson' => $row['OpeningHoursSpecification'],
+            'openingHoursSpecificationJson' => $openingHoursJson,
             'openingHoursSpecificationJsonUpdatedOn' => $this->filterDbDate(
                 $row['OpeningHoursSpecificationUpdatedOn']),
             'openingHoursSpecificationJsonUpdatedBy' => $row['OpeningHoursSpecificationUpdatedBy'],
@@ -1039,6 +1059,7 @@ class SchoenstattTable extends SionTable implements
             'jsonApiUrl'            => $jsonApiUrl,
             'jsonFoundationEvent'   => $jsonFoundationEvent,
             'jsonIdentifier'        => $jsonIdentifier,
+            'openingHours'          => $openingHours,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
@@ -1051,7 +1072,6 @@ class SchoenstattTable extends SionTable implements
      */
     public function getAssociationSchema($object, $forApi = false)
     {
-        static $openingHoursValidator;
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
@@ -1072,17 +1092,8 @@ class SchoenstattTable extends SionTable implements
             $schema->isAccessibleForFree(true);
             $schema->publicAccess(true);
         }
-        if (isset($object['openingHoursSpecificationJson'])) {
-            if (!isset($openingHoursValidator)) {
-                $openingHoursValidator = new OpeningHoursSpecificationJson();
-            }
-            if ($openingHoursValidator->isValid($object['openingHoursSpecificationJson'])) {
-                try {
-                    $spec = Json::decode($object['openingHoursSpecificationJson'], Json::TYPE_ARRAY);
-                    $openingHours = OpeningHours::create($spec);
-                    $schema->setProperty('openingHoursSpecification', $openingHours->asStructuredData());
-                } catch (\Exception $e) {}
-            }
+        if (isset($object['openingHours']) && $object['openingHours'] instanceof OpeningHours) {
+            $schema->setProperty('openingHoursSpecification', $object['openingHours']->asStructuredData());
         }
         return $schema;
     }
