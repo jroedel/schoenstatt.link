@@ -33,6 +33,7 @@ use Spatie\SchemaOrg\CatholicChurch;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Spatie\OpeningHours\OpeningHours;
 use Zend\Json\Json;
+use Zend\Validator\Timezone;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -360,8 +361,8 @@ class SchoenstattTable extends SionTable implements
             //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
             //'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
             $select->columns(['AssociationId', 'AssociationName', 'Parent', 'Kind', 'OverrideNameFormat',
-            'InternalName', 'IsInternalNameTranslateable',
-            'Country', 'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
+            'InternalName', 'IsInternalNameTranslateable','Country', 'TimeZone',
+            'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
             'IsActive', 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminTags',
             'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy', 'Email', 'Email2',
             'EmailsUpdatedOn', 'EmailsUpdatedBy', 'Phone1', 'Phone1Label', 'Phone2', 'Phone2Label',
@@ -631,6 +632,8 @@ class SchoenstattTable extends SionTable implements
         static $languageCode;
         static $urlLabelLogos;
         static $openingHoursValidator;
+        static $tzValidator;
+        
         $id = $this->filterDbId($row['AssociationId']);
 
         if (isset($this->unlinkedAssociationsMemoryCache[$id])) {
@@ -915,6 +918,13 @@ class SchoenstattTable extends SionTable implements
             $jsonIdentifier = $siteIdentifier;
         }
         
+        if (!isset($tzValidator)) {
+            $tzValidator = new Timezone();
+        }
+        $timeZoneId = $row['TimeZone'];
+        if (!$tzValidator->isValid($timeZoneId)) {
+            $timeZoneId = null;
+        }
         $openingHoursJson = $row['OpeningHoursSpecification'];
         $openingHours = null;
         if (!isset($openingHoursValidator)) {
@@ -923,7 +933,11 @@ class SchoenstattTable extends SionTable implements
         if ($openingHoursValidator->isValid($openingHoursJson)) {
             try {
                 $spec = Json::decode($openingHoursJson, Json::TYPE_ARRAY);
-                $openingHours = OpeningHours::create($spec);
+                if (isset($timeZoneId)) {
+                    $openingHours = OpeningHours::create($spec, $timeZoneId);
+                } else {
+                    $openingHours = OpeningHours::create($spec);
+                }
             } catch (\Exception $e) {}
         }
         
@@ -938,6 +952,7 @@ class SchoenstattTable extends SionTable implements
             'kind'                  => $kind,
             'country'               => $country,
             'countryRegion'         => $countryRegion,
+            'timeZoneId'            => $timeZoneId,
             
             'openingHoursHuman'         => $row['OpeningHoursHuman'],
             'openingHoursHumanUpdatedOn'=> $this->filterDbDate($row['OpeningHoursHumanUpdatedOn']),
