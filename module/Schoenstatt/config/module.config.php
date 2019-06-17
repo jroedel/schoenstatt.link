@@ -1638,6 +1638,7 @@ return [
                 'controller_services'                   => [
                     CountriesInfo::class,
                 ],
+                'row_processor_function'                => 'processAssociationRow',
                 'get_object_function'                   => 'getSimpleAssociationBySwId',
                 'get_objects_function'                  => 'getAssociations',
                 'name_field'                            => 'associationName',

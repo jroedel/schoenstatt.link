@@ -164,9 +164,10 @@ class AssociationsController extends SionController
             throw new UnAuthorizedException();
         }
         /**
-         * @var SchoenstattTable $table
+         * @var \Schoenstatt\Model\SchoenstattTable $table
          */
         $table = $this->getSionTable();
+        $result = $table->autoFillTimeZones();
         $result = $table->updateAssociationMd5s();
         return ['result' => $result];
     }

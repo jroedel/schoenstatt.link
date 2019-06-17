@@ -48,7 +48,7 @@ class TimeZone extends AbstractValidator
     public static function getTimeZoneValueOptions(string $country = null)
     {
         $tzs = TimeZoneSelect::get_time_zones();
-        if (isset($country)) {
+        if (isset($country) && 'GB-SCT' !== $country) {
             $countryList = \DateTimeZone::listIdentifiers(\DateTimeZone::PER_COUNTRY, $country);
         }
         $onlyCountry = isset($country) && is_array($countryList) && !empty($countryList);
