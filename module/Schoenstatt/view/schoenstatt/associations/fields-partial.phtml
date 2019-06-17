@@ -36,6 +36,8 @@ $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('parentId'));
 echo $this->formRow($form->get('kind'));
 echo $this->formRow($form->get('country'));
+echo $this->formRow($form->get('openingHoursHuman'));
+echo $this->formRow($form->get('openingHoursSpecificationJson'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
 echo $this->formRow($form->get('suppressionDate'));?>
