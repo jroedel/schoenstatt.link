@@ -2254,7 +2254,6 @@ return [
                 ['route' => 'publications/publication/edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
-                ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
                 
                 ['route' => 'blog', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/create', 'roles' => ['blog_contributor']],
@@ -2270,7 +2269,8 @@ return [
                 ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
                 ['route' => 'books/create', 'roles' => ['lib_user']],
-
+                
+                ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/create', 'roles' => ['lib_user']],

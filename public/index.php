@@ -39,7 +39,7 @@ if (file_exists(__DIR__ . '/../config/development.config.php')) {
 // Report all errors except E_DEPRECATED
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 ini_set('display_errors', 1);
-ini_set('xdebug.var_display_max_depth', 2);
+ini_set('xdebug.var_display_max_depth', 1);
 
 // Run the application!
 Application::init($appConfig)->run();

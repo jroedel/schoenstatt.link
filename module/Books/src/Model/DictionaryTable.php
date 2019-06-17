@@ -193,6 +193,10 @@ class DictionaryTable extends SionTable
      */
     public function getAvailableDictionaryLanguages()
     {
+        $cacheKey = 'available-dictionary-languages';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
         $select = $this->getSelectPrototype('dictionary-entry');
         $select->columns(['Locale', 'Count' => new Expression('COUNT(*)')])
             ->group(['Locale'])
@@ -214,6 +218,7 @@ class DictionaryTable extends SionTable
                 'count' => $this->filterDbInt($row['Count']),
             ];
         }
+        $this->cacheEntityObjects($cacheKey, $dictionaries, ['dictionary-entry']);
         return $dictionaries;
     }
     
