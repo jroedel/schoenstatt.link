@@ -5,6 +5,7 @@ use Zend\InputFilter\InputFilterProviderInterface;
 use Zend\Filter\ToNull;
 use SionModel\Form\SionForm;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
+use Schoenstatt\Validator\TimeZone;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -135,7 +136,20 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false
             ],
         ]);
-        
+        $timeZoneOptions = array_merge(["" => ""], TimeZone::getTimeZoneValueOptions());
+        $this->add([
+            'name' => 'timeZoneId',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Time zone',
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => $timeZoneOptions,
+            ],
+            'attributes' => [
+                'required' => false,
+            ],
+        ]);
         $this->add([
             'name' => 'openingHoursHuman',
             'type' => 'Text',
@@ -738,7 +752,17 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                         ],
                     ],
                 ],
-            ], 
+            ],
+            'timeZoneId' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
             'openingHoursHuman' => [
                 'required' => false,
                 'filters' => [

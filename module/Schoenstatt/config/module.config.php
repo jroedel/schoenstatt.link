@@ -1719,6 +1719,7 @@ return [
                     'parentId'                  => 'Parent',
                     'kind'                      => 'Kind',
                     'country'                   => 'Country',
+                    'timeZoneId'                => 'TimeZone',
                     'openingHoursHuman'         => 'OpeningHoursHuman',
                     'openingHoursHumanUpdatedOn'=> 'OpeningHoursHumanUpdatedOn',
                     'openingHoursHumanUpdatedBy'=> 'OpeningHoursHumanUpdatedBy',

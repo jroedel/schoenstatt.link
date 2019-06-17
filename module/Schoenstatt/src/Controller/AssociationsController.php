@@ -8,6 +8,7 @@ use JTranslate\Model\CountriesInfo;
 use Zend\Filter\StripTags;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Schoenstatt\Validator\TimeZone;
 
 class AssociationsController extends SionController
 {
@@ -53,10 +54,24 @@ class AssociationsController extends SionController
             return $view;
         }
         $entity = $view->getVariable('entity');
+        /** @var AssociationForm $form */
+        $form = $view->getVariable('form');
+        if (isset($entity['country'])) {
+            $tzList = TimeZone::getTimeZoneValueOptions($entity['country']);
+            if (!empty($tzList)) {
+                $form->get('timeZoneId')->setValueOptions($tzList);
+            }
+        }
         if ('sch-shrine' === $entity['kind'] || 'sch-wayside-shrine' === $entity['kind']) {
-            /** @var AssociationForm $form */
-            $form = $view->getVariable('form');
-            $form->get('publicNotes')->setLabel('Visitor information');
+            $publicNotes = $form->get('publicNotes');
+            $publicNotes->setLabel('Visitor information (also Mass/Adoration/Confession information)');
+            $publicNotes->setAttribute('placeholder', "Turn right at the first driveway after getting off the highway.
+
+**Mass Times**: Sunday 11:00am, every 3rd Sunday 7pm
+
+**Adoration**: Sunday 8pm
+
+**Confession**: By appointment, please don't hesitate to call.");
         }
         return $view;
     }

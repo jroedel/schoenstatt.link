@@ -26,7 +26,7 @@
         "matriphe/iso-639": "^1.0",
 		"cakephp/utility": "^3.2.0",
         "mledoze/countries": "^1.8",
-        "spatie/schema-org": "^1.6",
+        "spatie/schema-org": "^2.2",
         "slm/locale": "^0.3",
         "zendframework/zend-component-installer": "^1.0",
         "zendframework/zend-permissions-acl": "^2.7",
@@ -51,7 +51,8 @@
         "spatie/opening-hours": "^2.0",
         "zfr/zfr-cors": "dev-optimized-cors-preflight",
         "jmikola/geojson": "1.0",
-        "cyberprojekt/libkml": "dev-master"
+        "cyberprojekt/libkml": "dev-master",
+        "scottconnerly/timezone": "^0.2.0"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",

@@ -1,6 +1,6 @@
 <?php
-use Spatie\SchemaOrg\Thing;
 use Carbon\Carbon;
+use Spatie\SchemaOrg\BaseType;
 
 $object = $this->entity;
 $internalName = null;
@@ -39,12 +39,12 @@ $this->headTitle($name);?>
     	<!-- Here goes the logo -->
     	<div class="col-md-7">
             <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
-            if (!is_null($object['email'])) { //@todo add checks for validated
+            if (isset($object['email'])) : //@todo add checks for validated
                 echo $this->email($object['email']);
                 if (!is_null($object['email2'])) {
                     echo ', '.$this->email($object['email2']);
                 }
-            }?></p>
+            endif;?></p>
             <?php
             if (isset($object['geoPoint'])) :
                 //https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
@@ -348,7 +348,7 @@ if ($this->isAllowed('route/associations/association/edit')) {
 </div></div>
 <?php if (isset($this->schema)):
     $schema = $this->schema;
-    if ($schema instanceof Thing) {
+    if ($schema instanceof BaseType) {
         echo $schema->toScript();
     }
 endif;?>

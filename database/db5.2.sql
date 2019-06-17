@@ -1,2 +1,3 @@
 #submitted 2019-06-17
 ALTER TABLE `sch_associations` ADD `OpeningHoursHuman` VARCHAR(500) NULL DEFAULT NULL AFTER `SchemaOrgJsonMd5`, ADD `OpeningHoursHumanUpdatedOn` DATETIME NULL DEFAULT NULL AFTER `OpeningHoursHuman`, ADD `OpeningHoursHumanUpdatedBy` INT NULL DEFAULT NULL AFTER `OpeningHoursHumanUpdatedOn`, ADD `OpeningHoursSpecification` TEXT NULL DEFAULT NULL AFTER `OpeningHoursHumanUpdatedBy`, ADD `OpeningHoursSpecificationUpdatedOn` DATETIME NULL DEFAULT NULL AFTER `OpeningHoursSpecification`, ADD `OpeningHoursSpecificationUpdatedBy` INT NULL DEFAULT NULL AFTER `OpeningHoursSpecificationUpdatedOn`;
+ALTER TABLE `sch_associations` ADD `TimeZone` VARCHAR(100) NULL DEFAULT NULL AFTER `Country`;
