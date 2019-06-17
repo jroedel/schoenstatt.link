@@ -4,6 +4,7 @@ namespace Schoenstatt\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
 use Zend\Filter\ToNull;
 use SionModel\Form\SionForm;
+use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -28,13 +29,13 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Name for the public',
-                'required' => true,
                 'help-block' => 'This is the name that would be published in Google Maps (if applicable). '
                     .'Several association types include `name formats` that insert this field within a commonly '
                     .'used format, for example `Schoenstatt movement of [name]`. This simplifies mass translation, '
                     .'but can be overridden below.',
             ],
             'attributes' => [
+                'required' => true,
                 'placeholder' => 'ex. Schoenstatt Fathers',
                 'maxlength' => '200',
             ],
@@ -70,13 +71,13 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Name within Schoenstatt',
-                'required' => false,
                 'help-block' => 'This is the name that would be that will be shown to most users of the page '
                     .'(supposing most users are Schoenstatters). This field has no name formats as the '
                     .'public name field does. If the internal name would be the same as the public name, '
                     .'please leave blank.',
             ],
             'attributes' => [
+                'required' => false,
                 'placeholder' => 'ex. Exile Shrine',
                 'maxlength' => '200',
             ],
@@ -134,7 +135,43 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false
             ],
         ]);
-
+        
+        $this->add([
+            'name' => 'openingHoursHuman',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Opening hours (free text)',
+                'help-block' => 'Be as descriptive as possible, including closing days throughout the year! 
+There\'s nothing worse for a pilgrim than finding a closed door.',
+            ],
+            'attributes' => [
+                'required' => false,
+                'placeholder' => 'Sun-Sat 9-11am, 12-8pm, except first Tuesdays of the month',
+            ],
+        ]);
+        $this->add([
+            'name' => 'openingHoursSpecificationJson',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Opening hours specification JSON (advanced users)',
+                'help-block' => 'Please see OpeningHours::create([...]);
+at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/opening-hours</a></br>
+',
+            ],
+            'attributes' => [
+                'required' => false,
+                'rows' => 8,
+                'placeholder' => '{
+  "friday":["09:00-12:00","13:00-18:00"],
+  "saturday":["09:00-12:00","13:00-18:00"],
+  "sunday":["09:00-12:00","13:00-18:00"],
+  "exceptions": {
+    "2016-11-11": ["09:00-12:00"],
+    "2016-12-25": [],
+    "01-01": [],
+}}',
+            ],
+        ]);
         $this->add([
             'name' => 'foundationDate',
             'type' => 'Date',
@@ -494,19 +531,6 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Zip/PLZ',
             ],
         ]);
-//         $this->add([
-//             'name' => 'post1Country',
-//             'type' => 'Select',
-//             'options' => [
-//                 'label' => 'Country (post1)',
-//                 'empty_option' => '',
-//                 'unselected_value' => '',
-//             ],
-//             'attributes' => [
-//                 'required' => false
-//             ],
-//         ]);
-        
         $this->add([
             'name' => 'googlePlaceId',
             'type' => 'Text',
@@ -520,47 +544,6 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '200',
             ],
         ]);
-//         $this->add([
-//             'name' => 'postStreet1',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'Street line 1 (post)',
-//             ],
-//         ]);
-//         $this->add([
-//             'name' => 'postStreet2',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'Street line 2 (post)',
-//             ],
-//         ]);
-//         $this->add([
-//             'name' => 'postCityState',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'City/State (post)',
-//             ],
-//         ]);
-//         $this->add([
-//             'name' => 'postZip',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'Zip/PLZ (post)',
-//             ],
-//         ]);
-//         $this->add([
-//             'name' => 'post2Country',
-//             'type' => 'Select',
-//             'options' => [
-//                 'label' => 'Country (post2)',
-//                 'empty_option' => '',
-//                 'unselected_value' => '',
-//             ],
-//             'attributes' => [
-//                 'required' => false
-//             ],
-//         ]);
-
         $this->add([
             'name' => 'contactNotes',
             'type' => 'Textarea',
@@ -754,6 +737,45 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                             'max' => 6,
                         ],
                     ],
+                ],
+            ], 
+            'openingHoursHuman' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 500,
+                        ],
+                    ],
+                ],
+            ],
+            'openingHoursSpecificationJson' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 1000,
+                        ],
+                    ],
+                    ['name' => OpeningHoursSpecificationJson::class]
                 ],
             ],
             'foundationDate' => [
@@ -1003,78 +1025,6 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-//             'post2Street1' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => 'StripTags'],
-//                     ['name' => 'StripNewlines'],
-//                     ['name' => 'StringTrim'],
-//                     ['name' => 'ToNull'],
-//                 ],
-//                 'validators' => [
-//                     [
-//                         'name' => 'StringLength',
-//                         'options' => [
-//                             'encoding' => 'UTF-8',
-//                             'max' => 70,
-//                         ],
-//                     ],
-//                 ],
-//             ],
-//             'post2Street2' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => 'StripTags'],
-//                     ['name' => 'StripNewlines'],
-//                     ['name' => 'StringTrim'],
-//                     ['name' => 'ToNull'],
-//                 ],
-//                 'validators' => [
-//                     [
-//                         'name' => 'StringLength',
-//                         'options' => [
-//                             'encoding' => 'UTF-8',
-//                             'max' => 70,
-//                         ],
-//                     ],
-//                 ],
-//             ],
-//             'post2CityState' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => 'StripTags'],
-//                     ['name' => 'StripNewlines'],
-//                     ['name' => 'StringTrim'],
-//                     ['name' => 'ToNull'],
-//                 ],
-//                 'validators' => [
-//                     [
-//                         'name' => 'StringLength',
-//                         'options' => [
-//                             'encoding' => 'UTF-8',
-//                             'max' => 40,
-//                         ],
-//                     ],
-//                 ],
-//             ],
-//             'post2Zip' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => 'StripTags'],
-//                     ['name' => 'StripNewlines'],
-//                     ['name' => 'StringTrim'],
-//                     ['name' => 'ToNull'],
-//                 ],
-//                 'validators' => [
-//                     [
-//                         'name' => 'StringLength',
-//                         'options' => [
-//                             'encoding' => 'UTF-8',
-//                             'max' => 15,
-//                         ],
-//                     ],
-//                 ],
-//             ],
             'googlePlaceId' => [
                 'required' => false,
                 'filters' => [

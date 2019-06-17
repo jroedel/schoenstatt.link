@@ -30,6 +30,9 @@ use GeoJson\Feature\FeatureCollection;
 use Spatie\SchemaOrg\Event;
 use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
+use Schoenstatt\Validator\OpeningHoursSpecificationJson;
+use Spatie\OpeningHours\OpeningHours;
+use Zend\Json\Json;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -372,7 +375,10 @@ class SchoenstattTable extends SionTable implements
             'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
             'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
             'VisitorsInformationPt', 'VisitorsInformationFr',
-            'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr', 'SchemaOrgJsonMd5']);
+            'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr', 'SchemaOrgJsonMd5',
+            'OpeningHoursHuman', 'OpeningHoursHumanUpdatedOn', 'OpeningHoursHumanUpdatedBy',
+            'OpeningHoursSpecification', 'OpeningHoursSpecificationUpdatedOn', 'OpeningHoursSpecificationUpdatedBy'
+            ]);
             //         $select->group(['TheMonth', 'TheYear']);
             //         $select->where($predicate->in('ChangedEntity', $tableEntities));
 //             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
@@ -631,12 +637,12 @@ class SchoenstattTable extends SionTable implements
         }
         $isTranslatorReady = $this->translator instanceof TranslatorInterface;
         $areCountryTranslationsReady = isset($this->countryNameTranslations);
-        $country = $this->filterDbString($row['Country']);
+        $country = $row['Country'];
         $countryInfo = $this->countriesInfo->getCountry($country);
         $countryRegion = isset($countryInfo) ? $countryInfo->region : null;
 
         $locale = $this->getLocale();
-        $kind = $this->filterDbString($row['Kind']);
+        $kind = $row['Kind'];
         if (!isset($this->associationKinds[$kind])) {
             return null;
         }
@@ -647,14 +653,14 @@ class SchoenstattTable extends SionTable implements
 
         //process URLs
         $unprocessedUrls = [
-            ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
-            ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
-            ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
+            ['url' => $row['Url1'], 'label' => $row['Url1Label']],
+            ['url' => $row['Url2'], 'label' => $row['Url2Label']],
+            ['url' => $row['Url3'], 'label' => $row['Url3Label']],
         ];
 
-        $facebookUrl = $this->filterDbString($row['FacebookUrl']);
-        $twitterUser = $this->filterDbString($row['TwitterUser']);
-        $instagramUser = $this->filterDbString($row['InstagramUser']);
+        $facebookUrl = $row['FacebookUrl'];
+        $twitterUser = $row['TwitterUser'];
+        $instagramUser = $row['InstagramUser'];
         $googlePlaceId = $row['GooglePlaceId'];
         if (isset($facebookUrl)) {
             $unprocessedUrls[] = ['url' => $facebookUrl, 'label' => 'Facebook'];
@@ -712,28 +718,28 @@ class SchoenstattTable extends SionTable implements
 
         $phones = [];
         $jsonTelephone = [];
-        if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
+        if (null !== ($phone1 = $row['Phone1'])) {
             $phones[] = [
                 'number' => $phone1,
-                'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label']))
+                'label' => null !== ($phone1Label = $row['Phone1Label'])
                     ? $phone1Label : 'Other',
             ];
             $jsonTelephone[] = $phone1;
         }
-        if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
+        if (null !== ($phone2 = $row['Phone2'])) {
             $phones[] = [
                 'number' => $phone2,
-                'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label']))
+                'label' => null !== ($phone2Label = $row['Phone2Label'])
                     ? $phone2Label : 'Other',
             ];
             if (!in_array($phone2, $jsonTelephone)) {
                 $jsonTelephone[] = $phone2;
             }
         }
-        if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
+        if (null !== ($phone3 = $row['Phone3'])) {
             $phones[] = [
                 'number' => $phone3,
-                'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label']))
+                'label' => null !== ($phone3Label = $row['Phone3Label'])
                     ? $phone3Label : 'Other',
             ];
             if (!in_array($phone3, $jsonTelephone)) {
@@ -747,14 +753,14 @@ class SchoenstattTable extends SionTable implements
         }
 
         //abstract address elements
-        $street1   = $this->filterDbString($row['Post1Street1']);
-        $street2   = $this->filterDbString($row['Post1Street2']);
-        $cityState = $this->filterDbString($row['Post1CityState']);
-        $zip       = $this->filterDbString($row['Post1Zip']);
-        $postStreet1   = $this->filterDbString($row['Post2Street1']);
-        $postStreet2   = $this->filterDbString($row['Post2Street2']);
-        $postCityState = $this->filterDbString($row['Post2CityState']);
-        $postZip       = $this->filterDbString($row['Post2Zip']);
+        $street1   = $row['Post1Street1'];
+        $street2   = $row['Post1Street2'];
+        $cityState = $row['Post1CityState'];
+        $zip       = $row['Post1Zip'];
+        $postStreet1   = $row['Post2Street1'];
+        $postStreet2   = $row['Post2Street2'];
+        $postCityState = $row['Post2CityState'];
+        $postZip       = $row['Post2Zip'];
 
         $addresses = [];
         if (isset($street1) || isset($street2) || isset($cityState)) {
@@ -811,7 +817,7 @@ class SchoenstattTable extends SionTable implements
             }
         }
 
-        $name = $this->filterDbString($row['AssociationName']);
+        $name = $row['AssociationName'];
         $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
         $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
         $formattedName = null;
@@ -912,6 +918,15 @@ class SchoenstattTable extends SionTable implements
             'kind'                  => $kind,
             'country'               => $country,
             'countryRegion'         => $countryRegion,
+            
+            'openingHoursHuman'         => $row['OpeningHoursHuman'],
+            'openingHoursHumanUpdatedOn'=> $this->filterDbDate($row['OpeningHoursHumanUpdatedOn']),
+            'openingHoursHumanUpdatedBy'=> $row['OpeningHoursHumanUpdatedBy'],
+            'openingHoursSpecificationJson' => $row['OpeningHoursSpecification'],
+            'openingHoursSpecificationJsonUpdatedOn' => $this->filterDbDate(
+                $row['OpeningHoursSpecificationUpdatedOn']),
+            'openingHoursSpecificationJsonUpdatedBy' => $row['OpeningHoursSpecificationUpdatedBy'],
+            
             'foundationDate'        => $foundationDate,
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
@@ -920,23 +935,23 @@ class SchoenstattTable extends SionTable implements
             'isActive'              => $this->filterDbBool($row['IsActive']),
 
             'geoPoint'                  => $geoPoint,
-            'latitude'                  => $this->filterDbString($row['Latitude']), //@deprecated
-            'longitude'                 => $this->filterDbString($row['Longitude']), //@deprecated
-            'idealEn'                   => $this->filterDbString($row['IdealEn']),
-            'idealEs'                   => $this->filterDbString($row['IdealEs']),
-            'idealDe'                   => $this->filterDbString($row['IdealDe']),
-            'idealPt'                   => $this->filterDbString($row['IdealPt']),
-            'idealFr'                   => $this->filterDbString($row['IdealFr']),
-            'visitorsInformationEn'     => $this->filterDbString($row['VisitorsInformationEn']),
-            'visitorsInformationEs'     => $this->filterDbString($row['VisitorsInformationEs']),
-            'visitorsInformationDe'     => $this->filterDbString($row['VisitorsInformationDe']),
-            'visitorsInformationPt'     => $this->filterDbString($row['VisitorsInformationPt']),
-            'visitorsInformationFr'     => $this->filterDbString($row['VisitorsInformationFr']),
-            'historyEn'                 => $this->filterDbString($row['HistoryEn']),
-            'historyEs'                 => $this->filterDbString($row['HistoryEs']),
-            'historyDe'                 => $this->filterDbString($row['HistoryDe']),
-            'historyPt'                 => $this->filterDbString($row['HistoryPt']),
-            'historyFr'                 => $this->filterDbString($row['HistoryFr']),
+            'latitude'                  => $row['Latitude'], //@deprecated
+            'longitude'                 => $row['Longitude'], //@deprecated
+            'idealEn'                   => $row['IdealEn'],
+            'idealEs'                   => $row['IdealEs'],
+            'idealDe'                   => $row['IdealDe'],
+            'idealPt'                   => $row['IdealPt'],
+            'idealFr'                   => $row['IdealFr'],
+            'visitorsInformationEn'     => $row['VisitorsInformationEn'],
+            'visitorsInformationEs'     => $row['VisitorsInformationEs'],
+            'visitorsInformationDe'     => $row['VisitorsInformationDe'],
+            'visitorsInformationPt'     => $row['VisitorsInformationPt'],
+            'visitorsInformationFr'     => $row['VisitorsInformationFr'],
+            'historyEn'                 => $row['HistoryEn'],
+            'historyEs'                 => $row['HistoryEs'],
+            'historyDe'                 => $row['HistoryDe'],
+            'historyPt'                 => $row['HistoryPt'],
+            'historyFr'                 => $row['HistoryFr'],
 
             'adminTags'             => $this->filterDbArray($row['AdminTags']),
 
@@ -960,19 +975,19 @@ class SchoenstattTable extends SionTable implements
             'emailsUpdatedOn'       => $this->filterDbDate($row['EmailsUpdatedOn']),
             'emailsUpdatedBy'       => $this->filterDbId($row['EmailsUpdatedBy']),
             'phone1'                => $phone1,
-            'phone1Label'           => $this->filterDbString($row['Phone1Label']),
+            'phone1Label'           => $row['Phone1Label'],
             'phone2'                => $phone2,
-            'phone2Label'           => $this->filterDbString($row['Phone2Label']),
+            'phone2Label'           => $row['Phone2Label'],
             'phone3'                => $phone3,
-            'phone3Label'           => $this->filterDbString($row['Phone3Label']),
+            'phone3Label'           => $row['Phone3Label'],
             'phonesUpdatedOn'       => $this->filterDbDate($row['PhonesUpdatedOn']),
             'phonesUpdatedBy'       => $this->filterDbId($row['PhonesUpdatedBy']),
-            'url1'                  => $this->filterDbString($row['Url1']),
-            'url1Label'             => $this->filterDbString($row['Url1Label']),
-            'url2'                  => $this->filterDbString($row['Url2']),
-            'url2Label'             => $this->filterDbString($row['Url2Label']),
-            'url3'                  => $this->filterDbString($row['Url3']),
-            'url3Label'             => $this->filterDbString($row['Url3Label']),
+            'url1'                  => $row['Url1'],
+            'url1Label'             => $row['Url1Label'],
+            'url2'                  => $row['Url2'],
+            'url2Label'             => $row['Url2Label'],
+            'url3'                  => $row['Url3'],
+            'url3Label'             => $row['Url3Label'],
             'facebookUrl'           => $facebookUrl,
             'twitterUser'           => $twitterUser,
             'instagramUser'         => $instagramUser,
@@ -988,17 +1003,17 @@ class SchoenstattTable extends SionTable implements
             'postZip'               => $postZip, //@todo deprecated
             
 //             'post2Country'              => $post2Country,
-            'contactNotes'          => $this->filterDbString($row['ContactNotes']),
+            'contactNotes'          => $row['ContactNotes'],
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
 
             'contactInfoUpdatedOn'  => $this->filterDbDate($row['ContactInfoUpdatedOn']),
             'contactInfoUpdatedBy'  => $this->filterDbDate($row['ContactInfoUpdatedBy']),
 
-            'publicNotes'           => $this->filterDbString($row['PublicNotes']),
+            'publicNotes'           => $row['PublicNotes'],
             'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
             'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
-            'adminNotes'            => $this->filterDbString($row['AdminNotes']),
+            'adminNotes'            => $row['AdminNotes'],
             'adminNotesUpdatedOn'   => $this->filterDbDate($row['AdminNotesUpdatedOn']),
             'adminNotesUpdatedBy'   => $this->filterDbId($row['AdminNotesUpdatedBy']),
             'createdOn'             => $this->filterDbDate($row['CreatedOn']),
@@ -1036,6 +1051,7 @@ class SchoenstattTable extends SionTable implements
      */
     public function getAssociationSchema($object, $forApi = false)
     {
+        static $openingHoursValidator;
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
@@ -1055,6 +1071,18 @@ class SchoenstattTable extends SionTable implements
         ) {
             $schema->isAccessibleForFree(true);
             $schema->publicAccess(true);
+        }
+        if (isset($object['openingHoursSpecificationJson'])) {
+            if (!isset($openingHoursValidator)) {
+                $openingHoursValidator = new OpeningHoursSpecificationJson();
+            }
+            if ($openingHoursValidator->isValid($object['openingHoursSpecificationJson'])) {
+                try {
+                    $spec = Json::decode($object['openingHoursSpecificationJson'], Json::TYPE_ARRAY);
+                    $openingHours = OpeningHours::create($spec);
+                    $schema->setProperty('openingHoursSpecification', $openingHours->asStructuredData());
+                } catch (\Exception $e) {}
+            }
         }
         return $schema;
     }
@@ -1340,9 +1368,9 @@ ORDER BY `LastName`, `FirstName`";
 
             //process URLs
             $unprocessedUrls = [
-                ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
-                ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
-                ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
+                ['url' => $row['Url1'], 'label' => $row['Url1Label']],
+                ['url' => $row['Url2'], 'label' => $row['Url2Label']],
+                ['url' => $row['Url3'], 'label' => $row['Url3Label']],
             ];
             $urls = SionTable::processUrls($unprocessedUrls);
 
@@ -1354,7 +1382,7 @@ ORDER BY `LastName`, `FirstName`";
 
             $title = null;
             $automaticTitle = $this->filterDbBool($row['TitleAutomatic']);
-            $manualTitle = $this->filterDbString($row['Title']);
+            $manualTitle = $row['Title'];
             if (!$automaticTitle) {
                 $title = $manualTitle;
             } else {
@@ -1381,52 +1409,52 @@ ORDER BY `LastName`, `FirstName`";
                 }
             }
 
-            $lastName = $this->filterDbString($row['LastName']);
-            $firstName = $this->filterDbString($row['FirstName']);
+            $lastName = $row['LastName'];
+            $firstName = $row['FirstName'];
             $fullName = $firstName . ' ' . $lastName;
             $sort = strtoupper(substr($lastName.$firstName, 0, 4));
 
             $phones = [];
-            if (null !== ($cellPhone = $this->filterDbString($row['CellPhone']))) {
+            if (null !== ($cellPhone = $row['CellPhone'])) {
                 $phones[] = [
                     'number' => $cellPhone,
                     'label' => 'Main cell phone',
                     'whatsApp' => $this->filterDbBool($row['CellPhoneHasWhatsApp']),
                 ];
             }
-            if (null !== ($phone1 = $this->filterDbString($row['Phone1']))) {
+            if (null !== ($phone1 = $row['Phone1'])) {
                 $phones[] = [
                     'number' => $phone1,
-                    'label' => null !== ($phone1Label = $this->filterDbString($row['Phone1Label']))
+                    'label' => null !== ($phone1Label = $row['Phone1Label'])
                         ? $phone1Label : 'Other',
                 ];
             }
-            if (null !== ($phone2 = $this->filterDbString($row['Phone2']))) {
+            if (null !== ($phone2 = $row['Phone2'])) {
                 $phones[] = [
                     'number' => $phone2,
-                    'label' => null !== ($phone2Label = $this->filterDbString($row['Phone2Label']))
+                    'label' => null !== ($phone2Label = $row['Phone2Label'])
                         ? $phone2Label : 'Other',
                 ];
             }
-            if (null !== ($phone3 = $this->filterDbString($row['Phone3']))) {
+            if (null !== ($phone3 = $row['Phone3'])) {
                 $phones[] = [
                     'number' => $phone3,
-                    'label' => null !== ($phone3Label = $this->filterDbString($row['Phone3Label']))
+                    'label' => null !== ($phone3Label = $row['Phone3Label'])
                         ? $phone3Label : 'Other',
                 ];
             }
 
             $address = [
-                'street1'               => $this->filterDbString($row['PostStreet1']),
-                'street2'               => $this->filterDbString($row['PostStreet2']),
-                'cityState'             => $this->filterDbString($row['PostCityState']),
-                'zip'                   => $this->filterDbString($row['PostZip']),
-                'country'               => $this->filterDbString($row['PostCountry']),
+                'street1'               => $row['PostStreet1'],
+                'street2'               => $row['PostStreet2'],
+                'cityState'             => $row['PostCityState'],
+                'zip'                   => $row['PostZip'],
+                'country'               => $row['PostCountry'],
             ];
 
-            $country = $this->filterDbString($row['Country']);
+            $country = $row['Country'];
 
-            $primaryLocale = $this->filterDbString($row['PrimaryLocale']);
+            $primaryLocale = $row['PrimaryLocale'];
             //not a valid locale, find another
             if (!isset($primaryLocale) || !isset($possibleLocales[$primaryLocale]) && isset($country)) {
                 if (isset($this->countryLanguageMap[$country])) {
@@ -1475,8 +1503,8 @@ ORDER BY `LastName`, `FirstName`";
                 'fullName'                  => $fullName,
                 'searchName'                => $firstName.' '.$lastName, //@todo remove accents
 //                 'searchName'                => $row['SearchName'],
-                'firstNameWithoutAccents'   => $this->filterDbString($row['FirstNameWithoutAccents']),
-                'lastNameWithoutAccents'    => $this->filterDbString($row['LastNameWithoutAccents']),
+                'firstNameWithoutAccents'   => $row['FirstNameWithoutAccents'],
+                'lastNameWithoutAccents'    => $row['LastNameWithoutAccents'],
                 'fullFriendlyName'          => $fullName,
                 'spousePersonId'            => $this->filterDbId($row['SpousePersonId']),
                 'personTags'                => $personTags,
@@ -1492,7 +1520,7 @@ ORDER BY `LastName`, `FirstName`";
                 'age'                       => $age,
                 'nameDay'                   => $nameDay,
 
-                'publicNotes'               => $this->filterDbString($row['PublicNotes']),
+                'publicNotes'               => $row['PublicNotes'],
                 'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),
                 'publicNotesUpdatedBy'      => $this->filterDbId($row['PublicNotesUpdatedBy']),
 
@@ -1509,25 +1537,25 @@ ORDER BY `LastName`, `FirstName`";
                 'cellPhone'                 => $cellPhone,
                 'cellPhoneHasWhatsApp'      => $this->filterDbBool($row['CellPhoneHasWhatsApp']),
                 'phone1'                    => $phone1,
-                'phone1Label'               => $this->filterDbString($row['Phone1Label']),
+                'phone1Label'               => $row['Phone1Label'],
                 'phone2'                    => $phone2,
-                'phone2Label'               => $this->filterDbString($row['Phone2Label']),
+                'phone2Label'               => $row['Phone2Label'],
                 'phone3'                    => $phone3,
-                'phone3Label'               => $this->filterDbString($row['Phone3Label']),
+                'phone3Label'               => $row['Phone3Label'],
                 'phonesUpdatedOn'           => $this->filterDbDate($row['PhonesUpdatedOn']),
                 'phonesUpdatedBy'           => $this->filterDbId($row['PhonesUpdatedBy']),
                 'urls'                      => $urls,
-                'url1'                      => $this->filterDbString($row['Url1']),
-                'url1Label'                 => $this->filterDbString($row['Url1Label']),
-                'url2'                      => $this->filterDbString($row['Url2']),
-                'url2Label'                 => $this->filterDbString($row['Url2Label']),
-                'url3'                      => $this->filterDbString($row['Url3']),
-                'url3Label'                 => $this->filterDbString($row['Url3Label']),
-                'facebookUrl'               => $this->filterDbString($row['FacebookUrl']),
-                'skypeUser'                 => $this->filterDbString($row['SkypeUser']),
-                'twitterUser'               => $this->filterDbString($row['TwitterUser']),
-                'instagramUser'             => $this->filterDbString($row['InstagramUser']),
-                'slackUser'                 => $this->filterDbString($row['SlackUser']),
+                'url1'                      => $row['Url1'],
+                'url1Label'                 => $row['Url1Label'],
+                'url2'                      => $row['Url2'],
+                'url2Label'                 => $row['Url2Label'],
+                'url3'                      => $row['Url3'],
+                'url3Label'                 => $row['Url3Label'],
+                'facebookUrl'               => $row['FacebookUrl'],
+                'skypeUser'                 => $row['SkypeUser'],
+                'twitterUser'               => $row['TwitterUser'],
+                'instagramUser'             => $row['InstagramUser'],
+                'slackUser'                 => $row['SlackUser'],
 
                 'address'                   => $address,
 
@@ -1537,7 +1565,7 @@ ORDER BY `LastName`, `FirstName`";
                 'postZip'                   => $address['zip'],
                 'postCountry'               => $address['country'],
 
-                'contactNotes'              => $this->filterDbString($row['ContactNotes']),
+                'contactNotes'              => $row['ContactNotes'],
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
 
@@ -1547,11 +1575,11 @@ ORDER BY `LastName`, `FirstName`";
                 /**
                  * Private info
                 */
-                'dataSource'                => $this->filterDbString($row['DataSource']),
+                'dataSource'                => $row['DataSource'],
                 'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
                 'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
                 'adminTags'                 => $this->filterDbArray(strtolower($row['AdminTags'])),
-                'adminNotes'                => $this->filterDbString($row['AdminNotes']),
+                'adminNotes'                => $row['AdminNotes'],
                 'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
                 'adminNotesUpdatedBy'       => $this->filterDbId($row['AdminNotesUpdatedBy']),
             ];
@@ -1619,7 +1647,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $entities = [];
         foreach ($results as $row) {
             $id = $this->filterDbId($row['RoleId']);
-            $roleTitle = $this->filterDbString($row['RoleTitle']);
+            $roleTitle = $row['RoleTitle'];
             if ($isTranslatorReady) {
                 $formattedRoleTitle = $this->translator->translate($roleTitle, 'Schoenstatt');
             } else {
@@ -1828,7 +1856,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $startDate = $this->filterDbDate($row['StartDate']);
             $endDate = $this->filterDbDate($row['EndDate']);
             $isActive = $this::areWeWithinDateRange($startDate, $endDate);
-            $roleTitle = $this->filterDbString($row['RoleTitle']);
+            $roleTitle = $row['RoleTitle'];
             if ($isTranslatorReady) {
                 $formattedRoleTitle = $this->translator->translate($roleTitle, 'Schoenstatt');
             } else {
@@ -1837,7 +1865,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $entities[$id] = [
                 'assignmentId'          => $id,
                 'roleId'                => $this->filterDbId($row['RoleId']),
-                'roleTitle'             => $this->filterDbString($row['RoleTitle']),
+                'roleTitle'             => $roleTitle,
                 'associationId'         => $this->filterDbId($row['AssociationId']),
                 'startDate'             => $startDate,
                 'endDate'               => $endDate,

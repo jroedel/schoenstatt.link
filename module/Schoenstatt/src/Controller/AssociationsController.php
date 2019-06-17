@@ -172,7 +172,7 @@ class AssociationsController extends SionController
             $chileNationalMovement = 8;
             $data = $this->getChileInfo();
             foreach ($data as $diocesanInfo) {
-                $newDioceseId = $this->createDiocesanMovement($chileNationalMovement, $diocesanInfo);
+                $this->createDiocesanMovement($chileNationalMovement, $diocesanInfo);
             }
         }
         return new ViewModel([
