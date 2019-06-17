@@ -34,6 +34,8 @@ use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Spatie\OpeningHours\OpeningHours;
 use Zend\Json\Json;
 use Zend\Validator\Timezone;
+use Zend\Db\Sql\Predicate\IsNull;
+use Zend\Db\Sql\Predicate\IsNotNull;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -347,6 +349,19 @@ class SchoenstattTable extends SionTable implements
             }
         }
         return $valueOptions;
+    }
+    
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
+     */
+    protected function getSelectPrototype($entity)
+    {
+        if ('association' === $entity) {
+            return $this->getAssociationSelectPrototype();
+        }
+        return parent::getSelectPrototype($entity);
     }
 
     /**
@@ -1227,6 +1242,38 @@ class SchoenstattTable extends SionTable implements
             $adapter->update(['SchemaOrgJsonMd5' => $md5], ['AssociationId' => $object['associationId']]);
         }
         return $return;
+    }
+    
+    public function autoFillTimeZones()
+    {
+        $objects = $this->queryObjects('association', [
+            new PredicateSet([
+                new IsNull('TimeZone'),
+                new IsNotNull('Country')
+                ])
+        ]);
+        $countryTzs = [];
+        $count = count($objects);
+        var_dump("$count associations are missing time zones");
+        foreach ($objects as $object) {
+            $country = $object['country'];
+            if (isset($country) && 'GB-SCT' !== $country) {
+                if (!isset($countryTzs[$country])) {
+                    $countryTzs[$country] = 
+                        array_keys(\Schoenstatt\Validator\TimeZone::getTimeZoneValueOptions($country));
+                    if ('CL' === $country) {
+                        var_dump($countryTzs[$country]);
+                    }
+                }
+                if (1 === count($countryTzs[$country])) {
+                    $tz = $countryTzs[$country][0];
+                    var_dump("$country => $tz");
+                    $this->updateEntity('association', $object['associationId'], [
+                        'timeZoneId' => $tz
+                    ]);
+                }
+            }
+        }
     }
 
     /**
