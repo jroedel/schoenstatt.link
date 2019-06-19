@@ -216,19 +216,19 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 'aria-controls'   => 'canoicalSuppressionGroup'
             ],
         ]);
-        $this->add([
-            'name' => 'suppressionDate',
-            'type' => 'Date',
-            'options' => [
-                'label' => 'Suppression date',
-                'format' => 'Y-m-d',
-            ],
-            'attributes' => [
-                'min' => '1900-01-01',
-                'step' => 'any',
-                'required' => false,
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'suppressionDate',
+//             'type' => 'Date',
+//             'options' => [
+//                 'label' => 'Suppression date',
+//                 'format' => 'Y-m-d',
+//             ],
+//             'attributes' => [
+//                 'min' => '1900-01-01',
+//                 'step' => 'any',
+//                 'required' => false,
+//             ],
+//         ]);
 
         $this->add([
             'name' => 'isLifeCommunity',
@@ -266,17 +266,17 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 'maxlength' => '70',
             ],
         ]);
-        $this->add([
-            'name' => 'email2',
-            'type' => 'Email',
-            'options' => [
-                'label' => 'Alternative Email',
-            ],
-            'attributes' => [
-                'required' => false,
-                'maxlength' => '70',
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'email2',
+//             'type' => 'Email',
+//             'options' => [
+//                 'label' => 'Alternative Email',
+//             ],
+//             'attributes' => [
+//                 'required' => false,
+//                 'maxlength' => '70',
+//             ],
+//         ]);
         $this->add([
             'name' => 'phone1',
             'type' => 'Phone',
@@ -558,14 +558,14 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 'maxlength' => '200',
             ],
         ]);
-        $this->add([
-            'name' => 'contactNotes',
-            'type' => 'Textarea',
-            'options' => [
-                'label' => 'Contact detail notes',
-                'required' => false,
-            ],
-        ]);
+//         $this->add([
+//             'name' => 'contactNotes',
+//             'type' => 'Textarea',
+//             'options' => [
+//                 'label' => 'Contact detail notes',
+//                 'required' => false,
+//             ],
+//         ]);
 
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
@@ -578,7 +578,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 'required' => false,
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
-                'rows' => 8,
+                'rows' => 4,
             ],
         ]);
 
@@ -593,7 +593,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 'required' => false,
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
-                'rows' => 8,
+                'rows' => 4,
             ],
         ]);
 

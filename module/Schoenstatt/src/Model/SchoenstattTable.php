@@ -102,8 +102,9 @@ class SchoenstattTable extends SionTable implements
         'jsonSameAs'        => 'sameAs',
         'jsonGeo'           => 'geo',
         'jsonFoundationEvent'=> 'event',
+        'jsonAdditionalProperty' => 'additionalProperty',
 //         'jsonApiUrl'        => 'apiUrl',
-        'publicNotes'       => 'description',
+        'jsonDescription'   => 'description',
     ];
 
     /**
@@ -648,6 +649,7 @@ class SchoenstattTable extends SionTable implements
         static $urlLabelLogos;
         static $openingHoursValidator;
         static $tzValidator;
+        static $markdownParser;
         
         $id = $this->filterDbId($row['AssociationId']);
 
@@ -669,6 +671,7 @@ class SchoenstattTable extends SionTable implements
 
         //@todo use the filter
         $identifier = 'SL'.($id+10000).'A';
+        $jsonAdditionalProperty = [];
 
         //process URLs
         $unprocessedUrls = [
@@ -902,6 +905,13 @@ class SchoenstattTable extends SionTable implements
         $foundationDate = $this->filterDbDate($row['FoundationDate']);
         $jsonFoundationEvent = null;
         if (isset($foundationDate) && $foundationDate instanceof \DateTimeInterface) {
+            $dateString = $foundationDate->format('Y-m-d');
+            $jsonAdditionalPropertyFoundation = new PropertyValue();
+            $jsonAdditionalPropertyFoundation->propertyID('Foundation date')
+            ->value($dateString);
+            $jsonAdditionalProperty[] = $jsonAdditionalPropertyFoundation;
+            
+            //@TODO the jsonFoundationEvent is deprecated
             if ('sch-shrine' === $kind) {
                 $eventDescription = 'Shrine blessing';
             } else {
@@ -910,10 +920,10 @@ class SchoenstattTable extends SionTable implements
             if ($isTranslatorReady) {
                 $eventDescription = $this->translator->translate($eventDescription, 'Schoenstatt');
             }
+            
             $location = new CatholicChurch();
             $location->setProperty('@id', $jsonId);
             
-            $dateString = $foundationDate->format('Y-m-d');
             $jsonFoundationEvent = new Event();
             $jsonFoundationEvent->name('foundation')
                 ->description($eventDescription)
@@ -954,6 +964,24 @@ class SchoenstattTable extends SionTable implements
                     $openingHours = OpeningHours::create($spec);
                 }
             } catch (\Exception $e) {}
+        }
+        
+        $publicNotes = $row['PublicNotes'];
+        if (!isset($markdownParser)) {
+            $markdownParser = new \Parsedown();
+            $markdownParser->setSafeMode(true);
+        }
+        $jsonDescription = $markdownParser->text($publicNotes);
+        
+        $email = $this->filterEmailString($row['Email']);
+        if (isset($email)) {
+            $jsonAdditionalPropertyFoundation = new PropertyValue();
+            $jsonAdditionalPropertyFoundation->propertyID('email')
+            ->value($email);
+            $jsonAdditionalProperty[] = $jsonAdditionalPropertyFoundation;
+        }
+        if (empty($jsonAdditionalProperty)) {
+            $jsonAdditionalProperty = null;
         }
         
         $processedRow = [
@@ -1020,7 +1048,7 @@ class SchoenstattTable extends SionTable implements
             /**
              * Contact fields
              */
-            'email'                 => $this->filterEmailString($row['Email']),
+            'email'                 => $email,
             'email2'                => $this->filterEmailString($row['Email2']),
             'emailsUpdatedOn'       => $this->filterDbDate($row['EmailsUpdatedOn']),
             'emailsUpdatedBy'       => $this->filterDbId($row['EmailsUpdatedBy']),
@@ -1060,7 +1088,7 @@ class SchoenstattTable extends SionTable implements
             'contactInfoUpdatedOn'  => $this->filterDbDate($row['ContactInfoUpdatedOn']),
             'contactInfoUpdatedBy'  => $this->filterDbDate($row['ContactInfoUpdatedBy']),
 
-            'publicNotes'           => $row['PublicNotes'],
+            'publicNotes'           => $publicNotes,
             'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
             'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
             'adminNotes'            => $row['AdminNotes'],
@@ -1089,6 +1117,8 @@ class SchoenstattTable extends SionTable implements
             'jsonApiUrl'            => $jsonApiUrl,
             'jsonFoundationEvent'   => $jsonFoundationEvent,
             'jsonIdentifier'        => $jsonIdentifier,
+            'jsonAdditionalProperty'=> $jsonAdditionalProperty,
+            'jsonDescription'       => $jsonDescription,
             'openingHours'          => $openingHours,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
