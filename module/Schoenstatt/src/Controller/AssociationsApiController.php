@@ -104,6 +104,15 @@ class AssociationsApiController extends AbstractRestfulController
         ], ['prettyPrint' => true]);
     }
     
+    public function findByKindMd5Action()
+    {
+        $view = $this->findByKindAction();
+        if ($view instanceof JsonModel) {
+            $view->setVariable('items', null);
+        }
+        return $view;
+    }
+    
     public function shrinesJsonAction()
     {
         $table = $this->schoenstattTable;
