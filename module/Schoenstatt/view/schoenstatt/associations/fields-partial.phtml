@@ -41,7 +41,7 @@ echo $this->formRow($form->get('openingHoursHuman'));
 echo $this->formRow($form->get('openingHoursSpecificationJson'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
-echo $this->formRow($form->get('suppressionDate'));?>
+//echo $this->formRow($form->get('suppressionDate'));?>
 <div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php echo $this->formRow($form->get('publicNotes'));
 echo $this->formRow($form->get('adminNotes'));?>
@@ -49,7 +49,7 @@ echo $this->formRow($form->get('adminNotes'));?>
     <h2><?php echo $this->translate('Contact Info');?></h2>
 <?php
 echo $this->formRow($form->get('email'));
-echo $this->formRow($form->get('email2'));
+// echo $this->formRow($form->get('email2'));
 echo $this->formRow($form->get('phone1'));
 echo $this->formRow($form->get('phone1Label'));
 echo $this->formRow($form->get('phone2'));
@@ -80,7 +80,7 @@ $this->formSelect()->setTranslatorEnabled(false);
 // echo $this->formRow($form->get('post2Country'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('googlePlaceId'));
-echo $this->formRow($form->get('contactNotes'));
+// echo $this->formRow($form->get('contactNotes'));
 echo $this->formRow($form->get('security'));
 $jsScript = <<<JS
 $("select[name='country']").selectize({

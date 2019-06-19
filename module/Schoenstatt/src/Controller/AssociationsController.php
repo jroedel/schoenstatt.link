@@ -64,12 +64,8 @@ class AssociationsController extends SionController
         }
         if ('sch-shrine' === $entity['kind'] || 'sch-wayside-shrine' === $entity['kind']) {
             $publicNotes = $form->get('publicNotes');
-            $publicNotes->setLabel('Visitor information (also Mass/Adoration/Confession information)');
+            $publicNotes->setLabel('First-time visitor information');
             $publicNotes->setAttribute('placeholder', "Turn right at the first driveway after getting off the highway.
-
-**Mass Times**: Sunday 11:00am, every 3rd Sunday 7pm
-
-**Adoration**: Sunday 8pm
 
 **Confession**: By appointment, please don't hesitate to call.");
         }
