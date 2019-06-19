@@ -1409,6 +1409,16 @@ return [
                             ],
                         ],
                     ],
+                    'find-by-kind-md5' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/associations/findByKindMd5',
+                            'defaults' => [
+                                'controller' => Controller\AssociationsApiController::class,
+                                'action'     => 'findByKindMd5',
+                            ],
+                        ],
+                    ],
                     'shrines-json' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -1984,6 +1994,7 @@ return [
                 ['route' => 'api-v1', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/associations', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/find-by-kind', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v1/find-by-kind-md5', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/shrines-json', 'roles' => ['guest', 'user', null]],
             ],
         ],
