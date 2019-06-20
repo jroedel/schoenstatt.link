@@ -9,6 +9,7 @@ use Zend\Filter\StripTags;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\TimeZone;
+use Spatie\SchemaOrg\CatholicChurch;
 
 class AssociationsController extends SionController
 {
@@ -96,7 +97,9 @@ class AssociationsController extends SionController
             $association['nationalOrganizations'] = $nationalOrganizations;
             $view->setVariable('entity', $association);
         }
+        /** @var CatholicChurch $schema */
         $schema = $table->getAssociationSchema($association);
+        $schema->setProperty('event', null);
         $view->setVariable('schema', $schema);
         
         $changes = $table->getEntityChanges('association', $association['associationId']);

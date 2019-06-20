@@ -1153,7 +1153,8 @@ class SchoenstattTable extends SionTable implements
             $schema->publicAccess(true);
         }
         if (isset($object['openingHours']) && $object['openingHours'] instanceof OpeningHours) {
-            $schema->setProperty('openingHoursSpecification', $object['openingHours']->asStructuredData());
+            $format = isset($object['timeZoneId']) ? 'H:iP' : 'H:i';
+            $schema->setProperty('openingHoursSpecification', $object['openingHours']->asStructuredData($format));
         }
         return $schema;
     }
