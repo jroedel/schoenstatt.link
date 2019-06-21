@@ -43,6 +43,14 @@ class SchoenstattTable extends SionTable implements
 {
     const TRANSLATOR_DOMAIN = 'Schoenstatt';
     
+    const LOCALES_TO_MD5_COLUMN_NAME = [
+        'en_US' => 'SchemaOrgJsonMd5V1En',
+        'es_ES' => 'SchemaOrgJsonMd5V1Es',
+        'pt_BR' => 'SchemaOrgJsonMd5V1Pt',
+        'de_DE' => 'SchemaOrgJsonMd5V1De',
+        'it_IT' => 'SchemaOrgJsonMd5V1It',
+    ];
+    
     const DEFAULT_PLACE_FORMAT = ':zip :cityState';
 
     const CATEGORY_DECEASED     = 'deceased';
@@ -873,12 +881,12 @@ class SchoenstattTable extends SionTable implements
             'schemaOrgJsonMd5V1Pt'  => $row['SchemaOrgJsonMd5V1Pt'],
             'schemaOrgJsonMd5V1De'  => $row['SchemaOrgJsonMd5V1De'],
             'schemaOrgJsonMd5V1It'  => $row['SchemaOrgJsonMd5V1It'],
-            'schemaOrgJsonMd5V1ByLanguage' => [
-                'en' => $row['SchemaOrgJsonMd5V1En'],
-                'es' => $row['SchemaOrgJsonMd5V1Es'],
-                'pt' => $row['SchemaOrgJsonMd5V1Pt'],
-                'de' => $row['SchemaOrgJsonMd5V1De'],
-                'it' => $row['SchemaOrgJsonMd5V1It'],
+            'schemaOrgJsonMd5V1ByLocale' => [
+                'en_US' => $row['SchemaOrgJsonMd5V1En'],
+                'es_ES' => $row['SchemaOrgJsonMd5V1Es'],
+                'pt_BR' => $row['SchemaOrgJsonMd5V1Pt'],
+                'de_DE' => $row['SchemaOrgJsonMd5V1De'],
+                'it_IT' => $row['SchemaOrgJsonMd5V1It'],
             ],
             //@todo do the URL better
             'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
@@ -1087,13 +1095,17 @@ class SchoenstattTable extends SionTable implements
         return $schema;
     }
 
-    public function getAssociationListSchemaV1($objects, &$resultingMd5s)
+    //@todo add locale function parameter
+    public function getAssociationListSchemaV1($objects, &$resultingMd5s, $locale = null)
     {
+        if (!isset($locale)) {
+            $locale = $this->getLocale();
+        }
         $schemata = [];
         $resultingMd5s = [];
         foreach ($objects as $object) {
-            $schema = $this->getAssociationSchemaV1($object);
-            $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5V1En'];
+            $schema = $this->getAssociationSchemaV1($object, $locale);
+            $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
             $array = $schema->toArray();
             $schemata[] = $array;
         }
@@ -1172,28 +1184,38 @@ class SchoenstattTable extends SionTable implements
             }
         }
         //Set the MD5 sum
-        $schema = $this->getAssociationSchemaV1($newData);
-        $array = $schema->toArray();
-        $md5 = md5(json_encode($array));
-        $adapter = $this->getTableGateway('sch_associations');
-        $adapter->update(['SchemaOrgJsonMd5V1En' => $md5], ['AssociationId' => $newData['associationId']]);
+        $localeMd5Columns = self::LOCALES_TO_MD5_COLUMN_NAME;
+        $data = [];
+        foreach ($localeMd5Columns as $locale => $column) {
+            $schema = $this->getAssociationSchemaV1($newData);
+            $array = $schema->toArray();
+            $md5 = md5(json_encode($array));
+            $adapter = $this->getTableGateway('sch_associations');
+            $data[$column] = $md5;
+        }
+        $adapter->update($data, ['AssociationId' => $newData['associationId']]);
     }
 
     /**
      * Update the SchemaOrgJsonMd5 with the latest schema digests
      */
-    public function updateAssociationMd5s(array $associationIds)
+    public function updateAssociationMd5s(array $associationIds = [])
     {
+        $localeMd5Columns = self::LOCALES_TO_MD5_COLUMN_NAME;
         //@todo afterwards, do all associations, not just shrines
         $associations = $this->getAssociations();
         $return = [];
         foreach ($associations as $object) {
-            $schema = $this->getAssociationSchemaV1($object);
-            $array = $schema->toArray();
-            $md5 = md5(json_encode($array));
-            $return[$object['associationId']] = $md5;
-            $adapter = $this->getTableGateway('sch_associations');
-            $adapter->update(['SchemaOrgJsonMd5V1En' => $md5], ['AssociationId' => $object['associationId']]);
+            $data = [];
+            foreach ($localeMd5Columns as $locale => $column) {
+                $schema = $this->getAssociationSchemaV1($object, $locale);
+                $array = $schema->toArray();
+                $md5 = md5(json_encode($array));
+                $return[$object['associationId']] = $md5;
+                $adapter = $this->getTableGateway('sch_associations');
+                $data[$column] = $md5;
+            }
+            $adapter->update($data, ['AssociationId' => $object['associationId']]);
         }
         return $return;
     }
