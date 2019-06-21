@@ -79,7 +79,7 @@ class Module
         
         /** @var SchoenstattTable $schoenstattTable */
         $schoenstattTable = $sm->get(SchoenstattTable::class);
-        $associations = $schoenstattTable->getUnlinkedAssociations();
+        $associations = $schoenstattTable->getObjects('association');
         
         $movement = $navigation->findOneBy('route', 'schoenstatt');
         $pages = $navigation->findAllBy('route', 'shrines');

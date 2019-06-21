@@ -92,7 +92,7 @@ class PublicationsTable extends SionTable
     public function getAuthorAssociationValueOptions()
     {
         $authors = [];
-        $authorAssociations = $this->schoenstattTable->getUnlinkedAssociations();
+        $authorAssociations = $this->schoenstattTable->getObjects('association');
         foreach ($authorAssociations as $associationId => $object) {
             if (!$object['isAuthor']) {
                 continue;
@@ -221,7 +221,7 @@ ORDER BY `Publisher`";
         $entities = $this->getUnlinkedPublications();
 
         $languages = [];
-        foreach ($entities as $entityId => $object) {
+        foreach ($entities as $object) {
             if (('publication_public' ===  $object['resourceId'] && (isset($this->actingUserId) || $object['isRevisedWithBookInHand'])) ||
                 ($includeUser && 'publication_user' === $object['resourceId']) ||
                 ($includeInstitute && 'publication_institute' === $object['resourceId']) ||

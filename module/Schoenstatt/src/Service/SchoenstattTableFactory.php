@@ -41,7 +41,7 @@ class SchoenstattTableFactory implements FactoryInterface
             $dbAdapter,
             $container,
             $actingUserId,
-            $config['schoenstatt'],
+            $config,
             $countriesInfo,
             $translator
         );

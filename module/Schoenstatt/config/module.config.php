@@ -5,8 +5,6 @@ use SionModel\Problem\EntityProblem;
 use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Router\Http\Segment;
 use Zend\Router\Http\Literal;
-use Spatie\SchemaOrg\CatholicChurch;
-use Spatie\SchemaOrg\PlaceOfWorship;
 use Spatie\SchemaOrg\Organization;
 use Spatie\SchemaOrg\EducationalOrganization;
 use Spatie\SchemaOrg\WebSite;
@@ -143,7 +141,6 @@ return [
             'clipboardButton'       => View\Helper\ClipboardButton::class,
             'formatPerson'          => View\Helper\FormatPerson::class,
             'languageChooser'       => View\Helper\LanguageChooser::class,
-            'schoenstattJsonLd'     => View\Helper\SchoenstattJsonLd::class,
         ],
     ],
 
@@ -439,7 +436,7 @@ return [
                 'name_format' => 'Schoenstatt Shrine %s',
                 'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => false,
-                'schema_type' => CatholicChurch::class,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Rector',
@@ -465,7 +462,7 @@ return [
                 'name_format' => 'Schoenstatt wayside shrine %s',
                 'should_translate_name_parameter' => false,
                 'is_sub_diocesan_association' => false,
-                'schema_type' => PlaceOfWorship::class,
+                'schema_type' => Organization::class,
                 'default_roles' => [
                     [
                         'roleTitle' => 'Public contact',
@@ -816,6 +813,38 @@ return [
                         'sort' => 80,
                         'isMainRole' => false,
                         'isMainContact' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                ],
+            ],
+            'apostolic-project' => [
+                'sort'  => 850,
+                'label' => 'Apostolic project',
+                'is_sub_diocesan_association' => false,
+                'schema_type' => Organization::class,
+                'default_roles' => [
+                    [
+                        'roleTitle' => 'Coordinator',
+                        'singlePosition' => true,
+                        'sort' => 10,
+                        'isMainRole' => true,
+                        'isMainContact' => true,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Moderator',
+                        'singlePosition' => false,
+                        'sort' => 15,
+                        'isMainRole' => false,
+                        'isMainContact' => false,
+                        'shouldAlwaysBeFilled' => false,
+                    ],
+                    [
+                        'roleTitle' => 'Member',
+                        'singlePosition' => false,
+                        'sort' => 70,
+                        'isMainRole' => false,
+                        'isMainContact' => false,
                         'shouldAlwaysBeFilled' => false,
                     ],
                 ],
@@ -1271,7 +1300,7 @@ return [
                         'options' => [
                             'route'    => '/:sw_id',
                             'constraints' => [
-                                ':sw_id' => 'SL[0-9]{1,5}W',
+                                'sw_id' => 'SL[0-9]{1,5}A',
                             ],
                             'defaults' => [
                                 'controller' => Controller\AssociationsController::class,
@@ -1649,8 +1678,8 @@ return [
                     CountriesInfo::class,
                 ],
                 'row_processor_function'                => 'processAssociationRow',
-                'get_object_function'                   => 'getSimpleAssociationBySwId',
-                'get_objects_function'                  => 'getAssociations',
+//                 'get_object_function'                   => 'getSimpleAssociationBySwId',
+//                 'get_objects_function'                  => 'getAssociations',
                 'name_field'                            => 'associationName',
                 'name_field_is_translateable'           => false,
                 'format_view_helper'                    => 'formatEntity',
@@ -1737,6 +1766,12 @@ return [
                     'openingHoursSpecificationJson' => 'OpeningHoursSpecification',
                     'openingHoursSpecificationJsonUpdatedOn' => 'OpeningHoursSpecificationUpdatedOn',
                     'openingHoursSpecificationJsonUpdatedBy' => 'OpeningHoursSpecificationUpdatedBy',
+                    'eventsHuman'               => 'EventsHuman',
+                    'eventsHumanUpdatedOn'      => 'EventsHumanUpdatedOn',
+                    'eventsHumanUpdatedBy'      => 'EventsHumanUpdatedBy',
+                    'eventsJson'                => 'EventsJson',
+                    'eventsJsonUpdatedOn'       => 'EventsJsonUpdatedOn',
+                    'eventsJsonUpdatedBy'       => 'EventsJsonUpdatedBy',
                     'foundationDate'            => 'FoundationDate',
                     'suppressionDate'           => 'SuppressionDate',
                     'isLifeCommunity'           => 'IsLifeCommunity',
@@ -1746,21 +1781,21 @@ return [
                     'geoPoint'                  => 'Location',
                     'latitude'                  => 'Latitude', //@deprecated
                     'longitude'                 => 'Longitude', //@deprecated
-                    'idealEn'                   => 'IdealEn',
-                    'idealEs'                   => 'IdealEs',
-                    'idealDe'                   => 'IdealDe',
-                    'idealPt'                   => 'IdealPt',
-                    'idealFr'                   => 'IdealFr',
-                    'visitorsInformationEn'     => 'VisitorsInformationEn',
-                    'visitorsInformationEs'     => 'VisitorsInformationEs',
-                    'visitorsInformationDe'     => 'VisitorsInformationDe',
-                    'visitorsInformationPt'     => 'VisitorsInformationPt',
-                    'visitorsInformationFr'     => 'VisitorsInformationFr',
-                    'historyEn'                 => 'HistoryEn',
-                    'historyEs'                 => 'HistoryEs',
-                    'historyDe'                 => 'HistoryDe',
-                    'historyPt'                 => 'HistoryPt',
-                    'historyFr'                 => 'HistoryFr',
+                    'idealEn'                   => 'IdealEn', //@deprecated
+                    'idealEs'                   => 'IdealEs', //@deprecated
+                    'idealDe'                   => 'IdealDe', //@deprecated
+                    'idealPt'                   => 'IdealPt', //@deprecated
+                    'idealFr'                   => 'IdealFr', //@deprecated
+                    'visitorsInformationEn'     => 'VisitorsInformationEn', //@deprecated
+                    'visitorsInformationEs'     => 'VisitorsInformationEs', //@deprecated
+                    'visitorsInformationDe'     => 'VisitorsInformationDe', //@deprecated
+                    'visitorsInformationPt'     => 'VisitorsInformationPt', //@deprecated
+                    'visitorsInformationFr'     => 'VisitorsInformationFr', //@deprecated
+                    'historyEn'                 => 'HistoryEn', //@deprecated
+                    'historyEs'                 => 'HistoryEs', //@deprecated
+                    'historyDe'                 => 'HistoryDe', //@deprecated
+                    'historyPt'                 => 'HistoryPt', //@deprecated
+                    'historyFr'                 => 'HistoryFr', //@deprecated
 
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',
@@ -1770,7 +1805,7 @@ return [
                     'adminNotesUpdatedOn'       => 'AdminNotesUpdatedOn',
                     'adminNotesUpdatedBy'       => 'AdminNotesUpdatedBy',
                     'email'                     => 'Email',
-                    'email2'                    => 'Email2',
+                    'email2'                    => 'Email2', //@deprecated
                     'emailsUpdatedOn'           => 'EmailsUpdatedOn',
                     'emailsUpdatedBy'           => 'EmailsUpdatedBy',
                     'phone1'                    => 'Phone1',

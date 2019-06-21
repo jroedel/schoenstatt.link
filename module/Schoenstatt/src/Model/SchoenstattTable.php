@@ -19,10 +19,7 @@ use SionModel\Db\GeoPoint;
 use Zend\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
 use Spatie\SchemaOrg\Schema;
-use Zend\Db\Sql\Predicate\Operator;
-use Zend\Db\Sql\Where;
 use Zend\Db\Sql\Predicate\PredicateSet;
-use Zend\Db\Sql\Predicate\In;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
 use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
@@ -36,6 +33,8 @@ use Zend\Json\Json;
 use Zend\Validator\Timezone;
 use Zend\Db\Sql\Predicate\IsNull;
 use Zend\Db\Sql\Predicate\IsNotNull;
+use Spatie\SchemaOrg\Place;
+use Spatie\SchemaOrg\PlaceOfWorship;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -93,26 +92,30 @@ class SchoenstattTable extends SionTable implements
 
     const ASSOCIATION_SCHEMA_FIELD_MAP = [
         'jsonId'            => '@id',
-        'formattedName'     => 'name',
-        'jsonAlternateName' => 'alternateName',
-        'jsonDisambiguatingDescription' => 'disambiguatingDescription',
-        'jsonIdentifier'    => 'identifier',
+        'formattedName'     => 'name', //ad-extra name for non-schoenstatters
+        'jsonAlternateName' => 'alternateName', //@todo can this be an array with all languages?
+        'jsonDisambiguatingDescription' => 'disambiguatingDescription', //ad-intra name for schoenstatters
+        'jsonIdentifier'    => 'identifier',  //@todo always array
         'jsonAddress'       => 'address',
-        'jsonTelephone'     => 'telephone',
+        'jsonTelephone'     => 'telephone', //@todo make always an array
         'jsonSameAs'        => 'sameAs',
         'jsonGeo'           => 'geo',
-        'jsonFoundationEvent'=> 'event',
+        'jsonFoundationEvent'=> 'event', //@todo not anymore
         'jsonAdditionalProperty' => 'additionalProperty',
-//         'jsonApiUrl'        => 'apiUrl',
-        'jsonDescription'   => 'description',
+        'jsonDescription'   => 'description', //visitor information
     ];
 
     /**
-     * Schoenstatt config
+     * Application config
      * @var mixed[]
      */
     protected $config;
 
+    /**
+     * An associative array mapping ISO language codes to locales
+     * @var string[]
+     */
+    protected $languageLocaleMap;
     /**
      * Prototype to be cloned when specifying new problems
      * @var EntityProblem $entityProblemPrototype
@@ -179,12 +182,14 @@ class SchoenstattTable extends SionTable implements
         AdapterInterface $dbAdapter,
         $serviceLocator,
         $actingUserId,
-        $schoenstattConfig,
+        $config,
         $countriesInfo,
         $translator
     ) {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
-        $this->config = $schoenstattConfig;
+        $this->config = $config;
+        
+        $this->languageLocaleMap = $config['slm_locale']['aliases'];
 
         /** @var AssociationKindsService $kindsService */
         $kindsService = $serviceLocator->get(AssociationKindsService::class);
@@ -205,29 +210,20 @@ class SchoenstattTable extends SionTable implements
         $this->swValidator = new \Schoenstatt\Validator\SchoenstattLinkIdentifier();
         $this->translator = $translator;
     }
-
+    
     /**
      *
      * {@inheritDoc}
      * @see \SionModel\Db\Model\SionTable::existsEntity()
      */
-    public function existsEntity($entity, $id)
-    {
-        if ('association' === $entity && is_string($id) && substr($id, 0, 2) === "SL") {
-            $id = $this->filterSwId($id, 'association');
-        }
-        return parent::existsEntity($entity, $id);
-    }
-
-    public function getObject($entity, $id, $failSilently = false)
-    {
-        //a hack so that the association/edit action can find the object using site-wide identifiers
-        if ('association' === $entity && is_numeric($id)) {
-            return $this->getSimpleAssociation($id);
-        }
-        return parent::getObject($entity, $id, $failSilently);
-    }
-
+//     public function existsEntity($entity, $id)
+//     {
+//         if ('association' === $entity && is_string($id) && substr($id, 0, 2) === "SL") {
+//             $id = $this->filterSwId($id, 'association');
+//         }
+//         return parent::existsEntity($entity, $id);
+//     }
+    
     /**
      * Validate and filter a site-wide identifier. Return false if it's not valid.
      *
@@ -292,19 +288,27 @@ class SchoenstattTable extends SionTable implements
      */
     public function getAssociationValueOptions($includeInactive = false, $includeNonLifeLongMembership = true)
     {
-        $entities = $this->getUnlinkedAssociations();
+        $locale = $this->getLocale();
+        $cacheKey = 'association-value-options-'
+            .($includeInactive ? 'inactive-':'active-')
+            .($includeNonLifeLongMembership ? 'life-':'nonlife-')
+            .$locale;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+        $entities = $this->getObjects('association');
         $valueOptions = [];
         foreach ($entities as $entityId => $object) {
-            if (!$includeNonLifeLongMembership && !$this->filterDbBool($object['isLifeCommunity'])) {
+            if (!$includeNonLifeLongMembership && !$object['isLifeCommunity']) {
                 continue;
             }
-            if (isset($object['formattedName'])) {
-                $valueOptions[$entityId] = $object['formattedName'];
-            } else {
-                $valueOptions[$entityId] = $object['name'];
+            if (!$includeInactive && !$object['isActive']) {
+                continue;
             }
+            $valueOptions[$entityId] = $object['nameByLocale'][$locale];
         }
         asort($valueOptions);
+        $this->cacheEntityObjects($cacheKey, $valueOptions, ['association']);
         return $valueOptions;
     }
 
@@ -359,49 +363,16 @@ class SchoenstattTable extends SionTable implements
      */
     protected function getSelectPrototype($entity)
     {
+        $select = parent::getSelectPrototype($entity);
         if ('association' === $entity) {
-            return $this->getAssociationSelectPrototype();
+            $entitySpec = $this->getEntitySpecification($entity);
+            $columns = array_values($entitySpec->updateColumns);
+            $columns = array_merge($columns, ['SchemaOrgJsonMd5V1En','SchemaOrgJsonMd5V1Es','SchemaOrgJsonMd5V1Pt','SchemaOrgJsonMd5V1De',
+                'SchemaOrgJsonMd5V1It']);
+            $columns['GeoPoint'] = new Expression('AsText(`Location`)');
+            $select->columns($columns);
         }
-        return parent::getSelectPrototype($entity);
-    }
-
-    /**
-     * Get a standardized select object to retrieve records from the database
-     * @return \Zend\Db\Sql\Select
-     */
-    protected function getAssociationSelectPrototype()
-    {
-        static $select;
-        if (!isset($select)) {
-            $select = new Select('sch_associations');
-            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
-            //'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['AssociationId', 'AssociationName', 'Parent', 'Kind', 'OverrideNameFormat',
-            'InternalName', 'IsInternalNameTranslateable','Country', 'TimeZone',
-            'FoundationDate', 'SuppressionDate', 'IsLifeCommunity', 'IsNameTranslateable',
-            'IsActive', 'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminTags',
-            'AdminNotes', 'AdminNotesUpdatedOn', 'AdminNotesUpdatedBy', 'Email', 'Email2',
-            'EmailsUpdatedOn', 'EmailsUpdatedBy', 'Phone1', 'Phone1Label', 'Phone2', 'Phone2Label',
-            'Phone3', 'Phone3Label', 'PhonesUpdatedOn', 'PhonesUpdatedBy', 'Url1', 'Url1Label',
-            'Url2', 'Url2Label', 'Url3', 'Url3Label', 'FacebookUrl', 'TwitterUser', 'InstagramUser',
-            'Post1Street1', 'Post1Street2', 'Post1CityState', 'Post1Zip', 'Post1Country',
-            'Post2Street1', 'Post2Street2', 'Post2CityState', 'Post2Zip', 'Post2Country', 'GooglePlaceId',
-            'ContactNotes', 'ContactInfoUpdatedOn', 'ContactInfoUpdatedBy', 'UpdatedOn',
-            'UpdatedBy', 'CreatedOn', 'CreatedBy', 'IsAuthor',
-            'GeoPoint' => new Expression('AsText(`Location`)'), 'Latitude', 'Longitude',
-            'IdealEn', 'IdealEs', 'IdealDe', 'IdealPt', 'IdealFr',
-            'VisitorsInformationEn', 'VisitorsInformationEs', 'VisitorsInformationDe',
-            'VisitorsInformationPt', 'VisitorsInformationFr',
-            'HistoryEn', 'HistoryEs', 'HistoryDe', 'HistoryPt', 'HistoryFr', 'SchemaOrgJsonMd5',
-            'OpeningHoursHuman', 'OpeningHoursHumanUpdatedOn', 'OpeningHoursHumanUpdatedBy',
-            'OpeningHoursSpecification', 'OpeningHoursSpecificationUpdatedOn', 'OpeningHoursSpecificationUpdatedBy'
-            ]);
-            //         $select->group(['TheMonth', 'TheYear']);
-            //         $select->where($predicate->in('ChangedEntity', $tableEntities));
-//             $select->order(['library_id', 'call_number', 'category', 'lang', 'author', 'title']);
-        }
-
-        return clone $select;
+        return $select;
     }
     
     public function getShrineGeoJson()
@@ -432,11 +403,12 @@ class SchoenstattTable extends SionTable implements
      */
     public function getAssociations()
     {
-        $cacheKey = 'associations-'.$this->getLocale();
-        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
-            return $cache;
-        }
-        $entities = $this->getUnlinkedAssociations();
+        //don't cache, too heavy
+//         $cacheKey = 'associations-'.$this->getLocale();
+//         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+//             return $cache;
+//         }
+        $entities = $this->getObjects('association');
 
         foreach ($entities as $entityId => $entity) {
             if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
@@ -447,79 +419,19 @@ class SchoenstattTable extends SionTable implements
 
         $this->connectEntityRolesAndAssignments('association', $entities);
 
-        $this->cacheEntityObjects($cacheKey, $entities, ['association', 'person', 'role', 'assignment']);
+//         $this->cacheEntityObjects($cacheKey, $entities, ['association', 'person', 'role', 'assignment']);
         return $entities;
     }
 
-
+    /**
+     * //@todo factor out this function
+     * @param array $query
+     * @param array $options
+     * @return mixed[]
+     */
     public function searchAssociations($query, $options = [])
     {
-
-        $fieldMap = $this->getEntitySpecification('association')->updateColumns;
-
-        $gateway = $this->getTableGateway('sch_associations');
-        $select = $this->getAssociationSelectPrototype();
-        $where = new Where();
-
-        $combination = (isset($options['orCombination']) && $options['orCombination'])
-            ? PredicateSet::OP_OR : PredicateSet::OP_AND;
-
-        // Prepare associationId predicate
-        if (isset($query['associationId'])) {
-            $associationIdClause = null;
-            if (is_array($query['associationId'])) {
-                $associations = [];
-                foreach ($query['associationId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $associations)) {
-                        $associations[] = $value;
-                    }
-                }
-                if (count($associations) === 1) {
-                    $query['associationId'] = $associations[0];
-                } elseif (count($associations) > 1) {
-                    $associationIdClause= new In($fieldMap['associationId'], $associations);
-                }
-            }
-            if (is_numeric($query['associationId'])) {
-                $associationIdClause= new Operator(
-                    $fieldMap['associationId'],
-                    Operator::OPERATOR_EQUAL_TO,
-                    $query['associationId']
-                );
-            }
-            if (isset($associationIdClause)) {
-                $where->addPredicate($associationIdClause, $combination);
-            }
-        }
-
-        //prepare associationKind predicate
-        if (isset($query['kind'])) {
-            $associationKindClause= new Operator($fieldMap['kind'], Operator::OPERATOR_EQUAL_TO, $query['kind']);
-        }
-        if (isset($associationKindClause)) {
-            $where->addPredicate($associationKindClause, $combination);
-        }
-
-        //Set the where clause
-        $select->where($where);
-
-        if (isset($options['maxResults']) && is_numeric($options['maxResults'])) {
-            $select->limit($options['maxResults']);
-        }
-
-        if (isset($options['page']) && is_numeric($options['page'])) {
-            $resultsPerPage = isset($options['resultsPerPage']) && is_numeric($options['resultsPerPage'])
-                ? $options['resultsPerPage'] : self::DEFAULT_RESULTS_PER_PAGE;
-            $select->offset($options['page'] * $resultsPerPage);
-        }
-
-        $results = $gateway->selectWith($select);
-        $entities = [];
-
-        foreach ($results as $row) {
-            $processedRow = $this->processAssociationRow($row);
-            $entities[$processedRow['associationId']] = $processedRow;
-        }
+        $entities = $this->queryObjects('association', $query, $options);
 
         if (!isset($options['noLink']) || !$options['noLink']) {
             $this->linkAssociations($entities);
@@ -568,65 +480,6 @@ class SchoenstattTable extends SionTable implements
         //no return, by ref
     }
 
-    /**
-     * A proxy for getSimpleAssociation, first translating the swId to a normal associationId
-     * @param string $swId
-     * @return null|mixed[]
-     */
-    public function getSimpleAssociationBySwId($swId)
-    {
-        if (false === ($id = $this->filterSwId($swId))) {
-            return null;
-        }
-        return $this->getSimpleAssociation($id);
-    }
-
-    /**
-     * Get an association array without linking it to related objects
-     *
-     * @param int $id
-     * @return mixed[]
-     */
-    public function getSimpleAssociation($id)
-    {
-        static $gateway;
-        if (!isset($gateway)) {
-            $gateway = $this->getTableGateway('sch_associations');
-        }
-        $select = $this->getAssociationSelectPrototype();
-        $select->where(['AssociationId' => $id]);
-        /** @var ResultSet $result */
-        $result = $gateway->selectWith($select);
-        $results = $result->toArray();
-
-        if (!isset($results[0])) {
-            return null;
-        }
-        return $this->processAssociationRow($results[0]);
-    }
-
-    public function getUnlinkedAssociations()
-    {
-        $cacheKey = 'unlinked-associations-'.$this->getLocale();
-        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
-            return $cache;
-        }
-
-        $gateway = $this->getTableGateway('sch_associations');
-        $select = $this->getAssociationSelectPrototype();
-        $results = $gateway->selectWith($select);
-        $entities = [];
-        foreach ($results as $row) {
-            $processedRow = $this->processAssociationRow($row);
-            if (isset($processedRow)) {
-                $entities[$processedRow['associationId']] = $processedRow;
-            }
-        }
-        $this->sortAssociationRowData($entities);
-        $this->cacheEntityObjects($cacheKey, $entities, ['association']);
-        return $entities;
-    }
-
     protected function sortAssociationRowData(&$results)
     {
         uasort($results, [SchoenstattTable::class, 'associationCompare']);
@@ -647,9 +500,7 @@ class SchoenstattTable extends SionTable implements
         static $googlePlacePattern;
         static $languageCode;
         static $urlLabelLogos;
-        static $openingHoursValidator;
         static $tzValidator;
-        static $markdownParser;
         
         $id = $this->filterDbId($row['AssociationId']);
 
@@ -665,13 +516,12 @@ class SchoenstattTable extends SionTable implements
         $locale = $this->getLocale();
         $kind = $row['Kind'];
         if (!isset($this->associationKinds[$kind])) {
-            return null;
+            throw new \Exception("Invalid association kind found for id $id");
         }
         $associationKindSpec = $this->associationKinds[$kind];
 
         //@todo use the filter
         $identifier = 'SL'.($id+10000).'A';
-        $jsonAdditionalProperty = [];
 
         //process URLs
         $unprocessedUrls = [
@@ -708,12 +558,12 @@ class SchoenstattTable extends SionTable implements
 
         $urls = SionTable::processUrls($unprocessedUrls);
         if (!isset($urlLabelLogos)) {
-            if (isset($this->config['url_map'])) {
-                if (!is_array($this->config['url_map'])) {
+            if (isset($this->config['schoenstatt']['url_map'])) {
+                if (!is_array($this->config['schoenstatt']['url_map'])) {
                     throw new \Exception('url_map config should be an array');
                 }
                 $urlLabelLogos = [];
-                foreach ($this->config['url_map'] as $urlConfig) {
+                foreach ($this->config['schoenstatt']['url_map'] as $urlConfig) {
                     if (isset($urlConfig['label']) && isset($urlConfig['logo'])) {
                         $urlLabelLogos[$urlConfig['label']] = $urlConfig['logo'];
                     }
@@ -736,8 +586,7 @@ class SchoenstattTable extends SionTable implements
                 $languageCode = 'en';
             }
         }
-        $jsonApiUrl = "https://schoenstatt.link/$languageCode/api/v1/associations/".$identifier;
-
+        
         $phones = [];
         $jsonTelephone = [];
         if (null !== ($phone1 = $row['Phone1'])) {
@@ -842,106 +691,49 @@ class SchoenstattTable extends SionTable implements
         $name = $row['AssociationName'];
         $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
         $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
-        $formattedName = null;
-        if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()) {
-            $token = $name;
-            if ($associationKindSpec->shouldTranslateNameParameter) {
-                if ($areCountryTranslationsReady &&
-                    isset($this->countryNameTranslations[$token]) &&
-                    isset($this->countryNameTranslations[$token][$locale])
-                ) {
-                    $token = $this->countryNameTranslations[$token][$locale];
-                } elseif ($isTranslatorReady) {
-                    $token = $this->translator->translate($token, 'Schoenstatt');
+        $namesByLocale = [];
+        foreach ($this->languageLocaleMap as $localeMapped) {
+            $tempName = null;
+            if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()) { //by format
+                $token = $name;
+                if ($associationKindSpec->shouldTranslateNameParameter || $isNameTranslateable) {
+                    if ($areCountryTranslationsReady &&
+                        isset($this->countryNameTranslations[$token]) &&
+                        isset($this->countryNameTranslations[$token][$localeMapped])
+                    ) {
+                        $token = $this->countryNameTranslations[$token][$localeMapped];
+                    } elseif ($isTranslatorReady) {
+                        $token = $this->translator->translate($token, 'Schoenstatt', $localeMapped);
+                    }
+                }
+                $tempName = sprintf($associationKindSpec->translatedNameFormat, $token);
+            } else { //no name format
+                if ($isNameTranslateable && $isTranslatorReady) {
+                    $tempName = $this->translator->translate($name, 'Schoenstatt', $localeMapped);
+                } else {
+                    $tempName = $name;
                 }
             }
-            $formattedName = sprintf($associationKindSpec->translatedNameFormat, $token);
-        } else { //no name format
-            if ($isNameTranslateable && $isTranslatorReady) {
-                $formattedName = $this->translator->translate($name, 'Schoenstatt');
-            } else {
-                $formattedName = $name;
-            }
+            $namesByLocale[$localeMapped] = $tempName;
         }
 
         $internalName = $row['InternalName'];
         $isInternalNameTranslateable = $this->filterDbBool($row['IsInternalNameTranslateable']);
-        $internalDisplayName = null;
-        if (isset($internalName)) {
-            if ($isInternalNameTranslateable && $isTranslatorReady) {
-                $internalDisplayName = $this->translator->translate($internalName, 'Schoenstatt');
+        $internalNameByLocale = [];
+        foreach ($this->languageLocaleMap as $localeMapped) {
+            if (isset($internalName)) {
+                if ($isInternalNameTranslateable && $isTranslatorReady) {
+                    $internalNameByLocale[$localeMapped] = $this->translator->translate($internalName, 'Schoenstatt', $localeMapped);
+                } else {
+                    $internalNameByLocale[$localeMapped] = $internalName;
+                }
             } else {
-                $internalDisplayName = $internalName;
+                $internalNameByLocale[$localeMapped] = $namesByLocale[$localeMapped];
             }
-        } else {
-            $internalDisplayName = $formattedName;
-        }
-
-        $jsonAlternateName = null;
-        $jsonDisambiguatingDescription = null;
-        if ($internalDisplayName !== $formattedName) {
-            $jsonAlternateName = $internalDisplayName;
-            $jsonDisambiguatingDescription = $internalDisplayName;
-        } else {
-            $jsonDisambiguatingDescription = ($isNameTranslateable && $isTranslatorReady)
-                ? $this->translator->translate($name, 'Schoenstatt')
-                : $name;
         }
 
         $geoPoint = $this->filterDbGeoPoint($row['GeoPoint']);
-        $jsonGeo = null;
-        if (isset($geoPoint)) {
-            $jsonGeo = Schema::geoCoordinates();
-            $jsonGeo->latitude($geoPoint->latitude);
-            $jsonGeo->longitude($geoPoint->longitude);
-            if (isset($country)) {
-                $jsonGeo->addressCountry($country);
-            }
-        }
-        
-        //@todo do the URL better
-        $jsonId = "https://schoenstatt.link/en/associations/".$identifier;
-        
         $foundationDate = $this->filterDbDate($row['FoundationDate']);
-        $jsonFoundationEvent = null;
-        if (isset($foundationDate) && $foundationDate instanceof \DateTimeInterface) {
-            $dateString = $foundationDate->format('Y-m-d');
-            $jsonAdditionalPropertyFoundation = new PropertyValue();
-            $jsonAdditionalPropertyFoundation->propertyID('Foundation date')
-            ->value($dateString);
-            $jsonAdditionalProperty[] = $jsonAdditionalPropertyFoundation;
-            
-            //@TODO the jsonFoundationEvent is deprecated
-            if ('sch-shrine' === $kind) {
-                $eventDescription = 'Shrine blessing';
-            } else {
-                $eventDescription = 'Foundation';
-            }
-            if ($isTranslatorReady) {
-                $eventDescription = $this->translator->translate($eventDescription, 'Schoenstatt');
-            }
-            
-            $location = new CatholicChurch();
-            $location->setProperty('@id', $jsonId);
-            
-            $jsonFoundationEvent = new Event();
-            $jsonFoundationEvent->name('foundation')
-                ->description($eventDescription)
-                ->location($location)
-                ->startDate($dateString)
-                ->endDate($dateString);
-        }
-        $siteIdentifier = new PropertyValue();
-        $siteIdentifier->propertyID('Schoenstatt Link ID')
-            ->value($identifier);
-        if (isset($googlePlaceId)) {
-            $placeIdentifier = new PropertyValue();
-            $placeIdentifier->propertyID('Google Maps Place ID')
-            ->value($googlePlaceId);
-            $jsonIdentifier = [$siteIdentifier, $placeIdentifier];
-        } else {
-            $jsonIdentifier = $siteIdentifier;
-        }
         
         if (!isset($tzValidator)) {
             $tzValidator = new Timezone();
@@ -951,45 +743,15 @@ class SchoenstattTable extends SionTable implements
             $timeZoneId = null;
         }
         $openingHoursJson = $row['OpeningHoursSpecification'];
-        $openingHours = null;
-        if (!isset($openingHoursValidator)) {
-            $openingHoursValidator = new OpeningHoursSpecificationJson();
-        }
-        if ($openingHoursValidator->isValid($openingHoursJson)) {
-            try {
-                $spec = Json::decode($openingHoursJson, Json::TYPE_ARRAY);
-                if (isset($timeZoneId)) {
-                    $openingHours = OpeningHours::create($spec, $timeZoneId);
-                } else {
-                    $openingHours = OpeningHours::create($spec);
-                }
-            } catch (\Exception $e) {}
-        }
-        
         $publicNotes = $row['PublicNotes'];
-        if (!isset($markdownParser)) {
-            $markdownParser = new \Parsedown();
-            $markdownParser->setSafeMode(true);
-        }
-        $jsonDescription = $markdownParser->text($publicNotes);
-        
         $email = $this->filterEmailString($row['Email']);
-        if (isset($email)) {
-            $jsonAdditionalPropertyFoundation = new PropertyValue();
-            $jsonAdditionalPropertyFoundation->propertyID('email')
-            ->value($email);
-            $jsonAdditionalProperty[] = $jsonAdditionalPropertyFoundation;
-        }
-        if (empty($jsonAdditionalProperty)) {
-            $jsonAdditionalProperty = null;
-        }
         
         $processedRow = [
             'associationId'         => $id,
             'identifier'            => $identifier,
-            'name'                  => $name,
+            'name'                  => $name, //non-translated field
             'overrideNameFormat'    => $overrideNameFormat,
-            'internalName'          => $internalName,
+            'internalName'          => $internalName, //non-translated field
             'isInternalNameTranslateable' => $isInternalNameTranslateable,
             'parentId'              => $this->filterDbId($row['Parent']),
             'kind'                  => $kind,
@@ -1005,6 +767,12 @@ class SchoenstattTable extends SionTable implements
                 $row['OpeningHoursSpecificationUpdatedOn']),
             'openingHoursSpecificationJsonUpdatedBy' => $row['OpeningHoursSpecificationUpdatedBy'],
             
+            'eventsHuman'           => $row['EventsHuman'],
+            'eventsHumanUpdatedOn'  => $this->filterDbDate($row['EventsHumanUpdatedOn']),
+            'eventsHumanUpdatedBy'  => $row['EventsHumanUpdatedBy'],
+            'eventsJson'            => $row['EventsJson'],
+            'eventsJsonUpdatedOn'   => $this->filterDbDate($row['EventsJsonUpdatedOn']),
+            'eventsJsonUpdatedBy'   => $row['EventsJsonUpdatedBy'],
             'foundationDate'        => $foundationDate,
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
@@ -1013,25 +781,25 @@ class SchoenstattTable extends SionTable implements
             'isActive'              => $this->filterDbBool($row['IsActive']),
 
             'geoPoint'                  => $geoPoint,
-            'latitude'                  => $row['Latitude'], //@deprecated
-            'longitude'                 => $row['Longitude'], //@deprecated
-            'idealEn'                   => $row['IdealEn'],
-            'idealEs'                   => $row['IdealEs'],
-            'idealDe'                   => $row['IdealDe'],
-            'idealPt'                   => $row['IdealPt'],
-            'idealFr'                   => $row['IdealFr'],
-            'visitorsInformationEn'     => $row['VisitorsInformationEn'],
-            'visitorsInformationEs'     => $row['VisitorsInformationEs'],
-            'visitorsInformationDe'     => $row['VisitorsInformationDe'],
-            'visitorsInformationPt'     => $row['VisitorsInformationPt'],
-            'visitorsInformationFr'     => $row['VisitorsInformationFr'],
-            'historyEn'                 => $row['HistoryEn'],
-            'historyEs'                 => $row['HistoryEs'],
-            'historyDe'                 => $row['HistoryDe'],
-            'historyPt'                 => $row['HistoryPt'],
-            'historyFr'                 => $row['HistoryFr'],
+//             'latitude'                  => $row['Latitude'], //@deprecated
+//             'longitude'                 => $row['Longitude'], //@deprecated
+//             'idealEn'                   => $row['IdealEn'],
+//             'idealEs'                   => $row['IdealEs'],
+//             'idealDe'                   => $row['IdealDe'],
+//             'idealPt'                   => $row['IdealPt'],
+//             'idealFr'                   => $row['IdealFr'],
+//             'visitorsInformationEn'     => $row['VisitorsInformationEn'],
+//             'visitorsInformationEs'     => $row['VisitorsInformationEs'],
+//             'visitorsInformationDe'     => $row['VisitorsInformationDe'],
+//             'visitorsInformationPt'     => $row['VisitorsInformationPt'],
+//             'visitorsInformationFr'     => $row['VisitorsInformationFr'],
+//             'historyEn'                 => $row['HistoryEn'],
+//             'historyEs'                 => $row['HistoryEs'],
+//             'historyDe'                 => $row['HistoryDe'],
+//             'historyPt'                 => $row['HistoryPt'],
+//             'historyFr'                 => $row['HistoryFr'],
 
-            'adminTags'             => $this->filterDbArray($row['AdminTags']),
+//             'adminTags'             => $this->filterDbArray($row['AdminTags']),
 
             'sort'                  => $associationKindSpec->sort,
             'isSubDiocesan'         => $associationKindSpec->isSubDiocesanAssociation,
@@ -1081,7 +849,7 @@ class SchoenstattTable extends SionTable implements
             'postZip'               => $postZip, //@todo deprecated
             
 //             'post2Country'              => $post2Country,
-            'contactNotes'          => $row['ContactNotes'],
+//             'contactNotes'          => $row['ContactNotes'],
 //                 'contactNotesUpdatedOn'     => $this->filterDbDate($row['ContactNotesUpdatedOn']),
 //                 'contactNotesUpdatedBy'     => $this->filterDbId($row['ContactNotesUpdatedBy']),
 
@@ -1098,28 +866,27 @@ class SchoenstattTable extends SionTable implements
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
-
-            'schemaOrgJsonMd5'      => $row['SchemaOrgJsonMd5'],
-
+            
+            'schemaOrgJsonMd5V1En'  => $row['SchemaOrgJsonMd5V1En'],
+            'schemaOrgJsonMd5V1Es'  => $row['SchemaOrgJsonMd5V1Es'],
+            'schemaOrgJsonMd5V1Pt'  => $row['SchemaOrgJsonMd5V1Pt'],
+            'schemaOrgJsonMd5V1De'  => $row['SchemaOrgJsonMd5V1De'],
+            'schemaOrgJsonMd5V1It'  => $row['SchemaOrgJsonMd5V1It'],
+            'schemaOrgJsonMd5V1ByLanguage' => [
+                'en' => $row['SchemaOrgJsonMd5V1En'],
+                'es' => $row['SchemaOrgJsonMd5V1Es'],
+                'pt' => $row['SchemaOrgJsonMd5V1Pt'],
+                'de' => $row['SchemaOrgJsonMd5V1De'],
+                'it' => $row['SchemaOrgJsonMd5V1It'],
+            ],
+            //@todo do the URL better
+            'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
+            'nameByLocale'          => $namesByLocale, //should never be null
+            'internalNameByLocale'  => $internalNameByLocale, //should never be null
             'postAddresses'         => $addresses,
             'resourceId'            => 'association_'.$id,
             'phones'                => $phones,
             'urls'                  => $urls,
-            'formattedName'         => $formattedName,
-            'internalDisplayName'   => $internalDisplayName,
-            'jsonId'                => $jsonId,
-            'jsonAlternateName'     => $jsonAlternateName,
-            'jsonDisambiguatingDescription' => $jsonDisambiguatingDescription,
-            'jsonAddress'           => $jsonAddress,
-            'jsonTelephone'         => $jsonTelephone,
-            'jsonGeo'               => $jsonGeo,
-            'jsonSameAs'            => $jsonSameAs,
-            'jsonApiUrl'            => $jsonApiUrl,
-            'jsonFoundationEvent'   => $jsonFoundationEvent,
-            'jsonIdentifier'        => $jsonIdentifier,
-            'jsonAdditionalProperty'=> $jsonAdditionalProperty,
-            'jsonDescription'       => $jsonDescription,
-            'openingHours'          => $openingHours,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
@@ -1130,8 +897,10 @@ class SchoenstattTable extends SionTable implements
      * @param mixed[] $object
      * @return \Spatie\SchemaOrg\Thing
      */
-    public function getAssociationSchema($object, $forApi = false)
+    public function getAssociationSchemaV1($object, $locale = null)
     {
+        static $markdownParser;
+        static $openingHoursValidator;
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
@@ -1139,38 +908,140 @@ class SchoenstattTable extends SionTable implements
         if (!isset($schemaType) || !class_exists($schemaType)) {
             throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
         }
+        if (!isset($locale)) {
+            $locale = $this->getLocale();
+        }
         $schema = new $schemaType;
-        foreach (self::ASSOCIATION_SCHEMA_FIELD_MAP as $field => $property) {
-            if (isset($object[$field])) {
-                $schema->setProperty($property, $object[$field]);
+        //@id
+        $schema->setProperty('@id', $object['jsonId']);
+        
+        //name
+        $name = $object['nameByLocale'][$locale];
+        $schema->setProperty('name', $name);
+        
+        //alternateName
+        $jsonAlternateName = [];
+        foreach ($this->languageLocaleMap as $aLocale) {
+            if ($object['nameByLocale'][$aLocale] !== $name
+                && !in_array($object['nameByLocale'][$aLocale], $jsonAlternateName, TRUE)
+            ) {
+                $jsonAlternateName[] = $object['nameByLocale'][$aLocale];
+            }
+            if ($object['internalNameByLocale'][$aLocale] !== $name 
+                && !in_array($object['internalNameByLocale'][$aLocale], $jsonAlternateName, TRUE)
+            ) {
+                $jsonAlternateName[] = $object['internalNameByLocale'][$aLocale];
             }
         }
-        //mark shrines as free public places
-        if (('sch-shrine' === $object['kind'] || 'sch-wayside-shrine' === $object['kind'])
-            && $object['isActive']
-        ) {
-            $schema->isAccessibleForFree(true);
-            $schema->publicAccess(true);
+        if (empty($jsonAlternateName)) {
+            $jsonAlternateName = null;
+        } else {
+            sort($jsonAlternateName);
+            $schema->setProperty('alternateName', $jsonAlternateName);
         }
-        if (isset($object['openingHours']) && $object['openingHours'] instanceof OpeningHours) {
-            $format = isset($object['timeZoneId']) ? 'H:iP' : 'H:i';
-            $schema->setProperty('openingHoursSpecification', $object['openingHours']->asStructuredData($format));
+        
+        //disambiguatingDescription (used for internal name)
+        $schema->setProperty('disambiguatingDescription', $object['internalNameByLocale'][$locale]);
+        
+        //description
+        if (!isset($markdownParser)) {
+            $markdownParser = new \Parsedown();
+            $markdownParser->setSafeMode(true);
         }
+        $schema->setProperty('description', $markdownParser->text($object['publicNotes']));
+        
+        //email
+        if (isset($object['email'])) {
+            $schema->setProperty('email', $object['email']);
+        }
+        
+        //identifier
+        $siteIdentifier = new PropertyValue();
+        $siteIdentifier->propertyID('Schoenstatt Link ID')
+        ->value($object['identifier']);
+        $jsonIdentifier = [$siteIdentifier];
+        if (isset($object['googlePlaceId'])) {
+            $placeIdentifier = new PropertyValue();
+            $placeIdentifier->propertyID('Google Maps Place ID')
+            ->value($object['googlePlaceId']);
+            $jsonIdentifier[] = $placeIdentifier;
+        }
+        $schema->setProperty('identifier', $jsonIdentifier);
+        
+        //location
+        //@todo derive this code to kind configs
+        if ('sch-shrine' === $object['kind']) {
+            $location = new CatholicChurch();
+            //mark shrines as free public places
+            $location->isAccessibleForFree(true);
+            $location->publicAccess(true);
+        } elseif ('sch-wayside-shrine' === $object['kind']) {
+            $location = new PlaceOfWorship();
+            //mark shrines as free public places
+            $location->isAccessibleForFree(true);
+            $location->publicAccess(true);
+        } else {
+            $location = new Place();
+        }
+        
+        //geo
+        if (isset($object['geoPoint'])) {
+            $jsonGeo = Schema::geoCoordinates();
+            $jsonGeo->latitude($object['geoPoint']->latitude);
+            $jsonGeo->longitude($object['geoPoint']->longitude);
+            if (isset($object['country'])) {
+                $jsonGeo->addressCountry($object['country']);
+            }
+            $location->geo($jsonGeo);
+        }
+        
+        //openingHours
+        $openingHours = null;
+        if (!isset($openingHoursValidator)) {
+            $openingHoursValidator = new OpeningHoursSpecificationJson();
+        }
+        if ($openingHoursValidator->isValid($object['openingHoursSpecificationJson'])) {
+            try {
+                $spec = Json::decode($object['openingHoursSpecificationJson'], Json::TYPE_ARRAY);
+                if (isset($object['timeZoneId'])) {
+                    $openingHours = OpeningHours::create($spec, $object['timeZoneId']);
+                } else {
+                    $openingHours = OpeningHours::create($spec);
+                }
+            } catch (\Exception $e) {}
+            if (isset($openingHours)) {
+                $format = isset($object['timeZoneId']) ? 'H:iP' : 'H:i';
+                $location->setProperty('openingHoursSpecification', $openingHours->asStructuredData($format));
+            }
+        }
+        
+        $schema->setProperty('location', $location);
+        
+        //foundingDate
+        if (isset($object['foundationDate']) && $object['foundationDate'] instanceof \DateTimeInterface) {
+            $dateString = $object['foundationDate']->format('Y-m-d');
+            $schema->setProperty('foundingDate', $dateString);
+        }
+        
+//         'jsonAddress'           => $jsonAddress,
+//         'jsonTelephone'         => $jsonTelephone,
+//         'jsonSameAs'            => $jsonSameAs,
+//         'jsonAdditionalProperty'=> $jsonAdditionalProperty,
+//         'jsonDescription'       => $jsonDescription,
+        
+        //@todo add faxNumber
+        //@todo add hasMap
+        
         return $schema;
     }
 
-    public function getAssociationListSchema($objects, &$resultingMd5s, $forApi = false)
+    public function getAssociationListSchemaV1($objects, &$resultingMd5s)
     {
         $schemata = [];
         $resultingMd5s = [];
         foreach ($objects as $object) {
-            $schema = $this->getAssociationSchema($object, $forApi);
-            
-            //this goes here because we only add it when returning a list of schemata
-//             if ($forApi && isset($object['jsonApiUrl'])) {
-//                 $schema->setProperty('apiUrl', $object['jsonApiUrl']);
-//             }
-            $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5'];
+            $schema = $this->getAssociationSchemaV1($object);
+            $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5V1En'];
             $array = $schema->toArray();
             $schemata[] = $array;
         }
@@ -1178,7 +1049,7 @@ class SchoenstattTable extends SionTable implements
     }
 
     /**
-     *
+     * @todo we shouldn't need to query the whole table to get 1 association
      * @param int $id
      * @return mixed[]
      */
@@ -1249,28 +1120,28 @@ class SchoenstattTable extends SionTable implements
             }
         }
         //Set the MD5 sum
-        $schema = $this->getAssociationSchema($newData);
+        $schema = $this->getAssociationSchemaV1($newData);
         $array = $schema->toArray();
         $md5 = md5(json_encode($array));
         $adapter = $this->getTableGateway('sch_associations');
-        $adapter->update(['SchemaOrgJsonMd5' => $md5], ['AssociationId' => $newData['associationId']]);
+        $adapter->update(['SchemaOrgJsonMd5V1En' => $md5], ['AssociationId' => $newData['associationId']]);
     }
 
     /**
      * Update the SchemaOrgJsonMd5 with the latest schema digests
      */
-    public function updateAssociationMd5s()
+    public function updateAssociationMd5s(array $associationIds)
     {
         //@todo afterwards, do all associations, not just shrines
         $associations = $this->getAssociations();
         $return = [];
         foreach ($associations as $object) {
-            $schema = $this->getAssociationSchema($object);
+            $schema = $this->getAssociationSchemaV1($object);
             $array = $schema->toArray();
             $md5 = md5(json_encode($array));
             $return[$object['associationId']] = $md5;
             $adapter = $this->getTableGateway('sch_associations');
-            $adapter->update(['SchemaOrgJsonMd5' => $md5], ['AssociationId' => $object['associationId']]);
+            $adapter->update(['SchemaOrgJsonMd5V1En' => $md5], ['AssociationId' => $object['associationId']]);
         }
         return $return;
     }
@@ -1316,7 +1187,7 @@ class SchoenstattTable extends SionTable implements
      */
     public function getNationalAssociations($country)
     {
-        $associationConfig = $this->config['association_kinds'];
+        $associationConfig = $this->config['schoenstatt']['association_kinds'];
         $entities = $this->getAssociations();
         foreach ($entities as $entityId => $entity) {
             //don't include sub-diocesan associations
@@ -1490,7 +1361,7 @@ ORDER BY `LastName`, `FirstName`";
             if (!$automaticTitle) {
                 $title = $manualTitle;
             } else {
-                $personTagConfig = $this->config['person_tags'];
+                $personTagConfig = $this->config['schoenstatt']['person_tags'];
                 //sort tag config according to sort order
                 $sort = [];
                 foreach ($personTagConfig as $k => $v) {
@@ -1717,7 +1588,7 @@ ORDER BY `LastName`, `FirstName`";
             return $cache;
         }
         $entities = $this->getUnlinkedRoles();
-        $associations = $this->getUnlinkedAssociations();
+        $associations = $this->getObjects('association');
         foreach ($entities as $key => $role) {
             if ($role['associationId'] && isset($associations[$role['associationId']])) {
                 $entities[$key]['association'] = $associations[$role['associationId']];
@@ -1828,7 +1699,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
          * 3. Include active persons who where left out
          */
         $entities       = $this->getAssignments();
-        $associations   = $this->getUnlinkedAssociations();
+        $associations   = $this->getObjects('association');
         $persons        = $this->getUnlinkedPersons();
 
         //first mark the "found" persons and associations in assignments
@@ -1918,7 +1789,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         }
         $entities       = $this->getUnlinkedAssignments();
         $persons        = $this->getUnlinkedPersons();
-        $associations   = $this->getUnlinkedAssociations();
+        $associations   = $this->getObjects('association');
+        $locale = $this->getLocale();
 
         foreach ($entities as $assignmentId => $assignment) {
             if (!isset($persons[$assignment['personId']]) ||
@@ -1931,7 +1803,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 $entities[$assignmentId]['association'] = $associations[$assignment['associationId']];
                 $entities[$assignmentId]['associationSort'] =
                     $this->strPad($associations[$assignment['associationId']]['sort'], 4, '0', STR_PAD_LEFT).
-                    $associations[$assignment['associationId']]['formattedName'];
+                    $associations[$assignment['associationId']]['nameByLocale'][$locale];
             }
         }
 
@@ -2038,6 +1910,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
          * * acceptingMerePersons: !associationKind && !associationCountry && !roleTitle
          * * acceptingMereAssociations: !roleTitle
          */
+        $locale = $this->getLocale();
         $onlyMainRoles = isset($query['onlyMainRoles']) && is_bool($query['onlyMainRoles'])
             ? $query['onlyMainRoles'] : false;
         $includeInactive = isset($query['includeInactive']) && is_bool($query['includeInactive'])
@@ -2173,7 +2046,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             if ($searchSearchField &&
                 (!isset($assignment['association']) ||
                     (false === stripos($assignment['association']['name'], $query['search']) &&
-                     false === stripos($assignment['association']['formattedName'], $query['search']))) &&
+                    false === stripos($assignment['association']['nameByLocale'][$locale], $query['search']))) &&
                 (!isset($assignment['roleTitle']) || false === stripos($assignment['roleTitle'], $query['search'])) &&
                 (!isset($assignment['formattedRoleTitle'])
                     || false === stripos($assignment['formattedRoleTitle'], $query['search'])) &&
@@ -2232,7 +2105,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             //2.4 search field criteria
             if (!$isMerePerson && $searchSearchField &&
                 false === stripos($assignment['association']['name'], $query['search']) &&
-                false === stripos($assignment['association']['formattedName'], $query['search'])
+                false === stripos($assignment['association']['nameByLocale'][$locale], $query['search'])
             ) {
                 $hasMereAssociationFailed = true;
             }
@@ -2359,11 +2232,12 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
 
+        $locale = $this->getLocale();
         $sort = [];
         foreach ($shrines as $k => $v) {
             $sort['countryRegion'][$k] = $v['countryRegion'];
             $sort['country'][$k] = $v['country'];
-            $sort['internalDisplayName'][$k] = $v['internalDisplayName'];
+            $sort['internalNameByLocale'][$k] = $v['internalDisplayName'][$locale];
         }
         # sort by event_type desc and then title asc
         array_multisort(
@@ -2371,7 +2245,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             SORT_ASC,
             $sort['country'],
             SORT_ASC,
-            $sort['internalDisplayName'],
+            $sort['internalNameByLocale'],
             SORT_ASC,
             $shrines
         );
