@@ -3,15 +3,12 @@ use Carbon\Carbon;
 use Spatie\SchemaOrg\BaseType;
 
 $object = $this->entity;
+$locale = \Locale::getDefault();
 $internalName = null;
-if (isset($object['internalDisplayName'])) {
-    $internalName = $object['internalDisplayName'];
+if (isset($object['internalNameByLocale'][$locale])) {
+    $internalName = $object['internalNameByLocale'][$locale];
 }
-if (isset($object['formattedName'])) {
-    $name = $object['formattedName'];
-} else {
-    $name = $object['isNameTranslateable'] ? $this->translate($object['name']) : $object['name'];
-}
+$name = $object['nameByLocale'][$locale];
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($name);?>
 <h1><?php echo $this->escapeHtml($name);?></h1>

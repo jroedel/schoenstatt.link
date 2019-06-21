@@ -6,6 +6,17 @@ use Zend\Filter\ToNull;
 use SionModel\Form\SionForm;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Schoenstatt\Validator\TimeZone;
+use Zend\Validator\StringLength;
+use Zend\Filter\StripTags;
+use Zend\Filter\StripNewlines;
+use Zend\Filter\StringTrim;
+use SionModel\Filter\ToGeoPoint;
+use Zend\Validator\GpsPoint;
+use SionModel\Validator\Twitter;
+use Zend\Validator\EmailAddress;
+use SionModel\Filter\ToDateTime;
+use SionModel\Filter\ToBit;
+use SionModel\Validator\Instagram;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -152,7 +163,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
         ]);
         $this->add([
             'name' => 'openingHoursHuman',
-            'type' => 'Text',
+            'type' => 'Textarea',
             'options' => [
                 'label' => 'Opening hours (free text)',
                 'help-block' => 'Be as descriptive as possible, including closing days throughout the year! 
@@ -170,6 +181,44 @@ There\'s nothing worse for a pilgrim than finding a closed door.',
                 'label' => 'Opening hours specification JSON (advanced users)',
                 'help-block' => 'Please see OpeningHours::create([...]);
 at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/opening-hours</a></br>
+',
+            ],
+            'attributes' => [
+                'required' => false,
+                'rows' => 8,
+                'placeholder' => '{
+  "friday":["09:00-12:00","13:00-18:00"],
+  "saturday":["09:00-12:00","13:00-18:00"],
+  "sunday":["09:00-12:00","13:00-18:00"],
+  "exceptions": {
+    "2016-11-11": ["09:00-12:00"],
+    "2016-12-25": [],
+    "01-01": [],
+}}',
+            ],
+        ]);
+        $this->add([
+            'name' => 'eventsHuman',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Mass, adoration and reconciliation schedules (free text)',
+                'help-block' => 'Please add all details available, including exceptions to the general rule. 
+(Summer/winter schedules, months without mass, etc.)',
+            ],
+            'attributes' => [
+                'required' => false,
+                'placeholder' => 'Covenant mass every 3rd Sunday, daily mass every Wednesday at 7am, '
+.'except in June and July. Confessions will be offered 30 minutes before every mass. '
+.'Youth adoration every 1st and 3rd Friday while school is in session. Please verify on the Facebook page.',
+            ],
+        ]);
+        $this->add([
+            'name' => 'eventsJson',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Mass, adoration and reconciliation JSON (advanced users)',
+                'help-block' => 'Please see eventSchedule specification
+at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</br>
 ',
             ],
             'attributes' => [
@@ -660,10 +709,10 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'name' => [
                 'required' => true,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -671,7 +720,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 200,
@@ -682,22 +731,22 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'overrideNameFormat' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'isNameTranslateable' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'internalName' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -705,7 +754,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 200,
@@ -716,14 +765,14 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'isInternalNameTranslateable' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'parentId' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'ToInt'],
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_INTEGER,
                         ],
@@ -737,7 +786,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 'required' => false,
                 'filters' => [
                     ['name' => 'StringToUpper'],
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -745,7 +794,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 6,
@@ -756,7 +805,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'timeZoneId' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -766,7 +815,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'openingHoursHuman' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -774,7 +823,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 500,
@@ -785,7 +834,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'openingHoursSpecificationJson' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -793,7 +842,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 1000,
@@ -802,28 +851,67 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                     ['name' => OpeningHoursSpecificationJson::class]
                 ],
             ],
+            'eventsHuman' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => StringLength::class,
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 1000,
+                        ],
+                    ],
+                ],
+            ],
+            'eventsJson' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => StringLength::class,
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => 3000,
+                        ],
+                    ],
+                    ['name' => OpeningHoursSpecificationJson::class]
+                ],
+            ],
             'foundationDate' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
+                    ['name' => ToDateTime::class],
                 ],
             ],
             'isAuthor' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'isActive' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    ['name' => ToBit::class]
                 ],
             ],
             'suppressionDate' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToDateTime'],
+                    ['name' => ToDateTime::class],
                 ],
             ],
             'isLifeCommunity' => [
@@ -832,29 +920,29 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'email' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
                 'validators' => [
-                    ['name' => 'EmailAddress'],
+                    ['name' => EmailAddress::class],
                 ],
             ],
             'email2' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
                 'validators' => [
-                    ['name' => 'EmailAddress'],
+                    ['name' => EmailAddress::class],
                 ],
             ],
             'phone1' => $this->phoneInputFilterSpec,
@@ -866,7 +954,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'url1' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -876,10 +964,10 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'url1Label' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -889,7 +977,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'url2' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -899,10 +987,10 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'url2Label' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -912,7 +1000,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'url3' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -922,10 +1010,10 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'url3Label' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -935,7 +1023,7 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'facebookUrl' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -945,49 +1033,49 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'twitterUser' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
                 'validators' => [
-                    ['name' => 'SionModel\Validator\Twitter'],
+                    ['name' => Twitter::class],
                 ],
             ],
             'instagramUser' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'ToNull',
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
                 'validators' => [
-                    ['name' => 'SionModel\Validator\Instagram'],
+                    ['name' => Instagram::class],
                 ],
             ],
             'geoPoint' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToGeoPoint'],
+                    ['name' => ToGeoPoint::class],
                 ],
                 'validators' => [
-                    ['name' => 'Zend\Validator\GpsPoint'],
+                    ['name' => GpsPoint::class],
                 ],
             ],
             'street1' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class],
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 70,
@@ -998,14 +1086,14 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'street2' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class],
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 70,
@@ -1016,14 +1104,14 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'cityState' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class],
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 40,
@@ -1034,14 +1122,14 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'zip' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class],
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 15,
@@ -1052,14 +1140,14 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'googlePlaceId' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull'],
+                    ['name' => StripTags::class],
+                    ['name' => StripNewlines::class],
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class],
                 ],
                 'validators' => [
                     [
-                        'name' => 'StringLength',
+                        'name' => StringLength::class,
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 200,
@@ -1067,22 +1155,11 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
                     ],
                 ],
             ],
-            'contactNotes' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull',
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
             'publicNotes' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
@@ -1092,8 +1169,8 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'adminNotes' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'ToNull',
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]

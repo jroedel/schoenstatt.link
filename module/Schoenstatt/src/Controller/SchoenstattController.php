@@ -64,6 +64,7 @@ class SchoenstattController extends AbstractActionController
     {
         $table = $this->schoenstattTable;
         $shrines = $table->getShrines();
+        
         return new ViewModel([
 //             'form'              => $form,
             'shrines'   => $shrines,
@@ -119,7 +120,7 @@ class SchoenstattController extends AbstractActionController
     {
         /** @var SchoenstattTable $table */
         $table = $this->schoenstattTable;
-        $objects = $table->getUnlinkedAssociations();
+        $objects = $table->getObjects('association');
         $map = [];
         foreach ($objects as $associationId => $object) {
             if ('sch-national-movement' === $object['kind'] && isset($object['country'])) {

@@ -9,43 +9,45 @@ use Zend\Filter\StripTags;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\TimeZone;
-use Spatie\SchemaOrg\CatholicChurch;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 
 class AssociationsController extends SionController
 {
-    public function sendToNewUrl()
+    public function sendToNewUrlAction()
     {
         $associationId = $this->params()->fromRoute('association_id');
-        /** @var \Schoenstatt\Model\SchoenstattTable $table */
-        $table = $this->getSionTable();
-        $object = $table->getSimpleAssociation($associationId);
-        if (!isset($object)) {
-            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-            ->addMessage(ucwords($this->entity).' not found.');
-            $redirectRoute = 'associations';
-            return $this->redirect()->toRoute($redirectRoute);
-        }
-        return $this->redirect()->toRoute('associations/association', ['sw_id' => $object['identifier']]);
+        $filter = new ToSchoenstattLinkIdentifier('association');
+        $swId = $filter->filter($associationId);
+        return $this->redirect()->toRoute('associations/association', ['sw_id' => $swId]);
     }
 
     /**
-     *
+     * Makes sure this function returns the associationId if passed a site-wide id
+     * 
      * {@inheritDoc}
-     * @see \SionModel\Controller\SionController::updateEntityPostFormValidation()
+     * @see \SionModel\Controller\SionController::getEntityIdParam()
      */
-    public function updateEntityPostFormValidation($id, $data, $form)
+    protected function getEntityIdParam($action = 'show', $default = null)
     {
-        $entity = $this->getEntity();
-        /** @var SionTable $table **/
-        $table = $this->getSionTable();
-
-        //hack to make sure we call updateEntity with the int id
-        $idFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
-
-        $table->updateEntity($entity, $idFilter->filter($id), $data);
-        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage(ucfirst($entity).' successfully updated.');
-        $this->redirectAfterEdit($id);
+        static $swValidator;
+        static $swFilter;
+        $id = $this->params()->fromRoute('sw_id');
+        if (isset($id)) {
+            if (!isset($swValidator)) {
+                $swValidator = new SchoenstattLinkIdentifier();
+            }
+            if (!$swValidator->isValid($id)) {
+                throw new \Exception('Invalid site-wide id');
+            }
+            if (!isset($swFilter)) {
+                $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
+            }
+            $id = $swFilter->filter($id);
+        } else {
+            $id = $this->params()->fromRoute('association_id');
+        }
+        return $id;
     }
 
     public function editAction()
@@ -80,7 +82,7 @@ class AssociationsController extends SionController
             return $view;
         }
         //set nationalOrganizations
-        /** @var SchoenstattTable $table */
+        /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $this->getSionTable();
         $association = $view->getVariable('entity');
         if (!$this->zfcUserAuthentication()->hasIdentity()
@@ -89,16 +91,16 @@ class AssociationsController extends SionController
         ) {
             return $this->redirect()->toRoute('welcome');
         }
-        if ($association['kind'] == 'sch-national-movement' && !is_null($association['country'])) {
+        if ($association['kind'] === 'sch-national-movement' && isset($association['country'])) {
             $nationalOrganizations = $table->getNationalAssociations($association['country']);
-            if (key_exists($association['associationId'], $nationalOrganizations)) {
+            if (isset($nationalOrganizations[$association['associationId']])) {
                 unset($nationalOrganizations[$association['associationId']]);
             }
             $association['nationalOrganizations'] = $nationalOrganizations;
             $view->setVariable('entity', $association);
         }
         /** @var CatholicChurch $schema */
-        $schema = $table->getAssociationSchema($association);
+        $schema = $table->getAssociationSchemaV1($association);
         $schema->setProperty('event', null);
         $view->setVariable('schema', $schema);
         

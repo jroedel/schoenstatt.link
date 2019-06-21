@@ -25,6 +25,7 @@ class FormatAssociation extends AbstractHelper
      */
     public function __invoke($data, array $options = [])
     {
+        $locale = \Locale::getDefault();
         $display = isset($options['display']) ? $options['display'] : 'name';
         $editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : $display=='name';
         $showFlagOption = isset($options['showFlag']) ? (bool)$options['showFlag'] : true;
@@ -45,13 +46,7 @@ class FormatAssociation extends AbstractHelper
                         $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
                     }
                     
-                    if ($data['formattedName']) {
-                        $text = $data['formattedName'];
-                    } elseif ($data['isNameTranslateable']) {
-                        $text = $this->view->translate($data['name'], 'Schoenstatt');
-                    } else {
-                        $text = $data['name'];
-                    }
+                    $text = $data['nameByLocale'][\Locale::getDefault()];
                     break;
                 case self::DISPLAY_INTERNAL_NAME:
                     //only show flag if we're looking at display_name
@@ -59,14 +54,10 @@ class FormatAssociation extends AbstractHelper
                         $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
                     }
                     
-                    if ($data['internalDisplayName']) {
-                        $text = $data['internalDisplayName'];
-                    } elseif ($data['formattedName']) {
-                        $text = $data['formattedName'];
-                    } elseif ($data['isNameTranslateable']) {
-                        $text = $this->view->translate($data['name'], 'Schoenstatt');
+                    if ($data['internalNameByLocale'][$locale]) {
+                        $text = $data['internalNameByLocale'][$locale];
                     } else {
-                        $text = $data['name'];
+                        $text = $data['nameByLocale'][$locale];
                     }
                     break;
                 case self::DISPLAY_KIND:
