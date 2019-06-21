@@ -24,7 +24,6 @@ use Schoenstatt\Filter\SchoenstattLinkIdentifier;
 use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
 use GeoJson\Feature\FeatureCollection;
-use Spatie\SchemaOrg\Event;
 use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
@@ -35,12 +34,15 @@ use Zend\Db\Sql\Predicate\IsNull;
 use Zend\Db\Sql\Predicate\IsNotNull;
 use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PlaceOfWorship;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
     PersonValueOptionsProviderInterface,
     ResourceProviderInterface
 {
+    const TRANSLATOR_DOMAIN = 'Schoenstatt';
+    
     const DEFAULT_PLACE_FORMAT = ':zip :cityState';
 
     const CATEGORY_DECEASED     = 'deceased';
@@ -495,6 +497,7 @@ class SchoenstattTable extends SionTable implements
 
     protected function processAssociationRow($row)
     {
+        static $swFilter;
         static $twitterUrlPattern;
         static $instagramUrlPattern;
         static $googlePlacePattern;
@@ -520,8 +523,10 @@ class SchoenstattTable extends SionTable implements
         }
         $associationKindSpec = $this->associationKinds[$kind];
 
-        //@todo use the filter
-        $identifier = 'SL'.($id+10000).'A';
+        if (!isset($swFilter)) {
+            $swFilter = new ToSchoenstattLinkIdentifier('association');
+        }
+        $identifier = $swFilter->filter($id);
 
         //process URLs
         $unprocessedUrls = [
@@ -628,12 +633,12 @@ class SchoenstattTable extends SionTable implements
         $street2   = $row['Post1Street2'];
         $cityState = $row['Post1CityState'];
         $zip       = $row['Post1Zip'];
-        $postStreet1   = $row['Post2Street1'];
-        $postStreet2   = $row['Post2Street2'];
-        $postCityState = $row['Post2CityState'];
-        $postZip       = $row['Post2Zip'];
+//         $postStreet1   = $row['Post2Street1'];
+//         $postStreet2   = $row['Post2Street2'];
+//         $postCityState = $row['Post2CityState'];
+//         $postZip       = $row['Post2Zip'];
 
-        $addresses = [];
+        $addresses = []; //@todo @deprecated
         if (isset($street1) || isset($street2) || isset($cityState)) {
             //in case we need to put the streets on one line
             $streets = [];
@@ -652,46 +657,30 @@ class SchoenstattTable extends SionTable implements
                 'country'   => $country,
             ];
         }
-        if (isset($postStreet1) || isset($postStreet2) || isset($postCityState)) {
-            //in case we need to put the streets on one line
-            $streets = [];
-            if (isset($postStreet1)) {
-                $streets[] = $postStreet1;
-            }
-            if (isset($postStreet2)) {
-                $streets[] = $postStreet2;
-            }
-            $addresses[] = [
-                'street1'   => $postStreet1,
-                'street2'   => $postStreet2,
-                'street'    => implode(', ', $streets),
-                'cityState' => $postCityState,
-                'zip'       => $postZip,
-                'country'   => $country,
-            ];
-        }
-
-        $jsonAddress = null;
-        if (count($addresses) > 0) {
-            $jsonAddress = [];
-            foreach ($addresses as $address) {
-                $addressObj = Schema::postalAddress();
-                foreach ($this->addressFieldMap as $field => $property) {
-                    if (isset($address[$field])) {
-                        $addressObj->$property($address[$field]);
-                    }
-                }
-                $jsonAddress[] = $addressObj;
-            }
-            if (1 === count($jsonAddress)) {
-                $jsonAddress = $jsonAddress[0];
-            }
-        }
+//         if (isset($postStreet1) || isset($postStreet2) || isset($postCityState)) {
+//             //in case we need to put the streets on one line
+//             $streets = [];
+//             if (isset($postStreet1)) {
+//                 $streets[] = $postStreet1;
+//             }
+//             if (isset($postStreet2)) {
+//                 $streets[] = $postStreet2;
+//             }
+//             $addresses[] = [
+//                 'street1'   => $postStreet1,
+//                 'street2'   => $postStreet2,
+//                 'street'    => implode(', ', $streets),
+//                 'cityState' => $postCityState,
+//                 'zip'       => $postZip,
+//                 'country'   => $country,
+//             ];
+//         }
 
         $name = $row['AssociationName'];
         $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
         $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
         $namesByLocale = [];
+        //translate the name to each locale
         foreach ($this->languageLocaleMap as $localeMapped) {
             $tempName = null;
             if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()) { //by format
@@ -703,13 +692,13 @@ class SchoenstattTable extends SionTable implements
                     ) {
                         $token = $this->countryNameTranslations[$token][$localeMapped];
                     } elseif ($isTranslatorReady) {
-                        $token = $this->translator->translate($token, 'Schoenstatt', $localeMapped);
+                        $token = $this->translator->translate($token, self::TRANSLATOR_DOMAIN, $localeMapped);
                     }
                 }
                 $tempName = sprintf($associationKindSpec->translatedNameFormat, $token);
             } else { //no name format
                 if ($isNameTranslateable && $isTranslatorReady) {
-                    $tempName = $this->translator->translate($name, 'Schoenstatt', $localeMapped);
+                    $tempName = $this->translator->translate($name, self::TRANSLATOR_DOMAIN, $localeMapped);
                 } else {
                     $tempName = $name;
                 }
@@ -723,7 +712,11 @@ class SchoenstattTable extends SionTable implements
         foreach ($this->languageLocaleMap as $localeMapped) {
             if (isset($internalName)) {
                 if ($isInternalNameTranslateable && $isTranslatorReady) {
-                    $internalNameByLocale[$localeMapped] = $this->translator->translate($internalName, 'Schoenstatt', $localeMapped);
+                    $internalNameByLocale[$localeMapped] = $this->translator->translate(
+                        $internalName, 
+                        self::TRANSLATOR_DOMAIN, 
+                        $localeMapped
+                        );
                 } else {
                     $internalNameByLocale[$localeMapped] = $internalName;
                 }
@@ -731,9 +724,6 @@ class SchoenstattTable extends SionTable implements
                 $internalNameByLocale[$localeMapped] = $namesByLocale[$localeMapped];
             }
         }
-
-        $geoPoint = $this->filterDbGeoPoint($row['GeoPoint']);
-        $foundationDate = $this->filterDbDate($row['FoundationDate']);
         
         if (!isset($tzValidator)) {
             $tzValidator = new Timezone();
@@ -742,9 +732,20 @@ class SchoenstattTable extends SionTable implements
         if (!$tzValidator->isValid($timeZoneId)) {
             $timeZoneId = null;
         }
-        $openingHoursJson = $row['OpeningHoursSpecification'];
+        
         $publicNotes = $row['PublicNotes'];
-        $email = $this->filterEmailString($row['Email']);
+        $publicNotesByLocale = [];
+        foreach ($this->languageLocaleMap as $localeMapped) {
+            if (isset($publicNotes)) {
+                $publicNotesByLocale[$localeMapped] = $this->translator->translate(
+                    $publicNotes, 
+                    self::TRANSLATOR_DOMAIN, 
+                    $localeMapped
+                    );
+            } else {
+                $publicNotesByLocale[$localeMapped] = null;
+            }
+        }
         
         $processedRow = [
             'associationId'         => $id,
@@ -762,7 +763,7 @@ class SchoenstattTable extends SionTable implements
             'openingHoursHuman'         => $row['OpeningHoursHuman'],
             'openingHoursHumanUpdatedOn'=> $this->filterDbDate($row['OpeningHoursHumanUpdatedOn']),
             'openingHoursHumanUpdatedBy'=> $row['OpeningHoursHumanUpdatedBy'],
-            'openingHoursSpecificationJson' => $openingHoursJson,
+            'openingHoursSpecificationJson' => $row['OpeningHoursSpecification'],
             'openingHoursSpecificationJsonUpdatedOn' => $this->filterDbDate(
                 $row['OpeningHoursSpecificationUpdatedOn']),
             'openingHoursSpecificationJsonUpdatedBy' => $row['OpeningHoursSpecificationUpdatedBy'],
@@ -773,14 +774,14 @@ class SchoenstattTable extends SionTable implements
             'eventsJson'            => $row['EventsJson'],
             'eventsJsonUpdatedOn'   => $this->filterDbDate($row['EventsJsonUpdatedOn']),
             'eventsJsonUpdatedBy'   => $row['EventsJsonUpdatedBy'],
-            'foundationDate'        => $foundationDate,
+            'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
             'isNameTranslateable'   => $isNameTranslateable,
             'isAuthor'              => $this->filterDbBool($row['IsAuthor']),
             'isActive'              => $this->filterDbBool($row['IsActive']),
 
-            'geoPoint'                  => $geoPoint,
+            'geoPoint'              => $this->filterDbGeoPoint($row['GeoPoint']),
 //             'latitude'                  => $row['Latitude'], //@deprecated
 //             'longitude'                 => $row['Longitude'], //@deprecated
 //             'idealEn'                   => $row['IdealEn'],
@@ -816,8 +817,8 @@ class SchoenstattTable extends SionTable implements
             /**
              * Contact fields
              */
-            'email'                 => $email,
-            'email2'                => $this->filterEmailString($row['Email2']),
+            'email'                 => $this->filterEmailString($row['Email']),
+//             'email2'                => $this->filterEmailString($row['Email2']),
             'emailsUpdatedOn'       => $this->filterDbDate($row['EmailsUpdatedOn']),
             'emailsUpdatedBy'       => $this->filterDbId($row['EmailsUpdatedBy']),
             'phone1'                => $phone1,
@@ -843,10 +844,10 @@ class SchoenstattTable extends SionTable implements
             'cityState'             => $cityState,
             'zip'                   => $zip,
 //             'post1Country'              => $post1Country,
-            'postStreet1'           => $postStreet1, //@todo deprecated
-            'postStreet2'           => $postStreet2, //@todo deprecated
-            'postCityState'         => $postCityState, //@todo deprecated
-            'postZip'               => $postZip, //@todo deprecated
+//             'postStreet1'           => $postStreet1, //@todo deprecated
+//             'postStreet2'           => $postStreet2, //@todo deprecated
+//             'postCityState'         => $postCityState, //@todo deprecated
+//             'postZip'               => $postZip, //@todo deprecated
             
 //             'post2Country'              => $post2Country,
 //             'contactNotes'          => $row['ContactNotes'],
@@ -883,10 +884,12 @@ class SchoenstattTable extends SionTable implements
             'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
             'nameByLocale'          => $namesByLocale, //should never be null
             'internalNameByLocale'  => $internalNameByLocale, //should never be null
+            'publicNotesByLocale'   => $publicNotesByLocale,
             'postAddresses'         => $addresses,
             'resourceId'            => 'association_'.$id,
             'phones'                => $phones,
             'urls'                  => $urls,
+            'jsonSameAs'            => $jsonSameAs,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
@@ -944,11 +947,17 @@ class SchoenstattTable extends SionTable implements
         $schema->setProperty('disambiguatingDescription', $object['internalNameByLocale'][$locale]);
         
         //description
-        if (!isset($markdownParser)) {
-            $markdownParser = new \Parsedown();
-            $markdownParser->setSafeMode(true);
+        if (isset($object['publicNotesByLocale'][$locale])) {
+            if (!isset($markdownParser)) {
+                $markdownParser = new \Parsedown();
+                $markdownParser->setSafeMode(true);
+            }
+            $descriptionText = $markdownParser->text($object['publicNotesByLocale'][$locale]);
+            $schema->setProperty(
+                'description', 
+                $descriptionText
+                );
         }
-        $schema->setProperty('description', $markdownParser->text($object['publicNotes']));
         
         //email
         if (isset($object['email'])) {
@@ -1015,6 +1024,31 @@ class SchoenstattTable extends SionTable implements
             }
         }
         
+        //address
+        if (isset($object['street1']) || isset($object['street2']) || isset($object['cityState'])) {
+            $jsonAddress = Schema::postalAddress();
+            if (isset($object['country'])) {
+                $jsonAddress->setProperty('addressCountry', $object['country']);
+            }
+            if (isset($object['cityState'])) {
+                $jsonAddress->setProperty('addressLocality', $object['cityState']);
+            }
+            if (isset($object['zip'])) {
+                $jsonAddress->setProperty('postalCode', $object['zip']);
+            }
+            if (isset($object['street1']) || isset($object['street2'])) {
+                $streets = [];
+                if (isset($object['street1'])) {
+                    $streets[] = $object['street1'];
+                }
+                if (isset($object['street2'])) {
+                    $streets[] = $object['street2'];
+                }
+                $jsonAddress->setProperty('streetAddress', implode(', ', $streets));
+            }
+            $schema->setProperty('address', $jsonAddress);
+        }
+        
         $schema->setProperty('location', $location);
         
         //foundingDate
@@ -1023,13 +1057,31 @@ class SchoenstattTable extends SionTable implements
             $schema->setProperty('foundingDate', $dateString);
         }
         
-//         'jsonAddress'           => $jsonAddress,
-//         'jsonTelephone'         => $jsonTelephone,
-//         'jsonSameAs'            => $jsonSameAs,
+        //sameAs
+        if (isset($object['jsonSameAs']) && !empty($object['jsonSameAs'])) {
+            $schema->setProperty('sameAs', $object['jsonSameAs']);
+        }
+        
+        // telephone & fax
+        $fax = null;
+        $telephone = [];
+        foreach ($object['phones'] as $labelNumber) {
+            if ('Fax' === $labelNumber['label']) {
+                $fax = $labelNumber['number'];
+            } else {
+                $telephone[] = $labelNumber['number'];
+            }
+        }
+        if (!empty($telephone)) {
+            $schema->setProperty('telephone', $telephone);
+        }
+        if (isset($fax)) {
+            $schema->setProperty('faxNumber', $fax);
+        }
+        
 //         'jsonAdditionalProperty'=> $jsonAdditionalProperty,
 //         'jsonDescription'       => $jsonDescription,
         
-        //@todo add faxNumber
         //@todo add hasMap
         
         return $schema;
@@ -1624,7 +1676,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $id = $this->filterDbId($row['RoleId']);
             $roleTitle = $row['RoleTitle'];
             if ($isTranslatorReady) {
-                $formattedRoleTitle = $this->translator->translate($roleTitle, 'Schoenstatt');
+                $formattedRoleTitle = $this->translator->translate($roleTitle, self::TRANSLATOR_DOMAIN);
             } else {
                 $formattedRoleTitle = $roleTitle;
             }
@@ -1834,7 +1886,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             $isActive = $this::areWeWithinDateRange($startDate, $endDate);
             $roleTitle = $row['RoleTitle'];
             if ($isTranslatorReady) {
-                $formattedRoleTitle = $this->translator->translate($roleTitle, 'Schoenstatt');
+                $formattedRoleTitle = $this->translator->translate($roleTitle, self::TRANSLATOR_DOMAIN);
             } else {
                 $formattedRoleTitle = $roleTitle;
             }
@@ -2237,7 +2289,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         foreach ($shrines as $k => $v) {
             $sort['countryRegion'][$k] = $v['countryRegion'];
             $sort['country'][$k] = $v['country'];
-            $sort['internalNameByLocale'][$k] = $v['internalDisplayName'][$locale];
+            $sort['internalNameByLocale'][$k] = $v['internalNameByLocale'][$locale];
         }
         # sort by event_type desc and then title asc
         array_multisort(

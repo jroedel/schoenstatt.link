@@ -38,9 +38,6 @@ $this->headTitle($name);?>
             <p><strong><?php echo $this->translate('Email'); ?>:</strong> <?php
             if (isset($object['email'])) : //@todo add checks for validated
                 echo $this->email($object['email']);
-                if (!is_null($object['email2'])) {
-                    echo ', '.$this->email($object['email2']);
-                }
             endif;?></p>
             <?php
             if (isset($object['geoPoint'])) :

@@ -20,6 +20,16 @@ use SionModel\Validator\Instagram;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
+    public const PHONE_LABEL_VALUE_OPTIONS = [
+        'Alternate cell phone' => 'Alternate cell phone',
+        'Only WhatsApp' => 'Only WhatsApp',
+        'Movement house' => 'Movement house',
+        'Office' => 'Office',
+        'Parish' => 'Parish',
+        'Personal house phone' => 'Personal house phone',
+        'Fax' => 'Fax',
+    ];
+    
     public function __construct()
     {
         parent::__construct('edit_association');
@@ -347,14 +357,7 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
-                'value_options' => [
-                    'Alternate cell phone' => 'Alternate cell phone',
-                    'Only WhatsApp' => 'Only WhatsApp',
-                    'Movement house' => 'Movement house',
-                    'Office' => 'Office',
-                    'Parish' => 'Parish',
-                    'Personal house phone' => 'Personal house phone',
-                ],
+                'value_options' => self::PHONE_LABEL_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -381,14 +384,7 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
                 'empty_option' => '',
                 'disable_inarray_validator' => true,
                 'unselected_value' => '',
-                'value_options' => [
-                    'Alternate cell phone' => 'Alternate cell phone',
-                    'Only WhatsApp' => 'Only WhatsApp',
-                    'Movement house' => 'Movement house',
-                    'Office' => 'Office',
-                    'Parish' => 'Parish',
-                    'Personal house phone' => 'Personal house phone',
-                ],
+                'value_options' => self::PHONE_LABEL_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -415,14 +411,7 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
                 'empty_option' => '',
                 'disable_inarray_validator' => true,
                 'unselected_value' => '',
-                'value_options' => [
-                    'Alternate cell phone' => 'Alternate cell phone',
-                    'Only WhatsApp' => 'Only WhatsApp',
-                    'Movement house' => 'Movement house',
-                    'Office' => 'Office',
-                    'Parish' => 'Parish',
-                    'Personal house phone' => 'Personal house phone',
-                ],
+                'value_options' => self::PHONE_LABEL_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -931,20 +920,20 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
                     ['name' => EmailAddress::class],
                 ],
             ],
-            'email2' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    ['name' => EmailAddress::class],
-                ],
-            ],
+//             'email2' => [
+//                 'required' => false,
+//                 'filters' => [
+//                     ['name' => StringTrim::class],
+//                     ['name' => ToNull::class,
+//                         'options' => [
+//                             'type' => ToNull::TYPE_STRING,
+//                         ]
+//                     ],
+//                 ],
+//                 'validators' => [
+//                     ['name' => EmailAddress::class],
+//                 ],
+//             ],
             'phone1' => $this->phoneInputFilterSpec,
             'phone1Label' => $this->phoneLabelInputFilterSpec,
             'phone2' => $this->phoneInputFilterSpec,
