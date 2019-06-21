@@ -1721,7 +1721,7 @@ return [
 //                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
                 'many_to_one_update_columns'            => [
                     'email'                     => 'emails',
-                    'email2'                    => 'emails',
+//                     'email2'                    => 'emails',
 
                     'phone1'                    => 'phones',
                     'phone1Label'               => 'phones',
@@ -1731,7 +1731,7 @@ return [
                     'phone3Label'               => 'phones',
 
                     'email'                     => 'contactInfo',
-                    'email2'                    => 'contactInfo',
+//                     'email2'                    => 'contactInfo',
                     'phone1'                    => 'contactInfo',
                     'phone1Label'               => 'contactInfo',
                     'phone2'                    => 'contactInfo',
@@ -1779,23 +1779,23 @@ return [
                     'isActive'                  => 'IsActive',
 
                     'geoPoint'                  => 'Location',
-                    'latitude'                  => 'Latitude', //@deprecated
-                    'longitude'                 => 'Longitude', //@deprecated
-                    'idealEn'                   => 'IdealEn', //@deprecated
-                    'idealEs'                   => 'IdealEs', //@deprecated
-                    'idealDe'                   => 'IdealDe', //@deprecated
-                    'idealPt'                   => 'IdealPt', //@deprecated
-                    'idealFr'                   => 'IdealFr', //@deprecated
-                    'visitorsInformationEn'     => 'VisitorsInformationEn', //@deprecated
-                    'visitorsInformationEs'     => 'VisitorsInformationEs', //@deprecated
-                    'visitorsInformationDe'     => 'VisitorsInformationDe', //@deprecated
-                    'visitorsInformationPt'     => 'VisitorsInformationPt', //@deprecated
-                    'visitorsInformationFr'     => 'VisitorsInformationFr', //@deprecated
-                    'historyEn'                 => 'HistoryEn', //@deprecated
-                    'historyEs'                 => 'HistoryEs', //@deprecated
-                    'historyDe'                 => 'HistoryDe', //@deprecated
-                    'historyPt'                 => 'HistoryPt', //@deprecated
-                    'historyFr'                 => 'HistoryFr', //@deprecated
+//                     'latitude'                  => 'Latitude', //@deprecated
+//                     'longitude'                 => 'Longitude', //@deprecated
+//                     'idealEn'                   => 'IdealEn', //@deprecated
+//                     'idealEs'                   => 'IdealEs', //@deprecated
+//                     'idealDe'                   => 'IdealDe', //@deprecated
+//                     'idealPt'                   => 'IdealPt', //@deprecated
+//                     'idealFr'                   => 'IdealFr', //@deprecated
+//                     'visitorsInformationEn'     => 'VisitorsInformationEn', //@deprecated
+//                     'visitorsInformationEs'     => 'VisitorsInformationEs', //@deprecated
+//                     'visitorsInformationDe'     => 'VisitorsInformationDe', //@deprecated
+//                     'visitorsInformationPt'     => 'VisitorsInformationPt', //@deprecated
+//                     'visitorsInformationFr'     => 'VisitorsInformationFr', //@deprecated
+//                     'historyEn'                 => 'HistoryEn', //@deprecated
+//                     'historyEs'                 => 'HistoryEs', //@deprecated
+//                     'historyDe'                 => 'HistoryDe', //@deprecated
+//                     'historyPt'                 => 'HistoryPt', //@deprecated
+//                     'historyFr'                 => 'HistoryFr', //@deprecated
 
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',
@@ -1805,7 +1805,7 @@ return [
                     'adminNotesUpdatedOn'       => 'AdminNotesUpdatedOn',
                     'adminNotesUpdatedBy'       => 'AdminNotesUpdatedBy',
                     'email'                     => 'Email',
-                    'email2'                    => 'Email2', //@deprecated
+//                     'email2'                    => 'Email2', //@deprecated
                     'emailsUpdatedOn'           => 'EmailsUpdatedOn',
                     'emailsUpdatedBy'           => 'EmailsUpdatedBy',
                     'phone1'                    => 'Phone1',
@@ -1830,13 +1830,13 @@ return [
                     'cityState'                 => 'Post1CityState',
                     'zip'                       => 'Post1Zip',
 //                     'country'              => 'Post1Country',
-                    'postStreet1'               => 'Post2Street1', //@todo DEPRECATED
-                    'postStreet2'               => 'Post2Street2', //@todo DEPRECATED
-                    'postCityState'             => 'Post2CityState', //@todo DEPRECATED
-                    'postZip'                   => 'Post2Zip', //@todo DEPRECATED
-                    'postCountry'               => 'Post2Country', //@todo DEPRECATED
+//                     'postStreet1'               => 'Post2Street1', //@todo DEPRECATED
+//                     'postStreet2'               => 'Post2Street2', //@todo DEPRECATED
+//                     'postCityState'             => 'Post2CityState', //@todo DEPRECATED
+//                     'postZip'                   => 'Post2Zip', //@todo DEPRECATED
+//                     'postCountry'               => 'Post2Country', //@todo DEPRECATED
                     'googlePlaceId'             => 'GooglePlaceId',
-                    'contactNotes'              => 'ContactNotes',
+//                     'contactNotes'              => 'ContactNotes',
                     'contactInfoUpdatedOn'      => 'ContactInfoUpdatedOn',
                     'contactInfoUpdatedBy'      => 'ContactInfoUpdatedBy',
                     'updatedOn'                 => 'UpdatedOn',
