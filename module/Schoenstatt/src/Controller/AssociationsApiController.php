@@ -93,8 +93,9 @@ class AssociationsApiController extends AbstractRestfulController
         }
         $table = $this->schoenstattTable;
         $objects = $table->searchAssociations(['kind' => $kind]); //@todo factor out this function
+        $locale = \Locale::getDefault();
         $md5s = null;
-        $json = $table->getAssociationListSchemaV1($objects, $md5s);
+        $json = $table->getAssociationListSchemaV1($objects, $locale, $md5s);
         $md5 = md5(json_encode($md5s));
         return new JsonModel([
             'items'         => $json,
