@@ -35,6 +35,7 @@ use Zend\Db\Sql\Predicate\IsNotNull;
 use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PlaceOfWorship;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use Spatie\SchemaOrg\Organization;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -99,22 +100,7 @@ class SchoenstattTable extends SionTable implements
         'addMensBranch' => 'sch-mens-league-branch',
         'addFamilyBranch' => 'sch-family-league-branch',
     ];
-
-    const ASSOCIATION_SCHEMA_FIELD_MAP = [
-        'jsonId'            => '@id',
-        'formattedName'     => 'name', //ad-extra name for non-schoenstatters
-        'jsonAlternateName' => 'alternateName', //@todo can this be an array with all languages?
-        'jsonDisambiguatingDescription' => 'disambiguatingDescription', //ad-intra name for schoenstatters
-        'jsonIdentifier'    => 'identifier',  //@todo always array
-        'jsonAddress'       => 'address',
-        'jsonTelephone'     => 'telephone', //@todo make always an array
-        'jsonSameAs'        => 'sameAs',
-        'jsonGeo'           => 'geo',
-        'jsonFoundationEvent'=> 'event', //@todo not anymore
-        'jsonAdditionalProperty' => 'additionalProperty',
-        'jsonDescription'   => 'description', //visitor information
-    ];
-
+    
     /**
      * Application config
      * @var mixed[]
@@ -591,6 +577,7 @@ class SchoenstattTable extends SionTable implements
             }
         }
         
+        //urls to list as sameAs on schema
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
         
         if (!isset($languageCode)) {
@@ -755,6 +742,10 @@ class SchoenstattTable extends SionTable implements
             }
         }
         
+        $parentId = $this->filterDbId($row['Parent']);
+        $parentJsonId = "https://schoenstatt.link/en/associations/"
+            .(isset($parentId) ? $swFilter->filter($parentId) : null);
+        
         $processedRow = [
             'associationId'         => $id,
             'identifier'            => $identifier,
@@ -762,7 +753,7 @@ class SchoenstattTable extends SionTable implements
             'overrideNameFormat'    => $overrideNameFormat,
             'internalName'          => $internalName, //non-translated field
             'isInternalNameTranslateable' => $isInternalNameTranslateable,
-            'parentId'              => $this->filterDbId($row['Parent']),
+            'parentId'              => $parentId,
             'kind'                  => $kind,
             'country'               => $country,
             'countryRegion'         => $countryRegion,
@@ -822,6 +813,7 @@ class SchoenstattTable extends SionTable implements
             'mainContactPerson'     => null,
             'childAssociations'     => [],
             'parent'                => null,
+            'parentJsonId'          => $parentJsonId,
             /**
              * Contact fields
              */
@@ -1057,8 +1049,6 @@ class SchoenstattTable extends SionTable implements
             $schema->setProperty('address', $jsonAddress);
         }
         
-        $schema->setProperty('location', $location);
-        
         //foundingDate
         if (isset($object['foundationDate']) && $object['foundationDate'] instanceof \DateTimeInterface) {
             $dateString = $object['foundationDate']->format('Y-m-d');
@@ -1069,6 +1059,14 @@ class SchoenstattTable extends SionTable implements
         if (isset($object['jsonSameAs']) && !empty($object['jsonSameAs'])) {
             $schema->setProperty('sameAs', $object['jsonSameAs']);
         }
+        
+        //look for a mapUrl
+        foreach ($object['urls'] as $url) {
+            if ('map' === strtolower($url['label'])) {
+                $location->hasMap($url['url']);
+            }
+        }
+        $schema->setProperty('location', $location);
         
         // telephone & fax
         $fax = null;
@@ -1087,15 +1085,15 @@ class SchoenstattTable extends SionTable implements
             $schema->setProperty('faxNumber', $fax);
         }
         
-//         'jsonAdditionalProperty'=> $jsonAdditionalProperty,
-//         'jsonDescription'       => $jsonDescription,
-        
-        //@todo add hasMap
+        if (isset($object['parentJsonId'])) {
+            $parent = new Organization();
+            $parent->setProperty('@id', $object['parentJsonId']);
+            $schema->setProperty('parentOrganization', $parent);
+        }
         
         return $schema;
     }
 
-    //@todo add locale function parameter
     public function getAssociationListSchemaV1($objects, &$resultingMd5s, $locale = null)
     {
         if (!isset($locale)) {
