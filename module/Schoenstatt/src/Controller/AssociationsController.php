@@ -7,7 +7,6 @@ use Zend\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
 use Zend\Filter\StripTags;
 use BjyAuthorize\Exception\UnAuthorizedException;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\TimeZone;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
@@ -101,7 +100,6 @@ class AssociationsController extends SionController
         }
         /** @var CatholicChurch $schema */
         $schema = $table->getAssociationSchemaV1($association);
-        $schema->setProperty('event', null);
         $view->setVariable('schema', $schema);
         
         $changes = $table->getEntityChanges('association', $association['associationId']);
