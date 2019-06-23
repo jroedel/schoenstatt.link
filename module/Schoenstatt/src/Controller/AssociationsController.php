@@ -73,6 +73,21 @@ class AssociationsController extends SionController
         }
         return $view;
     }
+    
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::getEntityObject()
+     */
+    public function getEntityObject($id)
+    {
+        if (isset($this->object[$id])) {
+            return $this->object[$id];
+        }
+        $table = $this->getSionTable();
+        $this->object[$id] = $table->getAssociation($id);
+        return $this->object[$id];
+    }
 
     public function showAction()
     {
