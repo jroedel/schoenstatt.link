@@ -93,23 +93,16 @@ $this->headTitle($name);?>
             </div> <!-- Links column -->
             </div> <!-- Links row -->
             <?php endif;
-        	$addressLabel = null;
-        	if (count($object['postAddresses']) > 1) {
-        	    $addressLabel = 'Postal addresses';
-        	} elseif (count($object['postAddresses']) == 1) {
-    	        $addressLabel = 'Postal address';
-    	    }
-    	    if (isset($addressLabel)) :?>
+            if (isset($object['address'])) :
+                $addressLabel = 'Postal address';?>
     	    <p><strong><?php echo $this->translate($addressLabel)?>:</strong></p>
     	    <?php
     	    endif;
-        	foreach ($object['postAddresses'] as $address) {
-        	    echo $this->address($address);
-        	}
-        	if (isset($object['contactNotes'])) :?>
-        		<p><strong><?php echo $this->translate('Notes');?>:</strong></p>
-        		<div id="contactNotes"><?php echo $this->markdown($object['contactNotes']);?></div>
-        	<?php endif;?>
+    	    echo $this->address($object['address']);
+        	//if (isset($object['contactNotes'])) : @todo get rid of contactNotes @deprecated?><!-- 
+        		<p><strong><?php //echo $this->translate('Notes');?>:</strong></p>
+        		<div id="contactNotes"><?php //echo $this->markdown($object['contactNotes']);?></div>
+        	<?php //endif;?> -->
         	<!--
         	Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
         	Please help in confirming and/or updating out-dated information.
