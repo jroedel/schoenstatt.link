@@ -17,6 +17,7 @@ use Zend\Validator\EmailAddress;
 use SionModel\Filter\ToDateTime;
 use SionModel\Filter\ToBit;
 use SionModel\Validator\Instagram;
+use Schoenstatt\Validator\EventsJson;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -865,7 +866,7 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
                     ['name' => ToNull::class,
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
-                        ]
+                        ],
                     ],
                 ],
                 'validators' => [
@@ -876,7 +877,7 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
                             'max' => 3000,
                         ],
                     ],
-                    ['name' => OpeningHoursSpecificationJson::class]
+                    ['name' => EventsJson::class]
                 ],
             ],
             'foundationDate' => [

@@ -36,6 +36,7 @@ use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PlaceOfWorship;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Spatie\SchemaOrg\Organization;
+use Schoenstatt\Validator\EventsJson;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -904,6 +905,7 @@ class SchoenstattTable extends SionTable implements
     {
         static $markdownParser;
         static $openingHoursValidator;
+        static $eventsJsonValidator;
         if (!isset($this->associationKinds[$object['kind']])) {
             throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
         }
@@ -992,6 +994,8 @@ class SchoenstattTable extends SionTable implements
         } else {
             $location = new Place();
         }
+        $location->setProperty('@id', $object['jsonId'].'#location');
+        $location->setProperty('name', $name);
         
         //geo
         if (isset($object['geoPoint'])) {
@@ -1046,7 +1050,7 @@ class SchoenstattTable extends SionTable implements
                 }
                 $jsonAddress->setProperty('streetAddress', implode(', ', $streets));
             }
-            $schema->setProperty('address', $jsonAddress);
+            $location->setProperty('address', $jsonAddress);
         }
         
         //foundingDate
@@ -1089,6 +1093,17 @@ class SchoenstattTable extends SionTable implements
             $parent = new Organization();
             $parent->setProperty('@id', $object['parentJsonId']);
             $schema->setProperty('parentOrganization', $parent);
+        }
+        
+        //event
+        if (isset($object['eventsJson'])) {
+            if (!isset($eventsJsonValidator)) {
+                $eventsJsonValidator = new EventsJson();
+            }
+            if ($eventsJsonValidator->isValid($object['eventsJson'])) {
+                $eventsJson = Json::decode($object['eventsJson'], Json::TYPE_ARRAY);
+                $schema->event($eventsJson);
+            }
         }
         
         return $schema;
