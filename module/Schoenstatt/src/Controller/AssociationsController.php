@@ -138,9 +138,11 @@ class AssociationsController extends SionController
         $countryParam = $this->params()->fromQuery('country');
         $parentParam = $this->params()->fromQuery('parentId');
         $nameParam = $this->params()->fromQuery('name');
-        if (!$this->getRequest()->isPost() && ((!is_null($countryParam) &&
+        $tzParam = $this->params()->fromQuery('timeZoneId');
+        $kindParam = $this->params()->fromQuery('kind');
+        if (!$this->getRequest()->isPost() && ((isset($countryParam) &&
             is_string($countryParam) && strlen($countryParam) == 2) ||
-                !is_null($parentParam) || !is_null($nameParam))
+            isset($parentParam) || isset($nameParam)) || isset($tzParam) || isset($kindParam)
         ) {
             $form = $view->getVariable('form');
             $haveSetSomething = false;
@@ -154,12 +156,22 @@ class AssociationsController extends SionController
                 $form->get('parentId')->setValue($parentParam);
                 $haveSetSomething = true;
             }
-            if (!is_null($nameParam)) {
+            if (isset($nameParam)) {
                 $filter = new StripTags();
                 $form->get('name')->setValue($filter->filter($nameParam));
                 $haveSetSomething = true;
             }
-            if ($haveSetSomething) {
+            if (isset($tzParam)) {
+                $filter = new StripTags();
+                $form->get('timeZoneId')->setValue($filter->filter($tzParam));
+                $haveSetSomething = true;
+            }
+            if (isset($kindParam)) {
+                $filter = new StripTags();
+                $form->get('kind')->setValue($filter->filter($kindParam));
+                $haveSetSomething = true;
+            }
+            if ($haveSetSomething) { //@todo this shouldn't be necessary as we have the same object reference
                 $view->setVariable('form', $form);
             }
         }
