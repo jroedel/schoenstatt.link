@@ -817,38 +817,6 @@ return [
                     ],
                 ],
             ],
-            'apostolic-project' => [
-                'sort'  => 850,
-                'label' => 'Apostolic project',
-                'is_sub_diocesan_association' => false,
-                'schema_type' => Organization::class,
-                'default_roles' => [
-                    [
-                        'roleTitle' => 'Coordinator',
-                        'singlePosition' => true,
-                        'sort' => 10,
-                        'isMainRole' => true,
-                        'isMainContact' => true,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                    [
-                        'roleTitle' => 'Moderator',
-                        'singlePosition' => false,
-                        'sort' => 15,
-                        'isMainRole' => false,
-                        'isMainContact' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                    [
-                        'roleTitle' => 'Member',
-                        'singlePosition' => false,
-                        'sort' => 70,
-                        'isMainRole' => false,
-                        'isMainContact' => false,
-                        'shouldAlwaysBeFilled' => false,
-                    ],
-                ],
-            ],
             'legal-entity' => [
                 'label' => 'Legal entity',
                 'sort'  => 900,

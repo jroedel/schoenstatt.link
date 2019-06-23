@@ -259,15 +259,20 @@ endif;?>
     <div class="col-xs-6">
     <?php if ($this->isAllowed('route/associations/create')):
     $queryOptions = ['parentId' => $object['associationId']];
-    if (!is_null($object['country'])) {
+    if (isset($object['country'])) {
         $queryOptions['country'] = $object['country'];
     }
-    if (!$object['overrideNameFormat']) {
-        $queryOptions['name'] = $object['name'];
-    }?>
+    if (isset($object['timeZoneId'])) {
+        $queryOptions['timeZoneId'] = $object['timeZoneId'];
+    }
+    if ('sch-shrine' === $object['kind']) {
+        $queryOptions['kind'] = 'sch-diocesan-apostolate';
+    }
+    ?>
         <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
             echo $this->url('associations/create', [], ['query' => $queryOptions]);?>">
-            <?php echo $this->translate('Add associated association');?></a>
+            <?php $addText = 'sch-shrine' === $object['kind'] ? 'Add apostolate/branch' : 'Add associated association';
+            echo $this->translate($addText);?></a>
         </span>
     <?php endif;?>
     </div>
