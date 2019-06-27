@@ -1,0 +1,24 @@
+<!-- Table -->
+<div class="table-responsive">
+<table class="table">
+<tr>
+	<th><?php echo $this->translate('Shrine');?></th>
+	<th><?php echo $this->translate('Website');?></th>
+	<th><?php echo $this->translate('Opening hours?');?></th>
+	<th><?php echo $this->translate('Events?');?></th>
+	<th><?php echo $this->translate('Name translated?');?></th>
+</tr>
+<?php foreach ($this->objects as $entityId => $entity) :?>
+<tr>
+	<td><?php echo $this->formatEntity('association', $entity);?></td>
+	<!-- <td><?php echo $this->formatEntity('association', $entity, ['display' => 'kind']);?></td> -->
+	<td><?php if (!empty($entity['urls'])) {
+	    echo $this->formatUrlObject($entity['urls'][0]);
+	}?></td>
+	<td><?= isset($entity['openingHoursJson']) ? 'Yup!' : 'Nope :-('; ?></td>
+	<td><?= isset($entity['eventsJson']) ? 'Yup!' : 'Nope :-('; ?></td>
+	<td><?= $entity['hasTranslationCount'] . '/'.$entity['needTranslationCount']; ?></td>
+</tr>
+<?php endforeach;?>
+</table>
+</div>

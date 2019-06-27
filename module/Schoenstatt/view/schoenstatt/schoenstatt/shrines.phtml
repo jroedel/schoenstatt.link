@@ -16,7 +16,7 @@ foreach ($this->shrines as $associationId => $object) {
 foreach ($regions as $region => $objects) :?>
 <h3 id="<?= $region ?>"><?= $this->translate($region);?></h3>
 <?php
-    echo $this->partial('schoenstatt/associations/associations-table', [
+    echo $this->partial('schoenstatt/associations/shrines-table', [
         'objects' => $objects,
         //     'wrapInPanel' => true,
     //     'showActive' => true,

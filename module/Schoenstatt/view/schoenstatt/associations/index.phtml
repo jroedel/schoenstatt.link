@@ -2,7 +2,7 @@
 <a href="<?php echo $this->url('associations/create');?>"><?php
     echo $this->translate('Create new association');?></a><?php
 endif;
-
-echo $this->partial('associations-table', [
+$partial = isset($this->partial) ? $this->partial : 'associations-table';
+echo $this->partial($partial, [
     'objects' => $this->objects
 ]);
