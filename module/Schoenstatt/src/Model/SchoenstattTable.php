@@ -479,7 +479,7 @@ class SchoenstattTable extends SionTable implements
 
     protected function sortAssociationRowData(&$results)
     {
-        uasort($results, [SchoenstattTable::class, 'associationCompare']);
+        uasort($results, [self::class, 'associationCompare']);
     }
 
     protected static function associationCompare($a, $b)
@@ -649,35 +649,51 @@ class SchoenstattTable extends SionTable implements
                 'country'   => $country,
             ];
         }
-        
+        $needTranslationCount = 0;
+        $hasTranslationCount = 0;
         $name = $row['AssociationName'];
         $overrideNameFormat = $this->filterDbBool($row['OverrideNameFormat']);
         $isNameTranslateable = $this->filterDbBool($row['IsNameTranslateable']);
         $namesByLocale = [];
+        
+        $needsTranslation = (!$overrideNameFormat
+            && $associationKindSpec->hasNameFormat()
+            && $associationKindSpec->shouldTranslateNameParameter
+            ) || $isNameTranslateable;
         //translate the name to each locale
         foreach ($this->languageLocaleMap as $localeMapped) {
+            $hasTranslated = false;
             $tempName = null;
             if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()) { //by format
                 $token = $name;
+                $tempToken = $token;
                 if ($associationKindSpec->shouldTranslateNameParameter || $isNameTranslateable) {
                     if ($areCountryTranslationsReady &&
                         isset($this->countryNameTranslations[$token]) &&
                         isset($this->countryNameTranslations[$token][$localeMapped])
                     ) {
-                        $token = $this->countryNameTranslations[$token][$localeMapped];
+                        $tempToken = $this->countryNameTranslations[$token][$localeMapped];
                     } elseif ($isTranslatorReady) {
-                        $token = $this->translator->translate($token, self::TRANSLATOR_DOMAIN, $localeMapped);
+                        $tempToken = $this->translator->translate($token, self::TRANSLATOR_DOMAIN, $localeMapped);
                     }
                 }
-                $tempName = sprintf($associationKindSpec->translatedNameFormat, $token);
+                $hasTranslated = $tempToken !== $token;
+                $tempName = sprintf($associationKindSpec->translatedNameFormat, isset($tempToken) ? $tempToken : $token);
             } else { //no name format
                 if ($isNameTranslateable && $isTranslatorReady) {
                     $tempName = $this->translator->translate($name, self::TRANSLATOR_DOMAIN, $localeMapped);
+                    $hasTranslated = $tempName !== $name;
                 } else {
                     $tempName = $name;
                 }
             }
             $namesByLocale[$localeMapped] = $tempName;
+            if ($needsTranslation && 'en_US' !== $localeMapped) {
+                $needTranslationCount++;
+                if ($hasTranslated) {
+                    $hasTranslationCount++;
+                }
+            }
         }
 
         $internalName = $row['InternalName'];
@@ -686,11 +702,19 @@ class SchoenstattTable extends SionTable implements
         foreach ($this->languageLocaleMap as $localeMapped) {
             if (isset($internalName)) {
                 if ($isInternalNameTranslateable && $isTranslatorReady) {
-                    $internalNameByLocale[$localeMapped] = $this->translator->translate(
+                    
+                    $tempName = $this->translator->translate(
                         $internalName, 
                         self::TRANSLATOR_DOMAIN, 
                         $localeMapped
                         );
+                    $internalNameByLocale[$localeMapped] = $tempName;
+                    if ('en_US' !== $localeMapped) {
+                        $needTranslationCount++;
+                        if ($tempName !== $internalName) {
+                            $hasTranslationCount++;
+                        }
+                    }
                 } else {
                     $internalNameByLocale[$localeMapped] = $internalName;
                 }
@@ -859,6 +883,8 @@ class SchoenstattTable extends SionTable implements
             'phones'                => $phones,
             'urls'                  => $urls,
             'jsonSameAs'            => $jsonSameAs,
+            'needTranslationCount'  => $needTranslationCount,
+            'hasTranslationCount'   => $hasTranslationCount,
         ];
         $this->unlinkedAssociationsMemoryCache[$id] = &$processedRow;
         return $processedRow;

@@ -67,7 +67,7 @@ class SchoenstattController extends AbstractActionController
         
         return new ViewModel([
 //             'form'              => $form,
-            'shrines'   => $shrines,
+            'shrines'           => $shrines,
             'datasets'          => $this->getShrineDatasets(),
         ]);
     }

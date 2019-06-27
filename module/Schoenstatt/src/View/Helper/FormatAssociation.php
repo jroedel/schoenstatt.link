@@ -46,7 +46,7 @@ class FormatAssociation extends AbstractHelper
                         $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
                     }
                     
-                    $text = $data['nameByLocale'][\Locale::getDefault()];
+                    $text = $data['nameByLocale'][$locale];
                     break;
                 case self::DISPLAY_INTERNAL_NAME:
                     //only show flag if we're looking at display_name
