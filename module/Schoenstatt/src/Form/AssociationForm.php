@@ -1177,4 +1177,28 @@ at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</b
         ];
         return $this->filterSpec;
     }
+    
+    public function setData($data)
+    {
+        $phoneLabels = self::PHONE_LABEL_VALUE_OPTIONS;
+        $hasChanged = false;
+        if (isset($data['phone1Label']) && !isset($phoneLabels[$data['phone1Label']])) {
+            $phoneLabels[$data['phone1Label']] = $data['phone1Label'];
+            $hasChanged = true;
+        }
+        if (isset($data['phone2Label']) && !isset($phoneLabels[$data['phone2Label']])) {
+            $phoneLabels[$data['phone2Label']] = $data['phone2Label'];
+            $hasChanged = true;
+        }
+        if (isset($data['phone3Label']) && !isset($phoneLabels[$data['phone3Label']])) {
+            $phoneLabels[$data['phone3Label']] = $data['phone3Label'];
+            $hasChanged = true;
+        }
+        if ($hasChanged) {
+            $this->get('phone1Label')->setValueOptions($phoneLabels);
+            $this->get('phone2Label')->setValueOptions($phoneLabels);
+            $this->get('phone3Label')->setValueOptions($phoneLabels);
+        }
+        return parent::setData($data);
+    }
 }
