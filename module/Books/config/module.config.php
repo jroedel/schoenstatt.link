@@ -445,6 +445,23 @@ return [
                             ],
                         ],
                     ],
+                    'literature' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/literature[/:publication_id]',
+                            'defaults' => [
+                                'action' => null,
+                                'controller' => Controller\PublicationsApiController::class,
+                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
+                                    'allowed_origins' => ['*'],
+                                    'allowed_methods' => ['GET'],
+                                ],
+                            ],
+                            'constraints' => [
+                                'publication_id' => '[0-9]{1,8}',
+                            ],
+                        ],
+                    ],
                 ],
             ],
             'publications' => [
@@ -2237,6 +2254,7 @@ return [
                 ['route' => 'api-v1/dictionary/update/entry', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary/create', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/slugify-terms', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/literature', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
