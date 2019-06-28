@@ -45,7 +45,7 @@ class PublicationsApiController extends AbstractRestfulController
         self::prepPublicationObjects($objects);
         
         return new JsonModel([
-            'items'         => $objects,
+            'items'         => array_values($objects),
         ], ['prettyPrint' => false]);
     }
     
