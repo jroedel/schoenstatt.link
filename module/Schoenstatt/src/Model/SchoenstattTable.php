@@ -1914,9 +1914,13 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $entities;
     }
 
-    protected function getUnlinkedAssignments()
+    protected function getUnlinkedAssignments(array $ids = [], $locale = null)
     {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-assignments'))) {
+        if (!isset($locale)) {
+            $locale = $this->getLocale();
+        }
+        $cacheKey = 'unlinked-assignments'.$locale;
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
         $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`PersonId`,
@@ -1928,46 +1932,64 @@ INNER JOIN `sch_roles` r ON a.`RoleId` = r.`RoleId` WHERE 1
 ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
 
         $results = $this->fetchSome(null, $sql, null);
-        $isTranslatorReady = $this->translator instanceof TranslatorInterface;
         $entities = [];
         foreach ($results as $row) {
-            $id = $this->filterDbId($row['AssignmentId']);
-            $startDate = $this->filterDbDate($row['StartDate']);
-            $endDate = $this->filterDbDate($row['EndDate']);
-            $isActive = $this::areWeWithinDateRange($startDate, $endDate);
-            $roleTitle = $row['RoleTitle'];
-            if ($isTranslatorReady) {
-                $formattedRoleTitle = $this->translator->translate($roleTitle, self::TRANSLATOR_DOMAIN);
-            } else {
-                $formattedRoleTitle = $roleTitle;
-            }
-            $entities[$id] = [
-                'assignmentId'          => $id,
-                'roleId'                => $this->filterDbId($row['RoleId']),
-                'roleTitle'             => $roleTitle,
-                'associationId'         => $this->filterDbId($row['AssociationId']),
-                'startDate'             => $startDate,
-                'endDate'               => $endDate,
-                'isMainRole'            => $this->filterDbBool($row['IsMainRole']),
-                'isMainContact'         => $this->filterDbBool($row['IsMainContact']),
-                'isSinglePosition'      => $this->filterDbBool($row['IsSinglePosition']),
-                'shouldAlwaysBeFilled'  => $this->filterDbBool($row['ShouldAlwaysBeFilled']),
-                'roleSort'              => $this->filterDbInt($row['Sort']),
-                'roleIsActive'          => $this->filterDbBool($row['IsActive']),
-                'personId'              => $this->filterDbId($row['PersonId']),
-                'createdOn'             => $this->filterDbDate($row['CreatedOn']),
-                'createdBy'             => $this->filterDbId($row['CreatedBy']),
-                'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
-                'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
-
-                'formattedRoleTitle'    => $formattedRoleTitle,
-                'isActive'              => $isActive,
-                'association'           => null,
-                'person'                => null,
-            ];
+            $object = $this->processAssignmentRow($row);
+            $entities[$object['assignmentId']] = $object;
         }
-        $this->cacheEntityObjects('unlinked-assignments', $entities);
+        $this->cacheEntityObjects($cacheKey, $entities, ['assignment', 'association']);
         return $entities;
+    }
+    
+    protected function processAssignmentRow($row, $locale = null)
+    {
+        static $swFilter;
+        if (!isset($locale)) {
+            if (isset($this->locale)) {
+                $locale = $this->locale;
+            } else {
+                $locale = $this->getLocale();
+            }
+        }
+        $id = $this->filterDbId($row['AssignmentId']);
+        $startDate = $this->filterDbDate($row['StartDate']);
+        $endDate = $this->filterDbDate($row['EndDate']);
+        $isActive = $this::areWeWithinDateRange($startDate, $endDate);
+        $roleTitle = $row['RoleTitle'];
+        $formattedRoleTitle = $this->translator->translate($roleTitle, self::TRANSLATOR_DOMAIN, $locale);
+        
+        $associationId = $this->filterDbId($row['AssociationId']);
+        if (!isset($swFilter)) {
+            $swFilter = new ToSchoenstattLinkIdentifier('association');
+        }
+        $associationIdentifier = $swFilter->filter($associationId);
+        
+        $object = [
+            'assignmentId'          => $id,
+            'roleId'                => $this->filterDbId($row['RoleId']),
+            'roleTitle'             => $roleTitle,
+            'associationId'         => $associationId,
+            'startDate'             => $startDate,
+            'endDate'               => $endDate,
+            'isMainRole'            => $this->filterDbBool($row['IsMainRole']),
+            'isMainContact'         => $this->filterDbBool($row['IsMainContact']),
+            'isSinglePosition'      => $this->filterDbBool($row['IsSinglePosition']),
+            'shouldAlwaysBeFilled'  => $this->filterDbBool($row['ShouldAlwaysBeFilled']),
+            'roleSort'              => $this->filterDbInt($row['Sort']),
+            'roleIsActive'          => $this->filterDbBool($row['IsActive']),
+            'personId'              => $this->filterDbId($row['PersonId']),
+            'createdOn'             => $this->filterDbDate($row['CreatedOn']),
+            'createdBy'             => $this->filterDbId($row['CreatedBy']),
+            'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
+            'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
+            
+            'associationIdentifier' => $associationIdentifier,
+            'formattedRoleTitle'    => $formattedRoleTitle,
+            'isActive'              => $isActive,
+            'association'           => null,
+            'person'                => null,
+        ];
+        return $object;
     }
 
     /**
