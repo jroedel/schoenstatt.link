@@ -1986,11 +1986,11 @@ return [
                 ['route' => 'associations/create', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/do-work', 'roles' => ['guest', 'user', null]], //uses api key authorization
-                ['route' => 'associations/association/edit', 'roles' => ['sch_moderator']],
+                ['route' => 'associations/association/edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'associations/association/moderate', 'roles' => ['sch_moderator']],
-                ['route' => 'associations/association/suggest', 'roles' => ['sch_user']],
+                ['route' => 'associations/association/suggest', 'roles' => ['sch_user', 'user']],
                 ['route' => 'associations/association/delete', 'roles' => ['sch_general_moderator']],
-                ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_general_moderator']],
+                ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_administrator']],
 
                 ['route' => 'roles', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/create', 'roles' => ['sch_moderator']],
