@@ -3,7 +3,8 @@ namespace Schoenstatt\Service;
 
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Schoenstatt\Form\AssignmentForm;
+use Schoenstatt\Model\SchoenstattTable;
+use Schoenstatt\Form\EditAssignmentForm;
 
 /**
  * Factory responsible of prepping the AssignmentForm
@@ -19,9 +20,19 @@ class EditAssignmentFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var AssignmentForm $form */
-        $form = $container->get(AssignmentForm::class);
-
+        /** @var SchoenstattTable $table **/
+        $table = $container->get(SchoenstattTable::class);
+        
+        //@todo can we factor this out? the element is disabled anyways
+        $associations = $table->getAssociationValueOptions();
+        
+        //@todo can we factor this out? the element is disabled anyways
+        $persons = $table->getPersonValueOptions();
+        $roleTitlesValueOptions = $table->getJavascriptRoleTitleValueOptions();
+        
+        $form = new EditAssignmentForm($roleTitlesValueOptions);
+        $form->get('associationId')->setValueOptions($associations);
+        $form->get('personId')->setValueOptions($persons);
         $form->prepareforEdit();
         return $form;
     }

@@ -1,7 +1,6 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\Form\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
 use Zend\Json\Json;
@@ -149,16 +148,6 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
         ];
-    }
-
-    public function prepareforEdit()
-    {
-        $this->setName('edit_assignment');
-        $this->get('associationId')->setAttribute('disabled', true);
-        $this->get('roleId')->setAttribute('disabled', true);
-        $this->get('personId')->setAttribute('disabled', true);
-        $this->setValidationGroup('startDate', 'endDate', 'security');
-        $this->isPreparedForEdit = true;
     }
 
     public function setData($data)

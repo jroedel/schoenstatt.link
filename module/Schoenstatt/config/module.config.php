@@ -77,7 +77,7 @@ return [
             Form\AdvancedSearchForm::class          => Service\AdvancedSearchFormFactory::class,
             Form\PersonForm::class                  => Service\PersonFormFactory::class,
             Form\AssignmentForm::class              => Service\AssignmentFormFactory::class,
-            'Schoenstatt\Form\EditAssignmentForm'   => Service\EditAssignmentFormFactory::class,
+            Form\EditAssignmentForm::class          => Service\EditAssignmentFormFactory::class,
             Form\AssociationForm::class             => Service\AssociationFormFactory::class,
             Form\RoleForm::class                    => Service\RoleFormFactory::class,
             'Schoenstatt\Config'                    => Service\ConfigServiceFactory::class,
@@ -95,6 +95,7 @@ return [
                 Form\PersonForm::class => Form\PersonForm::class,
                 Form\AdvancedSearchForm::class => Form\AdvancedSearchForm::class,
                 Form\AssignmentForm::class => Form\AssignmentForm::class,
+                Form\EditAssignmentForm::class => Form\EditAssignmentForm::class,
                 Form\AssociationForm::class => Form\AssociationForm::class,
                 Form\RoleForm::class => Form\RoleForm::class,
             ],
@@ -116,6 +117,9 @@ return [
                 LazyServiceFactory::class,
             ],
             Form\AssignmentForm::class => [
+                LazyServiceFactory::class,
+            ],
+            Form\EditAssignmentForm::class => [
                 LazyServiceFactory::class,
             ],
             Form\AssociationForm::class => [
