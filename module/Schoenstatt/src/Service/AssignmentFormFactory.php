@@ -4,6 +4,7 @@ namespace Schoenstatt\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\AssignmentForm;
+use Schoenstatt\Model\SchoenstattTable;
 
 /**
  * Factory responsible of prepping the AssociationForm
@@ -20,7 +21,7 @@ class AssignmentFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $table **/
-        $table = $container->get('Schoenstatt\Model\SchoenstattTable');
+        $table = $container->get(SchoenstattTable::class);
 
         $associations = $table->getAssociationValueOptions();
 
