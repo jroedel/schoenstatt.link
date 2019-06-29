@@ -14,39 +14,44 @@ class AssociationKind
 
     /**
      * User-readable name
-     * @var string
+     * @var string $label
      */
     public $label;
-
     /**
      * Label translated into the current default locale
-     * @var string
+     * @var string $translatedLabel
      */
     public $translatedLabel;
     /**
      * Number used to sort in a list of mixed association kinds
-     * @var number
+     * @var number $sort
      */
     public $sort;
     /**
      * A string format to be processed with sprintf unless the concrete association
      * overrides the format.
-     * @var string
+     * @var string $nameFormat
      */
     public $nameFormat;
     /**
      * The localized name format
+     * @deprecated
      */
     public $translatedNameFormat;
     /**
+     * The name format translated into each site-locale
+     * @var array $nameFormatByLocale
+     */
+    public $nameFormatByLocale = [];
+    /**
      * Should the name parameter be translated?, If it's a city name, probably not.
-     * @var bool
+     * @var bool $shouldTranslateNameParameter
      */
     public $shouldTranslateNameParameter = false;
     /**
      * Is the association kind necessarily organized at a diocesan level?
      * With exception to the umbrella Diocesan Movement.
-     * @var string
+     * @var string $isSubDiocesanAssociation
      */
     public $isSubDiocesanAssociation = false;
     /**
@@ -56,13 +61,13 @@ class AssociationKind
     public $schemaType;
     /**
      * A list of roles to automatically create when this kind is instantiated
-     * @var array
+     * @var array $defaultRoles
      */
     public $defaultRoles = [];
 
     public function __construct($name, $entitySpecification)
     {
-        if (is_null($name)) {
+        if (!isset($name)) {
             throw new \InvalidArgumentException('Name is a required parameter.');
         }
         if (!is_array($entitySpecification)) {
@@ -76,7 +81,7 @@ class AssociationKind
                 $this->$key = $value;
             }
         }
-        if (is_null($this->sort) || !is_numeric($this->sort)) {
+        if (!isset($this->sort) || !is_numeric($this->sort)) {
             $this->sort = 999;
         }
     }
@@ -88,7 +93,7 @@ class AssociationKind
      */
     public function hasNameFormat()
     {
-        return !is_null($this->nameFormat);
+        return isset($this->nameFormat);
     }
 
 //     /**

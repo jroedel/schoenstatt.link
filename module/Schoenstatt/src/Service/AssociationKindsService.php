@@ -4,6 +4,7 @@ namespace Schoenstatt\Service;
 use Zend\I18n\Translator\TranslatorInterface;
 use Schoenstatt\Model\AssociationKind;
 use Zend\Mvc\I18n\Translator;
+use Schoenstatt\Model\SchoenstattTable;
 
 class AssociationKindsService
 {
@@ -17,25 +18,34 @@ class AssociationKindsService
      * @var Translator $translator
      */
     protected $translator;
+    /**
+     * An associative array mapping ISO language codes to locales
+     * @var string[] $languageLocaleMap
+     */
+    protected $languageLocaleMap;
 
-    public function __construct($associationKindSpecifications, TranslatorInterface $translator)
+    public function __construct($associationKindSpecifications, TranslatorInterface $translator, array $config)
     {
         $this->translator = $translator;
+        $this->languageLocaleMap = $config['slm_locale']['aliases'];
+        
         foreach ($associationKindSpecifications as $kind => $spec) {
             if (!is_array($spec) || !is_string($kind)) {
                 unset($associationKindSpecifications[$kind]);
             }
-            if (!key_exists('label', $spec) || !is_string($spec['label'])) {
+            if (!isset($spec['label']) || !is_string($spec['label'])) {
                 throw new \Exception('All association kind specs must contain a label.');
             }
-            if (key_exists('name_format', $spec) &&
-                is_string($spec['name_format'])
-            ) {
-                $spec['translated_name_format'] =
-                    $this->translator->translate($spec['name_format'], 'Schoenstatt');
+            if (isset($spec['name_format']) && is_string($spec['name_format'])) {
+                $spec['translated_name_format'] = $this->translator->translate($spec['name_format'], SchoenstattTable::TRANSLATOR_DOMAIN);
+                $spec['name_format_by_locale'] = [];
+                foreach ($this->languageLocaleMap as $locale) {
+                    $spec['name_format_by_locale'][$locale] =
+                        $this->translator->translate($spec['name_format'], SchoenstattTable::TRANSLATOR_DOMAIN, $locale);
+                }
             }
-            if (!key_exists('translated_label', $spec)) {
-                $spec['translated_label'] = $this->translator->translate($spec['label'], 'Schoenstatt');
+            if (!isset($spec['translated_label'])) {
+                $spec['translated_label'] = $this->translator->translate($spec['label'], SchoenstattTable::TRANSLATOR_DOMAIN);
             }
             $this->associationKinds[$kind] = new AssociationKind($kind, $spec);
         }
