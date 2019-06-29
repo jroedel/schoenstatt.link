@@ -2346,7 +2346,7 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         $shrines = [];
         foreach ($objects as $associationId => $object) {
             if ('sch-shrine' === $object['kind']
-                || 'sch-wayside-shrine' === $object['kind']
+//                 || 'sch-wayside-shrine' === $object['kind']
             ) {
                 $shrines[$associationId] = $object;
             }
