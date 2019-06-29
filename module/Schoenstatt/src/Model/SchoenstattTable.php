@@ -496,7 +496,6 @@ class SchoenstattTable extends SionTable implements
         static $twitterUrlPattern;
         static $instagramUrlPattern;
         static $googlePlacePattern;
-        static $languageCode;
         static $urlLabelLogos;
         static $tzValidator;
         
@@ -580,13 +579,6 @@ class SchoenstattTable extends SionTable implements
         
         //urls to list as sameAs on schema
         $jsonSameAs = SionTable::processJsonUrls($unprocessedUrls, ['media', 'map']);
-        
-        if (!isset($languageCode)) {
-            $languageCode = \Locale::getPrimaryLanguage(\Locale::getDefault());
-            if (!isset($languageCode) || !in_array($languageCode, ['en', 'es', 'de', 'pt'])) {
-                $languageCode = 'en';
-            }
-        }
         
         $phones = [];
         $jsonTelephone = [];
@@ -678,9 +670,12 @@ class SchoenstattTable extends SionTable implements
                     }
                 }
                 $hasTranslated = $tempToken !== $token;
-                $tempName = sprintf($associationKindSpec->translatedNameFormat, isset($tempToken) ? $tempToken : $token);
+                $tempName = sprintf(
+                    $associationKindSpec->nameFormatByLocale[$localeMapped], 
+                    isset($tempToken) ? $tempToken : $token
+                    );
             } else { //no name format
-                if ($isNameTranslateable && $isTranslatorReady) {
+                if ($isNameTranslateable) {
                     $tempName = $this->translator->translate($name, self::TRANSLATOR_DOMAIN, $localeMapped);
                     $hasTranslated = $tempName !== $name;
                 } else {

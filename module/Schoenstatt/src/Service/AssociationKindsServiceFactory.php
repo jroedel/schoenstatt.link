@@ -18,16 +18,16 @@ class AssociationKindsServiceFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        $config = $container->get('Schoenstatt\Config');
-        if (!key_exists('association_kinds', $config)) {
+        $config = $container->get('Config');
+        if (!isset($config['schoenstatt']['association_kinds'])) {
             throw new \Exception('No association configuration defined!');
         }
 
-        $kindsConfig = $config['association_kinds'];
+        $kindsConfig = $config['schoenstatt']['association_kinds'];
         $plugins = $container->get('ViewHelperManager');
         $translateViewHelper = $plugins->get('translate');
         $translator = $translateViewHelper->getTranslator();
-        $kindsService = new AssociationKindsService($kindsConfig, $translator);
+        $kindsService = new AssociationKindsService($kindsConfig, $translator, $config);
         return $kindsService;
     }
 }
