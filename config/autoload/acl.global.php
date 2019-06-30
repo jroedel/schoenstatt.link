@@ -42,7 +42,8 @@ return [
                 ['route' => 'sion-model/auto-fix-data-problems', 'roles' => ['lib_administrator']],
                 
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
-                ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
+                ['route' => 'jtranslate/phrase/edit', 'roles' => ['translator', 'sch_general_moderator']],
+                ['route' => 'jtranslate/phrase/delete', 'roles' => ['translator', 'sch_general_moderator']],
                 
                 ['route' => 'comments/create', 'roles' => ['user']],
             ],
