@@ -477,10 +477,18 @@ class SchoenstattTable extends SionTable implements
         static $googlePlacePattern;
         static $urlLabelLogos;
         static $tzValidator;
-        static $translationPhrases;
+        
+        static $phrases;
+        static $phrasesToIdMap;
+        static $translationPhraseTranslationCounts;
+        
+        //@todo get this outta here
+        static $count;
         
         $id = $this->filterDbId($row['AssociationId']);
-        $isTranslatorReady = $this->translator instanceof TranslatorInterface;
+        if (!$this->translator instanceof TranslatorInterface) {
+            throw new \Exception('No translator instance!');
+        }
         $areCountryTranslationsReady = isset($this->countryNameTranslations);
         $country = $row['Country'];
         $countryInfo = $this->countriesInfo->getCountry($country);
@@ -618,15 +626,22 @@ class SchoenstattTable extends SionTable implements
             ];
         }
         
-        if (!isset($translationPhrases)) {
-            $translationPhrases = [];
+        if (!isset($phrasesToIdMap)) {
+            $phrasesToIdMap = [];
+            $translationPhraseTranslationCounts = [];
             if (!isset($this->translationsTable)) {
                 throw new \Exception('Translation table is not properly configured.');
             }
-            $phrasesTemp = $this->translationsTable->getTranslations();
-            foreach ($phrasesTemp as $key => $phrase) {
+            $phrases = $this->translationsTable->getTranslations();
+            foreach ($phrases as $key => $phrase) {
                 if (self::TRANSLATOR_DOMAIN === $phrase['textDomain']) {
-                    $translationPhrases[$phrase['phrase']] = $key;
+                    $phrasesToIdMap[$phrase['phrase']] = $key;
+                    $translationPhraseTranslationCounts[$key] = 0;
+                    foreach ($this->languageLocaleMap as $localeMapped) {
+                        if (isset($phrase[$localeMapped])) {
+                            $translationPhraseTranslationCounts[$key]++;
+                        }
+                    }
                 }
             }
         }
@@ -644,9 +659,15 @@ class SchoenstattTable extends SionTable implements
             && $associationKindSpec->shouldTranslateNameParameter
             ) || $isNameTranslateable;
         
+        if ($needsTranslation && !isset($this->countryNameTranslations[$name])) {
+            $needTranslationCount += count($this->languageLocaleMap);
+            if (isset($translationPhraseTranslationCounts[$phrasesToIdMap[$name]])) {
+                $hasTranslationCount += $translationPhraseTranslationCounts[$phrasesToIdMap[$name]];
+            }
+        }
+        
         //translate the name to each locale
         foreach ($this->languageLocaleMap as $localeMapped) {
-            $hasTranslated = false;
             $tempName = null;
             if (!$overrideNameFormat && $associationKindSpec->hasNameFormat()) { //by format
                 $token = $name;
@@ -658,45 +679,41 @@ class SchoenstattTable extends SionTable implements
                     ) {
                         $tempToken = $this->countryNameTranslations[$token][$localeMapped];
                     } else {
-                        if (isset($translationPhrases[$token]) && !isset($associationTranslationPhrases[$token])) {
-                            $associationTranslationPhrases[$translationPhrases[$token]] = $token;
+                        if (isset($phrasesToIdMap[$token]) && !isset($associationTranslationPhrases[$token])) {
+                            $associationTranslationPhrases[$phrasesToIdMap[$token]] = $token;
                         }
                         $tempToken = $this->translator->translate($token, self::TRANSLATOR_DOMAIN, $localeMapped);
                     }
                 }
-                $hasTranslated = $tempToken !== $token;
                 $tempName = sprintf(
                     $associationKindSpec->nameFormatByLocale[$localeMapped], 
                     isset($tempToken) ? $tempToken : $token
                     );
             } else { //no name format
                 if ($isNameTranslateable) {
-                    if (isset($translationPhrases[$name]) && !isset($associationTranslationPhrases[$name])) {
-                        $associationTranslationPhrases[$translationPhrases[$name]] = $name;
+                    if (isset($phrasesToIdMap[$name]) && !isset($associationTranslationPhrases[$name])) {
+                        $associationTranslationPhrases[$phrasesToIdMap[$name]] = $name;
                     }
                     $tempName = $this->translator->translate($name, self::TRANSLATOR_DOMAIN, $localeMapped);
-                    $hasTranslated = $tempName !== $name;
                 } else {
                     $tempName = $name;
                 }
             }
             $namesByLocale[$localeMapped] = $tempName;
-            if ($needsTranslation && 'en_US' !== $localeMapped) {
-                $needTranslationCount++;
-                if ($hasTranslated) {
-                    $hasTranslationCount++;
-                }
-            }
         }
 
         $internalName = $row['InternalName'];
         $isInternalNameTranslateable = $this->filterDbBool($row['IsInternalNameTranslateable']);
         
         if ($isInternalNameTranslateable
-            && isset($translationPhrases[$internalName]) 
+            && isset($phrasesToIdMap[$internalName]) 
             && !isset($associationTranslationPhrases[$internalName])
         ) {
-            $associationTranslationPhrases[$translationPhrases[$internalName]] = $internalName;
+            $associationTranslationPhrases[$phrasesToIdMap[$internalName]] = $internalName;
+            $needTranslationCount += count($this->languageLocaleMap);
+            if (isset($translationPhraseTranslationCounts[$phrasesToIdMap[$internalName]])) {
+                $hasTranslationCount += $translationPhraseTranslationCounts[$phrasesToIdMap[$internalName]];
+            }
         }
         
         $internalNameByLocale = [];
@@ -709,12 +726,6 @@ class SchoenstattTable extends SionTable implements
                         $localeMapped
                         );
                     $internalNameByLocale[$localeMapped] = $tempName;
-                    if ('en_US' !== $localeMapped) {
-                        $needTranslationCount++;
-                        if ($tempName !== $internalName) {
-                            $hasTranslationCount++;
-                        }
-                    }
                 } else {
                     $internalNameByLocale[$localeMapped] = $internalName;
                 }
@@ -748,6 +759,15 @@ class SchoenstattTable extends SionTable implements
         $parentId = $this->filterDbId($row['Parent']);
         $parentJsonId = "https://schoenstatt.link/en/associations/"
             .(isset($parentId) ? $swFilter->filter($parentId) : null);
+        
+        $translationPoints = ($needTranslationCount === 0
+            ? 3 : (floor((float)$hasTranslationCount / (float)$needTranslationCount * 3)));
+        $score = (!empty($jsonSameAs) ? 3 : 0)
+            + (isset($row['OpeningHoursHuman']) || isset($row['OpeningHoursSpecification']) 
+                ? 2 : 0)
+            + (isset($row['EventsHuman']) || isset($row['EventsJson'])
+                ? 2 : 0)
+            + $translationPoints;
         
         $processedRow = [
             'associationId'         => $id,
@@ -886,6 +906,7 @@ class SchoenstattTable extends SionTable implements
             'translationPhrases'    => $associationTranslationPhrases,
             'needTranslationCount'  => $needTranslationCount,
             'hasTranslationCount'   => $hasTranslationCount,
+            'dataScore'             => $score,
         ];
         return $processedRow;
     }
