@@ -10,16 +10,16 @@
 </tr>
 <?php foreach ($this->objects as $entityId => $entity) :?>
 <tr>
-	<td><?php echo $this->formatEntity('association', $entity);?></td>
-	<!-- <td><?php echo $this->formatEntity('association', $entity, ['display' => 'kind']);?></td> -->
+	<td><?= $this->formatEntity('association', $entity);?></td>
+	<!-- <td><?= $this->formatEntity('association', $entity, ['display' => 'kind']);?></td> -->
 	<td><?php foreach ($entity['urls'] as $url) {
 	    if ('Map' !== $url['label']) {
 	       echo $this->formatUrlObject($url);
 	       break;
 	    }
 	}?></td>
-	<td><?= isset($entity['openingHoursJson']) ? 'Yup!' : 'Nope :-('; ?></td>
-	<td><?= isset($entity['eventsJson']) ? 'Yup!' : 'Nope :-('; ?></td>
+	<td><?= isset($entity['openingHoursJson']) || isset($entity['openingHoursHuman']) ? 'Yup!' : 'Nope :-('; ?></td>
+	<td><?= isset($entity['eventsJson']) || isset($entity['eventsHuman']) ? 'Yup!' : 'Nope :-('; ?></td>
 	<td><?= $entity['hasTranslationCount'] . '/'.$entity['needTranslationCount']; ?></td>
 </tr>
 <?php endforeach;?>
