@@ -17,15 +17,36 @@ $str3 = "Until 2019-10-18, this page will be oriented towards data-maintainers a
 <?php 
 //separate by countryRegion
 $regions = [];
+$regionStats = [];
 foreach ($this->shrines as $associationId => $object) {
     if (!isset($regions[$object['countryRegion']])) {
         $regions[$object['countryRegion']] = [];
     }
+    if (!isset($regionStats[$object['countryRegion']])) {
+        $regionStats[$object['countryRegion']] = [
+            'id' => $object['countryRegion'].'-progress-bar',
+            'maxScore' => 0,
+            'score' => 0,
+        ];
+    }
     $regions[$object['countryRegion']][$associationId] = $object;
+    $regionStats[$object['countryRegion']]['maxScore'] += 10;
+    $regionStats[$object['countryRegion']]['score'] += $object['dataScore'];
 }
 foreach ($regions as $region => $objects) :?>
 <h3 id="<?= $region ?>"><?= $this->translate($region);?></h3>
+<?php if ($regionStats[$region]['score'] > 0 && $regionStats[$region]['maxScore'] > 0):
+$percent = floor($regionStats[$region]['score'] / $regionStats[$region]['maxScore'] * 100);
+$regionStats[$region]['percent'] = $percent;?>
+<div class="progress">
+  <div id="<?= $regionStats[$region]['id']?>" class="progress-bar" role="progressbar" aria-valuenow="<?= $percent?>" aria-valuemin="0" aria-valuemax="100">
+    <?= $percent.$this->translate('% Complete')?>
+  </div>
+</div>
 <?php
+else:
+    unset($regionStats[$region]);
+endif;
 $partial = $this->isAllowed('route/associations/association/edit') 
     ? 'schoenstatt/associations/shrines-table'
     : 'schoenstatt/associations/associations-table';
@@ -51,4 +72,20 @@ if (false !== $json) {
     echo $json;
 }?>
 </script>
-<?php endif;?>
+<?php endif;
+
+//code to set the width json of the progress bars. Must be done by javascript because
+//CSP doesn't allow us to use inline-styles
+$regionJson = json_encode($regionStats);
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+  var regions = $regionJson;
+  Object.keys(regions).forEach(function(k){
+    percent = regions[k]["percent"]+"%";
+    $('#'+regions[k]["id"]).css("width", percent);
+  });
+});
+JS;
+$this->inlineScript()->captureEnd();
+?>
