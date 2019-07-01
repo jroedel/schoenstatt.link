@@ -401,23 +401,9 @@ class SchoenstattTable extends SionTable implements
     public function getAssociations()
     {
         //don't cache, too heavy
-//         $cacheKey = 'associations-'.$this->getLocale();
-//         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
-//             return $cache;
-//         }
-        $entities = $this->getObjects('association');
-
-        foreach ($entities as $entityId => $entity) {
-            if (isset($entity['parentId']) && isset($entities[$entity['parentId']])) {
-                $entities[$entityId]['parent'] = &$entities[$entity['parentId']];
-                $entities[$entity['parentId']]['childAssociations'][$entityId] = &$entities[$entityId];
-            }
-        }
-
-        $this->connectEntityRolesAndAssignments('association', $entities);
-
-//         $this->cacheEntityObjects($cacheKey, $entities, ['association', 'person', 'role', 'assignment']);
-        return $entities;
+        $objects = $this->getObjects('association');
+        $this->linkAssociations($objects);
+        return $objects;
     }
 
     /**
@@ -2332,29 +2318,16 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
      */
     public function getShrines()
     {
-//         $shrineResults = $this->searchEntities([
-//             'associationKind' => 'sch-shrine',
-// //             'onlyMainContact' => true,
-//         ]);
-
-//         $shrines = [];
-//         foreach ($shrineResults as $assignment) {
-//             $shrines[$assignment['associationId']] = $assignment;
-//         }
-        //@todo we should just select the rows we need
-        $objects = $this->getAssociations();
-        $shrines = [];
-        foreach ($objects as $associationId => $object) {
-            if ('sch-shrine' === $object['kind']
-//                 || 'sch-wayside-shrine' === $object['kind']
-            ) {
-                $shrines[$associationId] = $object;
-            }
+        $cacheKey = 'shrines';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
         }
+        $objects = $this->queryObjects('association', ['kind' => 'sch-shrine']);
+        $this->linkAssociations($objects);
 
         $locale = $this->getLocale();
         $sort = [];
-        foreach ($shrines as $k => $v) {
+        foreach ($objects as $k => $v) {
             $sort['countryRegion'][$k] = $v['countryRegion'];
             $sort['country'][$k] = $v['country'];
             $sort['internalNameByLocale'][$k] = $v['internalNameByLocale'][$locale];
@@ -2367,10 +2340,11 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             SORT_ASC,
             $sort['internalNameByLocale'],
             SORT_ASC,
-            $shrines
+            $objects
         );
-
-        return $shrines;
+        
+        $this->cacheEntityObjects($cacheKey, $objects, ['assignment', 'association']);
+        return $objects;
     }
 
     /**
