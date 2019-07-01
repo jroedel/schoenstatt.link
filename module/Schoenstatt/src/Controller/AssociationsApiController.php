@@ -36,12 +36,13 @@ class AssociationsApiController extends AbstractRestfulController
 //         }
         $table = $this->schoenstattTable;
         $objects = $table->getAssociations();
+        $locale = \Locale::getDefault();
         $md5s = null;
-        $json = $table->getAssociationListSchema($objects, $md5s, true);
+        $json = $table->getAssociationListSchemaV1($objects, $md5s, $locale);
         $md5 = md5(json_encode($md5s));
         return new JsonModel([
             'items'         => $json,
-            'locale'    => \Locale::getDefault(),
+            'locale'        => $locale,
             'md5'           => $md5,
             'objectMd5s'    => $md5s,
         ], ['prettyPrint' => true]);
@@ -64,17 +65,16 @@ class AssociationsApiController extends AbstractRestfulController
 //             return $this->sendFailedMessage('Invalid API key.');
 //         }
         $table = $this->schoenstattTable;
-
+        $locale = \Locale::getDefault();
         $object = $table->getAssociation($id);
-        $place = $table->getAssociationSchemaV1($object);
-
+        $place = $table->getAssociationSchemaV1($object, $locale);
         if (!isset($place)) {
             return $this->sendFailedMessage('Invalid shrine requested.', 404);
         }
         $return = [
             'apiUrl'    => 'https://schoenstatt.link/api/v1/associations/'.$object['identifier'],
             'locale'    => \Locale::getDefault(),
-            'md5'       => $object['schemaOrgJsonMd5'],
+            'md5'       => $object['schemaOrgJsonMd5V1ByLocale'][$locale],
             'object'    => $place->toArray(),
         ];
         $view = new JsonModel($return, ['prettyPrint' => true]);
