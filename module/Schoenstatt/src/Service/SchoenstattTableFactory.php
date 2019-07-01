@@ -6,6 +6,7 @@ use Interop\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use JTranslate\Model\CountriesInfo;
 use Zend\Db\Adapter\Adapter;
+use JTranslate\Model\TranslationsTable;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
@@ -36,6 +37,7 @@ class SchoenstattTableFactory implements FactoryInterface
         $plugins = $container->get('ViewHelperManager');
         $translateViewHelper = $plugins->get('translate');
         $translator = $translateViewHelper->getTranslator();
+        $translationsTable = $container->get(TranslationsTable::class);
         
         $table = new SchoenstattTable(
             $dbAdapter,
@@ -43,7 +45,8 @@ class SchoenstattTableFactory implements FactoryInterface
             $actingUserId,
             $config,
             $countriesInfo,
-            $translator
+            $translator,
+            $translationsTable
         );
         return $table;
     }
