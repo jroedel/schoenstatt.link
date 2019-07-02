@@ -15,41 +15,31 @@ $str3 = "Until 2019-10-18, this page will be oriented towards data-maintainers a
 <p><?= sprintf($this->escapeHtml($this->translate($str2)), '<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine" target="_blank">', '</a>')?></p>
 <p><?= $this->escapeHtml($this->translate($str3))?></p>
 <?php 
-//separate by countryRegion
-$regions = [];
-$regionStats = [];
-foreach ($this->shrines as $associationId => $object) {
-    if (!isset($regions[$object['countryRegion']])) {
-        $regions[$object['countryRegion']] = [];
-    }
-    if (!isset($regionStats[$object['countryRegion']])) {
-        $regionStats[$object['countryRegion']] = [
-            'id' => $object['countryRegion'].'-progress-bar',
-            'maxScore' => 0,
-            'score' => 0,
-        ];
-    }
-    $regions[$object['countryRegion']][$associationId] = $object;
-    $regionStats[$object['countryRegion']]['maxScore'] += 10;
-    $regionStats[$object['countryRegion']]['score'] += $object['dataScore'];
-}
-foreach ($regions as $region => $objects) :?>
-<h3 id="<?= $region ?>"><?= $this->translate($region);?></h3>
-<?php if ($regionStats[$region]['score'] > 0 && $regionStats[$region]['maxScore'] > 0):
-$percent = floor($regionStats[$region]['score'] / $regionStats[$region]['maxScore'] * 100);
-$regionStats[$region]['percent'] = $percent;?>
+$isModerator = $this->isAllowed('route/associations/association/edit');
+
+if ($isModerator):
+$totalPercent = $this->totalPercent;?>
+<p><strong><?= $this->translate('Total shrine progress')?>:</strong></p>
 <div class="progress">
-  <div id="<?= $regionStats[$region]['id']?>" class="progress-bar" role="progressbar" aria-valuenow="<?= $percent?>" aria-valuemin="0" aria-valuemax="100">
-    <?= $percent.$this->translate('% Complete')?>
+  <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="<?= $totalPercent?>" aria-valuemin="0" aria-valuemax="100">
+    <?= $totalPercent.$this->translate('% Complete')?>
+  </div>
+</div>
+<?php 
+endif;
+$partial = $isModerator
+    ? 'schoenstatt/associations/shrines-table'
+    : 'schoenstatt/associations/associations-table';
+foreach ($this->regions as $region => $objects) :?>
+<h3 id="<?= $region ?>"><?= $this->translate($region);?></h3>
+<?php if ($isModerator):?>
+<div class="progress">
+  <div id="<?= $this->regionStats[$region]['id']?>" class="progress-bar" role="progressbar" aria-valuenow="<?= $this->regionStats[$region]['percent']?>" aria-valuemin="0" aria-valuemax="100">
+    <?= $this->regionStats[$region]['percent'].$this->translate('% Complete')?>
   </div>
 </div>
 <?php
-else:
-    unset($regionStats[$region]);
 endif;
-$partial = $this->isAllowed('route/associations/association/edit') 
-    ? 'schoenstatt/associations/shrines-table'
-    : 'schoenstatt/associations/associations-table';
     echo $this->partial($partial, [
         'objects' => $objects,
         //     'wrapInPanel' => true,
@@ -76,10 +66,12 @@ if (false !== $json) {
 
 //code to set the width json of the progress bars. Must be done by javascript because
 //CSP doesn't allow us to use inline-styles
-$regionJson = json_encode($regionStats);
+$regionJson = json_encode($this->regionStats);
+$totalPercent = '"'.$totalPercent.'%"';
 $this->inlineScript()->captureStart();
 echo <<<JS
 $(function () {
+  $('#total-progress-bar').css("width", $totalPercent);
   var regions = $regionJson;
   Object.keys(regions).forEach(function(k){
     percent = regions[k]["percent"]+"%";

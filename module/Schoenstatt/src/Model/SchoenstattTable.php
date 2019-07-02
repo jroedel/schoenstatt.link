@@ -482,9 +482,6 @@ class SchoenstattTable extends SionTable implements
         static $phrasesToIdMap;
         static $translationPhraseTranslationCounts;
         
-        //@todo get this outta here
-        static $count;
-        
         $id = $this->filterDbId($row['AssociationId']);
         if (!$this->translator instanceof TranslatorInterface) {
             throw new \Exception('No translator instance!');
