@@ -228,22 +228,35 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'type' => 'Textarea',
             'options' => [
                 'label' => 'Mass, adoration and reconciliation JSON (advanced users)',
-                'help-block' => 'Please see eventSchedule specification
-at <a href="https://schema.org/eventSchedule" target="_blank">schema.org</a>.</br>
-',
+                'help-block' => 'Please see the <a href="https://schema.org/eventSchedule" target="_blank">
+Event</a> and <a href="https://schema.org/eventSchedule" target="_blank">eventSchedule</a> specification
+under format JSON+LD. Please make sure to include a location property linking to the shrine.'
+//                 , and check 
+// the schema at Google\'s <a href="https://search.google.com/structured-data/testing-tool" target="_blank">
+// Structured Data Tool</a>.
+// ',
             ],
             'attributes' => [
                 'required' => false,
                 'rows' => 8,
                 'placeholder' => '{
-  "friday":["09:00-12:00","13:00-18:00"],
-  "saturday":["09:00-12:00","13:00-18:00"],
-  "sunday":["09:00-12:00","13:00-18:00"],
-  "exceptions": {
-    "2016-11-11": ["09:00-12:00"],
-    "2016-12-25": [],
-    "01-01": [],
-}}',
+  "@context": "http://schema.org/",
+  "@type": "Event",
+  "name": "Mass",
+  "description": "Mass at the Schoenstatt Shrine",
+  "location": {"@type":"CatholicChurch", "@id":"https://schoenstatt.link/en/associations/SL10519A#location"},
+  "startDate": "2019-06-02",
+  "eventSchedule": [{
+     "@type": "Schedule",
+     "byDay": ["http://schema.org/Sunday", "http://schema.org/Monday", "http://schema.org/Tuesday","http://schema.org/Wednesday","http://schema.org/Thursday","http://schema.org/Friday", "http://schema.org/Saturday"],
+     "startTime": "07:00"
+  },{
+     "@type": "Schedule",
+     "byDay": ["http://schema.org/Sunday", "http://schema.org/Monday", "http://schema.org/Tuesday","http://schema.org/Wednesday","http://schema.org/Thursday","http://schema.org/Friday", "http://schema.org/Saturday"],
+     "startTime": "15:00"
+  }
+  ]
+}',
             ],
         ]);
         $this->add([
