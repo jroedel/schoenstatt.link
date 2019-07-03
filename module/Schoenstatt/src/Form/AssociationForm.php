@@ -214,7 +214,8 @@ at <a href="https://github.com/spatie/opening-hours" target="_blank">spatie/open
             'options' => [
                 'label' => 'Mass, adoration and reconciliation schedules (free text)',
                 'help-block' => 'Please add all details available, including exceptions to the general rule. 
-(Summer/winter schedules, months without mass, etc.)',
+(Summer/winter schedules, months without mass, etc.). If you found the schedule on a webpage, include the link 
+so users can double-check.',
             ],
             'attributes' => [
                 'required' => false,
@@ -339,17 +340,6 @@ under format JSON+LD. Please make sure to include a location property linking to
                 'maxlength' => '70',
             ],
         ]);
-//         $this->add([
-//             'name' => 'email2',
-//             'type' => 'Email',
-//             'options' => [
-//                 'label' => 'Alternative Email',
-//             ],
-//             'attributes' => [
-//                 'required' => false,
-//                 'maxlength' => '70',
-//             ],
-//         ]);
         $this->add([
             'name' => 'phone1',
             'type' => 'Phone',
@@ -610,15 +600,7 @@ under format JSON+LD. Please make sure to include a location property linking to
                 'maxlength' => '200',
             ],
         ]);
-//         $this->add([
-//             'name' => 'contactNotes',
-//             'type' => 'Textarea',
-//             'options' => [
-//                 'label' => 'Contact detail notes',
-//                 'required' => false,
-//             ],
-//         ]);
-
+        
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
             'type' => 'Textarea',
@@ -648,23 +630,6 @@ under format JSON+LD. Please make sure to include a location property linking to
                 'rows' => 4,
             ],
         ]);
-
-//      $this->add([
-//          'name' => 'adminTags',
-//          'type' => 'Select',
-//          'options' => [
-//              'label' => 'Admin tags',
-//              'empty_option' => '',
-//              'placeholder' => 'Select tags or type new ones...',
-//              'unselected_value' => '',
-//              'disable_inarray_validator' => true,
-//              'value_options' => [],
-//          ],
-//          'attributes' => [
-//              'required' => false,
-//              'multiple' => true,
-//          ],
-//      ]);
 /**
  * Common elements
  */
@@ -911,12 +876,12 @@ under format JSON+LD. Please make sure to include a location property linking to
                     ['name' => ToBit::class]
                 ],
             ],
-            'suppressionDate' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToDateTime::class],
-                ],
-            ],
+//             'suppressionDate' => [
+//                 'required' => false,
+//                 'filters' => [
+//                     ['name' => ToDateTime::class],
+//                 ],
+//             ],
             'isLifeCommunity' => [
                 'required' => false,
             ],
@@ -934,20 +899,6 @@ under format JSON+LD. Please make sure to include a location property linking to
                     ['name' => EmailAddress::class],
                 ],
             ],
-//             'email2' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => StringTrim::class],
-//                     ['name' => ToNull::class,
-//                         'options' => [
-//                             'type' => ToNull::TYPE_STRING,
-//                         ]
-//                     ],
-//                 ],
-//                 'validators' => [
-//                     ['name' => EmailAddress::class],
-//                 ],
-//             ],
             'phone1' => $this->phoneInputFilterSpec,
             'phone1Label' => $this->phoneLabelInputFilterSpec,
             'phone2' => $this->phoneInputFilterSpec,
@@ -1180,13 +1131,6 @@ under format JSON+LD. Please make sure to include a location property linking to
                     ],
                 ],
             ],
-//          'adminTags' => [
-//              'required' => false,
-//                 'filters' => [
-//                     ['name' => 'StringToLower'],
-//                     ['name' => 'SionModel\Filter\SortArray'],
-//                 ],
-//          ],
         ];
         return $this->filterSpec;
     }
