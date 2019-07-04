@@ -194,6 +194,7 @@ if (file_exists("public".$filename)):?>
 </div><!-- info 1 column -->
 </div> <!-- Info row -->
 
+<?php if (!empty($object['assignments']) || $this->isAllowed('route/assignments/create')):?>
 <div class="row">
 <div class="col-md-12">
 <div class="panel panel-default" id="assignmentsPanel">
@@ -206,7 +207,7 @@ if (file_exists("public".$filename)):?>
             <?php if ($this->isAllowed('route/assignments/create')):
                 $queryOptions= [];
                 $newRoleId = null;
-                if (!is_null($entity['mainRole'])) {
+                if (isset($entity['mainRole'])) {
                     $newRoleId = $entity['mainRole']['roleId'];
                 } elseif (!empty($entity['roles'])) {
                     $newRoleId = current($entity['roles'])['roleId'];
@@ -240,9 +241,9 @@ if (file_exists("public".$filename)):?>
     	]);?>
     </div> <!-- assignments 2 column -->
 	</div></div>
-</div></div></div>
+</div></div></div><?php 
+endif;
 
-<?php
 if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganizations'])):?>
 <div class="panel panel-default">
 <!-- Default panel contents -->
@@ -327,6 +328,7 @@ endif;?>
 
 
 <!-- Left side roles, right side Admin notes -->
+<?php if ($this->isAllowed('route/associations/create')):?>
 <div class="row">
 <div class="col-md-12">
 <div class="panel panel-default" id="adminPanel">
@@ -361,9 +363,10 @@ endif;?>
 		<?php endif;?>
     </div>
 	</div></div>
-</div></div></div>
+</div></div></div><?php 
+endif;
 
-<?php
+
 if ($this->isAllowed('route/associations/association/edit')) {
     echo $this->partial('sion-model/sion-model/entity-changes-panel', [
         'changes' => $this->changes,
