@@ -1,5 +1,9 @@
-<a class="btn btn-primary"><?php 
+<p class="pull-right"><a class="btn btn-primary"><?php 
 /** @var \Zend\View\Renderer\PhpRenderer $this */
-echo $this->translate('New post');?></a>
+if ($this->isAllowed('route/blog/create')) {
+    echo $this->translate('New post');
+}?></a></p>
 
-<?php echo count($this->entities);?>
+<?php foreach ($this->objects as $post) : ?>
+<p><?= $this->formatEntity('text', $post);?></p>
+<?php endforeach;?>

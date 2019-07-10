@@ -21,6 +21,7 @@ return [
     'Search publications' => 'Buscar publicaciones',
     'Sign in' => 'Acceder',
     'translation edits' => 'aportes traducción',
+    'Turn down for what' => 'Posteo traducido',
     'Username' => 'Nombre de usuario',
     'We need your help!' => '¡Ayúdanos!',
 ];

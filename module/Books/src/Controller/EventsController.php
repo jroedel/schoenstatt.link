@@ -2,19 +2,9 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Books\Model\LibraryTable;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Books\Form\CheckinForm;
-use Books\Form\MassCheckoutForm;
-use Zend\Form\Element\Select;
-use Books\Model\LibraryOptions;
-use Schoenstatt\Service\PatresGateway;
-use Schoenstatt\Model\SchoenstattTable;
-use BjyAuthorize\Exception\UnAuthorizedException;
 use Books\Form\EventsSearchForm;
-use Books\Model\EventTextTable;
 
 class EventsController extends SionController
 {
@@ -23,6 +13,7 @@ class EventsController extends SionController
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
+        //@todo revise that the search form is properly using field names
         $form = $this->services[EventsSearchForm::class];
         $form->setData($params);
         $entities = null;
@@ -31,10 +22,10 @@ class EventsController extends SionController
             $data = $form->getData();
             
             if (!empty($data)) {
-                /** @var EventTextTable $table */
+                /** @var \Books\Model\EventTextTable $table */
                 $table = $this->getSionTable();
-                $data['maxResults'] = self::MAX_SEARCH_RESULTS;
-                $entities = $table->searchEvents($data);
+                $options = ['maxResults' => self::MAX_SEARCH_RESULTS];
+                $entities = $table->queryObjects('event', $data, $options);
                 if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {
                     $this->nowMessenger()->addMessage("More than the max number of publications match your search. Only the first 300 results shown.", NowMessenger::NAMESPACE_INFO);
                 }
@@ -46,8 +37,8 @@ class EventsController extends SionController
         }
     
         return new ViewModel([
-        'entities'  => $entities,
-        'form'      => $form,
+            'entities'  => $entities,
+            'form'      => $form,
         ]);
     }
 }

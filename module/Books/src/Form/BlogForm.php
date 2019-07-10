@@ -48,9 +48,6 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
                 'data-parser' => 'CommonMark',
                 'rows' => 12,
             ],
-            'filters' => [
-                ['name' => 'StripTags'],
-            ],
         ]);
         $this->add([
             'name' => 'inLanguage',
