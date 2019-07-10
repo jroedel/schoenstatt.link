@@ -1140,6 +1140,32 @@ class SchoenstattTable extends SionTable implements
             }
         }
         
+        //add human text
+        $additionalProperties = [];
+        if (isset($object['openingHoursHuman'])) {
+            if (!isset($markdownParser)) {
+                $markdownParser = new \Parsedown();
+                $markdownParser->setSafeMode(true);
+            }
+            $openingHoursHuman = new PropertyValue();
+            $openingHoursHuman->propertyID('Opening hours text')
+            ->value($markdownParser->text($object['openingHoursHuman']));
+            $additionalProperties[] = $openingHoursHuman;
+        }
+        if (isset($object['eventsHuman'])) {
+            if (!isset($markdownParser)) {
+                $markdownParser = new \Parsedown();
+                $markdownParser->setSafeMode(true);
+            }
+            $eventsHuman = new PropertyValue();
+            $eventsHuman->propertyID('Events text')
+            ->value($markdownParser->text($object['eventsHuman']));
+            $additionalProperties[] = $eventsHuman;
+        }
+        if (!empty($additionalProperties)) {
+            $schema->setProperty('additionalProperty', $additionalProperties);
+        }
+        
         return $schema;
     }
 
