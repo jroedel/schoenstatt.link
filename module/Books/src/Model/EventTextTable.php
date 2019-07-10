@@ -269,7 +269,8 @@ class EventTextTable extends SionTable implements
         ->setProperty('author', $textObject['createdByUsername'])
         ->setProperty('image', "https://schoenstatt.link/favicon-310.png")
         ->setProperty('articleBody', $textObject['plainText'])
-        ->setProperty('publisher', ['@id' => '#identity']);
+        ->setProperty('publisher', ['@id' => '#identity'])
+        ->setProperty('mainEntityOfPage', ['@id' => '#webpage']);
         if (isset($textObject['createdOn'])) {
             $schema->setProperty('datePublished', $textObject['createdOn']->format('Y-m-d'));
         }
