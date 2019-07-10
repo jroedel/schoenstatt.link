@@ -1,12 +1,13 @@
-<?php $this->inlineScript()->appendFile('/js/Chart.bundle.min.js', 'text/javascript', ['nonce' => $GLOBALS['inline-nonce']]);
-$schCounts = $this->changeCounts['schoenstatt'];
-$pubCounts = $this->changeCounts['publications'];
-$transCounts = $this->changeCounts['translations'];
-$untranslatedMonths = array_keys($schCounts);
-$months = [];
-foreach ($untranslatedMonths as $value) {
-    $months[] = '"'.$this->translate($value, 'default').'"';
-}
+<?php 
+// $this->inlineScript()->appendFile('/js/Chart.bundle.min.js', 'text/javascript', ['nonce' => $GLOBALS['inline-nonce']]);
+// $schCounts = $this->changeCounts['schoenstatt'];
+// $pubCounts = $this->changeCounts['publications'];
+// $transCounts = $this->changeCounts['translations'];
+// $untranslatedMonths = array_keys($schCounts);
+// $months = [];
+// foreach ($untranslatedMonths as $value) {
+//     $months[] = '"'.$this->translate($value, 'default').'"';
+// }
 ?>
 <div class="jumbotron">
   <div class="container">
