@@ -57,7 +57,8 @@ class IndexController extends AbstractActionController
     public function indexAction()
     {
         $changeCounts = $this->get6MonthsChanges();
-        $blogPosts = $this->eventTextTable->getTexts(
+        $blogPosts = $this->eventTextTable->getObjects(
+            'text',
             ['kind' => EventTextTable::TEXT_KIND_BLOG],
             ['limit' => 5]
         );
