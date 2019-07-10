@@ -266,7 +266,15 @@ class EventTextTable extends SionTable implements
         $schema = new BlogPosting();
         $schema->setProperty('headline', $textObject['title'])
         ->setProperty('inLanguage', $textObject['inLanguage'])
+        ->setProperty('author', $textObject['createdByUsername'])
+        ->setProperty('image', "https://schoenstatt.link/favicon-310.png")
         ->setProperty('articleBody', $textObject['plainText']);
+        if (isset($textObject['createdOn'])) {
+            $schema->setProperty('datePublished', $textObject['createdOn']->format('Y-m-d'));
+        }
+        if (isset($textObject['updatedOn'])) {
+            $schema->setProperty('dateModified', $textObject['updatedOn']->format('Y-m-d')); //? 'Y-m-d H:i:s'
+        }
         //@todo add url
         if (!empty($textObject['tags'])) {
             $schema->setProperty('keywords', implode(',', $textObject['tags']));
