@@ -8,12 +8,17 @@ use Spatie\SchemaOrg\ListItem;
     // iterate through the pages
     foreach ($this->pages as $key => $page):
         $listItem = new ListItem();
-        $listItem->position($position)
-            ->setProperty('name', $page->getLabel());
+        $listItem->position($position);
         if ($key < count($this->pages) - 1) {
-            $listItem->setProperty('item', $this->serverUrl().$page->getHref());
+            $listItem->setProperty('item', [
+                '@id' => $this->serverUrl().$page->getHref(),
+                'name' => $page->getLabel()
+            ]);
         } else {
-            $listItem->setProperty('item', $this->serverUrl().$this->url(null, [], [], true));
+            $listItem->setProperty('item', [
+                '@id' => $this->serverUrl().$this->url(null, [], [], true),
+                'name' => $page->getLabel()
+            ]);
         }
         $listItems[] = $listItem;
         $position++;
@@ -37,4 +42,5 @@ use Spatie\SchemaOrg\ListItem;
     <?php endforeach; ?>
 </ol>
 <?php $breadcrumbs = new BreadcrumbList();
-echo $breadcrumbs->setProperty('itemListElement', $listItems)->toScript(); ?>
+echo $breadcrumbs->setProperty('itemListElement', $listItems)->toScript(); 
+?>

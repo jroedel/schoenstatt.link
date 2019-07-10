@@ -230,9 +230,20 @@ $routeName = $this->routeName();?>
 
          echo $this->content;
          // @todo add search to google https://developers.google.com/search/docs/data-types/sitelinks-searchbox
-         ?>
+         
+         $pageName = $this->headTitle()[0];?>
 <script type='application/ld+json'>
 [{
+  "@context": "http://schema.org",
+  "@type": "WebPage",
+  "@id": "#webpage",
+  "name": "<?= $this->escapeHtml($pageName);
+    //"description": "In addition to Patrick's work in the SEO field, he also enjoys classical jazz dancing and organic farming ",
+    ?>",
+  "publisher": {
+    "@id": "#identity"
+  }
+},{
   "@context": "http://schema.org",
   "@type": "WebSite",
   "name": "Schoenstatt Link",
@@ -269,7 +280,10 @@ $routeName = $this->routeName();?>
   "@id": "#identity",
   "name": "Schoenstatt Link",
   "url": "https://schoenstatt.link/en/",
-  "logo": "https://schoenstatt.link/favicon-310.png",
+  "logo": {
+    "@type": "ImageObject",
+    "url": "https://schoenstatt.link/favicon-310.png"
+  },
   "sameAs": [
     "https://www.facebook.com/SchoenstattLink/",
     "https://twitter.com/SchoenstattLink"
