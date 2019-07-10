@@ -31,7 +31,6 @@ if (isset($this->schema)) {
     /** @var \Spatie\SchemaOrg\BlogPosting $schema */
     $schema = $this->schema;
     $thisUrl = $this->serverUrl().$this->url(null, [], [], true);
-    $schema->setProperty('url', $thisUrl)
-        ->setProperty('@id', $thisUrl);
+    $schema->setProperty('url', $thisUrl);
     echo $schema->toScript();
 }?>
