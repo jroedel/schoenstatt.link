@@ -212,7 +212,7 @@ if (file_exists("public".$filename)):?>
                 } elseif (!empty($entity['roles'])) {
                     $newRoleId = current($entity['roles'])['roleId'];
                 }
-                if (!is_null($newRoleId)) {
+                if (isset($newRoleId)) {
                     $queryOptions = ['query' => ['roleId' => $newRoleId]];
                 }?>
                 <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php

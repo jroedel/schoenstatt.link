@@ -1127,29 +1127,43 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'edit' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/posts/:text_id/edit',
+                            'constraints' => [
+                                'text_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'edit',
+                            ],
+                        ],
+                    ],
+                    'delete' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/posts/:text_id/delete',
+                            'constraints' => [
+                                'text_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'delete',
+                            ],
+                        ],
+                    ],
                     'blog-post' => [
                         'type'    => Segment::class,
                         'options' => [
-                            'route'    => '/posts/:text_id',
+                            'route'    => '/posts/:text_id[/:slug]',
                             'constraints' => [
                                 'text_id' => '[0-9]{1,5}',
+                                'slug' => '[a-z0-9-]{1,200}',
                             ],
                             'defaults' => [
                                 'action' => 'show',
                             ],
                         ],
                         'may_terminate' => true,
-                        'child_routes' => [
-                            'edit' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/edit',
-                                    'defaults' => [
-                                        'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                        ],
                     ],
                     'create' => [
                         'type'    => Segment::class,
@@ -1999,11 +2013,10 @@ return [
                 'entity_key_field'                          => 'textId',
                 'sion_model_class'                          => Model\EventTextTable::class,
                 'sion_controllers'                          => [Controller\BlogController::class],//BorrowersController::class],
-                'controller_services'                       => [
-                    
-                ],
-                'get_object_function'                       => 'getText',
-                'get_objects_function'                      => 'getUnlinkedTexts',
+                'controller_services'                       => [],
+                'row_processor_function'                    => 'processTextRow',
+//                 'get_object_function'                       => 'getText',
+//                 'get_objects_function'                      => 'getUnlinkedTexts',
                 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'title',
@@ -2023,12 +2036,12 @@ return [
 //                 'index_template'                            => 'project/events/index',
                 'default_route_key'                         => 'text_id',
                 //                 'show_action_template'                      => 'project/events/show',
-                'show_route'                                => 'texts/text',
+                'show_route'                                => 'blog/blog-post',
                 'show_route_key'                            => 'text_id',
                 'show_route_key_field'                      => 'textId',
                 'edit_action_form'                          => Form\BlogForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
-                'edit_route'                                => 'blog/blog-post/edit',
+                'edit_route'                                => 'blog/edit',
                 'edit_route_key'                            => 'text_id',
                 'edit_route_key_field'                      => 'textId',
                 'create_action_form'                        => Form\BlogForm::class,
@@ -2276,8 +2289,8 @@ return [
                 ['route' => 'blog', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/create', 'roles' => ['blog_contributor']],
                 ['route' => 'blog/blog-post', 'roles' => ['guest', 'user']],
-                ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
-                ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
+                ['route' => 'blog/edit', 'roles' => ['blog_contributor']],
+                ['route' => 'blog/delete', 'roles' => ['blog_contributor']],
                 
                 ['route' => 'dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'dictionary/inLanguage', 'roles' => ['guest', 'user']],

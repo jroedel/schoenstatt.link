@@ -17,6 +17,7 @@ use Books\Model\PublicationsTable;
 use Application\Navigation\FixNavigationPages;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
+use Books\Model\EventTextTable;
 
 class Module
 {
@@ -128,6 +129,20 @@ class Module
                 'params' => ['library_id' => $object['libraryId']],
 //                 'resource' => $object['viewRole'],
                 'id'    => 'lib_'.$object['libraryId'],
+            ]);
+        }
+        
+        /** @var EventTextTable $eventTextTable */
+        $eventTextTable = $sm->get(EventTextTable::class);
+        $texts = $eventTextTable->getObjects('text');
+        $blogPage = $navigation->findOneBy('route', 'blog');
+        foreach ($texts as $object) {
+            $blogPage->addPage([
+                'label' => $object['title'],
+                'route' => 'blog/blog-post',
+                'params' => ['text_id' => $object['textId'], 'slug' => $object['slug']],
+                //                 'resource' => $object['viewRole'],
+                'id'    => 'blog_'.$object['textId'],
             ]);
         }
         

@@ -1,6 +1,12 @@
 <?php
 
 return [
+    '### Hey this is great
+
+I\'m **really** blogging now.' => '### Está buenísimo esto
+
+
+Ahora **sí** estoy bloggeando!',
     '$2' => '$2',
     '$3' => '$3',
     '%s - Overdue notice' => '%s - Notificación de libros debidos',
@@ -245,6 +251,7 @@ return [
     'To help Father Kentenich scholars locate rare books and manuscripts' => 'Ayudar a los investigadores dedicados al Padre Kentenich encontrar libros y manuscritos escasos.',
     'Translated from' => 'Traducida de',
     'Translator(s)' => 'Traductor(es)',
+    'Turn down for what' => 'Posteo traducido',
     'URL 1' => 'URL 1',
     'URL 1 Label' => 'Etiqueta URL 1',
     'URL 2' => 'URL 2',

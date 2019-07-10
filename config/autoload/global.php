@@ -25,17 +25,14 @@ return [
             [
                 'label' => 'Home',
                 'route' => 'welcome',
-                'resource' => 'route/welcome',
                 'pages' => [
                     [
                         'label' => 'Developers Center',
                         'route' => 'developers',
-                        'resource' => 'route/developers',
                     ], //afterwards we'll add each library
                     [
                         'label' => 'Security research acknowledgements',
                         'route' => 'acknowledgements',
-                        'resource' => 'route/acknowledgements',
                     ],
                 ],
             ],
@@ -47,62 +44,52 @@ return [
             [
                 'label' => 'Shrines',
                 'route' => 'shrines',
-                'resource' => 'route/shrines',
                 'pages' => [
                     [
                         'label' => 'Africa',
                         'route' => 'shrines',
                         'fragment' => 'Africa',
-                        'resource' => 'route/shrines',
                     ],
                     [
                         'label' => 'Asia',
                         'route' => 'shrines',
                         'fragment' => 'Asia',
-                        'resource' => 'route/shrines',
                     ],
                     [
                         'label' => 'Europe',
                         'route' => 'shrines',
                         'fragment' => 'Europe',
-                        'resource' => 'route/shrines',
                     ],
                     [
                         'label' => 'Americas',
                         'route' => 'shrines',
                         'fragment' => 'Americas',
-                        'resource' => 'route/shrines',
                     ],
                     [
                         'label' => 'Oceania',
                         'route' => 'shrines',
                         'fragment' => 'Oceania',
-                        'resource' => 'route/shrines',
                     ],
                 ],
             ],
             [
                 'label' => 'Literature',
                 'route' => 'publications',
-                'resource' => 'route/publications',
                 'pages' => [
                     [
                         'label' => 'Libraries',
                         'route' => 'libraries',
-                        'resource' => 'route/libraries',
                     ], //afterwards we'll add each library
                     [
                         'label' => 'Dictionaries',
                         'route' => 'dictionary',
-                        'resource' => 'route/dictionary',
                     ],
                 ],
             ],
-//             [
-//                 'label' => 'Blog',
-//                 'route' => 'blog',
-//                 'resource' => 'route/blog',
-//             ],
+            [
+                'label' => 'Blog',
+                'route' => 'blog',
+            ],
             [
                 'label' => 'Admin',
                 'route' => 'admin',

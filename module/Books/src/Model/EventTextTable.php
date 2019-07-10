@@ -16,6 +16,7 @@ use Cocur\Slugify\Slugify;
 use voku\Html2Text\Html2Text;
 use Zend\Db\Sql\Predicate\Operator;
 use Zend\Db\Sql\Predicate\In;
+use Spatie\SchemaOrg\BlogPosting;
 
 class EventTextTable extends SionTable implements
     ResourceProviderInterface,
@@ -45,14 +46,52 @@ class EventTextTable extends SionTable implements
         $this->usernames = $usernames;
     }
     
+    protected function getSelectPrototype($entity)
+    {
+        $select = parent::getSelectPrototype($entity);
+        if ('text' === $entity) {
+            $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
+        } elseif ('event' === $entity) {
+            $select->order(['StartDate']);
+        }
+        return $select;
+    }
+    
     /**
      * Returns a list of existing text tags according to the kind of text
      * @param string|array $kind
      * @return array
      */
-    public function getTextTagsOptions($kind = '')
+    public function getTextTagsOptions($kind = null)
     {
-        return [];
+        $cacheKey = 'text-tags';
+        if (isset($kind)) {
+            $cacheKey.='-'.$kind;
+        }
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+        $gateway = $this->getTableGateway('texts');
+        $select = $this->getSelectPrototype('text');
+        $select->columns(['Tags']);
+        $select->group(['Tags']);
+        $select->reset(Select::ORDER);
+        if (isset($kind)) {
+            $select->where(['TextKind' => $kind]);
+        }
+        $results = $gateway->selectWith($select)->toArray();
+        $tags = [];
+        foreach ($results as $row) {
+            $theseTags = $this->filterDbArray($row['Tags']);
+            foreach ($theseTags as $tag) {
+                if (!isset($tags[$tag])) {
+                    $tags[$tag] = $tag;
+                }
+            }
+        }
+        ksort($tags);
+        $this->cacheEntityObjects($cacheKey, $tags, ['text']);
+        return $tags;
     }
     
     /**
@@ -107,182 +146,6 @@ class EventTextTable extends SionTable implements
             'legacyFileDateModified' => $this->filterDbDate($row['LegacyFileDateModified']),
         ];
         return $processedRow;
-    }
-    
-    public function searchEvents($query, $options = [])
-    {
-//         $queryParameters = [
-//             'title', 'search', //'startDate', 'endDate', 'period'
-//         ];
-//         $possibleOptions = ['maxResults', 'page', 'resultsPerPage'];
-        
-        $fieldMap = $this->getEntitySpecification('event')->updateColumns;
-        
-        $gateway = $this->getTableGateway('jk_events');
-        $select = $this->getEventSelectPrototype();
-        $where = new Where();
-        
-        //Prepare the libraryId predicate
-//         $libraryClause = null;
-//         if (isset($query['libraryId'])) {
-//             if (is_array($query['libraryId'])) {
-//                 $libaries = [];
-//                 foreach ($query['libraryId'] as $value) {
-//                     if (is_numeric($value) && !in_array($value, $libaries)) {
-//                         $libaries[] = $value;
-//                     }
-//                 }
-//                 if (count($libaries) === 1) {
-//                     $query['libraryId'] = $libaries[0];
-//                 } elseif (count($libraries) > 1) {
-//                     $libraryClause = new In($fieldMap['libraryId'], $libaries);
-//                 }
-//             }
-//             if (is_numeric($query['libraryId'])) {
-//                 $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $query['libraryId']);
-//             }
-//         } elseif (isset($libraryId)) { //if the caller didn't specify a libraryId query param, set the current library
-//             $libraryClause = new Operator($fieldMap['libraryId'], Operator::OPERATOR_EQUAL_TO, $libraryId);
-//         }
-//         if (isset($libraryClause)) {
-//             $where->addPredicate($libraryClause, PredicateSet::OP_AND);
-//         }
-        
-        //Prepare the search predicate
-        if (isset($query['search'])) {
-            $search = $query['search'];
-            $searchLike = sprintf("%%%s%%", $search);
-            $searchClause = new Predicate();
-            $searchClause->addPredicates([
-                new Like($fieldMap['titleEn'], $searchLike),
-                new Like($fieldMap['titleEs'], $searchLike),
-                new Like($fieldMap['titleDe'], $searchLike),
-                new Like($fieldMap['titlePt'], $searchLike),
-                new Like($fieldMap['titleFr'], $searchLike),
-                //new Operator($fieldMap['withinLibraryId'], Operator::OPERATOR_EQUAL_TO, $search),
-            ], PredicateSet::OP_OR);
-            $where->addPredicate($searchClause);
-        }
-        
-        // Prepare collectionId predicate, could be used to search for a period
-//         if (isset($query['collectionId'])) {
-//             $collectionIdClause = null;
-//             if (is_array($query['collectionId'])) {
-//                 $collections = [];
-//                 foreach ($query['collectionId'] as $value) {
-//                     if (is_numeric($value) && !in_array($value, $collections)) {
-//                         $collections[] = $value;
-//                     }
-//                 }
-//                 if (count($collections) === 1) {
-//                     $query['collectionId'] = $collections[0];
-//                 } elseif (count($collections) > 1) {
-//                     $collectionIdClause= new In($fieldMap['collectionId'], $collections);
-//                 }
-//             }
-//             if (is_numeric($query['collectionId'])) {
-//                 $collectionIdClause= new Operator($fieldMap['collectionId'], Operator::OPERATOR_EQUAL_TO, $query['collectionId']);
-//             }
-//             if (isset($collectionIdClause)) {
-//                 $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
-//             }
-//         }
-        
-        //Prepare category predicate
-//         if (isset($query['category'])) {
-//             $categoryClause = null;
-//             if (is_array($query['category'])) {
-//                 $categories = [];
-//                 foreach ($query['category'] as $value) {
-//                     if (0 !== strlen($value) && !in_array($value, $categories)) {
-//                         $categories[] = $value;
-//                     }
-//                 }
-//                 if (count($categories) === 1) {
-//                     $query['category'] = $categories[0];
-//                 } elseif (count($categories) > 1) {
-//                     $categoryClaus$queryFullTexte= new In($fieldMap['category'], $categories);
-//                 }
-//             }
-//             if (is_string($query['category']) && 0 !== strlen($query['category'])) {
-//                 $categoryClause = new Operator($fieldMap['category'], Operator::OPERATOR_EQUAL_TO, $query['category']);
-//             }
-//             if (isset($categoryClause)) {
-//                 $where->addPredicate($categoryClause, PredicateSet::OP_AND);
-//             }
-//         }
-        
-        //Prepare title predicate
-//         if (isset($query['title']) && 0 !== strlen($query['title'])) {
-//             $search = $query['title'];
-//             $searchLike = sprintf("%%%s%%",$search);
-//             $titleClause = new Operator($fieldMap['title'], Operator::OPERATOR_EQUAL_TO, $query['title']);
-//             $where->addPredicate($titleClause, PredicateSet::OP_AND);
-//         }
-        
-        //Prepare isActive predicate, default to true unless caller sets it to null
-//         if (!array_key_exists('isActive', $query) ||
-//             (!is_bool($query['isActive']) && null !== $query['isActive'])
-//         ) {
-//             $query['isActive'] = true;
-//         }
-//         if (isset($query['isActive'])) {
-//             $isActiveClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
-//             $where->addPredicate($isActiveClause, PredicateSet::OP_AND);
-//         }
-        
-        //Set the where clause
-        $select->where($where);
-        
-        $results = $gateway->selectWith($select);
-        $entities = [];
-//         $eventsToGrab = [];
-        foreach ($results as $row) {
-            $processedRow = $this->processBookRow($row);
-//             if (isset($processedRow['currentCheckoutId'])) {
-//                 $eventsToGrab[$processedRow['eventId']] = $processedRow['currentCheckoutId'];
-//             }
-            $entities[$processedRow['eventId']] = $processedRow;
-        }
-        
-        //grab checkouts to fill them in to entities
-//         $checkouts = $this->getCheckouts(array_values($eventsToGrab));
-//         foreach ($eventsToGrab as $bookId => $checkoutId) {
-//             if (isset($checkouts[$checkoutId])) {
-//                 $entities[$bookId]['currentCheckout'] = $checkouts[$checkoutId];
-//             }
-//         }
-        
-        return $entities;
-    }
-    
-    /**
-     * Get a standardized select object to retrieve records from the database
-     * @return \Zend\Db\Sql\Select
-     */
-    protected function getEventSelectPrototype()
-    {
-        static $select;
-        if (!isset($select)) {
-            $select = new Select('events');
-            //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'), 'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
-            $select->columns(['EventId', 'TitleEn', 'TitleEs', 'TitleDe', 'TitlePt', 'TitleFr',
-                'Country', 'OriginalLanguage', 'DescriptionEn', 'DescriptionEs', 'DescriptionDe',
-                'DescriptionPt', 'DescriptionFr', 'StartDate', 'DurationInDays', 'Accuracy',
-                'BestTextQuality', 'Place', 'Tags', 'AdminTags', 'AudienceText', 'AbbreviationEn',
-//                'AbbreviationEs', 'AbbreviationPt', 'AbbreviationFr',
-                'AbbreviationDe', 'AclResourceId',
-                'PublicNotes', 'PublicNotesUpdatedOn', 'PublicNotesUpdatedBy', 'AdminNotes', 'AdminNotesUpdatedOn',
-                'AdminNotesUpdatedBy', 'UpdatedOn', 'UpdatedBy', 'CreatedOn', 'CreatedBy', 'LegacySource',
-                'LegacyFile', 'LegacyFileDateModified'
-                //'admin_notes_updated_by', 'current_checkout_id' => new Expression('(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))')
-            ]);
-//         $select->group(['TheMonth', 'TheYear']);
-//         $select->where($predicate->in('ChangedEntity', $tableEntities));
-            $select->order(['StartDate']);
-        }
-        
-        return clone $select;
     }
     
     /**
@@ -398,119 +261,17 @@ class EventTextTable extends SionTable implements
         return $data;
     }
     
-    public function getTexts($query = [], $options = [])
+    public static function getBlogPostSchema(array $textObject)
     {
-        $entitySpec = $this->getEntitySpecification('text');
-        $fieldMap = $entitySpec->updateColumns;
-        $gateway = $this->getTableGateway($entitySpec->tableName);
-        $select = $this->getTextSelectPrototype();
-        $where = new Where();
-        
-        $queryFullText = isset($options['fullText']) ? (bool)$options['fullText'] : false;
-        if (!$queryFullText) {
-            $columns = array_values($fieldMap);
-            $columns = array_diff(
-                $columns,
-                [$fieldMap['markdownText'], $fieldMap['htmlText'], $fieldMap['plainText']]
-            );
-            $select->columns($columns);
+        $schema = new BlogPosting();
+        $schema->setProperty('headline', $textObject['title'])
+        ->setProperty('inLanguage', $textObject['inLanguage'])
+        ->setProperty('articleBody', $textObject['plainText']);
+        //@todo add url
+        if (!empty($textObject['tags'])) {
+            $schema->setProperty('keywords', implode(',', $textObject['tags']));
         }
-        if (isset($query['kind'])) {
-            if (is_string($query['kind'])) {
-                $kindClause = new Operator($fieldMap['kind'], Operator::OPERATOR_EQUAL_TO, $query['kind']);
-            } elseif (is_array($query['kind'])) {
-                $kindClause = new In($fieldMap['kind'], $query['kind']);
-            }
-            $where->addPredicate($kindClause);
-        }
-        
-        if (isset($options['limit'])) {
-            $select->limit($options['limit']);
-        }
-        
-        $select->where($where);
-        $results = $gateway->selectWith($select);
-        
-        $objects = [];
-        foreach ($results as $row) {
-            $processedRow = $this->processTextRow($row);
-            $id = $processedRow['textId'];
-            $objects[$id] = $processedRow;
-        }
-        
-//         $this->cacheEntityObjects('unlinked-publications', $objects, ['publication']);
-        return $objects;
-    }
-    
-    /**
-     *
-     * @param int $id
-     * @return mixed[]
-     */
-    public function getText($id)
-    {
-        static $gateway;
-        if (!isset($gateway)) {
-            $gateway = $this->getTableGateway('texts');
-        }
-        $select = $this->getTextSelectPrototype();
-        $select->where(['TextId' => $id]);
-        /** @var ResultSet $result */
-        $result = $gateway->selectWith($select);
-        $results = $result->toArray();
-        
-        if (!isset($results[0])) {
-            return null;
-        }
-        $object = $this->processTextRow($results[0]);
-//         $this->linkPublication($object);
-        
-        return $object;
-    }
-    
-    /**
-     * Get an array of publications
-     * @param array $ids
-     * @return array
-     */
-    public function getUnlinkedTexts(array $ids = [])
-    {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-texts'))) {
-            return $cache;
-        }
-        $gateway = $this->getTableGateway('texts');
-        $select = $this->getTextSelectPrototype();
-        if (!empty($ids)) {
-            $select->where(['TextId' => $ids]);
-        }
-        $results = $gateway->selectWith($select);
-        
-        $entities = [];
-        foreach ($results as $row) {
-            $processedRow = $this->processTextRow($row);
-            $id = $processedRow['textId'];
-            $entities[$id] = $processedRow;
-        }
-        
-        $this->cacheEntityObjects('unlinked-texts', $entities, ['text']);
-        return $entities;
-    }
-    /**
-     * Get a standardized select object to retrieve records from the database
-     * @return \Zend\Db\Sql\Select
-     */
-    protected function getTextSelectPrototype()
-    {
-        static $select;
-        if (!isset($select)) {
-            $entitySpec = $this->getEntitySpecification('text');
-            $select = new Select($entitySpec->tableName);
-            $fieldMap = $entitySpec->updateColumns;
-            $select->columns(array_values($fieldMap));
-            $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
-        }
-        
-        return clone $select;
+        return $schema;
     }
     
     /**

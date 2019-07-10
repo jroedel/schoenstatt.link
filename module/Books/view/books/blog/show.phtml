@@ -1,6 +1,8 @@
 <?php /** @var \Zend\View\Renderer\PhpRenderer $this */
+$headText = $this->translate($this->entity['title']);
+$this->headTitle($headText);
 $object = $this->entity;?>
-<h1><?php echo $this->escapeHtml($this->entity['title']);?></h1>
+<h1><?php echo $this->escapeHtml($headText);?></h1>
 
 <p><i class="fa fa-user"></i> <?php echo sprintf($this->translate('by %s'), $object['createdByUsername']);
 ?>  <i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php echo $this->diffForHumans($this->entity['updatedOn']);?></p>
@@ -10,7 +12,10 @@ foreach ($object['tags'] as $tag) : ?>
 <?php endforeach;?></p>
 <hr>
 <?php
-echo $this->entity['htmlText'];?>
+$parsedown = new \Parsedown();
+$parsedown->setSafeMode(true);
+$translatedText = $parsedown->text($this->translate($this->entity['markdownText']));
+echo $translatedText;?>
 <hr>
     <!-- the comment box -->
 <?php if (isset($this->commentForm)) {
@@ -20,4 +25,11 @@ echo $this->entity['htmlText'];?>
 }
 echo $this->partial('sion-model/comments/comments-list', [
     'comments' => $this->comments,
-]);?>
+]);
+
+if (isset($this->schema)) {
+    /** @var \Spatie\SchemaOrg\BlogPosting $schema */
+    $schema = $this->schema;
+    $schema->setProperty('url', $this->serverUrl().$this->url(null, [], [], true));
+    echo $schema->toScript();
+}?>

@@ -10,6 +10,12 @@ class BlogController extends SionController
 {
     public function showAction()
     {
+        $slug = $this->params()->fromRoute('slug');
+        if (!isset($slug)) {
+            $id = $this->getEntityIdParam('show');
+            $entityObject = $this->getEntityObject($id);
+            return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $entityObject['textId'], 'slug' => $entityObject['slug']]);
+        }
         $view = parent::showAction();
         if ($view instanceof ResponseInterface) {
             return $view;
@@ -20,6 +26,8 @@ class BlogController extends SionController
                 ->addMessage('Blog entry not found');
             return $this->redirect()->toRoute('blog');
         }
+        $schema = EventTextTable::getBlogPostSchema($object);
+        $view->setVariable('schema', $schema);
         $view->setTemplate('books/blog/show');
         return $view;
     }
@@ -32,7 +40,7 @@ class BlogController extends SionController
     
     public function getEntityObject($id)
     {
-        $object = $this->getSionTable()->getText($id);
+        $object = $this->getSionTable()->getObject('text', $id);
         return $this->object[$id] = $object;
     }
     
