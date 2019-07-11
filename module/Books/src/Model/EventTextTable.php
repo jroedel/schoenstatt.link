@@ -2,10 +2,6 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
-use Zend\Db\Sql\Where;
-use Zend\Db\Sql\Predicate\Like;
-use Zend\Db\Sql\Predicate\Predicate;
-use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Select;
 use Zend\Db\Adapter\AdapterInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
@@ -14,8 +10,6 @@ use Zend\Permissions\Acl\Resource\GenericResource;
 use Schoenstatt\Filter\BlogPostUserIdFilter;
 use Cocur\Slugify\Slugify;
 use voku\Html2Text\Html2Text;
-use Zend\Db\Sql\Predicate\Operator;
-use Zend\Db\Sql\Predicate\In;
 use Spatie\SchemaOrg\BlogPosting;
 
 class EventTextTable extends SionTable implements

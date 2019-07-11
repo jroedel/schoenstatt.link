@@ -658,7 +658,9 @@ class SchoenstattTable extends SionTable implements
         
         if ($needsTranslation && !isset($this->countryNameTranslations[$name])) {
             $needTranslationCount += count($this->languageLocaleMap);
-            if (isset($translationPhraseTranslationCounts[$phrasesToIdMap[$name]])) {
+            if (isset($phrasesToIdMap[$name]) 
+                && isset($translationPhraseTranslationCounts[$phrasesToIdMap[$name]])
+            ) {
                 $hasTranslationCount += $translationPhraseTranslationCounts[$phrasesToIdMap[$name]];
             }
         }
