@@ -1127,30 +1127,6 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
-                    'edit' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/posts/:text_id/edit',
-                            'constraints' => [
-                                'text_id' => '[0-9]{1,5}',
-                            ],
-                            'defaults' => [
-                                'action'     => 'edit',
-                            ],
-                        ],
-                    ],
-                    'delete' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/posts/:text_id/delete',
-                            'constraints' => [
-                                'text_id' => '[0-9]{1,5}',
-                            ],
-                            'defaults' => [
-                                'action'     => 'delete',
-                            ],
-                        ],
-                    ],
                     'blog-post' => [
                         'type'    => Segment::class,
                         'options' => [
@@ -1164,6 +1140,30 @@ return [
                             ],
                         ],
                         'may_terminate' => true,
+                    ],
+                    'delete' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/posts/:text_id/delete',
+                            'constraints' => [
+                                'text_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'delete',
+                            ],
+                        ],
+                    ],
+                    'edit' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/posts/:text_id/edit',
+                            'constraints' => [
+                                'text_id' => '[0-9]{1,5}',
+                            ],
+                            'defaults' => [
+                                'action'     => 'edit',
+                            ],
+                        ],
                     ],
                     'create' => [
                         'type'    => Segment::class,
