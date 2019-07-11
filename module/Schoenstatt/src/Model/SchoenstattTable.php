@@ -727,7 +727,17 @@ class SchoenstattTable extends SionTable implements
                     $internalNameByLocale[$localeMapped] = $internalName;
                 }
             } else {
-                $internalNameByLocale[$localeMapped] = $namesByLocale[$localeMapped];
+                //if we don't have an internal name, just use the association-provided name, without the name format
+                if ($associationKindSpec->shouldTranslateNameParameter || $isNameTranslateable) {
+                    $internalNameByLocale[$localeMapped] = $this->translator->translate(
+                        $name,
+                        self::TRANSLATOR_DOMAIN,
+                        $localeMapped
+                        );
+                } else {
+                    $internalNameByLocale[$localeMapped] = $name;
+                }
+                
             }
         }
         
