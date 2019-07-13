@@ -36,7 +36,7 @@ return [
                 ['route' => 'schoenstatt', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'admin', 'roles' => ['sch_moderator', 'translator']],
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
-                ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
+                ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator', 'view_changes']],
                 ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['sch_administrator']],
                 ['route' => 'sion-model/phpinfo', 'roles' => ['sch_administrator']],
                 ['route' => 'sion-model/auto-fix-data-problems', 'roles' => ['lib_administrator']],
