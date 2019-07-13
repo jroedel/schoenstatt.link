@@ -96,6 +96,9 @@ class Module
         }
         
         $locale = \Locale::getDefault();
+        if (array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
+            $locale = 'en_US';
+        }
         foreach ($associations as $object) {
             if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {
                 //@todo this could be subdivided heirarchically
