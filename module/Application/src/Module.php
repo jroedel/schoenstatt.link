@@ -96,7 +96,7 @@ class Module
         }
         
         $locale = \Locale::getDefault();
-        if (array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
+        if (!array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
             $locale = 'en_US';
         }
         foreach ($associations as $object) {
