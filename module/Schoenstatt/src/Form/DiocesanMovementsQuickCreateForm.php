@@ -1,7 +1,6 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\Form\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
 
