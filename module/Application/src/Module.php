@@ -94,13 +94,18 @@ class Module
                 $shrinePageCounts[$page->getLabel()] = 1;
             }
         }
+        
+        $locale = \Locale::getDefault();
         foreach ($associations as $object) {
             if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {
                 //@todo this could be subdivided heirarchically
                 $movement->addPage([
                     'label' => $object['name'], //@todo replace this with something translatable
-                    'route' => 'associations/association',
-                    'params' => ['sw_id' => $object['identifier']],
+                    'route' => 'association',
+                    'params' => [
+                        'sw_id' => $object['identifier'],
+                        'slug' => $object['slugByLocale'][$locale]
+                    ],
                 ]);
             }
             if (!isset($object['countryRegion']) || !isset($shrinePages[$object['countryRegion']])) {
@@ -110,8 +115,11 @@ class Module
             }
             $shrinePages[$key]->addPage([
                 'label' => $object['name'], //@todo replace this with something translatable
-                'route' => 'associations/association',
-                'params' => ['sw_id' => $object['identifier']],
+                'route' => 'association',
+                'params' => [
+                    'sw_id' => $object['identifier'],
+                    'slug' => $object['slugByLocale'][$locale]
+                ],
             ]);
         }
         
