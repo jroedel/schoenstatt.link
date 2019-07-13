@@ -31,17 +31,21 @@ class AdminController extends AbstractActionController
     protected $problemService;
     protected $importFatherForm;
     protected $schoenstattTable;
+    /** @var \Schoenstatt\Service\PatresGateway $patresGateway */
+    protected $patresGateway;
     
     public function __construct(
         TranslationsTable $translationsTable,
         ProblemService $problemService,
         ImportFatherForm $importFatherForm,
-        SchoenstattTable $schoenstattTable
+        SchoenstattTable $schoenstattTable,
+        PatresGateway $patresGateway
     ) {
         $this->translationsTable = $translationsTable;
         $this->problemService = $problemService;
         $this->importFatherForm = $importFatherForm;
         $this->schoenstattTable = $schoenstattTable;
+        $this->patresGateway = $patresGateway;
     }
     
     public function indexAction()
@@ -84,9 +88,7 @@ class AdminController extends AbstractActionController
             $form->setData($data);
             if ($form->isValid()) { //here the sent personId will be checked against the haystack
                 $personId = $form->getData()['personId'];
-                /** @var \Schoenstatt\Service\PatresGateway $patresGateway */
-                $patresGateway = $sm->get(PatresGateway::class);
-                if (false === $patresGateway->importRemotePerson($personId)) {
+                if (false === $this->patresGateway->importRemotePerson($personId)) {
                     $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
                         ->addMessage('Person already exists in the database.');
                 } else {

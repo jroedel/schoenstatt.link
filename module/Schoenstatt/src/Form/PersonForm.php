@@ -1,10 +1,7 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\Form\Form;
 use Zend\InputFilter\InputFilterProviderInterface;
-use SionModel\Validator\Skype;
-use Zend\Uri\Uri;
 use Zend\Filter\ToNull;
 use SionModel\Form\SionForm;
 

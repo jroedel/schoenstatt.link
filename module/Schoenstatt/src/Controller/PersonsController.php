@@ -131,7 +131,7 @@ class PersonsController extends SionController
             if (isset($values['logo'])) {
                 continue;
             }
-            foreach ($urlConfig as $key => $configValues) {
+            foreach ($urlConfig as $configValues) {
                 if ($values['label'] == $configValues['label'] &&
                     isset($configValues['logo'])
                 ) {
@@ -140,7 +140,7 @@ class PersonsController extends SionController
                 }
             }
         }
-        foreach ($urlConfig as $key => $values) {
+        foreach ($urlConfig as $values) {
             if (isset($values[$deviceType]) &&
                 isset($values['userKey']) &&
                 !is_null($person[$values['userKey']])) {
