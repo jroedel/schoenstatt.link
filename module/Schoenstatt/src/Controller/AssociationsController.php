@@ -16,9 +16,13 @@ class AssociationsController extends SionController
     public function sendToNewUrlAction()
     {
         $associationId = $this->params()->fromRoute('association_id');
-        $filter = new ToSchoenstattLinkIdentifier('association');
-        $swId = $filter->filter($associationId);
-        return $this->redirect()->toRoute('associations/association', ['sw_id' => $swId]);
+        if (!isset($associationId)) {
+            $swId = $this->params()->fromRoute('sw_id');
+        } else {
+            $filter = new ToSchoenstattLinkIdentifier('association');
+            $swId = $filter->filter($associationId);
+        }
+        return $this->redirect()->toRoute('association', ['sw_id' => $swId]);
     }
 
     /**

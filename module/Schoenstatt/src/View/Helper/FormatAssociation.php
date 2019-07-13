@@ -76,12 +76,15 @@ class FormatAssociation extends AbstractHelper
         $text = $this->view->escapeHtml($text);
 
         //@todo check resources too
-        $permissionToViewLink = $this->view->isAllowed('route/associations/association');
-
+        $permissionToViewLink = $this->view->isAllowed('route/association'); 
+//             && $this->view->isAllowed($data['resourceId']);
         if ($displayAsLink && $permissionToViewLink) {
             $url = $this->view->url(
-                'associations/association',
-                ['sw_id' => $data['identifier']]
+                'association',
+                [
+                    'sw_id' => $data['identifier'],
+                    'slug' => $data['slugByLocale'][$locale]
+                ]
             );
             $finalMarkup .= sprintf(
                 '<a href="%s">%s</a>',

@@ -1,0 +1,35 @@
+<?php
+$headText = 'Submitting photos';
+$this->headTitle($headText);
+$text = [
+    'en' => <<<MD
+## Submitting photos
+
+By initiative of Alberto León, creator of the "Schoenstatt Shrines" app, we began showing images of the shrines in July 2019. If you have photos to contribute please follow these instructions. Please note: only send us photos that are in the Public Domain, ones you have personally taken (you give us permission to publish without attribution), or photos for which you already have permission to publish on schoenstatt.link.
+
+### File naming
+
+Files are named by the identifier of the shrine.
+
+1. Open the page of the shrine for which you wish to submit a photo.
+2. Look at the URL on the top of the browser window. For example, the original shrine is located at https://schoenstatt.link/en/SL10319A/original-schoenstatt-shrine, where "**SL10319A**" is the identifier for that shrine.
+3. The file name for photo should then be SL10319A.jpg (or SL10319A.png)
+
+If you would like to send more than one photo, the primary photo should be an outdoor photo a named as shown above. Additional photos should add an incremental number separated by a dash:
+
+SL10319A-1.jpg
+
+SL10319A-2.jpg
+
+#### File types
+
+We are currently accepting files in jpg and png format.
+
+#### Sending photos
+
+Please email photos to webmaster@schoenstatt.link where they should be uploaded to the website within a day.
+
+**Thanks for the help!**
+MD
+];
+echo $this->markdown($text['en']);

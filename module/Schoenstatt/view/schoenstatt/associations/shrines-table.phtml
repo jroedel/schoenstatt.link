@@ -8,7 +8,7 @@
 	<th><?php echo $this->translate('Events?');?></th>
 	<th><?php echo $this->translate('Name translated?');?></th>
 </tr>
-<?php foreach ($this->objects as $entityId => $entity) :?>
+<?php foreach ($this->objects as $entity) :?>
 <tr>
 	<td><?= $this->formatEntity('association', $entity);?></td>
 	<!-- <td><?= $this->formatEntity('association', $entity, ['display' => 'kind']);?></td> -->

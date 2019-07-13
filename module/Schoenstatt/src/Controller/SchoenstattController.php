@@ -107,6 +107,11 @@ class SchoenstattController extends AbstractActionController
         ]);
     }
     
+    public function submittingPhotosAction()
+    {
+        return new ViewModel([]);
+    }
+    
     public function getShrineDatasets()
     {
         $datasets = [];
