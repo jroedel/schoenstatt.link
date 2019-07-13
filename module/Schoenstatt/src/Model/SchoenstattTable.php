@@ -907,7 +907,7 @@ class SchoenstattTable extends SionTable implements
                 'it_IT' => $row['SchemaOrgJsonMd5V1It'],
             ],
             'slugByLocale' => $slugByLocale,
-            //@todo do the URL better
+            //@todo do the URL better, also, this url format is deprecated
             'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
             'nameByLocale'          => $namesByLocale, //should never be null
             'internalNameByLocale'  => $internalNameByLocale, //should never be null
