@@ -38,6 +38,7 @@ use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Spatie\SchemaOrg\Organization;
 use Schoenstatt\Validator\EventsJson;
 use JTranslate\Model\TranslationsTable;
+use Cocur\Slugify\Slugify;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
@@ -52,6 +53,14 @@ class SchoenstattTable extends SionTable implements
         'pt_BR' => 'SchemaOrgJsonMd5V1Pt',
         'de_DE' => 'SchemaOrgJsonMd5V1De',
         'it_IT' => 'SchemaOrgJsonMd5V1It',
+    ];
+    
+    const LOCALES_TO_SLUG_COLUMN_NAME = [
+        'en_US' => 'SlugEn',
+        'es_ES' => 'SlugEs',
+        'pt_BR' => 'SlugPt',
+        'de_DE' => 'SlugDe',
+        'it_IT' => 'SlugIt',
     ];
     
     const DEFAULT_PLACE_FORMAT = ':zip :cityState';
@@ -358,7 +367,7 @@ class SchoenstattTable extends SionTable implements
             $entitySpec = $this->getEntitySpecification($entity);
             $columns = array_values($entitySpec->updateColumns);
             $columns = array_merge($columns, ['SchemaOrgJsonMd5V1En','SchemaOrgJsonMd5V1Es','SchemaOrgJsonMd5V1Pt','SchemaOrgJsonMd5V1De',
-                'SchemaOrgJsonMd5V1It']);
+                'SchemaOrgJsonMd5V1It', 'SlugEn', 'SlugEs', 'SlugDe', 'SlugPt', 'SlugIt']);
             $columns['GeoPoint'] = new Expression('AsText(`Location`)');
             $select->columns($columns);
         }
@@ -778,6 +787,20 @@ class SchoenstattTable extends SionTable implements
                 ? 2 : 0)
             + $translationPoints;
         
+        $slugByLocale = [];
+        $missingSlugs = [];
+        foreach (self::LOCALES_TO_SLUG_COLUMN_NAME as $localeMapped => $slugColumn) {
+            $slug = $row[$slugColumn];
+            if (!isset($slug)) {
+                $slug = self::getSlug($namesByLocale[$localeMapped]);
+                $missingSlugs[$slugColumn] = $slug;
+            }
+            $slugByLocale[$localeMapped] = $slug;
+        }
+        if (!empty($missingSlugs)) {
+            $this->insertMissingAssociationSlugs($id, $missingSlugs);
+        }
+        
         $processedRow = [
             'associationId'         => $id,
             'identifier'            => $identifier,
@@ -813,25 +836,6 @@ class SchoenstattTable extends SionTable implements
             'isActive'              => $this->filterDbBool($row['IsActive']),
 
             'geoPoint'              => $this->filterDbGeoPoint($row['GeoPoint']),
-//             'latitude'                  => $row['Latitude'], //@deprecated
-//             'longitude'                 => $row['Longitude'], //@deprecated
-//             'idealEn'                   => $row['IdealEn'],
-//             'idealEs'                   => $row['IdealEs'],
-//             'idealDe'                   => $row['IdealDe'],
-//             'idealPt'                   => $row['IdealPt'],
-//             'idealFr'                   => $row['IdealFr'],
-//             'visitorsInformationEn'     => $row['VisitorsInformationEn'],
-//             'visitorsInformationEs'     => $row['VisitorsInformationEs'],
-//             'visitorsInformationDe'     => $row['VisitorsInformationDe'],
-//             'visitorsInformationPt'     => $row['VisitorsInformationPt'],
-//             'visitorsInformationFr'     => $row['VisitorsInformationFr'],
-//             'historyEn'                 => $row['HistoryEn'],
-//             'historyEs'                 => $row['HistoryEs'],
-//             'historyDe'                 => $row['HistoryDe'],
-//             'historyPt'                 => $row['HistoryPt'],
-//             'historyFr'                 => $row['HistoryFr'],
-
-//             'adminTags'             => $this->filterDbArray($row['AdminTags']),
 
             'sort'                  => $associationKindSpec->sort,
             'isSubDiocesan'         => $associationKindSpec->isSubDiocesanAssociation,
@@ -902,6 +906,7 @@ class SchoenstattTable extends SionTable implements
                 'de_DE' => $row['SchemaOrgJsonMd5V1De'],
                 'it_IT' => $row['SchemaOrgJsonMd5V1It'],
             ],
+            'slugByLocale' => $slugByLocale,
             //@todo do the URL better
             'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
             'nameByLocale'          => $namesByLocale, //should never be null
@@ -920,6 +925,38 @@ class SchoenstattTable extends SionTable implements
         return $processedRow;
     }
 
+    public static function getSlug($text)
+    {
+        static $slugFilter;
+        if (!isset($slugFilter)) {
+            $slugFilter = new Slugify();
+        }
+        $slug = $slugFilter->slugify($text);
+        if (strlen($slug) > 50) {
+            $slug = trim(substr($slug, 0, 50), '-');
+        }
+        return $slug;
+    }
+    
+    protected function insertMissingAssociationSlugs($associationId, $missingSlugs)
+    {
+        static $gateway;
+        if (!isset($gateway)) {
+            $gateway = $this->getTableGatewayForEntity('association');
+        }
+        $gateway->update($missingSlugs, ['AssociationId' => $associationId]);
+    }
+    
+    public function nullOutAssociationSlugs($associationId)
+    {
+        $gateway = $this->getTableGatewayForEntity('association');
+        $data = [];
+        foreach (self::LOCALES_TO_SLUG_COLUMN_NAME as $column) {
+            $data[$column] = null;
+        }
+        $gateway->update($data, ['AssociationId' => $associationId]);
+    }
+    
     /**
      *
      * @param mixed[] $object
@@ -1235,6 +1272,9 @@ class SchoenstattTable extends SionTable implements
         ) {
             $data['longitude'] = $data['geoPoint']->longitude;
             $data['latitude'] = $data['geoPoint']->latitude;
+        }
+        if (isset($entityData['associationId'])) {
+            $this->nullOutAssociationSlugs($entityData['associationId']);
         }
         return $data;
     }

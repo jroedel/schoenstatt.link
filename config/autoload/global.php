@@ -46,6 +46,10 @@ return [
                 'route' => 'shrines',
                 'pages' => [
                     [
+                        'label' => 'World',
+                        'route' => 'shrines',
+                    ],
+                    [
                         'label' => 'Africa',
                         'route' => 'shrines',
                         'fragment' => 'Africa',
@@ -69,6 +73,10 @@ return [
                         'label' => 'Oceania',
                         'route' => 'shrines',
                         'fragment' => 'Oceania',
+                    ],
+                    [
+                        'label' => 'Submitting photos',
+                        'route' => 'shrines/submitting-photos',
                     ],
                 ],
             ],

@@ -7,15 +7,17 @@ $this->headTitle($headText); ?>
 $str1 = "Welcome to the Schoenstatt Shrine collaborative database! This database is freely available under the %s Licence so that anyone may use it.  For now, anyone who registers for an account may help keep the information current. Please help us complete the information!";
 
 $str2 = "This data may be accessed directly by any apps or websites who which to receive up-to-date information via the %sREST API%s (application programming interface).";
-
+$str4 = "Do you have shrine photos to submit? See our %sphoto submission process%s.";
+$photosUrl = $this->url('shrines/submitting-photos');
 $str3 = "Until 2019-10-18, this page will be oriented towards data-maintainers and therefore show the columns of pertinent information.";
 ?>
 
 <p><?= sprintf($this->escapeHtml($this->translate($str1)), '<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">Creative Commons BY-SA</a>')?></p>
 <p><?= sprintf($this->escapeHtml($this->translate($str2)), '<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine" target="_blank">', '</a>')?></p>
+<p><?= sprintf($this->escapeHtml($this->translate($str4)), "<a href=\"$photosUrl\">", "</a>");?>
 <p><?= $this->escapeHtml($this->translate($str3))?></p>
 <?php 
-$isModerator = $this->isAllowed('route/associations/association/edit');
+$isModerator = $this->isAllowed('route/association-edit');
 
 if ($isModerator):
 $totalPercent = $this->totalPercent;?>

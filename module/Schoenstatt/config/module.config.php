@@ -1021,6 +1021,17 @@ return [
                     ],
                 ],
                 'may_terminate' => true,
+                'child_routes' => [
+                    'submitting-photos' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/submitting-photos',
+                            'defaults' => [
+                                'action'     => 'submittingPhotos',
+                            ],
+                        ],
+                    ],
+                ],
             ],
             'persons' => [
                 'type'    => Literal::class,
@@ -1256,6 +1267,46 @@ return [
                     ],
                 ],
             ],
+            'association' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => 'SL1[0-9]{4,4}A',
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\AssociationsController::class,
+                        'action'     => 'show',
+                    ],
+                ],
+            ],
+            'association-edit' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/edit',
+                    'constraints' => [
+                        'sw_id' => 'SL1[0-9]{4,4}A',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\AssociationsController::class,
+                        'action'     => 'edit',
+                    ],
+                ],
+            ],
+            'association-delete' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/delete',
+                    'constraints' => [
+                        'sw_id' => 'SL1[0-9]{4,4}A',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\AssociationsController::class,
+                        'action'     => 'delete',
+                    ],
+                ],
+            ],
             'associations' => [
                 'type'    => Literal::class,
                 'options' => [
@@ -1275,59 +1326,7 @@ return [
                                 'sw_id' => 'SL[0-9]{1,5}A',
                             ],
                             'defaults' => [
-                                'controller' => Controller\AssociationsController::class,
-                                'action'     => 'show',
-                            ],
-                        ],
-                        'may_terminate' => true,
-                        'child_routes' => [
-                            'edit' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/edit',
-                                    'defaults' => [
-                                        'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                            'suggest' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/suggest',
-                                    'defaults' => [
-                                        'action'     => 'suggest',
-                                    ],
-                                ],
-                            ],
-                            'moderate' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/moderate/:suggestion_id',
-                                    'constraints' => [
-                                        'suggestion_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'moderate',
-                                    ],
-                                ],
-                            ],
-                            'create-dioceses' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/create-dioceses',
-                                    'defaults' => [
-                                        'action'     => 'createDioceses',
-                                    ],
-                                ],
-                            ],
-                            'delete' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/delete',
-                                    'defaults' => [
-                                        'action'     => 'delete',
-                                    ],
-                                ],
+                                'action'     => 'sendToNewUrl',
                             ],
                         ],
                     ],
@@ -1339,7 +1338,6 @@ return [
                                 'association_id' => '[0-9]{1,5}',
                             ],
                             'defaults' => [
-                                'controller' => Controller\AssociationsController::class,
                                 'action'     => 'sendToNewUrl',
                             ],
                         ],
@@ -1349,7 +1347,6 @@ return [
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
-                                'controller' => Controller\AssociationsController::class,
                                 'action'     => 'create',
                             ],
                         ],
@@ -1368,7 +1365,6 @@ return [
                         'options' => [
                             'route'    => '/import',
                             'defaults' => [
-                                'controller' => Controller\AssociationsController::class,
                                 'action'     => 'import',
                             ],
                         ],
@@ -1664,17 +1660,17 @@ return [
                 'index_route'                           => 'associations',
 //                 'index_template'                        => 'project/events/index',
                 'default_route_key'                     => 'sw_id',
-                'show_route'                            => 'associations/association',
+                'show_route'                            => 'association',
                 'show_route_key'                        => 'sw_id',
                 'show_route_key_field'                  => 'identifier',
                 'edit_action_form'                      => Form\AssociationForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
-                'edit_route'                            => 'associations/association/edit',
+                'edit_route'                            => 'association-edit',
                 'edit_route_key'                        => 'sw_id',
                 'edit_route_key_field'                  => 'identifier',
                 'create_action_form'                    => Form\AssociationForm::class,
 //                 'create_action_valid_data_handler'      => 'createAssociation',
-                'create_action_redirect_route'          => 'associations/association',
+                'create_action_redirect_route'          => 'association',
                 'create_action_redirect_route_key'      => 'sw_id',
                 'create_action_redirect_route_key_field'=> 'identifier',
 //                 'create_action_template'                   => 'project/events/create',
@@ -1916,7 +1912,7 @@ return [
 //                 'index_template'                         => 'project/events/index',
                 'default_route_key'                     => 'assignment_id',
 //                 'show_action_template'                   => 'project/events/show',
-                'show_route'                            => 'associations/association',
+                'show_route'                            => 'association',
                 'show_route_key'                        => 'sw_id',
                 'show_route_key_field'                  => 'associationIdentifier',
                 'edit_action_form'                      => 'Schoenstatt\Form\EditAssignmentForm',
@@ -1926,7 +1922,7 @@ return [
                 'edit_route_key_field'                  => 'assignmentId',
                 'create_action_form'                    => Form\AssignmentForm::class,
 //                 'create_action_valid_data_handler'       => 'createEvent',
-                'create_action_redirect_route'          => 'associations/association',
+                'create_action_redirect_route'          => 'association',
                 'create_action_redirect_route_key'      => 'sw_id',
                 'create_action_redirect_route_key_field'=> 'associationIdentifier',
 //                 'create_action_template'                 => 'project/events/create',
@@ -1962,6 +1958,7 @@ return [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'shrines', 'roles' => ['user', 'guest', null]],
+                ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
                 ['route' => 'admin/maintenance', 'roles' => ['administrator']],
@@ -1982,15 +1979,16 @@ return [
                 ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
+                ['route' => 'association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'associations/create', 'roles' => ['sch_moderator']],
+                ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/do-work', 'roles' => ['guest', 'user', null]], //uses api key authorization
-                ['route' => 'associations/association/edit', 'roles' => ['sch_moderator', 'sch_user']],
-                ['route' => 'associations/association/moderate', 'roles' => ['sch_moderator']],
-                ['route' => 'associations/association/suggest', 'roles' => ['sch_user', 'user']],
-                ['route' => 'associations/association/delete', 'roles' => ['sch_general_moderator']],
-                ['route' => 'associations/association/create-dioceses', 'roles' => ['sch_administrator']],
+                ['route' => 'association-edit', 'roles' => ['sch_moderator', 'sch_user']],
+                ['route' => 'association/moderate', 'roles' => ['sch_moderator']],
+                ['route' => 'association/suggest', 'roles' => ['sch_user', 'user']],
+                ['route' => 'association-delete', 'roles' => ['sch_general_moderator']],
+                ['route' => 'association/create-dioceses', 'roles' => ['sch_administrator']],
 
                 ['route' => 'roles', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/create', 'roles' => ['sch_moderator']],

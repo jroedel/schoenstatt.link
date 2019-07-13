@@ -136,14 +136,14 @@ if (file_exists("public".$filename)):?>
         	<h3 class="panel-title"><?= $this->translate('Association Info'); ?></h3>
         </div>
         <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/associations/association/edit')): ?>
+            <?php if ($this->isAllowed('route/association-edit')): ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
-                    echo $this->url('associations/association/edit', ['sw_id' => $entity['identifier']]);?>">
+                    echo $this->url('association-edit', ['sw_id' => $entity['identifier']]);?>">
                     <?= $this->translate('Edit association');?></a>
                 </span>
-            <?php elseif ($this->isAllowed('route/associations/association/suggest')):?>
+            <?php elseif ($this->isAllowed('route/association/suggest')):?>
                 <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('associations/association/suggest', ['sw_id' => $entity['identifier']]);?>">
+                    echo $this->url('association/suggest', ['sw_id' => $entity['identifier']]);?>">
                     <?= $this->translate('Suggest change');?></a>
                 </span>
             <?php endif;?>
@@ -367,7 +367,7 @@ endif;?>
 endif;
 
 
-if ($this->isAllowed('route/associations/association/edit')) {
+if ($this->isAllowed('route/association-edit')) {
     echo $this->partial('sion-model/sion-model/entity-changes-panel', [
         'changes' => $this->changes,
         'panelTitle' => 'Change log'
@@ -376,8 +376,8 @@ if ($this->isAllowed('route/associations/association/edit')) {
 
 <!-- @todo Add photos at the bottom -->
 <div class="row"><div class="col-md-12">
-<?php if ($this->isAllowed('route/associations/association/edit')): ?>
-      <a class="btn btn-primary" href="<?= $this->url('associations/association/edit',
+<?php if ($this->isAllowed('route/association-edit')): ?>
+      <a class="btn btn-primary" href="<?= $this->url('association-edit',
           ['sw_id' => $object['identifier']]);?>"><?php
     echo $this->translate("Edit details")?></a>
 <?php endif;?>
