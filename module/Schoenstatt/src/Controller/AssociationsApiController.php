@@ -5,6 +5,9 @@ use Zend\Mvc\Controller\AbstractRestfulController;
 use Zend\View\Model\JsonModel;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Zend\Http\Header\Pragma;
+use Zend\Mvc\MvcEvent;
+use Zend\Http\Header\Expires;
 
 class AssociationsApiController extends AbstractRestfulController
 {
@@ -17,6 +20,8 @@ class AssociationsApiController extends AbstractRestfulController
      * @var array $config
      */
     protected $config;
+    
+    protected $makeCacheable = false;
 
     public function __construct(SchoenstattTable $schoenstattTable, array $config)
     {
@@ -40,6 +45,7 @@ class AssociationsApiController extends AbstractRestfulController
         $md5s = null;
         $json = $table->getAssociationListSchemaV1($objects, $md5s, $locale);
         $md5 = md5(json_encode($md5s));
+        
         return new JsonModel([
             'items'         => $json,
             'locale'        => $locale,
@@ -80,6 +86,34 @@ class AssociationsApiController extends AbstractRestfulController
         $view = new JsonModel($return, ['prettyPrint' => true]);
         return $view;
     }
+    
+    public function onDispatch(MvcEvent $e)
+    {
+        $this->makeCacheable();
+        return parent::onDispatch($e);
+    }
+    
+    public function makeCacheable()
+    {
+        /** @var \Zend\Http\PhpEnvironment\Response $response */
+        $response = $this->getResponse();
+        $headers = $response->getHeaders();
+        if (false !== $oldHeaders = $headers->get('Cache-Control')) {
+            foreach ($oldHeaders as $oldHeader) {
+                $headers->removeHeader($oldHeader);
+            }
+        }
+        if (false !== $oldHeaders = $headers->get('Pragma')) {
+            foreach ($oldHeaders as $oldHeader) {
+                $headers->removeHeader($oldHeader);
+            }
+        }
+        $headers->addHeaderLine('Cache-Control: public, max-age=1800');
+        $headers->addHeader(new Pragma());
+        $expires = new Expires();
+        $expires->setDate($expires->date()->add(date_interval_create_from_date_string('30 minutes')));
+        $headers->addHeader($expires);
+    }
 
     public function findByKindAction()
     {
@@ -97,6 +131,7 @@ class AssociationsApiController extends AbstractRestfulController
         $md5s = null;
         $json = $table->getAssociationListSchemaV1($objects, $md5s, $locale);
         $md5 = md5(json_encode($md5s));
+        $this->makeCacheable = true;
         return new JsonModel([
             'items'         => $json,
             'locale'        => \Locale::getDefault(),
