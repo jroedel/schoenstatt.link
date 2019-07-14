@@ -54,8 +54,15 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Name for the public',
                 'help-block' => 'This is the name that would be published in Google Maps (if applicable). '
                     .'Several association types include `name formats` that insert this field within a commonly '
-                    .'used format, for example `Schoenstatt movement of [name]`. This simplifies mass translation, '
-                    .'but can be overridden below.',
+                    .'used format, for example `Schoenstatt Shrine [name]`. This simplifies mass translation, '
+                    .'but can be overridden below.
+For Schoenstatt Shrine names, please use the name of the closest city to which the shrine would be associated'
+                .' (for example, Tucumán), '
+                .'or in the case of a little known city, add the State/Province separated by a comma '
+                .' (for example, Sleepy Eye, Minnesota). '
+                .'If there are multiple shrines in the same city, make sure to disambiguate one from the other. '
+                .'Try to keep names as short as possible, but avoid abbreviations. '
+                .'Longer names can be used for the `Name within Schoenstatt`.',
             ],
             'attributes' => [
                 'required' => true,
