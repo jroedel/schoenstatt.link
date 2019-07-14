@@ -32,13 +32,6 @@ class AssociationsApiController extends AbstractRestfulController
 
     public function getList()
     {
-//         $params = $this->params()->fromQuery();
-//         if (!isset($params['key'])) {
-//             return $this->sendFailedMessage('Please pass the API key as the \'key\' query parameter.');
-//         }
-//         if (!$this->authenticateApiKey($params['key'])) {
-//             return $this->sendFailedMessage('Invalid API key.');
-//         }
         $table = $this->schoenstattTable;
         $objects = $table->getAssociations();
         $locale = \Locale::getDefault();
@@ -51,7 +44,7 @@ class AssociationsApiController extends AbstractRestfulController
             'locale'        => $locale,
             'md5'           => $md5,
             'objectMd5s'    => $md5s,
-        ], ['prettyPrint' => true]);
+        ]);//, ['prettyPrint' => true]);
     }
 
     public function get($id)
@@ -83,7 +76,7 @@ class AssociationsApiController extends AbstractRestfulController
             'md5'       => $object['schemaOrgJsonMd5V1ByLocale'][$locale],
             'object'    => $place->toArray(),
         ];
-        $view = new JsonModel($return, ['prettyPrint' => true]);
+        $view = new JsonModel($return);//, ['prettyPrint' => true]);
         return $view;
     }
     
@@ -137,7 +130,7 @@ class AssociationsApiController extends AbstractRestfulController
             'locale'        => \Locale::getDefault(),
             'md5'           => $md5,
             'objectMd5s'    => $md5s,
-        ], ['prettyPrint' => true]);
+        ]);//, ['prettyPrint' => true]);
     }
     
     public function findByKindMd5Action()
