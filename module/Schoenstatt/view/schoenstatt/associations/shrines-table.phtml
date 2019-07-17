@@ -4,11 +4,15 @@
 <tr>
 	<th><?php echo $this->translate('Shrine');?></th>
 	<th><?php echo $this->translate('Website');?></th>
+	<th><?php echo $this->translate('Photo?');?></th>
 	<th><?php echo $this->translate('Opening hours?');?></th>
 	<th><?php echo $this->translate('Events?');?></th>
 	<th><?php echo $this->translate('Name translated?');?></th>
 </tr>
-<?php foreach ($this->objects as $entity) :?>
+<?php 
+$yes = $this->translate('Yup!');
+$no = $this->translate('Nope :-(');
+foreach ($this->objects as $entity) :?>
 <tr>
 	<td><?= $this->formatEntity('association', $entity);?></td>
 	<!-- <td><?= $this->formatEntity('association', $entity, ['display' => 'kind']);?></td> -->
@@ -18,8 +22,9 @@
 	       break;
 	    }
 	}?></td>
-	<td><?= isset($entity['openingHoursJson']) || isset($entity['openingHoursHuman']) ? 'Yup!' : 'Nope :-('; ?></td>
-	<td><?= isset($entity['eventsJson']) || isset($entity['eventsHuman']) ? 'Yup!' : 'Nope :-('; ?></td>
+	<td><?= !empty($entity['photos']) ? $yes : $no; ?></td>
+	<td><?= isset($entity['openingHoursJson']) || isset($entity['openingHoursHuman']) ? $yes : $no; ?></td>
+	<td><?= isset($entity['eventsJson']) || isset($entity['eventsHuman']) ? $yes : $no; ?></td>
 	<td><?= $entity['hasTranslationCount'] . '/'.$entity['needTranslationCount']; 
 	if ($this->isAllowed('route/jtranslate/phrase/edit')) :
     	foreach ($entity['translationPhrases'] as $phraseId => $phraseText) :
