@@ -774,33 +774,6 @@ class SchoenstattTable extends SionTable implements
             }
         }
         
-        $parentId = $this->filterDbId($row['Parent']);
-        $parentJsonId = "https://schoenstatt.link/en/associations/"
-            .(isset($parentId) ? $swFilter->filter($parentId) : null);
-        
-        $translationPoints = ($needTranslationCount === 0
-            ? 3 : (floor((float)$hasTranslationCount / (float)$needTranslationCount * 3)));
-        $score = (!empty($jsonSameAs) ? 3 : 0)
-            + (isset($row['OpeningHoursHuman']) || isset($row['OpeningHoursSpecification']) 
-                ? 2 : 0)
-            + (isset($row['EventsHuman']) || isset($row['EventsJson'])
-                ? 2 : 0)
-            + $translationPoints;
-        
-        $slugByLocale = [];
-        $missingSlugs = [];
-        foreach (self::LOCALES_TO_SLUG_COLUMN_NAME as $localeMapped => $slugColumn) {
-            $slug = $row[$slugColumn];
-            if (!isset($slug)) {
-                $slug = self::getSlug($namesByLocale[$localeMapped]);
-                $missingSlugs[$slugColumn] = $slug;
-            }
-            $slugByLocale[$localeMapped] = $slug;
-        }
-        if (!empty($missingSlugs)) {
-            $this->insertMissingAssociationSlugs($id, $missingSlugs);
-        }
-        
         //photos
         $photos = [];
         $filenameBase = "/associations/shrine_images/".$identifier;
@@ -826,6 +799,34 @@ class SchoenstattTable extends SionTable implements
             } else {
                 break;
             }
+        }
+        
+        $parentId = $this->filterDbId($row['Parent']);
+        $parentJsonId = "https://schoenstatt.link/en/associations/"
+            .(isset($parentId) ? $swFilter->filter($parentId) : null);
+        
+        $translationPoints = ($needTranslationCount === 0
+            ? 3 : (floor((float)$hasTranslationCount / (float)$needTranslationCount * 3)));
+        $score = (!empty($jsonSameAs) ? 2 : 0)
+            + (!empty($photos) ? 1 : 0)
+            + (isset($row['OpeningHoursHuman']) || isset($row['OpeningHoursSpecification']) 
+                ? 2 : 0)
+            + (isset($row['EventsHuman']) || isset($row['EventsJson'])
+                ? 2 : 0)
+            + $translationPoints;
+        
+        $slugByLocale = [];
+        $missingSlugs = [];
+        foreach (self::LOCALES_TO_SLUG_COLUMN_NAME as $localeMapped => $slugColumn) {
+            $slug = $row[$slugColumn];
+            if (!isset($slug)) {
+                $slug = self::getSlug($namesByLocale[$localeMapped]);
+                $missingSlugs[$slugColumn] = $slug;
+            }
+            $slugByLocale[$localeMapped] = $slug;
+        }
+        if (!empty($missingSlugs)) {
+            $this->insertMissingAssociationSlugs($id, $missingSlugs);
         }
         
         $processedRow = [
