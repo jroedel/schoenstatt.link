@@ -78,6 +78,10 @@ return [
                         'label' => 'Submitting photos',
                         'route' => 'shrines/submitting-photos',
                     ],
+                    [
+                        'label' => 'Wayside shrines',
+                        'route' => 'wayside-shrines',
+                    ],
                 ],
             ],
             [

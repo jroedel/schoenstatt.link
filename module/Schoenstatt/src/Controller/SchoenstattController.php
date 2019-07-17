@@ -107,6 +107,54 @@ class SchoenstattController extends AbstractActionController
         ]);
     }
     
+    public function waysideShrinesAction()
+    {
+        $table = $this->schoenstattTable;
+        $shrines = $table->getWaysideShrines();
+        
+        //separate by countryRegion
+        $regions = [];
+        $regionStats = [];
+        foreach ($shrines as $associationId => $object) {
+            if (!isset($regions[$object['countryRegion']])) {
+                $regions[$object['countryRegion']] = [];
+            }
+            if (!isset($regionStats[$object['countryRegion']])) {
+                $regionStats[$object['countryRegion']] = [
+                    'id' => $object['countryRegion'].'-progress-bar',
+                    'maxScore' => 0,
+                    'score' => 0,
+                ];
+            }
+            $regions[$object['countryRegion']][$associationId] = &$shrines[$associationId];
+            $regionStats[$object['countryRegion']]['maxScore'] += 10;
+            $regionStats[$object['countryRegion']]['score'] += $object['dataScore'];
+        }
+        $totalScore = 0;
+        $totalMaxScore = 0;
+        foreach ($regionStats as $region => $stats) {
+            $totalScore += $stats['score'];
+            $totalMaxScore += $stats['maxScore'];
+            if ($stats['score'] > 0 && $stats['maxScore'] > 0) {
+                $percent = floor($stats['score'] / $stats['maxScore'] * 100);
+                $regionStats[$region]['percent'] = $percent;
+            } else {
+                $regionStats[$region]['percent'] = 0;
+            }
+        }
+        $totalPercent = floor($totalScore / $totalMaxScore * 100);
+        
+        $view = new ViewModel([
+//             'form'              => $form,
+            'shrines'           => $shrines,
+            'regions'           => $regions,
+            'regionStats'       => $regionStats,
+            'totalPercent'      => $totalPercent,
+            'datasets'          => $this->getShrineDatasets(),
+        ]);
+        return $view;
+    }
+    
     public function submittingPhotosAction()
     {
         return new ViewModel([]);
