@@ -7,7 +7,7 @@ use Books\Model\LibraryTable;
 use Books\View\Helper\LibraryInfo;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class LibraryInfoFactory implements FactoryInterface
 {

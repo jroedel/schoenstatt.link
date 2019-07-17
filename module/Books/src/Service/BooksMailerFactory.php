@@ -8,7 +8,7 @@ use Books\Mailing\BooksMailer;
 /**
  * Factory responsible of priming the Mailer service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class BooksMailerFactory implements FactoryInterface
 {

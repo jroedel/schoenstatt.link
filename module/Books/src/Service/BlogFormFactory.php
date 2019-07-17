@@ -7,7 +7,7 @@ use Books\Model\EventTextTable;
 use Books\Form\BlogForm;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class BlogFormFactory implements FactoryInterface
 {

@@ -6,7 +6,7 @@ use Interop\Container\ContainerInterface;
 use Matriphe\ISO639\ISO639;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class LanguagesValueOptionsFactory extends ISO639 implements FactoryInterface
 {

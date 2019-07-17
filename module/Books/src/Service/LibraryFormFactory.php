@@ -8,7 +8,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class LibraryFormFactory implements FactoryInterface
 {

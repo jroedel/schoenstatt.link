@@ -9,7 +9,7 @@ use Schoenstatt\Form\RoleForm;
 /**
  * Factory responsible of prepping the RoleForm
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class RoleFormFactory implements FactoryInterface
 {

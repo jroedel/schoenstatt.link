@@ -9,7 +9,7 @@ use Schoenstatt\Model\SchoenstattTable;
 /**
  * Factory responsible of priming the SchoenstattTable service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class PublicationsTableFactory implements FactoryInterface
 {

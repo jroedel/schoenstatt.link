@@ -7,7 +7,7 @@ use Books\Model\LibraryTable;
 use Books\Form\CollectionForm;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class CollectionFormFactory implements FactoryInterface
 {

@@ -7,7 +7,7 @@ use Interop\Container\ContainerInterface;
 /**
  * Factory responsible of constructing the central collection of AssociationKind specs
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class AssociationKindsServiceFactory implements FactoryInterface
 {

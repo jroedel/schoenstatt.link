@@ -11,7 +11,7 @@ use JTranslate\Model\TranslationsTable;
 /**
  * Factory responsible of priming the SchoenstattTable service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class SchoenstattTableFactory implements FactoryInterface
 {

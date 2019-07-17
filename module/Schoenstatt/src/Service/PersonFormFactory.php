@@ -9,7 +9,7 @@ use Schoenstatt\Form\PersonForm;
 /**
  * Factory responsible of priming the PatresTable service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class PersonFormFactory implements FactoryInterface
 {

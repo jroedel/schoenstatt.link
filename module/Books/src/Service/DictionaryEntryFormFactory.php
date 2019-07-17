@@ -7,7 +7,7 @@ use Books\Model\DictionaryTable;
 use Books\Form\DictionaryEntryForm;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class DictionaryEntryFormFactory implements FactoryInterface
 {

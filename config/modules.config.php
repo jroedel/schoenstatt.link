@@ -39,7 +39,6 @@ $modules = [
     'ZfrCors',
     'Neilime\MobileDetect',
 //    'ZfcDatagrid',
-//    'AcMailer', Should we upgrade to v7 or switch to a web service?
     'Bible',
     'Books',
     'Schoenstatt',

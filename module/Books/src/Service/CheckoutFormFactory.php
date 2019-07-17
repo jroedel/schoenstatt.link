@@ -6,7 +6,7 @@ use Interop\Container\ContainerInterface;
 use Books\Form\CheckoutForm;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class CheckoutFormFactory implements FactoryInterface
 {

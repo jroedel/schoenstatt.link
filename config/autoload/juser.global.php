@@ -8,7 +8,7 @@ return [
         'cache_options' => [
             'adapter' => [
                 'name'    => 'apcu',
-                'ttl'       => 60*60, //1 hour
+                'ttl'       => 60*60*24, //1 day
                 // With a namespace we can indicate the same type of items
                 // -> So we can simple use the db id as cache key
                 'options' => [
