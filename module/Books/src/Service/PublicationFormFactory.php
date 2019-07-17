@@ -8,7 +8,7 @@ use Books\Model\PublicationsTable;
 use Matriphe\ISO639\ISO639;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class PublicationFormFactory extends ISO639 implements FactoryInterface
 {

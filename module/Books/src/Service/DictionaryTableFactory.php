@@ -9,7 +9,7 @@ use Books\Model\DictionaryTable;
 /**
  * Factory responsible of priming the LibraryTable service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class DictionaryTableFactory implements FactoryInterface
 {

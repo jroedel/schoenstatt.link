@@ -9,7 +9,7 @@ use JUser\Model\UserTable;
 /**
  * Factory responsible of priming the EventTextTableFactory service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class EventTextTableFactory implements FactoryInterface
 {

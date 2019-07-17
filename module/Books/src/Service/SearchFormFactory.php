@@ -7,7 +7,7 @@ use Books\Model\LibraryTable;
 use Books\Form\SearchForm;
 
 /**
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class SearchFormFactory implements FactoryInterface
 {

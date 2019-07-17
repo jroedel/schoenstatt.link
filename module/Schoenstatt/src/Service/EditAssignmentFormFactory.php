@@ -9,7 +9,7 @@ use Schoenstatt\Form\EditAssignmentForm;
 /**
  * Factory responsible of prepping the AssignmentForm
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class EditAssignmentFormFactory implements FactoryInterface
 {

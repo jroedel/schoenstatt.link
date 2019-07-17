@@ -9,7 +9,7 @@ use Zend\Db\Adapter\Adapter;
 /**
  * Factory responsible of priming the LibraryTable service
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class LibraryTableServiceFactory implements FactoryInterface
 {

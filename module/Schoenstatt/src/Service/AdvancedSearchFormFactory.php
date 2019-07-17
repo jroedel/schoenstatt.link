@@ -7,7 +7,7 @@ use Schoenstatt\Form\AdvancedSearchForm;
 
 /**
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class AdvancedSearchFormFactory implements FactoryInterface
 {

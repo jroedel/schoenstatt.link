@@ -9,7 +9,7 @@ use Schoenstatt\Model\SchoenstattTable;
 /**
  * Factory responsible of prepping the AssociationForm
  *
- * @author Jeff Roedel <webmaster@schoenstatt.link>
+ * @author Jeff Ro <webmaster@schoenstatt.link>
  */
 class AssignmentFormFactory implements FactoryInterface
 {

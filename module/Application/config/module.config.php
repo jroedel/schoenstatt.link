@@ -22,8 +22,8 @@ use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Cache\Storage\StorageInterface;
 use Application\View\GdprStrategy;
 use Application\Service\JsonPostFactory;
-use Zend\Log\Logger;
 use Application\Service\LoggerFactory;
+use Zend\Log\LoggerInterface;
 
 return [
     'router' => [
@@ -116,7 +116,7 @@ return [
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
             Authentication\Adapter\JsonPost::class => JsonPostFactory::class,
-            Logger::class  => LoggerFactory::class,
+            LoggerInterface::class  => LoggerFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
