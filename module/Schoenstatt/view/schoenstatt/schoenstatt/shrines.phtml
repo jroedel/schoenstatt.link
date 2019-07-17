@@ -16,6 +16,7 @@ $str3 = "Until 2019-10-18, this page will be oriented towards data-maintainers a
 <p><?= sprintf($this->escapeHtml($this->translate($str2)), '<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine" target="_blank">', '</a>')?></p>
 <p><?= sprintf($this->escapeHtml($this->translate($str4)), "<a href=\"$photosUrl\">", "</a>");?>
 <p><?= $this->escapeHtml($this->translate($str3))?></p>
+<a href="<?= $this->url('wayside-shrines')?>"><span class="pull-right btn btn-default"><?= $this->translate('Wayside shrines')?></span></a>
 <?php 
 $isModerator = $this->isAllowed('route/association-edit');
 

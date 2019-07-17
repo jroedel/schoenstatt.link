@@ -1033,6 +1033,17 @@ return [
                     ],
                 ],
             ],
+            'wayside-shrines' => [
+                'type'    => Literal::class,
+                'options' => [
+                    // Change this to something specific to your module
+                    'route'    => '/wayside-shrines',
+                    'defaults' => [
+                        'controller'    => Controller\SchoenstattController::class,
+                        'action'        => 'waysideShrines',
+                    ],
+                ],
+            ],
             'persons' => [
                 'type'    => Literal::class,
                 'options' => [
@@ -1959,6 +1970,7 @@ return [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
+                ['route' => 'wayside-shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
                 ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
                 ['route' => 'admin/maintenance', 'roles' => ['administrator']],

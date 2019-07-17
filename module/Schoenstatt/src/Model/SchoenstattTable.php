@@ -428,7 +428,7 @@ class SchoenstattTable extends SionTable implements
 
     protected function linkAssociations(array &$objects)
     {
-        $objectIds = array_keys($objects);
+        $query = ['parentId' => array_keys($objects)];
 
         //collect list of "interesting" associationIds
         $interestingIds = []; //starting point
@@ -439,12 +439,16 @@ class SchoenstattTable extends SionTable implements
                 $interestingIds[] = $object['parentId'];
             }
         }
+        if (!empty($interestingIds)) {
+            $query['associationId'] = $interestingIds;
+        }
 
         //search for all these publicationIds
-        $results = $this->searchAssociations([
-            'parentId' => $objectIds,
-            'associationId' => $interestingIds,
-        ], ['orCombination' => true, 'noLink' => true]);
+        $results = $this->queryObjects(
+            'association',
+            $query, 
+            ['orCombination' => true, 'noLink' => true]
+            );
 
         //link parents of our objects
         foreach ($objects as $objectId => $object) {
@@ -497,6 +501,8 @@ class SchoenstattTable extends SionTable implements
         }
         $areCountryTranslationsReady = isset($this->countryNameTranslations);
         $country = $row['Country'];
+        
+        //@todo region should be stored in the table for easier sorting
         $countryInfo = $this->countriesInfo->getCountry($country);
         $countryRegion = isset($countryInfo) ? $countryInfo->region : null;
 
@@ -839,7 +845,6 @@ class SchoenstattTable extends SionTable implements
             'parentId'              => $parentId,
             'kind'                  => $kind,
             'country'               => $country,
-            'countryRegion'         => $countryRegion,
             'timeZoneId'            => $timeZoneId,
             
             'openingHoursHuman'         => $row['OpeningHoursHuman'],
@@ -940,6 +945,7 @@ class SchoenstattTable extends SionTable implements
             'nameByLocale'          => $namesByLocale, //should never be null
             'internalNameByLocale'  => $internalNameByLocale, //should never be null
             'publicNotesByLocale'   => $publicNotesByLocale,
+            'countryRegion'         => $countryRegion, //@todo move into table
             'address'               => $address,
             'resourceId'            => 'association_'.$id,
             'phones'                => $phones,
@@ -2474,15 +2480,14 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         foreach ($objects as $k => $v) {
             $sort['countryRegion'][$k] = $v['countryRegion'];
             $sort['country'][$k] = $v['country'];
-            $sort['internalNameByLocale'][$k] = $v['internalNameByLocale'][$locale];
+            $sort['nameByLocale'][$k] = $v['nameByLocale'][$locale];
         }
-        # sort by event_type desc and then title asc
         array_multisort(
             $sort['countryRegion'],
             SORT_ASC,
             $sort['country'],
             SORT_ASC,
-            $sort['internalNameByLocale'],
+            $sort['nameByLocale'],
             SORT_ASC,
             $objects
         );
@@ -2491,6 +2496,38 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
         return $objects;
     }
 
+    /**
+     * Get the list of main roles of shrines.
+     * A list of assignments are returned, but keyed by the associationId.
+     * This provides compatibility with the assignments-table-partial, while giving the
+     * ability to print the list of all active national movements.
+     * @return mixed[]
+     */
+    public function getWaysideShrines()
+    {
+        $objects = $this->queryObjects('association', ['kind' => 'sch-wayside-shrine']);
+        $this->linkAssociations($objects);
+        
+        $locale = $this->getLocale();
+        $sort = [];
+        foreach ($objects as $k => $v) {
+            $sort['countryRegion'][$k] = $v['countryRegion'];
+            $sort['country'][$k] = $v['country'];
+            $sort['nameByLocale'][$k] = $v['nameByLocale'][$locale];
+        }
+        array_multisort(
+            $sort['countryRegion'],
+            SORT_ASC,
+            $sort['country'],
+            SORT_ASC,
+            $sort['nameByLocale'],
+            SORT_ASC,
+            $objects
+            );
+        
+        return $objects;
+    }
+    
     /**
      * Criteria keys are: search(text), exMembers(bool=true), deceased(bool=true),
      *     category(array[string]), status(array[string])
