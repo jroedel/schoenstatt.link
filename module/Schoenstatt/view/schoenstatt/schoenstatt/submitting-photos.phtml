@@ -35,5 +35,44 @@ Please email photos to webmaster@schoenstatt.link where they should be uploaded 
 
 **Thanks for the help!**
 MD
+,
+    'es' => <<<MD
+## Enviando fotos
+    
+Por iniciativa de Alberto León, creador de la "Santuarios de Schoenstatt" app, comenzamos mostrando fotos de los santuarios en julio del 2019. Si tienes fotos que quieres compartirnos, por favor sigue estas instrucciones. Nota bene: solo envíanos fotos que están en el dominio público, fotos que han sacado personalmente (nos dan permiso de publicarlas sin atribución), o fotos por las cuales ya tienes permiso de publicar en schoenstatt.link.
+
+### Nombre de los archivos
+    
+Los archivos llevan por nombre al identificador del santuario.
+
+1. Abre la página del santuario donde debe aparecer tu foto nueva.
+2. Fíjate en el URL arriba en la ventana del browser. Por ejemplo, el Santuario Original está ubicado en https://schoenstatt.link/es/SL10319A/santuario-original-de-schoenstatt, donde "**SL10319A**" es el identificador de ese santuario.
+3. El nombre del archivo entonces debe ser SL10319A.jpg (o SL10319A.png)
+    
+Si te gustaría enviarnos más de una foto para un santuario, la foto principal debe ser una sacada desde afuera mirando la puerta del santuario, y debe llevar el nombre como mostramos arriba (SL10319A.jpg). A las **fotos adicionales** se debe agregar un número incremental de dos dígitos, separado por un guión:
+    
+SL10319A.jpg  (*foto afuera del santuario, mirando de frente*)
+    
+SL10319A-01.jpg
+    
+SL10319A-02.jpg
+    
+SL10319A-03.jpg
+    
+#### Formatos de foto
+
+Actualmente, aceptamos archivos en formato jpg y png.
+    
+#### Enviando las fotos
+
+Por favor, envía las fotos a webmaster@schoenstatt.link donde se deberían subir a la página web dentro de un día.
+
+**¡Gracias por la ayuda!**
+MD
 ];
-echo $this->markdown($text['en']);
+$locale = \Locale::getDefault();
+if ($locale === 'es_ES') {
+    echo $this->markdown($text['es']);
+} else {
+    echo $this->markdown($text['en']);
+}
