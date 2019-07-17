@@ -801,6 +801,33 @@ class SchoenstattTable extends SionTable implements
             $this->insertMissingAssociationSlugs($id, $missingSlugs);
         }
         
+        //photos
+        $photos = [];
+        $filenameBase = "/associations/shrine_images/".$identifier;
+        $filename200 = $filenameBase.'-200px.jpg';
+        if (file_exists("public".$filename200)) {
+            $photos[] = [
+                'original' => $filenameBase.'.jpg',
+                '80px' => $filenameBase.'-80px.jpg',
+                '200px' => $filename200,
+                '2000px' => $filenameBase.'-2000px.jpg',
+            ];
+        }
+        for ($i = 1; $i <= 20; $i++) {
+            $filenameOtherBase = $filenameBase.sprintf("-%02d", $i);
+            $filename200 = $filenameOtherBase.'-200px.jpg';
+            if (file_exists("public".$filename200)) {
+                $photos[] = [
+                    'original' => $filenameOtherBase.'.jpg',
+                    '80px' => $filenameOtherBase.'-80px.jpg',
+                    '200px' => $filename200,
+                    '2000px' => $filenameOtherBase.'-2000px.jpg',
+                ];
+            } else {
+                break;
+            }
+        }
+        
         $processedRow = [
             'associationId'         => $id,
             'identifier'            => $identifier,
@@ -921,6 +948,7 @@ class SchoenstattTable extends SionTable implements
             'needTranslationCount'  => $needTranslationCount,
             'hasTranslationCount'   => $hasTranslationCount,
             'dataScore'             => $score,
+            'photos'                => $photos
         ];
         return $processedRow;
     }
