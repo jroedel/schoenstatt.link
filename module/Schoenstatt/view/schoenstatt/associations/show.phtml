@@ -20,11 +20,11 @@ if (isset($internalName) && $object['internalName'] !== $internalName) {
 if ('sch-shrine' !== $object['kind']):?>
 <p>(<?= $this->formatEntity('association', $object, ['display' => 'kind']);?>)</p><?php 
 endif;?>
-<div class="row"><?php 
-$filename = "/associations/shrine_images/".$object['identifier'].'.jpg';
-if (file_exists("public".$filename)):?>
+<div class="row"><?php
+if (!empty($object['photos'])):
+$mainPhoto = current($object['photos']);?>
 <div class="col-md-3">
-<a href="<?= $this->escapeHtmlAttr($filename)?>"><img src="<?= $this->escapeHtmlAttr($filename)
+<a href="<?= $this->escapeHtmlAttr($mainPhoto['2000px'])?>"><img src="<?= $this->escapeHtmlAttr($mainPhoto['200px'])
 ?>" class="img-responsive center-block" alt="<?= $this->escapeHtmlAttr($name)?>"></a>
 </div>
 <?php endif;
@@ -193,6 +193,19 @@ if (file_exists("public".$filename)):?>
 </div> <!-- course info 1 panel -->
 </div><!-- info 1 column -->
 </div> <!-- Info row -->
+
+<!-- photos -->
+<?php if (($photoCount = count($object['photos'])) > 1):?>
+<div id="association-photos" class="row">
+  <?php for ($i = 1; $i < $photoCount; $i++) :?>
+  <div class="col-xs-6 col-md-3">
+    <a href="<?= $object['photos'][$i]['2000px'];?>" class="thumbnail">
+      <img src="<?= $object['photos'][$i]['200px']?>" height="180px" alt="...">
+    </a>
+  </div>
+  <?php endfor;?>
+</div>
+<?php endif;?>
 
 <?php if (!empty($object['assignments']) || $this->isAllowed('route/assignments/create')):?>
 <div class="row">
