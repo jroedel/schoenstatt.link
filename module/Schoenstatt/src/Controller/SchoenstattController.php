@@ -17,16 +17,19 @@ use Spatie\SchemaOrg\Dataset;
 use Spatie\SchemaOrg\Organization;
 use Spatie\SchemaOrg\ContactPoint;
 use Spatie\SchemaOrg\DataDownload;
+use JUser\Model\UserTable;
 
 class SchoenstattController extends AbstractActionController
 {
     protected $schoenstattTable;
     protected $schConfig;
 
-    public function __construct(SchoenstattTable $schoenstattTable, array $config)
+    protected $userTable;
+    public function __construct(SchoenstattTable $schoenstattTable, array $config, UserTable $userTable)
     {
         $this->schoenstattTable = $schoenstattTable;
         $this->schConfig = $config['schoenstatt'];
+        $this->userTable = $userTable;
     }
 
     public function indexAction()
@@ -157,6 +160,13 @@ class SchoenstattController extends AbstractActionController
     
     public function submittingPhotosAction()
     {
+        /**
+         * @var \JUser\Model\UserTable $table
+         */
+//         $table = $this->userTable;
+//         $user = $table->findById(5);
+//         var_dump($user);
+        
         return new ViewModel([]);
     }
     

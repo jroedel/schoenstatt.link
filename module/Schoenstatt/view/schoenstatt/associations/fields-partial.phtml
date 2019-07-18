@@ -24,6 +24,7 @@ echo $this->formHidden($form->get('associationId'));?>
     echo $this->formElement($form->get('isInternalNameTranslateable'));
     echo $this->formElementErrors($form->get('isInternalNameTranslateable'));
     echo $this->helpBlock($form->get('isInternalNameTranslateable')).'<br>';
+    //@todo only show this for associationKinds which could actually be life communities
     echo $this->formElement($form->get('isLifeCommunity'));
     echo $this->formElementErrors($form->get('isLifeCommunity'));
     echo $this->helpBlock($form->get('isLifeCommunity')).'<br>';
@@ -40,7 +41,7 @@ echo $this->formRow($form->get('timeZoneId'));
 echo $this->formRow($form->get('openingHoursHuman'));
 echo $this->formRow($form->get('openingHoursSpecificationJson'));
 echo $this->formRow($form->get('eventsHuman'));
-echo $this->formRow($form->get('eventsJson'));
+// echo $this->formRow($form->get('eventsJson'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
 //echo $this->formRow($form->get('suppressionDate'));?>
