@@ -1968,6 +1968,7 @@ return [
     'bjyauthorize' => [
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
+                ['route' => 'schoenstatt', 'roles' => ['sch_moderator']],
                 ['route' => 'shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
                 ['route' => 'wayside-shrines', 'roles' => ['user', 'guest', null]],
@@ -1981,12 +1982,12 @@ return [
                 ['route' => 'assignments/advanced-search', 'roles' => ['sch_user']],
                 ['route' => 'assignments/create', 'roles' => ['sch_moderator']],
 
-                ['route' => 'persons', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'persons/person', 'roles' => ['sch_user', 'sch_basic']],
-                ['route' => 'persons/search', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'persons', 'roles' => ['sch_moderator']],
+                ['route' => 'persons/person', 'roles' => ['sch_moderator']],
+                ['route' => 'persons/search', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/create', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/edit', 'roles' => ['sch_moderator']],
-                ['route' => 'persons/person/suggest', 'roles' => ['sch_user']],
+                ['route' => 'persons/person/suggest', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/moderate', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
