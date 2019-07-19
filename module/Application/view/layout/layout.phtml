@@ -106,7 +106,7 @@ $routeName = $this->routeName();?>
                         echo $this->translate('Sign in', 'Application');?></a></li>
                     	<?php endif;
                     	if ('zfcuser/register' != $routeName):?>
-                        <li><a class="btn" href="<?php echo $this->url('zfcuser/register', [], ['query' => ['redirect' => $this->url('juser/thanks')]]);?>"><?php 
+                        <li><a class="btn" href="<?php echo $this->url('zfcuser/register');?>"><?php 
                         echo $this->translate('Register', 'Application');?></a></li>
                     	<?php endif;?>
                 	</ul>
