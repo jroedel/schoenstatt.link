@@ -598,9 +598,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
             'editorsAll' => [ //@todo add a validator
                 'required' => false,
-                'filters' => [
-                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
-                ],
             ],
             'translatorsAll' => [ //@todo add a validator
                 'required' => false,

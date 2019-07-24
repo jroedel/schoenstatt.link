@@ -32,6 +32,11 @@ return [
          * This is the service name of a SionTable instance to call the getChanges() method
          */
         'changes_model' => SchoenstattTable::class,
+        /**
+         * Used for auto-generating navigation pages for breadcrumbs
+         */
+        'navigation_key' => 'default',
+        
         'changes_show_all' => true,
         'visits_model' => SchoenstattTable::class,
         'files_directory' => 'data/files',
