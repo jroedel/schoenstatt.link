@@ -49,31 +49,31 @@ return [
                         'label' => 'World',
                         'route' => 'shrines',
                     ],
-                    [
-                        'label' => 'Africa',
-                        'route' => 'shrines',
-                        'fragment' => 'Africa',
-                    ],
-                    [
-                        'label' => 'Asia',
-                        'route' => 'shrines',
-                        'fragment' => 'Asia',
-                    ],
-                    [
-                        'label' => 'Europe',
-                        'route' => 'shrines',
-                        'fragment' => 'Europe',
-                    ],
-                    [
-                        'label' => 'Americas',
-                        'route' => 'shrines',
-                        'fragment' => 'Americas',
-                    ],
-                    [
-                        'label' => 'Oceania',
-                        'route' => 'shrines',
-                        'fragment' => 'Oceania',
-                    ],
+//                     [
+//                         'label' => 'Africa',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Africa',
+//                     ],
+//                     [
+//                         'label' => 'Asia',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Asia',
+//                     ],
+//                     [
+//                         'label' => 'Europe',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Europe',
+//                     ],
+//                     [
+//                         'label' => 'Americas',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Americas',
+//                     ],
+//                     [
+//                         'label' => 'Oceania',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Oceania',
+//                     ],
                     [
                         'label' => 'Submitting photos',
                         'route' => 'shrines/submitting-photos',
@@ -94,7 +94,8 @@ return [
                     ], //afterwards we'll add each library
                     [
                         'label' => 'Dictionaries',
-                        'route' => 'dictionary',
+                        'route' => 'publications',
+                        'fragment' => 'dictionaries',
                     ],
                 ],
             ],

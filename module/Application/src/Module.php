@@ -18,11 +18,19 @@ use Application\Navigation\FixNavigationPages;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
 use Books\Model\EventTextTable;
+use Zend\Cache\Storage\StorageInterface;
 
 class Module
 {
+    const PAGES_CACHE_KEYS = [
+        'dictionary-pages',
+        'publication-pages',
+        'association-pages',
+        'library-pages',
+        'blog-pages',
+    ];
+    
     /**
-     * @todo CACHE ME PLZZZ!
      * @param MvcEvent $e
      */
     public function onBootstrap(MvcEvent $e)
@@ -32,130 +40,186 @@ class Module
         $strategy = $sm->get(GdprStrategy::class);
         $strategy->attach($app->getEventManager());
         
-        //build out the navigation a little
-        /** @var Navigation $navigation */
-        $navigation = $sm->get(Navigation::class);
-        /** @var DictionaryTable $dictionaryTable */
-        $dictionaryTable = $sm->get(DictionaryTable::class);
-//         $navigation->addPage(['label' => 'hi', 'route' => 'associations/do-work']);
-        $dictionaryPage = $navigation->findOneBy('route', 'dictionary');
-        $dictionaries = $dictionaryTable->getAvailableDictionaryLanguages();
-        foreach ($dictionaries as $object) {
-            $dictionaryPage->addPage([
-                'label' => sprintf('German to %s Dictionary', $object['inLanguageName']),
-                'route' => 'dictionary/inLanguage',
-                'params' => ['inLanguage' => $object['inLanguage']],
-                'id'    => 'dict_'.$object['inLanguage'],
-            ]);
-        }
-        
-        $publicationsPage = $navigation->findOneBy('route', 'publications');
-        $pagesByLanguage = [];
-        $table = $sm->get(PublicationsTable::class);
-        $publications = $table->getUnlinkedPublications();
-        foreach ($publications as $publicationId => $object) {
-            if ($object['resourceId'] == 'publication_public' && true === $object['isRevisedWithBookInHand']) {
-                if (!array_key_exists($object['inLanguage'], $pagesByLanguage)) {
-                    $pagesByLanguage[$object['inLanguage']] = [];
-                }
-                $pagesByLanguage[$object['inLanguage']][] = [
-                    'label' => $object['title'],
-                    'route' => 'publications/publication',
-                    'params' => ['publication_id' => $publicationId],
-                    'id'    => 'pub_'.$publicationId,
-                ];
-            }
-        }
-        
-        $languageNames = $dictionaryTable->getLanguageNames();
-        foreach ($pagesByLanguage as $languageCode => $pages) {
-            $publicationsPage->addPage([
-                'label' => $languageNames[$languageCode].' Schoenstatt Literature',
-                'route' => 'publications/index',
-                'params' => ['inLanguage' => $languageCode],
-                'id'    => 'pub_lang_'.$languageCode,
-                'pages' => $pages,
-            ]);
-        }
-        
-        /** @var SchoenstattTable $schoenstattTable */
-        $schoenstattTable = $sm->get(SchoenstattTable::class);
-        $associations = $schoenstattTable->getObjects('association');
-        
-        $movement = $navigation->findOneBy('route', 'schoenstatt');
-        $pages = $navigation->findAllBy('route', 'shrines');
-        $shrinePages = [];
-        $shrinePageCounts = [];
-        foreach ($pages as $page) {
-            $shrinePages[$page->getLabel()] = $page;
-            if (isset($shrinePageCounts[$page->getLabel()])) {
-                $shrinePageCounts[$page->getLabel()]++;
-            } else {
-                $shrinePageCounts[$page->getLabel()] = 1;
-            }
-        }
-        
+        /** @var StorageInterface $cache */
+        $cache = $sm->get(StorageInterface::class);
         $locale = \Locale::getDefault();
         if (!array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
             $locale = 'en_US';
         }
-        foreach ($associations as $object) {
-            if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {
-                //@todo this could be subdivided heirarchically
-                $movement->addPage([
-                    'label' => $object['name'], //@todo replace this with something translatable
-                    'route' => 'association',
-                    'params' => [
-                        'sw_id' => $object['identifier'],
-                        'slug' => $object['slugByLocale'][$locale]
-                    ],
-                ]);
+        $pagesByCacheKey = $cache->getItems(self::PAGES_CACHE_KEYS);
+        
+        
+        if (!isset($pagesByCacheKey['dictionary-pages'])) {
+            $dictionaryPages = [];
+            /** @var DictionaryTable $dictionaryTable */
+            $dictionaryTable = $sm->get(DictionaryTable::class);
+            $dictionaries = $dictionaryTable->getAvailableDictionaryLanguages();
+            foreach ($dictionaries as $object) {
+                $dictionaryPages[] = [
+                    'label' => sprintf('German to %s Dictionary', $object['inLanguageName']),
+                    'route' => 'dictionary/inLanguage',
+                    'params' => ['inLanguage' => $object['inLanguage']],
+                    'id'    => 'dict_'.$object['inLanguage'],
+                ];
             }
-            if (!isset($object['countryRegion']) || !isset($shrinePages[$object['countryRegion']])) {
-                $key = 'Shrines';
-            } else {
-                $key = $object['countryRegion'];
-            }
-            $shrinePages[$key]->addPage([
-                'label' => $object['name'], //@todo replace this with something translatable
-                'route' => 'association',
-                'params' => [
-                    'sw_id' => $object['identifier'],
-                    'slug' => $object['slugByLocale'][$locale]
-                ],
-            ]);
+            $pagesByCacheKey['dictionary-pages'] = $dictionaryPages;
+            $cache->setItem('dictionary-pages', $dictionaryPages);
         }
         
-        /** @var LibraryTable $libraryTable */
-        $libraryTable = $sm->get(LibraryTable::class);
-        $libraries = $libraryTable->getObjects('library');
+        if (!isset($pagesByCacheKey['publication-pages'])) {
+            $publicationPages = [];
+            $pagesByLanguage = [];
+            $table = $sm->get(PublicationsTable::class);
+            $publications = $table->getUnlinkedPublications();
+            foreach ($publications as $publicationId => $object) {
+                if ($object['resourceId'] === 'publication_public' && true === $object['isRevisedWithBookInHand']) {
+                    if (!array_key_exists($object['inLanguage'], $pagesByLanguage)) {
+                        $pagesByLanguage[$object['inLanguage']] = [];
+                    }
+                    $pagesByLanguage[$object['inLanguage']][] = [
+                        'label' => $object['title'],
+                        'route' => 'publications/publication',
+                        'params' => ['publication_id' => $publicationId],
+                        'id'    => 'pub_'.$publicationId,
+                    ];
+                }
+            }
+            
+            if (!isset($dictionaryTable)) {
+                /** @var DictionaryTable $dictionaryTable */
+                $dictionaryTable = $sm->get(DictionaryTable::class);
+            }
+            $languageNames = $dictionaryTable->getLanguageNames();
+            foreach ($pagesByLanguage as $languageCode => $pages) {
+                $publicationPages[] = [
+                    'label' => $languageNames[$languageCode].' Schoenstatt Literature',
+                    'route' => 'publications/index',
+                    'params' => ['inLanguage' => $languageCode],
+                    'id'    => 'pub_lang_'.$languageCode,
+                    'pages' => $pages,
+                ];
+            }
+            
+            $pagesByCacheKey['publication-pages'] = $publicationPages;
+            $cache->setItem('publication-pages', $publicationPages);
+        }
+        
+        if (!isset($pagesByCacheKey['association-pages'])) {
+            $associationPages = [
+                'movement' => [],
+                'shrinesByRegion' => [],
+                'shrinesWorld' => [],
+                'waysideShrines' => [],
+            ];
+            
+            /** @var SchoenstattTable $schoenstattTable */
+            $schoenstattTable = $sm->get(SchoenstattTable::class);
+            $associations = $schoenstattTable->getObjects('association');
+            
+            foreach ($associations as $object) {
+                if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {
+                    //@todo this could be subdivided heirarchically
+                    $associationPages['movement'][] = [
+                        'label' => $object['name'], //@todo replace this with something translatable
+                        'route' => 'association',
+                        'params' => [
+                            'sw_id' => $object['identifier'],
+                            'slug' => $object['slugByLocale'][$locale]
+                        ],
+                    ];
+                }
+                if (!isset($object['countryRegion'])) {
+                    $associationPages['shrinesWorld'][] = [
+                        'label' => $object['name'],
+                        'route' => 'association',
+                        'params' => [
+                            'sw_id' => $object['identifier'],
+                            'slug' => $object['slugByLocale'][$locale]
+                        ],
+                    ];
+                } else {
+                    $key = $object['countryRegion'];
+                    if (!isset($associationPages['shrinesByRegion'][$key])) {
+                        $associationPages['shrinesByRegion'][$key] = [
+                            'label' => $key,
+                            'route' => 'shrines',
+                            'fragment' => $key,
+                            'pages' => [],
+                        ];
+                    }
+                    $associationPages['shrinesByRegion'][$key]['pages'][] = [
+                        'label' => $object['name'],
+                        'route' => 'association',
+                        'params' => [
+                            'sw_id' => $object['identifier'],
+                            'slug' => $object['slugByLocale'][$locale]
+                        ],
+                    ];
+                }
+            }
+            
+            $pagesByCacheKey['association-pages'] = $associationPages;
+            $cache->setItem('association-pages', $associationPages);
+        }
+        
+        if (!isset($pagesByCacheKey['library-pages'])) {
+            $libraryPages = [];
+            /** @var LibraryTable $libraryTable */
+            $libraryTable = $sm->get(LibraryTable::class);
+            $libraries = $libraryTable->getObjects('library');
+            foreach ($libraries as $object) {
+                if (!$object['isActive']) {
+                    continue;
+                }
+                $libraryPages[] = [
+                    'label' => $object['name'],
+                    'route' => 'libraries/library',
+                    'params' => ['library_id' => $object['libraryId']],
+    //                 'resource' => $object['viewRole'],
+                    'id'    => 'lib_'.$object['libraryId'],
+                ];
+            }
+            $pagesByCacheKey['library-pages'] = $libraryPages;
+            $cache->setItem('library-pages', $libraryPages);
+        }
+        
+        if (!isset($pagesByCacheKey['blog-pages'])) {
+            $blogPages = [];
+            /** @var EventTextTable $eventTextTable */
+            $eventTextTable = $sm->get(EventTextTable::class);
+            $texts = $eventTextTable->getObjects('text');
+            foreach ($texts as $object) {
+                $blogPages[] = [
+                    'label' => $object['title'],
+                    'route' => 'blog/blog-post',
+                    'params' => ['text_id' => $object['textId'], 'slug' => $object['slug']],
+                    //                 'resource' => $object['viewRole'],
+                    'id'    => 'blog_'.$object['textId'],
+                ];
+            }
+            $pagesByCacheKey['blog-pages'] = $blogPages;
+            $cache->setItem('blog-pages', $blogPages);
+        }
+        
+        
+        //build out the navigation a little
+        /** @var Navigation $navigation */
+        $navigation = $sm->get(Navigation::class);
+        $dictionaryPage = $navigation->findOneBy('label', 'Dictionaries');
+        $publicationsPage = $navigation->findOneBy('route', 'publications');
+        $movement = $navigation->findOneBy('route', 'schoenstatt');
+        $shrines = $navigation->findOneBy('label', 'Shrines');
+        $world = $navigation->findOneBy('label', 'World');
         $libPage = $navigation->findOneBy('route', 'libraries');
-        foreach ($libraries as $object) {
-            if (!$object['isActive']) {
-                continue;
-            }
-            $libPage->addPage([
-                'label' => $object['name'],
-                'route' => 'libraries/library',
-                'params' => ['library_id' => $object['libraryId']],
-//                 'resource' => $object['viewRole'],
-                'id'    => 'lib_'.$object['libraryId'],
-            ]);
-        }
-        
-        /** @var EventTextTable $eventTextTable */
-        $eventTextTable = $sm->get(EventTextTable::class);
-        $texts = $eventTextTable->getObjects('text');
         $blogPage = $navigation->findOneBy('route', 'blog');
-        foreach ($texts as $object) {
-            $blogPage->addPage([
-                'label' => $object['title'],
-                'route' => 'blog/blog-post',
-                'params' => ['text_id' => $object['textId'], 'slug' => $object['slug']],
-                //                 'resource' => $object['viewRole'],
-                'id'    => 'blog_'.$object['textId'],
-            ]);
-        }
+        
+        $dictionaryPage->addPages($pagesByCacheKey['dictionary-pages']);
+        $publicationsPage->addPages($pagesByCacheKey['publication-pages']);
+        $movement->addPages($pagesByCacheKey['association-pages']['movement']);
+        $shrines->addPages($pagesByCacheKey['association-pages']['shrinesByRegion']);
+        $world->addPages($pagesByCacheKey['association-pages']['shrinesWorld']);
+        $libPage->addPages($pagesByCacheKey['library-pages']);
+        $blogPage->addPages($pagesByCacheKey['blog-pages']);
         
         $navFixer = new FixNavigationPages();
         $navFixer->attach($app->getEventManager());

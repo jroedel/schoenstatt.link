@@ -28,6 +28,7 @@ use SionModel\Problem\EntityProblem;
 use Zend\Router\Http\Method;
 use Books\Model\DictionaryTable;
 use Zend\Navigation\Navigation;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 return [
     'books' => [
@@ -1176,6 +1177,59 @@ return [
                     ],
                 ],
             ],
+            'composition' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => 
+                        SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\CompositionsController::class,
+                        'action'     => 'show',
+                    ],
+                ],
+            ],
+            'composition-edit' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/edit',
+                    'constraints' => [
+                        'sw_id' =>
+                        SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\CompositionsController::class,
+                        'action'     => 'edit',
+                    ],
+                ],
+            ],
+            'composition-delete' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/delete',
+                    'constraints' => [
+                        'sw_id' =>
+                        SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\CompositionsController::class,
+                        'action'     => 'delete',
+                    ],
+                ],
+            ],
+            'music' => [
+                'type'    => Literal::class,
+                'options' => [
+                    'route'    => '/music',
+                    'defaults' => [
+                        'controller' => Controller\CompositionsController::class,
+                        'action'     => 'index',
+                    ],
+                ],
+            ],
         ],
     ],
     'sion_model' => [
@@ -2170,6 +2224,91 @@ return [
                     'createdBy' => 'CreatedBy',
                 ],
             ],
+            'composition' => [
+                'name'                                  => 'composition',
+                'table_name'                            => 'mus_composition',
+                'table_key'                             => 'CompositionId',
+                'entity_key_field'                      => 'compositionId',
+                'sion_model_class'                      => Model\MusicTable::class,
+                'sion_controllers'                      => [Controller\CompositionsController::class],
+                'controller_services'                   => [
+                ],
+                'row_processor_function'                => 'processCompositionRow',
+//                 'get_object_function'                   => 'getSimpleAssociationBySwId',
+//                 'get_objects_function'                  => 'getAssociations',
+                'name_field'                            => 'name',
+                'name_field_is_translateable'           => false,
+//                 'format_view_helper'                    => 'formatEntity',
+                'country_field'                         => 'country',
+                'report_changes'                        => true,
+                'required_columns_for_creation'         => [ //required for creation
+                    'name',
+                    'inLanguage',
+                ],
+                'index_route'                           => 'music',
+                //                 'index_template'                        => 'project/events/index',
+                'default_route_key'                     => 'sw_id',
+                'show_route'                            => 'association',
+                'show_route_key'                        => 'sw_id',
+                'show_route_key_field'                  => 'identifier',
+                'edit_action_form'                      => Form\CompositionForm::class,
+//                 'edit_action_template'                   => 'project/events/edit',
+                'edit_route'                            => 'composition-edit',
+                'edit_route_key'                        => 'sw_id',
+                'edit_route_key_field'                  => 'identifier',
+                'create_action_form'                    => Form\CompositionForm::class,
+//                 'create_action_valid_data_handler'      => 'createAssociation',
+                'create_action_redirect_route'          => 'composition',
+                'create_action_redirect_route_key'      => 'sw_id',
+                'create_action_redirect_route_key_field'=> 'identifier',
+//                 'create_action_template'                   => 'project/events/create',
+                'enable_delete_action'                  => true,
+//                 'delete_action_acl_resource'             => 'event_:id',
+//                 'delete_action_acl_permission'             => 'delete_event',
+                'delete_action_redirect_route'          => 'music',
+//                 'touch_default_field'                   => 'eventId',
+//                 'touch_field_route_key'                   => 'event_id',
+//                 'touch_json_route'                       => 'events/event/touch',
+//                 'touch_json_route_key'                    => 'event_id',
+//                 'database_bound_data_preprocessor'      => 'associationPreprocessor',
+//                 'database_bound_data_postprocessor'     => 'associationPostprocessor',
+//                 'moderate_route'                         => 'events/event/moderate',
+//                 'moderate_route_entity_key'             => 'event_id',
+//                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
+                'many_to_one_update_columns'            => [
+                ],
+                'update_columns' => [
+                    'compositionId' => 'CompositionId',
+                    'name' => 'Name',
+                    'disambiguatingDescription' => 'DisambiguatingDescription',
+                    'slug' => 'Slug',
+                    'inLanguage' => 'InLanguage',
+                    'country' => 'Country',
+                    'yearPublished' => 'YearPublished',
+                    'composerText' => 'ComposerText',
+                    'lyricistText' => 'LyricistText',
+                    'tags' => 'Tags',
+                    'derivedFromCompositionId' => 'DerivedFromCompositionId',
+                    'lyrics' => 'Lyrics',
+                    'chordProSpec' => 'ChordProSpec',
+                    'lilyPondSpec' => 'LilyPondSpec',
+                    'musicalKey' => 'MusicalKey',
+                    'alternateKey' => 'AlternateKey',
+                    'alternateKeyLabel' => 'AlternateKeyLabel',
+                    'copyrightInfo' => 'CopyrightInfo',
+                    'copyrightContactEmail' => 'CopyrightContactEmail',
+                    'url1' => 'Url1',
+                    'url1Label' => 'Url1Label',
+                    'url2' => 'Url2',
+                    'url2Label' => 'Url2Label',
+                    'url3' => 'Url3',
+                    'url3Label' => 'Url3Label',
+                    'updatedOn' => 'UpdatedOn',
+                    'updatedBy' => 'UpdatedBy',
+                    'createdOn' => 'CreatedOn',
+                    'createdBy' => 'CreatedBy',
+                ],
+            ],
         ],
     ],
 
@@ -2335,6 +2474,12 @@ return [
                 ['route' => 'library-imports/library/create', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
+                
+                ['route' => 'music', 'roles' => ['guest', 'user']],
+                ['route' => 'composition', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
+                ['route' => 'composition-edit', 'roles' => ['sch_moderator', 'sch_user']],
+                ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
+                ['route' => 'composition/create', 'roles' => ['sch_moderator']],
             ],
         ],
     ],

@@ -37,7 +37,6 @@ class DictionaryController extends SionController
         $objects = $table->queryObjects('dictionary-entry', ['locale' => $dictionary['locale'], 'isActive' => true]);
         $schemata = Json::encode($this->combineSchema($dictionarySchema, $objects));
         
-        $this->prepNavigation();
         return new ViewModel([
             'inLanguage' => $inLanguage,
             'inLanguageName' => $inLanguageName,
@@ -75,25 +74,5 @@ class DictionaryController extends SionController
     public function redirectAfterCreate($newId, $data = [], $form = null)
     {
         return $this->redirectAfterEdit($newId, $data, $form);
-    }
-    
-    protected function prepNavigation()
-    {
-        /** @var Navigation $nav */
-        $nav = $this->services[Navigation::class];
-        
-        $table = $this->getSionTable();
-        $availableLanguages = $table->getAvailableDictionaryLanguages();
-        $dictionaryPage = $nav->findOneBy('route', 'dictionary');
-        
-        foreach ($availableLanguages as $dict) {
-            $inLanguage = $dict['inLanguage'];
-            $url = $this->url()->fromRoute('dictionary/inLanguage', ['inLanguage' => $inLanguage]);
-            $dictionaryPage->addPage([
-                'label' => $table->getLanguageName($inLanguage),
-                'uri' => $url,
-                'id'    => 'dict_'.$inLanguage,
-            ]);
-        }
     }
 }
