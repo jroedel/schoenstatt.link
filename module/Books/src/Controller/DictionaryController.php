@@ -6,7 +6,6 @@ use Zend\View\Model\ViewModel;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Spatie\SchemaOrg\BaseType;
 use Zend\Json\Json;
-use Zend\Navigation\Navigation;
 
 class DictionaryController extends SionController
 {
