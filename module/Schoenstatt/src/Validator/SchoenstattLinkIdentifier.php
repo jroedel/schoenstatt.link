@@ -8,11 +8,13 @@ class SchoenstattLinkIdentifier extends Regex
     const ENTITY_ASSOCIATION = 'association';
     const ENTITY_PERSON  = 'person';
     const ENTITY_PUBLICATION = 'publication';
+    const ENTITY_COMPOSITION = 'composition';
 
     const ENTITY_TYPE_ABBRS = [
         'A' => self::ENTITY_ASSOCIATION,
         'P' => self::ENTITY_PERSON,
         'L' => self::ENTITY_PUBLICATION,
+        'C' => self::ENTITY_COMPOSITION,
     ];
 
     const GENERAL_REGEX = '/^SL([0-9]{5,5})([APL])$/';
@@ -20,11 +22,13 @@ class SchoenstattLinkIdentifier extends Regex
         self::ENTITY_ASSOCIATION => '/^SL([0-9]{5,5})A$/',
         self::ENTITY_PERSON => '/^SL([0-9]{5,5})P$/',
         self::ENTITY_PUBLICATION => '/^SL([0-9]{5,5})L$/',
+        self::ENTITY_COMPOSITION => '/^SL(95[0-9]{3,3})C$/',
     ];
     const ENTITY_STARTING_NUMBER = [
         self::ENTITY_ASSOCIATION => 10000,
         self::ENTITY_PERSON => 30000,
         self::ENTITY_PUBLICATION => 60000,
+        self::ENTITY_COMPOSITION => 95000,
     ];
 
     public function __construct($entityType = null)

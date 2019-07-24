@@ -5,10 +5,6 @@ use Zend\Filter\AbstractFilter;
 
 class ToSchoenstattLinkIdentifier extends AbstractFilter
 {
-    const ENTITY_ASSOCIATION = 'association';
-    const ENTITY_PERSON  = 'person';
-    const ENTITY_PUBLICATION = 'publication';
-
     protected $entityType;
 
     protected $pattern;
