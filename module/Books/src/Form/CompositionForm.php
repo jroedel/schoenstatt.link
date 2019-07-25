@@ -2,17 +2,23 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
+use Zend\Validator\EmailAddress;
 use Zend\Validator\Regex;
 use Zend\Filter\StringTrim;
 use Zend\Filter\ToNull;
 use Zend\Validator\StringLength;
 use Zend\Filter\StripTags;
 use Zend\Filter\StripNewlines;
+use Zend\Filter\StringToLower;
+use SionModel\Filter\SortArray;
+use Zend\InputFilter\InputFilterProviderInterface;
 
-class CompositionForm extends SionForm
+class CompositionForm extends SionForm implements InputFilterProviderInterface
 {
     public function __construct()
     {
+        parent::__construct('composition');
+        
         $urlLabels = [
             'Album' => 'Album',
             'Lyrics' => 'Lyrics',
@@ -25,9 +31,6 @@ class CompositionForm extends SionForm
             'type' => 'Text',
             'options' => [
                 'label' => 'Composition name',
-                'help-block' => 'This is the name that would be published in Google Maps (if applicable). '
-                .'Several association types include `name formats` that insert this field within a commonly '
-                .'used format, for example `Schoenstatt Shrine [name]`. This simplifies mass translation, ',
             ],
             'attributes' => [
                 'required' => true,
@@ -43,7 +46,6 @@ class CompositionForm extends SionForm
                 'help-block' => 'Please only use when composition needs to be distinguished from another similarly-named composition.',
             ],
             'attributes' => [
-                'required' => true,
                 'placeholder' => 'ex. Santo de la misa criolla',
                 'maxlength' => '50',
             ],
@@ -54,9 +56,9 @@ class CompositionForm extends SionForm
             'type' => 'Select',
             'options' => [
                 'label' => 'Language',
-                'required' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
+                'required' => false,
                 'value_options' => [],
             ],
         ]);
@@ -64,9 +66,10 @@ class CompositionForm extends SionForm
             'name' => 'country',
             'type' => 'Select',
             'options' => [
-                'label' => 'Country (if not international)',
+                'label' => 'Country of origin',
                 'empty_option' => '',
                 'unselected_value' => '',
+                'required' => false,
                 'value_options' => [],// $this->customValueOptions['country'],
             ],
             'attributes' => [
@@ -79,7 +82,6 @@ class CompositionForm extends SionForm
             'type' => 'Text',
             'options' => [
                 'label' => 'Published date',
-                'required' => false,
                 'help-block' => 'The year is plenty; if a more specific date is available, use format YYYY-MM-DD'
             ],
             'attributes' => [
@@ -91,9 +93,9 @@ class CompositionForm extends SionForm
             'type' => 'Select',
             'options' => [
                 'label' => 'Composer(s)',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
+                'required' => false,
                 'disable_inarray_validator' => true,
             ],
             'attributes' => [
@@ -106,9 +108,9 @@ class CompositionForm extends SionForm
             'type' => 'Select',
             'options' => [
                 'label' => 'Lyricist(s)',
-                'required' => false,
                 'empty_option' => '',
                 'unselected_value' => '',
+                'required' => false,
                 'disable_inarray_validator' => true,
             ],
             'attributes' => [
@@ -121,6 +123,7 @@ class CompositionForm extends SionForm
             'name' => 'derivedFromCompositionId',
             'type' => 'Select',
             'options' => [
+                'required' => false,
                 'label' => 'Derived or translated from',
                 'empty_option' => '',
                 'unselected_value' => '',
@@ -132,9 +135,45 @@ class CompositionForm extends SionForm
                 'required' => false,
             ],
         ]);
-//         lyrics
-//         chordProSpec
-//         lilyPondSpec
+        $this->add([
+            'name' => 'chordProSpec',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Chord pro specification',
+                'help-block' => 'See <a href="https://www.chordpro.org/">Chord pro markup</a>. '
+                .'The metadata will be automatically added afterwards.',
+            ],
+            'attributes' => [
+                'maxlength' => '2000',
+                'rows' => 8,
+            ],
+        ]);
+        $this->add([
+            'name' => 'lyrics',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Lyrics',
+                'help-block' => 'If song is specified with chord pro, it\'s not '
+                .'necessary to fill in the lyrics separately.',
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+                'rows' => 6,
+            ],
+        ]);
+        $this->add([
+            'name' => 'lilyPondSpec',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'LilyPond music notation',
+                'required' => false,
+                'help-block' => 'See <a href="http://lilypond.org/">LilyPond markup</a>.',
+            ],
+            'attributes' => [
+                'maxlength' => '5000',
+                'rows' => 8,
+            ],
+        ]);
 //         musicalKey
 //         alternateKey
 //         alternateKeyLabel
@@ -167,11 +206,11 @@ class CompositionForm extends SionForm
             'type' => 'Url',
             'options' => [
                 'label' => 'Other URL 1',
-                'required' => false,
                 'uriHandler' => 'Zend\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
+                'required' => false,
                 'placeholder' => 'ex. https://www.facebook.com/john.smith.34',
                 'maxlength' => '255',
             ],
@@ -181,13 +220,13 @@ class CompositionForm extends SionForm
             'type' => 'Select',
             'options' => [
                 'label' => 'Other URL 1 Label',
-                'required' => false,
                 'empty_option' => '',
                 'disable_inarray_validator' => true,
                 'unselected_value' => '',
                 'value_options' => $urlLabels,
             ],
             'attributes' => [
+                'required' => false,
                 'maxlength' => '50',
             ],
         ]);
@@ -196,11 +235,11 @@ class CompositionForm extends SionForm
             'type' => 'Url',
             'options' => [
                 'label' => 'Other URL 2',
-                'required' => false,
                 'uriHandler' => 'Zend\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
+                'required' => false,
                 'placeholder' => 'ex. https://www.facebook.com/john.smith.34',
                 'maxlength' => '255',
             ],
@@ -210,13 +249,13 @@ class CompositionForm extends SionForm
             'type' => 'Select',
             'options' => [
                 'label' => 'Other URL 2 Label',
-                'required' => false,
                 'disable_inarray_validator' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => $urlLabels,
             ],
             'attributes' => [
+                'required' => false,
                 'maxlength' => '50',
             ],
         ]);
@@ -225,11 +264,11 @@ class CompositionForm extends SionForm
             'type' => 'Url',
             'options' => [
                 'label' => 'Other URL 3',
-                'required' => false,
                 'uriHandler' => 'Zend\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
+                'required' => false,
                 'placeholder' => 'ex. https://www.facebook.com/john.smith.34',
                 'maxlength' => '255',
             ],
@@ -239,14 +278,40 @@ class CompositionForm extends SionForm
             'type' => 'Select',
             'options' => [
                 'label' => 'Other URL 3 Label',
-                'required' => false,
                 'disable_inarray_validator' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => $urlLabels,
             ],
             'attributes' => [
+                'required' => false,
                 'maxlength' => '50',
+            ],
+        ]);
+        $this->add([
+            'name' => 'tags',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Tags',
+                'required' => false,
+                'empty_option' => '',
+                'unselected_value' => '',
+                'disable_inarray_validator' => true,
+                'value_options' => [],
+                'help-block' => 'Tags regarding the content of the content, form or liturgical use of the song.',
+            ],
+            'attributes' => [
+                'required' => false,
+                'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'submit',
+            'type' => 'Submit',
+            'attributes' => [
+                'value' => 'Submit',
+                'id' => 'submit',
+                'class' => 'btn-primary'
             ],
         ]);
     }
@@ -334,10 +399,74 @@ class CompositionForm extends SionForm
             ],
             
             
-            
-//             copyrightInfo
-//             copyrightContactEmail
-            
+            'copyrightInfo' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'copyrightContactEmail' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => StringTrim::class],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => [
+                    ['name' => EmailAddress::class],
+                ],
+            ],
+            'derivedFromCompositionId' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'lyrics' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'chordProSpec' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
+            'lilyPondSpec' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => StripTags::class],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+            ],
             
             'url1' => [
                 'required' => false,
@@ -406,6 +535,13 @@ class CompositionForm extends SionForm
                             'type' => ToNull::TYPE_STRING,
                         ]
                     ],
+                ],
+            ],
+            'tags' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => StringToLower::class],
+                    ['name' => SortArray::class],
                 ],
             ],
         ];

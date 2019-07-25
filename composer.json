@@ -52,7 +52,8 @@
         "zfr/zfr-cors": "dev-optimized-cors-preflight",
         "jmikola/geojson": "1.0",
         "cyberprojekt/libkml": "dev-master",
-        "scottconnerly/timezone": "^0.2.0"
+        "scottconnerly/timezone": "^0.2.0",
+        "nicolaswurtz/chordpro-php": "dev-master"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
@@ -71,6 +72,10 @@
 	   {
 	     "type": "vcs",
 	     "url": "https://github.com/jroedel/ZfSnapGeoip"
+	   },
+	   {
+	     "type": "vcs",
+	     "url": "https://github.com/jroedel/chordpro-php"
 	   },
 	   {
 	     "type": "vcs",

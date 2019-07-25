@@ -1,0 +1,22 @@
+<?php
+if ($this->entity['chordProSpec']) {
+    
+    $this->headLink()->appendStylesheet($this->basePath() . '/css/chordpro.css');
+    $parser = new \ChordPro\Parser();
+    
+    // Choose one (or all !) of those formatters following your needs
+    $html_formatter = new \ChordPro\HtmlFormatter();
+//     $monospace_formatter = new ChordPro\MonospaceFormatter();
+//     $json_formatter = new ChordPro\JSONFormatter();
+    
+    // Create song object after parsing txt
+    $song = $parser->parse($this->entity['chordProSpec']);
+    $options = [
+        'french' => false,
+        'no_chords' => false
+    ];
+    
+    // Render !
+    $html = $html_formatter->format($song,$options);
+    echo $html;
+}

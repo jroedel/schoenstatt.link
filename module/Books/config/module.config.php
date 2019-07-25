@@ -237,6 +237,8 @@ return [
             Service\DriveGateway::class         => Service\DriveGatewayFactory::class,
             Form\BlogForm::class                => Service\BlogFormFactory::class,
             Form\DictionaryEntryForm::class     => Service\DictionaryEntryFormFactory::class,
+            Model\MusicTable::class             => Service\MusicTableFactory::class,
+            Form\CompositionForm::class         => Service\CompositionFormFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -1167,7 +1169,7 @@ return [
                         ],
                     ],
                     'create' => [
-                        'type'    => Segment::class,
+                        'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
@@ -1182,8 +1184,11 @@ return [
                 'options' => [
                     'route'    => '/:sw_id[/:slug]',
                     'constraints' => [
-                        'sw_id' => 
-                        SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                        'sw_id' =>
+                        trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                            '/^$'
+                            ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
@@ -1197,8 +1202,10 @@ return [
                 'options' => [
                     'route'    => '/:sw_id/edit',
                     'constraints' => [
-                        'sw_id' =>
-                        SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                        trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                            '/^$'
+                            ),
                     ],
                     'defaults' => [
                         'controller' => Controller\CompositionsController::class,
@@ -1212,7 +1219,10 @@ return [
                     'route'    => '/:sw_id/delete',
                     'constraints' => [
                         'sw_id' =>
-                        SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                        trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+                            '/^$'
+                            ),
                     ],
                     'defaults' => [
                         'controller' => Controller\CompositionsController::class,
@@ -1227,6 +1237,18 @@ return [
                     'defaults' => [
                         'controller' => Controller\CompositionsController::class,
                         'action'     => 'index',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'create-composition' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/create-composition',
+                            'defaults' => [
+                                'action'     => 'create',
+                            ],
+                        ],
                     ],
                 ],
             ],
@@ -2226,7 +2248,7 @@ return [
             ],
             'composition' => [
                 'name'                                  => 'composition',
-                'table_name'                            => 'mus_composition',
+                'table_name'                            => 'mus_compositions',
                 'table_key'                             => 'CompositionId',
                 'entity_key_field'                      => 'compositionId',
                 'sion_model_class'                      => Model\MusicTable::class,
@@ -2248,7 +2270,7 @@ return [
                 'index_route'                           => 'music',
                 //                 'index_template'                        => 'project/events/index',
                 'default_route_key'                     => 'sw_id',
-                'show_route'                            => 'association',
+                'show_route'                            => 'composition',
                 'show_route_key'                        => 'sw_id',
                 'show_route_key_field'                  => 'identifier',
                 'edit_action_form'                      => Form\CompositionForm::class,
@@ -2279,7 +2301,7 @@ return [
                 ],
                 'update_columns' => [
                     'compositionId' => 'CompositionId',
-                    'name' => 'Name',
+                    'name' => 'CompositionName',
                     'disambiguatingDescription' => 'DisambiguatingDescription',
                     'slug' => 'Slug',
                     'inLanguage' => 'InLanguage',
@@ -2289,8 +2311,8 @@ return [
                     'lyricistText' => 'LyricistText',
                     'tags' => 'Tags',
                     'derivedFromCompositionId' => 'DerivedFromCompositionId',
-                    'lyrics' => 'Lyrics',
                     'chordProSpec' => 'ChordProSpec',
+                    'lyrics' => 'Lyrics',
                     'lilyPondSpec' => 'LilyPondSpec',
                     'musicalKey' => 'MusicalKey',
                     'alternateKey' => 'AlternateKey',
@@ -2479,7 +2501,7 @@ return [
                 ['route' => 'composition', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'composition-edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
-                ['route' => 'composition/create', 'roles' => ['sch_moderator']],
+                ['route' => 'music/create-composition', 'roles' => ['sch_moderator']],
             ],
         ],
     ],
