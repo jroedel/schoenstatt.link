@@ -17,7 +17,7 @@ class SchoenstattLinkIdentifier extends Regex
         'C' => self::ENTITY_COMPOSITION,
     ];
 
-    const GENERAL_REGEX = '/^SL([0-9]{5,5})([APL])$/';
+    const GENERAL_REGEX = '/^SL([0-9]{5,5})([APLC])$/';
     const ENTITY_REGEXS = [
         self::ENTITY_ASSOCIATION => '/^SL([0-9]{5,5})A$/',
         self::ENTITY_PERSON => '/^SL([0-9]{5,5})P$/',

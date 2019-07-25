@@ -10,7 +10,6 @@ use Books\Form\UploadForm;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
 use Books\Model\DictionaryTable;
-use SionModel\Db\Model\PredicatesTable;
 
 class PublicationsController extends SionController
 {
@@ -42,7 +41,8 @@ class PublicationsController extends SionController
                 $entityObject['files'] = $publicationFiles[$entityObject['publicationId']];
             }
             if (isset($entityObject['subEditions']) && is_array($entityObject['subEditions'])) {
-                foreach ($entityObject['subEditions'] as $key => $value) {
+                $subEditionIds = array_keys($entityObject['subEditions']);
+                foreach ($subEditionIds as $key) {
                     if (isset($publicationFiles[$key])) {
                         $entityObject['files'] = array_merge($entityObject['files'], $publicationFiles[$key]);
                     }
@@ -440,8 +440,8 @@ class PublicationsController extends SionController
         $table = $this->getSionTable();
 //         $updates = $table->fillNoAccentsColumns();
         $updates = [];
-        $updates2 = $table->fillDatePublished();
-        $updates3 = $table->clearCopyrightYear();
+        $updates[] = $table->fillDatePublished();
+        $updates[] = $table->clearCopyrightYear();
 
         //after performing these updates, delete the DatePublished field in favor of the  DatePublishedText field
 

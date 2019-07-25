@@ -1152,7 +1152,8 @@ ORDER BY `Publisher`";
             ];
         }
 
-        foreach ($categories as $categoryId => $object) {
+        $categoryIds = array_keys($categories);
+        foreach ($categoryIds as $categoryId) {
             if (empty($categories[$categoryId]['fullNameStack'])) {
                 $stack = $this->getCategoriesNameStack($categoryId, $categories);
                 $categories[$categoryId]['fullNameStack'] = $stack;
