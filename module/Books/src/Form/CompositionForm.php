@@ -141,7 +141,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Chord pro specification',
                 'help-block' => 'See <a href="https://www.chordpro.org/">Chord pro markup</a>. '
-                .'The metadata will be automatically added afterwards.',
+                .'The metadata will be automatically added afterwards. Html tags are not allowed.',
             ],
             'attributes' => [
                 'maxlength' => '2000',
