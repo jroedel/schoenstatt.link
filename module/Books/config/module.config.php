@@ -467,6 +467,87 @@ return [
                     ],
                 ],
             ],
+            'publication' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
+                            '/^$'
+                            ),
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PublicationsController::class,
+                        'action'     => 'show',
+                    ],
+                ],
+            ],
+            'publication-edit' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/edit',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PublicationsController::class,
+                        'action'     => 'edit',
+                    ],
+                ],
+            ],
+            'publication-create-new-edition' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/create-new-edition',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PublicationsController::class,
+                        'action'     => 'createNewEdition',
+                    ],
+                ],
+            ],
+            'publication-delete' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/delete',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PublicationsController::class,
+                        'action'     => 'delete',
+                    ],
+                ],
+            ],
+            'publication-upload-cover' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/upload-cover',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PublicationsController::class,
+                        'action'     => 'uploadCover',
+                    ],
+                ],
+            ],
             'publications' => [
                 'type'    => Literal::class,
                 'options' => [
@@ -553,7 +634,7 @@ return [
                             ],
                         ],
                     ],
-                    'publication' => [
+                    'publication-old' => [
                         'type'    => Segment::class,
                         'options' => [
                             'route'    => '/:publication_id',
@@ -561,67 +642,7 @@ return [
                                 'publication_id' => '[0-9]{1,5}',
                             ],
                             'defaults' => [
-                                'action'     => 'show',
-                            ],
-                        ],
-                        'may_terminate' => true,
-                        'child_routes' => [
-                            'create-new-edition' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/create-new-edition',
-                                    'defaults' => [
-                                        'action'     => 'createNewEdition',
-                                    ],
-                                ],
-                            ],
-                            'upload-cover' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/upload-cover',
-                                    'defaults' => [
-                                        'action'     => 'uploadCover',
-                                    ],
-                                ],
-                            ],
-                            'edit' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/edit',
-                                    'defaults' => [
-                                        'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                            'delete' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/delete',
-                                    'defaults' => [
-                                        'action'     => 'delete',
-                                    ],
-                                ],
-                            ],
-                            'suggest' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/suggest',
-                                    'defaults' => [
-                                        'action'     => 'suggest',
-                                    ],
-                                ],
-                            ],
-                            'moderate' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/moderate/:suggestion_id',
-                                    'constraints' => [
-                                        'suggestion_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'moderate',
-                                    ],
-                                ],
+                                'action'     => 'sendToNewUrl',
                             ],
                         ],
                     ],
@@ -1184,8 +1205,7 @@ return [
                 'options' => [
                     'route'    => '/:sw_id[/:slug]',
                     'constraints' => [
-                        'sw_id' =>
-                        trim(
+                        'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
                             '/^$'
                             ),
@@ -1202,7 +1222,7 @@ return [
                 'options' => [
                     'route'    => '/:sw_id/edit',
                     'constraints' => [
-                        trim(
+                        'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
                             '/^$'
                             ),
@@ -1218,8 +1238,7 @@ return [
                 'options' => [
                     'route'    => '/:sw_id/delete',
                     'constraints' => [
-                        'sw_id' =>
-                        trim(
+                        'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
                             '/^$'
                             ),
@@ -1812,7 +1831,7 @@ return [
                 ],
                 'name_field'                            => 'title',
                 'name_field_is_translateable'           => false,
-                'country_field'                         => 'country',
+//                 'country_field'                         => 'country',
                 'text_columns'                          => [],
 //                 'many_to_one_update_columns'             => [
 //                     'email'  => 'contactInfo',
@@ -1829,26 +1848,26 @@ return [
 
                 'index_route'                           => 'publications',
 //                 'index_template'                         => 'project/events/index',
-                'default_route_key'                     => 'publication_id',
+                'default_route_key'                     => 'sw_id',
 //                 'show_action_template'                   => 'project/events/show',
-                'show_route'                            => 'publications/publication',
-                'show_route_key'                        => 'publication_id',
-                'show_route_key_field'                  => 'publicationId',
+                'show_route'                            => 'publication',
+                'show_route_key'                        => 'sw_id',
+                'show_route_key_field'                  => 'identifier',
                 'edit_action_form'                      => PublicationForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
-                'edit_route'                            => 'publications/publication/edit',
-                'edit_route_key'                        => 'publication_id',
-                'edit_route_key_field'                  => 'publicationId',
+                'edit_route'                            => 'publication-edit',
+                'edit_route_key'                        => 'sw_id',
+                'edit_route_key_field'                  => 'identifier',
                 'create_action_form'                    => PublicationForm::class,
 //                 'create_action_valid_data_handler'       => 'createEvent',
-                'create_action_redirect_route'          => 'publications/publication',
-                'create_action_redirect_route_key'      => 'publication_id',
-                'create_action_redirect_route_key_field'=> 'publicationId',
+                'create_action_redirect_route'          => 'publication',
+                'create_action_redirect_route_key'      => 'sw_id',
+                'create_action_redirect_route_key_field'=> 'identifier',
 //                 'create_action_template'                 => 'project/events/create',
 //                 'touch_default_field'                => 'publicationId',
-//                 'touch_field_route_key'                  => 'publication_id',
-//                 'touch_json_route'                       => 'publications/publication/touch',
-//                 'touch_json_route_key'                   => 'publication_id',
+//                 'touch_field_route_key'                  => 'sw_id',
+//                 'touch_json_route'                       => 'publication-touch',
+//                 'touch_json_route_key'                   => 'sw_id',
                 'database_bound_data_preprocessor'      => 'preprocessPublication',
                 'database_bound_data_postprocessor'     => 'postprocessPublication',
 //                 'moderate_route'                         => 'events/event/moderate',
@@ -1862,6 +1881,7 @@ return [
                     'publicationId'             => 'PublicationId',
                     'title'                     => 'Title',
                     'titleNoAccents'            => 'TitleNoAccents',
+                    'slug'                      => 'Slug',
                     'subtitle'                  => 'Subtitle',
                     'subtitleNoAccents'         => 'SubtitleNoAccents',
                     'resourceId'                => 'ResourceId',
@@ -1875,7 +1895,6 @@ return [
                     'editorsText'               => 'Editor',
                     'editorsNoAccents'          => 'EditorNoAccents',
                     'translatorsText'           => 'Translator',
-                    'illustratorsText'          => 'Illustrator',
 
                     'numberOfPages'             => 'NumberOfPages',
                     'copyrightYear'             => 'CopyrightYear',
@@ -2434,17 +2453,19 @@ return [
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/admin-tasks', 'roles' => ['pub_administrator']],
-
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/import', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/export', 'roles' => ['pub_moderator']],
-                ['route' => 'publications/publication', 'roles' => ['guest', 'user']],
-                ['route' => 'publications/publication/upload-cover', 'roles' => ['pub_moderator']],
-                ['route' => 'publications/publication/create-new-edition', 'roles' => ['pub_moderator']],
-                ['route' => 'publications/publication/edit', 'roles' => ['pub_moderator']],
-                ['route' => 'publications/publication/delete', 'roles' => ['pub_moderator']],
+                
+                ['route' => 'publications/publication-old', 'roles' => ['guest', 'user']],
+                ['route' => 'publication', 'roles' => ['guest', 'user']],
+                ['route' => 'publication-edit', 'roles' => ['pub_moderator']],
+                ['route' => 'publication-delete', 'roles' => ['pub_moderator']],
+                ['route' => 'publication-create-new-edition', 'roles' => ['pub_moderator']],
+                ['route' => 'publication-upload-cover', 'roles' => ['pub_moderator']],
+                
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
                 
                 ['route' => 'blog', 'roles' => ['guest', 'user']],

@@ -10,11 +10,30 @@ use Books\Form\UploadForm;
 use Books\Service\DriveGateway;
 use Books\Model\LibraryTable;
 use Books\Model\DictionaryTable;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 class PublicationsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 1000;
-
+    
+    public function sendToNewUrlAction()
+    {
+        $id = $this->params()->fromRoute('publication_id');
+        if (!isset($id)) {
+            $swId = $this->params()->fromRoute('sw_id');
+        } else {
+            $filter = new ToSchoenstattLinkIdentifier('publication');
+            $swId = $filter->filter($id);
+        }
+        /**
+         * @var \Zend\Http\Response $response
+         */
+        $response = $this->redirect()->toRoute('publication', ['sw_id' => $swId]);
+        $response->setStatusCode(301);
+        return $response;
+    }
+    
     public function showAction()
     {
         $view = parent::showAction();
@@ -316,7 +335,6 @@ class PublicationsController extends SionController
         unset($object['publicationId']);
         unset($object['bookEdition']);
         unset($object['numberOfPages']);
-        unset($object['copyrightYear']);
         unset($object['datePublished']);
         unset($object['publishingStatus']);
         unset($object['isbn']);
@@ -325,7 +343,6 @@ class PublicationsController extends SionController
         unset($object['editionNotes']);
         unset($object['isAwaitingMerge']);
         unset($object['isRevisedWithBookInHand']);
-        unset($object['publishDataAsJsonLd']);
         unset($object['isFormallyPublished']);
         unset($object['url1']);
         unset($object['url1Label']);
@@ -343,7 +360,9 @@ class PublicationsController extends SionController
 
         $newId = $table->createEntity('publication', $object);
 
-        $this->redirect()->toRoute('publications/publication/edit', ['publication_id' => $newId]);
+        $swFilter = new ToSchoenstattLinkIdentifier('publication');
+        $identifier = $swFilter->filter($newId);
+        return $this->redirect()->toRoute('publication-edit', ['sw_id' => $identifier]);
     }
 
     public function uploadCoverAction()
@@ -369,7 +388,10 @@ class PublicationsController extends SionController
                     ];
                     $publicationTable = $this->getSionTable();
                     $publicationTable->updateEntity('publication', $id, $publicationData);
-                    $this->redirect()->toRoute('publications/publication', ['publication_id' => $id]);
+                    
+                    $swFilter = new ToSchoenstattLinkIdentifier('publication');
+                    $identifier = $swFilter->filter($id);
+                    return $this->redirect()->toRoute('publication', ['sw_id' => $identifier]);
                 } else {
                     throw new \Exception('Error uploading file.');
                 }
@@ -449,5 +471,33 @@ class PublicationsController extends SionController
             'updates' => $updates,
         ]);
         return $view;
+    }
+    
+    /**
+     * Makes sure this function returns the publicationId if passed a site-wide id
+     *
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::getEntityIdParam()
+     */
+    protected function getEntityIdParam($action = 'show', $default = null)
+    {
+        static $swValidator;
+        static $swFilter;
+        $id = $this->params()->fromRoute('sw_id');
+        if (isset($id)) {
+            if (!isset($swValidator)) {
+                $swValidator = new SchoenstattLinkIdentifier();
+            }
+            if (!$swValidator->isValid($id)) {
+                throw new \Exception('Invalid site-wide id');
+            }
+            if (!isset($swFilter)) {
+                $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
+            }
+            $id = $swFilter->filter($id);
+        } else {
+            throw new \Exception('Invalid publication id');
+        }
+        return $id;
     }
 }

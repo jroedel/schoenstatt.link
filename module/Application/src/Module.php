@@ -18,7 +18,6 @@ use Application\Navigation\FixNavigationPages;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
 use Books\Model\EventTextTable;
-use Zend\Cache\Storage\StorageInterface;
 
 class Module
 {
@@ -41,7 +40,7 @@ class Module
         $strategy->attach($app->getEventManager());
         
         /** @var StorageInterface $cache */
-        $cache = $sm->get(StorageInterface::class);
+        $cache = $sm->get('SionModel\PersistentCache');
         $locale = \Locale::getDefault();
         if (!array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
             $locale = 'en_US';
@@ -72,14 +71,17 @@ class Module
             $table = $sm->get(PublicationsTable::class);
             $publications = $table->getUnlinkedPublications();
             foreach ($publications as $publicationId => $object) {
-                if ($object['resourceId'] === 'publication_public' && true === $object['isRevisedWithBookInHand']) {
+                if ($object['resourceId'] === 'publication_public') {
                     if (!array_key_exists($object['inLanguage'], $pagesByLanguage)) {
                         $pagesByLanguage[$object['inLanguage']] = [];
                     }
                     $pagesByLanguage[$object['inLanguage']][] = [
                         'label' => $object['title'],
-                        'route' => 'publications/publication',
-                        'params' => ['publication_id' => $publicationId],
+                        'route' => 'publication',
+                        'params' => [
+                            'sw_id' => $object['identifier'],
+                            'slug' => $object['slug'],
+                        ],
                         'id'    => 'pub_'.$publicationId,
                     ];
                 }

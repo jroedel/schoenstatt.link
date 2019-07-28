@@ -12,6 +12,7 @@ use Interop\Container\ContainerInterface;
 use Zend\ServiceManager\FactoryInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 use Zend\Log\Logger;
+use Application\Log\Writer\SlackWebhook;
 
 class LoggerFactory implements FactoryInterface
 {
@@ -22,6 +23,22 @@ class LoggerFactory implements FactoryInterface
         $writer = new \Zend\Log\Writer\Stream($path);
         $logger = new Logger();
         $logger->addWriter($writer);
+        
+        if (isset($config['slack_logger_url'])) {
+            $webhookUrl = $config['slack_logger_url'];
+            if (isset($config['slack_logger_minimum_severity'])) {
+                $minimumSeverity = $config['slack_logger_minimum_severity'];
+                $writer = new SlackWebhook($webhookUrl, $minimumSeverity);
+            } else {
+                $writer = new SlackWebhook($webhookUrl);
+            }
+            /*
+             * @todo fix this writer. Unfortunately, it looks like there may not be a way to do
+             * this without extending page load times. We maybe need to spin off a reporting
+             * process or something. Maybe we should listen to the finish event to wrap up requests
+             */ 
+//             $logger->addWriter($writer);
+        }
         return $logger;
     }
 

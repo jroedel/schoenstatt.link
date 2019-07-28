@@ -10,7 +10,7 @@ class PublicationsApiController extends AbstractRestfulController
     const PUBLICAITON_API_FIELDS = [
         'publicationId', 'title', 'subtitle', 'authorsText', 'bookEdition',
         'categoryId', 'inLanguage', 'description', 'isbn',
-        'editorsText', 'translatorsText', 'illustratorsText', 'numberOfPages',
+        'editorsText', 'translatorsText', 'numberOfPages',
         'copyrightYear', 'copyrightInfo', 'datePublishedText', 'publisher',
         'publishingPlace', 'datePublished', 'publishingStatus', 'bookFormatType',
         'mainPublicationId', 'translatedFromPublicationId', 'volumeNumber', 'containedIn',
@@ -59,7 +59,8 @@ class PublicationsApiController extends AbstractRestfulController
     
     protected static function prepPublicationObjects(array &$objects)
     {
-        foreach ($objects as $key => $value) {
+        $objectIds = array_keys($objects);
+        foreach ($objectIds as $key) {
             self::prepPublicationObject($objects[$key]);
         }
     }
@@ -70,7 +71,8 @@ class PublicationsApiController extends AbstractRestfulController
      */
     protected static function prepPublicationObject(array &$data)
     {
-        foreach ($data as $key => $value) {
+        $dataKeys = array_keys($data);
+        foreach ($dataKeys as $key) {
             if (!in_array($key, self::PUBLICAITON_API_FIELDS, true)) {
                 unset($data[$key]);
             }

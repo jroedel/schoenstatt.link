@@ -1992,6 +1992,7 @@ return [
                 ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
+                ['route' => 'associations/old-association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'association-edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'association-delete', 'roles' => ['sch_general_moderator']],

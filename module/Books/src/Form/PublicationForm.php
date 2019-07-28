@@ -112,22 +112,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'multiple' => true,
             ],
         ]);
-//         $this->add([
-//             'name' => 'illustratorsAll', //only show persons
-//             'type' => 'Select',
-//             'options' => [
-//                 'label' => 'Illustrator',
-//                 'required' => false,
-//                 'empty_option' => '',
-//                 'unselected_value' => '',
-//                 'disable_inarray_validator' => true,
-//             ],
-//             'attributes' => [
-//                 'maxlength' => '500',
-//                 'multiple' => true,
-//             ],
-//         ]);
-
         $this->add([
             'name' => 'description',
             'type' => 'Textarea',
@@ -186,12 +170,11 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Number of pages',
                 'required' => false,
+                'help-block' => 'Normally, just the number of pages unless book has roman numeral-numbered pages '
+                .'at the beginning. In this case, use the form `xxxii+442`.'
             ],
             'attributes' => [
-                'min'         => 0,
-                'max'         => 6000,
-                'step'        => 'any',
-                'inclusive'   => true,
+                'placeholder' => 'xxi+133',
             ],
         ]);
         $this->add([
@@ -247,7 +230,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Copyright year',
                 'required' => false,
-                'help-block' => 'The year of the first edition, ie. the creation of the creative work',
+                'help-block' => 'The year of the first edition, ie. the creation of the creative work.',
             ],
             'attributes' => [
                 'min'         => 1800,
@@ -353,30 +336,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '25',
             ],
         ]);
-//         $this->add([
-//             'name' => 'containedIn',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'Contained in',
-//                 'required' => true,
-//             ],
-//             'attributes' => [
-//                 'placeholder' => 'ex. Revista Vínculo 2014-10',
-//                 'maxlength' => '255',
-//             ],
-//         ]);
-//         $this->add([
-//             'name' => 'containedInIsbn',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'Contained in ISBN',
-//                 'required' => false,
-//             ],
-//             'attributes' => [
-//                 'placeholder' => 'ex. 9780030426599',
-//                 'maxlength' => '30',
-//             ],
-//         ]);
         $this->add([
             'name' => 'keywords',
             'type' => 'Select',
@@ -409,19 +368,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'value' => null, //set in factory
             ],
         ]);
-//         $this->add([
-//             'name' => 'isAccessibleForFree',
-//             'type' => 'Checkbox',
-//             'options' => [
-//                 'label' => 'Accessible for free?',
-//                 'checked_value' => '1',
-//                 'unchecked_value' => '0',
-//                 'use_hidden_element' => true,
-//             ],
-//             'attributes' => [
-//                 'value'   => '0',
-//             ],
-//         ]);
         $this->add([
             'name' => 'isScientificWork',
             'type' => 'Checkbox',
@@ -536,23 +482,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'rows' => 4,
             ],
         ]);
-
-//         $this->add([
-//             'name' => 'adminTags',
-//             'type' => 'Select',
-//             'options' => [
-//                 'label' => 'Admin tags',
-//                 'empty_option' => '',
-//                 'placeholder' => 'Select tags or type new ones...',
-//                 'unselected_value' => '',
-//                 'disable_inarray_validator' => true,
-//                 'value_options' => [],
-//             ],
-//             'attributes' => [
-//                 'required' => false,
-//                 'multiple' => true,
-//             ],
-//         ]);
         $this->add([
             'name' => 'submit',
             'type' => 'Submit',
@@ -593,7 +522,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'authorsAll' => [ //@todo add a validator
                 'required' => false,
                 'filters' => [
-                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+//                     ['name' => 'SionModel\Filter\TrimStringArray'],
                 ],
             ],
             'editorsAll' => [ //@todo add a validator
@@ -602,13 +531,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'translatorsAll' => [ //@todo add a validator
                 'required' => false,
                 'filters' => [
-                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
-                ],
-            ],
-            'illustratorsAll' => [ //@todo add a validator
-                'required' => false,
-                'filters' => [
-                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+//                     ['name' => 'SionModel\Filter\TrimStringArray'],
                 ],
             ],
             'inLanguage' => [
@@ -708,13 +631,21 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
             'numberOfPages' => [
                 'required' => false,
-//                 'allow_empty' => true,
-//                 'continue_if_empty' => true,
+                'validators' => [
+                    [
+                        'name' => Regex::class,
+                        'options' => [
+                            'pattern' => '/^[mlxvi\+0-9]{1,14}$/',
+                            'messageTemplates' => [
+                                Regex::NOT_MATCH => 'Please use a combination of roman numerals and/or numbers separated by `+`.',
+                            ],
+                        ],
+                    ]
+                ],
                 'filters' => [
-                    ['name' => 'ToInt'],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -922,50 +853,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            'containedIn' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 255,
-                        ],
-                    ],
-                ],
-            ],
-            'containedInIsbn' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 30,
-                        ],
-                    ],
-                ],
-            ],
             'keywords' => [
                 'required' => false,
                 'filters' => [
@@ -1000,12 +887,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => ToBit::class]
                 ],
             ],
-//             'publishDataAsJsonLd' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => ToBit::class]
-//                 ],
-//             ],
             'isFormallyPublished' => [
                 'required' => false,
                 'filters' => [
@@ -1055,20 +936,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            'adminTags' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StringToLower::class],
-                    ['name' => SortArray::class],
-                ],
-            ],
         ];
     }
-
-//     public function getData($flag = FormInterface::VALUES_NORMALIZED)
-//     {
-//         $values = parent::getData($flag);
-
-//         //check if we need to set any
-//     }
 }

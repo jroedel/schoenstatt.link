@@ -38,13 +38,8 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
         <div class="col-xs-6">
             <?php if ($this->isAllowed($object['resourceId'], 'edit')): ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
-                    echo $this->url('publications/publication/edit', array('publication_id' => $object['publicationId']));?>">
+                    echo $this->url('publication-edit', ['sw_id' => $object['identifier']]);?>">
                     <?= $this->translate('Edit publication')?></a>
-                </span>
-            <?php elseif (false)://@todo $this->isAllowed('route/publications/publication/suggest')):?>
-                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('courses/course/suggest', array('publication_id' => $object['publicationId']));?>">
-                    <?= $this->translate('Suggest change')?></a>
                 </span>
             <?php endif;?>
         </div>
@@ -82,10 +77,6 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
             echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Translator(s)'),
                     $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_TRANSLATORS]));
         }
-        if (!empty($object['illustratorsAll'])) {
-            echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Illustrator(s)'),
-                    $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_ILLUSTRATORS]));
-        }
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
@@ -98,7 +89,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
         echo $this->formatField('Genre', $object['genre'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
         echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
-            'displayOnlyWithPermission' => 'route/publications/publication/edit']);
+            'displayOnlyWithPermission' => 'route/publication-edit']);
         foreach ($object['urls'] as $urlObject) :
             ?><p><?= $this->formatPublicationUrlObject($urlObject);?></p><?php
         endforeach;

@@ -26,11 +26,6 @@ $object = $this->object;
                     echo $this->url('books/book/edit', [], [], true);?>">
                     <?php echo $this->translate('Edit book')?></a>
                 </span>
-            <?php elseif (false)://@todo $this->isAllowed('route/publications/publication/suggest')):?>
-                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('courses/course/suggest', array('publication_id' => $object['publicationId']));?>">
-                    <?php echo $this->translate('Suggest change')?></a>
-                </span>
             <?php endif;?>
         </div>
         </div>

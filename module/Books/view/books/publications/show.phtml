@@ -8,8 +8,8 @@ $this->headTitle($object['title']);?>
 <h1><?php echo $this->escapeHtml($this->entity['title']);?></h1>
 <?php echo $this->partial('publication-info', ['object' => $this->entity]);
 
-if ($this->isAllowed('route/publications/publication/create-new-edition')):?>
-<p><a class="btn btn-default" href="<?php echo $this->url('publications/publication/create-new-edition', [], [], true);?>"><?php
+if ($this->isAllowed('route/publication-create-new-edition')):?>
+<p><a class="btn btn-default" href="<?php echo $this->url('publication-create-new-edition', [], [], true);?>"><?php
 echo $this->translate('Add another edition');?></a></p>
 <?php endif;
 if (!empty($object['files']) && $this->isAllowed('publication_drive')) {
@@ -30,7 +30,7 @@ if ($this->isAllowed('route/comments/create')) {
         'form' => $this->commentForm
     ]);
 }
-if ($this->isAllowed('route/publications/publication/edit')) {
+if ($this->isAllowed('route/publication-edit')) {
     echo $this->partial('sion-model/sion-model/entity-changes-panel', [
         'changes' => $this->changes,
         'panelTitle' => 'Change log'

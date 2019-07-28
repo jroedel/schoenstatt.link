@@ -132,12 +132,12 @@ class FormatPublication extends FormatEntity
         }
 
         if ($linkOption) {
-//             $linkFormat = '<a href="%s">%s</a>';
-//             $url = $this->view->url('publications/publication', array('publication_id' => $object['publicationId']));
+            $linkFormat = '<a href="%s">%s</a>';
+            $url = $this->view->url('publication', ['sw_id' => $data['identifier'], 'slug' => $data['slug']]);
             if ($escapeMainText) {
                 $mainText = $this->view->escapeHtml($mainText);
             }
-            $finalMarkup .= $this->wrapAsLink('publication', $data, $mainText);
+            $finalMarkup .= sprintf($linkFormat, $url, $mainText);
         } else {
             if ($escapeMainText) {
                 $finalMarkup .= $this->view->escapeHtml($mainText);
@@ -172,7 +172,7 @@ class FormatPublication extends FormatEntity
 //             }
 //         }
         if ($editPencilOption) { //permissions are checked in editPencil
-            $finalMarkup .= $this->view->editPencil('publication', $data['publicationId']);
+            $finalMarkup .= $this->view->editPencil('publication', $data['identifier']);
         }
         if ($showHandChecked && $data['isRevisedWithBookInHand']) {
             $finalMarkup .= sprintf(

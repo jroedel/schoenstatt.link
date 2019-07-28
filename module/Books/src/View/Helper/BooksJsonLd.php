@@ -88,8 +88,11 @@ class BooksJsonLd extends AbstractHelper
                 case 'url':
                     $book->url($this->view->localeUrl(
                         'en_US',
-                        'publications/publication',
-                        ['publication_id' => $publication['publicationId']]
+                        'publication',
+                        [
+                            'sw_id' => $publication['identifier'],
+                            'slug' => $publication['slug']
+                        ]
                     )->__toString());
                     break;
                 case 'keywords':

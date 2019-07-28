@@ -183,7 +183,8 @@ $routeName = $this->routeName();?>
                     </ul>
                 <?php endif; //if username
                  echo $this->navigation('navigation')
-                     ->menu()
+                 ->menu()
+//                  ->setUseAcl(false)
                     ->setMinDepth(0)
                     ->setMaxDepth(0)
                     ->setUlClass('nav navbar-nav pull-right')
