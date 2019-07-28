@@ -27,7 +27,7 @@ $showCheckouts = $this->isAllowed('view_checkout_person');?>
         if (isset($book['publicationId']) && isset($this->publications[$book['publicationId']]) &&
             isset($this->publications[$book['publicationId']]['coverThumbnail80pxUri'])
         ):?>
-        	<a href="<?php echo $this->url('publications/publication', ['publication_id' => $book['publicationId']]); ?>">
+        	<a href="<?php echo $this->url('publication', ['sw_id' => $book['identifier'], 'slug' => $book['slug']]); ?>">
         	<img src="<?php echo $this->publications[$book['publicationId']]['coverThumbnail80pxUri']; ?>"
         	height="80px" alt="<?php echo $this->escapeHtmlAttr($this->publications[$book['publicationId']]['title']);?>"></a>
     <?php endif;?>

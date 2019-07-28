@@ -86,7 +86,7 @@ class CheckoutsController extends SionController
         //if all went well redirect to the borrower's page
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
             ->addMessage('Books successfully checked out.');
-        $this->redirect()->toRoute('borrowers/borrower', ['person_id' => $data['personId']]);
+        return $this->redirect()->toRoute('borrowers/borrower', ['person_id' => $data['personId']]);
     }
 
     public function libraryAction()
@@ -141,7 +141,7 @@ class CheckoutsController extends SionController
                 } else {
                     $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
                         ->addMessage('Books successfully checked in.');
-                    $this->redirect()->toRoute('checkouts/library', ['library_id' => $libraryId]);
+                    return $this->redirect()->toRoute('checkouts/library', ['library_id' => $libraryId]);
                 }
             } else {
                 $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
@@ -196,7 +196,7 @@ class CheckoutsController extends SionController
                 } else {
                     $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
                     ->addMessage('Books successfully checked out.');
-                    $this->redirect()->toRoute('checkouts/library/current', ['library_id' => $libraryId]);
+                    return $this->redirect()->toRoute('checkouts/library/current', ['library_id' => $libraryId]);
                 }
             } else {
                 //eliminate value options to use the javascript options; this reduces page size
@@ -221,7 +221,7 @@ class CheckoutsController extends SionController
         if (!$id) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Library not found.');
-            $this->redirect()->toRoute('libraries');
+            return $this->redirect()->toRoute('libraries');
         }
         return $id;
     }

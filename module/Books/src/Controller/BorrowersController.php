@@ -124,6 +124,6 @@ class BorrowersController extends AbstractActionController
     {
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
         ->addMessage('Person not found.');
-        $this->redirect()->toRoute('libraries');
+        return $this->redirect()->toRoute('libraries');
     }
 }

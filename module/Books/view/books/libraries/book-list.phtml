@@ -11,7 +11,7 @@ if (isset($this->publications) && is_array($this->publications)):?><th></th><?ph
     <?php if (isset($this->publications) && is_array($this->publications)):?><th><?php
     if (!is_null($book['publicationId']) && array_key_exists($book['publicationId'], $this->publications) &&
         !is_null($this->publications[$book['publicationId']]['coverThumbnail80pxUri'])):?>
-    <a href="<?php echo $this->url('publications/publication', ['publication_id' => $book['publicationId']]); ?>">
+    <a href="<?php echo $this->url('publication', ['sw_id' => $book['identifier'], 'slug' => $book['slug']]); ?>">
     <img src="<?php echo $this->publications[$book['publicationId']]['coverThumbnail80pxUri']; ?>"
     height="80px" alt="<?php echo $this->escapeHtmlAttr($this->publications[$book['publicationId']]['title']);?>"></a>
     <?php endif;?>
