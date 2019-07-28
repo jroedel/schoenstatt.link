@@ -1269,6 +1269,15 @@ return [
                             ],
                         ],
                     ],
+                    'import' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/import',
+                            'defaults' => [
+                                'action'     => 'import',
+                            ],
+                        ],
+                    ],
                 ],
             ],
         ],
@@ -2273,6 +2282,7 @@ return [
                 'sion_model_class'                      => Model\MusicTable::class,
                 'sion_controllers'                      => [Controller\CompositionsController::class],
                 'controller_services'                   => [
+                    'Books\LanguagesValueOptions'
                 ],
                 'row_processor_function'                => 'processCompositionRow',
 //                 'get_object_function'                   => 'getSimpleAssociationBySwId',
@@ -2334,6 +2344,7 @@ return [
                     'lyrics' => 'Lyrics',
                     'lilyPondSpec' => 'LilyPondSpec',
                     'musicalKey' => 'MusicalKey',
+                    'originalKey' => 'OriginalKey',
                     'alternateKey' => 'AlternateKey',
                     'alternateKeyLabel' => 'AlternateKeyLabel',
                     'copyrightInfo' => 'CopyrightInfo',
@@ -2523,6 +2534,7 @@ return [
                 ['route' => 'composition-edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'music/create-composition', 'roles' => ['sch_moderator']],
+                ['route' => 'music/import', 'roles' => ['administrator']],
             ],
         ],
     ],

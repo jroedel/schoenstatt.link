@@ -1,4 +1,9 @@
 <?php
-foreach ($this->objects as $object) {
-    echo $this->formatEntity('composition', $object);
-}
+$currentLanguage = '';
+foreach ($this->objects as $object) :
+if ($currentLanguage !== $object['inLanguage']) :
+$currentLanguage = $object['inLanguage'];?>
+<h2><?= $this->languageNames[$object['inLanguage']]?></h2>
+<?php endif;?>
+<p><?= $this->formatEntity('composition', $object);?></p>
+<?php endforeach;
