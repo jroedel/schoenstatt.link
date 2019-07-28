@@ -12,6 +12,7 @@ use Books\Model\LibraryTable;
 use Books\Model\DictionaryTable;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class PublicationsController extends SionController
 {
@@ -20,18 +21,26 @@ class PublicationsController extends SionController
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('publication_id');
-        if (!isset($id)) {
-            $swId = $this->params()->fromRoute('sw_id');
-        } else {
-            $filter = new ToSchoenstattLinkIdentifier('publication');
-            $swId = $filter->filter($id);
+        if (isset($id)) {
+            $object = $this->getEntityObject($id);
+            if (isset($object)) {
+                /**
+                 * @var \Zend\Http\Response $response
+                 */
+                $response = $this->redirect()->toRoute(
+                    'publication', 
+                    ['sw_id' => $object['identifier'], 'slug' => $object['slug']]
+                    );
+                $response->setStatusCode(301);
+                return $response;
+            }
         }
-        /**
-         * @var \Zend\Http\Response $response
-         */
-        $response = $this->redirect()->toRoute('publication', ['sw_id' => $swId]);
-        $response->setStatusCode(301);
-        return $response;
+        $entity = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+        ->addMessage(ucwords($entity).' not found.');
+        $redirectRoute = $entitySpec->indexRoute ? $entitySpec->indexRoute : $this->getDefaultRedirectRoute();
+        return $this->redirect()->toRoute($redirectRoute);
     }
     
     public function showAction()
