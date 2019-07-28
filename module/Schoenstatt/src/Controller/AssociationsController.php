@@ -9,25 +9,34 @@ use Zend\Filter\StripTags;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Schoenstatt\Validator\TimeZone;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class AssociationsController extends SionController
 {
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('association_id');
-        if (!isset($id)) {
-            $swId = $this->params()->fromRoute('sw_id');
-        } else {
-            $filter = new ToSchoenstattLinkIdentifier('association');
-            $swId = $filter->filter($id);
+        if (isset($id)) {
+            $object = $this->getEntityObject($id);
+            if (isset($object)) {
+                $locale = \Locale::getDefault();
+                /**
+                 * @var \Zend\Http\Response $response
+                 */
+                $response = $this->redirect()->toRoute(
+                    'association',
+                    ['sw_id' => $object['identifier'], 'slug' => $object['slugByLocale'][$locale]]
+                    );
+                $response->setStatusCode(301);
+                return $response;
+            }
         }
-        /**
-         * @var \Zend\Http\Response $response
-         */
-        $response = $this->redirect()->toRoute('association', ['sw_id' => $swId]);
-        $response->setStatusCode(301);
-        return $response;
+        $entity = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+        ->addMessage(ucwords($entity).' not found.');
+        $redirectRoute = $entitySpec->indexRoute ? $entitySpec->indexRoute : $this->getDefaultRedirectRoute();
+        return $this->redirect()->toRoute($redirectRoute);
     }
 
     /**
