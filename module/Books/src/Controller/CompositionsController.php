@@ -3,6 +3,7 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Zend\View\Model\ViewModel;
 
 class CompositionsController extends SionController
 {
@@ -32,5 +33,21 @@ class CompositionsController extends SionController
             throw new \Exception('Invalid composition id');
         }
         return $id;
+    }
+    
+    public function indexAction()
+    {
+        $view = parent::indexAction();
+        
+        $languages = $this->services['Books\LanguagesValueOptions'];
+        $view->setVariable('languageNames', $languages);
+        return $view;
+    }
+    
+    public function importAction()
+    {
+        $table = $this->getSionTable();
+        $count = $table->importMusicasJuly2019();
+        return new ViewModel(['count' => $count]);
     }
 }

@@ -100,6 +100,10 @@ return [
                 ],
             ],
             [
+                'label' => 'Music',
+                'route' => 'music',
+            ],
+            [
                 'label' => 'Blog',
                 'route' => 'blog',
             ],

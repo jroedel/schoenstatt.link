@@ -4,9 +4,25 @@ namespace Books\Model;
 use SionModel\Db\Model\SionTable;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
+use ChordPro\GuessKey;
+use ChordPro\MonospaceFormatter;
 
 class MusicTable extends SionTable
 {
+    /**
+     * 
+     * {@inheritDoc}
+     * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
+     */
+    protected function getSelectPrototype($entity)
+    {
+        $select = parent::getSelectPrototype($entity);
+        if ('composition' === $entity) {
+            $select->order(['InLanguage', 'CompositionName']);
+        }
+        return $select;
+    }
+    
     protected function processCompositionRow($row)
     {
         static $identifierFilter;
@@ -41,6 +57,7 @@ class MusicTable extends SionTable
             'chordProSpec' => $row['ChordProSpec'],
             'lilyPondSpec' => $row['LilyPondSpec'],
             'musicalKey' => $row['MusicalKey'],
+            'originalKey' => $row['OriginalKey'],
             'alternateKey' => $row['AlternateKey'],
             'alternateKeyLabel' => $row['AlternateKeyLabel'],
             'copyrightInfo' => $row['CopyrightInfo'],
@@ -152,5 +169,71 @@ GROUP BY Author ORDER BY Author";
         }
         $this->cacheEntityObjects($cacheKey, $authors, ['composition']);
         return $authors;
+    }
+    
+    public function importMusicasJuly2019()
+    {
+        $ids = [45,141,27,89,243,49,267,1,29,307,114,142,118,355,335,62,36,37,215,248,61,270,193,
+            324,119,35,113,253,222,41,282,328,350,60,13,58,18,345,56,172,334,12,348,169,221,100,
+            134,297,145,11,202,296,44,48,101,127,103,244,8,125,365,6,316,290,213,226,351,358,110,
+            327,294,136,204,190,314,188,43,17,42,220,281,227,164,137,195,235,81,4,255,217,315,363,
+            269,109,82,232,285,168,234,54,165,228,280,151,176,246,247,28,64,21,85,19,233,34,258,
+            357,219,105,271,278,287,323,157,353,7,68,153,53,115,181,325,57,317,340,38,279,124,225,
+            173,241,183,66,23,167,274,308,326,322,251,143,344,46,367,209,192,166,362,295,139,218,
+            10,318,284,277,266,292,236,206,121,25,163,88,16,208,55,298,15,123,275,260,203,133,179,
+            191,122,9,92,130,160,154,194,332,343,360,132,245,155,152,249,212,178,180,242,93,333,
+            331,26,310,91,356,108,162,230,239,339,131,47,161,250,238,346,120,216,341,309,338,
+            106,214,67,135,223,330,273,342,210,69,177,73,320,50,321,359,33,354,116,65,20,347,22,
+            364,319,70,39,144,337,207,99,40,170,329,368,205,313,128,366,336,237,175,240,254,126,
+            311,229,189,286,80,159,312,71,231,31,289,140,252,107,276,352,86,156,305,361,349,104,
+            32,257,72,306,30,83,304,272,256,111,293,129,14,288,3,90,5,224,268,117,51,2,196,63,102,
+            174,283,84,112,158,87,259,74,138,24,182,59,291];
+        $objects = $this->queryObjects('composition', ['compositionId' => $ids]);
+        $parser = new \ChordPro\Parser();
+        //regex to fix extra metadata
+        $re = '/({t:[^}]+})(.*)$/m';
+        $subst = '\\1';
+        $guessKey = new GuessKey();
+        $monospace = new MonospaceFormatter();
+        $count = 0;
+        foreach ($objects as $object) {
+            if (!isset($object['disambiguatingDescription'])) {
+                continue;
+            }
+            
+            //import file
+            $filename = "data/musicas/".$object['disambiguatingDescription'];
+            if (file_exists($filename)) {
+                $myfile = fopen($filename, "r");
+                if (false === $myfile) {
+                    throw new \Exception("Error reading $filename");
+                }
+                $text = trim(fread($myfile,filesize($filename)));
+                
+                $text = preg_replace($re, $subst, $text);
+                $data = ['chordProSpec' => $text];
+                fclose($myfile);
+                // Create song object after parsing txt
+                $song = $parser->parse($text);
+                $key = $song->getKey([]);
+                if (!isset($key)) {
+                    $key = $guessKey->guessKey($song);
+                    var_dump($key);
+                }
+                if (isset($key)) {
+                    $data['musicalKey'] = $key;
+                    $data['originalKey'] = $key;
+                }
+                $data['lyrics'] = $monospace->format($song, ['no_chords' => true]);
+                
+                //delete disambiguating description
+                $data['disambiguatingDescription'] = null;
+                
+                //update
+                $this->updateEntity('composition', $object['compositionId'], $data, [], false);
+                $count++;
+            }
+        }
+        return $count;
     }
 }
