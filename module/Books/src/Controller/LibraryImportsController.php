@@ -491,13 +491,13 @@ class LibraryImportsController extends SionController
             }
             switch ($transaction['action']) {
                 case 'update':
-                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
+                    $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
                     break;
                 case 'create':
-                    $transactions[$key]['result'] = $table->createEntity('book', $transaction, false);
+                    $table->createEntity('book', $transaction, false);
                     break;
                 case 'inactivate':
-                    $transactions[$key]['result'] = $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
+                    $table->updateEntity('book', $transaction['bookId'], $transaction, [], false);
                     break;
                 case 'create-collection':
                     $params = [

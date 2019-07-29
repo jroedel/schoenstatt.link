@@ -118,9 +118,8 @@ class DhController extends SionController
             
             if ($doIt) {
                 unset($data['pageNumber']);
-                $result = $table->updateEntity('dh-page', $pageNumber, $data, [], false);
+                $table->updateEntity('dh-page', $pageNumber, $data, [], false);
                 $data['pageNumber'] = $pageNumber;
-                $data['result'] = $result;
             }
             $results[] = $data;
         }

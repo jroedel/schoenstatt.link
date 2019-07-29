@@ -2,6 +2,7 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
+use Zend\Stdlib\ResponseInterface;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Zend\View\Model\ViewModel;
 
@@ -41,6 +42,20 @@ class CompositionsController extends SionController
         
         $languages = $this->services['Books\LanguagesValueOptions'];
         $view->setVariable('languageNames', $languages);
+        return $view;
+    }
+    
+    public function showAction()
+    {
+        $view = parent::showAction();
+        if ($view instanceof ResponseInterface) {
+            return $view;
+        }
+        $object = $view->getVariable('entity');
+        /** @var \Books\Model\MusicTable $table */
+        $table = $this->getSionTable();
+        $schema = $table->getCompositionSchemaV1($object);
+        $view->setVariable('schema', $schema);
         return $view;
     }
     

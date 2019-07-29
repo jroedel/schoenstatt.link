@@ -1440,7 +1440,7 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
         $badValues = [];
         foreach ($bookIds as $bookId) {
             $currentBook = $paramsPrototype;
-            if (!$newId = $this->updateEntity('book', $bookId, $currentBook, [], false)) {
+            if ($this->updateEntity('book', $bookId, $currentBook, [], false)) {
                 $badValues[] = $bookId;
             }
         }

@@ -107,12 +107,12 @@ class BorrowersController extends AbstractActionController
                 $patresToSchPersonMap[$checkout['personId']] = $schPersonId;
             }
             $newPersonId = $patresToSchPersonMap[$checkout['personId']];
+            $table->updateEntity('checkout', $checkoutId, [
+                'personId' => $newPersonId,
+            ], [], false);
             $changes[$checkoutId] = [
                 'oldPersonId' => $checkout['personId'],
-                'newPersonId' => $newPersonId,
-                'result' => $table->updateEntity('checkout', $checkoutId, [
-                    'personId' => $newPersonId,
-                ], [], false),
+                'newPersonId' => $newPersonId
             ];
         }
         return new ViewModel([

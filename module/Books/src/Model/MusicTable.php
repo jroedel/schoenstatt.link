@@ -6,6 +6,7 @@ use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
 use ChordPro\GuessKey;
 use ChordPro\MonospaceFormatter;
+use Spatie\SchemaOrg\MusicComposition;
 
 class MusicTable extends SionTable
 {
@@ -77,8 +78,54 @@ class MusicTable extends SionTable
             //these fields integrate composerText and authors linked through predicates
             'composersAll' => [],
             'lyricistsAll' => [],
+            'jsonId' => "https://schoenstatt.link/en/".$identifier,
         ];
         return $data;
+    }
+    
+    public function getCompositionSchemaV1($object)
+    {
+        $schema = new MusicComposition();
+        $properties = [
+            '@id' => $object['jsonId'],
+            'name' => $object['name'],
+            'inLanguage' => $object['inLanguage'],
+            'genre' => 'Religious',
+            'isFamilyFriendly' => true,
+        ];
+        $schema->addProperties($properties);
+        if (isset($object['composerText'])) {
+            $schema->setProperty('composer', $object['composerText']);
+        }
+        if (isset($object['lyricistText'])) {
+            $schema->setProperty('lyricist', $object['lyricistText']);
+        }
+        if (isset($object['lyrics'])) {
+            $schema->setProperty('lyrics', $object['lyrics']);
+        }
+        if (isset($object['musicalKey'])) {
+            $schema->setProperty('musicalKey', $object['musicalKey']);
+        }
+        if (isset($object['yearPublished'])) {
+            $schema->setProperty('datePublished', $object['yearPublished']);
+        }
+        if (isset($object['country'])) {
+            $schema->setProperty('locationCreated', $object['country']);
+        }
+        return $schema;
+    }
+    
+    public function getCompositionListSchemaV1($objects)//, &$resultingMd5s)
+    {
+        $schemata = [];
+//         $resultingMd5s = [];
+        foreach ($objects as $object) {
+            $schema = $this->getAssociationSchemaV1($object);
+//             $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
+            $array = $schema->toArray();
+            $schemata[] = $array;
+        }
+        return $schemata;
     }
     
     public function linkCompositions(&$objects)
