@@ -69,9 +69,9 @@ class DictionaryApiController extends ApiController
         if ($inputFilter->isValid()) {
             $updateData = $inputFilter->getValues();
             $table = $this->getDictionaryTable();
-            $result = $table->updateEntity('dictionary-entry', $id, $updateData);
+            $table->updateEntity('dictionary-entry', $id, $updateData);
             $this->httpStatusCode = 200;
-            $this->apiResponse = $result;
+            $this->apiResponse = 1;
         } else {
             $this->httpStatusCode = 400; //bad request
             $invalidMessages = $inputFilter->getMessages();
@@ -245,22 +245,19 @@ class DictionaryApiController extends ApiController
             foreach ($objects as $compositeKey => $object) {
                 switch ($object['itemAction']) {
                     case self::REPLACE_LIST_ITEM_ACTION_CREATE:
-                        $result = $table->createEntity('dictionary-entry', $object);
-                        $objects[$compositeKey]['dbResult'] = $result;
+                        $table->createEntity('dictionary-entry', $object);
                         break;
                     case self::REPLACE_LIST_ITEM_ACTION_UPDATE:
                         if (!isset($object['entryId'])) {
                             throw new \Exception('Missing entryId for item to update. Weird.');
                         }
-                        $result = $table->updateEntity('dictionary-entry', $object['entryId'], $object);
-                        $objects[$compositeKey]['dbResult'] = $result;
+                        $table->updateEntity('dictionary-entry', $object['entryId'], $object);
                         break;
                     case self::REPLACE_LIST_ITEM_ACTION_INACTIVATE:
                         if (!isset($object['entryId'])) {
                             throw new \Exception('Missing entryId for item to update. Weird.');
                         }
-                        $result = $table->updateEntity('dictionary-entry', $object['entryId'], ['isActive' => false]);
-                        $objects[$compositeKey]['dbResult'] = $result;
+                        $table->updateEntity('dictionary-entry', $object['entryId'], ['isActive' => false]);
                         break;
                     default:
                         throw new \Exception('We should never be here. Please report this error.');

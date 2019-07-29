@@ -1,4 +1,6 @@
 <?php
+use Spatie\SchemaOrg\BaseType;
+
 if ($this->entity['chordProSpec']) {
     
     $this->headLink()->appendStylesheet($this->basePath() . '/css/chordpro.css');
@@ -20,3 +22,9 @@ if ($this->entity['chordProSpec']) {
     $html = $html_formatter->format($song,$options);
     echo $html;
 }
+if (isset($this->schema)) {
+    $schema = $this->schema;
+    if ($schema instanceof BaseType) {
+        echo $schema->toScript();
+    }
+}?>

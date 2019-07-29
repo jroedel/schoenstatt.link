@@ -88,10 +88,11 @@ class LibrariesApiController extends AbstractRestfulController
         //make the database change (not manually, better to do it through updateEntity)
         $results = [];
         foreach ($objects as $object) {
-            $results[$object['bookId']] = $table->updateEntity('book', $object['bookId'], [
+            $table->updateEntity('book', $object['bookId'], [
                 'callNumber' => $object['newCallNumber'],
                 'newCallNumber' => null,
             ]);
+            $results[$object['bookId']] = true;
         }
         
         //report back how it went with each book

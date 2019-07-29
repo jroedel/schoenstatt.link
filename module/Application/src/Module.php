@@ -18,6 +18,7 @@ use Application\Navigation\FixNavigationPages;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
 use Books\Model\EventTextTable;
+use Books\Model\MusicTable;
 
 class Module
 {
@@ -27,6 +28,7 @@ class Module
         'association-pages',
         'library-pages',
         'blog-pages',
+        'music-pages',
     ];
     
     /**
@@ -203,6 +205,23 @@ class Module
             $cache->setItem('blog-pages', $blogPages);
         }
         
+        if (!isset($pagesByCacheKey['music-pages'])) {
+            $musicPages = [];
+            /** @var MusicTable $musicTable */
+            $musicTable = $sm->get(MusicTable::class);
+            $objects = $musicTable->getObjects('composition');
+            foreach ($objects as $object) {
+                $musicPages[] = [
+                    'label' => $object['name'],
+                    'route' => 'composition',
+                    'params' => ['sw_id' => $object['identifier'], 'slug' => $object['slug']],
+                    //                 'resource' => $object['viewRole'],
+                    'id'    => 'composition_'.$object['compositionId'],
+                ];
+            }
+            $pagesByCacheKey['music-pages'] = $musicPages;
+            $cache->setItem('music-pages', $musicPages);
+        }
         
         //build out the navigation a little
         /** @var Navigation $navigation */
@@ -214,6 +233,7 @@ class Module
         $world = $navigation->findOneBy('label', 'World');
         $libPage = $navigation->findOneBy('route', 'libraries');
         $blogPage = $navigation->findOneBy('route', 'blog');
+        $musicPage = $navigation->findOneBy('route', 'music');
         
         $dictionaryPage->addPages($pagesByCacheKey['dictionary-pages']);
         $publicationsPage->addPages($pagesByCacheKey['publication-pages']);
@@ -222,6 +242,7 @@ class Module
         $world->addPages($pagesByCacheKey['association-pages']['shrinesWorld']);
         $libPage->addPages($pagesByCacheKey['library-pages']);
         $blogPage->addPages($pagesByCacheKey['blog-pages']);
+        $musicPage->addPages($pagesByCacheKey['music-pages']);
         
         $navFixer = new FixNavigationPages();
         $navFixer->attach($app->getEventManager());
