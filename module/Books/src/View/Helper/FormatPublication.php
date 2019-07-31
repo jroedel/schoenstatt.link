@@ -6,10 +6,10 @@ use SionModel\View\Helper\FormatEntity;
 class FormatPublication extends FormatEntity
 {
     const DISPLAY_TITLE = 'title';
+    const DISPLAY_DISAMBIGUATING_TITLE = 'disambiguatingTitle';
     const DISPLAY_AUTHORS = 'authors';
     const DISPLAY_EDITION = 'edition';
     const DISPLAY_TRANSLATORS = 'translators';
-    const DISPLAY_ILLUSTRATORS = 'illustrators';
 
     /**
      *
@@ -33,6 +33,7 @@ class FormatPublication extends FormatEntity
         if (isset($options['display'])) {
             if ($options['display'] === self::DISPLAY_AUTHORS ||
                 $options['display'] === self::DISPLAY_TITLE ||
+                $options['display'] === self::DISPLAY_DISAMBIGUATING_TITLE ||
                 $options['display'] === self::DISPLAY_EDITION ||
                 $options['display'] === self::DISPLAY_TRANSLATORS ||
                 $options['display'] === self::DISPLAY_ILLUSTRATORS) {
@@ -43,11 +44,17 @@ class FormatPublication extends FormatEntity
         } else {
             $displayOption = $this::DISPLAY_TITLE;
         }
-        $linkOption        = isset($options['link']) ? (bool)$options['link'] : $displayOption == self::DISPLAY_TITLE;
-        $editPencilOption  = isset($options['displayEditPencil']) ? (bool)$options['displayEditPencil'] : $displayOption == self::DISPLAY_TITLE;
+        $linkOption        = isset($options['link']) 
+            ? (bool)$options['link'] 
+            : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
+        $editPencilOption  = isset($options['displayEditPencil']) 
+            ? (bool)$options['displayEditPencil'] 
+            : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
         $showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
         $showResourceLabel = isset($options['displayResourceLabel']) ? (bool)$options['displayResourceLabel'] : false;
-        $showHandChecked   = isset($options['displayHandChecked']) ? (bool)$options['displayHandChecked'] : $displayOption == self::DISPLAY_TITLE;
+        $showHandChecked   = isset($options['displayHandChecked']) 
+            ? (bool)$options['displayHandChecked'] 
+            : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
 
         $finalMarkup = '';
         $escapeMainText = true;
@@ -97,19 +104,9 @@ class FormatPublication extends FormatEntity
                 $escapeMainText = false;
                 $mainText = implode('; ', $authors);
                 break;
-            case self::DISPLAY_ILLUSTRATORS:
-                $authors = [];
-//                 if (isset($data['illustratorPerson'])) {
-//                     $authors[] = $this->view->formatEntity('person', $data['illustratorPerson']);
-//                 }
-                foreach ($data['illustratorsText'] as $text) {
-                    $authors[] = $this->view->escapeHtml($text);
-                }
-                $escapeMainText = false;
-                $mainText = implode('; ', $authors);
-                break;
             case self::DISPLAY_TITLE:
-                $mainText = $data['title'];
+            case self::DISPLAY_DISAMBIGUATING_TITLE:
+                $mainText = $data[$displayOption];
                 break;
             case self::DISPLAY_EDITION:
                 $mainText = '';
