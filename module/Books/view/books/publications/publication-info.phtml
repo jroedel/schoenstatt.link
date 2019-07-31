@@ -78,10 +78,11 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
                     $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_TRANSLATORS]));
         }
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Date published', $object['datePublishedText'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publishing status', $object['publishingStatus'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Book format', $object['bookFormatType'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Volume number', $object['volumeNumber'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Contained in', $object['containedIn'], ['displayOnlyIfNotNull' => true]);
