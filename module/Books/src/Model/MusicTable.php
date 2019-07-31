@@ -7,6 +7,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use ChordPro\GuessKey;
 use ChordPro\MonospaceFormatter;
 use Spatie\SchemaOrg\MusicComposition;
+use Spatie\SchemaOrg\CreativeWork;
 
 class MusicTable extends SionTable
 {
@@ -101,7 +102,9 @@ class MusicTable extends SionTable
             $schema->setProperty('lyricist', $object['lyricistText']);
         }
         if (isset($object['lyrics'])) {
-            $schema->setProperty('lyrics', $object['lyrics']);
+            $lyrics = new CreativeWork();
+            $lyrics->text($object['lyrics']);
+            $schema->setProperty('lyrics', $lyrics);
         }
         if (isset($object['musicalKey'])) {
             $schema->setProperty('musicalKey', $object['musicalKey']);

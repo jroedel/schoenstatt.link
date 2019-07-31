@@ -166,7 +166,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
         ]);
         $this->add([
             'name' => 'numberOfPages',
-            'type' => 'Number',
+            'type' => 'Text',
             'options' => [
                 'label' => 'Number of pages',
                 'required' => false,

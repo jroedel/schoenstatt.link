@@ -174,19 +174,16 @@ ORDER BY `Publisher`";
 
     public function getEditionValueOptions($onlyMainEditions = false)
     {
+        $cacheKey = 'publication-edition-value-options';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
         $entities = $this->getUnlinkedPublications();
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
-            $entry = $entityObject['title'];
-            if (isset($entityObject['bookEdition']) || isset($entityObject['copyrightYear'])) {
-                if (isset($entityObject['bookEdition']) && isset($entityObject['copyrightYear'])) {
-                    $entry .= ('['.$entityObject['bookEdition'].', '.$entityObject['copyrightYear']. ']');
-                } else {
-                    $entry .= ('['.$entityObject['bookEdition'].$entityObject['copyrightYear']. ']');
-                }
-            }
-            $return[$entityId] = $entry;
+            $return[$entityId] = $entityObject['disambiguatingTitle'];
         }
+        $this->cacheEntityObjects($cacheKey, $return, ['publication']);
         return $return;
     }
 
@@ -652,7 +649,35 @@ ORDER BY `Publisher`";
         }
 
         $categoryId = $this->filterDbId($row['CategoryId']);
+        $bookEdition = $row['BookEdition'];
+        $copyrightYear = $this->filterDbInt($row['CopyrightYear']);
+        $datePublishedText = $row['DatePublishedText'];
         $datePublished = $this->filterDbDate($row['DatePublished']);
+        
+        $disambiguatingTitle = $title;
+        if (isset($bookEdition)
+            || isset($copyrightYear)
+            || isset($datePublishedText)
+        ) {
+            $extraInfo = '';
+            if (isset($bookEdition)) {
+                $extraInfo = $bookEdition;
+            }
+            if (isset($datePublishedText)) {
+                if ('' === $extraInfo) {
+                    $extraInfo = $datePublishedText;
+                } else {
+                    $extraInfo .= (", ".$datePublishedText);
+                }
+            } elseif (isset($copyrightYear)) {
+                if ('' === $extraInfo) {
+                    $extraInfo = (string)$copyrightYear;
+                } else {
+                    $extraInfo .= (", ".(string)$copyrightYear);
+                }
+            }
+            $disambiguatingTitle = "$disambiguatingTitle [$extraInfo]";
+        }
 
         $processedRow = [
             'publicationId'             => $id,
@@ -664,7 +689,7 @@ ORDER BY `Publisher`";
             'resourceId'                => $resourceId,
             'authorsText'               => $authorsText,
             'authorsNoAccents'          => $row['AuthorsNoAccents'],
-            'bookEdition'               => $this->filterDbString($row['BookEdition']),
+            'bookEdition'               => $bookEdition,
             'categoryId'                => $categoryId,
 
             'inLanguage'                => $inLanguage,
@@ -674,12 +699,11 @@ ORDER BY `Publisher`";
             'editorsNoAccents'          => $row['EditorNoAccents'],
             'translatorsText'           => $translatorText,
             'numberOfPages'             => $this->filterDbInt($row['NumberOfPages']),
-            'copyrightYear'             => $this->filterDbInt($row['CopyrightYear']),
+            'copyrightYear'             => $copyrightYear,
             'copyrightInfo'             => $row['CopyrightInfo'],
-            'datePublishedText'         => $row['DatePublishedText'],
+            'datePublishedText'         => $datePublishedText,
             'publisher'                 => $this->filterDbString($row['Publisher']),
             'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
-            'datePublished'             => $datePublished,
             'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
             'bookFormatType'            => $bookFormatType,
             'mainPublicationId'         => $mainPublicationId,
@@ -742,7 +766,8 @@ ORDER BY `Publisher`";
             'categoryName'              => $row['CategoryName'],
             'categorySort'              => $this->filterDbInt($row['CategorySortOrder']),
             'categoryParentId'          => $this->filterDbId($row['CategoryParentId']),
-
+            'disambiguatingTitle'       => $disambiguatingTitle,
+            'datePublished'             => $datePublished,
             'identifier'                => $identifier,
             'isSubEdition'              => isset($mainPublicationId),
             'mainPublication'           => null,

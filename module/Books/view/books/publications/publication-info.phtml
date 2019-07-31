@@ -65,7 +65,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
         <?php echo $this->formatField('Language', $object['inLanguage']);
         if (!is_null($object['mainPublication'])) :?>
         <p><strong><?= $this->translate('Current publication');?>:</strong> <?php
-        echo $this->formatEntity('publication', $object['mainPublication']);?></p>
+        echo $this->formatEntity('publication', $object['mainPublication'], ['display' => FormatPublication::DISPLAY_DISAMBIGUATING_TITLE]);?></p>
         <?php endif;
         if (!is_null($object['translatedFromPublication'])) :?>
         <p><strong><?= $this->translate('Translated from');?>:</strong> <?php
