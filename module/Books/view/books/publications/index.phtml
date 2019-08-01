@@ -22,7 +22,10 @@ if ($this->isAllowed('route/publications/create')):?>
 
 <div class="col-md-9">
 <?php 
-foreach ($this->objects as $categoryName => $category) :?>
+foreach ($this->objects as $categoryName => $category) :
+if (empty($category['objects'])) {
+continue;
+}?>
 <h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->escapeHtml($this->translate($categoryName));?></h2>
 <?php 
     echo $this->partial('publication-list', [
@@ -40,7 +43,10 @@ endforeach;?>
  <nav class="col-md-3 pull-right" id="sidebar-nav" role="complementary">
     <ul class="nav nav-pills nav-stacked" data-spy="affix" data-offset-top="275">
     <?php $firstTime = true;
-    foreach ($this->objects as $categoryName => $category) :?>
+    foreach ($this->objects as $categoryName => $category) :
+    if (empty($category['objects'])) {
+    continue;
+    }?>
        <li><a href="#<?php echo $this->escapeHtmlAttr($category['bookmark']);?>" <?php if ($firstTime) echo 'class="active"';?>><?php echo $this->escapeHtml($this->translate( $categoryName ));?></a></li>
        <?php $firstTime = false;
        endforeach;?>

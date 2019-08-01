@@ -95,8 +95,9 @@ class Module
             }
             $languageNames = $dictionaryTable->getLanguageNames();
             foreach ($pagesByLanguage as $languageCode => $pages) {
+                $languageName = isset($languageNames[$languageCode]) ? $languageNames[$languageCode] : 'Other';
                 $publicationPages[] = [
-                    'label' => $languageNames[$languageCode].' Schoenstatt Literature',
+                    'label' => $languageName.' Schoenstatt Literature',
                     'route' => 'publications/index',
                     'params' => ['inLanguage' => $languageCode],
                     'id'    => 'pub_lang_'.$languageCode,
