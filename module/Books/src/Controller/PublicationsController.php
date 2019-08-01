@@ -344,7 +344,7 @@ class PublicationsController extends SionController
         unset($object['publicationId']);
         unset($object['bookEdition']);
         unset($object['numberOfPages']);
-        unset($object['datePublished']);
+        unset($object['datePublishedText']);
         unset($object['publishingStatus']);
         unset($object['isbn']);
         unset($object['hasNoISBN']);
