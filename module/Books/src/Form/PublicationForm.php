@@ -536,6 +536,13 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
             'inLanguage' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
             ],
             'bookEdition' => [
                 'required' => false,

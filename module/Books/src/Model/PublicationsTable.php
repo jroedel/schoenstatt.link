@@ -430,7 +430,11 @@ ORDER BY `Publisher`";
 
         //Prepare inLanguage predicate
         if (isset($query['inLanguage']) && 0 !== strlen($query['inLanguage'])) {
-            $inLanguageClause = new Operator($fieldMap['inLanguage'], Operator::OPERATOR_EQUAL_TO, $query['inLanguage']);
+            if (is_string($query['inLanguage']) && 'xx' === $query['inLanguage']) {
+                $inLanguageClause = new IsNull($fieldMap['inLanguage']);
+            } else {
+                $inLanguageClause = new Operator($fieldMap['inLanguage'], Operator::OPERATOR_EQUAL_TO, $query['inLanguage']);
+            }
             $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
         }
 
