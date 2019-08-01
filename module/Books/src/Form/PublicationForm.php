@@ -12,6 +12,7 @@ use Zend\Validator\StringLength;
 use Zend\Filter\StripNewlines;
 use Zend\Filter\StringTrim;
 use Zend\Validator\Regex;
+use Zend\Validator\NotEmpty;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -24,9 +25,9 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Title',
-                'required' => true,
             ],
             'attributes' => [
+                'required' => true,
                 'maxlength' => '300',
             ],
         ]);
@@ -76,10 +77,12 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Language',
-                'required' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],
+            ],
+            'attributes' => [
+                'required' => true,
             ],
         ]);
         $this->add([
@@ -535,11 +538,11 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
             'inLanguage' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
+                'required' => true,
+                'validators' => [
+                    ['name' => NotEmpty::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => NotEmpty::STRING,
                         ]
                     ],
                 ],
