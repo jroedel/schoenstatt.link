@@ -111,16 +111,17 @@ class FormatPublication extends FormatEntity
             case self::DISPLAY_EDITION:
                 $mainText = '';
                 $escapeMainText = false;
-                if (!is_null($data['bookEdition'])) {
+                if (isset($data['bookEdition'])) {
                     $mainText .= sprintf("<strong>%s</strong>", $this->view->escapeHtml($data['bookEdition']));
                 }
-                if (!is_null($data['copyrightYear'])) {
+                //use published date because copyright date should be the same for all editions (first edition)
+                if (isset($data['datePublishedText'])) {
                     if (strlen($mainText) > 0) {
                         $mainText .= ', ';
                     }
-                    $mainText .= $this->view->escapeHtml($data['copyrightYear']);
+                    $mainText .= $this->view->escapeHtml($data['datePublishedText']);
                 }
-                if (!is_null($data['publishingPlace'])) {
+                if (isset($data['publishingPlace'])) {
                     if (strlen($mainText) > 0) {
                         $mainText .= ' ';
                     }
