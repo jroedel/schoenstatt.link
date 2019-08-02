@@ -47,7 +47,7 @@ switch ($column) {
         break;
     case 'authors':?>
 		<td><?php echo $this->formatEntity('publication', $entity, [
-		    'display' => 'authors',
+		    'display' => FormatPublication::DISPLAY_AUTHORS,
 		]);?></td>
     	<?php break;
     case 'title':?>

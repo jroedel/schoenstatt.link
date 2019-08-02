@@ -595,28 +595,10 @@ ORDER BY `Publisher`";
 
         $resourceId = $this->filterDbString($row['ResourceId']);
 
-        $authorsAll = [];
-
-        $authorsText = $this->filterDbArray($row['Authors'], '; ');
-        foreach ($authorsText as $author) {
-            $authorsAll[] = $author;
-        }
-
-        $editorsAll = [];
+        //the text/all distinction exists because "all" will also include linked entities from other tables
+        $authorsText = $this->filterDbArray($row['Authors']);
         $editorText = $this->filterDbArray($row['Editor']);
-        if (isset($editorText)) {
-            foreach ($editorText as $value) {
-                $editorsAll[] = $value;
-            }
-        }
-
-        $translatorsAll = [];
         $translatorText = $this->filterDbArray($row['Translator']);
-        if (isset($translatorText)) {
-            foreach ($translatorText as $value) {
-                $translatorsAll[] = $value;
-            }
-        }
 
         $bookFormatType = $this->filterDbString($row['BookFormatType']);
         $bookFormatTypeUrl = null;
@@ -624,6 +606,7 @@ ORDER BY `Publisher`";
             $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
         }
         $inLanguage = $this->filterDbString($row['InLanguage']);
+        //@todo I'm not so sure this is a good idea
         if (!isset($inLanguage)) {
             $inLanguage = 'xx';
         }
@@ -680,7 +663,9 @@ ORDER BY `Publisher`";
                     $extraInfo .= (", ".(string)$copyrightYear);
                 }
             }
-            $disambiguatingTitle = "$disambiguatingTitle [$extraInfo]";
+            if (ststrlen($extraInfo) > 0) {
+                $disambiguatingTitle = "$disambiguatingTitle [$extraInfo]";
+            }
         }
 
         $processedRow = [
@@ -763,9 +748,9 @@ ORDER BY `Publisher`";
             'coverThumbnail400pxUri'    => $coverThumbnail400,
             'bookFormatTypeUrl'         => $bookFormatTypeUrl,
 
-            'authorsAll'                => $authorsAll,
-            'editorsAll'                => $editorsAll,
-            'translatorsAll'            => $translatorsAll,
+            'authorsAll'                => $authorsText,
+            'editorsAll'                => $editorText,
+            'translatorsAll'            => $translatorText,
 
             'categoryName'              => $row['CategoryName'],
             'categorySort'              => $this->filterDbInt($row['CategorySortOrder']),
