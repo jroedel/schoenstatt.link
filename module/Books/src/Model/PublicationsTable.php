@@ -663,7 +663,7 @@ ORDER BY `Publisher`";
                     $extraInfo .= (", ".(string)$copyrightYear);
                 }
             }
-            if (ststrlen($extraInfo) > 0) {
+            if (strlen($extraInfo) > 0) {
                 $disambiguatingTitle = "$disambiguatingTitle [$extraInfo]";
             }
         }
