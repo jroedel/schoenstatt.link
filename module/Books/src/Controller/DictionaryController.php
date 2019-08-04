@@ -61,7 +61,7 @@ class DictionaryController extends SionController
         return $schemata;
     }
     
-    public function redirectAfterEdit($id, $data = [], $form = null)
+    public function redirectAfterEdit($id, $data = [], $form = null, $updatedObject = [])
     {
         $inLanguage = \Locale::getPrimaryLanguage($data['locale']);
         if (isset($inLanguage)) {

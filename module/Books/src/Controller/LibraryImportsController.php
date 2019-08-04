@@ -180,7 +180,7 @@ class LibraryImportsController extends SionController
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterEdit()
      */
-    public function redirectAfterEdit($id, $data = [], $form = null)
+    public function redirectAfterEdit($id, $data = [], $form = null, $updatedObject = [])
     {
         //don't redirect after edit
     }
