@@ -48,7 +48,7 @@ class BlogController extends SionController
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterEdit()
      */
-    public function redirectAfterEdit($id, $data = [], $form = null)
+    public function redirectAfterEdit($id, $data = [], $form = null, $updatedObject = [])
     {
         return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $id]);
     }
