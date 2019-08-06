@@ -4,12 +4,12 @@ namespace Books\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\EventTextTable;
-use Books\Form\BlogForm;
+use Books\Form\TextForm;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class BlogFormFactory implements FactoryInterface
+class TextFormFactory implements FactoryInterface
 {
     /**
      * Create an object
@@ -23,7 +23,7 @@ class BlogFormFactory implements FactoryInterface
 
         $keywords = $table->getTextTagsOptions(EventTextTable::TEXT_KIND_BLOG);
 
-        $form = new BlogForm();
+        $form = new TextForm();
         $form->get('tags')->setValueOptions($keywords);
         return $form;
     }

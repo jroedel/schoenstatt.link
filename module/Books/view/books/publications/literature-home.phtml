@@ -46,3 +46,9 @@ $this->badge()->setTranslatorEnabled(false); ?>
 </div>
 </div>
 </div>
+
+<?php if ($this->isAllowed('route/texts')):?>
+<div class="row">
+<p><a href="<?= $this->url('texts') ?>" class="btn btn-primary"><?= $this->translate('Search Fr. Kentenich texts')?></a></p>
+</div>
+<?php endif;?>

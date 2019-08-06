@@ -8,9 +8,11 @@ use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterfac
 use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
 use Schoenstatt\Filter\BlogPostUserIdFilter;
-use Cocur\Slugify\Slugify;
 use voku\Html2Text\Html2Text;
 use Spatie\SchemaOrg\BlogPosting;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use Schoenstatt\Model\SchoenstattTable;
+use voku\helper\UTF8;
 
 class EventTextTable extends SionTable implements
     ResourceProviderInterface,
@@ -18,10 +20,12 @@ class EventTextTable extends SionTable implements
 {
     //kind of text for blog posts
     const TEXT_KIND_BLOG = 'blog';
-    //kind of text for saving blog drafts
+    //kind of text for auto-saving blog drafts
     const TEXT_KIND_BLOG_DRAFT = 'blog-draft';
     //kind of text for translating blog posts
     const TEXT_KIND_BLOG_TRANSLATION = 'blog-translation';
+    
+    const TEXT_KIND_JK_TEXT = 'jk-text';
     
     /**
      * @var array $config
@@ -44,6 +48,10 @@ class EventTextTable extends SionTable implements
     {
         $select = parent::getSelectPrototype($entity);
         if ('text' === $entity) {
+            $select->where(['TextKind' => self::TEXT_KIND_JK_TEXT]);
+            $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
+        } elseif ('blog-post' === $entity) {
+            $select->where(['TextKind' => self::TEXT_KIND_BLOG]);
             $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
         } elseif ('event' === $entity) {
             $select->order(['StartDate']);
@@ -149,18 +157,31 @@ class EventTextTable extends SionTable implements
      */
     protected function processTextRow($row)
     {
+        static $swFilter;
         $id = $this->filterDbId($row['TextId']);
         $createdBy = $this->filterDbId($row['CreatedBy']);
         $createdByUsername = null;
         if (isset($createdBy) && isset($this->usernames[$createdBy])) {
             $createdByUsername = $this->usernames[$createdBy];
         }
+        
+        if (!isset($swFilter)) {
+            $swFilter = new ToSchoenstattLinkIdentifier('text');
+        }
+        $identifier = $swFilter->filter($id);
+        $title = $row['Title'];
+        $slug = $row['Slug'];
+        if (!isset($slug)) {
+            $slug = SchoenstattTable::getSlug($title);
+            $this->slylyUpdateTextSlug($id, $slug);
+        }
+        
         $processedRow = [
             'textId'                => $id,
-            'title'                 => $row['Title'],
+            'title'                 => $title,
             'kind'                  => $row['TextKind'],
             'inLanguage'            => $row['Language'],
-            'slug'                  => $row['Slug'],
+            'slug'                  => $slug,
             'isDraft'               => $this->filterDbBool($row['IsDraft']),
             'markdownText'          => isset($row['MarkdownText']) ? $row['MarkdownText'] : null,
             'htmlText'              => isset($row['HtmlText']) ? $row['HtmlText'] : null,
@@ -185,9 +206,17 @@ class EventTextTable extends SionTable implements
             'createdOn'             => $this->filterDbDate($row['CreatedOn']),
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
             
+            'identifier'            => $identifier,
             'createdByUsername'     => $createdByUsername,
         ];
         return $processedRow;
+    }
+    
+    protected function slylyUpdateTextSlug($textId, $slug)
+    {
+        $gateway = $this->getTableGatewayForEntity('text');
+        $result = $gateway->update(['Slug' => $slug], ['TextId' => $textId]);
+        return $result;
     }
     
     /**
@@ -198,20 +227,18 @@ class EventTextTable extends SionTable implements
      */
     protected function preprocessText($data, $entityData, $action)
     {
-        static $slugFilter;
         static $mdParser;
         static $html2Text;
         static $now;
         //generate slug
         if (!isset($data['slug']) && isset($data['title'])) {
-            if (!isset($slugFilter)) {
-                $slugFilter = new Slugify();
-            }
-            $data['slug'] = $slugFilter->slugify($data['title']);
+            $data['slug'] = SchoenstattTable::getSlug($data['title']);
             //@todo check here that the slug doesn't exist, if it does try adding different numbers until it works
         }
         
-        if (isset($data['markdownText'])) {
+        if (isset($data['markdownText']) && !isset($data['htmlText']) 
+            && self::TEXT_KIND_JK_TEXT !== $entityData['kind']
+        ) {
             //generate HTML
             if (!isset($mdParser)) {
                 $parsedown = new \Parsedown();
@@ -253,6 +280,77 @@ class EventTextTable extends SionTable implements
         }
         
         return $data;
+    }
+    
+    /**
+     * Import markdown and html files into the JK text db
+     * @param boolean $simulate
+     * @return string[][]|boolean[][]
+     */
+    public function importJkTexts($simulate = true)
+    {
+        $objects = $this->queryObjects('text', [
+            'kind' => self::TEXT_KIND_JK_TEXT,
+            'markdownText' => null,
+            'htmlText' => null,
+        ]);
+        $results = [];
+        foreach ($objects as $objectId => $object) {
+            $filename = $object['legacyFile'];
+            if (!isset($filename)) {
+                continue;
+            }
+            $data = [];
+            if (!isset($object['markdownText']) || !isset($object['htmlText'])) {
+                //check if we have the md file,
+                $filePath = 'data/texts/'.$filename;
+                if (file_exists($filePath)) {
+                    try {
+                        //import it,
+                        $file = fopen($filePath, "r");
+                        $markdownText = fread($file,filesize($filePath));
+                        //normalize utf8
+                        $data['markdownText'] = UTF8::filter($markdownText);
+                        fclose($file);
+                        
+                        $pathInfo = pathinfo($filePath);
+                        $pathWithoutExtension = 'data/texts/'.$pathInfo['filename'];
+                        
+                        //also the html
+                        $htmlFilePath = $pathWithoutExtension.'.html';
+                        $file = fopen($htmlFilePath, "r");
+                        $data['htmlText'] = fread($file,filesize($htmlFilePath));
+                        fclose($file);
+                        
+                        //also the plain text for a better word count
+                        $plainFilePath = $pathWithoutExtension.'.txt';
+                        $file = fopen($plainFilePath, "r");
+                        $plainText = fread($file,filesize($plainFilePath));
+                        $data['wordCount'] = str_word_count($plainText);
+                        var_dump($data['wordCount']);
+                        fclose($file);
+                        
+                        //@todo for search text: replace word chars, strip non word chars
+                    } catch (\Exception $e) {
+                        if (isset($this->logger)) {
+                            $this->logger->err("Trying to import file `$filename`, but we were unsuccessful");
+                        }
+                    }
+                }
+            }
+            
+            if (!empty($data)) {
+                if (false === $simulate) {
+                    //looks like we've got some updating to do
+                    $result = $this->updateEntity('text', $objectId, $data, [], false);
+                    $data['result'] = $result;
+                } else {
+                    $data['result'] = 'simulated-update';
+                }
+                $results[$objectId] = $data;
+            }
+        }
+        return $results;
     }
     
     public static function getBlogPostSchema(array $textObject)

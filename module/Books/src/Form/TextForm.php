@@ -6,12 +6,12 @@ use Zend\InputFilter\InputFilterProviderInterface;
 use Books\Model\EventTextTable;
 use Zend\Validator\Identical;
 
-class BlogForm extends SionForm implements InputFilterProviderInterface
+class TextForm extends SionForm implements InputFilterProviderInterface
 {
     public function __construct()
     {
-        parent::__construct('event');
-
+        parent::__construct('text');
+        $this->setAttribute('method', 'GET');
         $this->add([
             'name' => 'title',
             'type' => 'Text',
@@ -23,19 +23,6 @@ class BlogForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '200',
             ],
         ]);
-//         $this->add([
-//             'name' => 'slug',
-//             'type' => 'Text',
-//             'options' => [
-//                 'label' => 'URL text',
-//                 'help-block' => 'This field can only be edited on draft texts. '
-//                     .'Be very careful to change this as it may break published links.'
-//             ],
-//             'attributes' => [
-//                 'required' => false,
-//                 'maxlength' => '50',
-//             ],
-//         ]);
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'markdownText',
             'type' => 'Textarea',
