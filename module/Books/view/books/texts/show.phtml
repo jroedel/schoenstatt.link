@@ -4,18 +4,19 @@ $this->headTitle($headText);
 $object = $this->entity;?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
 
-<p><i class="fa fa-user"></i> <?php echo sprintf($this->translate('by %s'), $object['createdByUsername']);
-?>  <i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php echo $this->diffForHumans($this->entity['createdOn']);?></p>
+<i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php 
+if (isset($this->entity['createdOn'])) {
+    echo $this->diffForHumans($this->entity['createdOn']);
+}?></p>
 <p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php 
 foreach ($object['tags'] as $tag) : ?>
 <a href=""><span class="badge badge-info"><?php echo $this->escapeHtml($tag); //@todo translate this later?></span></a> 
 <?php endforeach;?></p>
 <hr>
 <?php
-$parsedown = new \Parsedown();
-$parsedown->setSafeMode(true);
-$translatedText = $parsedown->text($this->translate($this->entity['markdownText']));
-echo $translatedText;?>
+if (isset($object['htmlText'])) {
+    echo $object['htmlText'];
+}?>
 <hr>
     <!-- the comment box -->
 <?php if (isset($this->commentForm)) {

@@ -1,0 +1,16 @@
+<?php
+use Cake\Utility\Text;
+
+echo $this->partial('search-bar', $this->vars);
+//add a bar graph showing the distribution of search results in the life of JK
+if (isset($this->objects)):
+foreach ($this->objects as $object) :?>
+<p><strong><?= $this->formatEntity('text', $object)?></strong>&nbsp;<?php
+if (isset($this->search)) {
+    echo Text::highlight(
+        Text::excerpt($object['plainText'], $this->search),
+        $this->search,
+        ['format' => '<mark>\1</mark>']);
+}?></p>
+<?php endforeach;
+endif;?>

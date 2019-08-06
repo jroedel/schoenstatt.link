@@ -1,0 +1,5 @@
+UPDATE `texts` SET `TextId`=`TextId`+2800 ;
+# drop the slug key
+ALTER TABLE `texts` CHANGE `Slug` `Slug` VARCHAR(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL;
+ALTER TABLE `texts` CHANGE `MarkdownText` `MarkdownText` MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL, CHANGE `HtmlText` `HtmlText` MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL, CHANGE `PlainText` `PlainText` MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL;
+ALTER TABLE `texts` ADD `SearchText` MEDIUMTEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL AFTER `PlainText`;

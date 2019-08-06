@@ -115,7 +115,7 @@ $this->inlineScript()->captureEnd();
 <?php 
 if (isset($this->blogPosts) && is_array($this->blogPosts)) :
     foreach ($this->blogPosts as $post) :?>
-      <p><strong><a href="<?php echo $this->url('blog/blog-post', ['text_id' => $post['textId'], 'slug' => $post['slug']]);?>"><?php echo $this->translate($post['title']);?></a></strong></p>
+      <p><strong><a href="<?php echo $this->url('blog/blog-post', ['sw_id' => $post['identifier'], 'slug' => $post['slug']]);?>"><?php echo $this->translate($post['title']);?></a></strong></p>
       <?php 
     endforeach;
 endif;?>

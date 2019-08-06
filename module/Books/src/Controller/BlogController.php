@@ -5,6 +5,9 @@ use SionModel\Controller\SionController;
 use Zend\Stdlib\ResponseInterface;
 use Books\Model\EventTextTable;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use Schoenstatt\Model\SchoenstattTable;
 
 class BlogController extends SionController
 {
@@ -38,10 +41,32 @@ class BlogController extends SionController
         //every minute or so we could in theory get a lost post back
     }
     
-    public function getEntityObject($id)
+    /**
+     * Makes sure this function returns the textId if passed a site-wide id
+     *
+     * {@inheritDoc}
+     * @see \SionModel\Controller\SionController::getEntityIdParam()
+     */
+    protected function getEntityIdParam($action = 'show', $default = null)
     {
-        $object = $this->getSionTable()->getObject('text', $id);
-        return $this->object[$id] = $object;
+        static $swValidator;
+        static $swFilter;
+        $id = $this->params()->fromRoute('sw_id');
+        if (isset($id)) {
+            if (!isset($swValidator)) {
+                $swValidator = new SchoenstattLinkIdentifier('text');
+            }
+            if (!$swValidator->isValid($id)) {
+                throw new \Exception('Invalid site-wide id');
+            }
+            if (!isset($swFilter)) {
+                $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier('text');
+            }
+            $id = $swFilter->filter($id);
+        } else {
+            throw new \Exception('Invalid text id');
+        }
+        return $id;
     }
     
     /**
@@ -50,7 +75,7 @@ class BlogController extends SionController
      */
     public function redirectAfterEdit($id, $data = [], $form = null, $updatedObject = [])
     {
-        return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $id]);
+        return $this->redirect()->toRoute('blog/blog-post', ['sw_id' => $updatedObject['identifier'], 'slug' => $updatedObject['slug']]);
     }
     
     /**
@@ -59,7 +84,10 @@ class BlogController extends SionController
      */
     public function redirectAfterCreate($newId, $data = [], $form = null)
     {
-        return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $newId]);
+        $swFilter = new ToSchoenstattLinkIdentifier('text');
+        $identifier = $swFilter->filter($newId);
+        $slug = SchoenstattTable::getSlug($data['title']);
+        return $this->redirect()->toRoute('blog/blog-post', ['sw_id' => $identifier, 'slug' => $slug]);
     }
     
     /**

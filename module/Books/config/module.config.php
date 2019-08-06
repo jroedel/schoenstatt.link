@@ -30,6 +30,37 @@ use Books\Model\DictionaryTable;
 use Zend\Navigation\Navigation;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
+$textColumns = [
+    'textId' => 'TextId',
+    'title' => 'Title',
+    'kind' => 'TextKind',
+    'inLanguage' => 'Language',
+    'slug' => 'Slug',
+    'isDraft' => 'IsDraft',
+    'markdownText' => 'MarkdownText',
+    'htmlText' => 'HtmlText',
+    'plainText' => 'PlainText',
+    'wordCount' => 'WordCount',
+    'jkTextQuality' => 'JkTextQuality',
+    'tags' => 'Tags',
+    'adminTags' => 'AdminTags',
+    'aclResourceId' => 'AclResourceId',
+    'publicNotes' => 'PublicNotes',
+    'publicNotesUpdatedBy' => 'PublicNotesUpdatedBy',
+    'publicNotesUpdatedOn' => 'PublicNotesUpdatedOn',
+    'adminNotes' => 'AdminNotes',
+    'adminNotesUpdatedBy' => 'AdminNotesUpdatedBy',
+    'adminNotesUpdatedOn' => 'AdminNotesUpdatedOn',
+    'legacyEventId' => 'LegacyEventId',
+    'legacyFile' => 'LegacyFile',
+    'legacyPathDate' => 'LegacyPathDate',
+    'legacyFileDateModified' => 'LegacyFileDateModified',
+    'updatedOn' => 'UpdatedOn',
+    'updatedBy' => 'UpdatedBy',
+    'createdOn' => 'CreatedOn',
+    'createdBy' => 'CreatedBy',
+];
+
 return [
     'books' => [
         'books_db_adapter' => Adapter::class,
@@ -235,7 +266,7 @@ return [
             'Books\LanguagesValueOptions'       => Service\LanguagesValueOptionsFactory::class,
             Mailing\BooksMailer::class          => Service\BooksMailerFactory::class,
             Service\DriveGateway::class         => Service\DriveGatewayFactory::class,
-            Form\BlogForm::class                => Service\BlogFormFactory::class,
+            Form\TextForm::class                => Service\TextFormFactory::class,
             Form\DictionaryEntryForm::class     => Service\DictionaryEntryFormFactory::class,
             Model\MusicTable::class             => Service\MusicTableFactory::class,
             Form\CompositionForm::class         => Service\CompositionFormFactory::class,
@@ -1140,13 +1171,85 @@ return [
                     ],
                 ],
             ],
+            'texts' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/texts',
+                    'defaults' => [
+                        'controller' => Controller\TextsController::class,
+                        'action' => 'search',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'jk-import' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/import',
+                            'defaults' => [
+                                'controller' => Controller\TextsController::class,
+                                'action'     => 'importJkTexts',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'text' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
+                            '/^$'
+                            ),
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\TextsController::class,
+                        'action'     => 'show',
+                    ],
+                ],
+            ],
+            'text-edit' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/edit',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\TextsController::class,
+                        'action'     => 'edit',
+                    ],
+                ],
+            ],
+            'text-delete' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/delete',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\TextsController::class,
+                        'action'     => 'delete',
+                    ],
+                ],
+            ],
             'blog' => [
                 'type' => Literal::class,
                 'options' => [
                     'route'    => '/blog',
                     'defaults' => [
                         'controller' => Controller\BlogController::class,
-                        'action' => 'index',
+                        'action' => 'blogIndex',
                     ],
                 ],
                 'may_terminate' => true,
@@ -1154,9 +1257,12 @@ return [
                     'blog-post' => [
                         'type'    => Segment::class,
                         'options' => [
-                            'route'    => '/posts/:text_id[/:slug]',
+                            'route'    => '/posts/:sw_id[/:slug]',
                             'constraints' => [
-                                'text_id' => '[0-9]{1,5}',
+                                'sw_id' => trim(
+                                    SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
+                                    '/^$'
+                                    ),
                                 'slug' => '[a-z0-9-]{1,200}',
                             ],
                             'defaults' => [
@@ -1164,28 +1270,36 @@ return [
                             ],
                         ],
                         'may_terminate' => true,
-                    ],
-                    'delete' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/posts/:text_id/delete',
-                            'constraints' => [
-                                'text_id' => '[0-9]{1,5}',
+                        'child_routes' => [
+                            'delete' => [
+                                'type'    => Segment::class,
+                                'options' => [
+                                    'route'    => '/posts/:sw_id/delete',
+                                    'constraints' => [
+                                        'sw_id' => trim(
+                                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
+                                            '/^$'
+                                            ),
+                                    ],
+                                    'defaults' => [
+                                        'action'     => 'delete',
+                                    ],
+                                ],
                             ],
-                            'defaults' => [
-                                'action'     => 'delete',
-                            ],
-                        ],
-                    ],
-                    'edit' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/posts/:text_id/edit',
-                            'constraints' => [
-                                'text_id' => '[0-9]{1,5}',
-                            ],
-                            'defaults' => [
-                                'action'     => 'edit',
+                            'edit' => [
+                                'type'    => Segment::class,
+                                'options' => [
+                                    'route'    => '/posts/:sw_id/edit',
+                                    'constraints' => [
+                                        'sw_id' => trim(
+                                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
+                                            '/^$'
+                                            ),
+                                    ],
+                                    'defaults' => [
+                                        'action'     => 'edit',
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -2110,13 +2224,79 @@ return [
                 'update_columns'                            => [
                 ],
             ],
+            'blog-post' => [
+                'name'                                      => 'blog-post',
+                'table_name'                                => 'texts',
+                'table_key'                                 => 'TextId',
+                'entity_key_field'                          => 'textId',
+                'sion_model_class'                          => Model\EventTextTable::class,
+                'sion_controllers'                          => [Controller\BlogController::class],
+                'controller_services'                       => [],
+                'row_processor_function'                    => 'processTextRow',
+//                 'get_object_function'                       => 'getText',
+//                 'get_objects_function'                      => 'getUnlinkedTexts',
+//                 'format_view_helper'                        => 'formatEvent',
+                'required_columns_for_creation'             => [
+                    'title',
+                    'kind',
+                    'inLanguage',
+                ],
+                'name_field'                                => 'title',
+                'name_field_is_translateable'               => true,
+//                 'country_field'                             => 'country',
+                'text_columns'                              => ['markdownText', 'htmlText', 'plainText'],
+//                 'many_to_one_update_columns'                => [
+//                     'email'    => 'contactInfo',
+//                     'cell'    => 'contactInfo',
+//                 ],
+                'report_changes'                            => true,
+//                 'index_route'                               => 'events',
+//                 'index_template'                            => 'project/events/index',
+//                 'default_route_key'                         => 'text_id',
+                'default_route_params'                     => [
+                    'sw_id' => 'identifier',
+                    'slug' => 'slug',
+                ],
+//                 'show_act    ion_template'                      => 'project/events/show',
+                'show_route'                                => 'blog/blog-post',
+//                 'show_route_key'                            => 'text_id',
+//                 'show_route_key_field'                      => 'textId',
+                'edit_action_form'                          => Form\TextForm::class,
+//                 'edit_action_template'                      => 'project/events/edit',
+                'edit_route'                                => 'text-edit',
+//                 'edit_route_key'                            => 'text_id',
+//                 'edit_route_key_field'                      => 'textId',
+                'create_action_form'                        => Form\TextForm::class,
+//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
+//                 'create_action_redirect_route'              => 'blog/blog-post',
+//                 'create_action_redirect_route_key'          => 'text_id',
+//                 'create_action_redirect_route_key_field'    => 'textId',
+//                 'create_action_template'                    => 'project/events/create',
+//                 'touch_default_field'                       => 'eventId',
+//                 'touch_route_key'                           => 'event_id',
+//                 'touch_field_route_key'                     => 'event_id',
+//                 'touch_json_route'                          => 'events/event/touch',
+//                 'touch_json_route_key'                      => 'event_id',
+                'database_bound_data_preprocessor'          => 'preprocessText',
+//                 'database_bound_data_postprocessor'         => 'postprocessEvent',
+//                 'moderate_route'                            => 'events/event/moderate',
+//                 'moderate_route_entity_key'                 => 'event_id',
+//                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
+                'enable_delete_action'                      => true,
+//                 'delete_action_acl_resource'                => 'event_:id',
+//                 'delete_action_acl_permission'              => 'delete',
+                'delete_action_redirect_route'              => 'text-delete',
+                'update_columns'                            => $textColumns,
+            ],
             'text' => [
                 'name'                                      => 'text',
                 'table_name'                                => 'texts',
                 'table_key'                                 => 'TextId',
                 'entity_key_field'                          => 'textId',
                 'sion_model_class'                          => Model\EventTextTable::class,
-                'sion_controllers'                          => [Controller\BlogController::class],//BorrowersController::class],
+                'sion_controllers'                          => [
+                    Controller\TextsController::class
+                ],//BorrowersController::class],
                 'controller_services'                       => [],
                 'row_processor_function'                    => 'processTextRow',
 //                 'get_object_function'                       => 'getText',
@@ -2138,21 +2318,25 @@ return [
                 'report_changes'                            => true,
                 //                 'index_route'                               => 'events',
 //                 'index_template'                            => 'project/events/index',
-                'default_route_key'                         => 'text_id',
-                //                 'show_action_template'                      => 'project/events/show',
-                'show_route'                                => 'blog/blog-post',
-                'show_route_key'                            => 'text_id',
-                'show_route_key_field'                      => 'textId',
-                'edit_action_form'                          => Form\BlogForm::class,
+//                 'default_route_key'                         => 'text_id',
+                'default_route_params'                     => [
+                    'sw_id' => 'identifier',
+                    'slug' => 'slug',
+                ],
+//                 'show_action_template'                      => 'project/events/show',
+                'show_route'                                => 'text',
+//                 'show_route_key'                            => 'text_id',
+//                 'show_route_key_field'                      => 'textId',
+                'edit_action_form'                          => Form\TextForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
-                'edit_route'                                => 'blog/edit',
-                'edit_route_key'                            => 'text_id',
-                'edit_route_key_field'                      => 'textId',
-                'create_action_form'                        => Form\BlogForm::class,
+                'edit_route'                                => 'text-edit',
+//                 'edit_route_key'                            => 'text_id',
+//                 'edit_route_key_field'                      => 'textId',
+                'create_action_form'                        => Form\TextForm::class,
 //                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
-                'create_action_redirect_route'              => 'blog/blog-post',
-                'create_action_redirect_route_key'          => 'text_id',
-                'create_action_redirect_route_key_field'    => 'textId',
+//                 'create_action_redirect_route'              => 'blog/blog-post',
+//                 'create_action_redirect_route_key'          => 'text_id',
+//                 'create_action_redirect_route_key_field'    => 'textId',
 //                 'create_action_template'                    => 'project/events/create',
 //                 'touch_default_field'                       => 'eventId',
 //                 'touch_route_key'                           => 'event_id',
@@ -2167,37 +2351,8 @@ return [
                 'enable_delete_action'                      => true,
 //                 'delete_action_acl_resource'                => 'event_:id',
 //                 'delete_action_acl_permission'              => 'delete',
-                'delete_action_redirect_route'              => 'blog',
-                'update_columns'                            => [
-                    'textId' => 'TextId',
-                    'title' => 'Title',
-                    'kind' => 'TextKind',
-                    'inLanguage' => 'Language',
-                    'slug' => 'Slug',
-                    'isDraft' => 'IsDraft',
-                    'markdownText' => 'MarkdownText',
-                    'htmlText' => 'HtmlText',
-                    'plainText' => 'PlainText',
-                    'wordCount' => 'WordCount',
-                    'jkTextQuality' => 'JkTextQuality',
-                    'tags' => 'Tags',
-                    'adminTags' => 'AdminTags',
-                    'aclResourceId' => 'AclResourceId',
-                    'publicNotes' => 'PublicNotes',
-                    'publicNotesUpdatedBy' => 'PublicNotesUpdatedBy',
-                    'publicNotesUpdatedOn' => 'PublicNotesUpdatedOn',
-                    'adminNotes' => 'AdminNotes',
-                    'adminNotesUpdatedBy' => 'AdminNotesUpdatedBy',
-                    'adminNotesUpdatedOn' => 'AdminNotesUpdatedOn',
-                    'legacyEventId' => 'LegacyEventId',
-                    'legacyFile' => 'LegacyFile',
-                    'legacyPathDate' => 'LegacyPathDate',
-                    'legacyFileDateModified' => 'LegacyFileDateModified',
-                    'updatedOn' => 'UpdatedOn',
-                    'updatedBy' => 'UpdatedBy',
-                    'createdOn' => 'CreatedOn',
-                    'createdBy' => 'CreatedBy',
-                ],
+                'delete_action_redirect_route'              => 'text-delete',
+                'update_columns'                            => $textColumns
             ],
             'dictionary-entry' => [
                 'name'                                      => 'dictionary-entry',
@@ -2487,11 +2642,18 @@ return [
                 
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
                 
+                ['route' => 'text', 'roles' => ['texts_user']], //extra checks in controller
+                ['route' => 'texts', 'roles' => ['texts_user']],
+                ['route' => 'text-edit', 'roles' => ['texts_moderator']],
+                ['route' => 'text-create', 'roles' => ['texts_moderator']],
+                ['route' => 'text-delete', 'roles' => ['texts_moderator']],
+                ['route' => 'texts/jk-import', 'roles' => ['administrator']],
+                
                 ['route' => 'blog', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/create', 'roles' => ['blog_contributor']],
                 ['route' => 'blog/blog-post', 'roles' => ['guest', 'user']],
-                ['route' => 'blog/edit', 'roles' => ['blog_contributor']],
-                ['route' => 'blog/delete', 'roles' => ['blog_contributor']],
+                ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
+                ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
                 
                 ['route' => 'dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'dictionary/inLanguage', 'roles' => ['guest', 'user']],
