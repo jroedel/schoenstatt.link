@@ -192,7 +192,7 @@ class Module
             $blogPages = [];
             /** @var EventTextTable $eventTextTable */
             $eventTextTable = $sm->get(EventTextTable::class);
-            $texts = $eventTextTable->getObjects('text');
+            $texts = $eventTextTable->getObjects('text', ['kind' => EventTextTable::TEXT_KIND_BLOG]);
             foreach ($texts as $object) {
                 $blogPages[] = [
                     'label' => $object['title'],

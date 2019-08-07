@@ -4,16 +4,7 @@ namespace Books;
 use Zend\Db\Adapter\Adapter;
 use Zend\Router\Http\Literal;
 use Zend\Router\Http\Segment;
-use Books\Model\PublicationsTable;
-use Books\Model\LibraryTable;
-use Books\Form\SearchForm;
-use Books\Form\LibraryForm;
-use Books\Form\CollectionForm;
-use Books\Form\PublicationsSearchForm;
-use Books\Form\BookForm;
 use Books\Mailing\BooksMailer;
-use Books\Form\PublicationForm;
-use Books\Form\ImportForm;
 use Schoenstatt\Model\SchoenstattTable;
 use BjyAuthorize\Guard\Route;
 use BjyAuthorize\Provider\Rule\Config;
@@ -275,31 +266,35 @@ return [
             // Mapping services to their class names is required
             // since the ServiceManager is not a declarative DIC.
             'class_map' => [
-                LibraryForm::class => LibraryForm::class,
-                SearchForm::class => SearchForm::class,
+                Form\LibraryForm::class => Form\LibraryForm::class,
+                Form\SearchForm::class => Form\SearchForm::class,
                 BooksMailer::class => BooksMailer::class,
-                PublicationsTable::class => PublicationsTable::class,
-                DictionaryTable::class => DictionaryTable::class,
-                LibraryTable::class => LibraryTable::class,
+                Model\PublicationsTable::class => Model\PublicationsTable::class,
+                Model\DictionaryTable::class => Model\DictionaryTable::class,
+                Model\LibraryTable::class => Model\LibraryTable::class,
+                Form\TextForm::class => Form\TextForm::class,
             ],
         ],
         'delegators' => [
-            LibraryForm::class => [
+            Form\LibraryForm::class => [
                 LazyServiceFactory::class,
             ],
-            SearchForm::class => [
+            Form\SearchForm::class => [
                 LazyServiceFactory::class,
             ],
             BooksMailer::class => [
                 LazyServiceFactory::class,
             ],
-            PublicationsTable::class => [
+            Model\PublicationsTable::class => [
                 LazyServiceFactory::class,
             ],
-            DictionaryTable::class => [
+            Model\DictionaryTable::class => [
                 LazyServiceFactory::class,
             ],
-            LibraryTable::class => [
+            Model\LibraryTable::class => [
+                LazyServiceFactory::class,
+            ],
+            Form\TextForm::class => [
                 LazyServiceFactory::class,
             ],
         ],
@@ -1559,16 +1554,16 @@ return [
                 'table_name'                            => 'lib_libraries',
                 'table_key'                             => 'LibraryId',
                 'entity_key_field'                      => 'libraryId',
-                'sion_model_class'                      => LibraryTable::class,
+                'sion_model_class'                      => Model\LibraryTable::class,
                 'sion_controllers'                      => [Controller\LibrariesController::class],
                 'controller_services'                   => [
-                    SearchForm::class,
+                    Form\SearchForm::class,
                     'Books\BorrowersValueOptions',
                     SchoenstattTable::class,
                     TranslationsTable::class,
                     ProblemService::class,
                     //BooksMailer::class, @todo return this to the controller
-                    PublicationsTable::class,
+                    Model\PublicationsTable::class,
                 ],
                 'get_object_function'                   => 'getLibrary',
                 'get_objects_function'                  => 'getUnlinkedLibraries',
@@ -1587,12 +1582,12 @@ return [
                 'show_route'                            => 'libraries/library',
                 'show_route_key'                        => 'library_id',
                 'show_route_key_field'                  => 'libraryId',
-                'edit_action_form'                      => LibraryForm::class,
+                'edit_action_form'                      => Form\LibraryForm::class,
 //                 'edit_action_template'                   => 'libraries/library/edit',
                 'edit_route'                            => 'libraries/library/edit',
                 'edit_route_key'                        => 'library_id',
                 'edit_route_key_field'                  => 'libraryId',
-                'create_action_form'                    => LibraryForm::class,
+                'create_action_form'                    => Form\LibraryForm::class,
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'libraries/library',
                 'create_action_redirect_route_key'      => 'library_id',
@@ -1661,10 +1656,10 @@ return [
                 'table_name'                                => 'lib_imports',
                 'table_key'                                 => 'ImportId',
                 'entity_key_field'                          => 'importId',
-                'sion_model_class'                          => LibraryTable::class,
+                'sion_model_class'                          => Model\LibraryTable::class,
                 'sion_controllers'                          => [Controller\LibraryImportsController::class],
                 'controller_services'                       => [
-                    PublicationsTable::class,
+                    Model\PublicationsTable::class,
                 ],
                 'get_object_function'                       => 'getLibraryImport',
                 'get_objects_function'                      => 'getLibraryImports',
@@ -1690,12 +1685,12 @@ return [
                 'show_route'                                => 'library-imports/library-import',
                 'show_route_key'                            => 'import_id',
                 'show_route_key_field'                      => 'importId',
-                'edit_action_form'                          => ImportForm::class,
+                'edit_action_form'                          => Form\ImportForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'library-imports/library-import/edit',
                 'edit_route_key'                            => 'import_id',
                 'edit_route_key_field'                      => 'importId',
-                'create_action_form'                        => ImportForm::class,
+                'create_action_form'                        => Form\ImportForm::class,
 //                 'create_action_valid_data_handler'          => 'createEvent',
                 'create_action_redirect_route'              => 'library-imports/library-import/edit',
                 'create_action_redirect_route_key'          => 'import_id',
@@ -1745,12 +1740,12 @@ return [
                 'table_name'                                => 'lib_books',
                 'table_key'                                 => 'book_id',
                 'entity_key_field'                          => 'bookId',
-                'sion_model_class'                          => LibraryTable::class,
+                'sion_model_class'                          => Model\LibraryTable::class,
                 'sion_controllers'                          => [Controller\BooksController::class],
                 'controller_services'                       => [
                     'Books\BorrowersValueOptions',
-                    PublicationsTable::class,
-                    LibraryTable::class,
+                    Model\PublicationsTable::class,
+                    Model\LibraryTable::class,
                 ],
                 'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
@@ -1776,12 +1771,12 @@ return [
                 'show_route'                                => 'books/book',
                 'show_route_key'                            => 'book_id',
                 'show_route_key_field'                      => 'bookId',
-                'edit_action_form'                          => BookForm::class,
+                'edit_action_form'                          => Form\BookForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'books/book/edit',
                 'edit_route_key'                            => 'book_id',
                 'edit_route_key_field'                      => 'bookId',
-                'create_action_form'                        => BookForm::class,
+                'create_action_form'                        => Form\BookForm::class,
 //                 'create_action_valid_data_handler'          => 'createEvent',
                 'create_action_redirect_route'              => 'books/book',
                 'create_action_redirect_route_key'          => 'book_id',
@@ -1853,7 +1848,7 @@ return [
                 'table_name'                            => 'lib_checkouts',
                 'table_key'                             => 'CheckoutId',
                 'entity_key_field'                      => 'checkoutId',
-                'sion_model_class'                      => LibraryTable::class,
+                'sion_model_class'                      => Model\LibraryTable::class,
                 'sion_controllers'                      => [Controller\CheckoutsController::class],
                 'controller_services'                   => [
                     PatresGateway::class,
@@ -1935,16 +1930,16 @@ return [
                 'table_name'                            => 'sch_publications',
                 'table_key'                             => 'PublicationId',
                 'entity_key_field'                      => 'publicationId',
-                'sion_model_class'                      => PublicationsTable::class,
+                'sion_model_class'                      => Model\PublicationsTable::class,
                 'sion_controllers'                      => [Controller\PublicationsController::class],
                 'controller_services'                   => [
                     FilesTable::class,
-                    PublicationsSearchForm::class,
+                    Form\PublicationsSearchForm::class,
                     'Books\LanguagesValueOptions',
                     DriveGateway::class,
-                    LibraryTable::class,
+                    Model\LibraryTable::class,
                     PredicatesTable::class,
-                    DictionaryTable::class,
+                    Model\DictionaryTable::class,
                 ],
                 'get_object_function'                   => 'getPublication',
                 'get_objects_function'                  => 'getUnlinkedPublications',
@@ -1976,12 +1971,12 @@ return [
                 'show_route'                            => 'publication',
                 'show_route_key'                        => 'sw_id',
                 'show_route_key_field'                  => 'identifier',
-                'edit_action_form'                      => PublicationForm::class,
+                'edit_action_form'                      => Form\PublicationForm::class,
 //                 'edit_action_template'                   => 'project/events/edit',
                 'edit_route'                            => 'publication-edit',
                 'edit_route_key'                        => 'sw_id',
                 'edit_route_key_field'                  => 'identifier',
-                'create_action_form'                    => PublicationForm::class,
+                'create_action_form'                    => Form\PublicationForm::class,
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'publication',
                 'create_action_redirect_route_key'      => 'sw_id',
@@ -2080,7 +2075,7 @@ return [
                 'table_name'                                => 'lib_collections',
                 'table_key'                                 => 'CollectionId',
                 'entity_key_field'                          => 'collectionId',
-                'sion_model_class'                          => LibraryTable::class,
+                'sion_model_class'                          => Model\LibraryTable::class,
                 'sion_controllers'                          => [Controller\CollectionsController::class],
                 'controller_services'                       => [],
                 'get_object_function'                       => 'getSimpleCollection',
@@ -2106,12 +2101,12 @@ return [
                 'show_route'                                => 'libraries/library',
                 'show_route_key'                            => 'library_id',
                 'show_route_key_field'                      => 'libraryId',
-                'edit_action_form'                          => CollectionForm::class,
+                'edit_action_form'                          => Form\CollectionForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'collections/collection/edit',
                 'edit_route_key'                            => 'collection_id',
                 'edit_route_key_field'                      => 'collectionId',
-                'create_action_form'                        => CollectionForm::class,
+                'create_action_form'                        => Form\CollectionForm::class,
 //                 'create_action_valid_data_handler'          => 'createEvent',s
                 'create_action_redirect_route'              => 'libraries/library',
                 'create_action_redirect_route_key'          => 'library_id',
