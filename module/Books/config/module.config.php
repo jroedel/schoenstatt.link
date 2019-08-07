@@ -2302,8 +2302,8 @@ return [
                     'kind',
                     'inLanguage',
                 ],
-                'name_field'                                => 'title',
-                'name_field_is_translateable'               => true,
+                'name_field'                                => 'filenamePlusTitle',
+                'name_field_is_translateable'               => false,
 //                 'country_field'                             => 'country',
                 'text_columns'                              => ['markdownText', 'htmlText', 'plainText'],
 //                 'many_to_one_update_columns'                => [
