@@ -1,6 +1,6 @@
 <?php
 use Zend\Json\Json;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $this->headScript()->appendFile($this->basePath() . '/js/gen-books-checkouts.js');
 $this->headLink()->appendStylesheet($this->basePath() . '/css/mass-checkouts.css');
 $headText = 'Book Checkout';

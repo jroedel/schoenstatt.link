@@ -4,7 +4,7 @@ $this->headTitle($headText);
 $object = $this->entity;?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
 
-<i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php 
+<p><i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php 
 if (isset($this->entity['createdOn'])) {
     echo $this->diffForHumans($this->entity['createdOn']);
 }?></p>

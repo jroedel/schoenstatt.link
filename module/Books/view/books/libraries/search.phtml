@@ -1,4 +1,5 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $title = "Library Search";
 $this->headTitle($title);
 ?>
@@ -8,7 +9,7 @@ $this->headTitle($title);
 <div class="row">
 <div class="col-md-2 bs-docs-sidebar hidden-phone">
     <ul class="nav nav-list bs-docs-sidenav affix">
-    <?php foreach ($this->entities as $libraryId => $library) : ?>
+    <?php foreach ($this->entities as $library) : ?>
     <li><a href="#<?php $this->escapeHtmlAttr($library['name']);?>"><i class="icon-chevron-right"></i> <?php
         echo $this->escapeHtml($library['name']);?></a>
     <p><?php if (count($library['books']) == 1) {
@@ -21,8 +22,8 @@ $this->headTitle($title);
     </ul>
 </div>
 <div class="col-md-10">
-<?php foreach ($this->entities as $libraryId => $library): ?>
-<div id="<?php echo $output = $this->escapeHtmlAttr($library['name']);?>">
+<?php foreach ($this->entities as $library): ?>
+<div id="<?php echo $this->escapeHtmlAttr($library['name']);?>">
     <h1><?php echo $this->escapeHtml($library['name']);?></h1>
 	<?php echo $this->partial('books/library/book-list', [
 	    'entities' => $library['books'],

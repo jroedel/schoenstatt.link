@@ -1,6 +1,6 @@
 <?php
 use Books\View\Helper\FormatPublication;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 /**
  * @var mixed[] $object
  */
@@ -52,7 +52,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
           $otherEditions = array_merge($object['subEditions'], $object['translations']);
       if (!empty($otherEditions)):?>
       <p><strong><?= $this->translate('Other editions');?>:</strong></p><?php
-      foreach ($otherEditions as $subId => $subPublication) :?>
+      foreach ($otherEditions as $subPublication) :?>
           <p><?php echo $this->formatEntity('publication', $subPublication);
           echo ' ';
           echo $this->formatEntity('publication', $subPublication, ['display' => FormatPublication::DISPLAY_EDITION]);?></p>
@@ -112,7 +112,7 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 // }?>
 
   <?php if (isset($object['publicNotes']) && 0 !== strlen($object['publicNotes'])):?>
-<div class="row"> <!-- notes row -->
+<div class="r2ow"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="notesPanel">
     <div class="panel-heading">

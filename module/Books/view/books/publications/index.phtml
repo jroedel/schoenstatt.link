@@ -1,4 +1,5 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $this->headLink()->appendStylesheet($this->basePath() . '/css/publications-index.css');
 if ($this->language === 'xx') {
     $headText = $this->translate('Schoenstatt Literature without language');
@@ -26,7 +27,7 @@ foreach ($this->objects as $categoryName => $category) :
 if (empty($category['objects'])) {
 continue;
 }?>
-<h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->escapeHtml($this->translate($categoryName));?></h2>
+<h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->escapeHtml($this->translate($categoryName));?></h3>
 <?php 
     echo $this->partial('publication-list', [
         'objects' => $category['objects'],

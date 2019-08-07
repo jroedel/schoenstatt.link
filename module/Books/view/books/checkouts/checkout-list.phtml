@@ -1,4 +1,5 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 /**
  * @param mixed[] $entities
  * @param mixed[] $options (showLabels)
@@ -19,14 +20,14 @@ $columnNames = [
     'dueOn'         => 'Due on',
     'checkedInOn'   => 'Checked in on',
 ];
-$options = [
-    'showLabels' => false,
-];
-if ($this->options) {
-    if (isset($this->options['showLabels']) && is_bool($this->options['showLabels'])) {
-        $options['showLabels'] = $this->options['showLabels'];
-    }
-}
+// $options = [
+//     'showLabels' => false,
+// ];
+// if ($this->options) {
+//     if (isset($this->options['showLabels']) && is_bool($this->options['showLabels'])) {
+//         $options['showLabels'] = $this->options['showLabels'];
+//     }
+// }
 $columns = [
     'library', 'book', 'borrower', 'checkedOutOn', 'dueOn', 'checkedInOn'
 ];
@@ -49,7 +50,7 @@ $resultsTotal = 0;?>
         </tr>
         </thead>
         <tbody>
-        <?php foreach ($this->entities as $entityId => $entity):
+        <?php foreach ($this->entities as $entity):
             $resultsTotal++;
 
             $rowClass = null;

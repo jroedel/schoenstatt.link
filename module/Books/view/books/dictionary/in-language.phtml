@@ -1,6 +1,7 @@
 <?php
 use Cake\Utility\Text;
 use Books\Model\DictionaryTable;
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 // echo $this->navigation('default')->breadcrumbs()->setIndent(8);;
 $titleFormat = DictionaryTable::DICTIONARY_TITLE_FORMAT;
 $headText = sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));
@@ -10,7 +11,7 @@ $this->headTitle($headText);
 <h1><?php echo $headText;?></h1>
 <?php
 $objects = $this->objects;
-foreach ($objects as $entryId => $object) :
+foreach ($objects as $object) :
 if (!$object['isActive'] && !$this->isAllowed('route/dictionary/entry/edit')) {
     continue;
 }?>
