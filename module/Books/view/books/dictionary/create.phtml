@@ -1,10 +1,9 @@
 <?php
-use Books\Form\DictionaryEntryForm;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $headText = 'Create new dictionary entry';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
-<?php /** @var DictionaryEntryForm $form */
+<?php /** @var \Books\Form\DictionaryEntryForm $form */
 $form = $this->form;
 $form->setAttribute('action', $this->url(null, [], [], true));
 $form->get('locale')->setAttribute('disabled', false);

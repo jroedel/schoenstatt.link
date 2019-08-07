@@ -1,4 +1,5 @@
-<?php if (!empty($this->entity['categoryStatistics']) && is_null($this->books)):?>
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
+if (!empty($this->entity['categoryStatistics']) && is_null($this->books)):?>
     <ul class="list-group">
     <?php foreach ($this->entity['categoryStatistics'] as $category => $count) : ?>
       <li class="list-group-item">

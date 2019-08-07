@@ -1,6 +1,6 @@
 <?php
 use Books\View\Helper\FormatPublication;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $columns = $this->columns;
 /**
  * @var $objects mixed[]
@@ -30,7 +30,6 @@ $files = isset($this->files) ? $this->files : null;
 <?php endforeach;?>
 </tr>
 <?php foreach($this->objects as $entityId => $entity) :
-$username = $this->zfcUserDisplayName();
 if (!$this->isAllowed($entity['resourceId'], 'show')) {
     continue;
 }?>

@@ -1,5 +1,5 @@
-<?php use Books\Model\LibraryOptions;
-/** @var LibraryOptions $libraryOptions */
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Books\Model\LibraryOptions $libraryOptions */
 $libraryOptions = $this->entity['options'];
 if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->books)):?>
     <?php foreach ($this->entity['collectionCategoryStatistics'] as $collectionId => $categories) :

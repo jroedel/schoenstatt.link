@@ -1,4 +1,4 @@
-<?php use Books\Model\LibraryOptions;
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
 $this->headTitle()->setTranslatorEnabled(false);
 $object = $this->entity;
 $entityId = $this->entityId;
@@ -18,7 +18,7 @@ endif;?>
 ?></div>
 
 <?php
-/** @var LibraryOptions $libraryOptions */
+/** @var \Books\Model\LibraryOptions $libraryOptions */
 $libraryOptions = $this->entity['options'];
 echo $this->partial($libraryOptions->mainShowDisplay, $this->vars);
 ?>
