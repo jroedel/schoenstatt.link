@@ -56,14 +56,14 @@ class IndexController extends AbstractActionController
 
     public function indexAction()
     {
-        $changeCounts = $this->get6MonthsChanges();
+//         $changeCounts = $this->get6MonthsChanges();
         $blogPosts = $this->eventTextTable->getObjects(
             'text',
             ['kind' => EventTextTable::TEXT_KIND_BLOG],
             ['limit' => 5]
         );
         return new ViewModel([
-            'changeCounts' => $changeCounts,
+            'changeCounts' => [],
             'blogPosts' => $blogPosts,
         ]);
     }

@@ -15,6 +15,27 @@ use Schoenstatt\Model\SchoenstattTable;
 
 class TextsController extends SionController
 {
+    public function indexAction()
+    {
+        /** @var \Books\Model\EventTextTable $table */
+        $table      = $this->getSionTable();
+        $entity     = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $columns = $entitySpec->updateColumns;
+        unset($columns['markdownText']);
+        unset($columns['htmlText']);
+        unset($columns['plainText']);
+        $columns = array_keys($columns);
+        $objects    = $table->getObjects($entity, [], ['columns' => $columns]);
+        $view = new ViewModel([
+            'entity'    => $entity,
+            'entitySpec'=> $entitySpec,
+            'objects'   => $objects,
+        ]);
+        
+        return $view;
+    }
+    
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
@@ -24,7 +45,6 @@ class TextsController extends SionController
         $search = null;
         if ($form->isValid()) {
             $data = $form->getData();
-            
             if (!empty($data)) {
                 /** @var \Books\Model\PublicationsTable $table */
                 $table = $this->getSionTable();
