@@ -291,8 +291,8 @@ class EventTextTable extends SionTable implements
     {
         $objects = $this->queryObjects('text', [
             'kind' => self::TEXT_KIND_JK_TEXT,
-            'markdownText' => null,
-            'htmlText' => null,
+//             'markdownText' => null,
+//             'htmlText' => null,
         ]);
         $results = [];
         foreach ($objects as $objectId => $object) {
@@ -301,7 +301,7 @@ class EventTextTable extends SionTable implements
                 continue;
             }
             $data = [];
-            if (!isset($object['markdownText']) || !isset($object['htmlText'])) {
+            if (!isset($object['markdownText']) || !isset($object['htmlText']) || !isset($object['plainText'])) {
                 //check if we have the md file,
                 $filePath = 'data/texts/'.$filename;
                 if (file_exists($filePath)) {
@@ -325,9 +325,8 @@ class EventTextTable extends SionTable implements
                         //also the plain text for a better word count
                         $plainFilePath = $pathWithoutExtension.'.txt';
                         $file = fopen($plainFilePath, "r");
-                        $plainText = fread($file,filesize($plainFilePath));
-                        $data['wordCount'] = str_word_count($plainText);
-                        var_dump($data['wordCount']);
+                        $data['plainText'] = fread($file,filesize($plainFilePath));
+                        $data['wordCount'] = str_word_count($data['plainText']);
                         fclose($file);
                         
                         //@todo for search text: replace word chars, strip non word chars
