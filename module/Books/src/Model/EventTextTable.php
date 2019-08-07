@@ -49,7 +49,7 @@ class EventTextTable extends SionTable implements
         $select = parent::getSelectPrototype($entity);
         if ('text' === $entity) {
             $select->where(['TextKind' => self::TEXT_KIND_JK_TEXT]);
-            $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
+            $select->order(['LegacyFile']);
         } elseif ('blog-post' === $entity) {
             $select->where(['TextKind' => self::TEXT_KIND_BLOG]);
             $select->order(['UpdatedOn' => Select::ORDER_DESCENDING]);
@@ -104,7 +104,6 @@ class EventTextTable extends SionTable implements
     protected function processEventRow($row)
     {
         $id = $this->filterDbId($row['EventId']);
-        
         $processedRow = [
             'eventId'               => $id,
             'titleEn'               => $row['TitleEn'],
@@ -176,6 +175,14 @@ class EventTextTable extends SionTable implements
             $this->slylyUpdateTextSlug($id, $slug);
         }
         
+        $legacyFile = $row['LegacyFile'];
+        $filenamePlusTitle = '';
+        if (isset($legacyFile)) {
+            $filenamePlusTitle .= str_replace('.md', '', $legacyFile);
+        }
+        if (strlen($filenamePlusTitle) > 0 && $title !== $legacyFile) {
+            $filenamePlusTitle .= ': '.$title;
+        }
         $processedRow = [
             'textId'                => $id,
             'title'                 => $title,
@@ -208,6 +215,7 @@ class EventTextTable extends SionTable implements
             
             'identifier'            => $identifier,
             'createdByUsername'     => $createdByUsername,
+            'filenamePlusTitle'     => $filenamePlusTitle,
         ];
         return $processedRow;
     }
