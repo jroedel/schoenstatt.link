@@ -104,6 +104,11 @@ class Module
                     'pages' => $pages,
                 ];
             }
+            $publicationPages[] = [
+                'label' => '150 preguntas sobre Schoenstatt',
+                'route' => 'publications/one-fifty-preguntas',
+                'id'    => 'pub_one_fifty_preguntas',
+            ];
             
             $pagesByCacheKey['publication-pages'] = $publicationPages;
             $cache->setItem('publication-pages', $publicationPages);
@@ -197,7 +202,7 @@ class Module
                 $blogPages[] = [
                     'label' => $object['title'],
                     'route' => 'blog/blog-post',
-                    'params' => ['text_id' => $object['textId'], 'slug' => $object['slug']],
+                    'params' => ['sw_id' => $object['identifier'], 'slug' => $object['slug']],
                     //                 'resource' => $object['viewRole'],
                     'id'    => 'blog_'.$object['textId'],
                 ];

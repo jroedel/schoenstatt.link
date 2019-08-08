@@ -18,6 +18,13 @@ class PublicationsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 1000;
     
+    public function oneFiftyPreguntasAction()
+    {
+        $view = new ViewModel();
+        $view->setTemplate('books/publications/one-fifty-preguntas');
+        return $view;
+    }
+    
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('publication_id');
