@@ -660,6 +660,15 @@ return [
                             ],
                         ],
                     ],
+                    'one-fifty-preguntas' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'     => '/150-preguntas-sobre-schoenstatt',
+                            'defaults' => [
+                                'action'     => 'oneFiftyPreguntas',
+                            ],
+                        ],
+                    ],
                     'publication-old' => [
                         'type'    => Segment::class,
                         'options' => [
@@ -2627,6 +2636,7 @@ return [
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/export', 'roles' => ['pub_moderator']],
+                ['route' => 'publications/one-fifty-preguntas', 'roles' => ['guest', 'user']],
                 
                 ['route' => 'publications/publication-old', 'roles' => ['guest', 'user']],
                 ['route' => 'publication', 'roles' => ['guest', 'user']],

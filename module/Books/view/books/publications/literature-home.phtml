@@ -23,6 +23,8 @@ $this->badge()->setTranslatorEnabled(false); ?>
     $languageText = array_key_exists($inLanguage, $this->languages) ? $this->translate($this->languages[$inLanguage]) : $inLanguage;
     echo $this->escapeHtml(sprintf($this->translate("%s Catalog"), $languageText));?></h4></a>
 <?php endforeach;?>
+	<a href="<?php echo $this->url('publications/one-fifty-preguntas');?>" class="list-group-item">
+    <h4 class="list-group-item-heading">150 preguntas sobre Schoenstatt</h4></a>
 </div>
 </div>
 </div>
