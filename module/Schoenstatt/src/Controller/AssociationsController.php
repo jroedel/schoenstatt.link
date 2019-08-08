@@ -16,7 +16,25 @@ class AssociationsController extends SionController
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('association_id');
+        $swId = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
+            $object = $this->getEntityObject($id);
+            if (isset($object)) {
+                $locale = \Locale::getDefault();
+                /**
+                 * @var \Zend\Http\Response $response
+                 */
+                $response = $this->redirect()->toRoute(
+                    'association',
+                    ['sw_id' => $object['identifier'], 'slug' => $object['slugByLocale'][$locale]]
+                    );
+                $response->setStatusCode(301);
+                return $response;
+            }
+        } elseif (isset($swId)) {
+            $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier('association');
+            //we can assume this will work because of the parameter constraints on the route
+            $id = $swFilter->filter($swId);
             $object = $this->getEntityObject($id);
             if (isset($object)) {
                 $locale = \Locale::getDefault();
