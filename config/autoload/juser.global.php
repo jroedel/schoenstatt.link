@@ -119,4 +119,9 @@ return [
             ],
         ],
     ],
+    'service_manager' => [
+        'aliases' => [
+            'JUser\Logger' => \Zend\Log\LoggerInterface::class
+        ],
+    ],
 ];
