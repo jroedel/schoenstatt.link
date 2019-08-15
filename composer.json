@@ -53,7 +53,8 @@
         "jmikola/geojson": "1.0",
         "cyberprojekt/libkml": "dev-master",
         "scottconnerly/timezone": "^0.2.0",
-        "nicolaswurtz/chordpro-php": "dev-master"
+        "nicolaswurtz/chordpro-php": "dev-master",
+        "samdark/sitemap": "^2.2"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
