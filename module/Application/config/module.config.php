@@ -24,6 +24,7 @@ use Application\View\GdprStrategy;
 use Application\Service\JsonPostFactory;
 use Application\Service\LoggerFactory;
 use Zend\Log\LoggerInterface;
+use Application\Service\IndexControllerFactory;
 
 return [
     'router' => [
@@ -149,9 +150,9 @@ return [
 //         'invokables' => [
 //             IndexController::class => IndexController::class
 //         ],
-//         'factories' => [
-//             IndexController::class => IndexController::class,
-//         ],
+        'factories' => [
+            IndexController::class => IndexControllerFactory::class,
+        ],
         'abstract_factories' => [
             \Application\Controller\LazyControllerFactory::class,
         ],

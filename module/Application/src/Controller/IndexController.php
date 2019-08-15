@@ -17,6 +17,8 @@ use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\EventTextTable;
 use Books\Model\DictionaryTable;
+use samdark\sitemap\Sitemap;
+use Zend\View\HelperPluginManager;
 
 class IndexController extends AbstractActionController
 {
@@ -44,14 +46,27 @@ class IndexController extends AbstractActionController
      * @var DictionaryTable $dictionaryTable
      */
     protected $dictionaryTable;
+    
+    protected $helperPluginManager;
+    protected $config;
 
-    public function __construct(Navigation $navigation, PublicationsTable $publicationsTable, SchoenstattTable $schoenstattTable, EventTextTable $eventTextTable, DictionaryTable $dictionaryTable)
+    public function __construct(
+        Navigation $navigation, 
+        PublicationsTable $publicationsTable, 
+        SchoenstattTable $schoenstattTable, 
+        EventTextTable $eventTextTable, 
+        DictionaryTable $dictionaryTable,
+        HelperPluginManager $helperPluginManager,
+        array $config
+        )
     {
         $this->navigation = $navigation;
         $this->publicationsTable = $publicationsTable;
         $this->schoenstattTable = $schoenstattTable;
         $this->eventTextTable = $eventTextTable;
         $this->dictionaryTable = $dictionaryTable;
+        $this->helperPluginManager = $helperPluginManager;
+        $this->config = $config;
     }
 
     public function indexAction()
@@ -91,16 +106,47 @@ class IndexController extends AbstractActionController
     public function sitemapAction()
     {
         $navigation = $this->navigation;
+        $plugins = $this->helperPluginManager;
+        /** @var \Zend\View\Helper\Navigation\Sitemap $sitemapHelper */
+        $sitemapHelper = $plugins->get('navigation')->sitemap();
+        $sitemapFile = 'data/sitemap/sitemap.xml';
+        $sitemap = new Sitemap($sitemapFile, true);
+        $sitemap->setUseGzip(true);
+        $iterator = new \RecursiveIteratorIterator($navigation, \RecursiveIteratorIterator::SELF_FIRST);
+        $serverUrl = $sitemapHelper->getServerUrl();
+        $languageSiteBases = [];
+        $languages = array_keys($this->config['slm_locale']['aliases']);
+        foreach ($languages as $lang) {
+            $languageSiteBases[$lang] = $serverUrl."/$lang/";
+        }
+        $firstCharToGrabFromUrl = strlen($languageSiteBases['en']);
+        // iterate container
+        foreach ($iterator as $page) {
+            $url = $sitemapHelper->url($page);
+            if (isset($url)) {
+                $urlLocales = [];
+                foreach ($languageSiteBases as $lang => $urlBase) {
+                    $urlLocales[$lang] = $urlBase.substr($url, $firstCharToGrabFromUrl);
+                }
+                $sitemap->addItem($urlLocales);
+            }
+        }
+        $sitemap->write();
         // Explicitly set type to text/xml, otherwise it's text/html
-        $this->getResponse()->getHeaders()->addHeaderLine(
+        $response = $this->getResponse();
+        $headers = $response->getHeaders();
+        $headers->addHeaderLine(
             'Content-Type',
             'text/xml'
-        );
+            )
+            ->addHeaderLine('Content-Encoding', 'gzip');
+        $response->setContent(file_get_contents($sitemapFile));
+        return $response;
         // Only render the sitemap helper, without any layout
-        $viewModel = new ViewModel();
-        $viewModel->setVariable('navigation', $navigation);
-        $viewModel->setTerminal(true);
-        return $viewModel;
+//         $viewModel = new ViewModel();
+//         $viewModel->setVariable('navigation', $navigation);
+//         $viewModel->setTerminal(true);
+//         return $viewModel;
     }
 
     public function get6MonthsChanges()
