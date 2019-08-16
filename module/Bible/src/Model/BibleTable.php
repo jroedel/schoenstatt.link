@@ -48,7 +48,7 @@ class BibleTable extends SionTable
             'translation' => $row['translation_id'],
             'verseId' => $this->filterDbId($row['verse_id']),
             'book' => $this->filterDbId($row['book_id']),
-            'chapter' => $this->filterDbId($row['chapter']),
+            'chapter' => (int)$row['chapter'],
             'verse' => $this->filterDbId($row['verse']),
             'text' => $row['text'],
         ];
