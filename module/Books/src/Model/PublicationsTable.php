@@ -605,6 +605,7 @@ ORDER BY `Publisher`";
         if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType])) {
             $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
         }
+        //@todo make into an array instead, many books use more than one language
         $inLanguage = $this->filterDbString($row['InLanguage']);
         //@todo I'm not so sure this is a good idea
         if (!isset($inLanguage)) {
@@ -1071,6 +1072,174 @@ ORDER BY `Publisher`";
         return $data;
     }
 
+    public function importForschungs(array $jsonArray)
+    {
+        $bookList = $jsonArray['bookinfo']['booklist']['book'];
+        var_dump(count($bookList));
+        echo '<pre>';
+        print_r($bookList[100]);
+        echo '</pre>';
+        /*
+         * userdefinedvalues, id, index, hash, mainsection, collectionstatus, rare, 
+         * format, country, language, purchasedate, owner, issuenr, publicationdate, 
+         * location, genres, tags (nothing important), links, lastmodified, thumbfilepath, clzbookid, 
+         * bpbooklastreceivedrevision, lccn, printing, pagecount, edition, firstedition, 
+         * extras, subjects, units, readtimes, readit, readingdate, submissiondate, 
+         * quantity, abridged
+         */
+        $publications = [];
+        $libraryBooks = [];
+        $languages = [];
+        foreach ($bookList as $book) {
+//             if (isset($book['tags']) && !empty($book['tags'])) {
+//                 echo '<pre>';
+//                 print_r($book);
+//                 echo '</pre>';
+//                 break;
+//             }
+            $lang = isset($book['language']) ? $book['language']['displayname'] : null;
+            if (isset($lang) && !in_array($lang, $languages)) {
+                $languages[] = $lang;
+            }
+            $publications[] = $this->processForschungsPublicationRow($book);
+        }
+    }
+    
+    protected function processForschungsPublicationRow($row)
+    {
+        static $languageMap;
+        if (!isset($languageMap)) {
+            $languageMap = [
+                'German' => ['de'],
+                'Spanish' => ['es'],
+                'English / German' => ['en', 'de'],
+                'Czech' => ['cs'],
+                'French' => ['fr'],
+                'English' => ['en'],
+                'Portuguese' => ['pt'],
+                'Français' => ['fr'],
+                'Latin - German' => ['la', 'de'],
+                'Hungarian' => ['hu'],
+                'Italian' => ['it'],
+                'German/Spanish' => ['de', 'es'],
+                'Croatian' => ['hr'],
+                'Polish' => ['pl'],
+                'Latin - German – English – Italian' => ['la', 'de', 'en', 'it'],
+                'Spanish / Portuguese' => ['es', 'pt'],
+                'Spanish/English/Italian' => ['es', 'en', 'it'],
+                'Spanish / German' => ['es', 'de'],
+                'German, English' => ['de', 'en'],
+                'German/French' => ['de', 'fr'],
+                'Latin' => ['la'],
+                'Lateinisch - Deutsch' => ['la', 'de'],
+                'German u. a.' => ['de'],
+            ];
+        }
+        $inLanguage = null;
+        if (isset($row['language']) && isset($row['language']['displayname'])) {
+            $langDisplay = $row['language']['displayname'];
+            if (!isset($languageMap[$langDisplay])) {
+                throw new \Exception("unknown language `$langDisplay`");
+            }
+            $inLanguage = $languageMap[$langDisplay];
+        }
+        $keywords = [];
+        if (isset($row['subjects']) && isset($row['subjects']['subject']) && is_array($row['subjects']['subject'])) {
+            foreach ($row['subjects']['subject'] as $subject) {
+                $keyword = isset($subject['displayname']) ? $subject['displayname'] : $subject;
+                if (is_string($keyword)) {
+                    $keywords[] = $keyword;
+                }
+            }
+        }
+        $title = null;
+        $authorText = [];
+        if (isset($row['mainsection'])) {
+            if (isset($row['mainsection']['title']) && is_string($row['mainsection']['title'])) {
+                $title = $row['mainsection']['title'];
+            }
+        }
+        $data = [
+//             'publicationId'             => $id,
+            'title'                     => $title,
+//             'titleNoAccents'            => $row['TitleNoAccents'],
+//             'slug'                      => $slug,
+//             'subtitle'                  => $row['Subtitle'],
+//             'subtitleNoAccents'         => $row['SubtitleNoAccents'],
+//             'resourceId'                => $resourceId,
+//             'authorsText'               => $authorsText,
+//             'authorsNoAccents'          => $row['AuthorsNoAccents'],
+//             'bookEdition'               => $bookEdition,
+//             'categoryId'                => $categoryId,
+            
+            'inLanguage' => $inLanguage,
+//             'description'               => $this->filterDbString($row['Description']),
+//             'isbn'                      => $this->filterDbString($row['Isbn']),
+//             'editorsText'               => $editorText,
+//             'editorsNoAccents'          => $row['EditorNoAccents'],
+//             'translatorsText'           => $translatorText,
+            'numberOfPages'             => isset($row['pagecount']) ? $row['pagecount'] : null,
+//             'copyrightYear'             => $copyrightYear,
+//             'copyrightInfo'             => $row['CopyrightInfo'],
+//             'datePublishedText'         => $datePublishedText,
+//             'publisher'                 => $this->filterDbString($row['Publisher']),
+//             'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
+//             'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
+//             'bookFormatType'            => $bookFormatType,
+//             'mainPublicationId'         => $mainPublicationId,
+//             'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
+//             'volumeNumber'              => $this->filterDbString($row['VolumeNumber']),
+//             'containedIn'               => $this->filterDbString($row['ContainedIn']),
+//             'containedInIsbn'           => $this->filterDbString($row['ContainedInIsbn']),
+//             'genre'                     => $this->filterDbString($row['Genre']),
+            'keywords'                  => $keywords,
+//             'adminTags'                 => $this->filterDbArray($row['AdminTags']),
+//             'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
+//             'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
+//             'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
+            
+//             'hasNoExplictEditionNumber' => $this->filterDbBool($row['HasNoExplictEditionNumber']),
+//             'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
+//             'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
+//             'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
+            
+//             'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
+//             'jkQuality'                 => $this->filterDbString($row['JkQuality']),
+//             'jkQualityNotes'            => $this->filterDbString($row['JkQualityNotes']),
+//             'jkPeriodId'                => $this->filterDbId($row['JkPeriod']),
+//             'jkEventId'                 => $this->filterDbId($row['JkEventId']),
+//             'urls'                      => $urls,
+//             'url1'                      => $this->filterDbString($row['Url1']),
+//             'url1Label'                 => $this->filterDbString($row['Url1Label']),
+//             'url2'                      => $this->filterDbString($row['Url2']),
+//             'url2Label'                 => $this->filterDbString($row['Url2Label']),
+//             'url3'                      => $this->filterDbString($row['Url3']),
+//             'url3Label'                 => $this->filterDbString($row['Url3Label']),
+//             'dataSource'                => $this->filterDbString($row['DataSource']),
+//             'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
+//             'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
+            
+//             'editionNotes'              => $this->filterDbString($row['EditionNotes']),
+//             'publicNotes'               => $this->filterDbString($row['PublicNotes']),
+//             'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),
+//             'publicNotesUpdatedBy'      => $this->filterDbId($row['PublicNotesUpdatedBy']),
+//             'adminNotes'                => $this->filterDbString($row['AdminNotes']),
+//             'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
+//             'adminNotesUpdatedBy'       => $this->filterDbId($row['AdminNotesUpdatedBy']),
+//             'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
+//             'createdBy'                 => $this->filterDbId($row['CreatedBy']),
+//             'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
+//             'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
+        ];
+        return $data;
+    }
+    
+    protected function processLibraryBookRowFromForschungPublication($publication)
+    {
+        $data = $publication;
+        return $data;
+    }
+    
     /**
      * Update the categories of all related books at the same time
      * @param array $data

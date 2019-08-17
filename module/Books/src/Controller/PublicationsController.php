@@ -13,6 +13,7 @@ use Books\Model\DictionaryTable;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Zend\Json\Json;
 
 class PublicationsController extends SionController
 {
@@ -462,9 +463,11 @@ class PublicationsController extends SionController
      */
     public function importAction()
     {
-        /** @var PublicationsTable $table */
+        /** @var \Books\Model\PublicationsTable $table */
         $table = $this->getSionTable();
-        $entities = $table->importPublications();//false);
+        $forschungs = file_get_contents('data/import/forschungs.json');
+        $array = Json::decode($forschungs, Json::TYPE_ARRAY);
+        $entities = $table->importForschungs($array);//false);
         $view = new ViewModel([
             'entities' => $entities,
         ]);
