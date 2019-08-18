@@ -3,9 +3,11 @@
 $this->headLink()->appendStylesheet($this->basePath() . '/css/publications-index.css');
 if ($this->language === 'xx') {
     $headText = $this->translate('Schoenstatt Literature without language');
-} elseif (array_key_exists($this->language, $this->languages)) {
+} elseif (isset($this->language) && array_key_exists($this->language, $this->languages)) {
     $headTextPattern = 'Schoenstatt Literature in %s';
     $headText = sprintf($this->translate($headTextPattern), $this->translate($this->languages[$this->language]));
+} else {
+    $headText = "Schoenstatt Literature";
 }
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText);

@@ -129,7 +129,7 @@ class FormatPublication extends FormatEntity
                 }
         }
 
-        if ($linkOption) {
+        if ($linkOption && isset($data['identifier']) && isset($data['slug'])) {
             $linkFormat = '<a href="%s">%s</a>';
             $url = $this->view->url('publication', ['sw_id' => $data['identifier'], 'slug' => $data['slug']]);
             if ($escapeMainText) {
@@ -169,7 +169,7 @@ class FormatPublication extends FormatEntity
 //                 }
 //             }
 //         }
-        if ($editPencilOption) { //permissions are checked in editPencil
+        if ($editPencilOption && isset($data['identifier'])) { //permissions are checked in editPencil
             $finalMarkup .= $this->view->editPencil('publication', $data['identifier']);
         }
         if ($showHandChecked && $data['isRevisedWithBookInHand']) {

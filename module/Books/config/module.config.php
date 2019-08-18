@@ -2048,6 +2048,7 @@ return [
 
                     'isAccessibleForFree'       => 'IsAccessableForFree',
                     'isScientificWork'          => 'IsScientificWork',
+                    //if the row hasn't been reconciled against the main corpus, isAwaitingMerge=true
                     'isAwaitingMerge'           => 'IsAwaitingMerge',
 
                     'hasNoExplictEditionNumber' => 'HasNoExplictEditionNumber',
@@ -2056,6 +2057,7 @@ return [
                     'publishDataAsJsonLd'       => 'PublishDataAsJsonLd',
                     'isFormallyPublished'       => 'IsFormallyPublished',
 
+                    //has the row been merged into another? This implies being hidden
                     'hasBeenMerged'             => 'HasBeenMerged',
                     'editionNotes'              => 'EditionNotes',
                     'publicNotes'               => 'PublicNotes',
