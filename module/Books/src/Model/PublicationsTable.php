@@ -1072,42 +1072,40 @@ ORDER BY `Publisher`";
         return $data;
     }
 
-    public function importForschungs(array $jsonArray)
+    public function importForschungs(array $jsonArray, $idToShow = null)
     {
         $bookList = $jsonArray['bookinfo']['booklist']['book'];
-        var_dump(count($bookList));
-        echo '<pre>';
-        print_r($bookList[100]);
-        echo '</pre>';
-        /*
-         * userdefinedvalues, id, index, hash, mainsection, collectionstatus, rare, 
-         * format, country, language, purchasedate, owner, issuenr, publicationdate, 
-         * location, genres, tags (nothing important), links, lastmodified, thumbfilepath, clzbookid, 
-         * bpbooklastreceivedrevision, lccn, printing, pagecount, edition, firstedition, 
-         * extras, subjects, units, readtimes, readit, readingdate, submissiondate, 
-         * quantity, abridged
-         */
         $publications = [];
-        $libraryBooks = [];
+//         $libraryBooks = [];
         $languages = [];
+        $count = 0;
         foreach ($bookList as $book) {
-//             if (isset($book['tags']) && !empty($book['tags'])) {
-//                 echo '<pre>';
-//                 print_r($book);
-//                 echo '</pre>';
-//                 break;
-//             }
             $lang = isset($book['language']) ? $book['language']['displayname'] : null;
             if (isset($lang) && !in_array($lang, $languages)) {
                 $languages[] = $lang;
             }
-            $publications[] = $this->processForschungsPublicationRow($book);
+            $pub = $this->processForschungsPublicationRow($book);
+            $dataSourceId = $pub['dataSourceId'];
+            if (isset($idToShow) && $dataSourceId == $idToShow) {
+                echo '<pre>';
+                print_r($book);
+                echo '</pre>';
+            }
+            $publications[$dataSourceId] = $pub;
+            $count++;
         }
+        return $publications;
     }
     
     protected function processForschungsPublicationRow($row)
     {
         static $languageMap;
+        static $nonAuthorNames;
+        static $editorIndicators;
+        static $editorInString;
+        static $dateConverters;
+        static $now;
+        static $debugCount;
         if (!isset($languageMap)) {
             $languageMap = [
                 'German' => ['de'],
@@ -1135,6 +1133,274 @@ ORDER BY `Publisher`";
                 'German u. a.' => ['de'],
             ];
         }
+        if (!isset($editorIndicators)) {
+            $editorIndicators = [
+                'Hrsg.' => 'displayname',
+                'Editor' => 'displayname',
+            ];
+        }
+        if (!isset($editorInString)) {
+            $editorInString = [
+                '(Hrsg.)',
+                '(Hrsg./Ed.)',
+                'hrsg. vom ',
+                '– Editor',
+            ];
+        }
+        if (!isset($nonAuthorNames)) {
+            $nonAuthorNames = [
+                'u. a.' => 'displayname',
+                'u.a.' => 'displayname',
+                'ohne Autor' => 'displayname',
+                'Autor: keine Angabe' => 'displayname',
+            ];
+        }
+        if (!isset($dateConverters)) {
+            $dateConverters = [
+                '18. April 2005' => '2005-04-18',
+                '2. Februar 2014' => '2014-02-02',
+                'April 1991' => '1991-04',
+                'April 2003' => '2003-04',
+                'April 2010' => '2010-04',
+                'April 2014' => '2014-04',
+                'August 2006' => '2006-08',
+                'August 2008' => '2008-08',
+                'August 2014' => '2014-08',
+                'Dezember 1982' => '1982-12',
+                'Dezember 2012' => '2012-12',
+                'Dezember 2014' => '2014-12',
+                'Februar 2012' => '2012-02',
+                'Februar 2015' => '2015-02',
+                'Januar 1995' => '1995-01',
+                'Januar 2009' => '2009-01',
+                'Januar 2010' => '2010-01',
+                'Januar 2012' => '2012-01',
+                'Juli 1995' => '1995-07',
+                'Juli 2011' => '2011-06',
+                'Juni 2014' => '2014-06',
+                'Mai 2005' => '2005-03',
+                'März 2014' => '2014-03',
+                'März 2015' => '2015-03',
+                'November 2014' => '2014-11',
+                'Oktober 2009' => '2009-10',
+                '18. Juli 1983' => '1983-08-18',
+                '13. Dezember 1965' => '1965-',
+                '13. Mai 1976' => '1976-',
+                '15. August 1985' => '1985-',
+                '15. August 1987' => '1987-',
+                '18. Oktober 1980' => '1980-',
+                '18. Oktober 1981' => '1981-',
+                '19. März 1977' => '1977-',
+                '21. November 2005' => '2005-',
+                '23. Oktober 2004' => '2004-',
+                'April 1977' => '1977-04',
+                'April 1982' => '1982-04',
+                'April 1986' => '1986-04',
+                'April 1989' => '1989-04',
+                'April 1992' => '1992-04',
+                'April 1997' => '1997-04',
+                'April 1998' => '1998-04',
+                'April 2004' => '2004-04',
+                'April 2005' => '2005-04',
+                'April 2006' => '2006-04',
+                'April 2008' => '2008-04',
+                'April 2009' => '2009-04',
+                'April 2011' => '2011-04',
+                'August 1969' => '1969-08',
+                'August 1982' => '1982-08',
+                'August 1984' => '1984-08',
+                'August 1985' => '1985-08',
+                'August 1986' => '1986-08',
+                'August 1988' => '1988-08',
+                'August 1990' => '1990-08',
+                'August 1991' => '1991-08',
+                'August 1992' => '1992-08',
+                'August 1993' => '1993-08',
+                'August 1995' => '1995-08',
+                'August 1996' => '1996-08',
+                'August 1999' => '1999-08',
+                'August 2002' => '2002-08',
+                'August 2003' => '2003-08',
+                'August 2004' => '2004-08',
+                'August 2010' => '2010-08',
+                'Dezember 1971' => '1971-12',
+                'Dezember 1981' => '1981-12',
+                'Dezember 1984' => '1984-12',
+                'Dezember 1985' => '1985-12',
+                'Dezember 1986' => '1986-12',
+                'Dezember 1994' => '1994-12',
+                'Dezember 1995' => '1995-12',
+                'Dezember 1996' => '1996-12',
+                'Dezember 1997' => '1997-12',
+                'Dezember 1999' => '1999-12',
+                'Dezember 2001' => '2001-12',
+                'Dezember 2004' => '2004-12',
+                'Dezember 2006' => '2006-12',
+                'Dezember 2009' => '2009-12',
+                'Dezember 2010' => '2010-12',
+                'Dezember 2011' => '2011-12',
+                'Februar 1999' => '1999-02',
+                'Februar 2001' => '2001-02',
+                'Februar 2003' => '2003-02',
+                'Februar 2004' => '2004-02',
+                'Februar 2005' => '2005-02',
+                'Februar 2006' => '2006-02',
+                'Januar 1984' => '1984-01',
+                'Januar 1985' => '1985-01',
+                'Januar 1997' => '1997-01',
+                'Januar 2001' => '2001-01',
+                'Januar 2006' => '2006-01',
+                'Januar 2007' => '2007-01',
+                'Januar 2008' => '2008-01',
+                'Juli 1978' => '1978-07',
+                'Juli 1983' => '1983-07',
+                'Juli 1984' => '1984-07',
+                'Juli 1988' => '1988-07',
+                'Juli 1989' => '1989-07',
+                'Juli 1990' => '1990-07',
+                'Juli 1997' => '1997-07',
+                'Juli 1998' => '1998-07',
+                'Juli 1999' => '1999-07',
+                'Juli 2000' => '2000-07',
+                'Juli 2001' => '2001-07',
+                'Juli 2004' => '2004-07',
+                'Juli 2006' => '2006-07',
+                'Juli 2007' => '2007-07',
+                'Juli 2008' => '2008-07',
+                'Juli 2009' => '2009-07',
+                'Juni 1968' => '1968-06',
+                'Juni 1976' => '1976-06',
+                'Juni 1977' => '1977-06',
+                'Juni 1984' => '1984-06',
+                'Juni 1985' => '1985-06',
+                'Juni 1986' => '1986-06',
+                'Juni 1990' => '1990-06',
+                'Juni 1992' => '1992-06',
+                'Juni 1994' => '1994-06',
+                'Juni 1996' => '1996-06',
+                'Juni 1997' => '1997-06',
+                'Juni 1998' => '1998-06',
+                'Juni 2000' => '2000-06',
+                'Juni 2001' => '2001-06',
+                'Juni 2002' => '2002-06',
+                'Juni 2003' => '2003-06',
+                'Juni 2005' => '2005-06',
+                'Juni 2006' => '2006-06',
+                'Juni 2007' => '2007-06',
+                'Juni 2008' => '2008-06',
+                'Juni 2009' => '2009-06',
+                'Juni 2010' => '2010-06',
+                'Mai 1973' => '1973-05',
+                'Mai 1974' => '1974-05',
+                'Mai 1984' => '1984-05',
+                'Mai 1985' => '1985-05',
+                'Mai 1986' => '1986-05',
+                'Mai 1987' => '1987-05',
+                'Mai 1988' => '1988-05',
+                'Mai 1993' => '1993-05',
+                'Mai 1996' => '1996-05',
+                'Mai 1998' => '1998-05',
+                'Mai 1999' => '1999-05',
+                'Mai 2000' => '2000-05',
+                'Mai 2001' => '2001-05',
+                'Mai 2002' => '2002-05',
+                'Mai 2003' => '2003-05',
+                'Mai 2006' => '2006-05',
+                'Mai 2007' => '2007-05',
+                'Mai 2008' => '2008-05',
+                'Mai 2009' => '2009-05',
+                'Mai 2011' => '2011-05',
+                'März 1970' => '1970-03',
+                'März 1979' => '1979-03',
+                'März 1981' => '1981-03',
+                'März 1985' => '1985-03',
+                'März 1987' => '1987-03',
+                'März 1988' => '1988-03',
+                'März 1991' => '1991-03',
+                'März 1994' => '1994-03',
+                'März 1995' => '1995-03',
+                'März 1996' => '1996-03',
+                'März 1997' => '1997-03',
+                'März 2000' => '2000-03',
+                'März 2001' => '2001-03',
+                'März 2002' => '2002-03',
+                'März 2003' => '2003-03',
+                'März 2007' => '2007-03',
+                'März 2008' => '2008-03',
+                'März 2009' => '2009-03',
+                'März 2010' => '2010-03',
+                'November 1971' => '1971-',
+                'November 1978' => '1978-',
+                'November 1979' => '1979-',
+                'November 1980' => '1980-',
+                'November 1985' => '1985-',
+                'November 1987' => '1987-',
+                'November 1990' => '1990-',
+                'November 1991' => '1991-',
+                'November 1993' => '1993-',
+                'November 1995' => '1995-',
+                'November 1997' => '1997-',
+                'November 2001' => '2001-',
+                'November 2003' => '',
+                'November 2004' => '2004-',
+                'November 2007' => '2007-',
+                'November 2009' => '2009-',
+                'Oktober 1969' => '1969-',
+                'Oktober 1973' => '1973-',
+                'Oktober 1981' => '1981-',
+                'Oktober 1983' => '1983-',
+                'Oktober 1991' => '1991-',
+                'Oktober 1995' => '1995-',
+                'Oktober 1997' => '1997-',
+                'Oktober 1998' => '1998-',
+                'Oktober 2002' => '2002-',
+                'Oktober 2003' => '2003-',
+                'Oktober 2004' => '2004-',
+                'Oktober 2005' => '2005-',
+                'Oktober 2006' => '2006-',
+                'Oktober 2007' => '2007-',
+                'Oktober 2008' => '2008-',
+                'Oktober 2012' => '2012-',
+                'September 1971' => '1971-',
+                'September 1974' => '1974-',
+                'September 1985' => '1985-',
+                'September 1989' => '1989-',
+                'September 1990' => '1990-',
+                'September 1993' => '1993-',
+                'September 1995' => '1995-',
+                'September 1997' => '1997-',
+                'September 1998' => '1998-',
+                'September 1999' => '1999-',
+                'September 2000' => '2000-',
+                'September 2004' => '2004-',
+                'September 2005' => '2005-',
+                'September 2006' => '2006-',
+                'September 2007' => '2007-',
+                'September 2008' => '2008-',
+                'September 2009' => '2009-',
+            ];
+        }
+        if (!isset($now)) {
+            $now = new \DateTime(null, new \DateTimeZone('UTC'));
+        }
+        if (!isset($debugCount)) {
+            $debugCount = 0;
+        }
+        
+        if (!isset($row['id'])) {
+            var_dump($row);
+            throw new \Exception('Every entry should have an id');
+        }
+        
+        /*
+         * userdefinedvalues(@todo check), id, index, hash, mainsection, collectionstatus (nothing important), rare,
+         * format(@todo), country, language, purchasedate, owner, issuenr(no), publicationdate,
+         * location, genres(@todo), tags (nothing important), links, lastmodified, thumbfilepath, clzbookid,
+         * bpbooklastreceivedrevision, lccn (@todo), printing, pagecount, edition, firstedition,
+         * extras (notes @todo), subjects, units(no), readtimes(no), readit(no), readingdate(no), submissiondate,
+         * quantity, abridged, sections (@todo)
+         */
+        $id = $row['id'];
         $inLanguage = null;
         if (isset($row['language']) && isset($row['language']['displayname'])) {
             $langDisplay = $row['language']['displayname'];
@@ -1152,58 +1418,204 @@ ORDER BY `Publisher`";
                 }
             }
         }
+        $edition = null;
+        if (isset($row['edition'])) {
+            if (!isset($row['edition']['displayname'])) {
+                var_dump($row['edition']);
+                throw new \Exception('Unexpected edition');
+            }
+            $edition = $row['edition']['displayname'];
+        }
+        
         $title = null;
-        $authorText = [];
+        $subtitle = null;
+        $slug = null;
+        $containedIn = null;
+        $authorsText = [];
+        $editorsText = [];
         if (isset($row['mainsection'])) {
+            //title
             if (isset($row['mainsection']['title']) && is_string($row['mainsection']['title'])) {
                 $title = $row['mainsection']['title'];
+                $slug = SchoenstattTable::getSlug($title);
+            }
+            
+            //subtitle
+            if (isset($row['mainsection']['subtitle']) && is_string($row['mainsection']['subtitle'])) {
+                $subtitle = $row['mainsection']['subtitle'];
+            }
+            
+            //authors
+            if (isset($row['mainsection']['authors']) && isset($row['mainsection']['authors']['author'])) {
+                $authorEntries = [];
+                if (isset($row['mainsection']['authors']['author']['role'])) {
+                    $authorEntries[] = $row['mainsection']['authors']['author'];
+                } elseif (isset($row['mainsection']['authors']['author'][0])) {
+                    $authorEntries = $row['mainsection']['authors']['author'];
+                }
+                $areEditors = false;
+                foreach ($authorEntries as $authorEntry) {
+                    if ($authorEntry['role']['$t'] !== 'Author') {
+                        throw new \Exception('It looks like we started specifying other author types');
+                    }
+                    
+                    //check if we're really looking at editors
+                    $disregardThisOne = false;
+                    foreach ($editorIndicators as $editorText => $fieldToCheck) {
+                        if ($authorEntry['person'][$fieldToCheck] === $editorText) {
+                            $areEditors = true;
+                            $disregardThisOne = true;
+                            break;
+                        }
+                    }
+                    
+                    //check if this is a non-@author user
+                    foreach ($nonAuthorNames as $nonAuthorText => $fieldToCheck) {
+                        if ($authorEntry['person'][$fieldToCheck] === $nonAuthorText) {
+                            $disregardThisOne = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!$disregardThisOne) {
+                        $name = $authorEntry['person']['displayname'];
+                        //check if it's actually an editor
+                        $editorStringToReplace = false;
+                        foreach ($editorInString as $stringToCheck) {
+                            if (false !== stripos($name, $stringToCheck)) {
+                                $editorStringToReplace = $stringToCheck;
+                                break;
+                            }
+                        }
+                        if (false !== $editorStringToReplace) { //this one's an editor
+                            $name = trim(str_replace($editorStringToReplace, '', $name));
+                            $editorsText[] = $name;
+                        } else {
+                            $authorsText[] = $name;
+                        }
+                    }
+                }
+                if ($areEditors) {
+                    $editorsText = array_merge($authorsText, $editorsText);
+                    $authorsText = [];
+                }
+            }
+            
+            //containedIn
+            if (isset($row['mainsection']['series']) && isset($row['mainsection']['series']['displayname'])) {
+                $containedIn = $row['mainsection']['series']['displayname'];
+                if (isset($row['mainsection']['series']['issuecount']) 
+                    && is_numeric($row['mainsection']['series']['issuecount'])
+                    && '1' !== $row['mainsection']['series']['issuecount']
+                ) {
+                    $issueCount = $row['mainsection']['series']['issuecount'];
+                    $containedIn = "$containedIn ($issueCount)";
+                }
             }
         }
+        
+        $publisher = null;
+        if (isset($row['publisher']) && isset($row['publisher']['displayname'])) {
+            $publisher = $row['publisher']['displayname'];
+        }
+        $publishingDate = null;
+        if (isset($row['publicationdate']) && isset($row['publicationdate']['date'])) {
+            $publishingDate = $row['publicationdate']['date'];
+            if (1 !== preg_match('/^\d{4,4}$/', $publishingDate)) {
+                if (isset($dateConverters[$publishingDate])) {
+                    $publishingDate = $dateConverters[$publishingDate];
+                } else {
+                    var_dump($publishingDate);
+//                     throw new \Exception('There are new dates to manually process');
+                }
+            }
+        }
+        $publishingPlace = null;
+        if (isset($row['country']) && isset($row['country']['displayname'])) {
+            $publishingPlace = $row['country']['displayname'];
+        }
+        
+        $copyrightYear = null;
+        if (isset($row['firstedition']) 
+            && isset($row['firstedition']['boolvalue']) 
+            && '1' === $row['firstedition']['boolvalue']
+        ) {
+            if (!isset($edition)) {
+                $edition = '1';
+            }
+            //if this is the first edition, fill the published year as copyright year
+            if (isset($publishingDate)) {
+                $re = '/((?:19|20)\d{2,2})/';
+                $matches = null;
+                if (preg_match($re, $publishingDate, $matches, PREG_OFFSET_CAPTURE, 0)) {
+                    $copyrightYear = $matches[1][0];
+                    $debugCount++;
+                    if ($debugCount < 15) {
+                        echo '<pre>';
+                        var_dump($copyrightYear);
+                        echo '</pre>';
+                    }
+                }
+            }
+        }
+        
+        $lastModified = null;
+        if (isset($row['lastmodified']) && isset($row['latmodified']['date'])) {
+            try {
+                $lastModified = new \DateTime($row['latmodified']['date'], new \DateTimeZone('Europe/Berlin'));
+            } catch (\Exception $e) {}
+        }
+        if (!isset($lastModified)) {
+            $lastModified = clone $now;
+        }
+        
         $data = [
-//             'publicationId'             => $id,
+            'publicationId'             => 0, //@todo don't forget to remove this
             'title'                     => $title,
 //             'titleNoAccents'            => $row['TitleNoAccents'],
-//             'slug'                      => $slug,
-//             'subtitle'                  => $row['Subtitle'],
+            'slug'                      => $slug,
+            'subtitle'                  => $subtitle,
 //             'subtitleNoAccents'         => $row['SubtitleNoAccents'],
-//             'resourceId'                => $resourceId,
-//             'authorsText'               => $authorsText,
+            'resourceId'                => 'publication_public',
+            'authorsText'               => $authorsText,
 //             'authorsNoAccents'          => $row['AuthorsNoAccents'],
-//             'bookEdition'               => $bookEdition,
+            'bookEdition'               => $edition,
 //             'categoryId'                => $categoryId,
             
             'inLanguage' => $inLanguage,
 //             'description'               => $this->filterDbString($row['Description']),
-//             'isbn'                      => $this->filterDbString($row['Isbn']),
-//             'editorsText'               => $editorText,
+            'isbn'                      => isset($row['isbn']) ? $row['isbn'] : null,
+            'editorsText'               => $editorsText,
 //             'editorsNoAccents'          => $row['EditorNoAccents'],
 //             'translatorsText'           => $translatorText,
             'numberOfPages'             => isset($row['pagecount']) ? $row['pagecount'] : null,
-//             'copyrightYear'             => $copyrightYear,
+            'copyrightYear'             => $copyrightYear,
 //             'copyrightInfo'             => $row['CopyrightInfo'],
-//             'datePublishedText'         => $datePublishedText,
-//             'publisher'                 => $this->filterDbString($row['Publisher']),
-//             'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
+            'datePublishedText'         => $publishingDate,
+            'publisher'                 => $publisher,
+            'publishingPlace'           => $publishingPlace,
 //             'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
 //             'bookFormatType'            => $bookFormatType,
 //             'mainPublicationId'         => $mainPublicationId,
 //             'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
 //             'volumeNumber'              => $this->filterDbString($row['VolumeNumber']),
-//             'containedIn'               => $this->filterDbString($row['ContainedIn']),
+            'containedIn'               => $containedIn,
 //             'containedInIsbn'           => $this->filterDbString($row['ContainedInIsbn']),
 //             'genre'                     => $this->filterDbString($row['Genre']),
             'keywords'                  => $keywords,
 //             'adminTags'                 => $this->filterDbArray($row['AdminTags']),
 //             'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
 //             'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
-//             'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
+            //if its in english or spanish, we need to merge it later
+            'isAwaitingMerge'           => !isset($inLanguage) || in_array('en', $inLanguage) 
+                                                || in_array('es', $inLanguage),
             
 //             'hasNoExplictEditionNumber' => $this->filterDbBool($row['HasNoExplictEditionNumber']),
 //             'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
-//             'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
+            'isRevisedWithBookInHand'   => true,
 //             'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
             
-//             'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
+            'hasBeenMerged'             => false,
 //             'jkQuality'                 => $this->filterDbString($row['JkQuality']),
 //             'jkQualityNotes'            => $this->filterDbString($row['JkQualityNotes']),
 //             'jkPeriodId'                => $this->filterDbId($row['JkPeriod']),
@@ -1215,9 +1627,9 @@ ORDER BY `Publisher`";
 //             'url2Label'                 => $this->filterDbString($row['Url2Label']),
 //             'url3'                      => $this->filterDbString($row['Url3']),
 //             'url3Label'                 => $this->filterDbString($row['Url3Label']),
-//             'dataSource'                => $this->filterDbString($row['DataSource']),
-//             'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
-//             'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
+            'dataSource'                => 'Forschungsbibliothek',
+            'dataSourceId'              => $id,
+            'dataSourceUpdatedOn'       => $lastModified,
             
 //             'editionNotes'              => $this->filterDbString($row['EditionNotes']),
 //             'publicNotes'               => $this->filterDbString($row['PublicNotes']),

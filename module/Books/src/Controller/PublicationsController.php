@@ -465,13 +465,13 @@ class PublicationsController extends SionController
     {
         /** @var \Books\Model\PublicationsTable $table */
         $table = $this->getSionTable();
+        $idToShow = $this->params()->fromQuery('id');
         $forschungs = file_get_contents('data/import/forschungs.json');
         $array = Json::decode($forschungs, Json::TYPE_ARRAY);
-        $entities = $table->importForschungs($array);//false);
+        $objects = $table->importForschungs($array, $idToShow);//false);
         $view = new ViewModel([
-            'entities' => $entities,
+            'objects' => $objects,
         ]);
-        $view->setTemplate('books/publications/index');
         return $view;
     }
 
