@@ -74,10 +74,15 @@ class Module
             $publications = $table->getUnlinkedPublications();
             foreach ($publications as $publicationId => $object) {
                 if ($object['resourceId'] === 'publication_public') {
-                    if (!array_key_exists($object['inLanguage'], $pagesByLanguage)) {
-                        $pagesByLanguage[$object['inLanguage']] = [];
+                    $inLanguage = isset($object['inLanguage']) 
+                        && is_array($object['inLanguage']) 
+                        && isset($object['inLanguage'][0]) 
+                        ? $object['inLanguage'][0] 
+                        : null;
+                    if (!array_key_exists($inLanguage, $pagesByLanguage)) {
+                        $pagesByLanguage[$inLanguage] = [];
                     }
-                    $pagesByLanguage[$object['inLanguage']][] = [
+                    $pagesByLanguage[$inLanguage][] = [
                         'label' => $object['title'],
                         'route' => 'publication',
                         'params' => [
