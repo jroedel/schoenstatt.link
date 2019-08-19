@@ -230,12 +230,16 @@ ORDER BY `Publisher`";
                     } else {
                         $languages['xx']++;
                     }
-                } else {
-                    if (!isset($languages[$object['inLanguage']])) {
-                        $languages[$object['inLanguage']] = 1;
-                    } else {
-                        $languages[$object['inLanguage']]++;
+                } elseif (is_array($object['inLanguage'])) {
+                    foreach ($object['inLanguage'] as $lang) {
+                        if (!isset($languages[$lang])) {
+                            $languages[$lang] = 1;
+                        } else {
+                            $languages[$lang]++;
+                        }
                     }
+                } else {
+                    throw new \Exception('Publication `inLanguage` should be either an array or null');
                 }
             }
         }
@@ -429,11 +433,12 @@ ORDER BY `Publisher`";
         }
 
         //Prepare inLanguage predicate
-        if (isset($query['inLanguage']) && 0 !== strlen($query['inLanguage'])) {
-            if (is_string($query['inLanguage']) && 'xx' === $query['inLanguage']) {
+        if (key_exists('inLanguage', $query)) {
+            if (null === $query['inLanguage']) {
                 $inLanguageClause = new IsNull($fieldMap['inLanguage']);
             } else {
-                $inLanguageClause = new Operator($fieldMap['inLanguage'], Operator::OPERATOR_EQUAL_TO, $query['inLanguage']);
+                $inLanuageText = $query['inLanguage'];
+                $inLanguageClause = new Like($fieldMap['inLanguage'], "%$inLanuageText%");
             }
             $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
         }
@@ -443,6 +448,17 @@ ORDER BY `Publisher`";
         if (isset($options['noSubEditions']) && $options['noSubEditions']) {
             $noSubEditionClause= new IsNull($fieldMap['mainPublicationId']);
             $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
+        }
+        
+        //@todo check if this really works
+        //Prepare NOT isAwaitingMerger predicate, by default, don't filter
+        if (isset($options['isAwaitingMerger'])) {
+            $isAwaitingMergerClause= new Operator(
+                $fieldMap['isAwaitingMerge'], 
+                Operator::OPERATOR_EQUAL_TO, 
+                $options['isAwaitingMerger'] ? '1' : '0'
+                );
+            $where->addPredicate($isAwaitingMergerClause, PredicateSet::OP_AND);
         }
 
         //Set the where clause
@@ -605,12 +621,7 @@ ORDER BY `Publisher`";
         if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType])) {
             $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
         }
-        //@todo make into an array instead, many books use more than one language
-        $inLanguage = $this->filterDbString($row['InLanguage']);
-        //@todo I'm not so sure this is a good idea
-        if (!isset($inLanguage)) {
-            $inLanguage = 'xx';
-        }
+        $inLanguage = $this->filterDbArray($row['InLanguage']);
 
         if (file_exists(sprintf('public/covers/%s.jpg', $id))) {
             $coverImage = sprintf('/covers/%s.jpg', $id);
@@ -1078,6 +1089,10 @@ ORDER BY `Publisher`";
         $publications = [];
 //         $libraryBooks = [];
         $languages = [];
+        $existingPublications = $this->queryObjects('publication', ['dataSource' => 'forschungsbibliothek']);
+        $existingPublications = $this->rekeyPublicationsByDataSourceId(
+            $existingPublications
+            );
         $count = 0;
         foreach ($bookList as $book) {
             $lang = isset($book['language']) ? $book['language']['displayname'] : null;
@@ -1085,16 +1100,46 @@ ORDER BY `Publisher`";
                 $languages[] = $lang;
             }
             $pub = $this->processForschungsPublicationRow($book);
+            if (!isset($pub['title'])) {
+                if (isset($this->logger)) {
+                    $this->logger->warn('Forschung importer: Row skipped due to missing title', ['record' => $book]);
+                }
+                continue;
+            }
+            if (isset($pub['bookEdition']) && is_string($pub['bookEdition']) && strlen($pub['bookEdition']) > 50) {
+                if (isset($this->logger)) {
+                    $this->logger->warn('Forschung importer: Book edition truncated', ['record' => $book]);
+                }
+                $pub['bookEdition'] = substr($pub['bookEdition'], 0, 50);
+                continue;
+            }
             $dataSourceId = $pub['dataSourceId'];
             if (isset($idToShow) && $dataSourceId == $idToShow) {
                 echo '<pre>';
                 print_r($book);
+                print_r($pub);
                 echo '</pre>';
             }
             $publications[$dataSourceId] = $pub;
+            if (!isset($existingPublications[$dataSourceId])) {
+                $this->createEntity('publication', $pub, false);
+            }
             $count++;
         }
+        $this->removeDependentCacheItems('publication');
         return $publications;
+    }
+    
+    protected function rekeyPublicationsByDataSourceId($publications)
+    {
+        $result = [];
+        foreach ($publications as $object) {
+            if (!isset($object['dataSourceId'])) {
+                throw new \Exception('All rows must have a dataSourceId');
+            }
+            $result[$object['dataSourceId']] = $object;
+        }
+        return $result;
     }
     
     protected function processForschungsPublicationRow($row)
@@ -1329,55 +1374,55 @@ ORDER BY `Publisher`";
                 'März 2008' => '2008-03',
                 'März 2009' => '2009-03',
                 'März 2010' => '2010-03',
-                'November 1971' => '1971-',
-                'November 1978' => '1978-',
-                'November 1979' => '1979-',
-                'November 1980' => '1980-',
-                'November 1985' => '1985-',
-                'November 1987' => '1987-',
-                'November 1990' => '1990-',
-                'November 1991' => '1991-',
-                'November 1993' => '1993-',
-                'November 1995' => '1995-',
-                'November 1997' => '1997-',
-                'November 2001' => '2001-',
-                'November 2003' => '',
-                'November 2004' => '2004-',
-                'November 2007' => '2007-',
-                'November 2009' => '2009-',
-                'Oktober 1969' => '1969-',
-                'Oktober 1973' => '1973-',
-                'Oktober 1981' => '1981-',
-                'Oktober 1983' => '1983-',
-                'Oktober 1991' => '1991-',
-                'Oktober 1995' => '1995-',
-                'Oktober 1997' => '1997-',
-                'Oktober 1998' => '1998-',
-                'Oktober 2002' => '2002-',
-                'Oktober 2003' => '2003-',
-                'Oktober 2004' => '2004-',
-                'Oktober 2005' => '2005-',
-                'Oktober 2006' => '2006-',
-                'Oktober 2007' => '2007-',
-                'Oktober 2008' => '2008-',
-                'Oktober 2012' => '2012-',
-                'September 1971' => '1971-',
-                'September 1974' => '1974-',
-                'September 1985' => '1985-',
-                'September 1989' => '1989-',
-                'September 1990' => '1990-',
-                'September 1993' => '1993-',
-                'September 1995' => '1995-',
-                'September 1997' => '1997-',
-                'September 1998' => '1998-',
-                'September 1999' => '1999-',
-                'September 2000' => '2000-',
-                'September 2004' => '2004-',
-                'September 2005' => '2005-',
-                'September 2006' => '2006-',
-                'September 2007' => '2007-',
-                'September 2008' => '2008-',
-                'September 2009' => '2009-',
+                'November 1971' => '1971-11',
+                'November 1978' => '1978-11',
+                'November 1979' => '1979-11',
+                'November 1980' => '1980-11',
+                'November 1985' => '1985-11',
+                'November 1987' => '1987-11',
+                'November 1990' => '1990-11',
+                'November 1991' => '1991-11',
+                'November 1993' => '1993-11',
+                'November 1995' => '1995-11',
+                'November 1997' => '1997-11',
+                'November 2001' => '2001-11',
+                'November 2003' => '2003-11',
+                'November 2004' => '2004-11',
+                'November 2007' => '2007-11',
+                'November 2009' => '2009-11',
+                'Oktober 1969' => '1969-10',
+                'Oktober 1973' => '1973-10',
+                'Oktober 1981' => '1981-10',
+                'Oktober 1983' => '1983-10',
+                'Oktober 1991' => '1991-10',
+                'Oktober 1995' => '1995-10',
+                'Oktober 1997' => '1997-10',
+                'Oktober 1998' => '1998-10',
+                'Oktober 2002' => '2002-10',
+                'Oktober 2003' => '2003-10',
+                'Oktober 2004' => '2004-10',
+                'Oktober 2005' => '2005-10',
+                'Oktober 2006' => '2006-10',
+                'Oktober 2007' => '2007-10',
+                'Oktober 2008' => '2008-10',
+                'Oktober 2012' => '2012-10',
+                'September 1971' => '1971-09',
+                'September 1974' => '1974-09',
+                'September 1985' => '1985-09',
+                'September 1989' => '1989-09',
+                'September 1990' => '1990-09',
+                'September 1993' => '1993-09',
+                'September 1995' => '1995-09',
+                'September 1997' => '1997-09',
+                'September 1998' => '1998-09',
+                'September 1999' => '1999-09',
+                'September 2000' => '2000-09',
+                'September 2004' => '2004-09',
+                'September 2005' => '2005-09',
+                'September 2006' => '2006-09',
+                'September 2007' => '2007-09',
+                'September 2008' => '2008-09',
+                'September 2009' => '2009-09',
             ];
         }
         if (!isset($now)) {
@@ -1519,6 +1564,7 @@ ORDER BY `Publisher`";
             $publisher = $row['publisher']['displayname'];
         }
         $publishingDate = null;
+        $publishedYear = null;
         if (isset($row['publicationdate']) && isset($row['publicationdate']['date'])) {
             $publishingDate = $row['publicationdate']['date'];
             if (1 !== preg_match('/^\d{4,4}$/', $publishingDate)) {
@@ -1526,8 +1572,14 @@ ORDER BY `Publisher`";
                     $publishingDate = $dateConverters[$publishingDate];
                 } else {
                     var_dump($publishingDate);
-//                     throw new \Exception('There are new dates to manually process');
+                    throw new \Exception('There are new dates to manually process');
                 }
+            }
+            //extract just the year for the library table
+            $re = '/((?:19|20)\d{2,2})/';
+            $matches = null;
+            if (preg_match($re, $publishingDate, $matches, PREG_OFFSET_CAPTURE, 0)) {
+                $publishedYear = $matches[1][0];
             }
         }
         $publishingPlace = null;
@@ -1544,18 +1596,8 @@ ORDER BY `Publisher`";
                 $edition = '1';
             }
             //if this is the first edition, fill the published year as copyright year
-            if (isset($publishingDate)) {
-                $re = '/((?:19|20)\d{2,2})/';
-                $matches = null;
-                if (preg_match($re, $publishingDate, $matches, PREG_OFFSET_CAPTURE, 0)) {
-                    $copyrightYear = $matches[1][0];
-                    $debugCount++;
-                    if ($debugCount < 15) {
-                        echo '<pre>';
-                        var_dump($copyrightYear);
-                        echo '</pre>';
-                    }
-                }
+            if (isset($publishedYear)) {
+                $copyrightYear = $publishedYear;
             }
         }
         
@@ -1567,6 +1609,16 @@ ORDER BY `Publisher`";
         }
         if (!isset($lastModified)) {
             $lastModified = clone $now;
+        }
+        
+        if (isset($row['lccn'])) {
+            $callNumber = $row['lccn'];
+//             $debugCount++;
+//             if ($debugCount < 15) {
+//                 echo '<pre>';
+//                 var_dump($callNumber);
+//                 echo '</pre>';
+//             }
         }
         
         $data = [
@@ -1627,7 +1679,7 @@ ORDER BY `Publisher`";
 //             'url2Label'                 => $this->filterDbString($row['Url2Label']),
 //             'url3'                      => $this->filterDbString($row['Url3']),
 //             'url3Label'                 => $this->filterDbString($row['Url3Label']),
-            'dataSource'                => 'Forschungsbibliothek',
+            'dataSource'                => 'forschungsbibliothek',
             'dataSourceId'              => $id,
             'dataSourceUpdatedOn'       => $lastModified,
             
@@ -1642,13 +1694,14 @@ ORDER BY `Publisher`";
 //             'createdBy'                 => $this->filterDbId($row['CreatedBy']),
 //             'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
 //             'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
+
+            //columns for library books. Shouldn't affect inserting into publications
+            'libraryId' => 5,
+            'withinLibraryId' => $id,
+            'authors' => $authorsText,
+            'callNumber' => $callNumber,
+            'publishedYear' => $publishedYear,
         ];
-        return $data;
-    }
-    
-    protected function processLibraryBookRowFromForschungPublication($publication)
-    {
-        $data = $publication;
         return $data;
     }
     
