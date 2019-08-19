@@ -340,13 +340,13 @@ ORDER BY `publisher`";
     {
         $libraryId = $this->getLibraryId();
 
-        $queryParameters = [
-            'title', 'author', 'search',
-            'isActive', 'isCheckedOut',
-            'collectionId', 'libraryId', 'category',
-            'publicationId'
-        ];
-        $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'onlyPendingBooks'];
+//         $queryParameters = [
+//             'title', 'author', 'search',
+//             'isActive', 'isCheckedOut',
+//             'collectionId', 'libraryId', 'category',
+//             'publicationId'
+//         ];
+//         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'onlyPendingBooks'];
         $onlyPendingBooks = isset($options['onlyPendingBooks']) ? (bool) $options['onlyPendingBooks'] : false;
         
         $fieldMap = $this->getEntitySpecification('book')->updateColumns;
@@ -968,12 +968,6 @@ ORDER BY `publisher`";
         array $withinLibraryIds,
         $createCheckoutsForBooksWithNoCheckouts = true
     ) {
-        $checkouts = $this->getUnlinkedCheckouts();
-        $library = $this->getLibrary($libraryId);
-
-        $tz = new \DateTimeZone('UTC');
-        $today = new \DateTime(null, $tz);
-
         $bookLookup = $this->getLibraryBookLookup($libraryId);
         $bookIds = [];
         foreach ($withinLibraryIds as $withinLibraryId) {
@@ -1042,7 +1036,7 @@ ORDER BY `publisher`";
         foreach ($bookIds as $bookId) {
             $currentBook = $paramsPrototype;
             $currentBook['bookId'] = $bookId;
-            if (!$newId = $this->createEntity('checkout', $currentBook, false)) {
+            if (!$this->createEntity('checkout', $currentBook, false)) {
                 $badValues[] = $bookId;
             }
         }
@@ -1053,7 +1047,7 @@ ORDER BY `publisher`";
     public function renewBook($checkoutId)
     {
         $checkout = $this->getCheckout($checkoutId);
-        $book = $this->getSimpleBook($bookId);
+        $book = $this->getSimpleBook($checkout['bookId']);
         $library = $this->getSimpleLibrary($book['libraryId']);
         static $today;
         //if the dueDate hasn't arrived, extend it; else, from today's date
@@ -1065,6 +1059,7 @@ ORDER BY `publisher`";
         $libraryOptions = $library['options'];
         $libraryOptions->defaultCheckoutTimePeriodInDays;
         $newDueOn = $today->addDays($libraryOptions->defaultCheckoutTimePeriodInDays);
+        return $newDueOn;
     }
 
     /**
@@ -1149,7 +1144,7 @@ ORDER BY `publisher`";
 
         //check if the books are checked out
         $checkouts = $this->getUnlinkedCheckouts();
-        foreach ($checkouts as $checkoutId => $checkout) {
+        foreach ($checkouts as $checkout) {
             if (null === $checkout['checkedInOn'] && isset($books[$checkout['bookId']]) &&
                 isset($entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']])
             ) { //book is checked out
@@ -1374,7 +1369,7 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
         }
         $library = $this->getLibrary($libraryId);
         $entities = [];
-        foreach ($library['books'] as $entityId => $entity) {
+        foreach ($library['books'] as $entity) {
             $currentCheckout = $entity['currentCheckout'];
             $entities[$entity['withinLibraryId']] = [
                 'title'     => $entity['title'],
@@ -2066,7 +2061,7 @@ ORDER BY CreatedOn DESC";
         $libraries = $this->getUnlinkedLibraries();
 
         $allow = [];
-        foreach ($libraries as $key => $object) {
+        foreach ($libraries as $object) {
             if (isset($object['viewRole'])) {
                 $viewRoles = [$object['viewRole']];
                 if ($object['viewRole'] == 'guest') { //if it's free to guests, it should also be open to users.

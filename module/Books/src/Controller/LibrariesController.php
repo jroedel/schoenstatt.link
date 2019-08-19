@@ -206,7 +206,6 @@ class LibrariesController extends SionController
         $borrowers = [];
 
         if ($form->isValid()) {
-            $notAllowed = [];
             $data = $form->getData();
 
             if (!empty($data)) {
@@ -332,7 +331,7 @@ class LibrariesController extends SionController
     public function transformBookQueryIntoLibraries($books)
     {
         $entities = [];
-        foreach ($books as $bookId => $book) {
+        foreach ($books as $book) {
             if (!isset($entities[$book['libraryId']])) {
                 $entities[$book['libraryId']] = $book['library'];
             }

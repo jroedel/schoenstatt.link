@@ -83,6 +83,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
             'attributes' => [
                 'required' => true,
+                'multiple' => true,
             ],
         ]);
         $this->add([

@@ -162,13 +162,16 @@ class PublicationsController extends SionController
     
     public function indexAction()
     {
-        /** @var PublicationsTable $table */
+        /** @var \Books\Model\PublicationsTable $table */
         $table      = $this->getSionTable();
         $entity     = $this->getEntity();
         $entitySpec = $this->getEntitySpecification();
         $language   = $this->params()->fromRoute('inLanguage');
         $languages  = $this->services['Books\LanguagesValueOptions'];
-        $objects    = $table->searchPublications(['inLanguage' => $language], ['noSubEditions' => true]);
+        $objects    = $table->searchPublications(
+            ['inLanguage' => $language], 
+            ['noSubEditions' => true, 'isAwaitingMerger' => false]
+            );
         $objects    = $this->groupPublicationsByCategory($objects);
 
         $form = $this->services[PublicationsSearchForm::class];
