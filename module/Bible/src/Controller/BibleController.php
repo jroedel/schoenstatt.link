@@ -1,13 +1,9 @@
 <?php
 namespace Bible\Controller;
 
-use Zend\Db\Sql\Where;
-use Zend\Db\Sql\Select;
-use SionModel\Db\Model\SionTable;
 use Zend\View\Model\ViewModel;
 use SionModel\Controller\SionController;
 use Bible\Model\BibleTable;
-use Bible\Filter\FromBibleworksMorphosyntacticCode;
 use Zend\Db\Sql\Predicate\Between;
 use Zend\Db\Sql\Predicate\PredicateSet;
 use Zend\Db\Sql\Predicate\In;
@@ -136,6 +132,7 @@ class BibleController extends SionController
         $books = [];
         $form = new BibleSearchForm();
         $data = $this->params()->fromQuery();
+        $search = null;
         if (!empty($data)) {
             $form->setData($data);
             if ($form->isValid()) {
@@ -143,7 +140,8 @@ class BibleController extends SionController
                 //fetch list of verses, maybe even group by the verse
                 /** @var BibleTable $table */
                 $table = $this->getSionTable();
-                $searchClause = new Like('text', '%'.UTF8::filter($data['search']).'%');
+                $search = $data['search'];
+                $searchClause = new Like('text', '%'.UTF8::filter($search).'%');
                 $translations = ['njb', 'septnt', 'jeresp', 'bnm2'];
                 $where = new PredicateSet([new In('translation_id', $translations), $searchClause]);
                 $verses = $table->getObjects('bible-verse', $where);
@@ -154,6 +152,7 @@ class BibleController extends SionController
             'form' => $form,
             'verses' => $verses,
             'books' => $books,
+            'search' => $search,
         ]);
     }
     
