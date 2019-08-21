@@ -1,5 +1,6 @@
 <?php
 use Bible\Model\BibleTable;
+use Cake\Utility\Text;
 
 echo $this->partial('search-bar', ['form' => $this->form]);
 
@@ -20,7 +21,7 @@ if (is_string($object['translation']) && isset(BibleTable::TRANSLATIONS[$object[
 } else {
     echo $this->escapeHtml($object['translation']);
 }?>)</h4>
-<p><?php echo $this->escapeHtml($object['text']);?>
+<p><?= Text::highlight($object['text'], $this->search, ['format' => '<mark>\1</mark>']);?></p>
 <?php endforeach;
 endif;
 endif;

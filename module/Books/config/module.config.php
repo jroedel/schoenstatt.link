@@ -1186,6 +1186,16 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
+                    'create' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/create',
+                            'defaults' => [
+                                'controller' => Controller\TextsController::class,
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
                     'jk-import' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -2656,6 +2666,7 @@ return [
                 ['route' => 'text-create', 'roles' => ['texts_moderator']],
                 ['route' => 'text-delete', 'roles' => ['texts_moderator']],
                 ['route' => 'texts/jk-import', 'roles' => ['administrator']],
+                ['route' => 'texts/create', 'roles' => ['texts_moderator']],
                 
                 ['route' => 'blog', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/create', 'roles' => ['blog_contributor']],
