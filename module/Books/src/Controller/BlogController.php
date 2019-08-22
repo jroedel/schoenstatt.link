@@ -8,9 +8,27 @@ use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
+use Zend\View\Model\ViewModel;
 
 class BlogController extends SionController
 {
+    
+    public function indexAction()
+    {
+        /** @var SionTable $table */
+        $table      = $this->getSionTable();
+        $entity     = $this->getEntity();
+        $entitySpec = $this->getEntitySpecification();
+        $objects    = $table->queryObjects($entity, ['kind' => EventTextTable::TEXT_KIND_BLOG]);
+        $view = new ViewModel([
+            'entity'    => $entity,
+            'entitySpec'=> $entitySpec,
+            'objects'   => $objects,
+        ]);
+        
+        return $view;
+    }
+    
     public function showAction()
     {
         $slug = $this->params()->fromRoute('slug');
