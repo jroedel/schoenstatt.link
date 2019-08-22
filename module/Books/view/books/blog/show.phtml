@@ -3,13 +3,7 @@ $headText = $this->translate($this->entity['title']);
 $this->headTitle($headText);
 $object = $this->entity;?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
-
-<p><i class="fa fa-user"></i> <?php echo sprintf($this->translate('by %s'), $object['createdByUsername']);
-?>  <i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php echo $this->diffForHumans($this->entity['createdOn']);?></p>
-<p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php 
-foreach ($object['tags'] as $tag) : ?>
-<a href=""><span class="badge badge-info"><?php echo $this->escapeHtml($tag); //@todo translate this later?></span></a> 
-<?php endforeach;?></p>
+<?= $this->partial('_front-matter', ['entity' => $this->entity]);?>
 <hr>
 <?php
 $parsedown = new \Parsedown();
