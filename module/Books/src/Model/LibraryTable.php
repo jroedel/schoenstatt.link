@@ -924,7 +924,7 @@ ORDER BY `publisher`";
 //                     'checkedInUserAgent'    => $this->filterDbString($row['CheckedInUserAgent']),
                 ];
                 //don't refresh the cache
-                (string)$this->updateEntity('checkout', $checkoutId, $data, [], false);
+                $this->updateEntity('checkout', $checkoutId, $data, [], false);
                 $booksToCheckin[$checkout['bookId']] = true;
             }
         }
