@@ -1,9 +1,6 @@
 <?php use Zend\Math\Rand;
-use Zend\Uri\Uri;
-use ZfcUser\Form\Login;
-use ZfcUser\Options\ModuleOptions;
-use Carbon\Carbon;
-use Zend\View\Helper\HeadScript;
+
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 echo $this->doctype();
 $username = $this->zfcUserDisplayName();
 $routeName = $this->routeName();?>
@@ -93,19 +90,18 @@ $routeName = $this->routeName();?>
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
                     </button>
-                    <a class="navbar-brand" href="<?php echo $this->url('welcome') ?>"><span><img alt="SL" src="/img/logo.png"></span> <?php 
-                    echo $this->translate('Schoenstatt Link', 'Application') ?></a>
+                    <a class="navbar-brand" href="<?php echo $this->url('welcome') ?>"><span><img alt="SL" src="/img/logo.png"></span> Schoenstatt Link</a>
                 </div>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <?php
                     if (!$username) :
                         //if they're not logged in show a link for sign on and registration
                     ?><ul class="nav navbar-nav pull-right">
-                        <?php if ('zfcuser/login' != $routeName):?>
+                        <?php if ('zfcuser/login' !== $routeName):?>
                         <li><a class="btn" href="<?php echo $this->url('zfcuser/login');?>"><?php 
                         echo $this->translate('Sign in', 'Application');?></a></li>
                     	<?php endif;
-                    	if ('zfcuser/register' != $routeName):?>
+                    	if ('zfcuser/register' !== $routeName):?>
                         <li><a class="btn" href="<?php echo $this->url('zfcuser/register');?>"><?php 
                         echo $this->translate('Register', 'Application');?></a></li>
                     	<?php endif;?>
@@ -214,11 +210,23 @@ $locale = \Locale::getDefault();
               	<?php endforeach;?>
               </ul>
             </div>
-    		<?= $this->navigation('navigation')
-    		->breadcrumbs()
-    		->setUseAcl(false)
-            ->setMinDepth(0)
-            ->setPartial('partial/breadcrumbs') ?>
+            <?php /*
+             * this code accepts a list of breadcrumbs arrays in the format 
+             * [
+             *  0 => ['location' => 'shrines', 'label' => 'Shrines', 'shouldTranslateLabel' => true],
+             *  1 => [...]
+             * ]
+             */
+            $breadcrumbsList = $this->breadcrumbsList;
+            if (isset($breadcrumbsList) &&  is_array($breadcrumbsList)):
+                echo $this->partial('partial/breadcrumbs-list', ['breadcrumbsList' => $breadcrumbsList]);
+            else:
+                echo $this->navigation('navigation')
+        		->breadcrumbs()
+        		->setUseAcl(false)
+                ->setMinDepth(0)
+                ->setPartial('partial/breadcrumbs');
+            endif;?>
             </div>
             <?php
             $flash = $this->flashMessenger();

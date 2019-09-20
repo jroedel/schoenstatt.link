@@ -1,6 +1,9 @@
 <?php use Spatie\SchemaOrg\BreadcrumbList;
 use Spatie\SchemaOrg\ListItem;
-// in module/Application/view/partial/breadcrumb.phtml: ?>
+// if we aren't receiving any pages, just get out
+if (!isset($this->pages) || count($this->pages) < 1) {
+    return;
+}?>
 <ol class="breadcrumb">
     <?php
     $listItems = [];
@@ -41,6 +44,6 @@ use Spatie\SchemaOrg\ListItem;
         </li>
     <?php endforeach; ?>
 </ol>
-<?php $breadcrumbs = new BreadcrumbList();
-echo $breadcrumbs->setProperty('itemListElement', $listItems)->toScript(); 
+<?php $breadcrumbsList = new BreadcrumbList();
+echo $breadcrumbsList->setProperty('itemListElement', $listItems)->toScript();
 ?>
