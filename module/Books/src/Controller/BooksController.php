@@ -81,6 +81,52 @@ class BooksController extends SionController
             $entity['publication'] = $publication;
         }
         $view->setVariable('entity', $entity);
+        
+        /* this code accepts a list of breadcrumbs arrays in the format
+        * [
+        *  0 => ['location' => 'shrines', 'label' => 'Shrines', 'shouldTranslateLabel' => true],
+        *  1 => [...]
+        * ]
+        */
+        $library = $entity['library'];
+        $breadcrumbs = [
+            ['route' => 'publications', 'label' => 'Literature', 'shouldTranslateLabel' => true],
+            [
+                'route' => 'libraries/library',
+                'params' => ['library_id' => $library['libraryId']], 
+                'label' => $library['name']
+            ],
+        ];
+        //preferentially, show the category, if there library doesn't list categories, check if we can show the collection.
+        if ($library['mainShowDisplay'] === LibraryTable::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS_CATEGORIES
+            || $library['mainShowDisplay'] === LibraryTable::MAIN_SHOW_DISPLAY_SHOW_CATEGORIES
+        ) {
+            if (isset($entity['category'])) {
+                $breadcrumbs[] = [
+                    'route' => 'libraries/library',
+                    'params' => ['library_id' => $library['libraryId']], 
+                    'options' => ['query' => ['category' => $entity['category']]],
+                    'label' => $entity['category'],
+                ];
+            }
+        } elseif ($library['mainShowDisplay'] === LibraryTable::MAIN_SHOW_DISPLAY_SHOW_COLLECTIONS
+            && isset($entity['collectionId'])
+            && isset($entity['library']['options']->collections[$entity['collectionId']])
+            ) {
+                $breadcrumbs[] = [
+                    'route' => 'libraries/library',
+                    'params' => ['library_id' => $library['libraryId']],
+                    'options' => ['query' => ['collectionId' => $entity['collectionId']]],
+                    'label' => $entity['library']['options']->collections[$entity['collectionId']]['name'],
+                ];
+        }
+        $breadcrumbs[] = [
+            'route' => null, 
+            'label' => $entity['title'], 
+            'reuseMatchedParams' => true, 
+            'active' => true
+        ];
+        $this->layout()->breadcrumbsList = $breadcrumbs;
         return $view;
     }
 
