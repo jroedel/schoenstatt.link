@@ -180,11 +180,13 @@ class SchoenstattController extends AbstractActionController
         ->name('Schoenstatt Link')
         ->contactPoint((new ContactPoint())
             ->contactType('technical support')
-            ->email('webmaster@schoenstatt.link'));
+            ->email('webmaster@schoenstatt.link')
+            ->telephone('+1 414 215 0318'));
         $datasetEn->name('Schoenstatt Shrine Database in English')
         ->description('Shrine database is a list of the Catholic Chapels belonging '
             .'to the International Schoenstatt Movement')
-        ->inLanguage('es')
+        ->inLanguage('en')
+        ->license('https://creativecommons.org/licenses/by-sa/3.0/')
         ->url('https://schoenstatt.link/en/shrines')
         ->keywords([
             'RELIGION > CATHOLIC CHURCH > MOVEMENTS',
@@ -194,12 +196,13 @@ class SchoenstattController extends AbstractActionController
         ->creator($creator)
         ->distribution((new DataDownload())
             ->encodingFormat('JSON')
-            ->contentLocation('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine'));
+            ->contentUrl('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine'));
         $datasetEs = new Dataset();
         $datasetEs->name('Base de datos de Santuarios de Schoenstatt en Español')
         ->description('La base de datos de los santuarios es una lista de capillas católicas perteneciente '
             .'al Movimiento Apostólico de Schoenstatt')
         ->inLanguage('es')
+        ->license('https://creativecommons.org/licenses/by-sa/3.0/')
         ->url('https://schoenstatt.link/es/shrines')
         ->keywords([
             'RELIGIÓN > IGLESIA CATÓLICA > MOVIMIENTOS',
@@ -209,7 +212,7 @@ class SchoenstattController extends AbstractActionController
         ->creator($creator)
         ->distribution((new DataDownload())
             ->encodingFormat('JSON')
-            ->contentLocation('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine'));
+            ->contentUrl('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine'));
         $datasets = [$datasetEn->toArray(), $datasetEs->toArray()];
         return $datasets;
     }
