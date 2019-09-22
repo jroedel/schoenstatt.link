@@ -2722,7 +2722,7 @@ return [
                 ['route' => 'composition', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'composition-edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
-                ['route' => 'music/create-composition', 'roles' => ['sch_moderator']],
+                ['route' => 'music/create-composition', 'roles' => ['sch_user']],
                 ['route' => 'music/import', 'roles' => ['administrator']],
             ],
         ],
