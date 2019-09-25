@@ -439,7 +439,7 @@ class PublicationsController extends SionController
         $simulate = '0' !== $this->params()->fromQuery('simulate', '1');
         /** @var PublicationsTable $table */
         $table = $this->getSionTable();
-        $publications = $table->getUnlinkedPublications();
+        $publications = $table->getObjects('publication');
         $changes = [];
         foreach ($publications as $publicationId => $object) {
             $trimmed = trim($object['title'], '. ');

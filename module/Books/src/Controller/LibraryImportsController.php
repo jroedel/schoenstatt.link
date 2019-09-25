@@ -319,12 +319,12 @@ class LibraryImportsController extends SionController
             if (!isset($publications)) {
                 /** @var \Books\Model\PublicationsTable $publicationsTable */
                 $publicationsTable = $this->services[PublicationsTable::class];
-                $publications = $publicationsTable->getUnlinkedPublications($publicationIds);
+                $publications = $publicationsTable->queryObjects('publication', ['publicationId' => $publicationIds]);
             }
         }
 
         //now for the real deal
-        foreach ($rows as $rowNumber => $rowColumns) {
+        foreach ($rows as $rowColumns) {
             $withinLibraryId = (int)$rowColumns[$fieldIndices['withinLibraryId']];
             if ($isDuplicateWithinLibraryId = in_array($withinLibraryId, $withinLibraryIds)) {
                 $duplicateWithinLibraryIds[] = $withinLibraryId;

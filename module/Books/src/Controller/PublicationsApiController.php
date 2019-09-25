@@ -41,7 +41,7 @@ class PublicationsApiController extends AbstractRestfulController
     {
 //         $params = $this->params()->fromQuery();
         $table = $this->table;
-        $objects = $table->getUnlinkedPublications();
+        $objects = $table->getObjects('publication');
         self::prepPublicationObjects($objects);
         
         return new JsonModel([

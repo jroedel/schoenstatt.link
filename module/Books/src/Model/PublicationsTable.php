@@ -160,7 +160,7 @@ ORDER BY `Publisher`";
 
     public function getKeywordsValueOptions()
     {
-        $publications = $this->getUnlinkedPublications();
+        $publications = $this->getObjects('publication');
         $valueOptions = [];
         foreach ($publications as $publication) {
             foreach ($publication['keywords'] as $keyword) {
@@ -178,7 +178,7 @@ ORDER BY `Publisher`";
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        $entities = $this->getUnlinkedPublications();
+        $entities = $this->getObjects('publication');
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
             $return[$entityId] = $entityObject['disambiguatingTitle'];
@@ -215,7 +215,7 @@ ORDER BY `Publisher`";
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        $entities = $this->getUnlinkedPublications();
+        $entities = $this->getObjects('publication');
 
         $languages = [];
         foreach ($entities as $object) {
@@ -494,7 +494,7 @@ ORDER BY `Publisher`";
             return $cache;
         }
 
-        $entities = $this->getUnlinkedPublications();
+        $entities = $this->getObjects('publication');
 //         $persons = $this->schoenstattTable->getUnlinkedPersons();
 //         $associations = $this->schoenstattTable->getUnlinkedAssociations();
 
@@ -542,34 +542,6 @@ ORDER BY `Publisher`";
         }
 
         $this->cacheEntityObjects('publications', $entities, ['publication']);
-        return $entities;
-    }
-
-    /**
-     * Get an array of publications
-     * @param array $ids
-     * @return array
-     */
-    public function getUnlinkedPublications(array $ids = [])
-    {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-publications'))) {
-            return $cache;
-        }
-        $gateway = $this->getTableGateway('sch_publications');
-        $select = $this->getSelectPrototype('publication');
-        if (!empty($ids)) {
-            $select->where(['publicationId' => $ids]);
-        }
-        $results = $gateway->selectWith($select);
-
-        $entities = [];
-        foreach ($results as $row) {
-            $processedRow = $this->processPublicationRow($row);
-            $id = $processedRow['publicationId'];
-            $entities[$id] = $processedRow;
-        }
-
-        $this->cacheEntityObjects('unlinked-publications', $entities, ['publication']);
         return $entities;
     }
 
@@ -2124,7 +2096,7 @@ WHERE 1";
 
     public function getAuthors()
     {
-        $publications = $this->getUnlinkedPublications();
+        $publications = $this->getObjects('publication');
         $authors = [];
         foreach ($publications as $publicationId => $publication) {
             if (!isset($publication['authorsText'])) {
