@@ -71,7 +71,7 @@ class Module
             $publicationPages = [];
             $pagesByLanguage = [];
             $table = $sm->get(PublicationsTable::class);
-            $publications = $table->getUnlinkedPublications();
+            $publications = $table->getObjects('publication');
             foreach ($publications as $publicationId => $object) {
                 if ($object['resourceId'] === 'publication_public') {
                     $inLanguage = isset($object['inLanguage']) 

@@ -344,7 +344,7 @@ class LibrariesController extends SionController
     {
         /** @var PublicationsTable $table */
         $table = $this->services[PublicationsTable::class];
-        $publications = $table->getUnlinkedPublications();
+        $publications = $table->getObjects('publication');
         return $publications;
     }
 

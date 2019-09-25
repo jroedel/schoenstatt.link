@@ -1961,7 +1961,7 @@ return [
                     Model\DictionaryTable::class,
                 ],
                 'get_object_function'                   => 'getPublication',
-                'get_objects_function'                  => 'getUnlinkedPublications',
+//                 'get_objects_function'                  => 'getUnlinkedPublications',
                 'row_processor_function'                => 'processPublicationRow',
                 'format_view_helper'                    => 'formatPublication',
                 'required_columns_for_creation'         => [
