@@ -24,7 +24,7 @@ class CompositionFormFactory implements FactoryInterface
 
 
         $languageSupport = $container->get(LanguageSupport::class);
-        $languages = $languageSupport->getLanguageValueOptions();
+        $languages = $languageSupport->getLanguageNames();
         $tags = $table->getTagsValueOptions();
         $compositions = $table->getCompositionValueOptions();
         $authors = $table->getAuthorTextValueOptions();

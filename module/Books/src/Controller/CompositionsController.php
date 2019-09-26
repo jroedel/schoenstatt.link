@@ -40,7 +40,7 @@ class CompositionsController extends SionController
     {
         $view = parent::indexAction();
         
-        $languages = $this->services['Books\LanguagesValueOptions'];
+        $languages = $this->getSionTable()->getLanguageNames();
         $view->setVariable('languageNames', $languages);
         return $view;
     }

@@ -27,19 +27,4 @@ class TextFormFactory implements FactoryInterface
         $form->get('tags')->setValueOptions($keywords);
         return $form;
     }
-
-    /**
-     * Fetch value options for a Select form element
-     * @param string $labelsInOwnLanguage
-     * @return string[]
-     */
-    protected function getLanguageValueOptions($labelsInOwnLanguage = false)
-    {
-        $valueOptions = [];
-        $labelField = $labelsInOwnLanguage ? 5 : 4;
-        foreach ($this->languages as $languageRow) {
-            $valueOptions[$languageRow[0]] = $languageRow[$labelField];
-        }
-        return $valueOptions;
-    }
 }
