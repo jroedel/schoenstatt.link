@@ -63,9 +63,15 @@ endif;?>
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
-      <!-- <p><strong><?= $this->translate('Superiors');?></strong></p> -->
-        <?php echo $this->formatField('Language', $object['inLanguage']);
-        if (!is_null($object['mainPublication'])) :?>
+        <p><strong><?= $this->translate('Language');?>:</strong> <?php
+        if (!empty($object['inLanguage'])) {
+            $languageNames = [];
+            foreach ($object['inLanguage'] as $language) {
+                $languageNames[] = $this->languageName($language);
+            }
+            echo implode(', ', $languageNames);
+        }?></p>
+        <?php if (!is_null($object['mainPublication'])) :?>
         <p><strong><?= $this->translate('Current publication');?>:</strong> <?php
         echo $this->formatEntity('publication', $object['mainPublication'], ['display' => FormatPublication::DISPLAY_DISAMBIGUATING_TITLE]);?></p>
         <?php endif;

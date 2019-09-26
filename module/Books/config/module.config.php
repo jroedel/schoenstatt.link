@@ -254,7 +254,6 @@ return [
             'Books\FathersObjects'              => Service\FathersObjectsFactory::class,
             'Books\BorrowersValueOptions'       => Service\BorrowersValueOptionsService::class,
             'Books\AuthorsValueOptions'         => Service\AuthorsValueOptionsService::class,
-            'Books\LanguagesValueOptions'       => Service\LanguagesValueOptionsFactory::class,
             Mailing\BooksMailer::class          => Service\BooksMailerFactory::class,
             Service\DriveGateway::class         => Service\DriveGatewayFactory::class,
             Form\TextForm::class                => Service\TextFormFactory::class,
@@ -1954,7 +1953,6 @@ return [
                 'controller_services'                   => [
                     FilesTable::class,
                     Form\PublicationsSearchForm::class,
-                    'Books\LanguagesValueOptions',
                     DriveGateway::class,
                     Model\LibraryTable::class,
                     PredicatesTable::class,
@@ -2454,7 +2452,6 @@ return [
                 'sion_model_class'                      => Model\MusicTable::class,
                 'sion_controllers'                      => [Controller\CompositionsController::class],
                 'controller_services'                   => [
-                    'Books\LanguagesValueOptions'
                 ],
                 'row_processor_function'                => 'processCompositionRow',
 //                 'get_object_function'                   => 'getSimpleAssociationBySwId',

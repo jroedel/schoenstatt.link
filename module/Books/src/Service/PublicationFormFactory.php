@@ -5,12 +5,12 @@ use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Form\PublicationForm;
 use Books\Model\PublicationsTable;
-use Matriphe\ISO639\ISO639;
+use SionModel\I18n\LanguageSupport;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
  */
-class PublicationFormFactory extends ISO639 implements FactoryInterface
+class PublicationFormFactory implements FactoryInterface
 {
     /**
      * Create an object
@@ -27,7 +27,9 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
         $publishers = $table->getPublishersValueOptions();
         $config = $container->get('Books\Config');
 
-        $languages = $this->getLanguageValueOptions();//$config['language_value_options'];
+        $languageInfo = new LanguageSupport();
+        $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+        $languages = $languageInfo->getLanguageNames($lang);
 
         $bookFormats = $config['book_format_type_value_options'];
         $urlLabels = $config['url_label_value_options'];
@@ -59,20 +61,5 @@ class PublicationFormFactory extends ISO639 implements FactoryInterface
 
 //      $form->get('adminTags')->setValueOptions($adminTags);
         return $form;
-    }
-
-    /**
-     * Fetch value options for a Select form element
-     * @param string $labelsInOwnLanguage
-     * @return string[]
-     */
-    protected function getLanguageValueOptions($labelsInOwnLanguage = false)
-    {
-        $valueOptions = [];
-        $labelField = $labelsInOwnLanguage ? 5 : 4;
-        foreach ($this->languages as $languageRow) {
-            $valueOptions[$languageRow[0]] = $languageRow[$labelField];
-        }
-        return $valueOptions;
     }
 }

@@ -126,7 +126,8 @@ class PublicationsController extends SionController
             $this->isAllowed('publication_patres', 'show')
         );
         $form = $this->services[PublicationsSearchForm::class];
-        $languages = $this->services['Books\LanguagesValueOptions'];
+        $cLanguage = \Locale::getPrimaryLanguage(\Locale::getDefault());
+        $languages = $table->getLanguageNames($cLanguage);
 
         $dictionaries = $this->getDictionaries();
         $libraries = $this->getLibraries();
@@ -167,7 +168,6 @@ class PublicationsController extends SionController
         $entity     = $this->getEntity();
         $entitySpec = $this->getEntitySpecification();
         $language   = $this->params()->fromRoute('inLanguage');
-        $languages  = $this->services['Books\LanguagesValueOptions'];
         $objects    = $table->searchPublications(
             ['inLanguage' => $language], 
             ['noSubEditions' => true, 'isAwaitingMerger' => false]
@@ -186,7 +186,6 @@ class PublicationsController extends SionController
         $view = new ViewModel([
             'form'      => $form,
             'language'  => $language,
-            'languages' => $languages,
             'entity'    => $entity,
             'entitySpec'=> $entitySpec,
             'objects'   => $objects,

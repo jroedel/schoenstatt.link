@@ -1,11 +1,12 @@
 <?php
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 $this->headLink()->appendStylesheet($this->basePath() . '/css/publications-index.css');
+$languageName = isset($this->language) ? $this->languageName($this->language) : null;
 if ($this->language === 'xx') {
     $headText = $this->translate('Schoenstatt Literature without language');
-} elseif (isset($this->language) && array_key_exists($this->language, $this->languages)) {
+} elseif (isset($languageName)) {
     $headTextPattern = 'Schoenstatt Literature in %s';
-    $headText = sprintf($this->translate($headTextPattern), $this->translate($this->languages[$this->language]));
+    $headText = sprintf($this->translate($headTextPattern), $languageName);
 } else {
     $headText = "Schoenstatt Literature";
 }
