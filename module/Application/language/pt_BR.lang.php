@@ -9,6 +9,7 @@ return [
     'Email' => 'E-mail',
     'Google Knowledge Graph' => 'Google Knowledge Graph',
     'Learn more' => 'Saiba mais',
+    'Literature' => 'Literatur',
     'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.' => 'Provavelmente, o maior desafio para nossa geração é transmitir a sabedoria e carisma do nosso Fundador. Ajude-nos completando nossa bibliografia do Padre Kentenich e Schoenstatt em todos os idiomas e escrevendo introduções e sumários dos livros.',
     'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!' => ' Schoenstatt é um movimento internacional que quer oferecer informação em vários idiomas. Ajude-nos a fazer nosso site acessível para o mundo inteiro!',
     'Schoenstatt Link' => 'Schoenstatt Link',

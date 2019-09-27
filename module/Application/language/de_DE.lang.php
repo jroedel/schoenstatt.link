@@ -8,6 +8,7 @@ return [
     'Email' => 'E-Mail',
     'Google Knowledge Graph' => 'Google Knowledge Graph (semantische Suchfunktion von Google)',
     'Learn more' => 'Weiterlesen',
+    'Literature' => 'Literatur',
     'Schoenstatt Link' => 'Schoenstatt Link',
     'Sign in' => 'Zugang',
     'Username' => 'Benutzername',
