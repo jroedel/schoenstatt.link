@@ -239,7 +239,6 @@ class LibraryImportsController extends SionController
         $sheet = $objPHPExcel->getSheetByName($sheetName);
         $highRow = $sheet->getHighestDataRow();
         $highColumn = $sheet->getHighestDataColumn();
-        var_dump($highRow);
         if ($highColumn == 'A' || $highRow == 1) {
             throw new \Exception('No data contained in the spreadsheet.');
         }
@@ -307,7 +306,7 @@ class LibraryImportsController extends SionController
         //first get the list of publicationIds used to query the PublicationTable
         if (isset($fieldIndices['publicationId'])) {
             $pubIdIndex = $fieldIndices['publicationId'];
-            foreach ($rows as $rowNumber => $rowColumns) {
+            foreach ($rows as $rowColumns) {
                 if (isset($rowColumns[$pubIdIndex]) && is_numeric($rowColumns[$pubIdIndex]) &&
                     !in_array($rowColumns[$pubIdIndex], $publicationIds)
                 ) {
