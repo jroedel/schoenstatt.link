@@ -239,7 +239,7 @@ class LibraryImportsController extends SionController
         $sheet = $objPHPExcel->getSheetByName($sheetName);
         $highRow = $sheet->getHighestDataRow();
         $highColumn = $sheet->getHighestDataColumn();
-        if ($highColumn == 'A' || $highRow == 1) {
+        if ($highColumn === 'A' || $highRow == 1) {
             throw new \Exception('No data contained in the spreadsheet.');
         }
 
@@ -328,7 +328,6 @@ class LibraryImportsController extends SionController
             if ($isDuplicateWithinLibraryId = in_array($withinLibraryId, $withinLibraryIds)) {
                 $duplicateWithinLibraryIds[] = $withinLibraryId;
             }
-            $withinLibraryIds[] = $withinLibraryId;
 
             $params = [
                 'libraryId' => $libraryId,
@@ -348,6 +347,7 @@ class LibraryImportsController extends SionController
             if (!$foundAValue) {
                 continue;
             }
+            $withinLibraryIds[] = $withinLibraryId;
 
             //make sure we get an int not a float
             $params['withinLibraryId'] = $withinLibraryId;
