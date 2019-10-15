@@ -1,7 +1,9 @@
 <?php
 use Spatie\SchemaOrg\BaseType;
-/** @var \Zend\View\Renderer\PhpRenderer $this */
-if ($this->entity['chordProSpec']) {
+/** @var \Zend\View\Renderer\PhpRenderer $this */?>
+
+<div class="row"><div class="col-md-12">
+<?php if ($this->entity['chordProSpec']) {
     
     $this->headLink()->appendStylesheet($this->basePath() . '/css/chordpro.css');
     $parser = new \ChordPro\Parser();
@@ -21,7 +23,11 @@ if ($this->entity['chordProSpec']) {
     // Render !
     $html = $html_formatter->format($song,$options);
     echo $html;
-}
+}?>
+<p></p>
+<p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
+</div></div>
+<?php 
 if (isset($this->schema)) {
     $schema = $this->schema;
     if ($schema instanceof BaseType) {

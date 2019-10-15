@@ -369,6 +369,7 @@ class SchoenstattTable extends SionTable implements
             $columns = array_merge($columns, ['SchemaOrgJsonMd5V1En','SchemaOrgJsonMd5V1Es','SchemaOrgJsonMd5V1Pt','SchemaOrgJsonMd5V1De',
                 'SchemaOrgJsonMd5V1It', 'SlugEn', 'SlugEs', 'SlugDe', 'SlugPt', 'SlugIt']);
             $columns['GeoPoint'] = new Expression('AsText(`Location`)');
+//             $columns['TotalViews'] = new Expression('AsText(`Location`)');
             $select->columns($columns);
         }
         return $select;
@@ -440,7 +441,7 @@ class SchoenstattTable extends SionTable implements
             }
         }
         if (!empty($interestingIds)) {
-            $query['associationId'] = $interestingIds;
+            $query['associationId'] = array_unique($interestingIds);
         }
 
         //search for all these publicationIds

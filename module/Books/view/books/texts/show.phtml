@@ -26,9 +26,12 @@ if (isset($object['htmlText'])) {
 }
 echo $this->partial('sion-model/comments/comments-list', [
     'comments' => $this->comments,
-]);
+]);?>
 
-if (isset($this->schema)) {
+<div class="row"><div class="col-md-12">
+<p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
+</div></div>
+<?php if (isset($this->schema)) {
     /** @var \Spatie\SchemaOrg\BlogPosting $schema */
     $schema = $this->schema;
     $thisUrl = $this->serverUrl().$this->url(null, [], [], true);
