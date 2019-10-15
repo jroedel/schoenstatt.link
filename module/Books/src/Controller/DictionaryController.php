@@ -36,11 +36,25 @@ class DictionaryController extends SionController
         $objects = $table->queryObjects('dictionary-entry', ['locale' => $dictionary['locale'], 'isActive' => true]);
         $schemata = Json::encode($this->combineSchema($dictionarySchema, $objects));
         
+        $visitKey = 'dictionary-'.$dictionary['locale'];
+        $table->registerVisit($visitKey, 0);
+        
+        $visitsArray = $table->getVisitCounts($visitKey, [0]);
+        if (isset($visitsArray[0])) {
+            $visits = $visitsArray[0];
+        } else {
+            $visits = [
+                'total' => 0,
+                'pastMonth' => 0,
+            ];
+        }
+        
         return new ViewModel([
             'inLanguage' => $inLanguage,
             'inLanguageName' => $inLanguageName,
             'schemata' => $schemata,
             'objects' => $objects,
+            'visits' => $visits,
         ]);
     }
     

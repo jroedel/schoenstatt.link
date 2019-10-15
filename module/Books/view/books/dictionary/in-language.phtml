@@ -2,12 +2,12 @@
 use Cake\Utility\Text;
 use Books\Model\DictionaryTable;
 /** @var \Zend\View\Renderer\PhpRenderer $this */
-// echo $this->navigation('default')->breadcrumbs()->setIndent(8);;
 $titleFormat = DictionaryTable::DICTIONARY_TITLE_FORMAT;
 $headText = sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText);
 ?>
+<div class="row"><div class="col-md-12">
 <h1><?php echo $headText;?></h1>
 <?php
 $objects = $this->objects;
@@ -29,6 +29,8 @@ if (!$object['isActive'] && !$this->isAllowed('route/dictionary/entry/edit')) {
         echo '</del>';
     }?></p>
 <?php endforeach;?>
+<p class="text-center"><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
+</div></div>
 <script type="application/ld+json">
 <?php echo $this->schemata;?>
 </script>

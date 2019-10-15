@@ -387,13 +387,13 @@ if ($this->isAllowed('route/association-edit')) {
     ]);
 }?>
 
-<!-- @todo Add photos at the bottom -->
 <div class="row"><div class="col-md-12">
 <?php if ($this->isAllowed('route/association-edit')): ?>
-      <a class="btn btn-primary" href="<?= $this->url('association-edit',
+      <p><a class="btn btn-primary" href="<?= $this->url('association-edit',
           ['sw_id' => $object['identifier']]);?>"><?php
-    echo $this->translate("Edit details")?></a>
+    echo $this->translate("Edit details")?></a><p>
 <?php endif;?>
+<p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
 </div></div>
 <?php if (isset($this->schema)):
     $schema = $this->schema;

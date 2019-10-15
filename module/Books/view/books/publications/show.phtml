@@ -37,3 +37,7 @@ if ($this->isAllowed('route/publication-edit')) {
         'panelTitle' => 'Change log'
     ]);
 }?>
+
+<div class="row"><div class="col-md-12">
+<p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
+</div></div>
