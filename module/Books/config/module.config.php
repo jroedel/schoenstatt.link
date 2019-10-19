@@ -272,6 +272,8 @@ return [
                 Model\DictionaryTable::class => Model\DictionaryTable::class,
                 Model\LibraryTable::class => Model\LibraryTable::class,
                 Form\TextForm::class => Form\TextForm::class,
+                Form\BookForm::class => Form\BookForm::class,
+                Form\CompositionForm::class => Form\CompositionForm::class,
             ],
         ],
         'delegators' => [
@@ -294,6 +296,12 @@ return [
                 LazyServiceFactory::class,
             ],
             Form\TextForm::class => [
+                LazyServiceFactory::class,
+            ],
+            Form\BookForm::class => [
+                LazyServiceFactory::class,
+            ],
+            Form\CompositionForm::class => [
                 LazyServiceFactory::class,
             ],
         ],

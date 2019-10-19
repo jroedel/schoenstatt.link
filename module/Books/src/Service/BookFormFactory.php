@@ -5,6 +5,7 @@ use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Form\BookForm;
 use SionModel\I18n\LanguageSupport;
+use Books\Model\LibraryTable;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
@@ -19,7 +20,7 @@ class BookFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var LibraryTable $table **/
-        $table = $container->get('Books\Model\LibraryTable');
+        $table = $container->get(LibraryTable::class);
 
         /** @var \Zend\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
@@ -39,6 +40,9 @@ class BookFormFactory implements FactoryInterface
         $authors = $table->getAuthorsValueOptions($libraryId);
         $collections = $table->getCollectionValueOptions($libraryId);
         $publishers = $table->getPublishersValueOptions();
+        if (!isset($publishers)) {
+            $publishers = null;
+        }
         
         $languageInfo = new LanguageSupport();
         $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
