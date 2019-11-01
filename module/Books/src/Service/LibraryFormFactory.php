@@ -33,14 +33,21 @@ class LibraryFormFactory implements FactoryInterface
             }
             $personValueOptionsOptions[$key] = $options['label'];
         }
-
-        $table = $container->get(LibraryTable::class);
-        $collections = $table->getCollectionValueOptions();
-
+        
         $form = new LibraryForm();
+        
+        /** @var \Zend\Router\RouteMatch $routeMatch */
+        $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
+        $libraryId = $routeMatch->getParam('library_id');
+        if (isset($libraryId)) {
+            /** @var LibraryTable $table */
+            $table = $container->get(LibraryTable::class);
+            $collections = $table->getCollectionValueOptions($libraryId);
+            $form->get('mainCollectionId')->setValueOptions($collections);
+        }
+
         $form->get('filiationId')->setValueOptions($config['library_filiation_options']);
         $form->get('contactPersonId')->setValueOptions($persons);
-        $form->get('mainCollectionId')->setValueOptions($collections);
         $form->get('mainShowDisplay')->setValueOptions(LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS);
         $form->get('defaultCheckoutPersonId')->setValueOptions($persons);
         $form->get('checkoutPersonListKind')->setValueOptions($personValueOptionsOptions);

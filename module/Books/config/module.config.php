@@ -347,9 +347,10 @@ return [
                     'libraries' => [
                         'type'    => Segment::class,
                         'options' => [
-                            'route'    => '/libraries[/:library_id]',
+                            'route'    => '/libraries/:library_id',
                             'defaults' => [
                                 'action' => null,
+                                'isAuthorizationRequired' => true,
                                 'controller' => Controller\LibrariesApiController::class,
                                 \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
                                     'allowed_origins' => ['*'],
@@ -360,21 +361,34 @@ return [
                                 'library_id' => '[0-9]{1,3}',
                             ],
                         ],
-                    ],
-                    'books' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/books[/:book_id]',
-                            'defaults' => [
-                                'action' => null,
-                                'controller' => Controller\BooksApiController::class,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'books' => [
+                                'type'    => Segment::class,
+                                'options' => [
+                                    'route'    => '/books[/:book_id]',
+                                    'defaults' => [
+                                        'action' => null,
+                                        'isAuthorizationRequired' => true,
+                                        'controller' => Controller\BooksApiController::class,
+                                        \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
+                                            'allowed_origins' => ['*'],
+                                            'allowed_methods' => ['GET'],
+                                        ],
+                                    ],
+                                    'constraints' => [
+                                        'book_id' => '[0-9]{1,8}',
+                                    ],
                                 ],
-                            ],
-                            'constraints' => [
-                                'book_id' => '[0-9]{1,8}',
+                                'may_terminate' => true,
+                                'child_routes' => [
+                                    'patch-list' => [
+                                        'type'    => Method::class,
+                                        'options' => [
+                                            'verb'      => 'patch',
+                                        ],
+                                    ],
+                                ],
                             ],
                         ],
                     ],
@@ -2632,10 +2646,10 @@ return [
         'guards' => [
             Route::class => [
                 ['route' => 'api-v1/libraries', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/libraries/books', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/pending-labels', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/pending-labels/finish-pending-labels', 'roles' => ['guest', 'user']],
                 
-                ['route' => 'api-v1/books', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary/list', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary/list/entry', 'roles' => ['guest', 'user']],

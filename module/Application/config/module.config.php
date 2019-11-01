@@ -34,7 +34,7 @@ return [
                     'login' => [
                         'type'    => Literal::class,
                         'options' => [
-                            'route'    => '/login',
+                            'route'    => '/users/login',
                             'defaults' => [
                                 'action' => 'login',
                                 'controller' => Controller\UsersApiController::class,
