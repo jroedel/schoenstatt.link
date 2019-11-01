@@ -105,6 +105,27 @@ class LibraryTable extends SionTable implements
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $config;
     }
+    
+    /**
+     *
+     * {@inheritDoc}
+     * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
+     */
+    protected function getSelectPrototype($entity)
+    {
+        $select = parent::getSelectPrototype($entity);
+        if ('book' === $entity) {
+            $entitySpec = $this->getEntitySpecification($entity);
+            $columns = array_values($entitySpec->updateColumns);
+            $columns['current_checkout_id'] = new Expression(
+                '(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` '
+                .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
+                );
+            $select->columns($columns);
+            $select->order(['library_id', 'sort_text']);
+        }
+        return $select;
+    }
 
     public function getLibraryValueOptions()
     {
@@ -324,7 +345,9 @@ ORDER BY `publisher`";
         $collections = $this->getUnlinkedCollections();
         $valueOptions = [];
         foreach ($collections as $collectionId => $collection) {
-            $valueOptions[$collectionId] = $collection['name'];
+            if ($collection['libraryId'] == $libraryId) {
+                $valueOptions[$collectionId] = $collection['name'];
+            }
         }
         return $valueOptions;
     }
@@ -351,7 +374,7 @@ ORDER BY `publisher`";
         
         $fieldMap = $this->getEntitySpecification('book')->updateColumns;
         $gateway = $this->getTableGateway('lib_books');
-        $select = $this->getBookSelectPrototype();
+        $select = $this->getSelectPrototype('book');
         $where = new Where();
 
         //Prepare the libraryId predicate
@@ -424,6 +447,34 @@ ORDER BY `publisher`";
             }
             if (isset($collectionIdClause)) {
                 $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
+            }
+        }
+        
+        // Prepare withinLibraryId predicate
+        if (isset($query['withinLibraryId'])) {
+            $withinLibraryIdClause = null;
+            if (is_array($query['withinLibraryId'])) {
+                $withinLibraryIds = [];
+                foreach ($query['withinLibraryId'] as $value) {
+                    if (is_numeric($value) && !in_array($value, $withinLibraryIds)) {
+                        $withinLibraryIds[] = $value;
+                    }
+                }
+                if (count($withinLibraryIds) === 1) {
+                    $query['withinLibraryId'] = $withinLibraryIds[0];
+                } elseif (count($withinLibraryIds) > 1) {
+                    $withinLibraryIdClause = new In($fieldMap['withinLibraryId'], $withinLibraryIds);
+                }
+            }
+            if (is_numeric($query['withinLibraryId'])) {
+                $withinLibraryIdClause = new Operator(
+                    $fieldMap['withinLibraryId'],
+                    Operator::OPERATOR_EQUAL_TO,
+                    $query['withinLibraryId']
+                    );
+            }
+            if (isset($withinLibraryIdClause)) {
+                $where->addPredicate($withinLibraryIdClause, PredicateSet::OP_AND);
             }
         }
 
@@ -567,13 +618,6 @@ ORDER BY `publisher`";
      */
     public function getBooks(array $bookIds = [])
     {
-        $libraryId = $this->getLibraryId();
-        if (empty($bookIds)) {
-            $cacheKey = !isset($libraryId) ? 'books' : 'books-'.$libraryId;
-            if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
-                return $cache;
-            }
-        }
         $entities = $this->getUnlinkedBooks($bookIds);
         $libraries = $this->getUnlinkedLibraries();
         foreach ($entities as $entityId => $entity) {
@@ -587,31 +631,7 @@ ORDER BY `publisher`";
                 $entities[$entityId]['currentCheckout'] = $this->getCheckout($entity['currentCheckoutId']);
             }
         }
-        if (empty($bookIds)) {
-            $this->cacheEntityObjects($cacheKey, $entities, ['book', 'checkout', 'library']);
-        }
         return $entities;
-    }
-
-    /**
-     * Get a standardized select object to retrieve records from the database
-     * @return \Zend\Db\Sql\Select
-     */
-    protected function getBookSelectPrototype()
-    {
-        static $select;
-        if (!isset($select)) {
-            $select = new Select('lib_books');
-            $columns = array_values($this->config['sion_model']['entities']['book']['update_columns']);
-            $columns['current_checkout_id'] = new Expression(
-                '(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` '
-                .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
-            );
-            $select->columns($columns);
-            $select->order(['library_id', 'sort_text']);
-        }
-
-        return clone $select;
     }
 
     public function getSimpleBook($id)
@@ -620,7 +640,7 @@ ORDER BY `publisher`";
         if (!isset($gateway)) {
             $gateway = $this->getTableGateway('lib_books');
         }
-        $select = $this->getBookSelectPrototype();
+        $select = $this->getSelectPrototype('book');
         $select->where(['book_id' => $id]);
         /** @var ResultSet $result */
         $result = $gateway->selectWith($select);
@@ -638,20 +658,10 @@ ORDER BY `publisher`";
      */
     public function getBook($id)
     {
-        static $gateway;
-        if (!isset($gateway)) {
-            $gateway = $this->getTableGateway('lib_books');
+        $object = $this->getSimpleBook($id);
+        if (!isset($object)) {
+            return $object;
         }
-        $select = $this->getBookSelectPrototype();
-        $select->where(['book_id' => $id]);
-        /** @var ResultSet $result */
-        $result = $gateway->selectWith($select);
-        $results = $result->toArray();
-
-        if (!isset($results[0])) {
-            return null;
-        }
-        $object = $this->processBookRow($results[0]);
         if (isset($object['libraryId'])) {
             $object['library'] = $this->getSimpleLibrary($object['libraryId']);
         }
@@ -673,10 +683,12 @@ ORDER BY `publisher`";
      */
     protected function getUnlinkedBooks(array $bookIds = [])
     {
-        $libraryId = $this->getLibraryId();
-        $cacheKey = !isset($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
-        if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
-            return $cache;
+        if (empty($bookIds)) {
+            $libraryId = $this->getLibraryId();
+            $cacheKey = !isset($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
+            if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
+                return $cache;
+            }
         }
 
         $gateway = $this->getTableGateway('lib_books');
@@ -685,12 +697,12 @@ ORDER BY `publisher`";
             $where['book_id'] = $bookIds;
         }
         if (isset($libraryId)) {
-            $select = $this->getBookSelectPrototype();
+            $select = $this->getSelectPrototype('book');
             $where['library_id'] = $libraryId;
             $select->where($where);
             $results = $gateway->selectWith($select);
         } else {
-            $select = $this->getBookSelectPrototype();
+            $select = $this->getSelectPrototype('book');
             if (!empty($where)) {
                 $select->where($where);
             }
@@ -701,7 +713,9 @@ ORDER BY `publisher`";
             $processedRow = $this->processBookRow($row);
             $entities[$processedRow['bookId']] = $processedRow;
         }
-        $this->cacheEntityObjects($cacheKey, $entities, ['book']);
+        if (empty($bookIds)) {
+            $this->cacheEntityObjects($cacheKey, $entities, ['book']);
+        }
         return $entities;
     }
     
@@ -709,19 +723,21 @@ ORDER BY `publisher`";
      * Get an associative array mapping collectionId to its name
      * @return string[]
      */
-    protected function getCollectionNames()
+    protected function getCollectionNames($libraryId = null)
     {
-        if (isset($this->collectionNames)) {
+        if (isset($this->collectionNames) && !isset($libraryId)) {
             return $this->collectionNames;
         }
         $select = $this->getSelectPrototype('collection');
-        $select->columns(['CollectionId', 'CollectionName']);
+        $select->columns(['CollectionId', 'CollectionName', 'LibraryId']);
         $gateway = $this->getTableGateway('lib_collections');
         $results = $gateway->selectWith($select);
         
         $entities = [];
         foreach ($results as $row) {
-            $entities[$row['CollectionId']] = $row['CollectionName'];
+            if (!isset($libraryId) || $row['LibraryId'] == $libraryId) {
+                $entities[$row['CollectionId']] = $row['CollectionName'];
+            }
         }
         $this->collectionNames = $entities;
         return $this->collectionNames;
@@ -1064,6 +1080,7 @@ ORDER BY `publisher`";
 
     /**
      * Get a standardized select object to retrieve records from the database
+     * @todo move to getSelectPrototype()
      * @return \Zend\Db\Sql\Select
      */
     protected function getLibrarySelectPrototype()
@@ -1159,6 +1176,10 @@ ORDER BY `publisher`";
         return $entities;
     }
 
+    /**
+     * @todo delete this function, move to getObjects('libraries')
+     * @return mixed[]
+     */
     public function getUnlinkedLibraries()
     {
         if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {

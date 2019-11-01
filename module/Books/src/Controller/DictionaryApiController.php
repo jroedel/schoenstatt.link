@@ -126,7 +126,7 @@ class DictionaryApiController extends ApiController
     {
         if (!isset($data['entries']) || !is_array($data['entries'])) {
             $this->httpStatusCode = 400; //bad request
-            $this->apiResponse['message'] = 'Please send a JSON request body with a array \'entries\' property';
+            $this->apiResponse['message'] = 'Please send a JSON request body with an array \'entries\' property';
             return $this->createResponse();
         }
         $entries = $data['entries'];

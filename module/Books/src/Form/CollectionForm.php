@@ -1,6 +1,7 @@
 <?php
 namespace Books\Form;
 
+use Books\Model\LibraryTable;
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
 
@@ -79,15 +80,16 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
             'name' => 'mainShowDisplay',
             'type' => 'Select',
             'options' => [
-                'label' => 'Main library view screen',
-                'required' => false,
+                'label' => 'Main view format',
+                'required' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => false,
-                'value_options' => [],
+                'value_options' => LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'maxlength' => '50',
+                'value' => LibraryTable::MAIN_SHOW_DISPLAY_DEFAULT,
             ],
         ]);
         $this->add([
