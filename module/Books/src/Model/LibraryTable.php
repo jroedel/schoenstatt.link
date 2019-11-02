@@ -301,7 +301,7 @@ WHERE (`library_id` = ?)
 ORDER BY `publisher`";
         $params = [$libraryId];
         $results = $this->fetchSome(null, $sql, $params);
-        $values = null;
+        $values = [];
         foreach ($results as $row) {
             $publisher = $this->filterDbString($row['publisher']);
             if (isset($publisher)) {
@@ -723,7 +723,7 @@ ORDER BY `publisher`";
      * Get an associative array mapping collectionId to its name
      * @return string[]
      */
-    protected function getCollectionNames($libraryId = null)
+    public function getCollectionNames($libraryId = null)
     {
         if (isset($this->collectionNames) && !isset($libraryId)) {
             return $this->collectionNames;
@@ -1526,7 +1526,11 @@ ORDER BY `LibraryId`, `IsActive` DESC, `CollectionName`";
             }
         }
         $format = '%1$s%2$-8s%3$04d%4$03d%5$03d';
-        $return = vsprintf($format, $params);
+        if (count($params) >= 5) {
+            $return = vsprintf($format, $params);
+        } else {
+            $return = null;
+        }
         return $return;
     }
 

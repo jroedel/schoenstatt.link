@@ -26,6 +26,15 @@ class CollectionFormFactory implements FactoryInterface
         /** @var \Zend\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id');
+        if (!isset($libraryId)) {
+            $collectionId = $routeMatch->getParam('collection_id');
+            if (isset($collectionId)) {
+                $collection = $table->getObject('collection', $collectionId);
+                if (isset($collection)) {
+                    $libraryId = $collection['libraryId'];
+                }
+            }
+        }
         if (isset($libraryId)) {
             $table->setLibraryId($libraryId);
             $form->get('libraryId')->setValue($libraryId);

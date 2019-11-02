@@ -62,7 +62,9 @@ class BookFormFactory implements FactoryInterface
         $form->get('authors')->setValueOptions($authors);
         $form->get('collectionId')->setValueOptions($collections);
         $form->get('keywords')->setValueOptions($keywords);
-        $form->get('publisher')->setValueOptions($publishers);
+        if (isset($publishers)) {
+            $form->get('publisher')->setValueOptions($publishers);
+        }
         $form->get('category')->setValueOptions($categories);
         $form->get('adminTags')->setValueOptions($adminTags);
 
