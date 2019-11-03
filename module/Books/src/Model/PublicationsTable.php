@@ -900,20 +900,10 @@ ORDER BY `Publisher`";
      */
     public function getPublication($id)
     {
-        static $gateway;
-        if (!isset($gateway)) {
-            $gateway = $this->getTableGateway('sch_publications');
-        }
-        $select = $this->getSelectPrototype('publication');
-        $select->where(['PublicationId' => $id]);
-        /** @var ResultSet $result */
-        $result = $gateway->selectWith($select);
-        $results = $result->toArray();
-
-        if (!isset($results[0])) {
+        $object = $this->getObject('publication', $id);
+        if (!isset($object)) {
             return null;
         }
-        $object = $this->processPublicationRow($results[0]);
         $this->linkPublication($object);
 
         return $object;

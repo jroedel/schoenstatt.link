@@ -1605,8 +1605,9 @@ return [
                     //BooksMailer::class, @todo return this to the controller
                     Model\PublicationsTable::class,
                 ],
+                'row_processor_function'                => 'processLibraryRow',
                 'get_object_function'                   => 'getLibrary',
-                'get_objects_function'                  => 'getUnlinkedLibraries',
+//                 'get_objects_function'                  => 'getUnlinkedLibraries',
 //                 'format_view_helper'                    => 'formatEvent',
                 'required_columns_for_creation'         => [
                     'name',
@@ -1703,6 +1704,7 @@ return [
                 ],
                 'get_object_function'                       => 'getLibraryImport',
                 'get_objects_function'                      => 'getLibraryImports',
+                'row_processor_function'                    => 'processLibraryImportRow',
 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'name',
@@ -1787,8 +1789,9 @@ return [
                     Model\PublicationsTable::class,
                     Model\LibraryTable::class,
                 ],
-                'get_object_function'                       => 'getSimpleBook',
+//                 'get_object_function'                       => 'getSimpleBook',
                 'get_objects_function'                      => 'getBooks',
+                'row_processor_function'                    => 'processBookRow',
 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'withinLibraryId',
@@ -1898,6 +1901,7 @@ return [
                 ],
                 'get_object_function'                   => 'getCheckout',
                 'get_objects_function'                  => 'getCheckouts',
+                'row_processor_function'                => 'processCheckoutRow',
                 'required_columns_for_creation'         => [
                     'personId',
                     'bookId',
@@ -2120,8 +2124,9 @@ return [
                 'sion_model_class'                          => Model\LibraryTable::class,
                 'sion_controllers'                          => [Controller\CollectionsController::class],
                 'controller_services'                       => [],
-                'get_object_function'                       => 'getSimpleCollection',
-                'get_objects_function'                      => 'getUnlinkedCollections',
+//                 'get_object_function'                       => 'getSimpleCollection',
+//                 'get_objects_function'                      => 'getUnlinkedCollections',
+                'row_processor_function'                => 'processCollectionRow',
 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'libraryId',

@@ -2,8 +2,6 @@
 namespace Books\View\Helper;
 
 use Zend\View\Helper\AbstractHelper;
-use Spatie\SchemaOrg\Schema;
-use OpenURL\ContextObject;
 use Books\Model\LibraryTable;
 use Zend\Router\RouteMatch;
 
@@ -43,7 +41,7 @@ class LibraryInfo extends AbstractHelper
         if (!isset($libraryId)) {
             $bookId = $match->getParam('book_id');
             if (isset($bookId)) {
-                $bookData = $this->getLibraryTable()->getSimpleBook($bookId);
+                $bookData = $this->getLibraryTable()->getObject('book', $bookId);
                 $libraryId = $bookData['libraryId'];
             } else {
                 $libraryImportId = $match->getParam('import_id');
