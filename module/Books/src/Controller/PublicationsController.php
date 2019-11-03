@@ -90,7 +90,7 @@ class PublicationsController extends SionController
         //get library results
         /** @var LibraryTable $libraryTable */
         $libraryTable = $this->services[LibraryTable::class];
-        $libraries = $libraryTable->getUnlinkedLibraries();
+        $libraries = $libraryTable->getObjects('library');
         //check which libraries the user has access to
         foreach ($libraries as $libraryId => $library) {
             if (!$this->isAllowed($library['resourceId'], 'show')) {
@@ -157,7 +157,7 @@ class PublicationsController extends SionController
     {
         /** @var LibraryTable $table */
         $table = $this->services[LibraryTable::class];
-        $objects = $table->getUnlinkedLibraries();
+        $objects = $table->getObjects('library');
         return $objects;
     }
     

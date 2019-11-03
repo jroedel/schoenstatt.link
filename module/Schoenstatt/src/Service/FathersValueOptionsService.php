@@ -20,7 +20,11 @@ class FathersValueOptionsService implements FactoryInterface
     {
         /** @var \Schoenstatt\Service\PatresGateway $gateway */
         $gateway = $container->get(PatresGateway::class);
-        $persons = $gateway->getPersonList();
+        try {
+            $persons = $gateway->getPersonList();
+        } catch (\Exception $e) {
+            $persons = []; //fail silently
+        }
         return $persons;
     }
 }

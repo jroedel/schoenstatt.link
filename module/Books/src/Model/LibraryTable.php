@@ -636,23 +636,23 @@ ORDER BY `publisher`";
      * @param array $bookIds
      * @return mixed[]
      */
-    public function getBooks(array $bookIds = [])
-    {
-        $entities = $this->getUnlinkedBooks($bookIds);
-        $libraries = $this->getUnlinkedLibraries();
-        foreach ($entities as $entityId => $entity) {
-            $unset = false;
-            if (isset($libraries[$entity['libraryId']])) {
-                $entities[$entityId]['library'] = $libraries[$entity['libraryId']];
-            } else {
-                unset($entities[$entityId]); //all books should be in a library
-            }
-            if (!$unset && isset($entity['currentCheckoutId'])) {
-                $entities[$entityId]['currentCheckout'] = $this->getCheckout($entity['currentCheckoutId']);
-            }
-        }
-        return $entities;
-    }
+//     public function getBooks(array $bookIds = [])
+//     {
+//         $entities = $this->getUnlinkedBooks($bookIds);
+//         $libraries = $this->getObjects('library');
+//         foreach ($entities as $entityId => $entity) {
+//             $unset = false;
+//             if (isset($libraries[$entity['libraryId']])) {
+//                 $entities[$entityId]['library'] = $libraries[$entity['libraryId']];
+//             } else {
+//                 unset($entities[$entityId]); //all books should be in a library
+//             }
+//             if (!$unset && isset($entity['currentCheckoutId'])) {
+//                 $entities[$entityId]['currentCheckout'] = $this->getCheckout($entity['currentCheckoutId']);
+//             }
+//         }
+//         return $entities;
+//     }
 
     /**
      * Get a book object(array) with its associated library and current checkout.
@@ -667,7 +667,7 @@ ORDER BY `publisher`";
             return null;
         }
         if (isset($object['libraryId'])) {
-            $object['library'] = $this->getSimpleLibrary($object['libraryId']);
+            $object['library'] = $this->getObject('library', $object['libraryId']);
         }
         if (isset($object['currentCheckoutId'])) {
             $checkout = $this->getObject('checkout', $object['currentCheckoutId']);
@@ -695,6 +695,7 @@ ORDER BY `publisher`";
             }
         }
 
+        //@todo simplify this function, maybe take out the $bookIds function
         $gateway = $this->getTableGateway('lib_books');
         $where = [];
         if (!empty($bookIds)) {
@@ -724,29 +725,30 @@ ORDER BY `publisher`";
     }
     
     /**
-     * Get an associative array mapping collectionId to its name
-     * @return string[]
+     * Takes a list of books by reference and links up their checkout records
+     * @param mixed[] $books
      */
-    public function getCollectionNames($libraryId = null)
+    protected function linkCurrentCheckoutsToBook(&$books)
     {
-        if (isset($this->collectionNames) && !isset($libraryId)) {
-            return $this->collectionNames;
-        }
-        $select = $this->getSelectPrototype('collection');
-        $select->columns(['CollectionId', 'CollectionName', 'LibraryId']);
-        $gateway = $this->getTableGateway('lib_collections');
-        $results = $gateway->selectWith($select);
-        
-        $entities = [];
-        foreach ($results as $row) {
-            if (!isset($libraryId) || $row['LibraryId'] == $libraryId) {
-                $entities[$row['CollectionId']] = $row['CollectionName'];
+        $checkoutIds = [];
+        foreach ($books as $object) {
+            if (isset($object['currentCheckoutId'])) {
+                $checkoutIds[] = $object['currentCheckoutId'];
             }
         }
-        $this->collectionNames = $entities;
-        return $this->collectionNames;
+        
+        if (empty($checkoutIds)) {
+            return;
+        }
+        
+        $checkouts = $this->queryObjects('checkout', ['checkoutId' => $checkoutIds]);
+        foreach ($books as $id => $object) {
+            if (isset($object['currentCheckoutId']) && isset($checkouts[$object['currentCheckoutId']])) {
+                $books[$id]['currentCheckout'] = $checkouts[$object['currentCheckoutId']];
+            }
+        }
     }
-
+    
     /**
      * Manipulate a database book row into a standardized row
      * @param array $row
@@ -919,7 +921,7 @@ ORDER BY `publisher`";
     public function checkinBooks(array $bookIds, $createCheckoutsForBooksWithNoCheckouts = true)
     {
         $checkouts = $this->getUnlinkedCheckouts();
-        $libraries = $this->getUnlinkedLibraries();
+        $libraries = $this->getObjects('library');
 
         $tz = new \DateTimeZone('UTC');
         $today = new \DateTime(null, $tz);
@@ -1018,6 +1020,7 @@ ORDER BY `publisher`";
             );
         }
         $withinLibraryIdLookup = $this->getLibraryBookLookup($libraryId);
+        //@todo instead just get the book records that are being referred to
         $books = $this->getUnlinkedBooks();
 
         //confirm all bookIds are valid
@@ -1068,7 +1071,7 @@ ORDER BY `publisher`";
     {
         $checkout = $this->getCheckout($checkoutId);
         $book = $this->getObject('book', $checkout['bookId']);
-        $library = $this->getSimpleLibrary($book['libraryId']);
+        $library = $this->getObject('library', $book['libraryId']);
         static $today;
         //if the dueDate hasn't arrived, extend it; else, from today's date
         if (!isset($today)) {
@@ -1083,6 +1086,8 @@ ORDER BY `publisher`";
     }
 
     /**
+     * @todo it would be better to do a linkLibraryStatistics function, so we don't have to run
+     * stats on all the libraries everytime we want to load the LibrariesController::showAction
      * @todo fill in monthlyCheckoutStatistics
      * @return mixed[]
      */
@@ -1092,14 +1097,13 @@ ORDER BY `publisher`";
             return $cache;
         }
 
-        $entities = $this->getUnlinkedLibraries();
+        $entities = $this->getObjects('library');
         $books = $this->getUnlinkedBooks();
-        foreach ($books as $bookId => $book) {
+        foreach ($books as $book) {
             if ($book['isActive'] && isset($book['libraryId']) && //don't do anything here with inactive books
                 isset($entities[$book['libraryId']])
             ) {
-                //@todo I don't think we need this and it makes the cache much bigger
-                $entities[$book['libraryId']]['books'][$bookId] = $book;
+//                 $entities[$book['libraryId']]['books'][$bookId] = $book;
 
                 $libraryId = $book['libraryId'];
                 //fill in statistics
@@ -1140,43 +1144,19 @@ ORDER BY `publisher`";
         }
 
         //check if the books are checked out
-        $checkouts = $this->getUnlinkedCheckouts();
-        foreach ($checkouts as $checkout) {
-            if (null === $checkout['checkedInOn'] && isset($books[$checkout['bookId']]) &&
-                isset($entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']])
-            ) { //book is checked out
-                $bookEntry = &$entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']];
-                $bookEntry['isAvailable'] = false;
-                $bookEntry['checkedOut'] = true;
-                $bookEntry['currentCheckout'] = $checkout;
-            }
-        }
+//         $checkouts = $this->getUnlinkedCheckouts();
+//         foreach ($checkouts as $checkout) {
+//             if (null === $checkout['checkedInOn'] && isset($books[$checkout['bookId']]) &&
+//                 isset($entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']])
+//             ) { //book is checked out
+//                 $bookEntry = &$entities[$books[$checkout['bookId']]['libraryId']]['books'][$checkout['bookId']];
+//                 $bookEntry['isAvailable'] = false;
+//                 $bookEntry['checkedOut'] = true;
+//                 $bookEntry['currentCheckout'] = $checkout;
+//             }
+//         }
 
         $this->cacheEntityObjects('libraries', $entities, ['library', 'book', 'checkout']);
-        return $entities;
-    }
-
-    /**
-     * @todo delete this function, move to getObjects('libraries')
-     * @return mixed[]
-     */
-    public function getUnlinkedLibraries()
-    {
-        if (null !== ($cache = $this->fetchCachedEntityObjects('unlinked-libraries'))) {
-            return $cache;
-        }
-        $entities = $this->getObjects('library');
-        $collections = $this->getObjects('collection');
-        foreach ($collections as $collectionId => $collection) {
-            if (isset($entities[$collection['libraryId']])) {
-                $collection['library'] = $entities[$collection['libraryId']];
-                //@todo maybe we should create the CollectionOptions object in the processCollectionRow function
-                $entities[$collection['libraryId']]['options']->collections[$collectionId] =
-                    new CollectionOptions($collection);
-            }
-        }
-
-        $this->cacheEntityObjects('unlinked-libraries', $entities, ['library', 'collection']);
         return $entities;
     }
     
@@ -1187,6 +1167,14 @@ ORDER BY `publisher`";
      */
     protected function processLibraryRow($row)
     {
+        static $options;
+        if (!is_array($options)) {
+            $options = [];
+        }
+        static $collections;
+        if (!isset($collections)) {
+            $collections = $this->getObjects('collection');
+        }
         $id = $this->filterDbId($row['LibraryId']);
         $nextWithinLibraryId = $this->filterDbInt($row['MaxWithinLibraryId']);
         $nextWithinLibraryId = isset($nextWithinLibraryId) && is_numeric($nextWithinLibraryId) ?
@@ -1235,7 +1223,7 @@ ORDER BY `publisher`";
             'resourceId'            => $resourceId,
             'nextWithinLibraryId'   => $nextWithinLibraryId,
             'bookCount'             => $this->filterDbInt($row['BookCount']),
-            'books'                 => [], //to be filled in, in getLibraries()
+            'books'                 => [], //to be filled in, in getLibraries() @deprecated
             'collections'           => [],
             'categoryStatistics'    => [],
             'collectionCategoryStatistics' => [],
@@ -1243,21 +1231,19 @@ ORDER BY `publisher`";
             'contactPerson'         => null,
             'options'               => null,
         ];
-        //@todo maybe do a little test to see if we're frequently creating extra objects
-        $processedRow['options'] = new LibraryOptions($processedRow);
-        return $processedRow;
-    }
-
-    /**
-     * @return mixed[]
-     */
-    public function getSimpleLibrary($id)
-    {
-        $libraries = $this->getUnlinkedLibraries();
-        if (!isset($libraries[$id]) || !($library = $libraries[$id])) {
-            return null;
+        
+        //this assures we don't have different instances of libraryOption floating around, just one per library
+        $processedRow['options'] = isset($options[$id]) 
+            ? $options[$id]
+            : ($options[$id] = new LibraryOptions($processedRow));
+        
+        foreach ($collections as $collectionId => $collection) {
+            if ($collection['libraryId'] == $id) {
+                $collections[$collectionId] = &$collections[$collectionId];
+                $processedRow['options']->collections[$collectionId] = $collections[$collectionId]['options'];
+            }
         }
-        return $library;
+        return $processedRow;
     }
 
     /**
@@ -1288,7 +1274,7 @@ ORDER BY `publisher`";
     public function getLibrariesOptions()
     {
         //don't cache because it's a quick operation
-        $libraries = $this->getUnlinkedLibraries();
+        $libraries = $this->getObjects('library');
         $entities = [];
         foreach ($libraries as $libraryId => $library) {
             $entities[$libraryId] = $library['options'];
@@ -1329,7 +1315,32 @@ ORDER BY `publisher`";
             
             'resourceId'            => 'library_'.$libraryId,
         ];
+        $processedRow['options'] = new CollectionOptions($processedRow);
         return $processedRow;
+    }
+    
+    /**
+     * Get an associative array mapping collectionId to its name
+     * @return string[]
+     */
+    public function getCollectionNames($libraryId = null)
+    {
+        if (isset($this->collectionNames) && !isset($libraryId)) {
+            return $this->collectionNames;
+        }
+        $select = $this->getSelectPrototype('collection');
+        $select->columns(['CollectionId', 'CollectionName', 'LibraryId']);
+        $gateway = $this->getTableGateway('lib_collections');
+        $results = $gateway->selectWith($select);
+        
+        $entities = [];
+        foreach ($results as $row) {
+            if (!isset($libraryId) || $row['LibraryId'] == $libraryId) {
+                $entities[$row['CollectionId']] = $row['CollectionName'];
+            }
+        }
+        $this->collectionNames = $entities;
+        return $this->collectionNames;
     }
 
     public function getLibraryBooksStatuses($libraryId = null)
@@ -1340,9 +1351,11 @@ ORDER BY `publisher`";
         if (!isset($libraryId) || !is_numeric($libraryId)) {
             throw new \InvalidArgumentException('getLibraryBooksStatuses requires an active libraryId');
         }
-        $library = $this->getLibrary($libraryId);
+        $books = $this->getObjects('book', ['libaryId' => $libraryId]);
+        $this->linkCurrentCheckoutsToBook($books);
+        
         $entities = [];
-        foreach ($library['books'] as $entity) {
+        foreach ($books as $entity) {
             $currentCheckout = $entity['currentCheckout'];
             $entities[$entity['withinLibraryId']] = [
                 'title'     => $entity['title'],
@@ -1429,7 +1442,7 @@ ORDER BY `publisher`";
         //if the regex works, it gets true, else, false
         static $regexChecks = [];
         if (!isset($libraries)) {
-            $libraries = $this->getUnlinkedLibraries();
+            $libraries = $this->getObjects('library');
         }
         $callNumber = $useNewCallNumber ? $book['newCallNumber'] : $book['callNumber'];
         if (!isset($callNumber)) {
@@ -1694,7 +1707,7 @@ ORDER BY CreatedOn DESC";
                 if (isset($libraryCache[$libraryId])) {
                     $object['book']['library'] = $libraryCache[$libraryId];
                 } else {
-                    $library = $this->getSimpleLibrary($libraryId);
+                    $library = $this->getObject('library', $libraryId);
                     $libraryCache[$libraryId] = $library;
                     $object['book']['library'] = $library;
                 }
@@ -1751,7 +1764,7 @@ ORDER BY CreatedOn DESC";
         }
 
         $books = $this->getUnlinkedBooks(array_keys($bookIds));
-        $libraries = $this->getUnlinkedLibraries();
+        $libraries = $this->getObjects('library');
 
         foreach ($entities as $entityId => $entity) {
             if (isset($books[$entity['bookId']]) &&
@@ -1934,7 +1947,7 @@ ORDER BY CreatedOn DESC";
     {
         $problems = [];
         //look for configuration problems
-        $objects = $this->getUnlinkedLibraries();
+        $objects = $this->getObjects('library');
         foreach ($objects as $object) {
             $problems = array_merge($problems, $this->getLibraryProblems($object, $minimumSeverity));
         }
@@ -1975,7 +1988,7 @@ ORDER BY CreatedOn DESC";
     {
         $problems = [];
         //look for configuration problems
-        $objects = $this->getUnlinkedLibraries();
+        $objects = $this->getObjects('library');
         foreach ($objects as $object) {
             $problems = $this->getLibraryCollectionProblems($object);
         }
@@ -2042,7 +2055,7 @@ ORDER BY CreatedOn DESC";
     public function getResources()
     {
         $return = [];
-        $libraries = $this->getUnlinkedLibraries();
+        $libraries = $this->getObjects('library');
         foreach ($libraries as $libraryId => $object) {
             $return[] = new GenericResource($object['resourceId']);
         }
@@ -2056,7 +2069,7 @@ ORDER BY CreatedOn DESC";
      */
     public function getRules()
     {
-        $libraries = $this->getUnlinkedLibraries();
+        $libraries = $this->getObjects('library');
 
         $allow = [];
         foreach ($libraries as $object) {
@@ -2084,21 +2097,6 @@ ORDER BY CreatedOn DESC";
             $allow[] = [['lib_administrator'], $object['resourceId'], 'administrate'];
         }
         return ['allow' => $allow];
-    }
-
-    /**
-     * @todo improve efficency for a single library or just factor it out
-     * @param int $id
-     * @return mixed[]
-     */
-    public function getLibrary($id)
-    {
-        $entities = $this->getLibraries();
-        if (!isset($entities[$id]) || !($entity = $entities[$id])) {
-            return null;
-        }
-
-        return $entity;
     }
 
     /**

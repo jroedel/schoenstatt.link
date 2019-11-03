@@ -24,18 +24,16 @@ class LibrariesController extends SionController
         if ($view instanceof \Zend\Stdlib\ResponseInterface) {
             return $view;
         }
-        $entityObject = $view->getVariable('entity');
+        
+        /** @var LibraryTable $table */
+        $table = $this->getSionTable();
+        $libraryId = $view->getVariable('entityId');
         $params = $this->params()->fromQuery();
-        if (isset($entityObject['libraryId'])) {
-            $params['libraryId'] = $entityObject['libraryId'];
-        }
+            $params['libraryId'] = $libraryId;
         $form = $this->services[SearchForm::class];
         $form->setData($params);
         $books = null;
         $borrowers = [];
-
-        /** @var LibraryTable $table */
-        $table = $this->getSionTable();
 
         if ($form->isValid()) {
             $data = $form->getData();
@@ -56,6 +54,7 @@ class LibrariesController extends SionController
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
 
+        $view->setVariable('entity', $table->getLibraries()[$libraryId]);
         $view->setVariable('publications', $this->getPublications());
         $view->setVariable('books', $books);
         $view->setVariable('borrowers', $borrowers);
@@ -156,7 +155,7 @@ class LibrariesController extends SionController
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
         $libraryId = $this->getLibraryId();
-        $object = $table->getSimpleLibrary($libraryId);
+        $object = $table->getObject('library', $libraryId);
         $problems = array_merge($table->getLibraryProblems($object), $table->getLibraryBookProblems($libraryId));
         $view = new ViewModel([
             'problems' => $problems,
@@ -174,7 +173,7 @@ class LibrariesController extends SionController
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
         $libraryId = $this->getLibraryId();
-        $object = $table->getSimpleLibrary($libraryId);
+        $object = $table->getObject('library', $libraryId);
         $problems = array_merge($table->getLibraryProblems($object), $table->getLibraryBookProblems($libraryId));
         
         $problemCounts = [
@@ -215,6 +214,7 @@ class LibrariesController extends SionController
                 $data['maxResults'] = 200;
 //                 var_dump($data);
                 $books = $table->searchBooks($data);
+                //@todo the use of 'books' is deprecated, find a different way
                 $libraries = $this->transformBookQueryIntoLibraries($books);
                 $borrowers = $this->services['Books\BorrowersValueOptions'];
             }
@@ -279,13 +279,14 @@ class LibrariesController extends SionController
 
     public function bookListAction()
     {
-        $resourceId = 'library_'.$this->getLibraryId();
+        $libraryId = $this->getLibraryId();
+        $resourceId = 'library_'.$libraryId;
         if (!$this->isAllowed($resourceId, 'show')) {
             throw new UnAuthorizedException();
         }
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
-        $books = $table->getBooks();
+        $books = $table->queryObjects('book', ['libraryId' => $libraryId]);
         return new ViewModel([
             'objects' => $books,
         ]);
@@ -315,7 +316,7 @@ class LibrariesController extends SionController
         $sendOnlyToBorrowersWithOverdueBooks = (bool)$this->params()->fromQuery('onlyOverdueBorrowers', true);
 
         $table = $this->getSionTable();
-        $library = $table->getSimpleLibrary($libraryId);
+        $library = $table->getObject('library', $libraryId);
         /** @var BooksMailer $mailer */
         $mailer = $this->services[BooksMailer::class];
         $borrowers = $mailer->sendBookNotices($libraryId, $sendOnlyToBorrowersWithOverdueBooks, $simulate, $borrowerSubset);

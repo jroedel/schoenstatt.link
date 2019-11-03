@@ -79,7 +79,7 @@ class BooksMailer extends Mailer
             return $borrowers;
         }
 
-        $library = $libraryTable->getSimpleLibrary($libraryId);
+        $library = $libraryTable->getObject('library', $libraryId);
         if (isset($library['contactEmail'])) {
             $replyEmail = $library['contactEmail'];
         } elseif (isset($library['contactPersonId'])) {

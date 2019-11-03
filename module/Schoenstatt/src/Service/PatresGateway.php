@@ -5,6 +5,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use Zend\InputFilter\InputFilterInterface;
 use Zend\Http\Client;
 use Zend\Json\Json;
+use Zend\Log\LoggerInterface;
 
 class PatresGateway
 {
@@ -38,6 +39,12 @@ class PatresGateway
      * @var string $personListUri
      */
     protected $personListUri;
+    
+    /**
+     * 
+     * @var LoggerInterface $logger
+     */
+    protected $logger;
 
     /**
      * Given a patres personId, a person from the SchoenstattTable is returned. Person is imported if requested
@@ -78,13 +85,28 @@ class PatresGateway
      */
     public function getPersonList()
     {
+        $cacheKey = 'patres-gateway-person-list';
+        if (isset($this->schoenstattTable) 
+            && null !== ($cache = $this->schoenstattTable->fetchCachedEntityObjects($cacheKey))
+        ) {
+            return $cache;
+        }
         $key = $this->getApiKey();
         $listUrl = $this->getPersonListUri();
         $client = new Client();
         $client->setMethod('get');
         $client->setUri($listUrl);
         $client->setParameterGet(['key' => $key]);
-        $response = $client->send();
+        try {
+            $response = $client->send();
+        } catch (\ErrorException $e) {
+            $logger = $this->getLogger();
+            if (isset($logger)) {
+                $logger->err("Error requesting the person list from schoenstatt-fathers.link. Reason: "
+                    .$e->getMessage());
+            }
+            throw $e;
+        }
 
         if (200 != $response->getStatusCode()) {
             throw new \Exception('Failed to retrieve list of fathers from Patres. Status code: '
@@ -95,6 +117,9 @@ class PatresGateway
             throw new \Exception('Failed to retrieve list of fathers from Patres. No data returned');
         }
         $persons = $data['data'];
+        if (isset($this->schoenstattTable)) {
+            $this->schoenstattTable->cacheEntityObjects($cacheKey, $persons, []);
+        }
         return $persons;
     }
 
@@ -404,5 +429,16 @@ class PatresGateway
     {
         $this->schoenstattTable = $schoenstattTable;
         return $this;
+    }
+    
+    public function setLogger(LoggerInterface $logger)
+    {
+        $this->logger = $logger;
+        return $this;
+    }
+    
+    public function getLogger()
+    {
+        return $this->logger;
     }
 }

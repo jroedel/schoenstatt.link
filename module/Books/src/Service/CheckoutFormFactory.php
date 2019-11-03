@@ -26,7 +26,7 @@ class CheckoutFormFactory implements FactoryInterface
         $application = $container->get('Application');
         $routeMatch = $application->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id', null);
-        $libraries = $table->getUnlinkedLibraries();
+        $libraries = $table->getObjects('library');
         if (!key_exists($libraryId, $libraries)) {
             throw new \Exception('Library not found');
         }
