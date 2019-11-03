@@ -26,7 +26,7 @@ class BooksController extends SionController
                 /** @var \Books\Model\LibraryTable $table */
                 $table = $this->services[LibraryTable::class];
                 if ($table->existsEntity('book', $copyBook)) {
-                    $copyBookObj = $table->getSimpleBook($copyBook);
+                    $copyBookObj = $table->getObject('book', $copyBook);
                     //allow copying books from other libraries as long as the user has show permissions
                     if ($this->isAllowed('library_'.$copyBookObj['libraryId'], 'show')) {
                         $form = $view->getVariable('form');

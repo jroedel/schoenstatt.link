@@ -27,7 +27,7 @@ class BookFormFactory implements FactoryInterface
         $libraryId = $routeMatch->getParam('library_id');
         if (!isset($libraryId)) {
             $bookId = $routeMatch->getParam('book_id');
-            $object = $table->getSimpleBook($bookId);
+            $object = $table->getObject('book', $bookId);
             $libraryId = isset($object['libraryId']) ? $object['libraryId'] : null;
         }
         if (isset($libraryId)) {
