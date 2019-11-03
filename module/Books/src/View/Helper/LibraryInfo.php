@@ -27,7 +27,7 @@ class LibraryInfo extends AbstractHelper
         if (!$table instanceof LibraryTable) {
             return null;
         }
-        $info = $table->getSimpleLibrary($libraryId);
+        $info = $table->getObject('library', $libraryId);
         return $info;
     }
     

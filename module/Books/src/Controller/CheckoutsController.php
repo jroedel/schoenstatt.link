@@ -60,7 +60,7 @@ class CheckoutsController extends SionController
             return;
         }
 
-        $library = $table->getLibrary($libraryId);
+        $library = $table->getObject('library', $libraryId);
         /** @var LibraryOptions $libraryOptions */
         $libraryOptions = $library['options'];
         if ($libraryOptions->checkoutPersonListKind == 'patres-sion') {
@@ -103,7 +103,7 @@ class CheckoutsController extends SionController
         /** @var LibraryTable $table */
         $table = $this->getSionTable();
         $entities = $table->getCheckoutsForLibrary($libraryId, $subset);
-        $library = $table->getLibrary($libraryId);
+        $library = $table->getObject('library', $libraryId);
 
         /** @var SchoenstattTable $schTable */
         $schTable = $this->services[SchoenstattTable::class];

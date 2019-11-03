@@ -32,6 +32,11 @@ class PatresGatewayFactory implements FactoryInterface
         $patresGateway->setPersonInputFilter($inputFilter);
         $patresGateway->setSchoenstattConfig($config);
         $patresGateway->setSchoenstattTable($table);
+        
+        if ($container->has('JUser\Logger')) {
+            $logger = $container->get('JUser\Logger');
+            $table->setLogger($logger);
+        }
         return $patresGateway;
     }
 }

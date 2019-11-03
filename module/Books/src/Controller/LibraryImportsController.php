@@ -285,7 +285,7 @@ class LibraryImportsController extends SionController
         }
         $table->setLibraryId($libraryId);
         /** @var LibraryOptions $libraryOptions */
-        $libraryOptions = $table->getSimpleLibrary($libraryId)['options'];
+        $libraryOptions = $table->getObject('library', $libraryId)['options'];
         /** @var array $preexistingCollectionMap $name => $collectionId */
         $preexistingCollectionMap = [];
         foreach ($libraryOptions->collections as $collectionId => $collectionOptions) {

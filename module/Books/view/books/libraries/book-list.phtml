@@ -7,7 +7,7 @@ if (isset($this->publications) && is_array($this->publications)):?><th></th><?ph
 <th><?php echo $this->translate('Call number');?></th>
 <th><?php echo $this->translate('Author');?></th>
 </tr>
-<?php foreach ($this->objects as $bookId => $book) : ?>
+<?php foreach ($this->objects as $book) : ?>
 <tr>
     <?php if (isset($this->publications) && is_array($this->publications)):?><th><?php
     if (!is_null($book['publicationId']) && array_key_exists($book['publicationId'], $this->publications) &&

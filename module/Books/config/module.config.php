@@ -1606,7 +1606,7 @@ return [
                     Model\PublicationsTable::class,
                 ],
                 'row_processor_function'                => 'processLibraryRow',
-                'get_object_function'                   => 'getLibrary',
+//                 'get_object_function'                   => 'getLibrary',
 //                 'get_objects_function'                  => 'getUnlinkedLibraries',
 //                 'format_view_helper'                    => 'formatEvent',
                 'required_columns_for_creation'         => [
@@ -1790,7 +1790,7 @@ return [
                     Model\LibraryTable::class,
                 ],
 //                 'get_object_function'                       => 'getSimpleBook',
-                'get_objects_function'                      => 'getBooks',
+//                 'get_objects_function'                      => 'getBooks',
                 'row_processor_function'                    => 'processBookRow',
 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [

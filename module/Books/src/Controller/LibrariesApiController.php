@@ -37,9 +37,9 @@ class LibrariesApiController extends AbstractRestfulController
 
     public function getList()
     {
-        $params = $this->params()->fromQuery();
+//         $params = $this->params()->fromQuery();
         $table = $this->libraryTable;
-        $objects = $table->getUnlinkedLibraries();
+        $objects = $table->getObjects('library');
         
         return new JsonModel([
             'items'         => $objects,
@@ -49,7 +49,7 @@ class LibrariesApiController extends AbstractRestfulController
     public function get($id)
     {
         $table = $this->libraryTable;
-        $object = $table->getSimpleLibrary($id);
+        $object = $table->getObject('library', $id);
         self::prepLibraryObject($object);
         return new JsonModel($object, ['prettyPrint' => true]);
     }
