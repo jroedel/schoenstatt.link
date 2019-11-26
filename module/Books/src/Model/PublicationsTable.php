@@ -45,7 +45,7 @@ class PublicationsTable extends SionTable
     /**
      * @var array $publicationsMemoryCache
      */
-    protected $unlinkedPublicationsMemoryCache = [];
+//     protected $unlinkedPublicationsMemoryCache = [];
 
     public function getAuthorsValueOptions()
     {
@@ -119,7 +119,7 @@ GROUP BY Author ORDER BY Author";
         $authors = [];
         $authorConcatenations = []; //these might be repeated so we have to check
         foreach ($results as $row) {
-            $author = $this->filterDbString($row['Author']);
+            $author = $row['Author'];
             if (isset($author)) {
                 if (false !== strpos($author, '|')) {
                     $authorsList = $this->filterDbArray($author);
@@ -150,7 +150,7 @@ ORDER BY `Publisher`";
         $results = $this->fetchSome(null, $sql, null);
         $values = null;
         foreach ($results as $row) {
-            $publisher = $this->filterDbString($row['Publisher']);
+            $publisher = $row['Publisher'];
             if (isset($publisher)) {
                 $values[$publisher] = $publisher;
             }
@@ -174,6 +174,7 @@ ORDER BY `Publisher`";
 
     public function getEditionValueOptions($onlyMainEditions = false)
     {
+        // @todo if we implement $onlyMainEditions, we have to adjust caching
         $cacheKey = 'publication-edition-value-options';
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
@@ -548,22 +549,22 @@ ORDER BY `Publisher`";
     /**
      * @return mixed[]
      */
-    protected function &processPublicationRow($row)
+    protected function processPublicationRow($row)
     {
         static $categories;
         static $swFilter;
         $id = $this->filterDbId($row['PublicationId']);
-
-        if (isset($this->unlinkedPublicationsMemoryCache[$id])) {
-            return $this->unlinkedPublicationsMemoryCache[$id];
-        }
+        
+//         if (isset($this->unlinkedPublicationsMemoryCache[$id])) {
+//             return $this->unlinkedPublicationsMemoryCache[$id];
+//         }
         if (!isset($swFilter)) {
             $swFilter = new ToSchoenstattLinkIdentifier('publication');
         }
         $identifier = $swFilter->filter($id);
         
         $title = $row['Title'];
-        $slug = $this->filterDbString($row['Slug']);
+        $slug = $row['Slug'];
         if (!isset($slug)) {
             $slug = SchoenstattTable::getSlug($title);
             $this->slylyUpdatePublicationSlug($id, $slug);
@@ -574,21 +575,21 @@ ORDER BY `Publisher`";
         }
         //process URLs
         $unprocessedUrls = [
-            ['url' => $row['Url1'], 'label' => $this->filterDbString($row['Url1Label'])],
-            ['url' => $row['Url2'], 'label' => $this->filterDbString($row['Url2Label'])],
-            ['url' => $row['Url3'], 'label' => $this->filterDbString($row['Url3Label'])],
+            ['url' => $row['Url1'], 'label' => $row['Url1Label']],
+            ['url' => $row['Url2'], 'label' => $row['Url2Label']],
+            ['url' => $row['Url3'], 'label' => $row['Url3Label']],
         ];
         $urls = $this::processUrls($unprocessedUrls);
         $mainPublicationId = $this->filterDbId($row['MainPublicationId']);
 
-        $resourceId = $this->filterDbString($row['ResourceId']);
+        $resourceId = $row['ResourceId'];
 
         //the text/all distinction exists because "all" will also include linked entities from other tables
         $authorsText = $this->filterDbArray($row['Authors']);
         $editorText = $this->filterDbArray($row['Editor']);
         $translatorText = $this->filterDbArray($row['Translator']);
 
-        $bookFormatType = $this->filterDbString($row['BookFormatType']);
+        $bookFormatType = $row['BookFormatType'];
         $bookFormatTypeUrl = null;
         if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType])) {
             $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
@@ -666,8 +667,8 @@ ORDER BY `Publisher`";
             'categoryId'                => $categoryId,
 
             'inLanguage'                => $inLanguage,
-            'description'               => $this->filterDbString($row['Description']),
-            'isbn'                      => $this->filterDbString($row['Isbn']),
+            'description'               => $row['Description'],
+            'isbn'                      => $row['Isbn'],
             'editorsText'               => $editorText,
             'editorsNoAccents'          => $row['EditorNoAccents'],
             'translatorsText'           => $translatorText,
@@ -675,16 +676,16 @@ ORDER BY `Publisher`";
             'copyrightYear'             => $copyrightYear,
             'copyrightInfo'             => $row['CopyrightInfo'],
             'datePublishedText'         => $datePublishedText,
-            'publisher'                 => $this->filterDbString($row['Publisher']),
-            'publishingPlace'           => $this->filterDbString($row['PublishingPlace']),
-            'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
+            'publisher'                 => $row['Publisher'],
+            'publishingPlace'           => $row['PublishingPlace'],
+            'publishingStatus'          => $row['PublishingStatus'],
             'bookFormatType'            => $bookFormatType,
             'mainPublicationId'         => $mainPublicationId,
             'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
-            'volumeNumber'              => $this->filterDbString($row['VolumeNumber']),
-            'containedIn'               => $this->filterDbString($row['ContainedIn']),
-            'containedInIsbn'           => $this->filterDbString($row['ContainedInIsbn']),
-            'genre'                     => $this->filterDbString($row['Genre']),
+            'volumeNumber'              => $row['VolumeNumber'],
+            'containedIn'               => $row['ContainedIn'],
+            'containedInIsbn'           => $row['ContainedInIsbn'],
+            'genre'                     => $row['Genre'],
             'keywords'                  => $this->filterDbArray($row['PublicTags']),
             'adminTags'                 => $this->filterDbArray($row['AdminTags']),
             'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
@@ -697,26 +698,26 @@ ORDER BY `Publisher`";
             'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
 
             'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
-            'jkQuality'                 => $this->filterDbString($row['JkQuality']),
-            'jkQualityNotes'            => $this->filterDbString($row['JkQualityNotes']),
+            'jkQuality'                 => $row['JkQuality'],
+            'jkQualityNotes'            => $row['JkQualityNotes'],
             'jkPeriodId'                => $this->filterDbId($row['JkPeriod']),
             'jkEventId'                 => $this->filterDbId($row['JkEventId']),
             'urls'                      => $urls,
-            'url1'                      => $this->filterDbString($row['Url1']),
-            'url1Label'                 => $this->filterDbString($row['Url1Label']),
-            'url2'                      => $this->filterDbString($row['Url2']),
-            'url2Label'                 => $this->filterDbString($row['Url2Label']),
-            'url3'                      => $this->filterDbString($row['Url3']),
-            'url3Label'                 => $this->filterDbString($row['Url3Label']),
-            'dataSource'                => $this->filterDbString($row['DataSource']),
+            'url1'                      => $row['Url1'],
+            'url1Label'                 => $row['Url1Label'],
+            'url2'                      => $row['Url2'],
+            'url2Label'                 => $row['Url2Label'],
+            'url3'                      => $row['Url3'],
+            'url3Label'                 => $row['Url3Label'],
+            'dataSource'                => $row['DataSource'],
             'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
             'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
 
-            'editionNotes'              => $this->filterDbString($row['EditionNotes']),
-            'publicNotes'               => $this->filterDbString($row['PublicNotes']),
+            'editionNotes'              => $row['EditionNotes'],
+            'publicNotes'               => $row['PublicNotes'],
             'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),
             'publicNotesUpdatedBy'      => $this->filterDbId($row['PublicNotesUpdatedBy']),
-            'adminNotes'                => $this->filterDbString($row['AdminNotes']),
+            'adminNotes'                => $row['AdminNotes'],
             'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
             'adminNotesUpdatedBy'       => $this->filterDbId($row['AdminNotesUpdatedBy']),
             'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
@@ -752,7 +753,7 @@ ORDER BY `Publisher`";
 
             'files'                     => [],
         ];
-        $this->unlinkedPublicationsMemoryCache[$id] = &$processedRow;
+//         $this->unlinkedPublicationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
     }
     
@@ -900,7 +901,7 @@ ORDER BY `Publisher`";
      */
     public function getPublication($id)
     {
-        $object = $this->getObject('publication', $id);
+        $object = $this->tryGettingObject('publication', $id);
         if (!isset($object)) {
             return null;
         }
@@ -1597,7 +1598,7 @@ ORDER BY `Publisher`";
 //             'categoryId'                => $categoryId,
             
             'inLanguage' => $inLanguage,
-//             'description'               => $this->filterDbString($row['Description']),
+//             'description'               => $row['Description']),
             'isbn'                      => isset($row['isbn']) ? $row['isbn'] : null,
             'editorsText'               => $editorsText,
 //             'editorsNoAccents'          => $row['EditorNoAccents'],
@@ -1608,14 +1609,14 @@ ORDER BY `Publisher`";
             'datePublishedText'         => $publishingDate,
             'publisher'                 => $publisher,
             'publishingPlace'           => $publishingPlace,
-//             'publishingStatus'          => $this->filterDbString($row['PublishingStatus']),
+//             'publishingStatus'          => $row['PublishingStatus']),
 //             'bookFormatType'            => $bookFormatType,
 //             'mainPublicationId'         => $mainPublicationId,
 //             'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
-//             'volumeNumber'              => $this->filterDbString($row['VolumeNumber']),
+//             'volumeNumber'              => $row['VolumeNumber']),
             'containedIn'               => $containedIn,
-//             'containedInIsbn'           => $this->filterDbString($row['ContainedInIsbn']),
-//             'genre'                     => $this->filterDbString($row['Genre']),
+//             'containedInIsbn'           => $row['ContainedInIsbn']),
+//             'genre'                     => $row['Genre']),
             'keywords'                  => $keywords,
 //             'adminTags'                 => $this->filterDbArray($row['AdminTags']),
 //             'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
@@ -1630,26 +1631,26 @@ ORDER BY `Publisher`";
 //             'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
             
             'hasBeenMerged'             => false,
-//             'jkQuality'                 => $this->filterDbString($row['JkQuality']),
-//             'jkQualityNotes'            => $this->filterDbString($row['JkQualityNotes']),
+//             'jkQuality'                 => $row['JkQuality']),
+//             'jkQualityNotes'            => $row['JkQualityNotes']),
 //             'jkPeriodId'                => $this->filterDbId($row['JkPeriod']),
 //             'jkEventId'                 => $this->filterDbId($row['JkEventId']),
 //             'urls'                      => $urls,
-//             'url1'                      => $this->filterDbString($row['Url1']),
-//             'url1Label'                 => $this->filterDbString($row['Url1Label']),
-//             'url2'                      => $this->filterDbString($row['Url2']),
-//             'url2Label'                 => $this->filterDbString($row['Url2Label']),
-//             'url3'                      => $this->filterDbString($row['Url3']),
-//             'url3Label'                 => $this->filterDbString($row['Url3Label']),
+//             'url1'                      => $row['Url1']),
+//             'url1Label'                 => $row['Url1Label']),
+//             'url2'                      => $row['Url2']),
+//             'url2Label'                 => $row['Url2Label']),
+//             'url3'                      => $row['Url3']),
+//             'url3Label'                 => $row['Url3Label']),
             'dataSource'                => 'forschungsbibliothek',
             'dataSourceId'              => $id,
             'dataSourceUpdatedOn'       => $lastModified,
             
-//             'editionNotes'              => $this->filterDbString($row['EditionNotes']),
-//             'publicNotes'               => $this->filterDbString($row['PublicNotes']),
+//             'editionNotes'              => $row['EditionNotes']),
+//             'publicNotes'               => $row['PublicNotes']),
 //             'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),
 //             'publicNotesUpdatedBy'      => $this->filterDbId($row['PublicNotesUpdatedBy']),
-//             'adminNotes'                => $this->filterDbString($row['AdminNotes']),
+//             'adminNotes'                => $row['AdminNotes']),
 //             'adminNotesUpdatedOn'       => $this->filterDbDate($row['AdminNotesUpdatedOn']),
 //             'adminNotesUpdatedBy'       => $this->filterDbId($row['AdminNotesUpdatedBy']),
 //             'createdOn'                 => $this->filterDbDate($row['CreatedOn']),
@@ -1725,10 +1726,10 @@ ORDER BY `Publisher`";
         $categories = [];
         foreach ($result as $row) {
             $id = $this->filterDbId($row['PublicationCategoryId']);
-            $name = $this->filterDbString($row['CategoryName']);
+            $name = $row['CategoryName'];
             $categories[$id] = [
                 'categoryId'    => $id,
-                'parentId'      => $this->filterDbString($row['ParentId']),
+                'parentId'      => $row['ParentId'],
                 'name'          => $name,
                 'sort'          => $this->filterDbInt($row['SortOrder']),
                 'isPlaceholder' => $this->filterDbBool($row['IsPlaceholder']),
@@ -1787,31 +1788,31 @@ ORDER BY `Publisher`";
         $entities = [];
         foreach ($results as $row) {
 //             $id = $this->filterDbId($row['PublicationId']);
-            $yearPublished = $this->filterDbString($row['jahr']);
+            $yearPublished = $row['jahr'];
             $dateFromYear = isset($yearPublished) ? date_create_from_format('Y', $yearPublished) : null;
 
-            $keywords = $this->filterDbString($row['Stichworte']);
+            $keywords = $row['Stichworte'];
             if (issett($keywords)) {
                 $keywords = explode(',', $keywords);
                 $keywords = array_map('trim', $keywords);
                 $keywords = implode('|', $keywords);
             }
-            $category = $this->filterDbString($row['kategorie']);
+            $category = $row['kategorie'];
             if (isset($category) && !isset($keywords)) {
                 $keywords = $category;
             } elseif (isset($category)) {
                 $keywords .= '|'.$category;
             }
 
-            $authorFirst = $this->filterDbString($row['vorname']);
-            $authorLast = $this->filterDbString($row['name']);
+            $authorFirst = $row['vorname'];
+            $authorLast = $row['name'];
             $author = null;
             if ($authorLast && $authorFirst) {
                 $author = $authorLast .', '.$authorFirst;
             } elseif ($authorFirst || $authorLast) {
                 $author = $authorLast .$authorFirst;
             }
-            $otherAuthors = $this->filterDbString($row['mitauthoren']);
+            $otherAuthors = $row['mitauthoren'];
 
             if ($author && $otherAuthors) {
                 $author .= '; '. $otherAuthors;
@@ -1819,13 +1820,13 @@ ORDER BY `Publisher`";
                 $author = $otherAuthors;
             }
 
-            $isScientific = $this->filterDbString($row['art']) == 'scientific';
+            $isScientific = $row['art'] == 'scientific';
 
-            $originalSource = $this->filterDbString($row['quelle']);
+            $originalSource = $row['quelle'];
             if (isset($originalSource)) {
                 $originalSource = 'Original source: '. $originalSource;
             }
-            $originalLanguage = $this->filterDbString($row['sprache']);
+            $originalLanguage = $row['sprache'];
             $language = null;
             switch ($originalLanguage) {
                 case 'esp':
@@ -1841,12 +1842,12 @@ ORDER BY `Publisher`";
                     $language = 'en';
                     break;
             }
-            $download = $this->filterDbString($row['download']);
+            $download = $row['download'];
 
             $entities[] = [
 //                 'publicationId'             => null,
 
-                'title'                     => $this->filterDbString($row['titel']),
+                'title'                     => $row['titel'],
                 'authorPerson1Id'           => null,
                 'authorPerson2Id'           => null,
                 'authorPerson3Id'           => null,
@@ -1854,15 +1855,15 @@ ORDER BY `Publisher`";
                 'authorsText'               => $author,
                 'bookEdition'               => null, //'BookEdition',
                 'inLanguage'                => $language,
-                'description'               => $this->filterDbString($row['Inhalt']),
+                'description'               => $row['Inhalt'],
                 'isbn'                      => null,
                 'translator'                => null,
                 'numberOfPages'             => null,
                 'copyrightYear'             => $yearPublished,
-                'publisher'                 => $this->filterDbString($row['verlag']),
-                'publishingPlace'           => $this->filterDbString($row['ort']),
+                'publisher'                 => $row['verlag'],
+                'publishingPlace'           => $row['ort'],
                 'datePublished'             => $dateFromYear,
-                'publishingStatus'          => $this->filterDbString($row['herausgabe']),
+                'publishingStatus'          => $row['herausgabe'],
                 'bookFormatType'            => $row['herausgabe'] == 'digital'
                     ? self::BOOK_FORMAT_TYPE_EBOOK : self::BOOK_FORMAT_TYPE_PAPERBACK,
                 'genre'                     => null,
@@ -1870,9 +1871,9 @@ ORDER BY `Publisher`";
                 'url1Label'                 => isset($download) ? 'Download' : null,
                 'textId'                    => null,
                 'mainPublication'           => null,
-//                 'volumeNumber'              => $this->filterDbString($row['BandNr']),
-//                 'containedIn'               => $this->filterDbString($row['NameZeitschrift']),
-//                 'containedInIsbn'           => $this->filterDbString($row['ISBN_ZeitschriftNr']),
+//                 'volumeNumber'              => $row['BandNr']),
+//                 'containedIn'               => $row['NameZeitschrift']),
+//                 'containedInIsbn'           => $row['ISBN_ZeitschriftNr']),
                 'keywords'                  => $keywords,
 
                 'isAccessibleForFree'       => false,
@@ -1913,17 +1914,17 @@ WHERE 1";
 
         foreach ($results as $row) {
             $publicNotes = '';
-//             $yearPublished = $this->filterDbString($row['jahr']);
+//             $yearPublished = $row['jahr']);
 //             $dateFromYear = isset($yearPublished) ? date_create_from_format('Y', $yearPublished) : null;
 
-            $isInternal = $this->filterDbString($row['ed_internpatres']) == 'yes' ||
-                $this->filterDbString($row['ev_intern']) == 'yes';
+            $isInternal = $row['ed_internpatres'] == 'yes' ||
+                $row['ev_intern'] == 'yes';
 
-            if (null !== ($remarks = $this->filterDbString($row['ed_remark']))) {
+            if (null !== ($remarks = $row['ed_remark'])) {
                 $publicNotes .= sprintf("Edition remarks: %s\r\n", $remarks);
             }
 
-            if (null !== ($evName = $this->filterDbString($row['ev_name']))) {
+            if (null !== ($evName = $row['ev_name'])) {
                 $publicNotes .= sprintf("Event name: %s\r\n", $evName);
             }
 
@@ -1934,25 +1935,25 @@ WHERE 1";
                 if (isset($endDate)) {
                     $dateString .= ' - '.date_format($endDate, 'Y-m-d');
                 }
-                if (null !== ($dateRemarks = $this->filterDbString($row['ev_dateremark']))) {
+                if (null !== ($dateRemarks = $row['ev_dateremark'])) {
                     $dateString .= sprintf(" (%s)", $dateRemarks);
                 }
                 $publicNotes .= sprintf("Text from %s\r\n", $dateString);
             }
 
-            if (null !== ($shortName = $this->filterDbString($row['ev_shortname']))) {
+            if (null !== ($shortName = $row['ev_shortname'])) {
                 $publicNotes .= sprintf("Short name: %s\r\n", $shortName);
             }
 
-            if (null !== ($abbreviation = $this->filterDbString($row['ev_kuerzelvaut']))) {
+            if (null !== ($abbreviation = $row['ev_kuerzelvaut'])) {
                 $publicNotes .= sprintf("Abbreviation: %s\r\n", $abbreviation);
             }
 
-            $originalSource = $this->filterDbString($row['ed_location']);
+            $originalSource = $row['ed_location'];
             if (isset($originalSource)) {
                 $originalSource = 'Original source: '. $originalSource;
             }
-            $originalLanguage = $this->filterDbString($row['ed_lang']);
+            $originalLanguage = $row['ed_lang'];
             $language = null;
             switch ($originalLanguage) {
                 case 'esp':
@@ -1969,7 +1970,7 @@ WHERE 1";
                     break;
             }
 
-            if (null !== ($quality = $this->filterDbString(ltrim($row['ed_quality'])))) {
+            if (null !== ($quality = ltrim($row['ed_quality']))) {
                 $quality = ucfirst(mb_substr($quality, 0, 1));
                 $qualityChr = ord($quality);
                 if ($qualityChr < 65 || $quality > 72) {
@@ -1979,7 +1980,7 @@ WHERE 1";
             $entities[] = [
 //                 'publicationId'          => null,
 
-                'title'                     => $this->filterDbString($row['ed_title']),
+                'title'                     => $row['ed_title'],
                 'authorPerson1Id'           => null,
                 'authorPerson2Id'           => null,
                 'authorPerson3Id'           => null,
@@ -2012,7 +2013,7 @@ WHERE 1";
                 'adminTags'                 => null,
 
                 'jkQuality'                 => $quality,
-                'jkQualityNotes'            => $this->filterDbString($row['ed_qualityremark']),
+                'jkQualityNotes'            => $row['ed_qualityremark'],
                 'jkPeriod'                  => $this->whichKentenichPeriod($startDate),
                 'jkEventId'                 => $this->filterDbId($row['ev_id']),
                 'dataSource'                => 'b_bibprim_edition',
@@ -2150,7 +2151,6 @@ WHERE 1";
 
     protected function filterDbDateInt($dateIntStr)
     {
-        $dateIntStr= $this->filterDbString($dateIntStr);
         if ($dateIntStr == '0') {
             $dateIntStr = null;
         }

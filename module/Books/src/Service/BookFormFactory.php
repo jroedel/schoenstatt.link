@@ -6,6 +6,7 @@ use Interop\Container\ContainerInterface;
 use Books\Form\BookForm;
 use SionModel\I18n\LanguageSupport;
 use Books\Model\LibraryTable;
+use Books\Model\PublicationsTable;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
@@ -53,7 +54,7 @@ class BookFormFactory implements FactoryInterface
         $categories = $table->getCategoryValueOptions();
 
         /** @var PublicationsTable */
-        $publicationsTable = $container->get('Books\Model\PublicationsTable');
+        $publicationsTable = $container->get(PublicationsTable::class);
         $allEditions = $publicationsTable->getEditionValueOptions(false);
 
         $form = new BookForm();

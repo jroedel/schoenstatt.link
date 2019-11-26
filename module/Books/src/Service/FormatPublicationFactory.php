@@ -4,6 +4,8 @@ namespace Books\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\View\Helper\FormatPublication;
+use SionModel\Service\EntitiesService;
+use Books\Model\PublicationsTable;
 
 /**
  * Factory responsible of retrieving an array containing the Schoenstatt configuration
@@ -20,10 +22,10 @@ class FormatPublicationFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         $parentLocator = $container->getServiceLocator();
-        $entityService = $parentLocator->get('SionModel\Service\EntitiesService');
+        $entityService = $parentLocator->get(EntitiesService::class);
 
-        /** @var \Books\Model\PublicationsTable $table */
-        $table = $parentLocator->get('Books\Model\PublicationsTable');
+        /** @var PublicationsTable $table */
+        $table = $parentLocator->get(PublicationsTable::class);
         $valueOptions = $table->getAuthorsValueOptions();
 
         $viewHelper = new FormatPublication($entityService, true);
