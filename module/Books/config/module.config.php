@@ -186,6 +186,13 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/collections'   => [
+                'label' => "Configure library collections",
+                'description' => 'Collections within a library represent important physical separations within a library; configure them here. For advanced users.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
             'sion-model/view-changes'   => [
                 'label' => "View changes",
                 'description' => 'View the recent changes made to the database.',
@@ -906,6 +913,16 @@ return [
                                     'route'    => '/book-list-json',
                                     'defaults' => [
                                         'action'     => 'getBookListJson',
+                                    ],
+                                ],
+                            ],
+                            'collections' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/collections',
+                                    'defaults' => [
+                                        'controller' => Controller\CollectionsController::class,
+                                        'action'     => 'index',
                                     ],
                                 ],
                             ],
@@ -2126,7 +2143,7 @@ return [
                 'controller_services'                       => [],
 //                 'get_object_function'                       => 'getSimpleCollection',
 //                 'get_objects_function'                      => 'getUnlinkedCollections',
-                'row_processor_function'                => 'processCollectionRow',
+                'row_processor_function'                    => 'processCollectionRow',
 //                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'libraryId',
@@ -2722,6 +2739,7 @@ return [
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/data-problems', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/collections', 'roles' => ['lib_user']],
                 ['route' => 'libraries/import', 'roles' => ['lib_user']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_user']],
                 ['route' => 'libraries/checkouts/library', 'roles' => ['lib_user']],

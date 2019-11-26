@@ -6,12 +6,26 @@ use Books\Model\LibraryTable;
 use Books\Form\BookForm;
 use RestApi\Controller\ApiController;
 use Zend\View\Model\ModelInterface;
+use Books\Model\PublicationsTable;
+use Zend\InputFilter\InputFilter;
 
 class BooksApiController extends ApiController
 {
     const RECORD_ACTION_UPDATE = 'record-update';
     const RECORD_ACTION_CREATE = 'record-create';
     
+    const PUBLICATION_TO_BOOK_FIELD_MAP = [
+        'title' => 'title',
+        'bookEdition' => 'bookEdition',
+        'authorsText' => 'authorsText',
+        'datePublishedText' => 'publishedYear', //special case, only take first 4 chars
+        'publisher' => 'publisher',
+        'publishingPlace' => 'publishingPlace',
+        'numberOfPages' => 'numberOfPages',
+        'inLanguage' => 'inLanguage',
+        'isbn' => 'isbn',
+        'keywords' => 'keywords',
+    ];
     /**
      * @var LibraryTable $libraryTable
      */
@@ -27,11 +41,21 @@ class BooksApiController extends ApiController
      */
     protected $bookForm;
     
-    public function __construct(LibraryTable $libraryTable, BookForm $bookForm, array $config)
-    {
+    /**
+     * @var PublicationsTable $publicationsTable
+     */
+    protected $publicationsTable;
+    
+    public function __construct(
+        LibraryTable $libraryTable, 
+        BookForm $bookForm, 
+        PublicationsTable $publicationsTable, 
+        array $config
+    ) {
         $this->setIdentifierName('book_id');
         $this->libraryTable = $libraryTable;
         $this->bookForm = $bookForm;
+        $this->publicationsTable = $publicationsTable;
         $this->config = $config;
     }
 
@@ -76,7 +100,8 @@ class BooksApiController extends ApiController
         
         $table = $this->getLibraryTable();
         $table->setLibraryId($libraryId);
-        $isSimulation = $this->params()->fromQuery('simulate') === '1';
+        $simulateParam = $this->params()->fromQuery('simulate');
+        $isSimulation = $simulateParam === 'true' || $simulateParam === '1';
         
         //run through the data, make sure each record has a withinLibraryId, and make an array of these
         if (!$this->requestIsJson()) {
@@ -93,7 +118,10 @@ class BooksApiController extends ApiController
         $collectionNames = $table->getCollectionNames($libraryId);
         $withinLibraryIds = [];
         $duplicateWithinLibraryIds = [];
+        $nonExtantWithinLibraryIds = [];
+        $publicationIds = [];
         $receivedBooks = [];
+        //@todo verify that libraries that require collections have them (maybe somehow in the InputFilter)
         foreach ($data as $book) {
             if (!is_array($book) || !isset($book['withinLibraryId']) || !is_numeric($book['withinLibraryId'])) {
                 $this->httpStatusCode = 400; //bad request
@@ -109,38 +137,79 @@ class BooksApiController extends ApiController
             $collectionId = null;
             if (!isset($book['collectionid']) 
                 && isset($book['collectionName'])
-                && $collectionId = array_search($book['collectionName'], $collectionNames)
             ) {
-                $book['collectionId'] = $collectionId;
+                $collectionId = array_search($book['collectionName'], $collectionNames);
+                if (false === $collectionId) {
+                    //error: if the user submits a collectionName it MUST exist
+                    $nonExtantWithinLibraryIds[] = $withinLibraryId;
+                } else {
+                    $book['collectionId'] = $collectionId;
+                }
+            }
+            
+            if (isset($book['publicationId'])) {
+                $publicationIds[] = $book['publicationId'];
             }
             
             $receivedBooks[$withinLibraryId] = $book;
         }
         if (!empty($duplicateWithinLibraryIds)) {
             $this->httpStatusCode = 409; //conflict: https://www.restapitutorial.com/httpstatuscodes.html#conflict
-            $this->apiResponse['message'] = 'Repeated `withinLibraryId`s found. These can be found in the `withinLibraryId` key (array).';
+            $this->apiResponse['message'] = 'Repeated `withinLibraryId`s found. '
+                .'These can be found in the `withinLibraryId` key (array).';
             $this->apiResponse['withinLibraryId'] = $duplicateWithinLibraryIds;
+            return $this->createResponse();
+        }
+        if (!empty($nonExtantWithinLibraryIds)) {
+            $this->httpStatusCode = 400; //bad request
+            $this->apiResponse['message'] = 'Some records submitted refer to `collectionName`s that don\'t exist. '
+                .'These can be found in the `withinLibraryId` key (array).';
+            $this->apiResponse['withinLibraryId'] = $nonExtantWithinLibraryIds;
             return $this->createResponse();
         }
         
         //fetch records from the db of these withinLibraryId, this will tell us to update or create
-        $books = $table->searchBooks(['withinLibraryId' => $withinLibraryIds, 'libraryId' => $libraryId]);
+        $books = $table->queryObjects('book', ['withinLibraryId' => $withinLibraryIds, 'libraryId' => $libraryId]);
+//         $books = $table->searchBooks(['withinLibraryId' => $withinLibraryIds, 'libraryId' => $libraryId]);
+        
+        
+        $publications = [];
+        if (!empty($publicationIds)) {
+            $publicationsTable = $this->publicationsTable;
+            $publications = $publicationsTable->queryObjects('publication', ['publicationId' => $publicationIds]);
+        }
         
         //loop through data again:
-        $withinLibraryIdLookup = $table->getLibraryBookLookup($libraryId, true);
+        $withinLibraryIdLookup = $this->getLookupBookIdsByWithinLibraryId($books);
         $results = [];
         $toCreate = [];
         $errorRecords = [];
         $inputFilter = $this->getInputFilter();
+        $inputFilter->get('isActive')->getFilterChain()->getFilters()->toArray()[0]->setOptions(['null_defaults_to' => true]);
         foreach ($withinLibraryIds as $withinLibraryId) {
+            //if the user specified a publicationId, copy over that info
+            if (isset($receivedBooks[$withinLibraryId]['publicationId'])) {
+                $publicationId = (int)$receivedBooks[$withinLibraryId]['publicationId'];
+                if (isset($publications[$publicationId])) {
+                    $this->fillInPublicationInformation(
+                        $receivedBooks[$withinLibraryId],
+                        $publications[$publicationId],
+                        $inputFilter
+                        );
+                }
+            }
+            
             //update
             if (isset($withinLibraryIdLookup[$withinLibraryId])) {
                 $bookId = $withinLibraryIdLookup[$withinLibraryId];
+                
+                //merge incoming data with the data in the db
                 if (isset($books[$bookId])) {
                     //if update, add data fields to db fields and run them through inputFilter
                     $merged = array_merge($books[$bookId], $receivedBooks[$withinLibraryId]);
                 } else {
-                    throw new \Exception('We have a withinLibraryId lookup record, but we dont have the record.');
+                    throw new \Exception('We have a withinLibraryId lookup record, but we dont have the record: '
+                        .$withinLibraryId);
                 }
                 $merged['libraryId'] = $libraryId;
                 $inputFilter->setData($merged);
@@ -216,6 +285,45 @@ class BooksApiController extends ApiController
          *   }
          * ]}
          */
+    }
+    
+    protected function getLookupBookIdsByWithinLibraryId($books)
+    {
+        $lookup = [];
+        foreach ($books as $objectId => $object) {
+            if (isset($object['withinLibraryId']) && !isset($lookup[$object['withinLibraryId']])) {
+                $lookup[$object['withinLibraryId']] = $objectId;
+            }
+        }
+        return $lookup;
+    }
+    
+    /**
+     * 
+     * @param mixed[] $book
+     * @param mixed[] $publication
+     * @param InputFilter $inputFilter
+     */
+    protected function fillInPublicationInformation(&$book, $publication, $inputFilter)
+    {
+        foreach (self::PUBLICATION_TO_BOOK_FIELD_MAP as $publicationField => $bookField) {
+            if (isset($publication[$publicationField])) {
+                $value = $publication[$publicationField];
+                if ('datePublishedText' === $publicationField) {
+                    $value = substr($value, 0, 4);
+                }
+                if ($inputFilter->has($bookField) && !$inputFilter->get($bookField)->setValue($value)->isValid()) {
+                    //don't add the data if it's going to fail our input filter
+                    //@todo this would be interesting to log
+                    var_dump($publication['publicationId']);
+                    var_dump($publicationField);
+                    continue;
+                }
+                $book[$bookField] = $value;
+            }
+        }
+        
+        //no return, by ref
     }
     
     public function getLibraryId()

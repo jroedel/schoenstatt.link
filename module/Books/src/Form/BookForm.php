@@ -4,6 +4,8 @@ namespace Books\Form;
 use SionModel\Form\SionForm;
 use Zend\InputFilter\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
+use SionModel\Filter\ToBit;
+use Zend\Filter\ToInt;
 
 class BookForm extends SionForm implements InputFilterProviderInterface
 {
@@ -58,7 +60,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '300',
             ],
         ]);
-
+        
         $this->add([
             'name' => 'authors',
             'type' => 'Select',
@@ -71,6 +73,16 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'attributes' => [
                 'maxlength' => '500',
                 'multiple' => true,
+            ],
+        ]);
+        $this->add([
+            'name' => 'authorsText',
+            'type' => 'Text',
+            'options' => [
+                'label' => 'Author(s) [separated by `|`]',
+            ],
+            'attributes' => [
+                'maxlength' => '500',
             ],
         ]);
 
@@ -375,6 +387,9 @@ class BookForm extends SionForm implements InputFilterProviderInterface
         return [
             'libraryId' => [
                 'required' => true,
+                'filters' => [
+                    ['name' => ToInt::class],
+                ],
             ],
             'withinLibraryId' => [
                 'required' => true,
@@ -412,7 +427,20 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'authors' => [ //@todo add a validator
                 'required' => false,
                 'filters' => [
-                //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                    //                     ['name' => 'SionModel\Filter\TrimStringArray'],
+                ],
+            ],
+            'authorsText' => [
+                'required' => false,
+                'filters' => [
+                    ['name' => 'StripTags'],
+                    ['name' => 'StripNewlines'],
+                    ['name' => 'StringTrim'],
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
                 ],
             ],
             'callNumber' => [
@@ -502,6 +530,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
+                    ['name' => ToInt::class],
                 ],
             ],
             'category' => [
@@ -656,7 +685,12 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'isActive' => [
                 'required' => false,
                 'filters' => [
-                    ['name' => 'SionModel\Filter\ToBit']
+                    [
+                        'name' => ToBit::class,
+                        'options' => [
+                            'null_defaults_to' => true,
+                        ],
+                    ],
                 ],
             ],
             'inactivationReason' => [
@@ -665,7 +699,8 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripTags'],
                     ['name' => 'StripNewlines'],
                     ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
+                    [
+                        'name' => 'ToNull',
                         'options' => [
                             'type' => \Zend\Filter\ToNull::TYPE_STRING,
                         ]

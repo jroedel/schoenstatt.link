@@ -4,6 +4,7 @@ namespace Books\Service;
 use Zend\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Form\CheckoutForm;
+use Books\Model\LibraryTable;
 
 /**
  * @author Jeff Ro <webmaster@schoenstatt.link>
@@ -17,8 +18,8 @@ class CheckoutFormFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var \Books\Model\LibraryTable $table **/
-        $table = $container->get('Books\Model\LibraryTable');
+        /** @var LibraryTable $table **/
+        $table = $container->get(LibraryTable::class);
 
         /**
          * @var \Zend\Mvc\Application $application

@@ -832,7 +832,7 @@ ORDER BY `publisher`";
      */
     protected function preprocessBook($data, $entityData, $action)
     {
-        if (isset($data['authors'])) {
+        if (isset($data['authors']) && !isset($data['authorsText'])) {
             $data['authorsText'] = implode('|', $data['authors']);
         }
         
@@ -863,6 +863,7 @@ ORDER BY `publisher`";
                 'There must by a libraryId set to get the active library book lookup list.'
             );
         }
+        // @todo factor out use of this function
         $entities = $this->getUnlinkedBooks();
         $bookLookup = [];
         foreach ($entities as $bookId => $book) {
@@ -1135,10 +1136,12 @@ ORDER BY `publisher`";
         }
 
         //sort stats
-        foreach ($entities as $entityId => $entity) {
+        $entitiesIds = array_keys($entities);
+        foreach ($entitiesIds as $entityId) {
             ksort($entities[$entityId]['categoryStatistics']);
             ksort($entities[$entityId]['collectionCategoryStatistics']);
-            foreach ($entities[$entityId]['collectionCategoryStatistics'] as $collectionId => $categories) {
+            $collectionIds = array_keys($entities[$entityId]['collectionCategoryStatistics']);
+            foreach ($collectionIds as $collectionId) {
                 ksort($entities[$entityId]['collectionCategoryStatistics'][$collectionId]);
             }
         }
