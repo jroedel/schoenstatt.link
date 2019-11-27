@@ -67,7 +67,7 @@ class BooksApiController extends ApiController
         LibrariesApiController::jsonSerializeDateTimeObjects($objects);
         return new JsonModel([
             'items'         => $objects,
-        ], ['prettyPrint' => true]);
+        ]);//, ['prettyPrint' => true]);
     }
     
     public function get($id)
