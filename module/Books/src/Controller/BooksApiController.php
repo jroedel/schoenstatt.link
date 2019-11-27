@@ -62,6 +62,8 @@ class BooksApiController extends ApiController
     public function getList()
     {
         $params = $this->params()->fromQuery();
+        $libraryId = $this->params()->fromRoute('library_id');
+        $params['libraryId'] = $libraryId;
         $table = $this->libraryTable;
         $objects = array_values($table->searchBooks($params));
         LibrariesApiController::jsonSerializeDateTimeObjects($objects);
