@@ -18,6 +18,53 @@ use JTranslate\Model\TranslationsTable;
 
 class LibrariesController extends SionController
 {
+    public function sortDebuggingAction()
+    {
+        $libraryId = $this->params()->fromRoute('library_id');
+        $limit = (int)$this->params()->fromQuery('limit', 25);
+        if (!is_numeric($limit)) {
+            $limit = 10;
+        }
+        $params = $this->params()->fromQuery();
+        $params['libraryId'] = $libraryId;
+        
+        /** @var \Books\Model\LibraryTable $table */
+        $table = $this->getSionTable();
+        $library = $table->getObject('library', $libraryId);
+        $collectionIds = array_keys($library['options']->collections);
+        $collectionIds[] = null;
+        $objects = [];
+        foreach ($collectionIds as $collectionId) {
+            $theseParams = $params;
+            $theseParams['collectionId'] = $collectionId;
+            $objects[$collectionId] = $table->searchBooks($theseParams, ['limit' => $limit]);
+            $this->updateSortValues($objects[$collectionId]);
+        }
+//         $objects = call_user_func_array('array_merge', $objects);
+//         $objectsByCollectionId = $this->separateBooksByCollectionId($objects);
+        return new ViewModel([
+            'libraryOptions' => $library['options'],
+            'objects' => $objects, // $objectsByCollectionId,
+        ]);
+    }
+    
+    protected function updateSortValues(&$books)
+    {
+        foreach ($books as $key => $object) {
+            $books[$key]['sortText'] = $this->getSionTable()->getBookSortText($object);
+        }
+    }
+    
+    protected function separateBooksByCollectionId($books)
+    {
+        $collectionGroupings = [];
+        foreach ($books as $object) {
+            $collectionId = $object['collectionId'];
+            $collectionGroupings[$collectionId][$object['bookId']] = $object;
+        }
+        return $collectionGroupings;
+    }
+    
     public function showAction()
     {
         $view = parent::showAction();

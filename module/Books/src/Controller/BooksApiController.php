@@ -58,13 +58,6 @@ class BooksApiController extends ApiController
         $this->publicationsTable = $publicationsTable;
         $this->config = $config;
     }
-    
-    public function testAction()
-    {
-        $table = $this->publicationsTable;
-        $pub = $table->getObject('publication', 4449);
-        var_dump($pub);
-    }
 
     public function getList()
     {

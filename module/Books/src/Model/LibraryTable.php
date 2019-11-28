@@ -443,7 +443,7 @@ ORDER BY `publisher`";
         }
 
         // Prepare collectionId predicate
-        if (isset($query['collectionId'])) {
+        if (key_exists('collectionId', $query)) {
             $collectionIdClause = null;
             if (is_array($query['collectionId'])) {
                 $collections = [];
@@ -455,15 +455,17 @@ ORDER BY `publisher`";
                 if (count($collections) === 1) {
                     $query['collectionId'] = $collections[0];
                 } elseif (count($collections) > 1) {
-                    $collectionIdClause= new In($fieldMap['collectionId'], $collections);
+                    $collectionIdClause = new In($fieldMap['collectionId'], $collections);
                 }
             }
             if (is_numeric($query['collectionId'])) {
-                $collectionIdClause= new Operator(
+                $collectionIdClause = new Operator(
                     $fieldMap['collectionId'],
                     Operator::OPERATOR_EQUAL_TO,
                     $query['collectionId']
                 );
+            } elseif (null === $query['collectionId']) {
+                $collectionIdClause = new IsNull($fieldMap['collectionId']);
             }
             if (isset($collectionIdClause)) {
                 $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
@@ -608,6 +610,10 @@ ORDER BY `publisher`";
 
         //Set the where clause
         $select->where($where);
+        
+        if (isset($options['limit']) && is_numeric($options['limit'])) {
+            $select->limit($options['limit']);
+        }
 
         $results = $gateway->selectWith($select);
         $entities = [];
