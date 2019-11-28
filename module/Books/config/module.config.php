@@ -186,6 +186,13 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
+            'libraries/library/sort-debugging'   => [
+                'label' => "Sort text debugging",
+                'description' => 'Preview the results of the sort-text strings. This improves the order books appear in. For advanced users.',
+                'route_parameters' => [
+                    'library_id' => ':libraryId',
+                ],
+            ],
             'libraries/library/collections'   => [
                 'label' => "Configure library collections",
                 'description' => 'Collections within a library represent important physical separations within a library; configure them here. For advanced users.',
@@ -351,16 +358,6 @@ return [
         'routes' => [
             'api-v1' => [
                 'child_routes' => [
-                    'test' => [ //@todo delete this test code
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'      => '/test',
-                            'defaults'  => [
-                                'action'     => 'test',
-                                'controller' => \Books\Controller\BooksApiController::class,
-                            ],
-                        ],
-                    ],
                     'libraries' => [
                         'type'    => Segment::class,
                         'options' => [
@@ -933,6 +930,15 @@ return [
                                     'defaults' => [
                                         'controller' => Controller\CollectionsController::class,
                                         'action'     => 'index',
+                                    ],
+                                ],
+                            ],
+                            'sort-debugging' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/sort-debugging',
+                                    'defaults' => [
+                                        'action'     => 'sortDebugging',
                                     ],
                                 ],
                             ],
@@ -2750,6 +2756,7 @@ return [
                 ['route' => 'libraries/library/admin', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/data-problems', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/sort-debugging', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/collections', 'roles' => ['lib_user']],
                 ['route' => 'libraries/import', 'roles' => ['lib_user']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_user']],

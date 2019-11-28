@@ -1,0 +1,88 @@
+<?php use SionModel\Validator\RegularExpression;
+
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$headText = $this->translate('Sort text debugging');
+$this->headTitle($headText);
+
+/** @var \Books\Model\LibraryOptions $options */
+$options = $this->libraryOptions;
+$regexValidator = new RegularExpression();
+$libraryRegex = $options->callNumberRegex;
+if (!$regexValidator->isValid($libraryRegex)) {
+    $libraryRegex = null;
+}
+?>
+<h1><?= $headText ?></h1>
+<p>Currently the regex for processing call numbers for the <?= $this->escapeHtml($options->name)?>
+ library is `<strong><?= $this->escapeHtml($options->callNumberRegex) ?></strong>`</p>
+<p>The sort text print format is `<strong><?= $this->escapeHtml($options->sortTextFormat) ?></strong>`</p>
+
+<?php 
+$collections = $options->collections;
+if (isset($this->objects[""])) {
+    $collections[""] = null;
+}
+/** @var \Books\Model\CollectionOptions $collection */
+foreach ($collections as $key => $collection) :
+$books = isset($this->objects[$key]) ? $this->objects[$key] : [];
+if (isset($collection)):
+$regex = $collection->callNumberRegex;
+if (!$regexValidator->isValid($regex)) {
+    $regex = null;
+}
+?>
+<h3><?= $this->formatEntity('collection', $collection->getArrayCopy()) ?><?php ?></h3>
+<p>Call number regex: `<strong><?= $this->escapeHtml($collection->callNumberRegex)?></strong>`<?php 
+if (isset($collection->callNumberRegex) && !isset($regex)) {
+echo ' (INVALID)!';
+}?></p>
+<p>Sort text format: `<strong><?= $this->escapeHtml($collection->sortTextFormat)?></strong>`</p>
+<?php else:
+if (!isset($collection->callNumberRegex)) { //don't take on library regex if the collection one is invalid
+    $regex = $libraryRegex;
+}?>
+<h3>Books without collection:</h3>
+<?php endif;?>
+<?php if (!empty($books)):?>
+<div class="table-responsive">
+<table class="table">
+<thead>
+<tr>
+<th>Title</th>
+<th>Call number</th>
+<th>Detail</th>
+<th>Sort text</th>
+</tr>
+</thead>
+<tbody>
+<?php foreach ($books as $object) :
+$isMatch = false;
+$matches = null;
+if (isset($regex) && isset($object['callNumber'])) {
+    $isMatch = preg_match($regex, $object['callNumber'], $matches, PREG_OFFSET_CAPTURE, 0);
+    if ($isMatch) {
+        $easierReadMatches = [];
+        for ($i = 1; $i < count($matches); $i++) {
+            $easierReadMatches[] = $matches[$i][0];
+        }
+        $matches = $easierReadMatches;
+    }
+}?>
+<tr>
+<td><?= $this->formatEntity('book', $object)?></td>
+<td><?php echo $this->escapeHtml($object['callNumber']);
+if ($isMatch) {
+    echo '<span class="glyphicon glyphicon-ok"></span>';
+} elseif ($isMatch === 0) {
+    echo '<span class="glyphicon glyphicon-remove"></span>';
+}?></td>
+<td><?php print_r($matches); 
+?></td>
+<td><?= $this->escapeHtml($object['sortText']) ?></td>
+</tr>
+<?php endforeach;?>
+</tbody>
+</table>
+</div>
+<?php endif;
+endforeach;?>
