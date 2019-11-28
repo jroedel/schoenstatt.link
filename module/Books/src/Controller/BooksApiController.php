@@ -58,6 +58,13 @@ class BooksApiController extends ApiController
         $this->publicationsTable = $publicationsTable;
         $this->config = $config;
     }
+    
+    public function testAction()
+    {
+        $table = $this->publicationsTable;
+        $pub = $table->getObject('publication', 4449);
+        var_dump($pub);
+    }
 
     public function getList()
     {
@@ -172,8 +179,6 @@ class BooksApiController extends ApiController
         
         //fetch records from the db of these withinLibraryId, this will tell us to update or create
         $books = $table->queryObjects('book', ['withinLibraryId' => $withinLibraryIds, 'libraryId' => $libraryId]);
-//         $books = $table->searchBooks(['withinLibraryId' => $withinLibraryIds, 'libraryId' => $libraryId]);
-        
         
         $publications = [];
         if (!empty($publicationIds)) {
@@ -313,6 +318,8 @@ class BooksApiController extends ApiController
                 $value = $publication[$publicationField];
                 if ('datePublishedText' === $publicationField) {
                     $value = substr($value, 0, 4);
+                } elseif ('authorsText' === $publicationField) {
+                    $value = implode('|', $value);
                 }
                 if ($inputFilter->has($bookField) && !$inputFilter->get($bookField)->setValue($value)->isValid()) {
                     //don't add the data if it's going to fail our input filter
