@@ -36,12 +36,6 @@ class LibraryOptions implements ArraySerializableInterface
      */
     public $mainShowDisplay;
     /**
-     * A format string to be passed to sprintf to generate each book's sortText
-     * @see https://secure.php.net/manual/en/function.sprintf.php
-     * @var string $sortTextFormat
-     */
-    public $sortTextFormat;
-    /**
      * @todo Does the library use collections?
      * @var bool $useCollections
      */
@@ -57,34 +51,6 @@ class LibraryOptions implements ArraySerializableInterface
      * @var int $mainCollectionId
      */
     public $mainCollectionId;
-    /**
-     * @var bool $requireCallNumbers
-     */
-    public $requireCallNumbers = false;
-    /**
-     * Text to be set as placeholder for call numbers; won't be translated
-     * @var string $callNumberPlaceholder
-     */
-    public $callNumberPlaceholder;
-    /**
-     * Text to place below call number input field
-     * @var string $callNumberHelpText
-     */
-    public $callNumberHelpText;
-    /**
-     * @var string $callNumberExplanation
-     */
-    public $callNumberExplanation;
-    /**
-     * @todo The regular expression to parameterize the call number, especially for use with label lines
-     * @var string $callNumberRegex
-     */
-    public $callNumberRegex;
-    /**
-     * @todo Should the library enforce the call number regex while editing/importing/creating books?
-     * @var bool $enforceCallNumberRegex
-     */
-    public $enforceCallNumberRegex = false;
     /**
      * The ACL role to grant permission to open the checkout form
      * @var string $checkoutBooksRole

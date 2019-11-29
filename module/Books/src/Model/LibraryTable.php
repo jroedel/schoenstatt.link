@@ -122,6 +122,12 @@ class LibraryTable extends SionTable implements
                 .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
                 );
             $select->columns($columns);
+            $select->join(
+                'lib_collections',
+                'lib_collections.CollectionId = lib_books.collection_id',
+                ['CollectionName', 'Abbreviation'],
+                Select::JOIN_LEFT
+                );
             $select->order(['library_id', 'sort_text']);
         } elseif ('library' === $entity) {
             $entitySpec = $this->getEntitySpecification($entity);
@@ -762,10 +768,6 @@ ORDER BY `publisher`";
      */
     protected function processBookRow($row)
     {
-        static $collectionNames;
-        if (!isset($collectionNames)) {
-            $collectionNames = $this->getCollectionNames();
-        }
         $id = $this->filterDbId($row['book_id']);
         $libraryId = $this->filterDbId($row['library_id']);
         $authorsText = $row['author'];
@@ -775,13 +777,6 @@ ORDER BY `publisher`";
         $name = $authorsPrettyText . ($authorsText ? ' - ' : '') . $title;
         $isActive = $this->filterDbBool($row['is_active']);
         $collectionId = $this->filterDbId($row['collection_id']);
-        $collectionName = null;
-        if (isset($collectionId)
-            && isset($collectionNames)
-            && isset($collectionNames[$collectionId])
-        ) {
-            $collectionName = $collectionNames[$collectionId];
-        }
         $processedRow = [
             'bookId'                => $id,
             'collectionId'          => $collectionId,
@@ -825,7 +820,8 @@ ORDER BY `publisher`";
             'currentCheckoutId'     => $this->filterDbId($row['current_checkout_id']),
             'currentCheckout'       => null,
             'library'               => null,
-            'collectionName'        => $collectionName,
+            'collectionName'        => $row['CollectionName'],
+            'collectionAbbreviation'=> $row['Abbreviation'],
         ];
         return $processedRow;
     }

@@ -5,6 +5,8 @@ use Zend\Stdlib\ArraySerializableInterface;
 
 class CollectionOptions implements ArraySerializableInterface
 {
+    use SortTextAwarenessTrait;
+    
     /**
      * @var int $collectionId
      */
@@ -13,7 +15,6 @@ class CollectionOptions implements ArraySerializableInterface
      * @var int $libraryId
      */
     public $libraryId;
-
     /**
      * Instance of library options
      * @var LibraryOptions $library
@@ -33,38 +34,10 @@ class CollectionOptions implements ArraySerializableInterface
      */
     public $description;
     /**
-     * A format string to be passed to sprintf to generate each book's sortText
-     * @see https://secure.php.net/manual/en/function.sprintf.php
-     * @var string $sortTextFormat
-     */
-    public $sortTextFormat;
-    /**
-     * @var string $callNumberHelpText
-     */
-    public $callNumberHelpText;
-    /**
-     * @var string $callNumberExplanation
-     */
-    public $callNumberExplanation;
-    /**
      * What should be displayed on the index show page?
      * @var string $mainShowDisplay
      */
     public $mainShowDisplay;
-    /**
-     * @var bool $requireCallNumbers
-     */
-    public $requireCallNumbers = false;
-    /**
-     * @todo The regular expression to parameterize the call number, especially for use with label lines
-     * @var string $callNumberRegex
-     */
-    public $callNumberRegex;
-    /**
-     * @todo Should the library enforce the call number regex while editing/importing/creating books?
-     * @var bool $enforceCallNumberRegex
-     */
-    public $enforceCallNumberRegex = false;
     /**
      * The 3 label lines indicate how to format a label for the spine of a book
      * @var string $labelLine1
