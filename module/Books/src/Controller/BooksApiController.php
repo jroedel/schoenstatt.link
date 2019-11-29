@@ -8,6 +8,8 @@ use RestApi\Controller\ApiController;
 use Zend\View\Model\ModelInterface;
 use Books\Model\PublicationsTable;
 use Zend\InputFilter\InputFilter;
+use Books\Filter\SortText;
+use Zend\View\Model\ViewModel;
 
 class BooksApiController extends ApiController
 {
@@ -57,6 +59,18 @@ class BooksApiController extends ApiController
         $this->bookForm = $bookForm;
         $this->publicationsTable = $publicationsTable;
         $this->config = $config;
+    }
+    
+    public function testAction()
+    {
+        $filter = new SortText('/^([A-Zistnvap ]{3,12}|E\.S\.) (\d+), (\d+(?:[a-z]|-\d+)?)\.(\d+)$/u', 
+            '{collectionAbbreviation}%1$-8s%2$04d%3$03d%4$03d');
+        $table = $this->getLibraryTable();
+        $bookId = 38266;
+        $book = $table->getObject('book', $bookId);
+        $sortText = $filter->filter($book);//'ANT TEO 4, 1.2');
+        var_dump($sortText);
+        return new ViewModel();
     }
 
     public function getList()
