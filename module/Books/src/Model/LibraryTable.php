@@ -1103,6 +1103,7 @@ ORDER BY `publisher`";
 
         $entities = $this->getObjects('library');
         $books = $this->getUnlinkedBooks();
+        
         foreach ($books as $book) {
             if ($book['isActive'] && isset($book['libraryId']) && //don't do anything here with inactive books
                 isset($entities[$book['libraryId']])
@@ -1120,17 +1121,17 @@ ORDER BY `publisher`";
                     $category = $book['category'];
                 }
                 //statistics by category without respect for collections
-                if (!isset($entities[$book['libraryId']]['categoryStatistics'][$category])) {
+                if (!isset($entities[$libraryId]['categoryStatistics'][$category])) {
                     $entities[$libraryId]['categoryStatistics'][$category] = 1;
                 } else {
                     $entities[$libraryId]['categoryStatistics'][$category]++;
                 }
 
                 //statistics on 2 levels: collection, category
-                if (!isset($entities[$book['libraryId']]['collectionCategoryStatistics'][$collectionId])) {
+                if (!isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId])) {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId] = [];
                 }
-                if (!isset($entities[$book['libraryId']]['collectionCategoryStatistics'][$collectionId][$category])) {
+                if (!isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category])) {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category] = 1;
                 } else {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category]++;

@@ -43,8 +43,7 @@ if (!isset($collection->callNumberRegex)) { //don't take on library regex if the
     $regex = $libraryRegex;
 }?>
 <h3>Books without collection:</h3>
-<?php var_dump($this->filters[null]);
-endif;?>
+<?php endif;?>
 <?php if (!empty($books)):?>
 <div class="table-responsive">
 <table class="table">

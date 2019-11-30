@@ -131,7 +131,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 .'the collection abbreviation followed by the capture groups of the call number.',
             ],
             'attributes' => [
-                'placeholder' => '%1$s%2$-8s%3$04d%4$03d%5$03d',
+                'placeholder' => '{collectionAbbreviation}%1$06.2f{author}{title}%2$02d',
                 'maxlength' => '255',
             ],
         ]);
