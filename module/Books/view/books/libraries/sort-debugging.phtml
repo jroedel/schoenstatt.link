@@ -16,7 +16,7 @@ if (!$regexValidator->isValid($libraryRegex)) {
 <p>Currently the regex for processing call numbers for the <?= $this->escapeHtml($options->name)?>
  library is `<strong><?= $this->escapeHtml($options->callNumberRegex) ?></strong>`</p>
 <p>The sort text print format is `<strong><?= $this->escapeHtml($options->sortTextFormat) ?></strong>`</p>
-
+<p><a href="<?= $this->url('libraries/library/refresh-sort', [], [], true) ?>" class="btn btn-default">Refresh all library sort text</a></p>
 <?php 
 $collections = $options->collections;
 if (isset($this->objects[""])) {
@@ -37,12 +37,15 @@ if (isset($collection->callNumberRegex) && !isset($regex)) {
 echo ' (INVALID)!';
 }?></p>
 <p>Sort text format: `<strong><?= $this->escapeHtml($collection->sortTextFormat)?></strong>`</p>
+<?php var_dump($this->filters[$collection->collectionId]);?>
 <?php else:
 if (!isset($collection->callNumberRegex)) { //don't take on library regex if the collection one is invalid
     $regex = $libraryRegex;
 }?>
 <h3>Books without collection:</h3>
-<?php endif;?>
+<?php var_dump($this->filters[null]);
+
+endif;?>
 <?php if (!empty($books)):?>
 <div class="table-responsive">
 <table class="table">
@@ -78,7 +81,10 @@ if ($isMatch) {
 }?></td>
 <td><?php print_r($matches); 
 ?></td>
-<td><?= $this->escapeHtml($object['sortText']) ?></td>
+<td><?php if (isset($this->filters[$object['collectionId']])) {
+    $sortText = $this->filters[$object['collectionId']]->filter($object);
+    echo $this->escapeHtml($sortText);
+}?></td>
 </tr>
 <?php endforeach;?>
 </tbody>

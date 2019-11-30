@@ -34,17 +34,21 @@ class LibrariesController extends SionController
         $collectionIds = array_keys($library['options']->collections);
         $collectionIds[] = null;
         $objects = [];
+        $filters = [];
         foreach ($collectionIds as $collectionId) {
+            $filters[$collectionId] = $table->getCollectionSortTextFilter($collectionId, $libraryId);
             $theseParams = $params;
             $theseParams['collectionId'] = $collectionId;
             $objects[$collectionId] = $table->searchBooks($theseParams, ['limit' => $limit]);
-            $this->updateSortValues($objects[$collectionId]);
+//             $this->updateSortValues($objects[$collectionId]);
         }
+        $filters[null] = $table->getCollectionSortTextFilter(null, $libraryId);
 //         $objects = call_user_func_array('array_merge', $objects);
 //         $objectsByCollectionId = $this->separateBooksByCollectionId($objects);
         return new ViewModel([
             'libraryOptions' => $library['options'],
             'objects' => $objects, // $objectsByCollectionId,
+            'filters' => $filters,
         ]);
     }
     

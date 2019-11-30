@@ -7,9 +7,9 @@ class SortText extends PregReplace
 {
     const PARAMETER_TOKENS = [
         'collectionAbbreviation',
-        'inLanguage'
-        //@todo add author
-        //@todo add title
+        'inLanguage',
+        'author',
+        'title'
     ];
     protected $options = [
         'pattern'     => null,
@@ -54,18 +54,23 @@ class SortText extends PregReplace
             $regex = $this->getPattern();
             $matches = null;
 //             var_dump($matches);
-            if (!preg_match($regex, $callNumber, $matches)) {
+            if (0 == preg_match($regex, $callNumber, $matches)) {
                 return null;
+                var_dump("no match: `".$regex."` `".$callNumber."` count: ".mb_strlen($callNumber));
             }
             array_shift($matches);
+            //the regex may end with optional capture groups
+            while (count($matches) < $this->captureGroupCount) {
+                $matches[] = "";
+            }
         } else {
             $matches = [];
         }
         $additionalParams = $this->resolveMetaParametersToValues($book);
         $params = array_merge($matches, $additionalParams);
-//         var_dump($params);
         $format = $this->format;
         if (count($params) !== $this->formatParameterCount) {
+            //@todo log this. Think if we should maybe chop off extra params if we have more than necessary
             return null;
         }
         $result = vsprintf($format, $params);
@@ -74,19 +79,29 @@ class SortText extends PregReplace
     
     protected function resolveMetaParametersToValues($book)
     {
+        static $fourCharUCaseFilter;
+        if (!isset($fourCharUCaseFilter)) {
+            $fourCharUCaseFilter = new FourCharUCase();
+        }
         $paramNames = $this->parametersToAppendToRegexCaptureGroups;
 //         var_dump($paramNames);
         $results = [];
         foreach ($paramNames as $paramName) {
             switch ($paramName) {
-                case 'collectionAbbreviation':
+                case 'collectionAbbreviation': //@todo always 4 char
                     $results[] = isset($book['collectionAbbreviation']) ? $book['collectionAbbreviation'] : "";
                     break;
-                case 'inLanguage':
+                case 'inLanguage': //always 2 chars
                     $results[] = isset($book['inLanguage']) && is_array($book['inLanguage']) 
                         && isset($book['inLanguage'][0]) 
                         ? substr($book['inLanguage'][0], 0, 2)
                         : '';
+                    break;
+                case 'author': //always 3 chars
+                    $results[] = $fourCharUCaseFilter->filter($book['authorsText']);
+                    break;
+                case 'title': //always 3 chars
+                    $results[] = $fourCharUCaseFilter->filter($book['title']);
                     break;
                 default:
                     ;
@@ -122,14 +137,14 @@ class SortText extends PregReplace
         parent::setPattern($pattern);
         
         //check how many capturing groups there are in the regex group
-        $captureGroupCount = $this->countPatternCaptureGroups();
-//         var_dump($captureGroupCount);
+        $this->captureGroupCount = $this->countPatternCaptureGroups();
+//         var_dump($this->captureGroupCount);
         
         //do the replacements to calculate the format, and $parametersToAppendToRegexCaptureGroups
         $tokenRegex = '/\{([^}]*?)(?:\|([^}]+))?\}/';
         $sortTextFormatWithTokens = $this->getSortText();
         
-        $currentTokenNumber = $captureGroupCount + 1;
+        $currentTokenNumber = $this->captureGroupCount + 1;
         $matches = null;
         $offset = 0;
         $parametersToAppendToRegexCaptureGroups = [];
@@ -182,11 +197,11 @@ class SortText extends PregReplace
             throw new \Exception('Invalid sort text format, no capture groups set: '.$finalFormat);
         }
         $specialParams = count($parametersToAppendToRegexCaptureGroups);
-        $totalParameterCount = $specialParams + $captureGroupCount;
+        $totalParameterCount = $specialParams + $this->captureGroupCount;
         if ($totalParameterCount < $this->formatParameterCount) {
             throw new \Exception("The sort text format `$finalFormat` contains "
                 .$this->formatParameterCount
-                ." params, but we only have $captureGroupCount regex params and $specialParams special params.");
+                ." params, but we only have $this->captureGroupCount regex params and $specialParams special params.");
         }
 //         var_dump($finalFormat);
         $this->format = $finalFormat;
