@@ -83,11 +83,11 @@ class LibrariesController extends SionController
             return $view;
         }
         
-        /** @var LibraryTable $table */
+        /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
         $libraryId = $view->getVariable('entityId');
         $params = $this->params()->fromQuery();
-            $params['libraryId'] = $libraryId;
+        $params['libraryId'] = $libraryId;
         $form = $this->services[SearchForm::class];
         $form->setData($params);
         $books = null;
@@ -112,7 +112,9 @@ class LibrariesController extends SionController
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
 
-        $view->setVariable('entity', $table->getLibraries()[$libraryId]);
+        $object = $table->getLibraries()[$libraryId];
+        
+        $view->setVariable('entity', $object);
         $view->setVariable('publications', $this->getPublications());
         $view->setVariable('books', $books);
         $view->setVariable('borrowers', $borrowers);
