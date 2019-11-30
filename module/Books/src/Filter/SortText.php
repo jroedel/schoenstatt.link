@@ -8,17 +8,26 @@ class SortText extends PregReplace
     const PARAMETER_TOKENS = [
         'collectionAbbreviation',
         'inLanguage'
+        //@todo add author
+        //@todo add title
     ];
     protected $options = [
         'pattern'     => null,
         'sortText' => '',
     ];
     
+    //@todo move sortText out of $options
     /**
-     * Set together with the pattern
+     * The resolved printf format string without special parameters. Set together with the pattern
      * @var string $form
      */
     protected $format;
+    
+    /**
+     * The number of parameters in $format
+     * @var int $formatParameterCount
+     */
+    protected $formatParameterCount;
     
     protected $parametersToAppendToRegexCaptureGroups = [];
     
@@ -26,8 +35,10 @@ class SortText extends PregReplace
     
     public function __construct($pattern, $sortText)
     {
+        //the order is important
         $this->setSortText($sortText);
-        parent::__construct($pattern);
+        $this->setPattern($pattern);
+        mb_internal_encoding("UTF-8");
     }
     
     public function filter($book)
@@ -35,6 +46,7 @@ class SortText extends PregReplace
         if (!is_array($book)) {
             return null;
         }
+        //@todo make sure we have `format` and `parameters...`
 //         var_dump($book);
         $callNumber = $book['callNumber'];
         if (isset($callNumber) && is_string($callNumber)) {
@@ -52,15 +64,17 @@ class SortText extends PregReplace
         $additionalParams = $this->resolveMetaParametersToValues($book);
         $params = array_merge($matches, $additionalParams);
 //         var_dump($params);
-        $format = $this->getSortText();
-        array_unshift($params, $format);
-        $result = call_user_func_array('sprintf', $params);
+        $format = $this->format;
+        if (count($params) !== $this->formatParameterCount) {
+            return null;
+        }
+        $result = vsprintf($format, $params);
         return $result;
     }
     
     protected function resolveMetaParametersToValues($book)
     {
-        $paramNames = $this->getParametersToAppendToRegexCaptureGroups();
+        $paramNames = $this->parametersToAppendToRegexCaptureGroups;
 //         var_dump($paramNames);
         $results = [];
         foreach ($paramNames as $paramName) {
@@ -83,6 +97,25 @@ class SortText extends PregReplace
         return $results;
     }
     
+    /**
+     * 
+     * @param string $format
+     * @return number
+     */
+    protected function countPrintfParameters($format)
+    {
+        if (!isset($format) || !is_string($format)) {
+            return 0;
+        }
+        $re = '/%(?:\d+\$)?[-\ddfsu]+/';
+        
+        $matches = null;
+        if (!preg_match_all($re, $format, $matches)) {
+            return 0;
+        }
+        return count($matches[0]);
+    }
+    
     public function setPattern($pattern)
     {
         //this will check the validity of the pattern
@@ -101,14 +134,16 @@ class SortText extends PregReplace
         $offset = 0;
         $parametersToAppendToRegexCaptureGroups = [];
         $finalFormat = '';
-//         var_dump($sortTextFormatWithTokens);
+//         var_dump($sortTextFormatWithTokens.' len '.mb_strlen($sortTextFormatWithTokens));
         //loop through special tokens in the format string. Tokens may include their own printf formats
         while (preg_match($tokenRegex, $sortTextFormatWithTokens, $matches, PREG_OFFSET_CAPTURE, $offset)) {
             $tokenName = $matches[1][0];
+//             var_dump('matched: '.$matches[0][0]);
             $tokenPosition = $matches[0][1];
             $tokenLength = mb_strlen($matches[0][0]);
-            $newOffset = $offset + $tokenPosition + $tokenLength;
+            $newOffset = $tokenPosition + $tokenLength;
             if ($tokenPosition > $offset) { //we skipped over some stuff, fill in finalFormat
+//                 var_dump('Addingg: '.mb_substr($sortTextFormatWithTokens, $offset, $tokenPosition - $offset));
                 $finalFormat .= mb_substr($sortTextFormatWithTokens, $offset, $tokenPosition - $offset);
             }
             
@@ -128,18 +163,34 @@ class SortText extends PregReplace
                 $tokenFormat = '%'.$currentTokenNumber.'$s';
             }
             $currentTokenNumber++;
+//             var_dump('Adding: '.$tokenFormat);
             $finalFormat .= $tokenFormat;
+//             var_dump('new offset: '.$newOffset);
             $offset = $newOffset;
         }
-        
+//         var_dump('final offset: '.$offset);
         //fill in the stuff at the end of the string
         if (mb_strlen($sortTextFormatWithTokens) > $offset) {
-            $finalFormat .= mb_substr($sortTextFormatWithTokens, $offset, mb_strlen($sortTextFormatWithTokens) - $offset);
+//             var_dump($sortTextFormatWithTokens);
+//             var_dump('Addinggg '.(mb_strlen($sortTextFormatWithTokens) - $offset).' chars from '.$offset.': '.mb_substr($sortTextFormatWithTokens, $offset, mb_strlen($sortTextFormatWithTokens) - $offset));
+            $finalFormat .= substr($sortTextFormatWithTokens, $offset, mb_strlen($sortTextFormatWithTokens) - $offset);
+        }
+//         var_dump('final format: '.$finalFormat);
+        
+        $this->formatParameterCount = $this->countPrintfParameters($finalFormat);
+        if (0 === $this->formatParameterCount) {
+            throw new \Exception('Invalid sort text format, no capture groups set: '.$finalFormat);
+        }
+        $specialParams = count($parametersToAppendToRegexCaptureGroups);
+        $totalParameterCount = $specialParams + $captureGroupCount;
+        if ($totalParameterCount < $this->formatParameterCount) {
+            throw new \Exception("The sort text format `$finalFormat` contains "
+                .$this->formatParameterCount
+                ." params, but we only have $captureGroupCount regex params and $specialParams special params.");
         }
 //         var_dump($finalFormat);
-        
-        $this->setSortText($finalFormat);
-        $this->setParametersToAppendToRegexCaptureGroups($parametersToAppendToRegexCaptureGroups);
+        $this->format = $finalFormat;
+        $this->parametersToAppendToRegexCaptureGroups = $parametersToAppendToRegexCaptureGroups;
         
         return $this;
     }
@@ -176,18 +227,6 @@ class SortText extends PregReplace
         return $this->options['sortText'];
     }
 
-    public function getParametersToAppendToRegexCaptureGroups()
-    {
-        return $this->parametersToAppendToRegexCaptureGroups;
-    }
-    
-    public function setParametersToAppendToRegexCaptureGroups($parametersToAppendToRegexCaptureGroups)
-    {
-        if (!is_array($parametersToAppendToRegexCaptureGroups)) {
-            throw new \InvalidArgumentException('Argument must be an array');
-        }
-        $this->parametersToAppendToRegexCaptureGroups = $parametersToAppendToRegexCaptureGroups;
-    }
     /**
      * This function shouldn't be used
      */

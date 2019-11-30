@@ -63,12 +63,15 @@ class BooksApiController extends ApiController
     
     public function testAction()
     {
-        $filter = new SortText('/^([A-Zistnvap ]{3,12}|E\.S\.) (\d+), (\d+(?:[a-z]|-\d+)?)\.(\d+)$/u', 
-            '{collectionAbbreviation}%1$-8s%2$04d%3$03d%4$03d');
         $table = $this->getLibraryTable();
+//         $table->getCollectionSortTextFilter(1, 3);
+//         return new ViewModel();
+//         $filter = new SortText('/^([A-Zistnvap ]{3,12}|E\.S\.) (\d+), (\d+(?:[a-z]|-\d+)?)\.(\d+)$/u', 
+//             '{collectionAbbreviation}%1$-8s%2$04d%3$03d%4$03d');
         $bookId = 38266;
         $book = $table->getObject('book', $bookId);
-        $sortText = $filter->filter($book);//'ANT TEO 4, 1.2');
+        var_dump($book['callNumber']);
+        $sortText = $table->getBookSortText($book);//'ANT TEO 4, 1.2');
         var_dump($sortText);
         return new ViewModel();
     }

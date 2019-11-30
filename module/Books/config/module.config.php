@@ -952,6 +952,15 @@ return [
                                     ],
                                 ],
                             ],
+                            'refresh-sort' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/refresh-sort',
+                                    'defaults' => [
+                                        'action'     => 'refreshSort',
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                     'create' => [
@@ -2767,6 +2776,7 @@ return [
                 ['route' => 'libraries/library/data-problems', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list-json', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/sort-debugging', 'roles' => ['lib_user']],
+                ['route' => 'libraries/library/refresh-sort', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/collections', 'roles' => ['lib_user']],
                 ['route' => 'libraries/import', 'roles' => ['lib_user']],
                 ['route' => 'libraries/checkouts', 'roles' => ['lib_user']],
