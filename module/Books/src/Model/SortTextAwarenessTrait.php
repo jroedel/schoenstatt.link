@@ -57,6 +57,9 @@ trait SortTextAwarenessTrait
             $filter = new SortText($this->libraryOptions->callNumberRegex, $this->libraryOptions->sortTextFormat);
             return $filter;
         }
+        var_dump("no filter for ".$this->name);
+        var_dump($this->callNumberRegex);
+        var_dump($this->sortTextFormat);
         return null;
     }
 }
