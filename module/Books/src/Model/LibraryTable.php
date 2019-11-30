@@ -20,6 +20,7 @@ use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
 use Zend\Db\Sql\Predicate\IsNull;
 use Zend\Db\Sql\Predicate\IsNotNull;
+use Books\Filter\SortText;
 
 class LibraryTable extends SionTable implements
     ResourceProviderInterface,
@@ -1238,7 +1239,7 @@ ORDER BY `publisher`";
         ];
         
         //this assures we don't have different instances of libraryOption floating around, just one per library
-        $processedRow['options'] = isset($options[$id]) 
+        $processedRow['options'] = isset($options[$id])
             ? $options[$id]
             : ($options[$id] = new LibraryOptions($processedRow));
         
@@ -1246,6 +1247,11 @@ ORDER BY `publisher`";
             if ($collection['libraryId'] == $id) {
                 $collections[$collectionId] = &$collections[$collectionId];
                 $processedRow['options']->collections[$collectionId] = $collections[$collectionId]['options'];
+                //@todo fix
+                //set the libraryOptions of the collections
+                if (!isset($collections[$collectionId]['options']->libraryOptions)) {
+                    $collections[$collectionId]['options']->libraryOptions = $processedRow['options'];
+                }
             }
         }
         return $processedRow;
@@ -1287,8 +1293,22 @@ ORDER BY `publisher`";
         return $entities;
     }
     
+    public function refreshLibrarySort($libraryId)
+    {
+        $books = $this->queryObjects('book', ['libraryId' => $libraryId]);
+        $gateway = $this->getTableGateway('lib_books');
+        foreach ($books as $bookId => $book) {
+            $sortText = $this->getBookSortText($book);
+            $gateway->update(['sort_text' => $sortText], ['book_id' => $bookId]);
+        }
+    }
+    
     protected function processCollectionRow($row)
     {
+        static $options;
+        if (!is_array($options)) {
+            $options = [];
+        }
         $id = $this->filterDbId($row['CollectionId']);
         $libraryId = $this->filterDbId($row['LibraryId']);
         
@@ -1320,7 +1340,11 @@ ORDER BY `publisher`";
             
             'resourceId'            => 'library_'.$libraryId,
         ];
-        $processedRow['options'] = new CollectionOptions($processedRow);
+        if (isset($options[$id])) {
+            $processedRow['options'] = $options[$id];
+        } else {
+            $processedRow['options'] = $options[$id] = new CollectionOptions($processedRow);
+        }
         return $processedRow;
     }
     
@@ -1443,74 +1467,75 @@ ORDER BY `publisher`";
      */
     public function getBookSortText($book, $useNewCallNumber = false)
     {
-        static $libraries;
-        //if the regex works, it gets true, else, false
-        static $regexChecks = [];
-        if (!isset($libraries)) {
-            $libraries = $this->getObjects('library');
-        }
+        static $collectionLibraryFilters;
         $callNumber = $useNewCallNumber ? $book['newCallNumber'] : $book['callNumber'];
         if (!isset($callNumber)) {
             return null;
         }
         $libraryId = $book['libraryId'];
-        if (!isset($libraries[$libraryId])) {
-            return null;
-        }
-        /** @var LibraryOptions $libraryOptions */
-        $libraryOptions = $libraries[$libraryId]['options'];
-        $collectionOptions = null;
-        $regex = null;
-        if (isset($book['collectionId']) && isset($libraryOptions->collections[$book['collectionId']])) {
-            $collectionOptions = $libraryOptions->collections[$book['collectionId']];
-            $regex = $collectionOptions->callNumberRegex;
-        } else {
-            $regex = $libraryOptions->callNumberRegex;
-        }
-        if (!isset($regex)) {
-            return null;
-        }
-        // we've got some valid regex
-        if (!isset($regexChecks[$regex])) {
-            $regexChecks[$regex] = false !== @preg_match($regex, null);
-        }
-        if (!$regexChecks[$regex]) {
-            return null;
-        }
+        $collectionId = $book['collectionId'];
         
-        //params to pass to sprintf
-        $params = [];
-        
-        $matches = null;
-        $regexParams = [];
-        $result = preg_match($regex, $callNumber, $matches);
-        if (1 === $result) {
-            $regexParams = array_slice($matches, 1);
+        if (!is_array($collectionLibraryFilters)) {
+            $collectionLibraryFilters = [];
         }
-        
-        foreach (self::SORT_TEXT_FORMAT_PARAMETER_ORDER as $value) {
-            switch ($value) {
-                case self::SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION:
-                    $collectionAbbreviation = '';
-                    if (isset($collectionOptions)) {
-                        $collectionAbbreviation = $collectionOptions->abbreviation;
-                    }
-                    $params[] = $collectionAbbreviation;
-                    break;
-                case self::SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS:
-                    $params = array_merge($params, $regexParams);
-                    break;
+        if (!key_exists($libraryId, $collectionLibraryFilters)) {
+            $collectionLibraryFilters[$libraryId] = [];
+        }
+        if (!key_exists($collectionId, $collectionLibraryFilters[$libraryId])) {
+            try {
+                $collectionLibraryFilters[$libraryId][$collectionId] = $this->getCollectionSortTextFilter($collectionId, $libraryId);
+            } catch (\Exception $e) {
+                //@todo log this
+                //@todo also create a problem for getCollectionSortTextFilterthis
+                $collectionLibraryFilters[$libraryId][$collectionId] = null;
             }
         }
-        $format = '%1$s%2$-8s%3$04d%4$03d%5$03d';
-        if (count($params) >= 5) {
-            $return = vsprintf($format, $params);
-        } else {
-            $return = null;
+        if ($collectionLibraryFilters[$libraryId][$collectionId] instanceof SortText) {
+            $sortText = $collectionLibraryFilters[$libraryId][$collectionId]->filter($book);
+            return $sortText;
         }
-        return $return;
+        return null;
     }
-
+    
+    public function getCollectionSortTextFilter($collectionId, $libraryId)
+    {
+        static $libraries;
+        static $collections;
+        if (!isset($libraries)) {
+            /** @var \Books\Model\LibraryOptions $libraries */
+            $libraries = $this->getObjects('library');
+            $collectionArrays = [];
+            foreach ($libraries as $library) {
+                $collectionArrays[] = $library['options']->collections;
+            }
+            if (count($collectionArrays) > 1) {
+                $collections = call_user_func_array('array_merge', $collectionArrays);
+            }
+            $collections = $this->keyCollections($collections, 'collectionId', true);
+        }
+        
+        if (isset($collectionId) && isset($collections[$collectionId])) {
+            return $collections[$collectionId]->getSortTextFilter();
+        } elseif (isset($libraryId) && isset($libraries[$libraryId])) {
+            return $libraries[$libraryId]['options']->getSortTextFilter();
+        }
+        return null;
+    }
+    
+    /**
+     * Take an array of CollectionOptions and key the array by the collectionId
+     * @param CollectionOptions[] $collections
+     * @return CollectionOptions[]
+     */
+    protected function keyCollections($collections)
+    {
+        $results = [];
+        foreach ($collections as $object) {
+            $results[$object->collectionId] = $object;
+        }
+        return $results;
+    }
+    
     /**
      * @todo factor out
      * @return mixed[]

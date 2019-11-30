@@ -5,6 +5,8 @@ use Zend\Stdlib\ArraySerializableInterface;
 
 class LibraryOptions implements ArraySerializableInterface
 {
+    use SortTextAwarenessTrait;
+    
     const DEFAULT_CHECKOUT_PERSON_LIST_KIND = 'all-borrowers';
     /**
      * @var int $libraryId

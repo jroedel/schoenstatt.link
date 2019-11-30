@@ -1,6 +1,8 @@
 <?php
 namespace Books\Model;
 
+use Books\Filter\SortText;
+
 trait SortTextAwarenessTrait
 {
     /**
@@ -38,8 +40,23 @@ trait SortTextAwarenessTrait
      */
     public $enforceCallNumberRegex = false;
     
+    /**
+     * Get a filter for formulating sort text strings from a book object
+     * @return \Books\Filter\SortText|NULL
+     */
     public function getSortTextFilter()
     {
-        
+        if (isset($this->callNumberRegex) && isset($this->sortTextFormat)) {
+            return new SortText($this->callNumberRegex, $this->sortTextFormat);
+        } elseif (property_exists($this, 'libraryOptions') 
+            && isset($this->libraryOptions)
+            && $this->libraryOptions instanceof LibraryOptions
+            && $this->libraryOptions->callNumberRegex
+            && $this->libraryOptions->sortTextFormat
+        ) {
+            $filter = new SortText($this->libraryOptions->callNumberRegex, $this->libraryOptions->sortTextFormat);
+            return $filter;
+        }
+        return null;
     }
 }

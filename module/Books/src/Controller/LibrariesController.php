@@ -48,6 +48,13 @@ class LibrariesController extends SionController
         ]);
     }
     
+    public function refreshSortAction()
+    {
+        $libraryId = $this->params()->fromRoute('library_id');
+        $table = $this->getSionTable()->refreshLibrarySort($libraryId);
+        return new ViewModel([]);
+    }
+    
     protected function updateSortValues(&$books)
     {
         foreach ($books as $key => $object) {
