@@ -32,6 +32,36 @@ return [
     ],
     'router' => [
         'routes' => [
+            'todays-reading-audio' => [
+                'type'    => Literal::class,
+                'options' => [
+                    'route'    => '/todays-reading-audio',
+                    'defaults' => [
+                        'controller' => Controller\BibleController::class,
+                        'action'     => 'todaysReadingAudio',
+                    ],
+                ],
+            ],
+            'tomorrows-reading-audio' => [
+                'type'    => Literal::class,
+                'options' => [
+                    'route'    => '/tomorrows-reading-audio',
+                    'defaults' => [
+                        'controller' => Controller\BibleController::class,
+                        'action'     => 'tommorowsReadingAudio',
+                    ],
+                ],
+            ],
+            'sundays-reading-audio' => [
+                'type'    => Literal::class,
+                'options' => [
+                    'route'    => '/sundays-reading-audio',
+                    'defaults' => [
+                        'controller' => Controller\BibleController::class,
+                        'action'     => 'sundaysReadingAudio',
+                    ],
+                ],
+            ],
             'dh' => [
                 'type'    => Literal::class,
                 'options' => [
@@ -577,6 +607,9 @@ return [
                 ['route' => 'dh/import', 'roles' => ['bib_administrator']],
                 ['route' => 'dh/page', 'roles' => ['bib_user']],
                 ['route' => 'dh/number', 'roles' => ['bib_user']],
+                ['route' => 'todays-reading-audio', 'roles' => ['guest', 'user']],
+                ['route' => 'tomorrows-reading-audio', 'roles' => ['guest', 'user']],
+                ['route' => 'sundays-reading-audio', 'roles' => ['guest', 'user']],
             ],
         ],
     ],

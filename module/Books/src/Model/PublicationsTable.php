@@ -45,7 +45,7 @@ class PublicationsTable extends SionTable
     /**
      * @var array $publicationsMemoryCache
      */
-//     protected $unlinkedPublicationsMemoryCache = [];
+    protected $unlinkedPublicationsMemoryCache = [];
 
     public function getAuthorsValueOptions()
     {
@@ -553,6 +553,18 @@ ORDER BY `Publisher`";
     {
         static $categories;
         static $swFilter;
+//         static $count;
+//         if (!isset($count)) {
+//             $count = 0;
+//             var_dump(memory_get_peak_usage(false));
+//             var_dump($count);
+//         }
+//         $count++;
+//         if ($count % 100 === 0) {
+//             var_dump(memory_get_peak_usage(false));
+//             var_dump($count);
+//         }
+        
         $id = $this->filterDbId($row['PublicationId']);
         
 //         if (isset($this->unlinkedPublicationsMemoryCache[$id])) {
@@ -631,25 +643,17 @@ ORDER BY `Publisher`";
             || isset($copyrightYear)
             || isset($datePublishedText)
         ) {
-            $extraInfo = '';
+            $extraInfoParts = [];
             if (isset($bookEdition)) {
-                $extraInfo = $bookEdition;
+                $extraInfoParts[] = $bookEdition;
             }
             if (isset($datePublishedText)) {
-                if ('' === $extraInfo) {
-                    $extraInfo = $datePublishedText;
-                } else {
-                    $extraInfo .= (", ".$datePublishedText);
-                }
+                $extraInfoParts[] = $datePublishedText;
             } elseif (isset($copyrightYear)) {
-                if ('' === $extraInfo) {
-                    $extraInfo = (string)$copyrightYear;
-                } else {
-                    $extraInfo .= (", ".(string)$copyrightYear);
-                }
+                $extraInfoParts[] = (string)$copyrightYear;
             }
-            if (strlen($extraInfo) > 0) {
-                $disambiguatingTitle = "$disambiguatingTitle [$extraInfo]";
+            if (count($extraInfoParts) > 0) {
+                $disambiguatingTitle .= " [".implode(', ', $extraInfoParts)."]";
             }
         }
 

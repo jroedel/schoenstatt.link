@@ -13,6 +13,50 @@ use voku\helper\UTF8;
 
 class BibleController extends SionController
 {
+    public function todaysReadingAudioAction()
+    {
+        $date = new \DateTime();
+        $url = $this->getReadingUrlForDate($date);
+        return $this->redirect()->toUrl($url);
+    }
+    
+    public function tomorrowsReadingAudioAction()
+    {
+        $date = new \DateTime();
+        $date->add(new \DateInterval('P1D'));
+        $url = $this->getReadingUrlForDate($date);
+        return $this->redirect()->toUrl($url);
+    }
+    
+    public function sundaysReadingAudioAction()
+    {
+        $date = new \DateTime();
+        $count = 0;
+        while (0 != $date->format("w") && $count < 7) {
+            $date->add(new \DateInterval('P1D'));
+            $count++;
+        }
+        $url = $this->getReadingUrlForDate($date);
+        return $this->redirect()->toUrl($url);
+    }
+    
+    /**
+     * Converts a DateTime object into a URL for readings from the USCCB
+     * For example, Dec 31, 2019 is transformed into
+     * http://ccc.usccb.org/cccradio/NABPodcasts/2019/19_12_31.mp3
+     * @param \DateTime $date
+     * @return string
+     */
+    public function getReadingUrlForDate(\DateTime $date)
+    {
+        $url = "http://ccc.usccb.org/cccradio/NABPodcasts/"
+            . date_format($date, "Y")
+            . "/"
+            . date_format($date, "y_m_d")
+            . ".mp3";
+        return $url;
+    }
+    
     /**
      * Routing currently doesn't allow access to this action @todo revise this function
      * {@inheritDoc}
