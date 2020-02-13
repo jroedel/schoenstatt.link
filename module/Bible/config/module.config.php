@@ -48,7 +48,7 @@ return [
                     'route'    => '/tomorrows-reading-audio',
                     'defaults' => [
                         'controller' => Controller\BibleController::class,
-                        'action'     => 'tomorrowsReadingAudio',
+                        'action'     => 'tommorrowsReadingAudio',
                     ],
                 ],
             ],
