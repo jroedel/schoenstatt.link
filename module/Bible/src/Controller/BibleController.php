@@ -20,7 +20,7 @@ class BibleController extends SionController
         return $this->redirect()->toUrl($url);
     }
     
-    public function tomorrowsReadingAudioAction()
+    public function tommorrowsReadingAudioAction()
     {
         $date = new \DateTime();
         $date->add(new \DateInterval('P1D'));
