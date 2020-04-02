@@ -2898,7 +2898,7 @@ return [
                 ['route' => 'music/create-composition', 'roles' => ['sch_user']],
                 ['route' => 'music/import', 'roles' => ['administrator']],
                 
-                ['route' => 'events', 'roles' => ['user']],
+                ['route' => 'events', 'roles' => ['user', 'guest']],
             ],
         ],
     ],
