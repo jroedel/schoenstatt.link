@@ -135,7 +135,6 @@ class EventTextTable extends SionTable implements
             'startDatePrecision'    => $row['StartDatePrecision'],
             'duration'              => $this->filterDbInt($row['Duration']),
             'durationUnit'          => $row['DurationUnit'],
-            'accuracy'              => $row['Accuracy'],
             'bestTextQuality'       => $row['BestTextQuality'],
             'tags'                  => $row['Tags'],
             'adminTags'             => $row['AdminTags'],

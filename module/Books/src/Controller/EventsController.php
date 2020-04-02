@@ -5,10 +5,44 @@ use SionModel\Controller\SionController;
 use Zend\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\EventsSearchForm;
+use Books\Model\EventTextTable;
+use Books\Filter\KentenichPeriodFromDate;
 
 class EventsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 150;
+    
+    public function indexAction()
+    {
+        $table = $this->getSionTable();
+        $objects = $table->queryObjects('event');
+        $periods = $this->groupEventsByEpochAndYear($objects);
+        
+        return new ViewModel([
+            'objects' => $objects,
+            'periods' => $periods,
+        ]);
+    }
+    
+    public function groupEventsByEpochAndYear(array $eventObjects)
+    {
+        $periods = [];
+        /** @var EventTextTable $table */
+        $table = $this->getSionTable();
+        $periodFilter = new KentenichPeriodFromDate();
+        foreach ($eventObjects as $object) {
+            $period = $periodFilter->filter($object['startDate']);
+            if (!isset($periods[$period])) {
+                $periods[$period] = [];
+            }
+            $year = $object['startDate']->format('Y');
+            if (!isset($periods[$period][$year])) {
+                $periods[$period][$year] = [];
+            }
+            $periods[$period][$year][$object['eventId']] = $object;
+        }
+        return $periods;
+    }
     
     public function searchAction()
     {

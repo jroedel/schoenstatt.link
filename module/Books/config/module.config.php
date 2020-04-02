@@ -1336,7 +1336,7 @@ return [
                     'route'    => '/timeline',
                     'defaults' => [
                         'controller' => Controller\EventsController::class,
-                        'action' => 'search',
+                        'action' => 'index',
                     ],
                 ],
                 'may_terminate' => true,
@@ -1712,7 +1712,7 @@ return [
                     'abbreviationPt' => 'AbbreviationPt',
                     'abbreviationIt' => 'AbbreviationIt',
                     'abbreviationFr' => 'AbbreviationFr',
-                    'aclResourcesId' => 'AclResourcesId',
+                    'aclResourceId' => 'AclResourceId',
                     'url1' => 'Url1',
                     'url1Label' => 'Url1Label',
                     'url2' => 'Url2',
@@ -2897,6 +2897,8 @@ return [
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'music/create-composition', 'roles' => ['sch_user']],
                 ['route' => 'music/import', 'roles' => ['administrator']],
+                
+                ['route' => 'events', 'roles' => ['user']],
             ],
         ],
     ],
