@@ -1330,6 +1330,78 @@ return [
                     ],
                 ],
             ],
+            'events' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/timeline',
+                    'defaults' => [
+                        'controller' => Controller\EventsController::class,
+                        'action' => 'search',
+                    ],
+                ],
+                'may_terminate' => true,
+                'child_routes' => [
+                    'create' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/create',
+                            'defaults' => [
+                                'controller' => Controller\EventsController::class,
+                                'action'     => 'create',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'event' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
+                            '/^$'
+                            ),
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\EventsController::class,
+                        'action'     => 'show',
+                    ],
+                ],
+            ],
+            'event-edit' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/edit',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\EventsController::class,
+                        'action'     => 'edit',
+                    ],
+                ],
+            ],
+            'event-delete' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/delete',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
+                            '/^$'
+                            ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\EventsController::class,
+                        'action'     => 'delete',
+                    ],
+                ],
+            ],
             'blog' => [
                 'type' => Literal::class,
                 'options' => [
@@ -1542,9 +1614,10 @@ return [
                 'controller_services'                       => [],
                 'entity_key_field'                          => 'eventId',
                 'sion_model_class'                          => Model\EventTextTable::class,
-                'get_object_function'                       => 'getEvent',
-                'get_objects_function'                      => 'getEvents',
-                //                 'format_view_helper'                        => 'formatEvent',
+                'row_processor_function'                    => 'processEventRow',
+//                 'get_object_function'                       => 'getEvent',
+//                 'get_objects_function'                      => 'getEvents',
+//                 'format_view_helper'                        => 'formatEvent',
                 'required_columns_for_creation'             => [
                     'startDate',
                     'durationInDays',
@@ -1553,21 +1626,21 @@ return [
                 'name_field'                                => 'titleEn',
                 'name_field_is_translateable'               => false,
                 'country_field'                             => 'country',
-                //                 'text_columns'                              => [],
+//                 'text_columns'                              => [],
 //                 'many_to_one_update_columns'                => [
-    //                     'email'    => 'contactInfo',
-    //                     'cell'    => 'contactInfo',
-    //                 ],
+//                     'email'    => 'contactInfo',
+//                     'cell'    => 'contactInfo',
+//                 ],
                 'report_changes'                            => true,
                 'index_route'                               => 'events',
                 'index_template'                            => 'books/events/index',
                 'default_route_key'                         => 'association_id',
-                //                 'show_action_template'                      => 'project/events/show',
+//                 'show_action_template'                      => 'project/events/show',
                 'show_route'                                => 'events/event',
                 'show_route_key'                            => 'event_id',
                 'show_route_key_field'                      => 'eventId',
-                //'edit_action_form'                          => Form\EditEventForm::class,
-                //                 'edit_action_template'                      => 'project/events/edit',
+//                 'edit_action_form'                          => Form\EditEventForm::class,
+//                 'edit_action_template'                      => 'project/events/edit',
                 'edit_route'                                => 'events/event/edit',
                 'edit_route_key'                            => 'event_id',
                 'edit_route_key_field'                      => 'eventId',
@@ -1592,11 +1665,11 @@ return [
                 'delete_action_redirect_route'              => 'events',
 
                 'acl_resource_id_field'                     => 'aclResourcesId',
-                'acl_show_permission'                       => 'show',
-                'acl_edit_permission'                       => 'edit',
-                'acl_suggest_permission'                    => 'suggest',
-                'acl_moderate_permission'                   => 'moderate',
-                'acl_delete_permission'                     => 'delete',
+//                 'acl_show_permission'                       => 'show',
+//                 'acl_edit_permission'                       => 'edit',
+//                 'acl_suggest_permission'                    => 'suggest',
+//                 'acl_moderate_permission'                   => 'moderate',
+//                 'acl_delete_permission'                     => 'delete',
 
                 'update_columns'                            => [
                     'eventId' => 'EventId',
@@ -1604,19 +1677,32 @@ return [
                     'titleEs' => 'TitleEs',
                     'titleDe' => 'TitleDe',
                     'titlePt' => 'TitlePt',
+                    'titleIt' => 'TitleIt',
                     'titleFr' => 'TitleFr',
+                    'zoom' => 'Zoom',
                     'country' => 'Country',
+                    'place' => 'Place',
                     'originalLanguage' => 'OriginalLanguage',
+                    'slugEn' => 'SlugEn',
+                    'slugEs' => 'SlugEs',
+                    'slugDe' => 'SlugDe',
+                    'slugPt' => 'SlugPt',
+                    'slugIt' => 'SlugIt',
+                    'slugFr' => 'SlugFr',
+                    'wikidataSubjectId' => 'WikidataSubjectId',
+                    'wikidataPropertyId' => 'WikidataPropertyId',
+                    'wikidataLinkByDefault' => 'WikidataLinkByDefault',
                     'descriptionEn' => 'DescriptionEn',
                     'descriptionEs' => 'DescriptionEs',
                     'descriptionDe' => 'DescriptionDe',
                     'descriptionPt' => 'DescriptionPt',
+                    'descriptionIt' => 'DescriptionIt',
                     'descriptionFr' => 'DescriptionFr',
                     'startDate' => 'StartDate',
-                    'durationInDays' => 'DurationInDays',
-                    'accuracy' => 'Accuracy',
+                    'startDatePrecision' => 'StartDatePrecision',
+                    'duration' => 'Duration',
+                    'durationUnit' => 'DurationUnit',
                     'bestTextQuality' => 'BestTextQuality',
-                    'place' => 'Place',
                     'tags' => 'Tags',
                     'adminTags' => 'AdminTags',
                     'audienceText' => 'AudienceText',
@@ -1624,8 +1710,15 @@ return [
                     'abbreviationEs' => 'AbbreviationEs',
                     'abbreviationDe' => 'AbbreviationDe',
                     'abbreviationPt' => 'AbbreviationPt',
+                    'abbreviationIt' => 'AbbreviationIt',
                     'abbreviationFr' => 'AbbreviationFr',
                     'aclResourcesId' => 'AclResourcesId',
+                    'url1' => 'Url1',
+                    'url1Label' => 'Url1Label',
+                    'url2' => 'Url2',
+                    'url2Label' => 'Url2Label',
+                    'url3' => 'Url3',
+                    'url3Label' => 'Url3Label',
                     'publicNotes' => 'PublicNotes',
                     'publicNotesUpdatedOn' => 'PublicNotesUpdatedOn',
                     'publicNotesUpdatedBy' => 'PublicNotesUpdatedBy',
