@@ -20,6 +20,7 @@ class BookList extends AbstractFilter
         }
         $re = '/\d{5,5}/';
 
+        $matches = null;
         preg_match_all($re, $value, $matches, PREG_PATTERN_ORDER, 0);
 
         return $matches[0];

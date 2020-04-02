@@ -2128,6 +2128,7 @@ WHERE 1";
 
     protected function whichKentenichPeriod($date)
     {
+        //@todo validate input
         if (null === $date) {
             return null;
         }
