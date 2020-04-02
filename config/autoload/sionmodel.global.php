@@ -13,6 +13,10 @@ if ($inDevelopment) {
 
 return [
     'sion_model' => [
+        /**
+         * An AuthenticationServiceInterface instance to be fetched from service manager
+         */
+        'default_authentication_service' => 'zfcuser_auth_service',
         //config for Content Security Policy
         'csp_config' => [
             //https://csp-evaluator.withgoogle.com
