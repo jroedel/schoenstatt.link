@@ -31,8 +31,9 @@ class AssociationsController extends SionController
                 $response->setStatusCode(301);
                 return $response;
             }
-        } elseif (isset($swId)) {
-            $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier('association');
+        } elseif (isset($swId) && is_string($swId)) {
+            $usePreApril2020Format = strlen($swId) === 8;
+            $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier('association', $usePreApril2020Format);
             //we can assume this will work because of the parameter constraints on the route
             $id = $swFilter->filter($swId);
             $object = $this->getEntityObject($id);

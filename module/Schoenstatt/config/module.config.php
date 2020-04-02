@@ -1339,7 +1339,7 @@ return [
                         'options' => [
                             'route'    => '/:sw_id',
                             'constraints' => [
-                                'sw_id' => 'SL[0-9]{1,5}A',
+                                'sw_id' => 'SL1[0-9]{4,5}A',
                             ],
                             'defaults' => [
                                 'action'     => 'sendToNewUrl',
@@ -1405,7 +1405,7 @@ return [
                             'route'    => '/associations[/:sw_id]',
                             'defaults' => [
                                 'action' => null,
-                                'controller' => Controller\AssociationsApiController::class,
+                                'controller' => Controller\AssociationsApiV1Controller::class,
                             ],
                             'constraints' => [
                                 'sw_id' => 'SL[12][0-9]{4,4}A',
@@ -1417,7 +1417,7 @@ return [
                         'options' => [
                             'route'    => '/associations/findByKind',
                             'defaults' => [
-                                'controller' => Controller\AssociationsApiController::class,
+                                'controller' => Controller\AssociationsApiV1Controller::class,
                                 'action'     => 'findByKind',
                             ],
                         ],
@@ -1427,7 +1427,7 @@ return [
                         'options' => [
                             'route'    => '/associations/findByKindMd5',
                             'defaults' => [
-                                'controller' => Controller\AssociationsApiController::class,
+                                'controller' => Controller\AssociationsApiV1Controller::class,
                                 'action'     => 'findByKindMd5',
                             ],
                         ],
@@ -1437,7 +1437,64 @@ return [
                         'options' => [
                             'route'    => '/associations/shrines.json',
                             'defaults' => [
-                                'controller' => Controller\AssociationsApiController::class,
+                                'controller' => Controller\AssociationsApiV1Controller::class,
+                                'action'     => 'shrinesJson',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'api-v2' => [
+                'type'    => Literal::class,
+                'options' => [
+                    // Change this to something specific to your module
+                    'route'    => '/api/v2',
+                    'defaults' => [
+                        'controller'    => Controller\SchoenstattController::class,
+                        'action' => 'v2',
+                    ],
+                ],
+                'may_terminate' => false,
+                'child_routes' => [
+                    'associations' => [
+                        'type'    => Segment::class,
+                        'options' => [
+                            'route'    => '/associations[/:sw_id]',
+                            'defaults' => [
+                                'action' => null,
+                                'controller' => Controller\AssociationsApiV2Controller::class,
+                            ],
+                            'constraints' => [
+                                'sw_id' => 'SL1[0-9]{5,5}A',
+                            ],
+                        ],
+                    ],
+                    'find-by-kind' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/associations/findByKind',
+                            'defaults' => [
+                                'controller' => Controller\AssociationsApiV2Controller::class,
+                                'action'     => 'findByKind',
+                            ],
+                        ],
+                    ],
+                    'find-by-kind-md5' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/associations/findByKindMd5',
+                            'defaults' => [
+                                'controller' => Controller\AssociationsApiV2Controller::class,
+                                'action'     => 'findByKindMd5',
+                            ],
+                        ],
+                    ],
+                    'shrines-json' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/associations/shrines.json',
+                            'defaults' => [
+                                'controller' => Controller\AssociationsApiV2Controller::class,
                                 'action'     => 'shrinesJson',
                             ],
                         ],
@@ -2020,6 +2077,11 @@ return [
                 ['route' => 'api-v1/find-by-kind', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/find-by-kind-md5', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/shrines-json', 'roles' => ['guest', 'user', null]],
+                
+                ['route' => 'api-v2/associations', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v2/find-by-kind', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v2/find-by-kind-md5', 'roles' => ['guest', 'user', null]],
+                ['route' => 'api-v2/shrines-json', 'roles' => ['guest', 'user', null]],
             ],
         ],
     ],

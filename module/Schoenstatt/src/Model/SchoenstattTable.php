@@ -486,6 +486,7 @@ class SchoenstattTable extends SionTable implements
     protected function processAssociationRow($row)
     {
         static $swFilter;
+        static $swOldFilter;
         static $twitterUrlPattern;
         static $instagramUrlPattern;
         static $googlePlacePattern;
@@ -517,7 +518,11 @@ class SchoenstattTable extends SionTable implements
         if (!isset($swFilter)) {
             $swFilter = new ToSchoenstattLinkIdentifier('association');
         }
+        if (!isset($swOldFilter)) {
+            $swOldFilter = new ToSchoenstattLinkIdentifier('association', true);
+        }
         $identifier = $swFilter->filter($id);
+        $identifierPreApril2020 = $swOldFilter->filter($id);
 
         //process URLs
         $unprocessedUrls = [
@@ -811,6 +816,7 @@ class SchoenstattTable extends SionTable implements
         }
         
         $parentId = $this->filterDbId($row['Parent']);
+        //@todo this shouldn't go here
         $parentJsonId = "https://schoenstatt.link/en/associations/"
             .(isset($parentId) ? $swFilter->filter($parentId) : null);
         
@@ -841,6 +847,7 @@ class SchoenstattTable extends SionTable implements
         $processedRow = [
             'associationId'         => $id,
             'identifier'            => $identifier,
+            'identifierPreApril2020'=> $identifierPreApril2020,
             'name'                  => $name, //non-translated field
             'overrideNameFormat'    => $overrideNameFormat,
             'internalName'          => $internalName, //non-translated field
@@ -930,6 +937,7 @@ class SchoenstattTable extends SionTable implements
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             
+            //@todo add V2 Jsons
             'schemaOrgJsonMd5V1En'  => $row['SchemaOrgJsonMd5V1En'],
             'schemaOrgJsonMd5V1Es'  => $row['SchemaOrgJsonMd5V1Es'],
             'schemaOrgJsonMd5V1Pt'  => $row['SchemaOrgJsonMd5V1Pt'],
@@ -943,8 +951,7 @@ class SchoenstattTable extends SionTable implements
                 'it_IT' => $row['SchemaOrgJsonMd5V1It'],
             ],
             'slugByLocale' => $slugByLocale,
-            //@todo do the URL better, also, this url format is deprecated
-            'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
+//             'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
             'nameByLocale'          => $namesByLocale, //should never be null
             'internalNameByLocale'  => $internalNameByLocale, //should never be null
             'publicNotesByLocale'   => $publicNotesByLocale,
@@ -958,7 +965,7 @@ class SchoenstattTable extends SionTable implements
             'needTranslationCount'  => $needTranslationCount,
             'hasTranslationCount'   => $hasTranslationCount,
             'dataScore'             => $score,
-            'photos'                => $photos
+            'photos'                => $photos,
         ];
         return $processedRow;
     }
@@ -1016,9 +1023,10 @@ class SchoenstattTable extends SionTable implements
             $locale = $this->getLocale();
         }
         $schema = new $schemaType;
+        $jsonId = "https://schoenstatt.link/en/associations/".$object['identifierPreApril2020'];
         //@id
-        $schema->setProperty('@id', $object['jsonId']);
-        $schema->setProperty('url', $object['jsonId']);
+        $schema->setProperty('@id', $jsonId);
+        $schema->setProperty('url', $jsonId);
         
         //name
         $name = $object['nameByLocale'][$locale];
@@ -1074,7 +1082,7 @@ class SchoenstattTable extends SionTable implements
         //identifier
         $siteIdentifier = new PropertyValue();
         $siteIdentifier->propertyID('Schoenstatt Link ID')
-        ->value($object['identifier']);
+        ->value($object['identifierPreApril2020']);
         $jsonIdentifier = [$siteIdentifier];
         if (isset($object['googlePlaceId'])) {
             $placeIdentifier = new PropertyValue();
@@ -1099,7 +1107,7 @@ class SchoenstattTable extends SionTable implements
         } else {
             $location = new Place();
         }
-        $location->setProperty('@id', $object['jsonId'].'#location');
+        $location->setProperty('@id', $jsonId.'#location');
         $location->setProperty('name', $name);
         
         //geo
@@ -1265,15 +1273,302 @@ class SchoenstattTable extends SionTable implements
         $resultingMd5s = [];
         foreach ($objects as $object) {
             $schema = $this->getAssociationSchemaV1($object, $locale);
-            $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
+            $jsonId = $schema->getProperty('@id');
+            if (!isset($jsonId) || !is_string($jsonId)) {
+                throw new \Exception("We didn't get a proper json Id");
+            }
+            $resultingMd5s[$jsonId] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
             $array = $schema->toArray();
             $schemata[] = $array;
         }
         return $schemata;
     }
-
+    
     /**
-     * @todo we shouldn't need to query the whole table to get 1 association
+     *
+     * @param mixed[] $object
+     * @return \Spatie\SchemaOrg\Thing
+     */
+    public function getAssociationSchemaV2($object, $locale = null, $onlyBasicProperties = false)
+    {
+        static $markdownParser;
+        static $openingHoursValidator;
+        static $eventsJsonValidator;
+        if (!isset($this->associationKinds[$object['kind']])) {
+            throw new \Exception(sprintf("No known association kind `%s`", $object['kind']));
+        }
+        $schemaType = $this->associationKinds[$object['kind']]->schemaType;
+        if (!isset($schemaType) || !class_exists($schemaType)) {
+            throw new \Exception(sprintf("No schema type exists for association kind `%s`", $object['kind']));
+        }
+        if (!isset($locale)) {
+            $locale = $this->getLocale();
+        }
+        $schema = new $schemaType;
+        $jsonId = "https://schoenstatt.link/en/".$object['identifier'];
+        //@id
+        $schema->setProperty('@id', $jsonId);
+        $schema->setProperty('url', $jsonId);
+        
+        //name
+        $name = $object['nameByLocale'][$locale];
+        $schema->setProperty('name', $name);
+        
+        //return early if we just want the basics
+        if ($onlyBasicProperties) {
+            return $schema;
+        }
+        
+        //alternateName
+        $jsonAlternateName = [];
+        foreach ($this->languageLocaleMap as $aLocale) {
+            if ($object['nameByLocale'][$aLocale] !== $name
+                && !in_array($object['nameByLocale'][$aLocale], $jsonAlternateName, TRUE)
+                ) {
+                    $jsonAlternateName[] = $object['nameByLocale'][$aLocale];
+                }
+                if ($object['internalNameByLocale'][$aLocale] !== $name
+                    && !in_array($object['internalNameByLocale'][$aLocale], $jsonAlternateName, TRUE)
+                    ) {
+                        $jsonAlternateName[] = $object['internalNameByLocale'][$aLocale];
+                    }
+        }
+        if (empty($jsonAlternateName)) {
+            $jsonAlternateName = null;
+        } else {
+            sort($jsonAlternateName);
+            $schema->setProperty('alternateName', $jsonAlternateName);
+        }
+        
+        //disambiguatingDescription (used for internal name)
+        $schema->setProperty('disambiguatingDescription', $object['internalNameByLocale'][$locale]);
+        
+        //description
+        if (isset($object['publicNotesByLocale'][$locale])) {
+            if (!isset($markdownParser)) {
+                $markdownParser = new \Parsedown();
+                $markdownParser->setSafeMode(true);
+            }
+            $descriptionText = $markdownParser->text($object['publicNotesByLocale'][$locale]);
+            $schema->setProperty(
+                'description',
+                $descriptionText
+                );
+        }
+        
+        //email
+        if (isset($object['email'])) {
+            $schema->setProperty('email', $object['email']);
+        }
+        
+        //identifier
+        $siteIdentifier = new PropertyValue();
+        $siteIdentifier->propertyID('Schoenstatt Link ID')
+        ->value($object['identifier']);
+        $jsonIdentifier = [$siteIdentifier];
+        if (isset($object['googlePlaceId'])) {
+            $placeIdentifier = new PropertyValue();
+            $placeIdentifier->propertyID('Google Maps Place ID')
+            ->value($object['googlePlaceId']);
+            $jsonIdentifier[] = $placeIdentifier;
+        }
+        $schema->setProperty('identifier', $jsonIdentifier);
+        
+        //location
+        //@todo derive this code to kind configs
+        if ('sch-shrine' === $object['kind']) {
+            $location = new CatholicChurch();
+            //mark shrines as free public places
+            $location->isAccessibleForFree(true);
+            $location->publicAccess(true);
+        } elseif ('sch-wayside-shrine' === $object['kind']) {
+            $location = new PlaceOfWorship();
+            //mark shrines as free public places
+            $location->isAccessibleForFree(true);
+            $location->publicAccess(true);
+        } else {
+            $location = new Place();
+        }
+        $location->setProperty('@id', $jsonId.'#location');
+        $location->setProperty('name', $name);
+        
+        //geo
+        if (isset($object['geoPoint'])) {
+            $jsonGeo = Schema::geoCoordinates();
+            $jsonGeo->latitude($object['geoPoint']->latitude);
+            $jsonGeo->longitude($object['geoPoint']->longitude);
+            if (isset($object['country'])) {
+                $jsonGeo->addressCountry($object['country']);
+            }
+            $location->geo($jsonGeo);
+        }
+        
+        //openingHours
+        $openingHours = null;
+        if (!isset($openingHoursValidator)) {
+            $openingHoursValidator = new OpeningHoursSpecificationJson();
+        }
+        if ($openingHoursValidator->isValid($object['openingHoursSpecificationJson'])) {
+            try {
+                $spec = Json::decode($object['openingHoursSpecificationJson'], Json::TYPE_ARRAY);
+                if (isset($object['timeZoneId'])) {
+                    $openingHours = OpeningHours::create($spec, $object['timeZoneId']);
+                } else {
+                    $openingHours = OpeningHours::create($spec);
+                }
+            } catch (\Exception $e) {}
+            if (isset($openingHours)) {
+                $format = isset($object['timeZoneId']) ? 'H:iP' : 'H:i';
+                $location->setProperty('openingHoursSpecification', $openingHours->asStructuredData($format));
+            }
+        }
+        
+        //address
+        if (isset($object['street1']) || isset($object['street2']) || isset($object['cityState'])) {
+            $jsonAddress = Schema::postalAddress();
+            if (isset($object['country'])) {
+                $jsonAddress->setProperty('addressCountry', $object['country']);
+            }
+            if (isset($object['cityState'])) {
+                $jsonAddress->setProperty('addressLocality', $object['cityState']);
+            }
+            if (isset($object['zip'])) {
+                $jsonAddress->setProperty('postalCode', $object['zip']);
+            }
+            if (isset($object['street1']) || isset($object['street2'])) {
+                $streets = [];
+                if (isset($object['street1'])) {
+                    $streets[] = $object['street1'];
+                }
+                if (isset($object['street2'])) {
+                    $streets[] = $object['street2'];
+                }
+                $jsonAddress->setProperty('streetAddress', implode(', ', $streets));
+            }
+            $location->setProperty('address', $jsonAddress);
+        }
+        
+        //foundingDate
+        if (isset($object['foundationDate']) && $object['foundationDate'] instanceof \DateTimeInterface) {
+            $dateString = $object['foundationDate']->format('Y-m-d');
+            $schema->setProperty('foundingDate', $dateString);
+        }
+        
+        //sameAs
+        if (isset($object['jsonSameAs']) && !empty($object['jsonSameAs'])) {
+            $schema->setProperty('sameAs', $object['jsonSameAs']);
+        }
+        
+        //look for a mapUrl
+        foreach ($object['urls'] as $url) {
+            if ('map' === strtolower($url['label'])) {
+                $location->hasMap($url['url']);
+            }
+        }
+        $schema->setProperty('location', $location);
+        
+        // telephone & fax
+        $fax = null;
+        $telephone = [];
+        foreach ($object['phones'] as $labelNumber) {
+            if ('Fax' === $labelNumber['label']) {
+                $fax = $labelNumber['number'];
+            } else {
+                $telephone[] = $labelNumber['number'];
+            }
+        }
+        if (!empty($telephone)) {
+            $schema->setProperty('telephone', $telephone);
+        }
+        if (isset($fax)) {
+            $schema->setProperty('faxNumber', $fax);
+        }
+        
+        //parentOrganization
+        if (isset($object['parentId'])) {
+            if (isset($object['parent'])) {
+                $parent = $this->getAssociationSchemaV1($object['parent'], $locale, true);
+            } else {
+                $parent = new Organization();
+                $parent->setProperty('@id', $object['parentJsonId']);
+            }
+            $schema->setProperty('parentOrganization', $parent);
+        }
+        
+        //subOrganization
+        if (isset($object['childAssociations'])) {
+            $childAssociations = [];
+            foreach ($object['childAssociations'] as $association) {
+                $childAssociations[] = $this->getAssociationSchemaV1($association, $locale, true);
+            }
+            if (!empty($childAssociations)) {
+                $schema->setProperty('subOrganization', $childAssociations);
+            }
+        }
+        
+        //event
+        if (isset($object['eventsJson'])) {
+            if (!isset($eventsJsonValidator)) {
+                $eventsJsonValidator = new EventsJson();
+            }
+            if ($eventsJsonValidator->isValid($object['eventsJson'])) {
+                $eventsJson = Json::decode($object['eventsJson'], Json::TYPE_ARRAY);
+                $schema->event($eventsJson);
+            }
+        }
+        
+        //add human text
+        $additionalProperties = [];
+        if (isset($object['openingHoursHuman'])) {
+            if (!isset($markdownParser)) {
+                $markdownParser = new \Parsedown();
+                $markdownParser->setSafeMode(true);
+            }
+            $openingHoursHuman = new PropertyValue();
+            $openingHoursHuman->propertyID('Opening hours text')
+            ->value($markdownParser->text($object['openingHoursHuman']));
+            $additionalProperties[] = $openingHoursHuman;
+        }
+        if (isset($object['eventsHuman'])) {
+            if (!isset($markdownParser)) {
+                $markdownParser = new \Parsedown();
+                $markdownParser->setSafeMode(true);
+            }
+            $eventsHuman = new PropertyValue();
+            $eventsHuman->propertyID('Events text')
+            ->value($markdownParser->text($object['eventsHuman']));
+            $additionalProperties[] = $eventsHuman;
+        }
+        if (!empty($additionalProperties)) {
+            $schema->setProperty('additionalProperty', $additionalProperties);
+        }
+        
+        return $schema;
+    }
+    
+    public function getAssociationListSchemaV2($objects, &$resultingMd5s, $locale = null)
+    {
+        if (!isset($locale)) {
+            $locale = $this->getLocale();
+        }
+        $schemata = [];
+        $resultingMd5s = [];
+        foreach ($objects as $object) {
+            $schema = $this->getAssociationSchemaV2($object, $locale);
+            $jsonId = $schema->getProperty('@id');
+            if (!isset($jsonId) || !is_string($jsonId)) {
+                throw new \Exception("We didn't get a proper json Id");
+            }
+            //@todo update with v2 jsons
+            $resultingMd5s[$jsonId] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
+            $array = $schema->toArray();
+            $schemata[] = $array;
+        }
+        return $schemata;
+    }
+    
+    /**
+     * @todo we shouldn't need to query the whole table to get 1 association. Create a linkAssociation function
      * @param int $id
      * @return mixed[]
      */
