@@ -9,8 +9,18 @@ class SchoenstattLinkIdentifier extends AbstractFilter
 
     protected $baseNumber;
     
+    /**
+     * In April 2020, site-wide ids we're expanded from 5 to 6 digit numbers. If you wish to work
+     * with pre-april 2020 ids, set $usePreApril2020Format to true in the constructor
+     * @var bool $usePreApril2020Format
+     */
     protected $usePreApril2020Format;
     
+    /**
+     * The class caches the last entity type that was processed. If the user needs to know
+     * what it was, you can call getLastEntityType(). It will return null if 
+     * @var string $lastEntityType
+     */
     protected $lastEntityType;
 
     public function __construct($entityType = null, $usePreApril2020Format = false)
@@ -43,6 +53,7 @@ class SchoenstattLinkIdentifier extends AbstractFilter
     public function filter($value)
     {
         if (!is_string($value)) {
+            $this->lastEntityType = null;
             throw new \Exception('String expected');
         }
 
@@ -64,11 +75,14 @@ class SchoenstattLinkIdentifier extends AbstractFilter
                         $baseNumber = \Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_OLD_STARTING_NUMBER[$entityType];
                     }
                 } else {
+                    $this->lastEntityType = null;
                     throw \Exception('We should never be here.');
                 }
             }
             return $number-$baseNumber;
         }
+        $this->lastEntityType = null;
+        throw new \Exception('This filter only processes valid site-wide identifiers');
     }
     
     public function getLastEntityType()

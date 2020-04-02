@@ -9,7 +9,7 @@ use Zend\Http\Header\Pragma;
 use Zend\Mvc\MvcEvent;
 use Zend\Http\Header\Expires;
 
-class AssociationsApiController extends AbstractRestfulController
+class AssociationsApiV1Controller extends AbstractRestfulController
 {
     /**
      * @var SchoenstattTable $schoenstattTable
@@ -184,14 +184,14 @@ class AssociationsApiController extends AbstractRestfulController
         static $validator;
         static $filter;
         if (!isset($validator)) {
-            $validator = new SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION);
+            $validator = new SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION, true);
         }
         if (!$validator->isValid($identifier)) {
             return false;
         }
 
         if (!isset($filter)) {
-            $filter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION);
+            $filter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION, true);
         }
         return $filter->filter($identifier);
     }

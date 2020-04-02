@@ -77,6 +77,11 @@ class SchoenstattLinkIdentifier extends Regex
         self::ENTITY_COMPOSITION => 95000,
     ];
     
+    /**
+     * In April 2020, site-wide ids we're expanded from 5 to 6 digit numbers. If you wish to work
+     * with pre-april 2020 ids, set $usePreApril2020Format to true in the constructor
+     * @var bool $usePreApril2020Format
+     */
     protected $usePreApril2020Format;
 
     public function __construct($entityType = null, $usePreApril2020Format = false)

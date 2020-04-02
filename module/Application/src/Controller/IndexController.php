@@ -91,7 +91,6 @@ class IndexController extends AbstractActionController
         static $swValidator;
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
-//         $slug = $this->params()->fromRoute('slug', '');
         if (isset($id)) {
             if (!isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier(null, true);
@@ -115,7 +114,6 @@ class IndexController extends AbstractActionController
             $route,
             [
                 'sw_id' => $newId,
-//                 'slug' => $slug
             ],
             [],
             true //reusing params should pass on our slug
