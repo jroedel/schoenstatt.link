@@ -111,7 +111,7 @@ class IndexController extends AbstractActionController
         $toIdFilter = new ToSchoenstattLinkIdentifier($entityType);
         $newId = $toIdFilter->filter($id);
         $route = SchoenstattLinkIdentifier::ENTITY_TYPE_ROUTES[$entityType];
-        return $this->redirect()->toRoute(
+        $response = $this->redirect()->toRoute(
             $route,
             [
                 'sw_id' => $newId,
@@ -120,6 +120,9 @@ class IndexController extends AbstractActionController
             [],
             true //reusing params should pass on our slug
             );
+        
+        $response->setStatusCode(301);
+        return $response;
     }
 
     public function developersAction()

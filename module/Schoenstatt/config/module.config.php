@@ -1283,7 +1283,12 @@ return [
                 'options' => [
                     'route'    => '/:sw_id[/:slug]',
                     'constraints' => [
-                        'sw_id' => 'SL1[0-9]{4,4}A',
+                        'sw_id' => trim(
+                            Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[
+                                Validator\SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
+                            ],
+                            '/^$'
+                            ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
