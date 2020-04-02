@@ -19,6 +19,9 @@ use Books\Model\EventTextTable;
 use Books\Model\DictionaryTable;
 use samdark\sitemap\Sitemap;
 use Zend\View\HelperPluginManager;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use function False\true;
 
 class IndexController extends AbstractActionController
 {
@@ -81,6 +84,42 @@ class IndexController extends AbstractActionController
             'changeCounts' => [],
             'blogPosts' => $blogPosts,
         ]);
+    }
+    
+    public function redirectPreApril2020SlIdAction()
+    {
+        static $swValidator;
+        static $swFilter;
+        $id = $this->params()->fromRoute('sw_id');
+//         $slug = $this->params()->fromRoute('slug', '');
+        if (isset($id)) {
+            if (!isset($swValidator)) {
+                $swValidator = new SchoenstattLinkIdentifier(null, true);
+            }
+            if (!$swValidator->isValid($id)) {
+                throw new \Exception('Invalid site-wide id');
+            }
+            if (!isset($swFilter)) {
+                $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier(null, true);
+            }
+            $id = $swFilter->filter($id);
+            $entityType = $swFilter->getLastEntityType();
+        } else {
+            throw new \Exception('Invalid id');
+        }
+        
+        $toIdFilter = new ToSchoenstattLinkIdentifier($entityType);
+        $newId = $toIdFilter->filter($id);
+        $route = SchoenstattLinkIdentifier::ENTITY_TYPE_ROUTES[$entityType];
+        return $this->redirect()->toRoute(
+            $route,
+            [
+                'sw_id' => $newId,
+//                 'slug' => $slug
+            ],
+            [],
+            true //reusing params should pass on our slug
+            );
     }
 
     public function developersAction()

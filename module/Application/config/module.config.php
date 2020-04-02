@@ -9,7 +9,6 @@
 
 namespace Application;
 
-use Application\Controller\IndexController;
 use Zend\Router\Http\Literal;
 use Zend\Navigation\Service\DefaultNavigationFactory;
 use Zend\I18n\Translator\TranslatorServiceFactory;
@@ -22,9 +21,8 @@ use Zend\ServiceManager\Proxy\LazyServiceFactory;
 use Zend\Cache\Storage\StorageInterface;
 use Application\View\GdprStrategy;
 use Application\Service\JsonPostFactory;
-use Application\Service\LoggerFactory;
-use Zend\Log\LoggerInterface;
-use Application\Service\IndexControllerFactory;
+use Zend\Router\Http\Segment;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 return [
     'router' => [
@@ -48,7 +46,7 @@ return [
                 'options' => [
                     'route'    => '/',
                     'defaults' => [
-                        'controller' => IndexController::class,
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'index',
                     ],
                 ],
@@ -58,7 +56,7 @@ return [
                 'options' => [
                     'route'    => '/sitemap.xml',
                     'defaults' => [
-                        'controller' => IndexController::class,
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'sitemap',
                     ],
                 ],
@@ -68,7 +66,7 @@ return [
                 'options' => [
                     'route'    => '/developers',
                     'defaults' => [
-                        'controller' => IndexController::class,
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'developers',
                     ],
                 ],
@@ -78,7 +76,7 @@ return [
                 'options' => [
                     'route'    => '/privacy',
                     'defaults' => [
-                        'controller' => IndexController::class,
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'privacy',
                     ],
                 ],
@@ -88,7 +86,7 @@ return [
                 'options' => [
                     'route'    => '/acknowledgements',
                     'defaults' => [
-                        'controller' => IndexController::class,
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'acknowledgements',
                     ],
                 ],
@@ -98,8 +96,25 @@ return [
                 'options' => [
                     'route'    => '/sign-in-no-cookies',
                     'defaults' => [
-                        'controller' => IndexController::class,
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'signInNoCookies',
+                    ],
+                ],
+            ],
+            'redirect-pre-april-2020-sl-id' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::GENERAL_OLD_REGEX,
+                            '/^$'
+                            ),
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\IndexController::class,
+                        'action'     => 'redirectPreApril2020SlId',
                     ],
                 ],
             ],
@@ -117,7 +132,6 @@ return [
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
             Authentication\Adapter\JsonPost::class => JsonPostFactory::class,
-            LoggerInterface::class  => LoggerFactory::class,
         ],
         'lazy_services' => [
             // Mapping services to their class names is required
@@ -151,7 +165,7 @@ return [
 //             IndexController::class => IndexController::class
 //         ],
         'factories' => [
-            IndexController::class => IndexControllerFactory::class,
+            Controller\IndexController::class => Service\IndexControllerFactory::class,
         ],
         'abstract_factories' => [
             \Application\Controller\LazyControllerFactory::class,
@@ -172,6 +186,7 @@ return [
     'bjyauthorize' => [
         'guards' => [
             Route::class => [
+                ['route' => 'redirect-pre-april-2020-sl-id', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/login', 'roles' => ['guest', 'user']],
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
