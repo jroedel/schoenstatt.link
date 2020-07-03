@@ -1,10 +1,11 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $headText = 'Create new publication';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
 $this->formSelect()->setTranslatorEnabled(false);
-$form->setAttribute('action', $this->url('publications/create'));
+$form->setAttribute('action', $this->url(null, [], [], true));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', $this->vars);

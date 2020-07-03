@@ -1,0 +1,5 @@
+<?php
+foreach ($this->objects as $object) :?>
+<p><?= $this->formatEntity('collection', $object);?>
+<?php endforeach;?>
+<p><a class="btn btn-primary" href="<?= $this->url('collections/create', ['library_id' => $this->libraryId])?>"><?= $this->translate('Add another collection')?></a>

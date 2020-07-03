@@ -1,10 +1,9 @@
-<?php
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
 $headText = 'Upload book cover';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('publications/publication/upload-cover',
-		[], [], true));
+$form->setAttribute('action', $this->url(null, [], [], true));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->formRow($form->get('fileUpload'));

@@ -9,89 +9,145 @@
 
 namespace Application;
 
+use Zend\Router\Http\Literal;
+use Zend\Navigation\Service\DefaultNavigationFactory;
+use Zend\I18n\Translator\TranslatorServiceFactory;
+use Zend\Log\LoggerAbstractServiceFactory;
+use Zend\Cache\Service\StorageCacheAbstractServiceFactory;
+use BjyAuthorize\Guard\Route;
+use SionModel\Service\ProblemService;
+use JTranslate\Model\TranslationsTable;
+use Zend\ServiceManager\Proxy\LazyServiceFactory;
+use Zend\Cache\Storage\StorageInterface;
+use Application\View\GdprStrategy;
+use Application\Service\JsonPostFactory;
+use Zend\Router\Http\Segment;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+
 return [
     'router' => [
         'routes' => [
+            'api-v1' => [
+                'child_routes' => [
+                    'login' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/users/login',
+                            'defaults' => [
+                                'action' => 'login',
+                                'controller' => Controller\UsersApiController::class,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'welcome' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'index',
                     ],
                 ],
             ],
             'sitemap' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/sitemap.xml',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'sitemap',
                     ],
                 ],
             ],
             'developers' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/developers',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'developers',
                     ],
                 ],
             ],
+            'privacy' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/privacy',
+                    'defaults' => [
+                        'controller' => Controller\IndexController::class,
+                        'action'     => 'privacy',
+                    ],
+                ],
+            ],
             'acknowledgements' => [
-                'type' => 'Literal',
+                'type' => Literal::class,
                 'options' => [
                     'route'    => '/acknowledgements',
                     'defaults' => [
-                        'controller' => 'Application\Controller\Index',
+                        'controller' => Controller\IndexController::class,
                         'action'     => 'acknowledgements',
                     ],
                 ],
             ],
-            // The following is a route to simplify getting started creating
-            // new controllers and actions without needing to create a new
-            // module. Simply drop new controllers in, and you can access them
-            // using the path /application/:controller/:action
-//             'application' => [
-//                 'type'    => 'Literal',
-//                 'options' => [
-//                     'route'    => '/application',
-//                     'defaults' => [
-//                         '__NAMESPACE__' => 'Application\Controller',
-//                         'controller'    => 'Index',
-//                         'action'        => 'index',
-//                     ],
-//                 ],
-//                 'may_terminate' => true,
-//                 'child_routes' => [
-//                     'default' => [
-//                         'type'    => 'Segment',
-//                         'options' => [
-//                             'route'    => '/[:controller[/:action]]',
-//                             'constraints' => [
-//                                 'controller' => '[a-zA-Z][a-zA-Z0-9_-]*',
-//                                 'action'     => '[a-zA-Z][a-zA-Z0-9_-]*',
-//                             ],
-//                             'defaults' => [
-//                             ],
-//                         ],
-//                     ],
-//                 ],
-//             ],
+            'sign-in-no-cookies' => [
+                'type' => Literal::class,
+                'options' => [
+                    'route'    => '/sign-in-no-cookies',
+                    'defaults' => [
+                        'controller' => Controller\IndexController::class,
+                        'action'     => 'signInNoCookies',
+                    ],
+                ],
+            ],
+            'redirect-pre-april-2020-sl-id' => [
+                'type' => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id[/:slug]',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::GENERAL_OLD_REGEX,
+                            '/^$'
+                            ),
+                        'slug' => '[a-z0-9-]{1,200}',
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\IndexController::class,
+                        'action'     => 'redirectPreApril2020SlId',
+                    ],
+                ],
+            ],
         ],
     ],
     'service_manager' => [
         'abstract_factories' => [
-            'Zend\Cache\Service\StorageCacheAbstractServiceFactory',
-            'Zend\Log\LoggerAbstractServiceFactory',
+            StorageCacheAbstractServiceFactory::class,
+            LoggerAbstractServiceFactory::class,
         ],
         'factories' => [
-            'translator' => 'Zend\Mvc\Service\TranslatorServiceFactory',
-            'navigation' => 'Zend\Navigation\Service\DefaultNavigationFactory'
+            'translator' => TranslatorServiceFactory::class,
+            'navigation' => DefaultNavigationFactory::class,
+            //default persistent storage, configured in cache.local.php
+            StorageInterface::class => Service\CacheFactory::class,
+            GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
+            Authentication\Adapter\JsonPost::class => JsonPostFactory::class,
+        ],
+        'lazy_services' => [
+            // Mapping services to their class names is required
+            // since the ServiceManager is not a declarative DIC.
+            'class_map' => [
+                ProblemService::class => ProblemService::class,
+                TranslationsTable::class => TranslationsTable::class,
+            ],
+        ],
+        'delegators' => [
+            ProblemService::class => [
+                LazyServiceFactory::class,
+            ],
+            TranslationsTable::class => [
+                LazyServiceFactory::class,
+            ],
         ],
     ],
 //     'translator' => [
@@ -105,90 +161,44 @@ return [
 //         ],
 //     ],
     'controllers' => [
-        'invokables' => [
-            'Application\Controller\Index' => Controller\IndexController::class
+//         'invokables' => [
+//             IndexController::class => IndexController::class
+//         ],
+        'factories' => [
+            Controller\IndexController::class => Service\IndexControllerFactory::class,
+        ],
+        'abstract_factories' => [
+            \Application\Controller\LazyControllerFactory::class,
         ],
     ],
     'view_manager' => [
-        'display_not_found_reason' => true,
-        'display_exceptions'       => true,
         'doctype'                  => 'HTML5',
         'not_found_template'       => 'error/404',
         'exception_template'       => 'error/index',
-        'template_map' => [
-            'layout/layout'           => __DIR__ . '/../view/layout/layout.phtml',
-            'application/index/index' => __DIR__ . '/../view/application/index/index.phtml',
-            'error/404'               => __DIR__ . '/../view/error/404.phtml',
-            'error/index'             => __DIR__ . '/../view/error/index.phtml',
-        ],
+        'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [
-            __DIR__ . '/../view',
+            __NAMESPACE__ => __DIR__ . '/../view',
         ],
-    ],
-    'asset_manager' => array(
-        'resolver_configs' => array(
-            'collections' => array(
-                'js/basic.js' => array(
-                    'js/jquery.min.js',
-                    'js/bootstrap.min.js',
-                    'js/basic-include.js',
-                ),
-                'css/basic.css' => array(
-                    'css/bootstrap.min.css',
-                    'css/flag-icon.min.css',
-                    'css/font-awesome.min.css',
-                ),
-            ),
-            'paths' => array(
-//                 'photos' => __DIR__ . '/../../../../data/foto',
-                __NAMESPACE__ => __DIR__ . '/../public',
-            ),
-//             'map' => array(
-//                 'specific-path.css' => __DIR__ . '/some/particular/file.css',
-//             ),
-        ),
-        'caching' => array(
-            'css/basic.css' => array(
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => array(
-                    'dir' => 'public', // path/to/cache
-                ),
-            ),
-            'js/basic.js' => array(
-                'cache'     => 'AssetManager\\Cache\\FilePathCache',
-                'options' => array(
-                    'dir' => 'public', // path/to/cache
-                ),
-            ),
-        ),
-//         'filters' => array(
-//             'js/d.js' => array(
-//                 array(
-//                     // Note: You will need to require the classes used for the filters yourself.
-//                     'filter' => 'JSMin',
-//                 ),
-//             ),
-//         ),
-        'view_helper' => array(
-            // Note: You will need to require the factory used for the cache yourself.
-//             'cache'        => 'Application\Cache\Redis',
-        ),
-    ),
-    // Placeholder for console routes
-    'console' => [
-        'router' => [
-            'routes' => [
-            ],
+        'strategies' => [
+            'ViewJsonStrategy',
         ],
     ],
     'bjyauthorize' => [
         'guards' => [
-            'BjyAuthorize\Guard\Route' => [
+            Route::class => [
+                ['route' => 'redirect-pre-april-2020-sl-id', 'roles' => ['guest', 'user']],
+                ['route' => 'api-v1/login', 'roles' => ['guest', 'user']],
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
                 ['route' => 'sitemap', 'roles' => ['guest', 'user']],
                 ['route' => 'acknowledgements', 'roles' => ['guest', 'user']],
+                ['route' => 'privacy', 'roles' => ['guest', 'user']],
             ],
+        ],
+    ],
+    'view_helpers' => [
+        'aliases' => [
+            'formElement' => 'TwbBundle\Form\View\Helper\TwbBundleFormElement',
         ],
     ],
 ];

@@ -1,11 +1,18 @@
 <?php
 
-return array(
+return [
+    '### Hey this is great
+
+I\'m **really** blogging now.' => '### Está buenísimo esto
+
+
+Ahora **sí** estoy bloggeando!',
     '$2' => '$2',
     '$3' => '$3',
     '%s - Overdue notice' => '%s - Notificación de libros debidos',
     '(none)' => '(ninguno)',
     ':short_category' => ':short_category',
+    'A 404 error occurred' => 'Un error 404 ha ocurrido',
     'Access level' => '¿Quién tiene acceso?',
     'Accessible for free?' => 'Existe acceso gratis?',
     'Active?' => '¿Activo?',
@@ -52,6 +59,7 @@ return array(
     'Books successfully checked out.' => 'Libros exitosamente prestados',
     'Books updated' => 'Libros actualizados',
     'Borrow' => 'Prestar',
+    'Brothers of Mary' => 'Hermanos de María',
     'by %s' => 'por %s',
     'Call number' => 'Número localizador',
     'Call number explanation' => 'Explicación del número localizador',
@@ -80,6 +88,7 @@ return array(
     'Contained in' => 'Contenido en',
     'Contained in ISBN' => 'Contenido en ISBN',
     'Copyright year' => 'Año de los derechos',
+    'Country (if not international)' => 'País (si no es internacional)',
     'Create checkouts if checking in a non-checked out book?' => '¿Crear préstamo cuando se devuelve un libro que no fue anteriormente prestado?',
     'Create new publication' => 'Crear nueva publicación',
     'Current checkouts for %s' => 'Préstamos actuales para %s',
@@ -114,8 +123,10 @@ return array(
     'ex. Revista Vínculo 2014-10' => 'ej. Revista Vínculo 2014-10',
     'Field' => 'Campo',
     'File path' => 'Ruta del archivo',
+    'Filiation' => 'Filial',
     'Follow %s on Twitter' => 'Sigue %s en Twitter',
     'Fr.' => 'P.',
+    'Fr. Kentenich dictionary German to %s' => 'Diccionario del P. Kentenich Alemán al %s',
     'General' => 'Colección general',
     'General Collection' => 'Colección general',
     'German' => 'Alemán',
@@ -141,6 +152,7 @@ return array(
     'Label line 2' => 'Segunda línea de la etiqueta',
     'Label line 3' => 'Tercera línea de la etiqueta',
     'Label management' => 'Gestión de etiquetas',
+    'Ladies of Schoenstatt' => 'Inst. Nuestra Señora de Schoenstatt',
     'Language' => 'Idioma',
     'Languages' => 'Idiomas',
     'Last updated' => 'Última actualización',
@@ -164,6 +176,7 @@ return array(
     'Name' => 'Nombre',
     'New call number' => 'Nuevo número localizador',
     'New Value' => 'Nuevo contenido',
+    'No Exception available' => 'No Excepción disponible',
     'No results found.' => 'Búsqueda sin resultados.',
     'none' => 'ninguno',
     'Not in the list?' => '¿Persona no está en la lista?',
@@ -173,6 +186,12 @@ return array(
     'One barcode per line' => 'Un código barra por línea',
     'or' => 'o',
     'Other editions' => 'Otras ediciones',
+    'Other URL 1' => 'Otro URL 1',
+    'Other URL 1 Label' => 'Etiqueta para Otro URL 1',
+    'Other URL 2' => 'Otro URL 2',
+    'Other URL 2 Label' => 'Etiqueta para Otro URL 2',
+    'Other URL 3' => 'Otro URL 3',
+    'Other URL 3 Label' => 'Etiqueta para Otro URL 3',
     'Overdue' => 'Vencido',
     'Paperback' => 'Libro de tapa blanda',
     'Password' => 'Contraseña',
@@ -219,12 +238,14 @@ return array(
     'Show collections and categories' => 'Mostrar colecciones y categorías',
     'Show editions separately?' => '¿Mostrar ediciones obsoletas?',
     'Sign in' => 'Acceder',
+    'Sisters of Mary' => 'Hermanas de María',
     'Spanish' => 'Español',
     'Start new import' => 'Iniciar nueva importación',
     'Step 1: Select books to print call number' => 'Paso 1: Seleccionar libros para imprimir número localizador',
     'Step 2: Export labels to Excel & print' => 'Paso 2: Exportar etiquetas a Excel y imprimir',
     'Step 3: Confirm call number change in the database' => 'Paso 3: Confirmar el cambio de números localizadores en la base de datos',
     'Subedition(s)' => 'Otras ediciones',
+    'Submit' => 'Confirmar',
     'Superiors' => 'Superiores',
     'The following is the list of books checked out under your name for the <strong>%s</strong> library. Please take the time to renew overdue books online, or inform the librarian of any lost books.' => 'Lo siguiente es la lista de libros a tu nombre para la <strong>%s</strong> biblioteca. Favor, toma el tiempo para renovar en línea los préstamos vencidos, o informar el encargado de biblioteca de cualquier libro extraviado.',
     'The Schoenstatt Library System was developed in the Schoenstatt Fathers\' seminary in Santiago, Chile to help with studies, but is made available to the whole Schoenstatt family with 3 objectives:' => 'El sistema de bibliotecas schoenstattianas fue desarrollado en el seminario de los Padres de Schoenstatt en Santiago, Chile para ayudar con los estudios, pero también se disponibiliza a la Familia de Schoesntatt entera con 3 objetivos:',
@@ -237,6 +258,7 @@ return array(
     'To help Father Kentenich scholars locate rare books and manuscripts' => 'Ayudar a los investigadores dedicados al Padre Kentenich encontrar libros y manuscritos escasos.',
     'Translated from' => 'Traducida de',
     'Translator(s)' => 'Traductor(es)',
+    'Turn down for what' => 'Posteo traducido',
     'URL 1' => 'URL 1',
     'URL 1 Label' => 'Etiqueta URL 1',
     'URL 2' => 'URL 2',
@@ -258,4 +280,4 @@ return array(
     'Worksheet' => 'Hoja',
     'Yes' => 'Sí',
     '—The Schoenstatt Link Team' => '—El equipo de Schoenstatt Link',
-);
+];

@@ -1,4 +1,5 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $form = $this->form;
 echo $this->formRow($form->get('name'));
 $this->formSelect()->setTranslatorEnabled(false);
@@ -9,5 +10,3 @@ echo $this->formRow($form->get('worksheet'));
 echo $this->formRow($form->get('isCompleteImport'));
 echo $this->formRow($form->get('security'));
 echo $this->formRow($form->get('submit'));
-
-?>

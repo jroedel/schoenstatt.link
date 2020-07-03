@@ -1,4 +1,7 @@
 <?php
+use Application\Service\DbAdapterServiceFactory;
+use Zend\Db\Adapter\Adapter;
+
 /**
  * Global Configuration Override
  *
@@ -12,9 +15,26 @@
  */
 
 return [
+    'schoenstatt' => [
+        'gdpr_template' => 'application/index/gdpr',
+    ],
     'navigation' => [
         // navigation with name default
         'default' => [
+            [
+                'label' => 'Home',
+                'route' => 'welcome',
+                'pages' => [
+                    [
+                        'label' => 'Developers Center',
+                        'route' => 'developers',
+                    ], //afterwards we'll add each library
+                    [
+                        'label' => 'Security research acknowledgements',
+                        'route' => 'acknowledgements',
+                    ],
+                ],
+            ],
             [
                 'label' => 'Movement',
                 'route' => 'schoenstatt',
@@ -23,17 +43,68 @@ return [
             [
                 'label' => 'Shrines',
                 'route' => 'shrines',
-                'resource' => 'route/shrines',
+                'pages' => [
+                    [
+                        'label' => 'World',
+                        'route' => 'shrines',
+                    ],
+//                     [
+//                         'label' => 'Africa',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Africa',
+//                     ],
+//                     [
+//                         'label' => 'Asia',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Asia',
+//                     ],
+//                     [
+//                         'label' => 'Europe',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Europe',
+//                     ],
+//                     [
+//                         'label' => 'Americas',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Americas',
+//                     ],
+//                     [
+//                         'label' => 'Oceania',
+//                         'route' => 'shrines',
+//                         'fragment' => 'Oceania',
+//                     ],
+                    [
+                        'label' => 'Submitting photos',
+                        'route' => 'shrines/submitting-photos',
+                    ],
+                    [
+                        'label' => 'Wayside shrines',
+                        'route' => 'wayside-shrines',
+                    ],
+                ],
             ],
             [
                 'label' => 'Literature',
                 'route' => 'publications',
-                'resource' => 'route/publications',
+                'pages' => [
+                    [
+                        'label' => 'Libraries',
+                        'route' => 'libraries',
+                    ], //afterwards we'll add each library
+                    [
+                        'label' => 'Dictionaries',
+                        'route' => 'publications',
+                        'fragment' => 'dictionaries',
+                    ],
+                ],
             ],
             [
-                'label' => 'Libraries',
-                'route' => 'libraries',
-                'resource' => 'route/libraries',
+                'label' => 'Music',
+                'route' => 'music',
+            ],
+            [
+                'label' => 'Blog',
+                'route' => 'blog',
             ],
             [
                 'label' => 'Admin',
@@ -44,7 +115,7 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            'Zend\Db\Adapter\Adapter' => 'Application\Service\DbAdapterServiceFactory',
+            Adapter::class => DbAdapterServiceFactory::class,
         ],
     ],
 ];

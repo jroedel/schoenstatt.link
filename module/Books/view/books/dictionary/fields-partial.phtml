@@ -1,0 +1,34 @@
+<?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown-jquery-ui.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
+
+/** @var \Books\Form\DictionaryEntryForm $form */
+$form = $this->form;
+echo $this->formRow($form->get('key'));
+echo $this->formRow($form->get('locale'));
+echo $this->formRow($form->get('directTranslation'));?>
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
+<?php
+echo $this->formRow($form->get('entry'));
+echo $this->formRow($form->get('links'));
+echo $this->formRow($form->get('isActive'));
+echo $this->formRow($form->get('security'));
+echo $this->formRow($form->get('submit'));
+//@todo We could actually limit users from adding pre-existing key-locale pairs
+$jsScript = <<<JS
+$("select[name='links[]']").selectize({
+    create: false,
+    sortField: 'text'
+});
+JS;
+$this->inlineScript()->captureStart();
+echo <<<JS
+$(function () {
+$jsScript
+});
+JS;
+$this->inlineScript()->captureEnd();
+
+?>

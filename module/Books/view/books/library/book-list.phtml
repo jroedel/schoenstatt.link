@@ -1,4 +1,5 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 /**
  * @param mixed[] $entities
  * @param string $name
@@ -27,7 +28,7 @@ $showCheckouts = $this->isAllowed('view_checkout_person');?>
         if (isset($book['publicationId']) && isset($this->publications[$book['publicationId']]) &&
             isset($this->publications[$book['publicationId']]['coverThumbnail80pxUri'])
         ):?>
-        	<a href="<?php echo $this->url('publications/publication', ['publication_id' => $book['publicationId']]); ?>">
+        	<a href="<?php echo $this->url('publication', ['sw_id' => $this->publications[$book['publicationId']]['identifier'], 'slug' => $this->publications[$book['publicationId']]['slug']]); ?>">
         	<img src="<?php echo $this->publications[$book['publicationId']]['coverThumbnail80pxUri']; ?>"
         	height="80px" alt="<?php echo $this->escapeHtmlAttr($this->publications[$book['publicationId']]['title']);?>"></a>
     <?php endif;?>

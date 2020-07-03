@@ -7,6 +7,7 @@ return [
         'resource_providers' => [
             'BjyAuthorize\Provider\Resource\Config' => [
                 'personal_information' => [], //admin columns of fathers
+                'publication_drive' => [],
             ],
         ],
 
@@ -21,6 +22,8 @@ return [
                 'allow' => [
                     //patres_details
 //                     [['patres_poweruser', 'patres_moderator_general', 'patres_course_moderator'], 'patres_details'],
+                    //who can see files attached to publications
+                    [['pub_drive'], 'publication_drive'],
                 ],
             ],
         ],
@@ -30,13 +33,18 @@ return [
              * access to all routes unless they are specified here.
             */
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'schoenstatt', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'admin', 'roles' => ['sch_moderator', 'translator']],
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
-                ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator']],
-                ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['sch_administrator']],
+                ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator', 'view_changes']],
+                ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['user', 'guest', null]],
+                ['route' => 'sion-model/phpinfo', 'roles' => ['sch_administrator']],
+                ['route' => 'sion-model/auto-fix-data-problems', 'roles' => ['lib_administrator']],
+                
                 ['route' => 'jtranslate', 'roles' => ['translator', 'sch_general_moderator']],
-                ['route' => 'jtranslate/phrase', 'roles' => ['translator', 'sch_general_moderator']],
+                ['route' => 'jtranslate/phrase/edit', 'roles' => ['translator', 'sch_general_moderator']],
+                ['route' => 'jtranslate/phrase/delete', 'roles' => ['translator', 'sch_general_moderator']],
+                
+                ['route' => 'comments/create', 'roles' => ['user']],
             ],
         ],
     ],

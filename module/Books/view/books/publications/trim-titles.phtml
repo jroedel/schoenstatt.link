@@ -1,4 +1,5 @@
-<?php if ($this->simulate):?>
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
+if ($this->simulate):?>
 <p>All changes listed below are only a simulation, include query parameter, "?simulate=0" to execute.</p><?php
 endif;?>
 <table class="table">

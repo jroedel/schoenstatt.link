@@ -1,0 +1,30 @@
+<?php
+namespace Books\Service;
+
+use Zend\ServiceManager\Factory\FactoryInterface;
+use Interop\Container\ContainerInterface;
+use Books\Model\EventTextTable;
+use Books\Form\TextForm;
+
+/**
+ * @author Jeff Ro <webmaster@schoenstatt.link>
+ */
+class TextFormFactory implements FactoryInterface
+{
+    /**
+     * Create an object
+     *
+     * @inheritdoc
+     */
+    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    {
+        /** @var EventTextTable $table **/
+        $table = $container->get(EventTextTable::class);
+
+        $keywords = $table->getTextTagsOptions(EventTextTable::TEXT_KIND_BLOG);
+
+        $form = new TextForm();
+        $form->get('tags')->setValueOptions($keywords);
+        return $form;
+    }
+}

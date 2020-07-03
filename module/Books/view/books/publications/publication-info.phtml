@@ -1,6 +1,6 @@
 <?php
 use Books\View\Helper\FormatPublication;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 /**
  * @var mixed[] $object
  */
@@ -12,23 +12,25 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 <div class="row">
 <?php if ($showCover):?>
 <div class="col-md-3">
-<?php if (file_exists(sprintf('public/covers/%s-200px.jpg', $object['publicationId']))) : ?>
-    <a href="<?php echo $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>">
-    <img src="<?php echo $this->basePath() . sprintf("/covers/%s-200px.jpg", $object['publicationId']); ?>"
-    height="200px" alt="<?php echo $this->escapeHtmlAttr($object['title']);?>"></a>
-<?php endif;?>
+    <?php if (file_exists(sprintf('public/covers/%s-400px.jpg', $object['publicationId']))) : ?>
+        <a href="<?= $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>">
+        <img src="<?= $this->basePath() . sprintf("/covers/%s-400px.jpg", $object['publicationId']); ?>"
+        class="img-responsive center-block" alt="<?= $this->escapeHtmlAttr($object['title']);?>"></a>
+    <?php endif;?>
 <p class="align-center"><?php //echo $this->escapeHtml(ucwords($object['condition']));?></p>
 </div>
-<div class="col-md-9">
-<?php else:?>
-<div class="col-md-12">
-<?php endif;?>
+<?php 
+    $infoPanelColumnLength = 9;
+else:
+    $infoPanelColumnLength = 12;
+endif;?>
+<div class="col-md-<?= $infoPanelColumnLength?>">
 <div class="panel panel-default" id="infoPanel">
     <div class="panel-heading">
         <div class="row">
         <div class="col-xs-6">
             <h3 class="panel-title"><?php 
-            if ('book-title-and-link' == $panelTitle) {
+            if ('book-title-and-link' === $panelTitle) {
                 echo $this->formatEntity('publication', $object);
             } else {
                 echo $this->escapeHtml($this->translate('Publication Info'));
@@ -38,13 +40,8 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
         <div class="col-xs-6">
             <?php if ($this->isAllowed($object['resourceId'], 'edit')): ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
-                    echo $this->url('publications/publication/edit', array('publication_id' => $object['publicationId']));?>">
-                    <?php echo $this->translate('Edit publication')?></a>
-                </span>
-            <?php elseif (false)://@todo $this->isAllowed('route/publications/publication/suggest')):?>
-                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('courses/course/suggest', array('publication_id' => $object['publicationId']));?>">
-                    <?php echo $this->translate('Suggest change')?></a>
+                    echo $this->url('publication-edit', ['sw_id' => $object['identifier']]);?>">
+                    <?= $this->translate('Edit publication')?></a>
                 </span>
             <?php endif;?>
         </div>
@@ -52,11 +49,12 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
     </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-          <p><strong><?php echo $this->translate('Author(s)');?>:</strong></p>
+          <p><strong><?= $this->translate('Author(s)');?>:</strong></p>
           <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
-      if (!empty($object['subEditions'])):?>
-      <p><strong><?php echo $this->translate('Other editions');?>:</strong></p><?php
-      foreach ($object['subEditions'] as $subId => $subPublication) :?>
+          $otherEditions = array_merge($object['subEditions'], $object['translations']);
+      if (!empty($otherEditions)):?>
+      <p><strong><?= $this->translate('Other editions');?>:</strong></p><?php
+      foreach ($otherEditions as $subPublication) :?>
           <p><?php echo $this->formatEntity('publication', $subPublication);
           echo ' ';
           echo $this->formatEntity('publication', $subPublication, ['display' => FormatPublication::DISPLAY_EDITION]);?></p>
@@ -65,14 +63,20 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
-      <!-- <p><strong><?php echo $this->translate('Superiors');?></strong></p> -->
-        <?php echo $this->formatField('Language', $object['inLanguage']);
-        if (!is_null($object['mainPublication'])) :?>
-        <p><strong><?php echo $this->translate('Current publication');?>:</strong> <?php
-        echo $this->formatEntity('publication', $object['mainPublication']);?></p>
+        <p><strong><?= $this->translate('Language');?>:</strong> <?php
+        if (!empty($object['inLanguage'])) {
+            $languageNames = [];
+            foreach ($object['inLanguage'] as $language) {
+                $languageNames[] = $this->languageName($language);
+            }
+            echo implode(', ', $languageNames);
+        }?></p>
+        <?php if (!is_null($object['mainPublication'])) :?>
+        <p><strong><?= $this->translate('Current publication');?>:</strong> <?php
+        echo $this->formatEntity('publication', $object['mainPublication'], ['display' => FormatPublication::DISPLAY_DISAMBIGUATING_TITLE]);?></p>
         <?php endif;
         if (!is_null($object['translatedFromPublication'])) :?>
-        <p><strong><?php echo $this->translate('Translated from');?>:</strong> <?php
+        <p><strong><?= $this->translate('Translated from');?>:</strong> <?php
         echo $this->formatEntity('publication', $object['translatedFromPublication']);?></p>
         <?php endif;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
@@ -81,15 +85,12 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
             echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Translator(s)'),
                     $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_TRANSLATORS]));
         }
-        if (!empty($object['illustratorsAll'])) {
-            echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Illustrator(s)'),
-                    $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_ILLUSTRATORS]));
-        }
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Date published', $object['datePublishedText'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Publishing status', $object['publishingStatus'], ['displayOnlyIfNotNull' => true]);
+//         echo $this->formatField('Publishing status', $object['publishingStatus'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Book format', $object['bookFormatType'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Volume number', $object['volumeNumber'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Contained in', $object['containedIn'], ['displayOnlyIfNotNull' => true]);
@@ -97,14 +98,14 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
         echo $this->formatField('Genre', $object['genre'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
         echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
-            'displayOnlyWithPermission' => 'route/publications/publication/edit']);
+            'displayOnlyWithPermission' => 'route/publication-edit']);
         foreach ($object['urls'] as $urlObject) :
-            ?><p><?php echo $this->formatPublicationUrlObject($urlObject);?></p><?php
+            ?><p><?= $this->formatPublicationUrlObject($urlObject);?></p><?php
         endforeach;
         ?>
     </div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->
-</div> <!-- course info 1 panel -->
+</div> <!-- info 1 panel -->
 </div> <!-- info 1 column -->
 </div> <!-- Info row -->
 
@@ -118,15 +119,15 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 //     ]);
 // }?>
 
-  <?php if (!is_null($object['publicNotes']) && 0 !== strlen($object['publicNotes'])):?>
+  <?php if (isset($object['publicNotes']) && 0 !== strlen($object['publicNotes'])):?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="notesPanel">
     <div class="panel-heading">
-        <h3 class="panel-title"><?php echo $this->translate('Notes'); ?></h3>
+        <h3 class="panel-title"><?= $this->translate('Notes'); ?></h3>
     </div>
     <div class="panel-body">
-    <div><?php echo $this->markdown($object['publicNotes']);?>
+    <div><?= $this->markdown($object['publicNotes']);?>
     </div>
     </div> <!-- notes panel body -->
 </div> <!-- notes panel -->
@@ -134,16 +135,16 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 </div> <!-- notes row -->
 <?php endif;?>
 
-  <?php if (!is_null($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
+  <?php if (isset($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
           $this->isAllowed($object['resourceId'], 'show-admin-info')):?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="adminNotesPanel">
     <div class="panel-heading">
-        <h3 class="panel-title"><?php echo $this->translate('Admin notes'); ?></h3>
+        <h3 class="panel-title"><?= $this->translate('Admin notes'); ?></h3>
     </div>
     <div class="panel-body">
-    <div><?php echo $this->markdown($object['adminNotes']);?>
+    <div><?= $this->markdown($object['adminNotes']);?>
     </div>
     </div> <!-- notes panel body -->
 </div> <!-- notes panel -->
@@ -152,4 +153,5 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
 <?php endif;
 
 echo $this->booksJsonLd('publication', $object);
+echo $this->coins('publication', $object);
 ?>

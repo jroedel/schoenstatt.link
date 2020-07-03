@@ -3,8 +3,8 @@ $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php
 $form = $this->form;
-$form->setAttribute('action', $this->url('associations/association/delete',
-		array('association_id' => $this->entityId)));
+$form->setAttribute('action', $this->url('association-delete',
+    ['sw_id' => $this->entityObject['identifier']]));
 $form->prepare();
 echo $this->form()->openTag($form);
 echo $this->formRow($form->get('security'));

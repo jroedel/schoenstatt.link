@@ -3,7 +3,7 @@ use Schoenstatt\Form\AssignmentForm;
 
 $this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
 $this->headLink()->appendStylesheet($this->basePath() . '/css/jquery-ui.min.css');
-$this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/selectize-validation-pack.js"));
+$this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize.js");
 
 $headText = 'Create New Assignment';
 $this->headTitle($headText); ?>

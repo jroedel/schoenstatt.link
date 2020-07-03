@@ -1,0 +1,236 @@
+[
+{
+    "type": "js",
+    "watch": ["public/js/basic-include.js", "public/js/jquery-eu-cookie-law-popup.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
+    "pack": ["public/js/basic-include.js", "public/js/jquery-eu-cookie-law-popup.js", "public/js/bootstrap.min.js", "public/js/_jquery.min.js"],
+    "output": "public/js/gen-basic.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js"],
+    "output": "public/js/gen-ui-validate.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js"],
+    "output": "public/js/gen-validate-selectize.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/schoenstatt-advanced-search-custom.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/schoenstatt-advanced-search-custom.js"],
+    "output": "public/js/gen-schoenstatt-advanced-search.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/publications-search-bar.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/publications-search-bar.js"],
+    "output": "public/js/gen-publications-search-bar.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/books-multiple-checkouts.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/books-multiple-checkouts.js"],
+    "output": "public/js/gen-books-checkouts.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": "public/js/books-multiple-checkouts.js",
+    "pack": "public/js/books-multiple-checkouts.js",
+    "output": "public/js/gen-books-checkin.js",
+    "minify": true
+},
+
+
+
+
+{
+    "type": "js",
+    "watch": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js"],
+    "pack": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js"],
+    "output": "public/js/gen-markdown-form-en.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.es.js"],
+    "pack": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.es.js"],
+    "output": "public/js/gen-markdown-form-es.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.es.js"],
+    "pack": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.es.js"],
+    "output": "public/js/gen-markdown-form-pt.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.de.js"],
+    "pack": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.de.js"],
+    "output": "public/js/gen-markdown-form-de.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.fr.js"],
+    "pack": ["public/js/markdown.js", "public/js/to-markdown.js", "public/js/bootstrap-markdown.js", "public/js/bootstrap-markdown.fr.js"],
+    "output": "public/js/gen-markdown-form-fr.js",
+    "minify": true
+},
+
+
+
+
+
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-en.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-en.js"],
+    "output": "public/js/gen-validate-selectize-markdown-en.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-de.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-de.js"],
+    "output": "public/js/gen-validate-selectize-markdown-de.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-es.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-es.js"],
+    "output": "public/js/gen-validate-selectize-markdown-es.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-pt.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-pt.js"],
+    "output": "public/js/gen-validate-selectize-markdown-pt.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-fr.js"],
+    "pack": ["public/js/_jquery-ui.min.js", "public/js/jquery.validate.min.js", "public/js/_selectize.min.js", "public/js/gen-markdown-form-fr.js"],
+    "output": "public/js/gen-validate-selectize-markdown-fr.js",
+    "minify": true
+},
+
+
+
+
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-en.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-en.js"],
+    "output": "public/js/gen-selectize-markdown-en.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-de.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-de.js"],
+    "output": "public/js/gen-selectize-markdown-de.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-es.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-es.js"],
+    "output": "public/js/gen-selectize-markdown-es.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-pt.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-pt.js"],
+    "output": "public/js/gen-selectize-markdown-pt.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-fr.js"],
+    "pack": ["public/js/_selectize.min.js", "public/js/gen-markdown-form-fr.js"],
+    "output": "public/js/gen-selectize-markdown-fr.js",
+    "minify": true
+},
+
+
+
+
+
+
+{
+    "type": "js",
+    "watch": "public/js/bootstrap-sortable.js",
+    "pack": "public/js/bootstrap-sortable.js",
+    "output": "public/js/gen-bootstrap-sortable.min.js",
+    "minify": true
+},
+{
+    "type": "js",
+    "watch": ["public/js/gen-validate-selectize.js", "public/js/schoenstatt-fathers-father-edit.js"],
+    "pack": ["public/js/gen-validate-selectize.js", "public/js/schoenstatt-fathers-father-edit.js"],
+    "output": "public/js/gen-schoenstatt-person-edit.js",
+    "minify": true
+},
+
+
+
+
+
+{
+    "type": "css",
+    "watch": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/style.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "pack": ["public/css/jquery-eu-cookie-law-popup.css", "public/css/style.css", "public/css/bootstrap.min.css", "public/css/flag-icon.min.css", "public/css/font-awesome.min.css"],
+    "output": "public/css/gen-basic.css",
+    "minify": true
+},
+{
+    "type": "css",
+    "watch": ["public/css/jquery-ui.min.css", "public/css/selectize.bootstrap3.css"],
+    "pack": ["public/css/jquery-ui.min.css", "public/css/selectize.bootstrap3.css"],
+    "output": "public/css/gen-selectize-jquery-ui.css",
+    "minify": true
+},
+{
+    "type": "css",
+    "watch": ["public/css/selectize.bootstrap3.css", "public/css/bootstrap-markdown.min.css"],
+    "pack": ["public/css/selectize.bootstrap3.css", "public/css/bootstrap-markdown.min.css"],
+    "output": "public/css/gen-selectize-markdown.css",
+    "minify": true
+},
+{
+    "type": "css",
+    "watch": ["public/css/jquery-ui.min.css", "public/css/selectize.bootstrap3.css", "public/css/bootstrap-markdown.min.css"],
+    "pack": ["public/css/jquery-ui.min.css", "public/css/selectize.bootstrap3.css", "public/css/bootstrap-markdown.min.css"],
+    "output": "public/css/gen-selectize-markdown-jquery-ui.css",
+    "minify": true
+},
+{
+    "type": "css",
+    "watch": "public/css/bootstrap-sortable.css",
+    "pack": "public/css/bootstrap-sortable.css",
+    "output": "public/css/gen-bootstrap-sortable.min.css",
+    "minify": true
+},
+{
+    "type": "css",
+    "watch": "public/css/selectize.bootstrap3.css",
+    "pack": "public/css/selectize.bootstrap3.css",
+    "output": "public/css/gen-selectize.bootstrap.min.css",
+    "minify": true
+}
+]

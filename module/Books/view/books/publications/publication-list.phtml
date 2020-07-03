@@ -1,6 +1,6 @@
 <?php
 use Books\View\Helper\FormatPublication;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $columns = $this->columns;
 /**
  * @var $objects mixed[]
@@ -16,8 +16,11 @@ $columnNames = [
     'edition'   => 'Edition',
     'publicationId' => 'Publication Id',
     'language'  => 'Language',
+    'dataSourceId'     => 'Data source id'
 ];
+$files = isset($this->files) ? $this->files : null;
 ?>
+<div class="responsive-table">
 <table class="table">
 <tr><?php foreach ($columns as $key => $column) :
     if (!isset($columnNames[$column])) {
@@ -27,9 +30,8 @@ $columnNames = [
     <th><?php echo $this->translate($columnNames[$column]);?></th>
 <?php endforeach;?>
 </tr>
-<?php foreach($this->objects as $entityId => $entity) :
-$username = $this->zfcUserDisplayName();
-if (!$this->isAllowed($entity['resourceId'], 'show') || (!$entity['isRevisedWithBookInHand'] && false === $username)) {
+<?php foreach($this->objects as $entity) :
+if (!$this->isAllowed($entity['resourceId'], 'show')) {
     continue;
 }?>
 <tr><?php foreach ($columns as $column) :
@@ -37,7 +39,7 @@ switch ($column) {
     case 'cover': ?>
     <td><?php
         if (file_exists(sprintf('public/covers/%s-80px.jpg', $entity['publicationId']))):?>
-    	<a href="<?php echo $this->url('publications/publication', ['publication_id' => $entity['publicationId']]); ?>">
+    	<a href="<?php echo $this->url('publication', ['sw_id' => $entity['identifier'], 'slug' => $entity['slug']]); ?>">
     <img src="<?php echo $this->basePath() . sprintf("/covers/%s-80px.jpg", $entity['publicationId']); ?>"
     height="80px" alt="<?php echo $this->escapeHtmlAttr($entity['title']);?>"></a>
     	<?php endif;
@@ -45,11 +47,26 @@ switch ($column) {
         break;
     case 'authors':?>
 		<td><?php echo $this->formatEntity('publication', $entity, [
-		    'display' => 'authors',
+		    'display' => FormatPublication::DISPLAY_AUTHORS,
 		]);?></td>
     	<?php break;
     case 'title':?>
-		<td><?php echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);?></td>
+		<td><?php //@todo move this to the formatPublication View helper
+		echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);
+		if (isset($files)) {
+		    if (isset($files[$entity['publicationId']])) {
+    		    echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
+    		        $this->translate('Downloadable files available'));
+		    } elseif (!empty($entity['subEditions'])) {
+                foreach ($entity['subEditions'] as $key => $value) {
+                    if (isset($files[$key])) {
+                        echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
+                            $this->translate('Downloadable files available'));
+                        break;
+                    }
+                }
+		    }
+		}?></td>
     	<?php break;
     case 'edition':?>
 		<td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>
@@ -60,7 +77,10 @@ switch ($column) {
     case 'language':?>
 		<td><?php echo $this->escapeHtml($entity['inLanguage']);?></td>
     	<?php break;
-
+case 'dataSourceId':?>
+		<td><a href="?id=<?= $this->escapeHtmlAttr($entity['dataSourceId']);?>"><?php 
+		  echo $this->escapeHtml($entity['dataSourceId']);?></a></td>
+    	<?php break;
     default:
         ;
     break;
@@ -68,3 +88,4 @@ switch ($column) {
 endforeach;
 endforeach; ?></tr>
 </table>
+</div>

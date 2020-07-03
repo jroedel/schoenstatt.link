@@ -1,12 +1,19 @@
 <?php
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+
 echo $this->partial('search-bar', ['form' => $form, 'centerOnPage' => false]);
+$associationSwIdFilter = new ToSchoenstattLinkIdentifier('association');
+$locale = \Locale::getDefault();
 echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
     'assignments' => $this->generalPresidium['assignments'],
     'wrapInPanel' => true,
     'showActive' => true,
     'showInactive' => false,
-    'headerText'  => '<a href="'.$this->url('associations/association',
-        ['association_id' => $this->generalPresidiumId]).'">'.
+    'headerText'  => '<a href="'.$this->url('association',
+        [
+            'sw_id' => $associationSwIdFilter->filter($this->generalPresidiumId),
+            'slug' => $this->generalPresidium['slugByLocale'][$locale]
+        ]).'">'.
         $this->translate($this->generalPresidium['name']).'</a>',
     'columns'       => ['role', 'person', 'email', 'telephone'],
 ]);

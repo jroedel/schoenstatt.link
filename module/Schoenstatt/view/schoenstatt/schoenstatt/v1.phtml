@@ -1,0 +1,31 @@
+<?php
+use Zend\View\Helper\HeadScript;
+
+$this->headLink()->appendStylesheet($this->basePath() . '/api/swagger-ui.css');
+?>
+    <div id="swagger-ui"></div>
+<?php $this->inlineScript()->appendFile("/api/swagger-ui-bundle.js");
+$this->inlineScript()->appendFile("/api/swagger-ui-standalone-preset.js");
+$this->inlineScript()->captureStart();
+echo <<<JS
+    window.onload = function() {
+      // Begin Swagger UI call region
+      const ui = SwaggerUIBundle({
+        url: "/api/v1.yaml",
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [
+          SwaggerUIBundle.presets.apis,
+          SwaggerUIStandalonePreset
+        ],
+        plugins: [
+          SwaggerUIBundle.plugins.DownloadUrl
+        ],
+        layout: "StandaloneLayout"
+      })
+      // End Swagger UI call region
+
+      window.ui = ui
+    }
+JS;
+$this->inlineScript()->captureEnd();
