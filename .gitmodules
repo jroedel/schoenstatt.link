@@ -1,0 +1,9 @@
+[submodule "module/SionModel"]
+	path = module/SionModel
+	url = git@github.com:jroedel/zf3-sion-model.git
+[submodule "module/JUser"]
+	path = module/JUser
+	url = git@github.com:jroedel/zf3-juser.git
+[submodule "module/JTranslate"]
+	path = module/JTranslate
+	url = git@github.com:jroedel/zf3-jtranslate.git
