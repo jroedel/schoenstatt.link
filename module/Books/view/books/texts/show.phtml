@@ -1,5 +1,6 @@
 <?php /** @var \Zend\View\Renderer\PhpRenderer $this */
-$headText = $this->translate($this->entity['title']);
+$headText = $this->entity['title'];
+// $headText = $this->translate($this->entity['title']);
 $this->headTitle($headText);
 $object = $this->entity;?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>

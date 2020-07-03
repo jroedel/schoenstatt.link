@@ -27,6 +27,7 @@ class EventTextTable extends SionTable implements
     
     const TEXT_KIND_JK_TEXT = 'jk-text';
     
+    const TEXT_KIND_OTHER =  'other';
     /**
      * @var array $config
      */

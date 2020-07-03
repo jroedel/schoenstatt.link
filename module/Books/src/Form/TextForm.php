@@ -11,7 +11,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
     public function __construct()
     {
         parent::__construct('text');
-        $this->setAttribute('method', 'GET');
+        $this->setAttribute('method', 'POST');
         $this->add([
             'name' => 'title',
             'type' => 'Text',
