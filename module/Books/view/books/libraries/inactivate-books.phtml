@@ -1,10 +1,11 @@
 <?php
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/inactivate-books.js"));
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$this->headScript()->appendFile($this->basePath() . "/js/books-inactivate-books.js");
 $headText = 'Inactivate books';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('libraries/library/inactivate-books', ['library_id' => $this->libraryId]));
+$form->setAttribute('action', $this->url(null, [], [], true));
 $form->prepare();
 echo $this->form()->openTag($form);
 echo $this->formRow($form->get('inactivationReason'));

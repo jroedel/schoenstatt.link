@@ -1,18 +1,10 @@
 <?php
-use Books\Form\BookForm;
-use Zend\Json\Json;
-
-$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
-$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
-$this->headLink()->appendStylesheet($this->basePath() . '/css/jquery-ui.min.css');
-// $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/jquery.min.js"));
-$this->headScript()->appendFile($this->basePath() . '/js/jquery.validate.min.js');
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
-// $this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/book-form.js"));
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown-jquery-ui.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
-$this->headScript()->offsetSetFile(100, $this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
-/** @var BookForm $form */
+$this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
+
+/** @var \Books\Form\BookForm $form */
 $form = $this->form;
 $libraryOptions = $form->getLibraryOptions();
 echo $this->formRow($form->get('withinLibraryId'));
@@ -28,12 +20,12 @@ echo $this->formRow($form->get('category'));
 echo $this->formRow($form->get('isbn'));
 echo $this->formRow($form->get('bookEdition'));
 echo $this->formRow($form->get('numberOfPages'));
-echo $this->formRow($form->get('copyrightYear'));
+echo $this->formRow($form->get('publishedYear'));
 echo $this->formRow($form->get('publisher'));
 echo $this->formRow($form->get('publishingPlace'));
 echo $this->formRow($form->get('publicationId'));
 echo $this->formRow($form->get('keywords'));?>
-<div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php
 echo $this->formRow($form->get('publicNotes'));
 echo $this->formRow($form->get('adminNotes'));
@@ -41,10 +33,8 @@ echo $this->formRow($form->get('adminTags'));
 echo $this->formRow($form->get('isActive'));
 echo $this->formRow($form->get('inactivationReason'));
 echo $this->formRow($form->get('security'));
-$libraryOptionsJson = Json::encode($libraryOptions);
 $nextWithinLibraryId = $libraryOptions->nextWithinLibraryId;
 $jsScript = <<<JS
-libraryOptions = $libraryOptionsJson;
 $("select[name='authors[]']").selectize({
     create: true,
     sortField: 'text',
@@ -85,8 +75,6 @@ $("#book").validate({
 $.validator.addMethod("isbn", function(value, element) {
   return this.optional( element ) || validateIsbn( value );
 }, 'Please enter a valid ISBN number.');
-
-//console.log(libraryOptions);
 JS;
 $this->inlineScript()->captureStart();
 echo <<<JS

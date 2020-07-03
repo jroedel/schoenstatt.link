@@ -1,17 +1,18 @@
 <?php
-$this->headLink()->appendStylesheet($this->basePath() . '/css/bootstrap-markdown.min.css');
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/markdown-form-$lang.js"));
-$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/selectize.min.js"));
+$this->headScript()->appendFile($this->basePath() . "/gen-selectize-markdown-$lang.js");
 $form = $this->form;
 echo $this->formRow($form->get('libraryId'));
 echo $this->formRow($form->get('name'));
+echo $this->formRow($form->get('abbreviation'));
 echo $this->formRow($form->get('description'));
 echo $this->formRow($form->get('callNumberRegex'));
 echo $this->formRow($form->get('callNumberHelpText'));
 echo $this->formRow($form->get('callNumberExplanation'));
 echo $this->formRow($form->get('mainShowDisplay'));
+echo $this->formRow($form->get('sortTextFormat'));
 echo $this->formRow($form->get('labelLine1'));
 echo $this->formRow($form->get('labelLine2'));
 echo $this->formRow($form->get('labelLine3'));

@@ -1,13 +1,14 @@
-<?php use Books\Model\LibraryOptions;
-/** @var LibraryOptions $libraryOptions */
+<?php /** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Books\Model\LibraryOptions $libraryOptions */
 $libraryOptions = $this->entity['options'];
 if (!empty($this->entity['collectionCategoryStatistics']) && is_null($this->books)):?>
     <?php foreach ($this->entity['collectionCategoryStatistics'] as $collectionId => $categories) :
         $collectionName = isset($libraryOptions->collections[$collectionId]) ?
             $this->translate($libraryOptions->collections[$collectionId]->name) :
             sprintf('(%s)', $this->translate('none'));?>
-        <h3 id="collection_<?php echo $this->escapeHtmlAttr($collectionId);?>"><?php echo $this->escapeHtml($collectionName);
-        if (isset($libraryOptions->collections[$collectionId]) && $this->isAllowed($this->entity['resourceId'], 'administrate')) {
+        <h3 id="collection_<?php echo $this->escapeHtmlAttr($collectionId);?>">
+        <a href="<?= $this->url(null, [], ['query' => ['collectionId' => $collectionId]], true);?>"><?php echo $this->escapeHtml($collectionName);?></a>
+        <?php if (isset($libraryOptions->collections[$collectionId]) && $this->isAllowed($this->entity['resourceId'], 'administrate')) {
             echo $this->editPencil('collection', $collectionId);
         }?></h3>
     	<ul class="list-group">

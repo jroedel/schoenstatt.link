@@ -1,37 +1,58 @@
 <?php
-$this->headLink()->appendStylesheet($this->basePath() . '/css/selectize.bootstrap3.css');
-$this->headScript()->appendFile($this->basePath() . "/". $this->asset("js/selectize.min.js"));
+$this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown-jquery-ui.css');
+$lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
+$this->headScript()->appendFile($this->basePath() . "/js/gen-validate-selectize-markdown-$lang.js");
 $form = $this->form;
 echo $this->formHidden($form->get('associationId'));?>
 <div class="form-group ">
     <?php echo $this->formLabel($form->get('name'));
     echo $this->formElement($form->get('name'));
     echo $this->formElementErrors($form->get('name'));
+    echo $this->helpBlock($form->get('name'));
     echo $this->formElement($form->get('overrideNameFormat'));
-    echo $this->formElementErrors($form->get('overrideNameFormat')).'<br>';
+    echo $this->formElementErrors($form->get('overrideNameFormat'));
+    echo $this->helpBlock($form->get('overrideNameFormat')).'<br>';
     echo $this->formElement($form->get('isNameTranslateable'));
-    echo $this->formElementErrors($form->get('isNameTranslateable')).'<br>';
+    echo $this->formElementErrors($form->get('isNameTranslateable'));
+    echo $this->helpBlock($form->get('isNameTranslateable'));?>
+</div>
+<div class="form-group ">
+    <?php echo $this->formLabel($form->get('internalName'));
+    echo $this->formElement($form->get('internalName'));
+    echo $this->formElementErrors($form->get('internalName'));
+    echo $this->helpBlock($form->get('internalName'));
+    echo $this->formElement($form->get('isInternalNameTranslateable'));
+    echo $this->formElementErrors($form->get('isInternalNameTranslateable'));
+    echo $this->helpBlock($form->get('isInternalNameTranslateable')).'<br>';
+    //@todo only show this for associationKinds which could actually be life communities
     echo $this->formElement($form->get('isLifeCommunity'));
-    echo $this->formElementErrors($form->get('isLifeCommunity')).'<br>';
+    echo $this->formElementErrors($form->get('isLifeCommunity'));
+    echo $this->helpBlock($form->get('isLifeCommunity')).'<br>';
     echo $this->formElement($form->get('isActive'));
-    echo $this->formElementErrors($form->get('isActive'));?>
+    echo $this->formElementErrors($form->get('isActive'));
+    echo $this->helpBlock($form->get('isActive'));?>
 </div>
 <?php
 $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('parentId'));
 echo $this->formRow($form->get('kind'));
 echo $this->formRow($form->get('country'));
+echo $this->formRow($form->get('timeZoneId'));
+echo $this->formRow($form->get('openingHoursHuman'));
+echo $this->formRow($form->get('openingHoursSpecificationJson'));
+echo $this->formRow($form->get('eventsHuman'));
+// echo $this->formRow($form->get('eventsJson'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
-echo $this->formRow($form->get('suppressionDate'));?>
-<div style="clear: left; display: block;" class="pull-right"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
+//echo $this->formRow($form->get('suppressionDate'));?>
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php echo $this->formRow($form->get('publicNotes'));
 echo $this->formRow($form->get('adminNotes'));?>
     <hr>
     <h2><?php echo $this->translate('Contact Info');?></h2>
 <?php
 echo $this->formRow($form->get('email'));
-echo $this->formRow($form->get('email2'));
+// echo $this->formRow($form->get('email2'));
 echo $this->formRow($form->get('phone1'));
 echo $this->formRow($form->get('phone1Label'));
 echo $this->formRow($form->get('phone2'));
@@ -49,19 +70,20 @@ echo $this->formRow($form->get('url3'));
 echo $this->formRow($form->get('url3Label'));
 
 echo $this->formRow($form->get('geoPoint'));
-echo $this->formRow($form->get('post1Street1'));
-echo $this->formRow($form->get('post1Street2'));
-echo $this->formRow($form->get('post1CityState'));
-echo $this->formRow($form->get('post1Zip'));
+echo $this->formRow($form->get('street1'));
+echo $this->formRow($form->get('street2'));
+echo $this->formRow($form->get('cityState'));
+echo $this->formRow($form->get('zip'));
 $this->formSelect()->setTranslatorEnabled(false);
-echo $this->formRow($form->get('post1Country'));
-echo $this->formRow($form->get('post2Street1'));
-echo $this->formRow($form->get('post2Street2'));
-echo $this->formRow($form->get('post2CityState'));
-echo $this->formRow($form->get('post2Zip'));
-echo $this->formRow($form->get('post2Country'));
+// echo $this->formRow($form->get('post1Country'));
+// echo $this->formRow($form->get('postStreet1'));
+// echo $this->formRow($form->get('postStreet2'));
+// echo $this->formRow($form->get('postCityState'));
+// echo $this->formRow($form->get('postZip'));
+// echo $this->formRow($form->get('post2Country'));
 $this->formSelect()->setTranslatorEnabled(true);
-echo $this->formRow($form->get('contactNotes'));
+echo $this->formRow($form->get('googlePlaceId'));
+// echo $this->formRow($form->get('contactNotes'));
 echo $this->formRow($form->get('security'));
 $jsScript = <<<JS
 $("select[name='country']").selectize({
@@ -92,14 +114,14 @@ $("select[name='url3Label']").selectize({
     create: true,
     sortField: 'text'
 });
-$("select[name='post1Country']").selectize({
-    create: false,
-    sortField: 'text'
-});
-$("select[name='post2Country']").selectize({
-    create: false,
-    sortField: 'text'
-});
+// $("select[name='post1Country']").selectize({
+//     create: false,
+//     sortField: 'text'
+// });
+// $("select[name='post2Country']").selectize({
+//     create: false,
+//     sortField: 'text'
+// });
 JS;
 
 $this->inlineScript()->captureStart();

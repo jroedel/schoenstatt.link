@@ -1,0 +1,36 @@
+<?php
+use Spatie\SchemaOrg\BaseType;
+/** @var \Zend\View\Renderer\PhpRenderer $this */?>
+
+<div class="row"><div class="col-md-12">
+<?php if ($this->entity['chordProSpec']) {
+    
+    $this->headLink()->appendStylesheet($this->basePath() . '/css/chordpro.css');
+    $parser = new \ChordPro\Parser();
+    
+    // Choose one (or all !) of those formatters following your needs
+    $html_formatter = new \ChordPro\HtmlFormatter();
+//     $monospace_formatter = new ChordPro\MonospaceFormatter();
+//     $json_formatter = new ChordPro\JSONFormatter();
+    
+    // Create song object after parsing txt
+    $song = $parser->parse($this->entity['chordProSpec']);
+    $options = [
+        'french' => false,
+        'no_chords' => false
+    ];
+    
+    // Render !
+    $html = $html_formatter->format($song,$options);
+    echo $html;
+}?>
+<p></p>
+<p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
+</div></div>
+<?php 
+if (isset($this->schema)) {
+    $schema = $this->schema;
+    if ($schema instanceof BaseType) {
+        echo $schema->toScript();
+    }
+}?>

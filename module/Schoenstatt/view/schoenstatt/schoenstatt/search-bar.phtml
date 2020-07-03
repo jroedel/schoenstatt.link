@@ -2,9 +2,7 @@
 $form = $this->form;
 $form->setAttribute('action', $this->url('assignments/search'));
 $form->prepare();?>
-<div class="row" style="margin-bottom: 30px;
-<?php if ($this->centerOnPage) {
-  echo " margin-top: 15%;";} ?>">
+<div class="row search-bar <?php if ($this->centerOnPage) {echo "search-bar-center";} ?>">
       <div class="col-md-6 col-md-offset-3 col-xs-12">
           <div id="custom-search-input">
            <?php echo $this->form()->openTag($form); ?>

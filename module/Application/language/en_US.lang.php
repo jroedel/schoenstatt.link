@@ -1,6 +1,6 @@
 <?php
 
-return array(
+return [
     'About half of the work to maintain a reliable, centralized source of information depends on programmers who can provide the easy-to-use tools to submit and access the data.' => 'About half of the work to maintain a reliable, centralized source of information depends on programmers who can provide the easy-to-use tools to submit and access the data.',
     'Are you a developer?' => 'Are you a developer?',
     'Are you a Kentenich scholar?' => 'Are you a Kentenich scholar?',
@@ -10,9 +10,12 @@ return array(
     'Email' => 'Email',
     'Google Knowledge Graph' => 'Google Knowledge Graph',
     'https://en.wikipedia.org/wiki/Knowledge_Graph' => 'https://en.wikipedia.org/wiki/Knowledge_Graph',
+    'Latest blog posts' => 'Latest blog posts',
     'Learn more' => 'Learn more',
+    'Literature' => 'Literature',
     'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.' => 'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Founder. Help us by completing our bibliography of Father Kentenich and Schoenstatt in all languages and writing brief book summaries.',
     'publication edits' => 'publication edits',
+    'Register' => 'Register',
     'schoenstatt edits' => 'schoenstatt edits',
     'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!' => 'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!',
     'Schoenstatt Link' => 'Schoenstatt Link',
@@ -21,6 +24,7 @@ return array(
     'Search publications' => 'Search publications',
     'Sign in' => 'Sign in',
     'translation edits' => 'translation edits',
+    'Turn down for what' => 'Turn down for what',
     'Username' => 'Username',
     'We need your help!' => 'We need your help!',
-);
+];

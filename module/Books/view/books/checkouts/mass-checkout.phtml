@@ -1,14 +1,13 @@
 <?php
 use Zend\Json\Json;
-
-$this->headScript()->appendFile($this->basePath() . '/'. $this->asset("js/checkout.js"));
+/** @var \Zend\View\Renderer\PhpRenderer $this */
+$this->headScript()->appendFile($this->basePath() . '/js/gen-books-checkouts.js');
+$this->headLink()->appendStylesheet($this->basePath() . '/css/mass-checkouts.css');
 $headText = 'Book Checkout';
 $this->headTitle($headText); ?>
-<style>input, select, .selectize-input {display: block; padding: 0; margin: 0; width: 100%;}
-td {margin: 0; padding: 0;}</style>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('libraries/library/mass-checkout', ['library_id' => $this->libraryId]));
+$form->setAttribute('action', $this->url(null, [], [], true));
 $form->prepare();
 echo $this->form()->openTag($form);
 $checkouts = $form->get('checkout');
@@ -65,7 +64,6 @@ $("select[name*='personId']").selectize({
     create: false
 });
 $("input[name='checkout[0][checkedOutOn]']").focus();
-$("input[style*='width: 8px;']").css( "width", "" );
 $("#addRows").click(function() {
     var currentCount = $('form tr').length;
     var template = $('#rowTemplate').data('template');
@@ -80,7 +78,6 @@ $("#addRows").click(function() {
     	options: personOptions,
         create: false
     });
-    $("input[style*='width: 8px;']").css( "width", "" );
     return false;
 });
 JS;

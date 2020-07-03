@@ -1,26 +1,27 @@
 Options +FollowSymLinks
 RewriteEngine On
 
-# fix some bad links that got into google's index
-RewriteCond %{REQUEST_URI} ^/en-US$ [OR]
-RewriteCond %{REQUEST_URI} ^/en-US/$
-RewriteRule ^(.*)$ https://schoenstatt\.link/en/ [R=301,L]
-
-RewriteCond %{REQUEST_URI} ^/en-US/ [NC]
-RewriteRule ^en-US/(.*)$ https://schoenstatt\.link/en/$1 [R=301,L]
-
-# Redirect to https page
+# The following rule tells Apache that if the requested filename
+# exists, simply serve it.
 RewriteCond %{HTTP_HOST} ^(www\.)?schoenstatt\.link [NC]
 RewriteCond %{SERVER_PORT} 80 
-RewriteRule ^(.*)$ https://schoenstatt\.link/$1 [R=301,L]
+RewriteRule ^(.*)$ https://schoenstatt\.link/$1 [R,L]
 
-# Redirect to canonical host
-RewriteCond %{HTTP_HOST} ^www\.schoenstatt\.link [NC]
-RewriteRule ^(.*)$ https://schoenstatt\.link/$1 [R=301,L]
-
-# Enable HSTS for a month
+# Enable HSTS for 6 months, preload into Chrome
 SetEnv HTTPS on
-Header set Strict-Transport-Security "max-age=2592000" env=HTTPS
+Header set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" env=HTTPS
+
+# protect against non-scripts being run
+Header add X-Content-Type-Options nosniff
+
+# old X frame support, we don't use iframes
+Header add X-Frame-Options DENY
+
+# XSS protection in IE and Chrome
+Header add X-XSS-Protection "1; mode=block"
+
+# set Referrer policy
+Header add Referrer-Policy "no-referrer, strict-origin-when-cross-origin"
 
 #ZF2 rewrite
 RewriteCond %{REQUEST_FILENAME} -s [OR]
@@ -53,9 +54,22 @@ SetEnv "APP_ENV" "production"
       text/xml
 </IfModule>
 
-#Set Cache-Control 1 month for static files
-<filesMatch ".(svg|ico|pdf|flv|jpeg|png|gif|js|css|swf)$">
-Header set Cache-Control "public,max-age=2592000"
+# One year for image files
+<filesMatch ".(jpg|jpeg|png|gif|ico|svg|flv)$">
+Header set Cache-Control "max-age=31536000, public, only-if-cached"
 </filesMatch>
+
+# One month for css and js
+<filesMatch ".(css|js)$">
+Header set Cache-Control "max-age=2628000, public, only-if-cached"
+</filesMatch>
+
+#Only cache css for 1 day
+<Files gen-basic.css>
+Header unset Cache-Control
+Header set Cache-Control "public,max-age=86400"
+</Files>
+
+
 #ExpiresActive On
 #ExpiresByType image/svg+xml A2592000

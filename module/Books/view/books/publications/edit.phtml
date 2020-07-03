@@ -1,16 +1,16 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 $headText = 'Edit publication';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('publications/publication/edit',
-		['publication_id' => $this->entityId]));
+$form->setAttribute('action', $this->url(null, [], [], true));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', $this->vars);
  echo $this->formSubmit($form->get('submit'));
-if ($this->isAllowed('route/publications/publication/delete')) :?>
-    &nbsp;<a class="btn btn-danger" href="<?php echo $this->url('publications/publication/delete', [], [], true);?>"><?php
+if ($this->isAllowed('route/publication-delete')) :?>
+    &nbsp;<a class="btn btn-danger" href="<?php echo $this->url('publication-delete', [], [], true);?>"><?php
     echo $this->translate('Delete')?></a>
 <?php endif;
  echo $this->form()->closeTag();

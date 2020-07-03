@@ -1,4 +1,5 @@
 <?php
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 /**
  * @var mixed[] $object
  */
@@ -26,11 +27,6 @@ $object = $this->object;
                     echo $this->url('books/book/edit', [], [], true);?>">
                     <?php echo $this->translate('Edit book')?></a>
                 </span>
-            <?php elseif (false)://@todo $this->isAllowed('route/publications/publication/suggest')):?>
-                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('courses/course/suggest', array('publication_id' => $object['publicationId']));?>">
-                    <?php echo $this->translate('Suggest change')?></a>
-                </span>
             <?php endif;?>
         </div>
         </div>
@@ -42,21 +38,34 @@ $object = $this->object;
         <?php 
         echo $this->formatField('Call number', $object['callNumber']);
         echo $this->formatField('Pending call number', $object['newCallNumber'], ['displayOnlyIfNotNull' => true]);
-        if (isset($object['collectionId']) && isset($object['library']['options']) && isset($object['library']['options']->collections[$object['collectionId']])) {
-            echo $this->formatField('Collection', $object['library']['options']->collections[$object['collectionId']]->name, ['displayOnlyIfNotNull' => true]);
-        }
+        if (isset($object['collectionId']) && isset($object['library']['options']) && isset($object['library']['options']->collections[$object['collectionId']])) :
+        ?><p><strong><?= $this->translate('Collection');?>:</strong> <a href="<?=
+        $this->url('libraries/library', ['library_id' => $object['libraryId']], ['query' => ['collectionId' => $object['collectionId']]])?>"><?=
+        $this->escapeHtml($object['library']['options']->collections[$object['collectionId']]->name)?></a>
+        </p><?php endif;
         echo $this->formatField('Barcode', $object['withinLibraryId']);
         echo $this->formatField('Author(s)', $object['authorsPrettyText']);?>
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
+        <p><strong><?= $this->translate('Language');?>:</strong> <?php
+        if (!empty($object['inLanguage'])) {
+            $languageNames = [];
+            foreach ($object['inLanguage'] as $language) {
+                $languageNames[] = $this->languageName($language);
+            }
+            echo implode(', ', $languageNames);
+        }?></p>
         <?php
-        echo $this->formatField('Language', $object['inLanguage']);
-        echo $this->formatField('Category', $object['category']); //make this a link to search involving all books of this category
+        if (isset($object['category'])):?>
+        <p><strong><?= $this->translate('Category');?>:</strong> <a href="<?=
+        $this->url('libraries/library', ['library_id' => $object['libraryId']], ['query' => ['category' => $object['category']]])
+        ?>"><?= $this->escapeHtml($object['category'])?></a></p>
+        <?php endif;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
-        echo $this->formatField('Copyright year', $object['copyrightYear'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Year published', $object['publishedYear'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publisher', $object['publisher'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Publishing place', $object['publishingPlace'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);

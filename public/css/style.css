@@ -1,37 +1,15 @@
-body {
-    padding-top: 60px;
-    padding-bottom: 40px;
-}
 
-.zf-green {
-    color: #68b604;
+.flag-icon-gb-sct {
+ background-image:url(../flags/4x3/gb-sct.svg)
 }
-
-.btn-success {
-  background-color: #57a900;
-  background-image: -moz-linear-gradient(top, #70d900, #57a900);
-  background-image: -ms-linear-gradient(top, #70d900, #57a900);
-  background-image: -webkit-gradient(linear, 0 0, 0 100%, from(#70d900), to(#57a900));
-  background-image: -webkit-linear-gradient(top, #70d900, #57a900);
-  background-image: -o-linear-gradient(top, #70d900, #57a900);
-  background-image: linear-gradient(top, #70d900, #57a900);
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#70d900', endColorstr='#57a900', GradientType=0);
+.flag-icon-gb-sct.flag-icon-squared {
+ background-image:url(../flags/1x1/gb-sct.svg)
 }
-
-.btn-success:hover,
-.btn-success:active,
-.btn-success.active,
-.btn-success.disabled,
-.btn-success[disabled] {
-  background-color: #57a900;
+.commonmark-help {
+ clear: left;
+ display: block;
 }
-
-.btn-success:active, .btn-success.active {
-  background-color: #57a900;
-}
-
-div.container a.brand {
-    background: url("../img/zf2-logo.png") no-repeat scroll 0 10px transparent;
-    margin-left: 0;
-    padding: 8px 20px 12px 40px;
-}
+.panel-body {overflow:scroll;}
+.search-bar {margin-bottom: 30px;}
+.search-bar-center {margin-top: 15%;}
+#association-photos .thumbnail img {height:180px;}

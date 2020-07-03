@@ -1,13 +1,10 @@
 <?php
-
 use Books\Model\LibraryTable;
-
+/** @var \Zend\View\Renderer\PhpRenderer $this */
 /**
  * @param mixed[] $checkouts
  */
-$tz = new DateTimeZone('UTC');
-$today = new \DateTime(null, $tz);
-foreach ($this->checkouts as $checkoutId => $object) {
+foreach ($this->checkouts as $object) {
     if (!isset($object['book'])) {
         continue;
     }

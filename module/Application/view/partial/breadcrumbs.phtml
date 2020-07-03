@@ -1,0 +1,49 @@
+<?php use Spatie\SchemaOrg\BreadcrumbList;
+use Spatie\SchemaOrg\ListItem;
+// if we aren't receiving any pages, just get out
+if (!isset($this->pages) || count($this->pages) < 1) {
+    return;
+}?>
+<ol class="breadcrumb">
+    <?php
+    $listItems = [];
+    $position = 1;
+    // iterate through the pages
+    foreach ($this->pages as $key => $page):
+        $listItem = new ListItem();
+        $listItem->position($position);
+        if ($key < count($this->pages) - 1) {
+            $listItem->setProperty('item', [
+                '@id' => $this->serverUrl().$page->getHref(),
+                'name' => $page->getLabel()
+            ]);
+        } else {
+            $listItem->setProperty('item', [
+                '@id' => $this->serverUrl().$this->url(null, [], [], true),
+                'name' => $page->getLabel()
+            ]);
+        }
+        $listItems[] = $listItem;
+        $position++;
+    ?>
+        <li<?php if ($page->isActive()) {
+            echo ' class="active"';
+        }?>>
+
+            <?php
+            // if this isn't the last page, add a link and the separator:
+            if ($key < count($this->pages) - 1):
+            ?>
+                <a href="<?= $page->getHref() ?>"><?= $page->getLabel() ?></a>
+            <?php
+            // otherwise, output the name only:
+            else:
+            ?>
+                <?= $page->getLabel() ?>
+            <?php endif; ?>
+        </li>
+    <?php endforeach; ?>
+</ol>
+<?php $breadcrumbsList = new BreadcrumbList();
+echo $breadcrumbsList->setProperty('itemListElement', $listItems)->toScript();
+?>
