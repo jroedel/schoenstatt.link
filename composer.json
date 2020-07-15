@@ -6,11 +6,12 @@
         "framework",
         "zf3",
         "mvc",
-        "translation"
+        "translation",
+        "schoenstatt"
     ],
     "homepage": "http://framework.zend.com/",
     "require": {
-        "php": "^5.6 || ^7.0",
+        "php": "^7.3",
         "nesbot/carbon": "^1.28",
         "giggsey/libphonenumber-for-php": "^8.11",
         "neitanod/forceutf8": "^2.0",
@@ -54,7 +55,11 @@
         "cyberprojekt/libkml": "dev-master",
         "scottconnerly/timezone": "^0.2.0",
         "nicolaswurtz/chordpro-php": "dev-master",
-        "samdark/sitemap": "^2.2"
+        "samdark/sitemap": "^2.2",
+        "lib-icu":">=4.4",
+        "ext-intl":"*",
+        "ext-pdo":"*",
+        "ext-pdo_mysql":"*"
     },
     "require-dev": {
         "bjyoungblood/bjy-profiler": "^1.1",
@@ -105,5 +110,10 @@
         	"Schoenstatt\\": "module/Schoenstatt/src/",
         	"SionModel\\": "module/SionModel/src/"
     	}
-	}
+	},
+    "scripts": {
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "serve": "php -S 0.0.0.0:8080 -t public"
+    }
 }
