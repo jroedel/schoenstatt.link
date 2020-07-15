@@ -15,16 +15,29 @@ use Zend\InputFilter\InputFilterProviderInterface;
 
 class CompositionForm extends SionForm implements InputFilterProviderInterface
 {
+    public const URL_LABEL_VALUE_OPTIONS = [
+        'Album' => 'Album',
+        'Lyrics' => 'Lyrics',
+        'Media' => 'Media',
+        'Reference' => 'Reference',
+    ];
+    
+    public const FUZZY_DATE_REGEX = '/^(?:18|19|20)\d{2,2}(?:-[0-3]\d)?(?:-[0-3]\d)?$/';
+    
+    public const CREATIVE_COMMONS_LICENSE_VALUE_OPTIONS = [
+        'https://creativecommons.org/licenses/by/4.0' => 'Attribution 4.0',
+        'https://creativecommons.org/licenses/by-sa/4.0' => 'Attribution-ShareAlike 4.0',
+        'https://creativecommons.org/licenses/by-nd/4.0' => 'Attribution-NoDerivs 4.0',
+        'https://creativecommons.org/licenses/by-nc/4.0' => 'Attribution-NonCommercial 4.0',
+        'https://creativecommons.org/licenses/by-nc-sa/4.0' => 'Attribution-NonCommercial-ShareAlike 4.0',
+        'https://creativecommons.org/licenses/by-nc-nd/4.0' => 'Attribution-NonCommercial-NoDerivs 4.0',
+        'https://creativecommons.org/about/cc0' => 'CC0 No Rights Reserved',
+        'https://wiki.creativecommons.org/wiki/Public_domain' => 'Public domain',
+    ];
+    
     public function __construct()
     {
         parent::__construct('composition');
-
-        $urlLabels = [
-            'Album' => 'Album',
-            'Lyrics' => 'Lyrics',
-            'Media' => 'Media',
-            'Reference' => 'Reference',
-        ];
 
         $this->add([
             'name' => 'name',
@@ -70,7 +83,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'empty_option' => '',
                 'unselected_value' => '',
                 'required' => false,
-                'value_options' => [],// $this->customValueOptions['country'],
+                'value_options' => [],
             ],
             'attributes' => [
                 'required' => false
@@ -89,7 +102,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'composersAll', //same value options as authorsAll
+            'name' => 'composersAll',
             'type' => 'Select',
             'options' => [
                 'label' => 'Composer(s)',
@@ -104,7 +117,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
         $this->add([
-            'name' => 'lyricistsAll', //same value options as authorsAll
+            'name' => 'lyricistsAll', //same value options as composersAll
             'type' => 'Select',
             'options' => [
                 'label' => 'Lyricist(s)',
@@ -118,7 +131,52 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'multiple' => true,
             ],
         ]);
-//         tags
+        $this->add([
+            'name' => 'openLicenseUrl',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'Creative commons license',
+                'empty_option' => '',
+                'unselected_value' => '',
+                'value_options' => self::CREATIVE_COMMONS_LICENSE_VALUE_OPTIONS,
+                //https://creativecommons.org/licenses/
+                'help-block' => 'If you speak with the original artist (copyright holder), please consider requesting '
+                . 'that they release their song(s) under one of the <a href="https://creativecommons.org/licenses/">'
+                . 'Creative Commons licenses</a>. This doesn\'t mean '
+                . 'they need to "surrender" their copyrights, but instead sets the "default permissions" for using '
+                . 'the song. If they decide to release it under one of these licenses, please ask for an email '
+                . 'containing this decision and forward it to <a href="mailto:webmaster@schoenstatt.link">'
+                . 'webmaster@schoenstatt.link</a>.',
+            ],
+            'attributes' => [
+                'required' => false,
+                'maxlength' => '50',
+            ],
+        ]);
+        $this->add([
+            'name' => 'copyrightInfo',
+            'type' => 'Textarea',
+            'options' => [
+                'label' => 'Copyright info',
+                'required' => false,
+                'help-block' => 'Include information about the copyright owner, contact information, '
+                . 'and under what licence it has been published.',
+            ],
+            'attributes' => [
+                'maxlength' => '500',
+            ],
+        ]);
+        $this->add([
+            'name' => 'copyrightContactEmail',
+            'type' => 'Email',
+            'options' => [
+                'label' => 'Copyright contact email',
+            ],
+            'attributes' => [
+                'required' => false,
+                'maxlength' => '70',
+            ],
+        ]);
         $this->add([
             'name' => 'derivedFromCompositionId',
             'type' => 'Select',
@@ -178,34 +236,10 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
 //         alternateKey
 //         alternateKeyLabel
         $this->add([
-            'name' => 'copyrightInfo',
-            'type' => 'Textarea',
-            'options' => [
-                'label' => 'Copyright info',
-                'required' => false,
-                'help-block' => 'Include information about the copyright owner, contact information, '
-                . 'and under what licence it has been published.',
-            ],
-            'attributes' => [
-                'maxlength' => '500',
-            ],
-        ]);
-        $this->add([
-            'name' => 'copyrightContactEmail',
-            'type' => 'Email',
-            'options' => [
-                'label' => 'Copyright contact email',
-            ],
-            'attributes' => [
-                'required' => false,
-                'maxlength' => '70',
-            ],
-        ]);
-        $this->add([
             'name' => 'url1',
             'type' => 'Url',
             'options' => [
-                'label' => 'Other URL 1',
+                'label' => 'URL 1',
                 'uriHandler' => 'Zend\Uri\Http',
                 'allowRelative' => false,
             ],
@@ -219,11 +253,11 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'name' => 'url1Label',
             'type' => 'Select',
             'options' => [
-                'label' => 'Other URL 1 Label',
+                'label' => 'URL 1 Label',
                 'empty_option' => '',
                 'disable_inarray_validator' => true,
                 'unselected_value' => '',
-                'value_options' => $urlLabels,
+                'value_options' => self::URL_LABEL_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'required' => false,
@@ -234,7 +268,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'name' => 'url2',
             'type' => 'Url',
             'options' => [
-                'label' => 'Other URL 2',
+                'label' => 'URL 2',
                 'uriHandler' => 'Zend\Uri\Http',
                 'allowRelative' => false,
             ],
@@ -248,11 +282,11 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'name' => 'url2Label',
             'type' => 'Select',
             'options' => [
-                'label' => 'Other URL 2 Label',
+                'label' => 'URL 2 Label',
                 'disable_inarray_validator' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
-                'value_options' => $urlLabels,
+                'value_options' => self::URL_LABEL_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'required' => false,
@@ -263,7 +297,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'name' => 'url3',
             'type' => 'Url',
             'options' => [
-                'label' => 'Other URL 3',
+                'label' => 'URL 3',
                 'uriHandler' => 'Zend\Uri\Http',
                 'allowRelative' => false,
             ],
@@ -277,11 +311,11 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'name' => 'url3Label',
             'type' => 'Select',
             'options' => [
-                'label' => 'Other URL 3 Label',
+                'label' => 'URL 3 Label',
                 'disable_inarray_validator' => true,
                 'empty_option' => '',
                 'unselected_value' => '',
-                'value_options' => $urlLabels,
+                'value_options' => self::URL_LABEL_VALUE_OPTIONS,
             ],
             'attributes' => [
                 'required' => false,
@@ -375,7 +409,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                     [
                         'name' => Regex::class,
                         'options' => [
-                            'pattern' => '/^(?:18|19|20)\d{2,2}(?:-[0-3]\d)?(?:-[0-3]\d)?$/',
+                            'pattern' => self::FUZZY_DATE_REGEX,
                             'messageTemplates' => [
                                 Regex::NOT_MATCH => 'Please enter a valid date. Remember to add a `0` before single digit month and day numbers.',
                             ],
@@ -397,8 +431,9 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'lyricistsAll' => [ //@todo add a validator
                 'required' => false,
             ],
-
-
+            'openLicenseUrl' => [
+                'required' => false,
+            ],
             'copyrightInfo' => [
                 'required' => false,
                 'filters' => [

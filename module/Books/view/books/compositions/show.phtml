@@ -3,6 +3,7 @@ use Spatie\SchemaOrg\BaseType;
 /** @var \Zend\View\Renderer\PhpRenderer $this */?>
 
 <div class="row"><div class="col-md-12">
+<h2><?= $this->escapeHtml($this->entity['name']);?></h2>
 <?php if ($this->entity['chordProSpec']) {
     $this->headLink()->appendStylesheet($this->basePath() . '/css/chordpro.css');
     $parser = new \ChordPro\Parser();
@@ -22,8 +23,30 @@ use Spatie\SchemaOrg\BaseType;
     // Render !
     $html = $html_formatter->format($song, $options);
     echo $html;
-}?>
+} ?>
 <p></p>
+<?php if ($this->isAllowed('route/composition-edit')) :?>
+<p><a class="btn btn-primary" href="<?= $this->url('composition-edit', [], [], true);?>"><?php
+echo $this->translate('Edit song');?></a>
+<?php if ($this->isAllowed('route/composition-delete')): ?>
+&nbsp;<a class="btn btn-danger" href="<?= $this->url('composition-delete', [], [], true);?>"><?php
+echo $this->translate('Delete song');?></a><?php 
+endif;?></p>
+<?php endif;
+if (isset($this->comments)) {
+    echo $this->partial('sion-model/comments/comments-list', ['comments' => $this->comments]);
+}
+if ($this->isAllowed('route/comments/create') && isset($this->commentForm)) {
+    echo $this->partial('sion-model/comments/create', [
+        'form' => $this->commentForm
+    ]);
+}
+if ($this->isAllowed('route/composition-edit')) {
+    echo $this->partial('sion-model/sion-model/entity-changes-panel', [
+        'changes' => $this->changes,
+        'panelTitle' => 'Change log'
+    ]);
+}?>
 <p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
 </div></div>
 <?php

@@ -22,15 +22,16 @@ class CompositionFormFactory implements FactoryInterface
         /** @var MusicTable $table **/
         $table = $container->get(MusicTable::class);
 
-
         $languageSupport = $container->get(LanguageSupport::class);
         $languages = $languageSupport->getLanguageNames();
         $tags = $table->getTagsValueOptions();
         $compositions = $table->getCompositionValueOptions();
         $authors = $table->getAuthorTextValueOptions();
+        $countryNames = $container->get('CountryValueOptions');
 
         $form = new CompositionForm();
         $form->get('inLanguage')->setValueOptions($languages);
+        $form->get('country')->setValueOptions($countryNames);
         $form->get('derivedFromCompositionId')->setValueOptions($compositions);
         $form->get('composersAll')->setValueOptions($authors);
         $form->get('lyricistsAll')->setValueOptions($authors);

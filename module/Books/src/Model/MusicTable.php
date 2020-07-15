@@ -62,6 +62,7 @@ class MusicTable extends SionTable
             'originalKey' => $row['OriginalKey'],
             'alternateKey' => $row['AlternateKey'],
             'alternateKeyLabel' => $row['AlternateKeyLabel'],
+            'openLicenseUrl' => $row['OpenLicenseUrl'],
             'copyrightInfo' => $row['CopyrightInfo'],
             'copyrightContactEmail' => $row['CopyrightContactEmail'],
             'url1' => $row['Url1'],
