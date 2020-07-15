@@ -11,16 +11,6 @@
  * credentials from accidentally being committed into version control.
  */
 
-$dbParams = [
-    'database'  => 'xxxxxxxxxx',
-    'username'  => 'root',
-    'password'  => 'xxxxxxxxxxxxxxxx',
-    'hostname'  => 'localhost',
-    'driver_options'   =>  [
-        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8'
-    ]
-];
-
 $smtpOptions = [
     /**
      * The SMTP authentication identity.
@@ -50,11 +40,12 @@ $smtpOptions = [
 
 return [
     'db' => [
-        'driver'         => 'Pdo',
-        'username'       => $dbParams['username'],
-        'password'       => $dbParams['password'],
-        'dsn'            => 'mysql:dbname='.$dbParams['database'].';host='.$dbParams['hostname'],
-        'driver_options' => [PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;']
+        'driver'         => 'pdo_mysql',
+        'hostname'      => 'localhost',
+        'database'      => 'xxxxxxxxxx',
+        'username'       => 'root',
+        'password'       => 'xxxxxxxxx',
+        'driver_options' => [\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;'],
     ],
     'view_manager' => [
         'display_not_found_reason' => false,
@@ -81,7 +72,7 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            'Zend\Db\Adapter\Adapter' => 'Application\Service\DbAdapterServiceFactory',
+            \Zend\Db\Adapter\Adapter::class => \Application\Service\DbAdapterServiceFactory::class,
         ],
     ],
     'recaptcha' => [

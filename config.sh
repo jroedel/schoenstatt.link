@@ -26,14 +26,12 @@ fi
 #self update composer
 php composer.phar self-update
 
-############## setup sub modules ################
+# install packages
+php composer.phar install
 
-# TODO clone them to parent directory
+# make sure important data directories exist
+mkdir -p data/logs
+mkdir -p data/config
 
-# TODO create soft links to the module directory
-
-# create hard links of the phploy password file to their directories
-ln -f .phploy ../zf2-sion-model/.phploy
-ln -f .phploy ../zf2-juser/.phploy
-ln -f .phploy ../zf2-jtranslate/.phploy
-
+# download geoip data
+wget -q -O vendor/jroedel/zf-snap-geoip/data/GeoLiteCity.dat https://schoenstatt.link/REDACTED-PATH/GeoLiteCity.dat
