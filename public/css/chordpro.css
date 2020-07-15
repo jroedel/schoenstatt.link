@@ -6,6 +6,7 @@ body {
 .chordpro-title {
     font-size: 2em;
     font-weight: bold;
+    display: none; /* introduced to only use our own title */
 }
 .chordpro-subtitle {
     font-size: 1.5em;
