@@ -57,7 +57,7 @@ class BooksJsonLd extends AbstractHelper
 //                     if (!empty($publication['authorPersons'])) {
 
 //                     } else
-                    if (!is_null($publication['authorsText'])) {
+                    if (! is_null($publication['authorsText'])) {
                         $authors = $publication['authorsText'];
                         $authorObjects = [];
                         foreach ($authors as $authorName) {
@@ -96,7 +96,7 @@ class BooksJsonLd extends AbstractHelper
                     )->__toString());
                     break;
                 case 'keywords':
-                    if (!empty($publication[$field])) {
+                    if (! empty($publication[$field])) {
                         $book->$property(implode(',', $publication[$field]));
                     }
                     break;
@@ -124,8 +124,8 @@ class BooksJsonLd extends AbstractHelper
                     }
                     break;
                 default:
-                    if (array_key_exists($field, $publication) && !is_null($publication[$field]) &&
-                        (!is_array($publication[$field]) || !empty($publication[$field]))
+                    if (array_key_exists($field, $publication) && ! is_null($publication[$field]) &&
+                        (! is_array($publication[$field]) || ! empty($publication[$field]))
                     ) {
                         $book->$property($publication[$field]);
                     }

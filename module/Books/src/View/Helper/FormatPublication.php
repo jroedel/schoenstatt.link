@@ -25,7 +25,7 @@ class FormatPublication extends FormatEntity
     public function __invoke($entityType, $data, array $options = [])
     {
         //if there's not enough info we won't do anything
-        if (!isset($data['publicationId']) || !isset($data['title'])) {
+        if (! isset($data['publicationId']) || ! isset($data['title'])) {
             return '';
         }
 
@@ -44,16 +44,16 @@ class FormatPublication extends FormatEntity
         } else {
             $displayOption = $this::DISPLAY_TITLE;
         }
-        $linkOption        = isset($options['link']) 
-            ? (bool)$options['link'] 
+        $linkOption        = isset($options['link'])
+            ? (bool)$options['link']
             : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
-        $editPencilOption  = isset($options['displayEditPencil']) 
-            ? (bool)$options['displayEditPencil'] 
+        $editPencilOption  = isset($options['displayEditPencil'])
+            ? (bool)$options['displayEditPencil']
             : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
         $showLanguageLabel = isset($options['displayLanguageLabel']) ? (bool)$options['displayLanguageLabel'] : false;
         $showResourceLabel = isset($options['displayResourceLabel']) ? (bool)$options['displayResourceLabel'] : false;
-        $showHandChecked   = isset($options['displayHandChecked']) 
-            ? (bool)$options['displayHandChecked'] 
+        $showHandChecked   = isset($options['displayHandChecked'])
+            ? (bool)$options['displayHandChecked']
             : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
 
         $finalMarkup = '';
@@ -85,10 +85,10 @@ class FormatPublication extends FormatEntity
 //                     $authors[] = $this->view->formatEntity('person', $object).$editorText;
 //                 }
                 foreach ($data['editorsText'] as $text) {
-                    if (!isset($editorText)) {
+                    if (! isset($editorText)) {
                         $editorText = sprintf(' (%s)', $this->view->translate('Ed.'));
                     }
-                    $authors[] = $this->view->escapeHtml($text).$editorText;
+                    $authors[] = $this->view->escapeHtml($text) . $editorText;
                 }
                 $escapeMainText = false;
                 $mainText = implode('; ', $authors);
@@ -144,9 +144,9 @@ class FormatPublication extends FormatEntity
             }
         }
         if ($showLanguageLabel) {
-            if (!is_null($data['inLanguage'])) {
+            if (! is_null($data['inLanguage'])) {
                 $this->view->label()->setTranslatorTextDomain('Books');
-                $finalMarkup .= ' '. $this->view->label($data['inLanguage'], 'label-info');
+                $finalMarkup .= ' ' . $this->view->label($data['inLanguage'], 'label-info');
             }
         }
         if ($showResourceLabel) {
@@ -159,7 +159,7 @@ class FormatPublication extends FormatEntity
             }
             if (array_key_exists($data['resourceId'], $resourceLabels)) {
                 $this->view->label()->setTranslatorTextDomain('Books');
-                $finalMarkup .= ' '. $this->view->label($resourceLabels[$data['resourceId']], 'label-info');
+                $finalMarkup .= ' ' . $this->view->label($resourceLabels[$data['resourceId']], 'label-info');
             }
         }
 //         if ($showLabels) {

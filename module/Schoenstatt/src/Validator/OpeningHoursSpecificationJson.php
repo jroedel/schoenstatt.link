@@ -13,7 +13,7 @@ class OpeningHoursSpecificationJson extends AbstractValidator
     const JSON_NOT_EVALUATED_AS_OBJECT = 'jsonNotEvaluatedAsObject';
     const ERROR_CREATING_OPENING_HOURS = 'errorCreatingOpeningHours';
     const NO_OPENING_WITHIN_ONE_MONTH = 'noOpeningWithinOneMonth';
-    
+
     /**
      * Validation failure message template definitions
      *
@@ -26,18 +26,18 @@ class OpeningHoursSpecificationJson extends AbstractValidator
         self::ERROR_CREATING_OPENING_HOURS => "The input could not be parsed by OpeningHours",
         self::NO_OPENING_WITHIN_ONE_MONTH => "The input did not result in an opening within the next month",
     ];
-    
+
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Validator\ValidatorInterface::isValid()
      */
     public function isValid($value)
     {
-        if (!isset($value) || '' === $value) {
+        if (! isset($value) || '' === $value) {
             return true;
         }
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             $this->error(self::NOT_STRING);
             return false;
         }
@@ -47,7 +47,7 @@ class OpeningHoursSpecificationJson extends AbstractValidator
             $this->error(self::INVALID_JSON);
             return false;
         }
-        if (!is_array($json)) {
+        if (! is_array($json)) {
             $this->error(self::JSON_NOT_EVALUATED_AS_OBJECT);
             return false;
         }

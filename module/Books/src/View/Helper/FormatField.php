@@ -38,15 +38,15 @@ class FormatField extends AbstractHelper
             return '';
         }
 
-        if (isset($options['displayOnlyWithPermission']) && !is_null($options['displayOnlyWithPermission']) &&
-            !$this->view->isAllowed($options['displayOnlyWithPermission'])
+        if (isset($options['displayOnlyWithPermission']) && ! is_null($options['displayOnlyWithPermission']) &&
+            ! $this->view->isAllowed($options['displayOnlyWithPermission'])
         ) {
             return '';
         }
 
         $finalMarkup = '';
 
-        if (!is_null($label)) {
+        if (! is_null($label)) {
             if ($translateLabel) {
                 $label = $this->view->translate($label);
             }
@@ -81,7 +81,7 @@ class FormatField extends AbstractHelper
 //          $finalMarkup .= $this->view->editPencil('publication', $object['publicationId']);
 //      }
 
-        if (!is_null($wrapMarkup)) {
+        if (! is_null($wrapMarkup)) {
             $finalMarkup = sprintf($wrapMarkup, $finalMarkup);
         }
         return $finalMarkup;

@@ -1,14 +1,14 @@
 <?php use Cake\Utility\Text;
 
 if ($this->isAllowed('route/blog/create')) :
-?><p class="pull-right"><a class="btn btn-primary"><?php 
+    ?><p class="pull-right"><a class="btn btn-primary"><?php
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 
     echo $this->translate('New post');?></a>
-</p><?php endif;?>
+<?php endif;?>
 
 <?php foreach ($this->objects as $post) : ?>
 <h2><?= $this->formatEntity('blog-post', $post);?></h2>
-<?= $this->partial('_front-matter', ['entity' => $post]);?>
-<?= $this->markdown(Text::truncateByWidth($post['markdownText'], 1000));?>
+    <?= $this->partial('_front-matter', ['entity' => $post]);?>
+    <?= $this->markdown(Text::truncateByWidth($post['markdownText'], 1000));?>
 <?php endforeach;?>

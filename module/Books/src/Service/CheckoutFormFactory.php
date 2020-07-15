@@ -28,19 +28,19 @@ class CheckoutFormFactory implements FactoryInterface
         $routeMatch = $application->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id', null);
         $libraries = $table->getObjects('library');
-        if (!key_exists($libraryId, $libraries)) {
+        if (! key_exists($libraryId, $libraries)) {
             throw new \Exception('Library not found');
         }
         $libraryOptions = $libraries[$libraryId]['options'];
 
         $schConfig = $container->get('Schoenstatt\Config');
-        if (!isset($schConfig['person_value_options_providers'])) {
+        if (! isset($schConfig['person_value_options_providers'])) {
             throw new \Exception('No person_value_options_providers set');
         }
         $providers = $schConfig['person_value_options_providers'];
-        if (!isset($providers[$libraryOptions->checkoutPersonListKind]) ||
-            !isset($providers[$libraryOptions->checkoutPersonListKind]['target']) ||
-            !$container->has($providers[$libraryOptions->checkoutPersonListKind]['target'])
+        if (! isset($providers[$libraryOptions->checkoutPersonListKind]) ||
+            ! isset($providers[$libraryOptions->checkoutPersonListKind]['target']) ||
+            ! $container->has($providers[$libraryOptions->checkoutPersonListKind]['target'])
         ) {
             throw new \Exception('Improper checkout person list kind configuration');
         }

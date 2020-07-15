@@ -3,18 +3,19 @@ use Cake\Utility\Text;
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 echo $this->partial('search-bar', $this->vars);
 //add a bar graph showing the distribution of search results in the life of JK
-if (isset($this->objects)):
-foreach ($this->objects as $object) :?>
+if (isset($this->objects)) :
+    foreach ($this->objects as $object) :?>
 <p><strong><?= $this->formatEntity('text', $object)?></strong>&nbsp;<?php
 if (isset($this->search)) {
     echo Text::highlight(
         Text::excerpt($object['plainText'], $this->search),
         $this->search,
-        ['format' => '<mark>\1</mark>']);
+        ['format' => '<mark>\1</mark>']
+    );
 }?></p>
-<?php endforeach;
-else: 
-$message = <<<MD
+    <?php endforeach;
+else :
+    $message = <<<MD
 ## To whomever may stumble across this page...
 
 This is a work in progress to make Fr. Kentenich available to anyone
@@ -36,5 +37,5 @@ using the same email address as is recorded on schoenstatt-fathers.link. This
 provides some simple, but precise access control until we decide as a movement
 to open up Fr. Kentenich's writings to everyone.
 MD;
-echo $this->markdown($message);
+    echo $this->markdown($message);
 endif;?>

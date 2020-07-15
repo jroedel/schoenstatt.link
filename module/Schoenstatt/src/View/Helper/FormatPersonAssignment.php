@@ -17,11 +17,11 @@ class FormatPersonAssignment extends AbstractHelper
     public function __invoke($assignment, $editOption = false)
     {
         //if there's not enough info we won't do anything
-        if (!$assignment && !is_array($assignment)) {
+        if (! $assignment && ! is_array($assignment)) {
             return '';
         }
         //"Course Leader of Sanctuarium Vivum from 23/04/2016"
-        $finalMarkup = '<strong>'.$this->view->escapeHtml($assignment['roleTitle']).'</strong> ';
+        $finalMarkup = '<strong>' . $this->view->escapeHtml($assignment['roleTitle']) . '</strong> ';
         switch ($assignment['scope']) {
 //          case 'Filiation':
 //              if ($assignment['scopeName']) {
@@ -47,7 +47,7 @@ class FormatPersonAssignment extends AbstractHelper
             case 'Community':
                 break;
             default:
-                $finalMarkup .= $this->view->translate("of").' ';
+                $finalMarkup .= $this->view->translate("of") . ' ';
                 $finalMarkup .= $this->view->formatScope(
                     $assignment['baseScope'],
                     $assignment['scopeName'],
@@ -56,16 +56,16 @@ class FormatPersonAssignment extends AbstractHelper
                 break;
         }
         echo ' ';
-        
+
         if ($assignment['startDate']) {
-            $finalMarkup .= ' '.$this->view->translate("starting").' '.$this->view->dateFormat(
+            $finalMarkup .= ' ' . $this->view->translate("starting") . ' ' . $this->view->dateFormat(
                 $assignment['startDate'],
                 \IntlDateFormatter::SHORT,
                 \IntlDateFormatter::NONE
             );
         }
         if ($assignment['endDate']) {
-            $finalMarkup .= ' '.$this->view->translate("until").' '.$this->view->dateFormat(
+            $finalMarkup .= ' ' . $this->view->translate("until") . ' ' . $this->view->dateFormat(
                 $assignment['endDate'],
                 \IntlDateFormatter::SHORT,
                 \IntlDateFormatter::NONE

@@ -28,12 +28,12 @@ class AssociationKindsService
     {
         $this->translator = $translator;
         $this->languageLocaleMap = $config['slm_locale']['aliases'];
-        
+
         foreach ($associationKindSpecifications as $kind => $spec) {
-            if (!is_array($spec) || !is_string($kind)) {
+            if (! is_array($spec) || ! is_string($kind)) {
                 unset($associationKindSpecifications[$kind]);
             }
-            if (!isset($spec['label']) || !is_string($spec['label'])) {
+            if (! isset($spec['label']) || ! is_string($spec['label'])) {
                 throw new \Exception('All association kind specs must contain a label.');
             }
             if (isset($spec['name_format']) && is_string($spec['name_format'])) {
@@ -44,7 +44,7 @@ class AssociationKindsService
                         $this->translator->translate($spec['name_format'], SchoenstattTable::TRANSLATOR_DOMAIN, $locale);
                 }
             }
-            if (!isset($spec['translated_label'])) {
+            if (! isset($spec['translated_label'])) {
                 $spec['translated_label'] = $this->translator->translate($spec['label'], SchoenstattTable::TRANSLATOR_DOMAIN);
             }
             $this->associationKinds[$kind] = new AssociationKind($kind, $spec);

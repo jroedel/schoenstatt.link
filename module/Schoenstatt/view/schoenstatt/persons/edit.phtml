@@ -20,18 +20,20 @@ if (isset($titleText)) {
 // }
 
 $form = $this->form;
-$form->setAttribute('action', $this->url($this->action,
+$form->setAttribute('action', $this->url(
+    $this->action,
     [
         'person_id' => $this->entityId,
         //only used if we're reviewing a suggestion:
-//         'suggestion_id' => isset($this->person['suggestionId']) ? $this->person['suggestionId'] : null,
-    ]));
+    //         'suggestion_id' => isset($this->person['suggestionId']) ? $this->person['suggestionId'] : null,
+    ]
+));
  $form->prepare();
  echo $this->form()->openTag($form);
- echo $this->partial('fields-partial', array(
+ echo $this->partial('fields-partial', [
      'form' => $form,
      'entity' => $this->entity,
- ));
+ ]);
 //  if ($isModeration) {
 //      echo $this->formRow($form->get('suggestionResponse'));
 //      echo $this->formHidden($form->get('suggestionId'));
@@ -47,7 +49,7 @@ $form->setAttribute('action', $this->url($this->action,
 // endif;
  echo $this->form()->closeTag();
  //@todo DRY up this modal
-if ($this->isAllowed('route/persons/person/delete')) :?>
+ if ($this->isAllowed('route/persons/person/delete')) :?>
 <!-- Modal -->
 <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
   <div class="modal-dialog modal-sm">
@@ -60,19 +62,21 @@ if ($this->isAllowed('route/persons/person/delete')) :?>
         <p><?php echo $this->translate("Only delete a person if he/she was created by mistake!
         		If you wish change the person in charge, simply set an \"End Date\" in the past
         		and create a new assignment.");?></p>
-        <?php $form = $this->deleteForm;
-        	$form->setAttribute('action', $this->url('persons/person/delete',
-        			['person_id' => $this->entityId]));
-        	$form->prepare();
- 			echo $this->form()->openTag($form);
-			echo $this->formRow($form->get('security'));
-			echo $this->formSubmit($form->get('submit'));
-			echo '&nbsp;';
-			echo $this->formButton($form->get('cancel'));
-			echo $this->form()->closeTag();
-        ?>
+         <?php $form = $this->deleteForm;
+            $form->setAttribute('action', $this->url(
+                'persons/person/delete',
+                ['person_id' => $this->entityId]
+            ));
+            $form->prepare();
+            echo $this->form()->openTag($form);
+            echo $this->formRow($form->get('security'));
+            echo $this->formSubmit($form->get('submit'));
+            echo '&nbsp;';
+            echo $this->formButton($form->get('cancel'));
+            echo $this->form()->closeTag();
+            ?>
       </div>
     </div>
   </div>
 </div>
-<?php endif;?>
+    <?php endif;?>

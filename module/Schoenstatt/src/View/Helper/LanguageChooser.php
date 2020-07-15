@@ -26,7 +26,7 @@ class LanguageChooser extends AbstractHelper
             return null;
         }
         $theLanguage = \Locale::getPrimaryLanguage(\Locale::getDefault());
-        if (!key_exists($theLanguage, $this->languageChooser)) {
+        if (! key_exists($theLanguage, $this->languageChooser)) {
             if (key_exists($theLanguage, $availableLanguages)) {
                 return $theLanguage;
             }

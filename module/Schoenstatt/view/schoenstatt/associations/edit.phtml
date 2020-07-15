@@ -4,8 +4,10 @@ $headText = 'Edit Association';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('association-edit',
-		['sw_id' => $this->entity['identifier']]));
+$form->setAttribute('action', $this->url(
+    'association-edit',
+    ['sw_id' => $this->entity['identifier']]
+));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', [
@@ -13,4 +15,4 @@ $form->setAttribute('action', $this->url('association-edit',
  ]);
  echo $this->formSubmit($form->get('submit'));
  echo $this->form()->closeTag();
-?>
+    ?>

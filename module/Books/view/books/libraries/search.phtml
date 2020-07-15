@@ -5,7 +5,7 @@ $this->headTitle($title);
 ?>
 <h3><?php echo $this->escapeHtml($this->translate($title));?></h3>
 <?php echo $this->partial('books/library/search-bar', ['form' => $this->form]);?>
-<?php if (!is_null($this->entities) && 0 !== count($this->entities)) :?>
+<?php if (! is_null($this->entities) && 0 !== count($this->entities)) :?>
 <div class="row">
 <div class="col-md-2 bs-docs-sidebar hidden-phone">
     <ul class="nav nav-list bs-docs-sidenav affix">
@@ -14,23 +14,23 @@ $this->headTitle($title);
         echo $this->escapeHtml($library['name']);?></a>
     <p><?php if (count($library['books']) == 1) { //@todo the use of 'books' is deprecated, find a different way
         echo sprintf($this->translate("%s result found."), count($library['books']));
-    } else {
-        echo sprintf($this->translate("%s results found."), count($library['books']));
-    }?></p>
+       } else {
+           echo sprintf($this->translate("%s results found."), count($library['books']));
+       }?></p>
     </li>
     <?php endforeach;?>
     </ul>
 </div>
 <div class="col-md-10">
-<?php foreach ($this->entities as $library): ?>
+    <?php foreach ($this->entities as $library) : ?>
 <div id="<?php echo $this->escapeHtmlAttr($library['name']);?>">
     <h1><?php echo $this->escapeHtml($library['name']);?></h1>
-	<?php echo $this->partial('books/library/book-list', [
-	    'entities' => $library['books'],
-	    'publications'  => $this->publications,
-	]);?>
+        <?php echo $this->partial('books/library/book-list', [
+        'entities' => $library['books'],
+        'publications'  => $this->publications,
+    ]);?>
 </div>
-<?php endforeach; ?>
+    <?php endforeach; ?>
 </div>
 </div>
 <?php endif;?>

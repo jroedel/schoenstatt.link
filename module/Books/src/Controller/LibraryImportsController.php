@@ -20,7 +20,7 @@ class LibraryImportsController extends SionController
     */
     public function getLibraryId()
     {
-        if (!isset($this->libraryId)) {
+        if (! isset($this->libraryId)) {
             $this->libraryId = $this->params()->fromRoute('library_id');
         }
         return $this->libraryId;
@@ -40,8 +40,8 @@ class LibraryImportsController extends SionController
     public function indexAction()
     {
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         $view = parent::indexAction();
@@ -52,8 +52,8 @@ class LibraryImportsController extends SionController
     public function createAction()
     {
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
@@ -135,7 +135,7 @@ class LibraryImportsController extends SionController
         if (file_exists($object['filePath']) &&
             isset($object['worksheet'])
         ) {
-            $shouldSimulate = !$request->isPost() || null === $request->getPost('import');
+            $shouldSimulate = ! $request->isPost() || null === $request->getPost('import');
             $objects = $this->importSpreadsheetFile($object['filePath'], $object['worksheet'], $fieldsMap, $shouldSimulate, $object['isCompleteImport']);
         } else {
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
@@ -154,7 +154,7 @@ class LibraryImportsController extends SionController
                 ++$stats[$object['action']];
             }
         }
-        if (!$shouldSimulate) { //update the stats
+        if (! $shouldSimulate) { //update the stats
             $params = [
                 'booksUpdated'      => $stats['update'],
                 'booksCreated'      => $stats['create'],
@@ -167,14 +167,14 @@ class LibraryImportsController extends SionController
         }
 
         return $view->setVariables([
-            'isImported'    => !$shouldSimulate,
+            'isImported'    => ! $shouldSimulate,
             'transactions'  => $objects,
             'fields'        => $fieldsMap,
             'simulate'      => $shouldSimulate,
             'statistics'    => $stats,
         ], false);
     }
-    
+
     /**
      *
      * {@inheritDoc}
@@ -245,7 +245,7 @@ class LibraryImportsController extends SionController
 
         //first, get the first row which should contain the column headers
         // and make sure we have all the required headers
-        $rowHeaders = $sheet->rangeToArray('A1:'.$highColumn.'1')[0];
+        $rowHeaders = $sheet->rangeToArray('A1:' . $highColumn . '1')[0];
 
         $fieldIndices = [];
         foreach ($rowHeaders as $key => $value) {
@@ -262,15 +262,15 @@ class LibraryImportsController extends SionController
         $requiredFields = ['withinLibraryId', 'title'];
         $missingRequiredFields = [];
         foreach ($requiredFields as $value) {
-            if (!isset($fieldIndices[$value])) {
+            if (! isset($fieldIndices[$value])) {
                 $missingRequiredFields[] = $value;
             }
         }
-        if (!empty($missingRequiredFields)) {
-            throw new \Exception('Missing required fields for the excel file: '.implode(', ', $missingRequiredFields));
+        if (! empty($missingRequiredFields)) {
+            throw new \Exception('Missing required fields for the excel file: ' . implode(', ', $missingRequiredFields));
         }
 
-        $rows = $sheet->rangeToArray('A2:'.$highColumn.$highRow);
+        $rows = $sheet->rangeToArray('A2:' . $highColumn . $highRow);
 
         //we're done with the PHPExcel object, free up the memory
         $objPHPExcel->disconnectWorksheets();
@@ -280,7 +280,7 @@ class LibraryImportsController extends SionController
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
         $libraryId = $this->getLibraryId();
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             throw new \Exception('This function should only be called in the context of a particular library.');
         }
         $table->setLibraryId($libraryId);
@@ -308,14 +308,14 @@ class LibraryImportsController extends SionController
             $pubIdIndex = $fieldIndices['publicationId'];
             foreach ($rows as $rowColumns) {
                 if (isset($rowColumns[$pubIdIndex]) && is_numeric($rowColumns[$pubIdIndex]) &&
-                    !in_array($rowColumns[$pubIdIndex], $publicationIds)
+                    ! in_array($rowColumns[$pubIdIndex], $publicationIds)
                 ) {
                     $publicationIds[] = (int)$rowColumns[$pubIdIndex];
                 }
             }
         }
-        if (!empty($publicationIds)) {
-            if (!isset($publications)) {
+        if (! empty($publicationIds)) {
+            if (! isset($publications)) {
                 /** @var \Books\Model\PublicationsTable $publicationsTable */
                 $publicationsTable = $this->services[PublicationsTable::class];
                 $publications = $publicationsTable->queryObjects('publication', ['publicationId' => $publicationIds]);
@@ -344,7 +344,7 @@ class LibraryImportsController extends SionController
                 }
             }
             //if the row is empty, just skip to the next (not worth throwing an error)
-            if (!$foundAValue) {
+            if (! $foundAValue) {
                 continue;
             }
             $withinLibraryIds[] = $withinLibraryId;
@@ -353,23 +353,23 @@ class LibraryImportsController extends SionController
             $params['withinLibraryId'] = $withinLibraryId;
 
             //check if we need to do something with collections
-            if (!$libraryOptions->useCollections) {
+            if (! $libraryOptions->useCollections) {
                 if (isset($params['collection'])) {
                     unset($params['collection']);
                 }
                 if (isset($params['collectionId'])) {
                     unset($params['collectionId']);
                 }
-            } elseif (isset($params['collection']) && !isset($params['collectionId'])) {//we need to lookup the collectionId for the rows
+            } elseif (isset($params['collection']) && ! isset($params['collectionId'])) {//we need to lookup the collectionId for the rows
                 if (isset($preexistingCollectionMap[$params['collection']])) {
                     $params['collectionId'] = $preexistingCollectionMap[$params['collection']];
-                } elseif (!in_array($params['collection'], $collectionInsertsQueued)) {
+                } elseif (! in_array($params['collection'], $collectionInsertsQueued)) {
                     $transactions[] = [
                         'action'    => 'create-collection',
                         'libraryId' => $libraryId,
                         'name'      => $params['collection'],
                         'title'     => 'New collection', //this is for the view script
-                        'collection'=> $params['collection'], //this is for the view script
+                        'collection' => $params['collection'], //this is for the view script
                     ];
                     $collectionInsertsQueued[] = $params['collection'];
                 }
@@ -404,15 +404,15 @@ class LibraryImportsController extends SionController
                 }
             }
 
-            $hasWithinLibraryIdProblem = !isset($withinLibraryId) || !is_numeric($withinLibraryId);
-            if (!$hasWithinLibraryIdProblem) {
+            $hasWithinLibraryIdProblem = ! isset($withinLibraryId) || ! is_numeric($withinLibraryId);
+            if (! $hasWithinLibraryIdProblem) {
                 $bookId = isset($bookLookup[$withinLibraryId]) ? $bookLookup[$withinLibraryId]['bookId'] : null;
             } else {
                 $bookId = null;
             }
 
             //determine the action to take on the row
-            if (!isset($params['title']) || $hasWithinLibraryIdProblem
+            if (! isset($params['title']) || $hasWithinLibraryIdProblem
                 || $isDuplicateWithinLibraryId
             ) {
                 $params['action'] = 'error';
@@ -437,19 +437,19 @@ class LibraryImportsController extends SionController
         if ($deleteMissingRowsFromDatabase) {
             foreach ($bookLookup as $withinLibraryId => $bookInfo) {
                 $bookId = $bookInfo['bookId'];
-                if ($bookInfo['isActive'] && !in_array($bookId, $bookIdsBeingUpdated)) {
+                if ($bookInfo['isActive'] && ! in_array($bookId, $bookIdsBeingUpdated)) {
                     $params = [
                         'action'            => 'inactivate',
                         'bookId'            => $bookId,
                         'isActive'          => false,
-                        'inactivationReason'=> 'Mass book import',
+                        'inactivationReason' => 'Mass book import',
                     ];
                     $transactions[] = $params;
                 }
             }
         }
 
-        if (!empty($duplicateWithinLibraryIds)) {
+        if (! empty($duplicateWithinLibraryIds)) {
             $simulate = true; //inform the calling function, we weren't able to persist
             //this breaks the idea of the function a little, but there's no better way to let the user know
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
@@ -457,7 +457,7 @@ class LibraryImportsController extends SionController
                 "File not imported due to duplicate withinLibraryIds: %s.",
                 implode(',', $duplicateWithinLibraryIds)
             ));
-        } elseif (!$simulate) {
+        } elseif (! $simulate) {
             //free up a little memory
             unset($rows);
             unset($bookLookup);
@@ -483,7 +483,7 @@ class LibraryImportsController extends SionController
         foreach ($transactions as $key => $transaction) {
             //set the new collectionId
             if (($transaction['action'] == 'update' || $transaction['action'] == 'create') &&
-                isset($transaction['collection']) && !isset($transaction['collectionId']) &&
+                isset($transaction['collection']) && ! isset($transaction['collectionId']) &&
                 isset($newCollectionsMap[$transaction['collection']])
             ) {
                 $transaction['collectionId'] = $newCollectionsMap[$transaction['collection']];
@@ -511,7 +511,7 @@ class LibraryImportsController extends SionController
             }
         }
         $table->removeDependentCacheItems('book'); //force cache refresh
-        if (!empty($newCollectionsMap)) {
+        if (! empty($newCollectionsMap)) {
             $table->removeDependentCacheItems('collection');
         }
     }

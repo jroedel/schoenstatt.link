@@ -1,5 +1,5 @@
 <?php /** @var \Zend\View\Renderer\PhpRenderer $this */
-if ($this->simulate):?>
+if ($this->simulate) :?>
 <p>All changes listed below are only a simulation, include query parameter, "?simulate=0" to execute.</p><?php
 endif;?>
 <table class="table">
@@ -8,8 +8,8 @@ endif;?>
 <?php $changes = $this->changes;
 foreach ($changes as $original => $trimmed) :?>
 <tr>
-	<td><?php echo $this->escapeHtml($original);?></td>
-	<td><?php echo $this->escapeHtml($trimmed);?></td>
+    <td><?php echo $this->escapeHtml($original);?></td>
+    <td><?php echo $this->escapeHtml($trimmed);?></td>
 </tr>
 <?php endforeach;?>
 </table>

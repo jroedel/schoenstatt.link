@@ -99,8 +99,8 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Sort text format',
                 'required' => false,
                 'help-block' => 'Format text to pass to sprintf. See '
-                .'https://secure.php.net/manual/en/function.sprintf.php for more info. The first parameter passed is '
-                .'the collection abbreviation followed by the capture groups of the call number.',
+                . 'https://secure.php.net/manual/en/function.sprintf.php for more info. The first parameter passed is '
+                . 'the collection abbreviation followed by the capture groups of the call number.',
             ],
             'attributes' => [
                 'placeholder' => '%1$s%2$-8s%3$04d%4$03d%5$03d',

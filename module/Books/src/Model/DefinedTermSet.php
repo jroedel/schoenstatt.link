@@ -11,7 +11,7 @@ use Spatie\SchemaOrg\CreativeWork;
  */
 class DefinedTermSet extends CreativeWork
 {
-    
+
     /**
      * A Defined Term contained in this term set.
      *

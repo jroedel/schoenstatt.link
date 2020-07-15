@@ -16,8 +16,8 @@ class CheckoutsController extends SionController
     public function createAction()
     {
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'checkout')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'checkout')) {
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
@@ -49,14 +49,14 @@ class CheckoutsController extends SionController
         $bookLookup = $table->getLibraryBookLookup($libraryId);
         $badValues = [];
         foreach ($data['withinLibraryIds'] as $value) {
-            if (!key_exists($value, $bookLookup)) {
+            if (! key_exists($value, $bookLookup)) {
                 $badValues[] = $value;
                 continue;
             }
         }
-        if (!empty($badValues)) {
+        if (! empty($badValues)) {
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
-                ->addMessage('The following book id\'s are invalid: '.implode(', ', $badValues).' Please try again.');
+                ->addMessage('The following book id\'s are invalid: ' . implode(', ', $badValues) . ' Please try again.');
             return;
         }
 
@@ -93,8 +93,8 @@ class CheckoutsController extends SionController
     {
         //get the parameter
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
 
@@ -121,8 +121,8 @@ class CheckoutsController extends SionController
     {
         //get the parameter
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
 
@@ -136,7 +136,7 @@ class CheckoutsController extends SionController
                 $data = $form->getData();
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
-                if (!($table->checkinWithinLibraryBooks($libraryId, $data['withinLibraryIds']))) {
+                if (! ($table->checkinWithinLibraryBooks($libraryId, $data['withinLibraryIds']))) {
                     $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)->addMessage('Error in form submission, please review.');
                 } else {
                     $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
@@ -157,8 +157,8 @@ class CheckoutsController extends SionController
     {
         //get the parameter
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
 
@@ -187,7 +187,7 @@ class CheckoutsController extends SionController
                         $badValues = array_merge($badValues, $return);
                     }
                 }
-                if (!empty($badValues)) {
+                if (! empty($badValues)) {
                     $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
                         ->addMessage(sprintf(
                             "There was a problem checking out one or more of the books: (%s) Any other books have been checked out. Please try again.",
@@ -217,8 +217,8 @@ class CheckoutsController extends SionController
      */
     protected function getLibraryId()
     {
-        $id = ( int ) $this->params()->fromRoute('library_id');
-        if (!$id) {
+        $id = (int) $this->params()->fromRoute('library_id');
+        if (! $id) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Library not found.');
             return $this->redirect()->toRoute('libraries');

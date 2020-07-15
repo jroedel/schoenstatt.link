@@ -4,8 +4,10 @@ $headText = 'Edit Role';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('roles/role/edit',
-		['role_id' => $this->entityId]));
+$form->setAttribute('action', $this->url(
+    'roles/role/edit',
+    ['role_id' => $this->entityId]
+));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', [
@@ -13,4 +15,4 @@ $form->setAttribute('action', $this->url('roles/role/edit',
  ]);
  echo $this->formSubmit($form->get('submit'));
  echo $this->form()->closeTag();
-?>
+    ?>

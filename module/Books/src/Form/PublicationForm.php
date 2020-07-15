@@ -151,7 +151,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'disable_inarray_validator' => false,
                 'value_options' => [],
                 'help-block' => 'To avoid showing multiple editions of the same book in the index, please select the'
-                    .' latest edition of this work from the list.'
+                    . ' latest edition of this work from the list.'
             ],
         ]);
         $this->add([
@@ -165,7 +165,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'disable_inarray_validator' => false,
                 'value_options' => [],
                 'help-block' => 'The work in the original language from which this book was translated. '
-                    .'If there is more than one edition in the original language, select the newest edition.'
+                    . 'If there is more than one edition in the original language, select the newest edition.'
             ],
         ]);
         $this->add([
@@ -175,7 +175,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Number of pages',
                 'required' => false,
                 'help-block' => 'Normally, just the number of pages unless book has roman numeral-numbered pages '
-                .'at the beginning. In this case, use the form `xxxii+442`.'
+                . 'at the beginning. In this case, use the form `xxxii+442`.'
             ],
             'attributes' => [
                 'placeholder' => 'xxi+133',
@@ -250,7 +250,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Copyright info',
                 'required' => false,
                 'help-block' => 'Include information about the copyright owner, contact information, '
-                    .'and under what licence it has been published.',
+                    . 'and under what licence it has been published.',
             ],
             'attributes' => [
                 'maxlength' => '500',

@@ -19,7 +19,7 @@ class PublicationsApiController extends AbstractRestfulController
         'isFormallyPublished', 'urls', 'editionNotes', 'publicNotes',
         'categoryName', 'categorySort', 'isSubEdition'
     ];
-    
+
     /**
      * @var PublicationsTable $libraryTable
      */
@@ -43,12 +43,12 @@ class PublicationsApiController extends AbstractRestfulController
         $table = $this->table;
         $objects = $table->getObjects('publication');
         self::prepPublicationObjects($objects);
-        
+
         return new JsonModel([
             'items'         => array_values($objects),
         ], ['prettyPrint' => false]);
     }
-    
+
     public function get($id)
     {
         $table = $this->table;
@@ -56,7 +56,7 @@ class PublicationsApiController extends AbstractRestfulController
         self::prepPublicationObject($object);
         return new JsonModel($object, ['prettyPrint' => true]);
     }
-    
+
     protected static function prepPublicationObjects(array &$objects)
     {
         $objectIds = array_keys($objects);
@@ -64,7 +64,7 @@ class PublicationsApiController extends AbstractRestfulController
             self::prepPublicationObject($objects[$key]);
         }
     }
-    
+
     /**
      * This function formats a library array from the LibraryTable for standard API output
      * @param array $data
@@ -73,13 +73,13 @@ class PublicationsApiController extends AbstractRestfulController
     {
         $dataKeys = array_keys($data);
         foreach ($dataKeys as $key) {
-            if (!in_array($key, self::PUBLICAITON_API_FIELDS, true)) {
+            if (! in_array($key, self::PUBLICAITON_API_FIELDS, true)) {
                 unset($data[$key]);
             }
         }
         self::jsonSerializeDateTimeObjects($data);
     }
-    
+
     /**
      * Recursively look for Datetime objects and serialize them for use in JSON
      * @param array $data
@@ -94,7 +94,7 @@ class PublicationsApiController extends AbstractRestfulController
             }
         }
     }
-    
+
     protected function sendFailedMessage($message, $statusCode = 401)
     {
         $response = $this->getResponse();

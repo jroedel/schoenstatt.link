@@ -40,7 +40,7 @@ return [
          * Used for auto-generating navigation pages for breadcrumbs
          */
         'navigation_key' => 'default',
-        
+
         'changes_show_all' => true,
         'visits_model' => SchoenstattTable::class,
         'files_directory' => 'data/files',
@@ -65,7 +65,7 @@ return [
             'adapter' => [
                 'name' => 'apcu',
                 'options' => [
-                    'ttl' => 60*60*24*5, //5 days
+                    'ttl' => 60 * 60 * 24 * 5, //5 days
                 ],
             ],
         ],

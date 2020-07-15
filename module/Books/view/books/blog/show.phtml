@@ -24,7 +24,7 @@ echo $this->partial('sion-model/comments/comments-list', [
 if (isset($this->schema)) {
     /** @var \Spatie\SchemaOrg\BlogPosting $schema */
     $schema = $this->schema;
-    $thisUrl = $this->serverUrl().$this->url(null, [], [], true);
+    $thisUrl = $this->serverUrl() . $this->url(null, [], [], true);
     $schema->setProperty('url', $thisUrl);
     echo $schema->toScript();
 }?>

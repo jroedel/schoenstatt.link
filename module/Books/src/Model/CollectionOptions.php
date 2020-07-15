@@ -6,7 +6,7 @@ use Zend\Stdlib\ArraySerializableInterface;
 class CollectionOptions implements ArraySerializableInterface
 {
     use SortTextAwarenessTrait;
-    
+
     /**
      * @var int $collectionId
      */
@@ -82,7 +82,7 @@ class CollectionOptions implements ArraySerializableInterface
         /** @var LibraryOptions $libraryOptions */
         $libraryOptions = isset($array['library']) && $array['library'] instanceof LibraryOptions
             ? $array['library'] : null;
-        $this->libraryOptions = !is_null($libraryOptions) ? $libraryOptions : null;
+        $this->libraryOptions = ! is_null($libraryOptions) ? $libraryOptions : null;
         $this->collectionId = isset($array['collectionId']) ? $array['collectionId'] : null;
         $this->libraryId = isset($array['libraryId']) ? $array['libraryId']
             : ($libraryOptions ? $libraryOptions->libraryId : null);
@@ -101,7 +101,7 @@ class CollectionOptions implements ArraySerializableInterface
             : ($libraryOptions ? $libraryOptions->requireCallNumbers : false);
         $this->callNumberRegex = isset($array['callNumberRegex']) ? $array['callNumberRegex']
             : ($libraryOptions ? $libraryOptions->callNumberRegex : null);
-        $this->enforceCallNumberRegex= isset($array['enforceCallNumberRegex'])
+        $this->enforceCallNumberRegex = isset($array['enforceCallNumberRegex'])
             ? $array['enforceCallNumberRegex']
             : ($libraryOptions ? $libraryOptions->enforceCallNumberRegex : false);
         $this->labelLine1 = isset($array['labelLine1']) ? $array['labelLine1']

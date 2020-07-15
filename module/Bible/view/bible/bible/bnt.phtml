@@ -1,6 +1,6 @@
 <?php $regex = '/(.+)@(.{1,6})/ui';
-foreach ($this->bnt as $key => $bntVerse): ?>
-<h1><?php echo $this->bookAbbrev[$this->book].' '.$this->chapter.':'.$key?></h1>
+foreach ($this->bnt as $key => $bntVerse) : ?>
+<h1><?php echo $this->bookAbbrev[$this->book] . ' ' . $this->chapter . ':' . $key?></h1>
 <p><?php echo $bntVerse->text;?></p>
 <p><?php echo $this->nab[$key]->text;?></p>
 <p><?php echo $this->lba[$key]->text;?></p>
@@ -16,12 +16,14 @@ foreach ($this->bnt as $key => $bntVerse): ?>
     $textBnm = is_object($this->bnm[$key]) ? $this->bnm[$key]->text : '';
     $wordsBnt = explode(' ', $textBnt);
     $wordsBnm = explode(' ', $textBnm);
-    foreach ($wordsBnt as $wordKey => $wordBnt): ?>
+    foreach ($wordsBnt as $wordKey => $wordBnt) : ?>
     <tr>
         <td><?php echo $wordBnt;?></td>
         <?php preg_match($regex, $wordsBnm[$wordKey], $matches); ?>
         <td><?php echo isset($matches[1]) ? $matches[1] : '';?></td>
-        <td><?php if (isset($matches[2])) echo key_exists($matches[2], $this->codes) ? $this->codes[$matches[2]] : $matches[2];?></td>
+        <td><?php if (isset($matches[2])) {
+            echo key_exists($matches[2], $this->codes) ? $this->codes[$matches[2]] : $matches[2];
+            }?></td>
     </tr>
     <?php endforeach;?>
 </table>

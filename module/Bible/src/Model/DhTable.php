@@ -7,7 +7,7 @@ use Zend\Db\Sql\Predicate\Between;
 class DhTable extends SionTable
 {
     public const LAST_PAGE_NUMBER = 1631;
-    
+
     protected function processDhRow(array $row)
     {
         $fileName = $row['FileName'];
@@ -17,7 +17,7 @@ class DhTable extends SionTable
             'headerDhNumber' => $row['ReferenceNumber'],
             'startDhNumber' => $row['StartDhNumber'],
             'endDhNumber' => $row['EndDhNumber'],
-            
+
             'headerText' => $row['HeaderText'],
             'widthInPixels' => $row['WidthInPixels'],
             'heightInPixels' => $row['HeightInPixels'],
@@ -27,7 +27,7 @@ class DhTable extends SionTable
         ];
         return $processedRow;
     }
-    
+
     /**
      * Try to find the page closest to a Dh number
      * @param number $dhNumber
@@ -36,7 +36,7 @@ class DhTable extends SionTable
      */
     public function lookupProbableDhNumberPage($dhNumber)
     {
-        if (!is_numeric($dhNumber)) {
+        if (! is_numeric($dhNumber)) {
             throw new \Exception('Dh number should be numeric');
         }
         $dhNumber = (int)$dhNumber;
@@ -47,15 +47,15 @@ class DhTable extends SionTable
         $max = $dhNumber + 17;
         $where = new Between('ReferenceNumber', $min, $max);
         $objects = $this->queryObjects('dh-page', $where);
-        
+
         $closestPageNumber = null;
         $closestDifference = 40;
         foreach ($objects as $object) {
-            if (!isset($object['headerDhNumber']) || !is_numeric($object['headerDhNumber'])) {
+            if (! isset($object['headerDhNumber']) || ! is_numeric($object['headerDhNumber'])) {
                 continue;
             }
             $dhHeaderNumber = (int)$object['headerDhNumber'];
-            $difference = abs($dhNumber-$dhHeaderNumber);
+            $difference = abs($dhNumber - $dhHeaderNumber);
             if ($difference < $closestDifference) {
                 $closestDifference = $difference;
                 $closestPageNumber = $object['pageNumber'];

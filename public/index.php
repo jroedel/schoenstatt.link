@@ -40,7 +40,7 @@ if (file_exists(__DIR__ . '/../config/development.config.php')) {
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
 ini_set('display_errors', 1);
 ini_set('xdebug.var_display_max_depth', 1);
-ini_set('memory_limit','512M');
+ini_set('memory_limit', '512M');
 
 // Run the application!
 Application::init($appConfig)->run();

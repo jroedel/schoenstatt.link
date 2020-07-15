@@ -1288,7 +1288,7 @@ return [
                                 Validator\SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
                             ],
                             '/^$'
-                            ),
+                        ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
@@ -1619,7 +1619,7 @@ return [
                 'create_action_valid_data_handler'      => 'createPerson',
                 'create_action_redirect_route'          => 'persons/person',
                 'create_action_redirect_route_key'      => 'person_id',
-                'create_action_redirect_route_key_field'=> 'personId',
+                'create_action_redirect_route_key_field' => 'personId',
 //                 'create_action_template'                 => 'project/events/create',
 //                 'touch_default_field'                => 'eventId',
 //                 'touch_field_route_key'                  => 'event_id',
@@ -1745,7 +1745,7 @@ return [
 //                 'create_action_valid_data_handler'      => 'createAssociation',
                 'create_action_redirect_route'          => 'association',
                 'create_action_redirect_route_key'      => 'sw_id',
-                'create_action_redirect_route_key_field'=> 'identifier',
+                'create_action_redirect_route_key_field' => 'identifier',
 //                 'create_action_template'                   => 'project/events/create',
                 'enable_delete_action'                  => true,
 //                 'delete_action_acl_resource'             => 'event_:id',
@@ -1802,8 +1802,8 @@ return [
                     'country'                   => 'Country',
                     'timeZoneId'                => 'TimeZone',
                     'openingHoursHuman'         => 'OpeningHoursHuman',
-                    'openingHoursHumanUpdatedOn'=> 'OpeningHoursHumanUpdatedOn',
-                    'openingHoursHumanUpdatedBy'=> 'OpeningHoursHumanUpdatedBy',
+                    'openingHoursHumanUpdatedOn' => 'OpeningHoursHumanUpdatedOn',
+                    'openingHoursHumanUpdatedBy' => 'OpeningHoursHumanUpdatedBy',
                     'openingHoursSpecificationJson' => 'OpeningHoursSpecification',
                     'openingHoursSpecificationJsonUpdatedOn' => 'OpeningHoursSpecificationUpdatedOn',
                     'openingHoursSpecificationJsonUpdatedBy' => 'OpeningHoursSpecificationUpdatedBy',
@@ -1894,7 +1894,7 @@ return [
                 'sion_model_class'                      => Model\SchoenstattTable::class,
                 'sion_controllers'                      => [Controller\RolesController::class],
                 'controller_services'                   => [
-                    
+
                 ],
                 'get_object_function'                   => 'getRole',
                 'get_objects_function'                  => 'getRoles',
@@ -1926,7 +1926,7 @@ return [
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'associations/old-association',
                 'create_action_redirect_route_key'      => 'association_id',
-                'create_action_redirect_route_key_field'=> 'associationId',
+                'create_action_redirect_route_key_field' => 'associationId',
 //                 'create_action_template'                 => 'project/events/create',
 //                 'touch_default_field'                => 'eventId',
 //                 'touch_field_route_key'                  => 'event_id',
@@ -1997,7 +1997,7 @@ return [
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'association',
                 'create_action_redirect_route_key'      => 'sw_id',
-                'create_action_redirect_route_key_field'=> 'associationIdentifier',
+                'create_action_redirect_route_key_field' => 'associationIdentifier',
 //                 'create_action_template'                 => 'project/events/create',
 //                 'touch_default_field'                => 'eventId',
 //                 'touch_field_route_key'                  => 'event_id',
@@ -2077,7 +2077,7 @@ return [
                 ['route' => 'api-v1/find-by-kind', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/find-by-kind-md5', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v1/shrines-json', 'roles' => ['guest', 'user', null]],
-                
+
                 ['route' => 'api-v2/associations', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v2/find-by-kind', 'roles' => ['guest', 'user', null]],
                 ['route' => 'api-v2/find-by-kind-md5', 'roles' => ['guest', 'user', null]],

@@ -27,7 +27,7 @@ class AssociationsController extends SionController
                 $response = $this->redirect()->toRoute(
                     'association',
                     ['sw_id' => $object['identifier'], 'slug' => $object['slugByLocale'][$locale]]
-                    );
+                );
                 $response->setStatusCode(301);
                 return $response;
             }
@@ -45,7 +45,7 @@ class AssociationsController extends SionController
                 $response = $this->redirect()->toRoute(
                     'association',
                     ['sw_id' => $object['identifier'], 'slug' => $object['slugByLocale'][$locale]]
-                    );
+                );
                 $response->setStatusCode(301);
                 return $response;
             }
@@ -53,14 +53,14 @@ class AssociationsController extends SionController
         $entity = $this->getEntity();
         $entitySpec = $this->getEntitySpecification();
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-        ->addMessage(ucwords($entity).' not found.');
+        ->addMessage(ucwords($entity) . ' not found.');
         $redirectRoute = $entitySpec->indexRoute ? $entitySpec->indexRoute : $this->getDefaultRedirectRoute();
         return $this->redirect()->toRoute($redirectRoute);
     }
 
     /**
      * Makes sure this function returns the associationId if passed a site-wide id
-     * 
+     *
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::getEntityIdParam()
      */
@@ -70,13 +70,13 @@ class AssociationsController extends SionController
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
-            if (!isset($swValidator)) {
+            if (! isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier();
             }
-            if (!$swValidator->isValid($id)) {
+            if (! $swValidator->isValid($id)) {
                 throw new \Exception('Invalid site-wide id');
             }
-            if (!isset($swFilter)) {
+            if (! isset($swFilter)) {
                 $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
             }
             $id = $swFilter->filter($id);
@@ -97,7 +97,7 @@ class AssociationsController extends SionController
         $form = $view->getVariable('form');
         if (isset($entity['country'])) {
             $tzList = TimeZone::getTimeZoneValueOptions($entity['country']);
-            if (!empty($tzList)) {
+            if (! empty($tzList)) {
                 $form->get('timeZoneId')->setValueOptions($tzList);
             }
         }
@@ -110,9 +110,9 @@ class AssociationsController extends SionController
         }
         return $view;
     }
-    
+
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::getEntityObject()
      */
@@ -136,7 +136,7 @@ class AssociationsController extends SionController
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $this->getSionTable();
         $association = $view->getVariable('entity');
-        if (!$this->zfcUserAuthentication()->hasIdentity()
+        if (! $this->zfcUserAuthentication()->hasIdentity()
             && $association['kind'] !== 'sch-shrine'
             && $association['kind'] !== 'sch-wayside-shrine'
         ) {
@@ -153,10 +153,10 @@ class AssociationsController extends SionController
         /** @var CatholicChurch $schema */
         $schema = $table->getAssociationSchemaV1($association);
         $view->setVariable('schema', $schema);
-        
+
         $changes = $table->getEntityChanges('association', $association['associationId']);
         $view->setVariable('changes', $changes);
-        
+
         return $view;
     }
 
@@ -177,19 +177,19 @@ class AssociationsController extends SionController
         $nameParam = $this->params()->fromQuery('name');
         $tzParam = $this->params()->fromQuery('timeZoneId');
         $kindParam = $this->params()->fromQuery('kind');
-        if (!$this->getRequest()->isPost() && ((isset($countryParam) &&
+        if (! $this->getRequest()->isPost() && ((isset($countryParam) &&
             is_string($countryParam) && strlen($countryParam) == 2) ||
             isset($parentParam) || isset($nameParam)) || isset($tzParam) || isset($kindParam)
         ) {
             $form = $view->getVariable('form');
             $haveSetSomething = false;
             $countries = $form->get('country')->getValueOptions();
-            if (!is_null($countryParam) && key_exists($countryParam, $countries)) {
+            if (! is_null($countryParam) && key_exists($countryParam, $countries)) {
                 $form->get('country')->setValue($countryParam);
                 $haveSetSomething = true;
             }
             $parents = $form->get('parentId')->getValueOptions();
-            if (!is_null($parentParam) && key_exists($parentParam, $parents)) {
+            if (! is_null($parentParam) && key_exists($parentParam, $parents)) {
                 $form->get('parentId')->setValue($parentParam);
                 $haveSetSomething = true;
             }
@@ -218,12 +218,12 @@ class AssociationsController extends SionController
     public function doWorkAction()
     {
         $key = $this->params()->fromQuery('key', null);
-        if (!isset($key)) {
+        if (! isset($key)) {
             throw new UnAuthorizedException();
         }
         $config = $this->config['sion_model'];
         $apiKeys = isset($config['api_keys']) && is_array($config['api_keys']) ? $config['api_keys'] : [];
-        if (!in_array($key, $apiKeys)) {
+        if (! in_array($key, $apiKeys)) {
             throw new UnAuthorizedException();
         }
         /**
@@ -355,7 +355,7 @@ class AssociationsController extends SionController
                 'kind' => 'sch-national-movement',],
             ['name' => 'Schoenstatt Movement of Italy', 'country' => 'IT',
                 'publicNotes' => 'Not official, it was a creation through the general presidium, '
-                .'that hasn\'t continued since the time of Fr. Ludovico Tedeschi.',
+                . 'that hasn\'t continued since the time of Fr. Ludovico Tedeschi.',
                 'kind' => 'sch-national-movement',],
             ['name' => 'Schoenstatt Movement of Croatia', 'country' => 'HR', 'publicNotes' => null,
                 'kind' => 'sch-national-movement',],

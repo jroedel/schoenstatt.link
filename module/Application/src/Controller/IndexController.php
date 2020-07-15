@@ -39,30 +39,29 @@ class IndexController extends AbstractActionController
      * @var SchoenstattTable $schoenstattTable
      */
     protected $schoenstattTable;
-    
+
     /**
      * @var EventTextTable $eventTextTable
      */
     protected $eventTextTable;
-    
+
     /**
      * @var DictionaryTable $dictionaryTable
      */
     protected $dictionaryTable;
-    
+
     protected $helperPluginManager;
     protected $config;
 
     public function __construct(
-        Navigation $navigation, 
-        PublicationsTable $publicationsTable, 
-        SchoenstattTable $schoenstattTable, 
-        EventTextTable $eventTextTable, 
+        Navigation $navigation,
+        PublicationsTable $publicationsTable,
+        SchoenstattTable $schoenstattTable,
+        EventTextTable $eventTextTable,
         DictionaryTable $dictionaryTable,
         HelperPluginManager $helperPluginManager,
         array $config
-        )
-    {
+    ) {
         $this->navigation = $navigation;
         $this->publicationsTable = $publicationsTable;
         $this->schoenstattTable = $schoenstattTable;
@@ -85,20 +84,20 @@ class IndexController extends AbstractActionController
             'blogPosts' => $blogPosts,
         ]);
     }
-    
+
     public function redirectPreApril2020SlIdAction()
     {
         static $swValidator;
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
-            if (!isset($swValidator)) {
+            if (! isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier(null, true);
             }
-            if (!$swValidator->isValid($id)) {
+            if (! $swValidator->isValid($id)) {
                 throw new \Exception('Invalid site-wide id');
             }
-            if (!isset($swFilter)) {
+            if (! isset($swFilter)) {
                 $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier(null, true);
             }
             $id = $swFilter->filter($id);
@@ -106,7 +105,7 @@ class IndexController extends AbstractActionController
         } else {
             throw new \Exception('Invalid id');
         }
-        
+
         $toIdFilter = new ToSchoenstattLinkIdentifier($entityType);
         $newId = $toIdFilter->filter($id);
         $route = SchoenstattLinkIdentifier::ENTITY_TYPE_ROUTES[$entityType];
@@ -117,8 +116,8 @@ class IndexController extends AbstractActionController
             ],
             [],
             true //reusing params should pass on our slug
-            );
-        
+        );
+
         $response->setStatusCode(301);
         return $response;
     }
@@ -127,17 +126,17 @@ class IndexController extends AbstractActionController
     {
         return new ViewModel();
     }
-    
+
     public function acknowledgementsAction()
     {
         return new ViewModel();
     }
-    
+
     public function privacyAction()
     {
         return new ViewModel();
     }
-    
+
     public function signInNoCookiesAction()
     {
         return new ViewModel();
@@ -157,7 +156,7 @@ class IndexController extends AbstractActionController
         $languageSiteBases = [];
         $languages = array_keys($this->config['slm_locale']['aliases']);
         foreach ($languages as $lang) {
-            $languageSiteBases[$lang] = $serverUrl."/$lang/";
+            $languageSiteBases[$lang] = $serverUrl . "/$lang/";
         }
         $firstCharToGrabFromUrl = strlen($languageSiteBases['en']);
         // iterate container
@@ -166,7 +165,7 @@ class IndexController extends AbstractActionController
             if (isset($url)) {
                 $urlLocales = [];
                 foreach ($languageSiteBases as $lang => $urlBase) {
-                    $urlLocales[$lang] = $urlBase.substr($url, $firstCharToGrabFromUrl);
+                    $urlLocales[$lang] = $urlBase . substr($url, $firstCharToGrabFromUrl);
                 }
                 $sitemap->addItem($urlLocales);
             }
@@ -178,7 +177,7 @@ class IndexController extends AbstractActionController
         $headers->addHeaderLine(
             'Content-Type',
             'text/xml'
-            )
+        )
             ->addHeaderLine('Content-Encoding', 'gzip');
         $response->setContent(file_get_contents($sitemapFile));
         return $response;

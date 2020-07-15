@@ -12,7 +12,7 @@ use Zend\View\Model\ViewModel;
 
 class BlogController extends SionController
 {
-    
+
     public function indexAction()
     {
         /** @var SionTable $table */
@@ -22,17 +22,17 @@ class BlogController extends SionController
         $objects    = $table->queryObjects($entity, ['kind' => EventTextTable::TEXT_KIND_BLOG]);
         $view = new ViewModel([
             'entity'    => $entity,
-            'entitySpec'=> $entitySpec,
+            'entitySpec' => $entitySpec,
             'objects'   => $objects,
         ]);
-        
+
         return $view;
     }
-    
+
     public function showAction()
     {
         $slug = $this->params()->fromRoute('slug');
-        if (!isset($slug)) {
+        if (! isset($slug)) {
             $id = $this->getEntityIdParam('show');
             $entityObject = $this->getEntityObject($id);
             return $this->redirect()->toRoute('blog/blog-post', ['text_id' => $entityObject['textId'], 'slug' => $entityObject['slug']]);
@@ -52,13 +52,13 @@ class BlogController extends SionController
         $view->setTemplate('books/blog/show');
         return $view;
     }
-    
+
     public function saveDraftAction()
     {
         //the idea here is to create a new text (kind=blog-draft)
         //every minute or so we could in theory get a lost post back
     }
-    
+
     /**
      * Makes sure this function returns the textId if passed a site-wide id
      *
@@ -71,13 +71,13 @@ class BlogController extends SionController
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
-            if (!isset($swValidator)) {
+            if (! isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier('text');
             }
-            if (!$swValidator->isValid($id)) {
+            if (! $swValidator->isValid($id)) {
                 throw new \Exception('Invalid site-wide id');
             }
-            if (!isset($swFilter)) {
+            if (! isset($swFilter)) {
                 $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier('text');
             }
             $id = $swFilter->filter($id);
@@ -86,7 +86,7 @@ class BlogController extends SionController
         }
         return $id;
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterEdit()
@@ -95,7 +95,7 @@ class BlogController extends SionController
     {
         return $this->redirect()->toRoute('blog/blog-post', ['sw_id' => $updatedObject['identifier'], 'slug' => $updatedObject['slug']]);
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterCreate()
@@ -107,7 +107,7 @@ class BlogController extends SionController
         $slug = SchoenstattTable::getSlug($data['title']);
         return $this->redirect()->toRoute('blog/blog-post', ['sw_id' => $identifier, 'slug' => $slug]);
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterDelete()

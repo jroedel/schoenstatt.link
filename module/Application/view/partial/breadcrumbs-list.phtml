@@ -7,8 +7,8 @@ use Spatie\SchemaOrg\BreadcrumbList;?>
     $listItems = [];
     $position = 1;
     // iterate through the pages
-    foreach ($this->breadcrumbsList as $key => $crumb):
-        if (!key_exists('route', $crumb) || !isset($crumb['label'])) {
+    foreach ($this->breadcrumbsList as $key => $crumb) :
+        if (! key_exists('route', $crumb) || ! isset($crumb['label'])) {
             throw new \Exception('Invalid breadcrumb');
         }
         $url = $this->url(
@@ -16,34 +16,34 @@ use Spatie\SchemaOrg\BreadcrumbList;?>
             isset($crumb['params']) ? $crumb['params'] : [],
             isset($crumb['options']) ? $crumb['options'] : [],
             isset($crumb['reuseMatchedParams']) ? $crumb['reuseMatchedParams'] : false
-            );
+        );
         $label = isset($crumb['shouldTranslateLabel']) && $crumb['shouldTranslateLabel'] ?
             $this->escapeHtml($this->translate(
                 $crumb['label'],
                 isset($crumb['translatorDomain']) ? $crumb['translatorDomain'] : 'Application'
-                )) :
+            )) :
             $this->escapeHtml($crumb['label']);
         $listItem = new ListItem();
         $listItem->position($position);
         $listItem->setProperty('item', [
-            '@id' => $this->serverUrl().$url,
+            '@id' => $this->serverUrl() . $url,
             'name' => $label
         ]);
         $listItems[] = $listItem;
         $position++;
-    ?>
+        ?>
         <li<?php if (isset($crumb['active']) && $crumb['active']) {
             echo ' class="active"';
-        }?>>
+           }?>>
 
         <?php
         // if this isn't the last page, add a link and the separator:
-        if ($key < count($this->breadcrumbsList) - 1):
-        ?>
+        if ($key < count($this->breadcrumbsList) - 1) :
+            ?>
             <a href="<?= $url ?>"><?= $label ?></a>
-        <?php
+            <?php
         // otherwise, output the name only:
-        else:
+        else :
             echo $label;
         endif; ?>
         </li>

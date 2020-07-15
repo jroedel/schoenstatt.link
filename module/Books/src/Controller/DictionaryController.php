@@ -12,10 +12,10 @@ class DictionaryController extends SionController
     public function inLanguageAction()
     {
         $inLanguage = $this->params()->fromRoute('inLanguage');
-        
+
         /** @var \Books\Model\DictionaryTable $table */
         $table = $this->getSionTable();
-        
+
         $availableLanguages = $table->getAvailableDictionaryLanguages();
         $dictionary = null;
         $isInLanguageAvailable = false;
@@ -26,19 +26,19 @@ class DictionaryController extends SionController
                 break;
             }
         }
-        if (!$isInLanguageAvailable) {
+        if (! $isInLanguageAvailable) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage('Language not found');
             return $this->redirect()->toRoute('dictionary');
         }
         $inLanguageName = $table->getLanguageName($inLanguage);
-        
+
         $dictionarySchema = $table->getDictionarySchema($inLanguage);
         $objects = $table->queryObjects('dictionary-entry', ['locale' => $dictionary['locale'], 'isActive' => true]);
         $schemata = Json::encode($this->combineSchema($dictionarySchema, $objects));
-        
-        $visitKey = 'dictionary-'.$dictionary['locale'];
+
+        $visitKey = 'dictionary-' . $dictionary['locale'];
         $table->registerVisit($visitKey, 0);
-        
+
         $visitsArray = $table->getVisitCounts($visitKey, [0]);
         if (isset($visitsArray[0])) {
             $visits = $visitsArray[0];
@@ -48,7 +48,7 @@ class DictionaryController extends SionController
                 'pastMonth' => 0,
             ];
         }
-        
+
         return new ViewModel([
             'inLanguage' => $inLanguage,
             'inLanguageName' => $inLanguageName,
@@ -57,7 +57,7 @@ class DictionaryController extends SionController
             'visits' => $visits,
         ]);
     }
-    
+
     /**
      * Prepare the schema to print out in the view
      * @param BaseType $dictionarySchema
@@ -74,7 +74,7 @@ class DictionaryController extends SionController
         }
         return $schemata;
     }
-    
+
     public function redirectAfterEdit($id, $data = [], $form = null, $updatedObject = [])
     {
         $inLanguage = \Locale::getPrimaryLanguage($data['locale']);
@@ -83,7 +83,7 @@ class DictionaryController extends SionController
         }
         return $this->redirect()->toRoute('dictionary');
     }
-    
+
     public function redirectAfterCreate($newId, $data = [], $form = null)
     {
         return $this->redirectAfterEdit($newId, $data, $form);

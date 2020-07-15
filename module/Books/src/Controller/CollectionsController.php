@@ -17,12 +17,12 @@ class CollectionsController extends SionController
             'objects' => $collections,
         ]);
     }
-    
+
     public function createAction()
     {
         $libraryId = $this->params()->fromRoute('library_id');
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();

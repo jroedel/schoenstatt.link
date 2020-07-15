@@ -22,7 +22,7 @@ class FormatAssociationFactory implements FactoryInterface
         $parentLocator = $container->getServiceLocator();
         /** @var AssociationKindsService $kindsService */
         $kindsService = $parentLocator->get(AssociationKindsService::class);
-        $valueOptions= $kindsService->getValueOptions();
+        $valueOptions = $kindsService->getValueOptions();
 
         $viewHelper = new FormatAssociation($valueOptions);
         return $viewHelper;

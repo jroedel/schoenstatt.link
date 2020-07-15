@@ -12,20 +12,20 @@ class DictionaryApiController extends ApiController
     const REPLACE_LIST_ITEM_ACTION_CREATE = 'create';
     const REPLACE_LIST_ITEM_ACTION_UPDATE = 'update';
     const REPLACE_LIST_ITEM_ACTION_INACTIVATE = 'inactivate';
-    
+
     protected $apiVisitText = 'apiv1';
-    
+
     /** @var DictionaryTable $table */
     protected $table;
-    
+
     protected $inputFilter;
-    
+
     public function __construct(DictionaryTable $table)
     {
         $this->table = $table;
         $this->setIdentifierName('entry_id');
     }
-    
+
     public function getList()
     {
         $table = $this->getDictionaryTable();
@@ -35,7 +35,7 @@ class DictionaryApiController extends ApiController
         $this->httpStatusCode = 200;
         return $this->createResponse();
     }
-    
+
     /**
      *
      * {@inheritDoc}
@@ -45,7 +45,7 @@ class DictionaryApiController extends ApiController
     {
         $table = $this->getDictionaryTable();
         $object = $table->getObject('dictionary-entry', $id);
-        if (!isset($object)) {
+        if (! isset($object)) {
             $this->apiResponse['message'] = 'Entry not found';
             $this->httpStatusCode = 404; //not found
             return $this->createResponse();
@@ -56,7 +56,7 @@ class DictionaryApiController extends ApiController
         $this->httpStatusCode = 200;
         return $this->createResponse();
     }
-    
+
     /**
      *
      * {@inheritDoc}
@@ -79,7 +79,7 @@ class DictionaryApiController extends ApiController
         }
         return $this->createResponse();
     }
-    
+
     /**
      *
      * {@inheritDoc}
@@ -116,7 +116,7 @@ class DictionaryApiController extends ApiController
         }
         return $this->createResponse();
     }
-    
+
     /**
      * This is for replacing the whole online dictionary.
      * {@inheritDoc}
@@ -124,15 +124,15 @@ class DictionaryApiController extends ApiController
      */
     public function replaceList($data)
     {
-        if (!isset($data['entries']) || !is_array($data['entries'])) {
+        if (! isset($data['entries']) || ! is_array($data['entries'])) {
             $this->httpStatusCode = 400; //bad request
             $this->apiResponse['message'] = 'Please send a JSON request body with an array \'entries\' property';
             return $this->createResponse();
         }
         $entries = $data['entries'];
-        
+
         $isSimulation = isset($data['isSimulation']) && $data['isSimulation'];
-        
+
         /**
          * If there are problems with any entries, this array will be sent to the user. Keyed by the orig slug
          * @var array $errors
@@ -148,30 +148,30 @@ class DictionaryApiController extends ApiController
          * @var array $slugs
          */
         $slugs = [];
-        
+
         //first check against the input filter
         $inputFilter = $this->getInputFilter();
         $slugifier = new Slugify();
         foreach ($entries as $entry) {
-            if (!is_array($entry)
-                || !isset($entry['key'])
-                || !isset($entry['slug'])
-                || !isset($entry['locale'])
-                || !isset($entry['entry'])
+            if (! is_array($entry)
+                || ! isset($entry['key'])
+                || ! isset($entry['slug'])
+                || ! isset($entry['locale'])
+                || ! isset($entry['entry'])
             ) {
                 $this->httpStatusCode = 400;
                 $this->apiResponse['message'] =
                     "All entries must define the following properties: key, slug, locale, entry";
                 return $this->createResponse();
             }
-            if (!isset($entry['isActive'])) {
+            if (! isset($entry['isActive'])) {
                 $entry['isActive'] = "1";
             }
             $inputFilter->setData($entry);
             if ($inputFilter->isValid()) {
                 $validData = $inputFilter->getValues();
                 $slug = $slugifier->slugify($validData['key']);
-                $compositeKey = $slug.$validData['locale'];
+                $compositeKey = $slug . $validData['locale'];
                 $validData['slug'] = $slug;
                 $validData['isActive'] = (bool)$validData['isActive'];
                 //assume this row should be created in the db until otherwise shown
@@ -198,17 +198,17 @@ class DictionaryApiController extends ApiController
                 $errors[$entry['slug']] = $this->formatInputFilterErrors($inputFilter->getMessages());
             }
         }
-        
-        if (!empty($errors)) {
+
+        if (! empty($errors)) {
             $this->httpStatusCode = 400; //bad requests
             $this->apiResponse['invalidInputs'] = $errors;
             return $this->createResponse();
         }
-        
+
         //make sure links checkout
         foreach ($objects as $entry) {
             foreach ($entry['links'] as $linkSlug) {
-                if (!isset($slugs[$linkSlug])) {
+                if (! isset($slugs[$linkSlug])) {
                     //we found a bad link
                     $errors[$entry['slug']] = [[
                         "field" => "links",
@@ -218,17 +218,17 @@ class DictionaryApiController extends ApiController
                 }
             }
         }
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             $this->httpStatusCode = 400; //bad request
             $this->apiResponse['invalidInputs'] = $errors;
             return $this->createResponse();
         }
-        
+
         //figure out which of the input records should be inserted, updated and inactivated
         $table = $this->getDictionaryTable();
         $currentObjects = $table->getObjects('dictionary-entry');
         foreach ($currentObjects as $value) {
-            $compositeKey = $value['slug'].$value['locale'];
+            $compositeKey = $value['slug'] . $value['locale'];
             if (isset($objects[$compositeKey])) {
                 $objects[$compositeKey]['entryId'] = $value['entryId'];
                 $objects[$compositeKey]['itemAction'] = self::REPLACE_LIST_ITEM_ACTION_UPDATE;
@@ -239,22 +239,22 @@ class DictionaryApiController extends ApiController
                 ];
             }
         }
-        
+
         //do it
-        if (!$isSimulation) {
+        if (! $isSimulation) {
             foreach ($objects as $compositeKey => $object) {
                 switch ($object['itemAction']) {
                     case self::REPLACE_LIST_ITEM_ACTION_CREATE:
                         $table->createEntity('dictionary-entry', $object);
                         break;
                     case self::REPLACE_LIST_ITEM_ACTION_UPDATE:
-                        if (!isset($object['entryId'])) {
+                        if (! isset($object['entryId'])) {
                             throw new \Exception('Missing entryId for item to update. Weird.');
                         }
                         $table->updateEntity('dictionary-entry', $object['entryId'], $object);
                         break;
                     case self::REPLACE_LIST_ITEM_ACTION_INACTIVATE:
-                        if (!isset($object['entryId'])) {
+                        if (! isset($object['entryId'])) {
                             throw new \Exception('Missing entryId for item to update. Weird.');
                         }
                         $table->updateEntity('dictionary-entry', $object['entryId'], ['isActive' => false]);
@@ -265,12 +265,12 @@ class DictionaryApiController extends ApiController
                 }
             }
         }
-        
+
         $this->httpStatusCode = 200;
         $this->apiResponse['results'] = array_values($objects);
         return $this->createResponse();
     }
-    
+
     protected function formatInputFilterErrors($messages)
     {
         $errors = [];
@@ -285,12 +285,12 @@ class DictionaryApiController extends ApiController
         }
         return $errors;
     }
-    
+
     public function slugifyTermsAction()
     {
         $request = $this->getRequest();
         $data = $this->processBodyContent($request);
-        if (!is_array($data) || !isset($data['terms']) || !is_array($data['terms'])) {
+        if (! is_array($data) || ! isset($data['terms']) || ! is_array($data['terms'])) {
             $this->httpStatusCode = 201;
             $this->apiResponse['message'] = '`terms` property is undefined.';
             return $this->createResponse();
@@ -298,9 +298,9 @@ class DictionaryApiController extends ApiController
         $this->httpStatusCode = 200;
         $slugify = new Slugify();
         $slugs = [];
-        
+
         foreach ($data['terms'] as $term) {
-            if (!is_string($term) && !isset($slugs[$term])) {
+            if (! is_string($term) && ! isset($slugs[$term])) {
                 $slugs[$term] = null;
             }
             $slugs[$term] = $slugify->slugify($term);
@@ -308,7 +308,7 @@ class DictionaryApiController extends ApiController
         $this->apiResponse['slugs'] = $slugs;
         return $this->createResponse();
     }
-    
+
     /**
      * Massage ORM-returned objects for handing over the API
      * @param mixed $objects
@@ -322,7 +322,7 @@ class DictionaryApiController extends ApiController
         }
         return $results;
     }
-    
+
     protected function prepDictionaryEntry($object)
     {
         unset($object['schema']);
@@ -332,14 +332,14 @@ class DictionaryApiController extends ApiController
         unset($object['updatedBy']);
         return $object;
     }
-    
+
     /**
      * Retrieve an input filter to validate api-submitted dictionary entries
      * @return \Zend\InputFilter\InputFilterInterface
      */
     public function getInputFilter()
     {
-        if (!isset($this->inputFilter)) {
+        if (! isset($this->inputFilter)) {
             $form = new DictionaryEntryForm();
             $this->inputFilter = $form->getInputFilter();
             $fields = $this->inputFilter->getInputs();
@@ -355,7 +355,7 @@ class DictionaryApiController extends ApiController
         }
         return $this->inputFilter;
     }
-    
+
     /**
      * @return \Books\Model\DictionaryTable
      */

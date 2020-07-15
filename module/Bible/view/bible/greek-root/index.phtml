@@ -18,12 +18,12 @@ $this->headLink()->appendStylesheet($this->basePath() . '/css/gen-bootstrap-sort
 </tr>
 </thead>
 <tbody>
-<?php 
+<?php
 $bibleSearchUrl = $this->url('bible/search');
 foreach ($this->objects as $object) :?>
 <tr>
-<td><a href="http://www.perseus.tufts.edu/hopper/morph?l=<?php echo urlencode($object['root']);?>&la=greek#lexicon"><?php 
-echo $this->escapeHtml($object['root']);?></a><?php 
+<td><a href="http://www.perseus.tufts.edu/hopper/morph?l=<?php echo urlencode($object['root']);?>&la=greek#lexicon"><?php
+echo $this->escapeHtml($object['root']);?></a><?php
 if (isset($object['rootId'])) {
     echo $this->editPencil('greek-root', $object['rootId']);
 }
@@ -34,17 +34,17 @@ if (isset($object['rootId'])) {
 <td><?php echo $this->verseFromId($object['firstVerseOccurrence']);?></td>
 <td><?php echo $this->escapeHtml($object['johnOccurrenceCount']);
 if (isset($object['johnFirstVerseOccurrence'])) {
-    echo ' '.$this->verseFromId($object['johnFirstVerseOccurrence']);
+    echo ' ' . $this->verseFromId($object['johnFirstVerseOccurrence']);
 }?></td>
 <td><?php foreach ($object['formsAvailable'] as $form) {
     echo sprintf(
-        '<a href="%s?search=%s@%s" target="_blank">%s</a> ', 
+        '<a href="%s?search=%s@%s" target="_blank">%s</a> ',
         $bibleSearchUrl,
         urlencode($object['root']),
         urlencode($form),
         $this->escapeHtml($form)
-        );
-}?></td>
+    );
+    }?></td>
 </tr>
 <?php endforeach;?>
 </tbody>

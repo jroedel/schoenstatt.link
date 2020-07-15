@@ -6,7 +6,8 @@ echo $this->simulate;
 <th></th>
 <tr>
 <tbody><?php $features = $this->features;
-foreach ($features as $object) :?><tr>
+foreach ($features as $object) :
+    ?><tr>
 <td><?php echo $this->escapeHtml($object['name']);?></td>
 <td><?php foreach ($object as $key => $value) :
     if ('name' !== $key && 'adminNotes' !== $key) :?>

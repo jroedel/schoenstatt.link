@@ -28,7 +28,7 @@ class DefinedTerm extends Intangible
     {
         return $this->setProperty('inDefinedTermSet', $inDefinedTermSet);
     }
-    
+
     /**
      * A Defined Term contained in this term set.
      *

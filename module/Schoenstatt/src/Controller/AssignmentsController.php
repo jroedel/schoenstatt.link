@@ -61,7 +61,7 @@ class AssignmentsController extends SionController
             $data = $form->getData();
 //             $showPhotos = $data['showPhotos'];
 //             unset($data['showPhotos']);
-            if (!empty($data)) {
+            if (! empty($data)) {
                 /** @var SchoenstattTable $table */
                 $table = $this->getSionTable();
                 $entities = $table->searchEntities($data);
@@ -103,7 +103,7 @@ class AssignmentsController extends SionController
                 }
                 //if it's valid, fill in the form
                 if (isset($queryAssociationId)) {
-                    if (!$form->get('associationId')->getValue()) {
+                    if (! $form->get('associationId')->getValue()) {
                         $form->get('associationId')->setValue($queryAssociationId);
                         $form->get('roleId')->setValueOptions($queryAssociationRoles);
                         $form->get('roleId')->setValue($queryRoleId);

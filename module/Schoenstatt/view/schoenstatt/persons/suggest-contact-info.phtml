@@ -7,8 +7,10 @@ $this->headTitle(sprintf($this->translate($titleText), $this->person['fullFriend
 <h1><?php echo $this->translate($headText);?></h1>
 <p class="lead"><?php echo $this->escapeHtml($this->person['fullName']);?></p>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('persons/person/suggest-contact-info',
-		['person_id' => $this->person['personId']]));
+$form->setAttribute('action', $this->url(
+    'persons/person/suggest-contact-info',
+    ['person_id' => $this->person['personId']]
+));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->formRow($form->get('personId')); //print this here because the partial is reused for the create form
@@ -23,4 +25,4 @@ $form->setAttribute('action', $this->url('persons/person/suggest-contact-info',
  echo $this->formRow($form->get('security'));
  echo $this->formSubmit($form->get('submit'));
  echo $this->form()->closeTag();
-?>
+    ?>

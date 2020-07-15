@@ -60,7 +60,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '300',
             ],
         ]);
-        
+
         $this->add([
             'name' => 'authors',
             'type' => 'Select',
@@ -337,7 +337,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
     */
     public function setLibraryOptions(LibraryOptions $libraryOptions)
     {
-        $this->get('collectionId')->setAttribute('disabled', !$libraryOptions->useCollections);
+        $this->get('collectionId')->setAttribute('disabled', ! $libraryOptions->useCollections);
         $callNumber = $this->get('callNumber');
         $newCallNumber = $this->get('newCallNumber');
         // @todo add regex validator to callNumber
@@ -360,7 +360,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
         } else {
             $collectionId->setEmptyOption('');
         }
-        if (!isset($this->data) && isset($libraryOptions->mainCollectionId)) {
+        if (! isset($this->data) && isset($libraryOptions->mainCollectionId)) {
             $collectionId->setValue($libraryOptions->mainCollectionId);
         }
 

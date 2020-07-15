@@ -43,7 +43,7 @@ class DriveGateway
         $publicationFiles = [];
         foreach ($files as $file) {
             if (isset($file['publicationId'])) {
-                if (!array_key_exists($file['publicationId'], $publicationFiles)) {
+                if (! array_key_exists($file['publicationId'], $publicationFiles)) {
                     $publicationFiles[$file['publicationId']] = [];
                 }
                 $publicationFiles[$file['publicationId']][$file['fileId']] = $file;
@@ -119,7 +119,7 @@ class DriveGateway
         $cache = $this->getCache();
         $success = null;
         $json = $cache->getItem(self::FILES_CACHE_KEY, $success);
-        if (!$success) {
+        if (! $success) {
             $key = $this->getApiKey();
             $listUrl = $this->getFilesApiUrl();
             $client = new Client();
@@ -129,14 +129,14 @@ class DriveGateway
             $response = $client->send();
 
             if (200 != $response->getStatusCode()) {
-                throw new \Exception('Failed to retrieve list of files from Google Drive. Status code: '. $response->getStatusCode());
+                throw new \Exception('Failed to retrieve list of files from Google Drive. Status code: ' . $response->getStatusCode());
             }
             $json = $response->getBody();
             //best to cache the JSON instead of serializing afterwards, plus it gets re-validated
             $cache->setItem(self::FILES_CACHE_KEY, $json);
         }
         $data = Json::decode($json, Json::TYPE_ARRAY);
-        if (!is_array($data)) {
+        if (! is_array($data)) {
             throw new \Exception('Failed to retrieve list of files from Google Drive. No data returned');
         }
         $result = [];
@@ -180,7 +180,7 @@ class DriveGateway
      */
     public function getCache()
     {
-        if (!isset($this->cache)) {
+        if (! isset($this->cache)) {
             throw new \Exception('Something went wrong, no cache available');
         }
         return $this->cache;
@@ -203,7 +203,7 @@ class DriveGateway
      */
     public function getConfig()
     {
-        if (!is_array($this->config)) {
+        if (! is_array($this->config)) {
             throw new \Exception('No config set');
         }
         return $this->config;
@@ -226,13 +226,13 @@ class DriveGateway
     */
     public function getApiKey()
     {
-        if (!isset($this->apiKey)) {
+        if (! isset($this->apiKey)) {
             $config = $this->getConfig();
             if (isset($config['books']) && isset($config['books'][self::CONFIG_KEY_API_KEY])) {
                 $this->apiKey = $config['books'][self::CONFIG_KEY_API_KEY];
             }
         }
-        if (!is_string($this->apiKey)) {
+        if (! is_string($this->apiKey)) {
             throw new \Exception('No API key available');
         }
         return $this->apiKey;
@@ -256,13 +256,13 @@ class DriveGateway
      */
     public function getFilesApiUrl()
     {
-        if (!isset($this->filesApiUrl)) {
+        if (! isset($this->filesApiUrl)) {
             $config = $this->getConfig();
             if (isset($config['books']) && isset($config['books'][self::CONFIG_KEY_FILES_API_URL])) {
                 $this->filesApiUrl = $config['books'][self::CONFIG_KEY_FILES_API_URL];
             }
         }
-        if (!is_string($this->filesApiUrl)) {
+        if (! is_string($this->filesApiUrl)) {
             throw new \Exception('No API key available');
         }
         return $this->filesApiUrl;

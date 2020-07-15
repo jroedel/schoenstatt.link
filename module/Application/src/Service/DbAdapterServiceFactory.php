@@ -11,7 +11,7 @@ use Interop\Container\ContainerInterface;
  */
 class DbAdapterServiceFactory implements FactoryInterface
 {
-    
+
     /**
      * Create an object
      *
@@ -27,13 +27,13 @@ class DbAdapterServiceFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         $config = $container->get('Config');
-        
+
         $dbParams = $config['db'];
-        
+
         $env = getenv('APP_ENV') ?: 'production';
         if ($env != 'production') {
             $adapter = new \BjyProfiler\Db\Adapter\ProfilingAdapter($dbParams);
-            
+
             if (php_sapi_name() == 'cli') {
                 $logger = new \Zend\Log\Logger();
                 // write queries profiling info to stdout in CLI mode
@@ -52,7 +52,7 @@ class DbAdapterServiceFactory implements FactoryInterface
         } else {
             $adapter = new \Zend\Db\Adapter\Adapter([
                 'driver'    => 'pdo',
-                'dsn'       => 'mysql:dbname='.$dbParams['database'].';host='.$dbParams['hostname'],
+                'dsn'       => 'mysql:dbname=' . $dbParams['database'] . ';host=' . $dbParams['hostname'],
                 'database'  => $dbParams['database'],
                 'username'  => $dbParams['username'],
                 'password'  => $dbParams['password'],

@@ -82,10 +82,10 @@ class PublicationsTable extends SionTable
         $authors = [];
         $authorPersons = $this->schoenstattTable->getUnlinkedPersons();
         foreach ($authorPersons as $personId => $object) {
-            if (!$object['isAuthor']) {
+            if (! $object['isAuthor']) {
                 continue;
             }
-            $authors['p'.$personId] = $object['fullName'];
+            $authors['p' . $personId] = $object['fullName'];
         }
         return $authors;
     }
@@ -95,10 +95,10 @@ class PublicationsTable extends SionTable
         $authors = [];
         $authorAssociations = $this->schoenstattTable->getObjects('association');
         foreach ($authorAssociations as $associationId => $object) {
-            if (!$object['isAuthor']) {
+            if (! $object['isAuthor']) {
                 continue;
             }
-            $authors['a'.$associationId] = $object['formattedName'];
+            $authors['a' . $associationId] = $object['formattedName'];
         }
         return $authors;
     }
@@ -133,7 +133,7 @@ GROUP BY Author ORDER BY Author";
         }
         //factor in the concatenated authors, making sure not to push duplicates
         foreach ($authorConcatenations as $key => $value) {
-            if (!isset($authors[$key])) {
+            if (! isset($authors[$key])) {
                 $authors[$key] = $value;
             }
         }
@@ -164,7 +164,7 @@ ORDER BY `Publisher`";
         $valueOptions = [];
         foreach ($publications as $publication) {
             foreach ($publication['keywords'] as $keyword) {
-                if (!isset($valueOptions[$keyword])) {
+                if (! isset($valueOptions[$keyword])) {
                     $valueOptions[$keyword] = $keyword;
                 }
             }
@@ -193,7 +193,7 @@ ORDER BY `Publisher`";
         $entities = $this->getCategories();
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
-            if (!$entityObject['isPlaceholder'] || $includePlaceholders) {
+            if (! $entityObject['isPlaceholder'] || $includePlaceholders) {
                 $return[$entityId] = $entityObject['fullName'];
             }
         }
@@ -212,7 +212,7 @@ ORDER BY `Publisher`";
      */
     public function getPublicationLanguageCounts($includeUser = false, $includeInstitute = false, $includePatres = false)
     {
-        $cacheKey = 'publication-languages-'.($includeUser ? '1':'0').($includeInstitute? '1':'0').($includePatres? '1':'0');
+        $cacheKey = 'publication-languages-' . ($includeUser ? '1' : '0') . ($includeInstitute ? '1' : '0') . ($includePatres ? '1' : '0');
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
@@ -220,20 +220,20 @@ ORDER BY `Publisher`";
 
         $languages = [];
         foreach ($entities as $object) {
-            if (('publication_public' ===  $object['resourceId'] && (isset($this->actingUserId) || $object['isRevisedWithBookInHand'])) ||
+            if (('publication_public' === $object['resourceId'] && (isset($this->actingUserId) || $object['isRevisedWithBookInHand'])) ||
                 ($includeUser && 'publication_user' === $object['resourceId']) ||
                 ($includeInstitute && 'publication_institute' === $object['resourceId']) ||
                 ($includePatres && 'publication_patres' === $object['resourceId'])
             ) {
-                if (!isset($object['inLanguage'])) {
-                    if (!isset($languages['xx'])) {
+                if (! isset($object['inLanguage'])) {
+                    if (! isset($languages['xx'])) {
                         $languages['xx'] = 1;
                     } else {
                         $languages['xx']++;
                     }
                 } elseif (is_array($object['inLanguage'])) {
                     foreach ($object['inLanguage'] as $lang) {
-                        if (!isset($languages[$lang])) {
+                        if (! isset($languages[$lang])) {
                             $languages[$lang] = 1;
                         } else {
                             $languages[$lang]++;
@@ -247,9 +247,9 @@ ORDER BY `Publisher`";
         $this->cacheEntityObjects($cacheKey, $languages, ['publication']);
         return $languages;
     }
-    
+
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
      */
@@ -268,7 +268,7 @@ ORDER BY `Publisher`";
                 'sch_pub_categories.PublicationCategoryId = sch_publications.CategoryId',
                 ['SortOrder', 'CategoryName', 'CategoryParentId' => 'ParentId'],
                 Select::JOIN_LEFT
-                );
+            );
             $select->order(['CategorySortOrder', 'Authors', 'InLanguage', 'Title']);
         }
         return $select;
@@ -325,18 +325,18 @@ ORDER BY `Publisher`";
             if (is_array($query['categoryId'])) {
                 $categories = [];
                 foreach ($query['categoryId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $categories)) {
+                    if (is_numeric($value) && ! in_array($value, $categories)) {
                         $categories[] = $value;
                     }
                 }
                 if (count($categories) === 1) {
                     $query['categoryId'] = $categories[0];
                 } elseif (count($categories) > 1) {
-                    $categoryIdClause= new In($fieldMap['categoryId'], $categories);
+                    $categoryIdClause = new In($fieldMap['categoryId'], $categories);
                 }
             }
             if (is_numeric($query['categoryId'])) {
-                $categoryIdClause= new Operator($fieldMap['categoryId'], Operator::OPERATOR_EQUAL_TO, $query['categoryId']);
+                $categoryIdClause = new Operator($fieldMap['categoryId'], Operator::OPERATOR_EQUAL_TO, $query['categoryId']);
             }
             if (isset($categoryIdClause)) {
                 $where->addPredicate($categoryIdClause, $combination);
@@ -349,18 +349,18 @@ ORDER BY `Publisher`";
             if (is_array($query['publicationId'])) {
                 $publications = [];
                 foreach ($query['publicationId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $publications)) {
+                    if (is_numeric($value) && ! in_array($value, $publications)) {
                         $publications[] = $value;
                     }
                 }
                 if (count($publications) === 1) {
                     $query['publicationId'] = $publications[0];
                 } elseif (count($publications) > 1) {
-                    $publicationIdClause= new In($fieldMap['publicationId'], $publications);
+                    $publicationIdClause = new In($fieldMap['publicationId'], $publications);
                 }
             }
             if (is_numeric($query['publicationId'])) {
-                $publicationIdClause= new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
+                $publicationIdClause = new Operator($fieldMap['publicationId'], Operator::OPERATOR_EQUAL_TO, $query['publicationId']);
             }
             if (isset($publicationIdClause)) {
                 $where->addPredicate($publicationIdClause, $combination);
@@ -373,18 +373,18 @@ ORDER BY `Publisher`";
             if (is_array($query['mainPublicationId'])) {
                 $mainPublications = [];
                 foreach ($query['mainPublicationId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $mainPublications)) {
+                    if (is_numeric($value) && ! in_array($value, $mainPublications)) {
                         $mainPublications[] = $value;
                     }
                 }
                 if (count($mainPublications) === 1) {
                     $query['mainPublicationId'] = $mainPublications[0];
                 } elseif (count($mainPublications) > 1) {
-                    $mainPublicationIdClause= new In($fieldMap['mainPublicationId'], $mainPublications);
+                    $mainPublicationIdClause = new In($fieldMap['mainPublicationId'], $mainPublications);
                 }
             }
             if (is_numeric($query['mainPublicationId'])) {
-                $mainPublicationIdClause= new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['mainPublicationId']);
+                $mainPublicationIdClause = new Operator($fieldMap['mainPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['mainPublicationId']);
             }
             if (isset($mainPublicationIdClause)) {
                 $where->addPredicate($mainPublicationIdClause, $combination);
@@ -397,18 +397,18 @@ ORDER BY `Publisher`";
             if (is_array($query['translatedFromPublicationId'])) {
                 $translatedFromPublications = [];
                 foreach ($query['translatedFromPublicationId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $translatedFromPublications)) {
+                    if (is_numeric($value) && ! in_array($value, $translatedFromPublications)) {
                         $translatedFromPublications[] = $value;
                     }
                 }
                 if (count($translatedFromPublications) === 1) {
                     $query['translatedFromPublicationId'] = $translatedFromPublications[0];
                 } elseif (count($translatedFromPublications) > 1) {
-                    $translatedFromPublicationIdClause= new In($fieldMap['translatedFromPublicationId'], $translatedFromPublications);
+                    $translatedFromPublicationIdClause = new In($fieldMap['translatedFromPublicationId'], $translatedFromPublications);
                 }
             }
             if (is_numeric($query['translatedFromPublicationId'])) {
-                $translatedFromPublicationIdClause= new Operator($fieldMap['translatedFromPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['translatedFromPublicationId']);
+                $translatedFromPublicationIdClause = new Operator($fieldMap['translatedFromPublicationId'], Operator::OPERATOR_EQUAL_TO, $query['translatedFromPublicationId']);
             }
             if (isset($translatedFromPublicationIdClause)) {
                 $where->addPredicate($translatedFromPublicationIdClause, $combination);
@@ -447,18 +447,18 @@ ORDER BY `Publisher`";
         //@todo check if this really works
         //Prepare isSubEdition predicate, by default, don't filter
         if (isset($options['noSubEditions']) && $options['noSubEditions']) {
-            $noSubEditionClause= new IsNull($fieldMap['mainPublicationId']);
+            $noSubEditionClause = new IsNull($fieldMap['mainPublicationId']);
             $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
         }
-        
+
         //@todo check if this really works
         //Prepare NOT isAwaitingMerger predicate, by default, don't filter
         if (isset($options['isAwaitingMerger'])) {
-            $isAwaitingMergerClause= new Operator(
-                $fieldMap['isAwaitingMerge'], 
-                Operator::OPERATOR_EQUAL_TO, 
+            $isAwaitingMergerClause = new Operator(
+                $fieldMap['isAwaitingMerge'],
+                Operator::OPERATOR_EQUAL_TO,
                 $options['isAwaitingMerger'] ? '1' : '0'
-                );
+            );
             $where->addPredicate($isAwaitingMergerClause, PredicateSet::OP_AND);
         }
 
@@ -482,7 +482,7 @@ ORDER BY `Publisher`";
             $entities[$processedRow['publicationId']] = $processedRow;
         }
 
-        if (!isset($options['noLink']) || !$options['noLink']) {
+        if (! isset($options['noLink']) || ! $options['noLink']) {
             $this->linkPublications($entities);
         }
 
@@ -564,25 +564,25 @@ ORDER BY `Publisher`";
 //             var_dump(memory_get_peak_usage(false));
 //             var_dump($count);
 //         }
-        
+
         $id = $this->filterDbId($row['PublicationId']);
-        
+
 //         if (isset($this->unlinkedPublicationsMemoryCache[$id])) {
 //             return $this->unlinkedPublicationsMemoryCache[$id];
 //         }
-        if (!isset($swFilter)) {
+        if (! isset($swFilter)) {
             $swFilter = new ToSchoenstattLinkIdentifier('publication');
         }
         $identifier = $swFilter->filter($id);
-        
+
         $title = $row['Title'];
         $slug = $row['Slug'];
-        if (!isset($slug)) {
+        if (! isset($slug)) {
             $slug = SchoenstattTable::getSlug($title);
             $this->slylyUpdatePublicationSlug($id, $slug);
         }
 
-        if (!isset($categories)) {
+        if (! isset($categories)) {
             $categories = $this->getCategories();
         }
         //process URLs
@@ -637,7 +637,7 @@ ORDER BY `Publisher`";
         $copyrightYear = $this->filterDbInt($row['CopyrightYear']);
         $datePublishedText = $row['DatePublishedText'];
         $datePublished = $this->filterDbDate($row['DatePublished']);
-        
+
         $disambiguatingTitle = $title;
         if (isset($bookEdition)
             || isset($copyrightYear)
@@ -653,7 +653,7 @@ ORDER BY `Publisher`";
                 $extraInfoParts[] = (string)$copyrightYear;
             }
             if (count($extraInfoParts) > 0) {
-                $disambiguatingTitle .= " [".implode(', ', $extraInfoParts)."]";
+                $disambiguatingTitle .= " [" . implode(', ', $extraInfoParts) . "]";
             }
         }
 
@@ -685,7 +685,7 @@ ORDER BY `Publisher`";
             'publishingStatus'          => $row['PublishingStatus'],
             'bookFormatType'            => $bookFormatType,
             'mainPublicationId'         => $mainPublicationId,
-            'translatedFromPublicationId'=> $this->filterDbId($row['TranslatedFromPublicationId']),
+            'translatedFromPublicationId' => $this->filterDbId($row['TranslatedFromPublicationId']),
             'volumeNumber'              => $row['VolumeNumber'],
             'containedIn'               => $row['ContainedIn'],
             'containedInIsbn'           => $row['ContainedInIsbn'],
@@ -760,7 +760,7 @@ ORDER BY `Publisher`";
 //         $this->unlinkedPublicationsMemoryCache[$id] = &$processedRow;
         return $processedRow;
     }
-    
+
     protected function slylyUpdatePublicationSlug($publicationId, $slug)
     {
         $gateway = $this->getTableGatewayForEntity('publication');
@@ -906,7 +906,7 @@ ORDER BY `Publisher`";
     public function getPublication($id)
     {
         $object = $this->tryGettingObject('publication', $id);
-        if (!isset($object)) {
+        if (! isset($object)) {
             return null;
         }
         $this->linkPublication($object);
@@ -942,7 +942,7 @@ ORDER BY `Publisher`";
          * associations and persons are allowed.
          */
         //use key_exists here because nulls or empty arrays should be included
-        if (!key_exists('authorsText', $data) && key_exists('authorsAll', $data)) {
+        if (! key_exists('authorsText', $data) && key_exists('authorsAll', $data)) {
             $text = [];
 //             $persons = [];
 //             $associations = [];
@@ -979,9 +979,9 @@ ORDER BY `Publisher`";
 //                 throw new \Exception('Only 5 author persons are allowed');
 //             }
         }
-        if (!key_exists('editorsText', $data) && !key_exists('editorPerson1Id', $data) &&
-            !key_exists('editorPerson2Id', $data) &&  !key_exists('editorPerson3Id', $data) &&
-            !key_exists('editorAssociationId', $data) &&
+        if (! key_exists('editorsText', $data) && ! key_exists('editorPerson1Id', $data) &&
+            ! key_exists('editorPerson2Id', $data) &&  ! key_exists('editorPerson3Id', $data) &&
+            ! key_exists('editorAssociationId', $data) &&
             key_exists('editorsAll', $data)
         ) {
             $text = [];
@@ -1016,8 +1016,8 @@ ORDER BY `Publisher`";
 //                 throw new \Exception('Only 3 editor persons are allowed');
 //             }
         }
-        if (!key_exists('translatorsText', $data) && !key_exists('translatorPerson1Id', $data) &&
-            !key_exists('translatorPerson2Id', $data) &&  !key_exists('translatorPerson3Id', $data) &&
+        if (! key_exists('translatorsText', $data) && ! key_exists('translatorPerson1Id', $data) &&
+            ! key_exists('translatorPerson2Id', $data) &&  ! key_exists('translatorPerson3Id', $data) &&
             key_exists('translatorsAll', $data)
         ) {
             $text = [];
@@ -1059,15 +1059,15 @@ ORDER BY `Publisher`";
         $existingPublications = $this->queryObjects('publication', ['dataSource' => 'forschungsbibliothek']);
         $existingPublications = $this->rekeyPublicationsByDataSourceId(
             $existingPublications
-            );
+        );
         $count = 0;
         foreach ($bookList as $book) {
             $lang = isset($book['language']) ? $book['language']['displayname'] : null;
-            if (isset($lang) && !in_array($lang, $languages)) {
+            if (isset($lang) && ! in_array($lang, $languages)) {
                 $languages[] = $lang;
             }
             $pub = $this->processForschungsPublicationRow($book);
-            if (!isset($pub['title'])) {
+            if (! isset($pub['title'])) {
                 if (isset($this->logger)) {
                     $this->logger->warn('Forschung importer: Row skipped due to missing title', ['record' => $book]);
                 }
@@ -1088,7 +1088,7 @@ ORDER BY `Publisher`";
                 echo '</pre>';
             }
             $publications[$dataSourceId] = $pub;
-            if (!isset($existingPublications[$dataSourceId])) {
+            if (! isset($existingPublications[$dataSourceId])) {
                 $this->createEntity('publication', $pub, false);
             }
             $count++;
@@ -1096,19 +1096,19 @@ ORDER BY `Publisher`";
         $this->removeDependentCacheItems('publication');
         return $publications;
     }
-    
+
     protected function rekeyPublicationsByDataSourceId($publications)
     {
         $result = [];
         foreach ($publications as $object) {
-            if (!isset($object['dataSourceId'])) {
+            if (! isset($object['dataSourceId'])) {
                 throw new \Exception('All rows must have a dataSourceId');
             }
             $result[$object['dataSourceId']] = $object;
         }
         return $result;
     }
-    
+
     protected function processForschungsPublicationRow($row)
     {
         static $languageMap;
@@ -1118,7 +1118,7 @@ ORDER BY `Publisher`";
         static $dateConverters;
         static $now;
         static $debugCount;
-        if (!isset($languageMap)) {
+        if (! isset($languageMap)) {
             $languageMap = [
                 'German' => ['de'],
                 'Spanish' => ['es'],
@@ -1145,13 +1145,13 @@ ORDER BY `Publisher`";
                 'German u. a.' => ['de'],
             ];
         }
-        if (!isset($editorIndicators)) {
+        if (! isset($editorIndicators)) {
             $editorIndicators = [
                 'Hrsg.' => 'displayname',
                 'Editor' => 'displayname',
             ];
         }
-        if (!isset($editorInString)) {
+        if (! isset($editorInString)) {
             $editorInString = [
                 '(Hrsg.)',
                 '(Hrsg./Ed.)',
@@ -1159,7 +1159,7 @@ ORDER BY `Publisher`";
                 '– Editor',
             ];
         }
-        if (!isset($nonAuthorNames)) {
+        if (! isset($nonAuthorNames)) {
             $nonAuthorNames = [
                 'u. a.' => 'displayname',
                 'u.a.' => 'displayname',
@@ -1167,7 +1167,7 @@ ORDER BY `Publisher`";
                 'Autor: keine Angabe' => 'displayname',
             ];
         }
-        if (!isset($dateConverters)) {
+        if (! isset($dateConverters)) {
             $dateConverters = [
                 '18. April 2005' => '2005-04-18',
                 '2. Februar 2014' => '2014-02-02',
@@ -1392,18 +1392,18 @@ ORDER BY `Publisher`";
                 'September 2009' => '2009-09',
             ];
         }
-        if (!isset($now)) {
+        if (! isset($now)) {
             $now = new \DateTime(null, new \DateTimeZone('UTC'));
         }
-        if (!isset($debugCount)) {
+        if (! isset($debugCount)) {
             $debugCount = 0;
         }
-        
-        if (!isset($row['id'])) {
+
+        if (! isset($row['id'])) {
             var_dump($row);
             throw new \Exception('Every entry should have an id');
         }
-        
+
         /*
          * userdefinedvalues(@todo check), id, index, hash, mainsection, collectionstatus (nothing important), rare,
          * format(@todo), country, language, purchasedate, owner, issuenr(no), publicationdate,
@@ -1416,7 +1416,7 @@ ORDER BY `Publisher`";
         $inLanguage = null;
         if (isset($row['language']) && isset($row['language']['displayname'])) {
             $langDisplay = $row['language']['displayname'];
-            if (!isset($languageMap[$langDisplay])) {
+            if (! isset($languageMap[$langDisplay])) {
                 throw new \Exception("unknown language `$langDisplay`");
             }
             $inLanguage = $languageMap[$langDisplay];
@@ -1432,13 +1432,13 @@ ORDER BY `Publisher`";
         }
         $edition = null;
         if (isset($row['edition'])) {
-            if (!isset($row['edition']['displayname'])) {
+            if (! isset($row['edition']['displayname'])) {
                 var_dump($row['edition']);
                 throw new \Exception('Unexpected edition');
             }
             $edition = $row['edition']['displayname'];
         }
-        
+
         $title = null;
         $subtitle = null;
         $slug = null;
@@ -1451,12 +1451,12 @@ ORDER BY `Publisher`";
                 $title = $row['mainsection']['title'];
                 $slug = SchoenstattTable::getSlug($title);
             }
-            
+
             //subtitle
             if (isset($row['mainsection']['subtitle']) && is_string($row['mainsection']['subtitle'])) {
                 $subtitle = $row['mainsection']['subtitle'];
             }
-            
+
             //authors
             if (isset($row['mainsection']['authors']) && isset($row['mainsection']['authors']['author'])) {
                 $authorEntries = [];
@@ -1470,7 +1470,7 @@ ORDER BY `Publisher`";
                     if ($authorEntry['role']['$t'] !== 'Author') {
                         throw new \Exception('It looks like we started specifying other author types');
                     }
-                    
+
                     //check if we're really looking at editors
                     $disregardThisOne = false;
                     foreach ($editorIndicators as $editorText => $fieldToCheck) {
@@ -1480,7 +1480,7 @@ ORDER BY `Publisher`";
                             break;
                         }
                     }
-                    
+
                     //check if this is a non-@author user
                     foreach ($nonAuthorNames as $nonAuthorText => $fieldToCheck) {
                         if ($authorEntry['person'][$fieldToCheck] === $nonAuthorText) {
@@ -1488,8 +1488,8 @@ ORDER BY `Publisher`";
                             break;
                         }
                     }
-                    
-                    if (!$disregardThisOne) {
+
+                    if (! $disregardThisOne) {
                         $name = $authorEntry['person']['displayname'];
                         //check if it's actually an editor
                         $editorStringToReplace = false;
@@ -1512,11 +1512,11 @@ ORDER BY `Publisher`";
                     $authorsText = [];
                 }
             }
-            
+
             //containedIn
             if (isset($row['mainsection']['series']) && isset($row['mainsection']['series']['displayname'])) {
                 $containedIn = $row['mainsection']['series']['displayname'];
-                if (isset($row['mainsection']['series']['issuecount']) 
+                if (isset($row['mainsection']['series']['issuecount'])
                     && is_numeric($row['mainsection']['series']['issuecount'])
                     && '1' !== $row['mainsection']['series']['issuecount']
                 ) {
@@ -1525,7 +1525,7 @@ ORDER BY `Publisher`";
                 }
             }
         }
-        
+
         $publisher = null;
         if (isset($row['publisher']) && isset($row['publisher']['displayname'])) {
             $publisher = $row['publisher']['displayname'];
@@ -1553,13 +1553,13 @@ ORDER BY `Publisher`";
         if (isset($row['country']) && isset($row['country']['displayname'])) {
             $publishingPlace = $row['country']['displayname'];
         }
-        
+
         $copyrightYear = null;
-        if (isset($row['firstedition']) 
-            && isset($row['firstedition']['boolvalue']) 
+        if (isset($row['firstedition'])
+            && isset($row['firstedition']['boolvalue'])
             && '1' === $row['firstedition']['boolvalue']
         ) {
-            if (!isset($edition)) {
+            if (! isset($edition)) {
                 $edition = '1';
             }
             //if this is the first edition, fill the published year as copyright year
@@ -1567,17 +1567,18 @@ ORDER BY `Publisher`";
                 $copyrightYear = $publishedYear;
             }
         }
-        
+
         $lastModified = null;
         if (isset($row['lastmodified']) && isset($row['latmodified']['date'])) {
             try {
                 $lastModified = new \DateTime($row['latmodified']['date'], new \DateTimeZone('Europe/Berlin'));
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+            }
         }
-        if (!isset($lastModified)) {
+        if (! isset($lastModified)) {
             $lastModified = clone $now;
         }
-        
+
         if (isset($row['lccn'])) {
             $callNumber = $row['lccn'];
 //             $debugCount++;
@@ -1587,7 +1588,7 @@ ORDER BY `Publisher`";
 //                 echo '</pre>';
 //             }
         }
-        
+
         $data = [
             'publicationId'             => 0, //@todo don't forget to remove this
             'title'                     => $title,
@@ -1600,7 +1601,7 @@ ORDER BY `Publisher`";
 //             'authorsNoAccents'          => $row['AuthorsNoAccents'],
             'bookEdition'               => $edition,
 //             'categoryId'                => $categoryId,
-            
+
             'inLanguage' => $inLanguage,
 //             'description'               => $row['Description']),
             'isbn'                      => isset($row['isbn']) ? $row['isbn'] : null,
@@ -1626,14 +1627,14 @@ ORDER BY `Publisher`";
 //             'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
 //             'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
             //if its in english or spanish, we need to merge it later
-            'isAwaitingMerge'           => !isset($inLanguage) || in_array('en', $inLanguage) 
+            'isAwaitingMerge'           => ! isset($inLanguage) || in_array('en', $inLanguage)
                                                 || in_array('es', $inLanguage),
-            
+
 //             'hasNoExplictEditionNumber' => $this->filterDbBool($row['HasNoExplictEditionNumber']),
 //             'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
             'isRevisedWithBookInHand'   => true,
 //             'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
-            
+
             'hasBeenMerged'             => false,
 //             'jkQuality'                 => $row['JkQuality']),
 //             'jkQualityNotes'            => $row['JkQualityNotes']),
@@ -1649,7 +1650,7 @@ ORDER BY `Publisher`";
             'dataSource'                => 'forschungsbibliothek',
             'dataSourceId'              => $id,
             'dataSourceUpdatedOn'       => $lastModified,
-            
+
 //             'editionNotes'              => $row['EditionNotes']),
 //             'publicNotes'               => $row['PublicNotes']),
 //             'publicNotesUpdatedOn'      => $this->filterDbDate($row['PublicNotesUpdatedOn']),
@@ -1671,7 +1672,7 @@ ORDER BY `Publisher`";
         ];
         return $data;
     }
-    
+
     /**
      * Update the categories of all related books at the same time
      * @param array $data
@@ -1680,7 +1681,7 @@ ORDER BY `Publisher`";
      */
     protected function postprocessPublication($data, $newEntityData, $action)
     {
-        if ($action === self::ENTITY_ACTION_SUGGEST || !isset($newEntityData['categoryId'])
+        if ($action === self::ENTITY_ACTION_SUGGEST || ! isset($newEntityData['categoryId'])
             || ($action === self::ENTITY_ACTION_UPDATE && isset($newEntityData['categoryId'])
             && isset($data['categoryId'])
             && $newEntityData['categoryId'] == $data['categoryId'])
@@ -1701,13 +1702,13 @@ ORDER BY `Publisher`";
             $where->addPredicate($clause, PredicateSet::OP_OR);
         }
         if (isset($translatedFromPublicationId)) {
-            $clause= new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $translatedFromPublicationId);
+            $clause = new Operator('PublicationId', Operator::OPERATOR_EQUAL_TO, $translatedFromPublicationId);
             $where->addPredicate($clause, PredicateSet::OP_OR);
         }
 
-        $clause= new Operator('MainPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
+        $clause = new Operator('MainPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
         $where->addPredicate($clause, PredicateSet::OP_OR);
-        $clause= new Operator('TranslatedFromPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
+        $clause = new Operator('TranslatedFromPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
         $where->addPredicate($clause, PredicateSet::OP_OR);
         $gateway->update(['CategoryId' => $categoryId], $where);
     }
@@ -1718,7 +1719,7 @@ ORDER BY `Publisher`";
             return $cache;
         }
         static $gateway;
-        if (!isset($gateway)) {
+        if (! isset($gateway)) {
             $gateway = $this->getTableGateway('sch_pub_categories');
         }
         $select = new Select('sch_pub_categories');
@@ -1802,25 +1803,25 @@ ORDER BY `Publisher`";
                 $keywords = implode('|', $keywords);
             }
             $category = $row['kategorie'];
-            if (isset($category) && !isset($keywords)) {
+            if (isset($category) && ! isset($keywords)) {
                 $keywords = $category;
             } elseif (isset($category)) {
-                $keywords .= '|'.$category;
+                $keywords .= '|' . $category;
             }
 
             $authorFirst = $row['vorname'];
             $authorLast = $row['name'];
             $author = null;
             if ($authorLast && $authorFirst) {
-                $author = $authorLast .', '.$authorFirst;
+                $author = $authorLast . ', ' . $authorFirst;
             } elseif ($authorFirst || $authorLast) {
-                $author = $authorLast .$authorFirst;
+                $author = $authorLast . $authorFirst;
             }
             $otherAuthors = $row['mitauthoren'];
 
             if ($author && $otherAuthors) {
-                $author .= '; '. $otherAuthors;
-            } elseif (!$author && $otherAuthors) {
+                $author .= '; ' . $otherAuthors;
+            } elseif (! $author && $otherAuthors) {
                 $author = $otherAuthors;
             }
 
@@ -1828,7 +1829,7 @@ ORDER BY `Publisher`";
 
             $originalSource = $row['quelle'];
             if (isset($originalSource)) {
-                $originalSource = 'Original source: '. $originalSource;
+                $originalSource = 'Original source: ' . $originalSource;
             }
             $originalLanguage = $row['sprache'];
             $language = null;
@@ -1899,7 +1900,7 @@ ORDER BY `Publisher`";
                 'publicNotesUpdatedBy'      => null,
                 'adminNotes'                => $originalSource,
                 'adminNotesUpdatedOn'       => $originalSource ? $now : null,
-                'adminNotesUpdatedBy'       => $originalSource ? $this->getActingUserId(): null,
+                'adminNotesUpdatedBy'       => $originalSource ? $this->getActingUserId() : null,
                 'createdOn'                 => $now,
                 'createdBy'                 => $this->getActingUserId(),
                 'updatedOn'                 => $now,
@@ -1937,7 +1938,7 @@ WHERE 1";
             if (isset($startDate)) {
                 $dateString = date_format($startDate, 'Y-m-d');
                 if (isset($endDate)) {
-                    $dateString .= ' - '.date_format($endDate, 'Y-m-d');
+                    $dateString .= ' - ' . date_format($endDate, 'Y-m-d');
                 }
                 if (null !== ($dateRemarks = $row['ev_dateremark'])) {
                     $dateString .= sprintf(" (%s)", $dateRemarks);
@@ -1955,7 +1956,7 @@ WHERE 1";
 
             $originalSource = $row['ed_location'];
             if (isset($originalSource)) {
-                $originalSource = 'Original source: '. $originalSource;
+                $originalSource = 'Original source: ' . $originalSource;
             }
             $originalLanguage = $row['ed_lang'];
             $language = null;
@@ -2036,7 +2037,7 @@ WHERE 1";
             ];
         }
 
-        if (!$simulate) {
+        if (! $simulate) {
             foreach ($entities as $key => $data) {
                 if (isset($data['title'])) {
                     $this->createEntity('publication', $data);
@@ -2094,7 +2095,7 @@ WHERE 1";
         $publications = $this->getObjects('publication');
         $authors = [];
         foreach ($publications as $publicationId => $publication) {
-            if (!isset($publication['authorsText'])) {
+            if (! isset($publication['authorsText'])) {
                 continue;
             }
             $authorTexts = $publication['authorsText'];
@@ -2134,7 +2135,7 @@ WHERE 1";
         }
         $tz = new \DateTimeZone('UTC');
         static $periodEnd;
-        if (!isset($periodEnd)) {
+        if (! isset($periodEnd)) {
             $periodEnd = [
                 1 => date_create_from_format('Y-m-d', '1913-01-01', $tz),
                 2 => date_create_from_format('Y-m-d', '1920-01-01', $tz),
@@ -2161,9 +2162,9 @@ WHERE 1";
         }
         if (isset($dateIntStr)) {
             if (mb_substr($dateIntStr, 4) == '0000') {
-                $dateIntStr = mb_substr($dateIntStr, 0, 4).'0101';
+                $dateIntStr = mb_substr($dateIntStr, 0, 4) . '0101';
             } elseif (mb_substr($dateIntStr, 6) == '00') {
-                $dateIntStr = mb_substr($dateIntStr, 0, 6).'01';
+                $dateIntStr = mb_substr($dateIntStr, 0, 6) . '01';
             }
             $dateIntStr = date_create_from_format('Ymd', $dateIntStr);
         }
@@ -2196,7 +2197,7 @@ WHERE 1";
      */
     public function getPredicatesTable()
     {
-        if (!isset($this->predicatesTable)) {
+        if (! isset($this->predicatesTable)) {
             throw new \Exception('Something went wrong, no predicatesTable available');
         }
         return $this->predicatesTable;

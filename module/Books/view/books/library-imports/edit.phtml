@@ -15,18 +15,18 @@ echo $this->form()->openTag($form);
 echo $this->partial('fields-partial', [
     'form' => $form,
 ]);
-if (!$this->isImported) {
+if (! $this->isImported) {
     echo $this->formRow($form->get('import'));
 }
 echo $this->form()->closeTag();
-if ($this->isImported && !isset($this->transactions)) {
+if ($this->isImported && ! isset($this->transactions)) {
     echo $this->partial('import-stats', ['entity' => $this->entity]);
 }?>
-<?php if ($this->simulate):?>
+<?php if ($this->simulate) :?>
 <p><em>All changes are only simulated.</em></p>
 <?php endif;?>
 
-<?php if (isset($this->transactions)):?>
+<?php if (isset($this->transactions)) :?>
 <p><strong>Records updated:</strong> <?php echo $this->escapeHtml($this->statistics['update']);?>&#9;
 <strong>Records created:</strong> <?php echo $this->escapeHtml($this->statistics['create']);?>&#9;
 <strong>Records inactivated:</strong> <?php echo $this->escapeHtml($this->statistics['inactivate']);?>&#9;
@@ -35,50 +35,50 @@ if ($this->isImported && !isset($this->transactions)) {
 <table class="table">
 <thead>
 <tr>
-<?php $fields = $this->fields;
-if ($limitFields && isset($limitedFields) && !empty($limitedFields)) {
-    foreach ($fields as $field => $column) {
-        if (!in_array($field, $limitedFields)) {
-            unset ($fields[$field]);
+    <?php $fields = $this->fields;
+    if ($limitFields && isset($limitedFields) && ! empty($limitedFields)) {
+        foreach ($fields as $field => $column) {
+            if (! in_array($field, $limitedFields)) {
+                unset($fields[$field]);
+            }
         }
     }
-}
-foreach ($fields as $field => $column): ?>
-	<th><?php echo $this->escapeHtml($field);?></th>
-<?php endforeach;?>
+    foreach ($fields as $field => $column) : ?>
+    <th><?php echo $this->escapeHtml($field);?></th>
+    <?php endforeach;?>
 </tr>
 </thead>
 <tbody>
-<?php
-$transactions = $this->transactions;
-foreach ($transactions as $transaction) :
-switch ($transaction['action']) {
-    case 'error':
-        $trClass = 'warning';
-        break;
-    case 'create':
-        $trClass = 'success';
-        break;
-    case 'update':
-        $trClass = 'info';
-        break;
-    case 'inactivate':
-        $trClass = 'danger';
-        break;
-    default:
-        $trClass = 'warning';
-        break;
-}?>
+    <?php
+    $transactions = $this->transactions;
+    foreach ($transactions as $transaction) :
+        switch ($transaction['action']) {
+            case 'error':
+                $trClass = 'warning';
+                break;
+            case 'create':
+                $trClass = 'success';
+                break;
+            case 'update':
+                $trClass = 'info';
+                break;
+            case 'inactivate':
+                $trClass = 'danger';
+                break;
+            default:
+                $trClass = 'warning';
+                break;
+        }?>
 <tr class="<?php echo $trClass;?>">
-	<?php foreach ($fields as $field => $column) :?>
-	<td><?php if (isset($transaction[$field]) && !is_array($transaction[$field])) {
-	   echo $this->escapeHtml($transaction[$field]);
-    } elseif (isset($transaction[$field]) && is_array($transaction[$field])) {
+        <?php foreach ($fields as $field => $column) :?>
+    <td><?php if (isset($transaction[$field]) && ! is_array($transaction[$field])) {
+        echo $this->escapeHtml($transaction[$field]);
+        } elseif (isset($transaction[$field]) && is_array($transaction[$field])) {
 //         var_dump($transaction[$field]);
-    }?></td>
-	<?php endforeach;?>
+        }?></td>
+        <?php endforeach;?>
 </tr>
-<?php endforeach;?>
+    <?php endforeach;?>
 </tbody>
 </table>
 <?php endif;?>

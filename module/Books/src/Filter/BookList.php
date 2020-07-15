@@ -15,7 +15,7 @@ class BookList extends AbstractFilter
         if (is_null($value)) {
             return [];
         }
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             throw new \InvalidArgumentException('Only string values excepted.');
         }
         $re = '/\d{5,5}/';

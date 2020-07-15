@@ -11,7 +11,7 @@ class TextSearchForm extends Form implements InputFilterProviderInterface
         // we want to ignore the name passed
         parent::__construct('search');
         $this->setAttribute('method', 'GET');
-        
+
         $this->add([
             'name' => 'search',
             'type' => 'Text',

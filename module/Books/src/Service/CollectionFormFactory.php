@@ -19,14 +19,14 @@ class CollectionFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         $form = new CollectionForm();
-        
+
         /** @var LibraryTable $table **/
         $table = $container->get(LibraryTable::class);
-        
+
         /** @var \Zend\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id');
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $collectionId = $routeMatch->getParam('collection_id');
             if (isset($collectionId)) {
                 $collection = $table->getObject('collection', $collectionId);

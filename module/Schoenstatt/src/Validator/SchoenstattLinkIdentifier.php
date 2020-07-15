@@ -20,7 +20,7 @@ class SchoenstattLinkIdentifier extends Regex
         'L' => self::ENTITY_PUBLICATION,
         'C' => self::ENTITY_COMPOSITION,
     ];
-    
+
     /*
      * All routes listed must receive both a sw_id and slug parameter
      */
@@ -32,7 +32,7 @@ class SchoenstattLinkIdentifier extends Regex
         self::ENTITY_PUBLICATION => 'publication',
         self::ENTITY_COMPOSITION => 'composition',
     ];
-    
+
     const GENERAL_REGEX = '/^SL([1-9][0-9]{5,5})([APTELC])$/';
     const ENTITY_REGEXS = [
         self::ENTITY_ASSOCIATION => '/^SL(1[0-9]{5,5})A$/',
@@ -58,7 +58,7 @@ class SchoenstattLinkIdentifier extends Regex
         self::ENTITY_PUBLICATION => 140000,
         self::ENTITY_COMPOSITION => 405000,
     ];
-    
+
     const GENERAL_OLD_REGEX = '/^SL([0-9]{5,5})([APLC])$/';
     const ENTITY_OLD_REGEXS = [
         self::ENTITY_ASSOCIATION => '/^SL([0-9]{5,5})A$/',
@@ -76,7 +76,7 @@ class SchoenstattLinkIdentifier extends Regex
         self::ENTITY_PUBLICATION => 60000,
         self::ENTITY_COMPOSITION => 95000,
     ];
-    
+
     /**
      * In April 2020, site-wide ids we're expanded from 5 to 6 digit numbers. If you wish to work
      * with pre-april 2020 ids, set $usePreApril2020Format to true in the constructor
@@ -87,16 +87,16 @@ class SchoenstattLinkIdentifier extends Regex
     public function __construct($entityType = null, $usePreApril2020Format = false)
     {
         $this->usePreApril2020Format = (bool)$usePreApril2020Format;
-        if (!isset($entityType)) {
-            if (!$this->usePreApril2020Format) {
+        if (! isset($entityType)) {
+            if (! $this->usePreApril2020Format) {
                 parent::__construct(self::GENERAL_REGEX);
             } else {
                 parent::__construct(self::GENERAL_OLD_REGEX);
             }
-        } elseif (!isset(self::ENTITY_REGEXS[$entityType])) {
+        } elseif (! isset(self::ENTITY_REGEXS[$entityType])) {
             throw new \Exception("Invalid entity type `$entityType`");
         } else {
-            if (!$this->usePreApril2020Format) {
+            if (! $this->usePreApril2020Format) {
                 parent::__construct(self::ENTITY_REGEXS[$entityType]);
             } else {
                 parent::__construct(self::ENTITY_OLD_REGEXS[$entityType]);

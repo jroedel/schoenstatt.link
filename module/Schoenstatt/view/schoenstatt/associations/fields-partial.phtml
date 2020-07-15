@@ -11,7 +11,7 @@ echo $this->formHidden($form->get('associationId'));?>
     echo $this->helpBlock($form->get('name'));
     echo $this->formElement($form->get('overrideNameFormat'));
     echo $this->formElementErrors($form->get('overrideNameFormat'));
-    echo $this->helpBlock($form->get('overrideNameFormat')).'<br>';
+    echo $this->helpBlock($form->get('overrideNameFormat')) . '<br>';
     echo $this->formElement($form->get('isNameTranslateable'));
     echo $this->formElementErrors($form->get('isNameTranslateable'));
     echo $this->helpBlock($form->get('isNameTranslateable'));?>
@@ -23,11 +23,11 @@ echo $this->formHidden($form->get('associationId'));?>
     echo $this->helpBlock($form->get('internalName'));
     echo $this->formElement($form->get('isInternalNameTranslateable'));
     echo $this->formElementErrors($form->get('isInternalNameTranslateable'));
-    echo $this->helpBlock($form->get('isInternalNameTranslateable')).'<br>';
+    echo $this->helpBlock($form->get('isInternalNameTranslateable')) . '<br>';
     //@todo only show this for associationKinds which could actually be life communities
     echo $this->formElement($form->get('isLifeCommunity'));
     echo $this->formElementErrors($form->get('isLifeCommunity'));
-    echo $this->helpBlock($form->get('isLifeCommunity')).'<br>';
+    echo $this->helpBlock($form->get('isLifeCommunity')) . '<br>';
     echo $this->formElement($form->get('isActive'));
     echo $this->formElementErrors($form->get('isActive'));
     echo $this->helpBlock($form->get('isActive'));?>

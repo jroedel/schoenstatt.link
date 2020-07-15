@@ -11,7 +11,7 @@ use ZfcUser\Authentication\Adapter\Db;
 class JsonPost extends Db
 {
     protected $request;
-    
+
     /**
      * @param \Zend\EventManager\EventInterface $e
      * @return AuthenticationResult
@@ -22,8 +22,8 @@ class JsonPost extends Db
         //we're only interested in json requests, otherwise
         $contentType = $request->getHeader('Content-Type');
         $isPost = 'POST' === $request->getMethod();
-        if (!$isPost
-            || !$contentType instanceof HeaderInterface
+        if (! $isPost
+            || ! $contentType instanceof HeaderInterface
             || 'application/json' !== $contentType->getFieldValue()
         ) {
             if (isset($e)) {
@@ -40,7 +40,7 @@ class JsonPost extends Db
             return $e;
         }
         $data = Json::decode($request->getContent(), Json::TYPE_ARRAY);
-        if (!isset($data['identity']) || !isset($data['credential'])) {
+        if (! isset($data['identity']) || ! isset($data['credential'])) {
             if (isset($e)) {
                 $e->setCode(AuthenticationResult::FAILURE)
                 ->setMessages(['Please provide a valid json object with identity and credential properties.']);
@@ -62,7 +62,7 @@ class JsonPost extends Db
 
         // Cycle through the configured identity sources and test each
         $fields = $this->getOptions()->getAuthIdentityFields();
-        while (!is_object($userObject) && count($fields) > 0) {
+        while (! is_object($userObject) && count($fields) > 0) {
             $mode = array_shift($fields);
             switch ($mode) {
                 case 'username':
@@ -74,7 +74,7 @@ class JsonPost extends Db
             }
         }
 
-        if (!$userObject) {
+        if (! $userObject) {
             if (isset($e)) {
                 $e->setCode(AuthenticationResult::FAILURE_IDENTITY_NOT_FOUND)
                 ->setMessages(['A record with the supplied identity could not be found.']);
@@ -91,7 +91,7 @@ class JsonPost extends Db
 
         if ($this->getOptions()->getEnableUserState()) {
             // Don't allow user to login if state is not in allowed list
-            if (!in_array($userObject->getState(), $this->getOptions()->getAllowedLoginStates())) {
+            if (! in_array($userObject->getState(), $this->getOptions()->getAllowedLoginStates())) {
                 if (isset($e)) {
                     $e->setCode(AuthenticationResult::FAILURE)
                     ->setMessages(['A record with the supplied identity is not active.']);
@@ -109,7 +109,7 @@ class JsonPost extends Db
 
         $bcrypt = new Bcrypt();
         $bcrypt->setCost($this->getOptions()->getPasswordCost());
-        if (!$bcrypt->verify($credential, $userObject->getPassword())) {
+        if (! $bcrypt->verify($credential, $userObject->getPassword())) {
             // Password does not match
             if (isset($e)) {
                 $e->setCode(AuthenticationResult::FAILURE_CREDENTIAL_INVALID)
@@ -129,7 +129,7 @@ class JsonPost extends Db
         // Update user's password hash if the cost parameter has changed
         $this->updateUserPasswordHash($userObject, $credential, $bcrypt);
         $this->setSatisfied(true);
-        
+
         if (isset($e)) {
             $e->setCode(AuthenticationResult::SUCCESS)
                 ->setIdentity($userObject->getId()) //notice the return is different if called by Chain
@@ -143,10 +143,10 @@ class JsonPost extends Db
         }
         return $e;
     }
-    
+
     public function getRequest()
     {
-        if (!isset($this->request)) {
+        if (! isset($this->request)) {
             $sm = $this->getServiceManager();
             $this->request = $sm->get('Request');
         }

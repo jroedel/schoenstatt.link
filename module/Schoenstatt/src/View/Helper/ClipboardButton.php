@@ -21,13 +21,13 @@ class ClipboardButton extends AbstractHelper
 
     public function clipboardWidget($label, $content, $buttonText)
     {
-        if (!$this->scriptIncluded) {
+        if (! $this->scriptIncluded) {
             $this->view->headScript()->appendFile($this->view->basePath() . '/js/clipboard.min.js');
             $this->scriptIncluded = true;
         }
         $randVal = Rand::getInteger(10000, 99999);
-        $textareaId = 'clipboard'.$randVal;
-        $buttonId = 'button'.$randVal;
+        $textareaId = 'clipboard' . $randVal;
+        $buttonId = 'button' . $randVal;
         $this->buttonIds[] = [
             'textarea'  => $textareaId,
             'button'    => $buttonId,
@@ -56,14 +56,14 @@ $(function() {
 var \$emailParent = $(\"#emails\").parent();
 var clipboard = new Clipboard('.btn-clipboard'); ";
         foreach ($this->buttonIds as $value) {
-            $return.=sprintf(
+            $return .= sprintf(
                 "$(\"#%s\").click(function() { $(\"#%s\").parent().show();});",
                 $value['button'],
                 $value['textarea']
             );
         }
-        $return.="});</script>";
-        
+        $return .= "});</script>";
+
         return $return;
     }
 }

@@ -6,7 +6,7 @@ $columns = $this->columns;
  * @var $objects mixed[]
  * @var $columns string[]
  */
-if (!isset($columns)) {
+if (! isset($columns)) {
     throw new \InvalidArgumentException('Please pass a list of columns to the publication-list partial');
 }
 $columnNames = [
@@ -22,57 +22,70 @@ $files = isset($this->files) ? $this->files : null;
 <div class="responsive-table">
 <table class="table">
 <tr><?php foreach ($columns as $key => $column) :
-    if (!isset($columnNames[$column])) {
+    if (! isset($columnNames[$column])) {
         unset($columns[$key]);
         continue;
     }?>
     <th><?php echo $this->translate($columnNames[$column]);?></th>
-<?php endforeach;?>
+    <?php endforeach;?>
 </tr>
-<?php foreach($this->objects as $entity) :
-$username = $this->zfcUserDisplayName();
-if (!$this->isAllowed($entity['resourceId'], 'show') || (!$entity['isRevisedWithBookInHand'] && false === $username)) {
-    continue;
-}?>
+<?php foreach ($this->objects as $entity) :
+    $username = $this->zfcUserDisplayName();
+    if (! $this->isAllowed($entity['resourceId'], 'show') || (! $entity['isRevisedWithBookInHand'] && false === $username)) {
+        continue;
+    }?>
 <tr><?php foreach ($columns as $column) :
-switch ($column) {
-    case 'cover': ?>
+    switch ($column) {
+        case 'cover':
+            ?>
     <td><?php
-        if (file_exists(sprintf('public/covers/%s-80px.jpg', $entity['publicationId']))):?>
-    	<a href="<?php echo $this->url('publication', ['sw_id' => $entity['identifier'], 'slug' => $entity['slug']]); ?>">
+    if (file_exists(sprintf('public/covers/%s-80px.jpg', $entity['publicationId']))) :?>
+        <a href="<?php echo $this->url('publication', ['sw_id' => $entity['identifier'], 'slug' => $entity['slug']]); ?>">
     <img src="<?php echo $this->basePath() . sprintf("/covers/%s-80px.jpg", $entity['publicationId']); ?>"
     height="80px" alt="<?php echo $this->escapeHtmlAttr($entity['title']);?>"></a>
-    	<?php endif;
-	?></td><?php
-        break;
-    case 'authors':?>
-		<td><?php echo $this->formatEntity('publication', $entity, [
-		    'display' => 'authors',
-		]);?></td>
-    	<?php break;
-    case 'title':?>
-		<td><?php //@todo move this to the formatPublication View helper
-		echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);
-		if (isset($files) && isset($files[$entity['publicationId']])) {
-		    echo sprintf('&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
-		        $this->translate('Downloadable files available'));
-		}?></td>
-    	<?php break;
-    case 'edition':?>
-		<td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>
-    	<?php break;
-    case 'publicationId':?>
-		<td><?php echo $this->escapeHtml($entity['publicationId']);?></td>
-    	<?php break;
-    case 'language':?>
-		<td><?php echo $this->escapeHtml($entity['inLanguage']);?></td>
-    	<?php break;
+    <?php endif;
+    ?></td><?php
+            break;
+        case 'authors':
+            ?>
+        <td><?php echo $this->formatEntity('publication', $entity, [
+            'display' => 'authors',
+        ]);?></td>
+            <?php
+            break;
+        case 'title':
+            ?>
+        <td><?php //@todo move this to the formatPublication View helper
+        echo $this->formatEntity('publication', $entity, ['displayLanguageLabel' => false, 'displayResourceLabel' => true]);
+        if (isset($files) && isset($files[$entity['publicationId']])) {
+            echo sprintf(
+                '&nbsp;<span class="fa fa-file-text fa-3" title="%s"></span>',
+                $this->translate('Downloadable files available')
+            );
+        }?></td>
+            <?php
+            break;
+        case 'edition':
+            ?>
+        <td><?php echo $this->formatEntity('publication', $entity, ['display' => FormatPublication::DISPLAY_EDITION]);?></td>
+            <?php
+            break;
+        case 'publicationId':
+            ?>
+        <td><?php echo $this->escapeHtml($entity['publicationId']);?></td>
+            <?php
+            break;
+        case 'language':
+            ?>
+        <td><?php echo $this->escapeHtml($entity['inLanguage']);?></td>
+            <?php
+            break;
 
-    default:
-        ;
-    break;
-}
-endforeach;
+        default:
+            ;
+            break;
+    }
+    endforeach;
 endforeach; ?></tr>
 </table>
 </div>

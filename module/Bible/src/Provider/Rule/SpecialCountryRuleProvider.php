@@ -7,15 +7,15 @@ use ZfSnapGeoip\Service\Geoip;
 class SpecialCountryRuleProvider implements ProviderInterface
 {
     protected $geoip;
-    
+
     protected $specialCountries;
-    
+
     public function __construct(Geoip $geoip, array $config)
     {
         $this->geoip = $geoip;
         $this->specialCountries = $config['bible']['special_countries'];
     }
-    
+
     /**
      *
      * {@inheritDoc}

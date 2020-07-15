@@ -2,7 +2,7 @@
 $headText = 'Edit greek root';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
-<p><?php echo $this->escapeHtml($this->entity['root']).' '; 
+<p><?php echo $this->escapeHtml($this->entity['root']) . ' ';
 
 $bibleSearchUrl = $this->url('bible/search');
 foreach ($this->entity['formsAvailable'] as $form) {
@@ -12,7 +12,7 @@ foreach ($this->entity['formsAvailable'] as $form) {
         urlencode($this->entity['root']),
         urlencode($form),
         $this->escapeHtml($form)
-        );
+    );
 }?></p>
 <?php $form = $this->form;
 $form->setAttribute('action', $this->url(null, [], [], true));

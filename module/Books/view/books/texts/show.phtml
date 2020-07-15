@@ -5,11 +5,11 @@ $this->headTitle($headText);
 $object = $this->entity;?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>
 
-<p><i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php 
+<p><i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php
 if (isset($this->entity['createdOn'])) {
     echo $this->diffForHumans($this->entity['createdOn']);
 }?></p>
-<p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php 
+<p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php
 foreach ($object['tags'] as $tag) : ?>
 <a href=""><span class="badge badge-info"><?php echo $this->escapeHtml($tag); //@todo translate this later?></span></a> 
 <?php endforeach;?></p>
@@ -35,7 +35,7 @@ echo $this->partial('sion-model/comments/comments-list', [
 <?php if (isset($this->schema)) {
     /** @var \Spatie\SchemaOrg\BlogPosting $schema */
     $schema = $this->schema;
-    $thisUrl = $this->serverUrl().$this->url(null, [], [], true);
+    $thisUrl = $this->serverUrl() . $this->url(null, [], [], true);
     $schema->setProperty('url', $thisUrl);
     echo $schema->toScript();
 }?>

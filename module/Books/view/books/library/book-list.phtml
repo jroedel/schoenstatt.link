@@ -4,57 +4,61 @@
  * @param mixed[] $entities
  * @param string $name
  */
-if (isset($this->entities) && !empty($this->entities)):
-$showCheckouts = $this->isAllowed('view_checkout_person');?>
+if (isset($this->entities) && ! empty($this->entities)) :
+    $showCheckouts = $this->isAllowed('view_checkout_person');?>
 <table class="table">
 <tr>
-	<?php if (isset($this->publications) && is_array($this->publications)):
-	?><th></th><?php
-	endif;?>
-	<th>#</th>
+    <?php if (isset($this->publications) && is_array($this->publications)) :
+        ?><th></th><?php
+    endif;?>
+    <th>#</th>
     <th><?php echo $this->translate("Author");?></th>
     <th><?php echo $this->translate("Title");?></th>
-    <th><?php echo $this->translate("Edition");?></th><?php 
+    <th><?php echo $this->translate("Edition");?></th><?php
     if ($showCheckouts) :?>
-    <th><?php echo $this->translate("Due on");?></th><?php 
+    <th><?php echo $this->translate("Due on");?></th><?php
     endif;?>
 </tr>
-<?php  foreach($this->entities as $book) : ?>
-    <tr<?php if (!$book['isAvailable']) {
+    <?php  foreach ($this->entities as $book) : ?>
+    <tr<?php if (! $book['isAvailable']) {
         echo ' class="danger"';
-    }?>><?php
-    if (isset($this->publications) && is_array($this->publications)):
+       }?>><?php
+if (isset($this->publications) && is_array($this->publications)) :
     ?><th><?php
-        if (isset($book['publicationId']) && isset($this->publications[$book['publicationId']]) &&
-            isset($this->publications[$book['publicationId']]['coverThumbnail80pxUri'])
-        ):?>
-        	<a href="<?php echo $this->url('publication', ['sw_id' => $this->publications[$book['publicationId']]['identifier'], 'slug' => $this->publications[$book['publicationId']]['slug']]); ?>">
-        	<img src="<?php echo $this->publications[$book['publicationId']]['coverThumbnail80pxUri']; ?>"
-        	height="80px" alt="<?php echo $this->escapeHtmlAttr($this->publications[$book['publicationId']]['title']);?>"></a>
-    <?php endif;?>
-    </th><?php endif;?>
-    	<td><?php echo $this->escapeHtml($book['callNumber']);?></td>
-    	<td><?php echo $this->escapeHtml($book['authorsPrettyText']);?></td>
-    	<?php if (0 && isset($book['file_type'])) :?>
-        	<td><a href="<?php echo $book['url']; //echo $this->url('library/book', ['book_id' => $book['book_id']));?>" target="_blank">
-        	<?php echo $book['title'];?></a>
-        	<?php echo '('.$book['file_type'].', '.number_format($book['file_size']/1048576, 1, '.','').'MB)';?></td>
-    	<?php else: ?>
-    		<td><?php echo $this->formatEntity('book', $book);?></td>
-    	<?php endif;?>
-    	<td><?php echo $this->escapeHtml($book['bookEdition']);?></td>
-    	<?php if ($showCheckouts) :?><td><?php 
-    	    if (isset($book['currentCheckout'])) {
-        	    echo $this->formatEntity('checkout', $book['currentCheckout']);
-        	    if (isset($this->borrowers) && isset($this->borrowers[$book['currentCheckout']['personId']])
-                ) {
-        	        echo ' '.sprintf($this->translate('by %s'),
-    	                $this->borrowers[$book['currentCheckout']['personId']]);
-        	    }
-    	    }?></td><?php endif;
-	    endforeach; ?>
+if (isset($book['publicationId']) && isset($this->publications[$book['publicationId']]) &&
+        isset($this->publications[$book['publicationId']]['coverThumbnail80pxUri'])
+    ) :?>
+            <a href="<?php echo $this->url('publication', ['sw_id' => $this->publications[$book['publicationId']]['identifier'], 'slug' => $this->publications[$book['publicationId']]['slug']]); ?>">
+            <img src="<?php echo $this->publications[$book['publicationId']]['coverThumbnail80pxUri']; ?>"
+            height="80px" alt="<?php echo $this->escapeHtmlAttr($this->publications[$book['publicationId']]['title']);?>"></a>
+<?php endif;?>
+<?php endif;?>
+        <td><?php echo $this->escapeHtml($book['callNumber']);?></td>
+        <td><?php echo $this->escapeHtml($book['authorsPrettyText']);?></td>
+            <?php if (0 && isset($book['file_type'])) :?>
+            <td><a href="<?php echo $book['url']; //echo $this->url('library/book', ['book_id' => $book['book_id']));?>" target="_blank">
+                <?php echo $book['title'];?></a>
+                <?php echo '(' . $book['file_type'] . ', ' . number_format($book['file_size'] / 1048576, 1, '.', '') . 'MB)';?></td>
+            <?php else : ?>
+            <td><?php echo $this->formatEntity('book', $book);?></td>
+            <?php endif;?>
+        <td><?php echo $this->escapeHtml($book['bookEdition']);?></td>
+            <?php if ($showCheckouts) :
+                ?><td><?php
+if (isset($book['currentCheckout'])) {
+    echo $this->formatEntity('checkout', $book['currentCheckout']);
+    if (isset($this->borrowers) && isset($this->borrowers[$book['currentCheckout']['personId']])
+    ) {
+        echo ' ' . sprintf(
+            $this->translate('by %s'),
+            $this->borrowers[$book['currentCheckout']['personId']]
+        );
+    }
+}?></td><?php
+            endif;
+    endforeach; ?>
     </tr>
 </table>
-<?php else:?>
+<?php else :?>
 <p><?php echo $this->translate('No results found.');?></p>
 <?php endif;?>

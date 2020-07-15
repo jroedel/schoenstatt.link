@@ -13,7 +13,7 @@ class KentenichPeriodFromDate extends AbstractFilter
     const PERIOD_EXILE = 6;
     const PERIOD_FINAL_YEARS = 7;
     const PERIOD_POST_FOUNDER = 8;
-    
+
     const PERIOD_NAMES = [
         self::PERIOD_PRE_SCHOENSTATT => 'Pre-Schoenstatt (1899-1912)',
         self::PERIOD_FOUNDING_ERA => 'Founding Era (1912-1919)',
@@ -24,7 +24,7 @@ class KentenichPeriodFromDate extends AbstractFilter
         self::PERIOD_FINAL_YEARS => 'The Final Years (1965-68)',
         self::PERIOD_POST_FOUNDER => 'After the Founder (1968-)',
     ];
-    
+
     const PERIOD_END_DATES = [
         self::PERIOD_PRE_SCHOENSTATT => '1912-10-29',
         self::PERIOD_FOUNDING_ERA => '1920-01-01',
@@ -35,13 +35,13 @@ class KentenichPeriodFromDate extends AbstractFilter
         self::PERIOD_FINAL_YEARS => '1969-01-01',
         self::PERIOD_POST_FOUNDER => '1969-01-01',
     ];
-    
+
     /**
      * An associative array mapping a period to its (non-inclusive) end date
      * @var array $periodEndDateMap
      */
     protected $periodEndDateMap;
-    
+
     public function __construct()
     {
         $utc = new \DateTimeZone('UTC');
@@ -50,17 +50,17 @@ class KentenichPeriodFromDate extends AbstractFilter
             $this->periodEndDateMap[$period] = date_create_from_format('Y-m-d', $endDateText, $utc);
         }
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \Zend\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {
-        if (!$value instanceof \DateTime) {
+        if (! $value instanceof \DateTime) {
             throw new \InvalidArgumentException('Only DateTime objects accepted.');
         }
-        
+
         foreach ($this->periodEndDateMap as $period => $endDate) {
             if ($value < $endDate) {
                 return $period;

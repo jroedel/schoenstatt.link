@@ -73,14 +73,16 @@ $routeName = $this->routeName();?>
         <!-- Scripts -->
         <?php
         echo $this->headScript()
-            ->prependFile($this->basePath('js/respond.min.js'), 'text/javascript', array('conditional' => 'lt IE 9',))
-            ->prependFile($this->basePath('js/html5shiv.min.js'), 'text/javascript', array('conditional' => 'lt IE 9',))
+            ->prependFile($this->basePath('js/respond.min.js'), 'text/javascript', ['conditional' => 'lt IE 9',])
+            ->prependFile($this->basePath('js/html5shiv.min.js'), 'text/javascript', ['conditional' => 'lt IE 9',])
             ->prependFile($this->basePath() . '/js/gen-basic.js')
         ; ?>
 
     </head>
 
-    <body <?php if ($routeName == 'publications/index') echo 'data-spy="scroll" data-target="#sidebar-nav" data-offset="35"'; //@todo refactor this hack?>>
+    <body <?php if ($routeName == 'publications/index') {
+        echo 'data-spy="scroll" data-target="#sidebar-nav" data-offset="35"';
+          } //@todo refactor this hack?>>
         <nav class="navbar navbar-default" role="navigation">
             <div class="container-fluid">
                 <div class="navbar-header">
@@ -94,19 +96,19 @@ $routeName = $this->routeName();?>
                 </div>
                 <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                     <?php
-                    if (!$username) :
+                    if (! $username) :
                         //if they're not logged in show a link for sign on and registration
-                    ?><ul class="nav navbar-nav pull-right">
-                        <?php if ('zfcuser/login' !== $routeName):?>
-                        <li><a class="btn" href="<?php echo $this->url('zfcuser/login');?>"><?php 
+                        ?><ul class="nav navbar-nav pull-right">
+                        <?php if ('zfcuser/login' !== $routeName) :?>
+                        <li><a class="btn" href="<?php echo $this->url('zfcuser/login');?>"><?php
                         echo $this->translate('Sign in', 'Application');?></a></li>
-                    	<?php endif;
-                    	if ('zfcuser/register' !== $routeName):?>
-                        <li><a class="btn" href="<?php echo $this->url('zfcuser/register');?>"><?php 
+                        <?php endif;
+                        if ('zfcuser/register' !== $routeName) :?>
+                        <li><a class="btn" href="<?php echo $this->url('zfcuser/register');?>"><?php
                         echo $this->translate('Register', 'Application');?></a></li>
-                    	<?php endif;?>
-                	</ul>
-                    <?php else:?>
+                        <?php endif;?>
+                    </ul>
+                    <?php else :?>
                     <ul class="nav navbar-nav pull-right">
                         <?php
                         //get library info
@@ -126,36 +128,36 @@ $routeName = $this->routeName();?>
                             0 != strcmp($routeName, 'welcome') &&
                             0 != strcmp($routeName, 'libraries/library')
                         ) :
-                        $shouldAddSearch = false;
-                        if ((false !== strpos($routeName, 'libraries/library/') ||
+                            $shouldAddSearch = false;
+                            if ((false !== strpos($routeName, 'libraries/library/') ||
                                 false !== strpos($routeName, 'books/') ||
                                 false !== strpos($routeName, 'checkouts/') ||
                                 false !== strpos($routeName, 'library-imports/')) &&
                             $this->isAllowed('route/libraries/library') &&
                             isset($libraryInfo) && isset($libraryInfo['resourceId']) &&
                             $this->isAllowed($libraryInfo['resourceId'], 'show')
-                        ) {
-                            $searchUrl = $this->url('libraries/library', ['library_id' => $libraryInfo['libraryId']]);
-                            $placeholder = sprintf($this->translate("Search %s", 'Application'), $this->escapeHtml($libraryInfo['name']));
-                            $shouldAddSearch = true;
-                        } elseif (false !== strpos($routeName, 'bible') &&
+                            ) {
+                                $searchUrl = $this->url('libraries/library', ['library_id' => $libraryInfo['libraryId']]);
+                                $placeholder = sprintf($this->translate("Search %s", 'Application'), $this->escapeHtml($libraryInfo['name']));
+                                $shouldAddSearch = true;
+                            } elseif (false !== strpos($routeName, 'bible') &&
                             $this->isAllowed('route/bible/search')
                             ) {
                                 $searchUrl = $this->url('bible/search');
                                 $placeholder = 'Search bible';
                                 $shouldAddSearch = $routeName !== 'bible/search';
-                        } elseif (false === strpos($routeName, 'publication') &&
+                            } elseif (false === strpos($routeName, 'publication') &&
                             $this->isAllowed('route/assignments/search')
-                        ) {
-                            $searchUrl = $this->url('assignments/search');
-                            $placeholder = 'Search contacts';
-                            $shouldAddSearch = true;
-                        } elseif ($this->isAllowed('route/publications/search')) {
-                            $searchUrl = $this->url('publications/search');
-                            $placeholder = 'Search publications';
-                            $shouldAddSearch = true;
-                        }
-                        if ($shouldAddSearch):?>
+                            ) {
+                                $searchUrl = $this->url('assignments/search');
+                                $placeholder = 'Search contacts';
+                                $shouldAddSearch = true;
+                            } elseif ($this->isAllowed('route/publications/search')) {
+                                $searchUrl = $this->url('publications/search');
+                                $placeholder = 'Search publications';
+                                $shouldAddSearch = true;
+                            }
+                            if ($shouldAddSearch) :?>
                             <li class="">
                                 <form class="navbar-form"
                                     action="<?php echo $searchUrl; ?>" method="get"
@@ -177,9 +179,9 @@ $routeName = $this->routeName();?>
                         <li><a href="<?php echo $this->url('zfcuser/logout');?>"><?php
                         echo $this->translate("Logout", 'Application');?></a></li>
                     </ul>
-                <?php endif; //if username
-                 echo $this->navigation('navigation')
-                 ->menu()
+                    <?php endif; //if username
+                    echo $this->navigation('navigation')
+                    ->menu()
 //                  ->setUseAcl(false)
                     ->setMinDepth(0)
                     ->setMaxDepth(0)
@@ -190,7 +192,7 @@ $routeName = $this->routeName();?>
         </nav>
         <div class="container" role="main">
             <div class="row">
-<?php 
+<?php
 $flags = [
     'en_US' => ['us', 'gb'][Rand::getInteger(0, 1)],
     'es_ES' => ['ar', 'es', 'cl', 'mx'][Rand::getInteger(0, 3)],
@@ -205,25 +207,25 @@ $locale = \Locale::getDefault();
                 <span class="flag-icon flag-icon-<?= $flags[$locale]?>"></span> <?= \Locale::getDisplayLanguage($locale)?> <span class="caret"></span>
               </button>
               <ul class="dropdown-menu">
-              	<?php foreach ($flags as $theLocale => $flag) :?>
+                <?php foreach ($flags as $theLocale => $flag) :?>
                 <li><a href="<?php echo $this->localeUrl($theLocale);?>"><span class="flag-icon flag-icon-<?=$flag ?>"></span> <?= \Locale::getDisplayLanguage($theLocale)?></a></li>
-              	<?php endforeach;?>
+                <?php endforeach;?>
               </ul>
             </div>
             <?php /*
-             * this code accepts a list of breadcrumbs arrays in the format 
+             * this code accepts a list of breadcrumbs arrays in the format
              * [
              *  0 => ['location' => 'shrines', 'label' => 'Shrines', 'shouldTranslateLabel' => true],
              *  1 => [...]
              * ]
              */
             $breadcrumbsList = $this->breadcrumbsList;
-            if (isset($breadcrumbsList) &&  is_array($breadcrumbsList)):
+            if (isset($breadcrumbsList) &&  is_array($breadcrumbsList)) :
                 echo $this->partial('partial/breadcrumbs-list', ['breadcrumbsList' => $breadcrumbsList]);
-            else:
+            else :
                 echo $this->navigation('navigation')
-        		->breadcrumbs()
-        		->setUseAcl(false)
+                ->breadcrumbs()
+                ->setUseAcl(false)
                 ->setMinDepth(0)
                 ->setPartial('partial/breadcrumbs');
             endif;?>
@@ -235,19 +237,19 @@ $locale = \Locale::getDefault();
              &times;
          </button>
          ')
-         ->setMessageSeparatorString('</br>')
-         ->setMessageCloseString('</div>');
+            ->setMessageSeparatorString('</br>')
+            ->setMessageCloseString('</div>');
 
-         echo $flash->render('error',   ['alert', 'alert-dismissable', 'alert-danger']);
-         echo $flash->render('info',    ['alert', 'alert-dismissable', 'alert-info']);
-         echo $flash->render('default', ['alert', 'alert-dismissable', 'alert-warning']);
-         echo $flash->render('success', ['alert', 'alert-dismissable', 'alert-success']);
-         echo $this->nowMessenger();
+            echo $flash->render('error', ['alert', 'alert-dismissable', 'alert-danger']);
+            echo $flash->render('info', ['alert', 'alert-dismissable', 'alert-info']);
+            echo $flash->render('default', ['alert', 'alert-dismissable', 'alert-warning']);
+            echo $flash->render('success', ['alert', 'alert-dismissable', 'alert-success']);
+            echo $this->nowMessenger();
 
-         echo $this->content;
+            echo $this->content;
          // @todo add search to google https://developers.google.com/search/docs/data-types/sitelinks-searchbox
-         
-         $pageName = $this->headTitle()[0];?>
+
+            $pageName = $this->headTitle()[0];?>
 <script type='application/ld+json'>
 [{
   "@context": "http://schema.org",
@@ -325,11 +327,11 @@ $locale = \Locale::getDefault();
     "email": "webmaster@schoenstatt.link",
     "contactType": "tech support",
     "availableLanguage": [
-    	"en",
+        "en",
         "es",
         "de",
         "pt"
-	]
+    ]
   }
 }]
  </script>

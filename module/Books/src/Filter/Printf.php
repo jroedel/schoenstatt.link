@@ -14,7 +14,7 @@ class Printf extends AbstractFilter
     {
         $matches = explode(' ', $value);
         $validInput = true;
-        
+
         foreach ($matches as $m) {
             // Check if a slice contains %$[number] as it indicates a sprintf format
             if (preg_match('/[%\d\$]+/', $m) > 0) {

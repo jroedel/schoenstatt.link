@@ -5,9 +5,9 @@ $this->headTitle($title);?>
 //@todo search bar, bottom or middle
 
 //description
-$description = "The author of this book has created a solid reference tool at the service of a deep life of ".
-    "faith. We wish to make this tool more accessible; not to replace the possession of a ".
-    "physical copy, but instead to allow students to make hyperlinks to specific documents while ".
+$description = "The author of this book has created a solid reference tool at the service of a deep life of " .
+    "faith. We wish to make this tool more accessible; not to replace the possession of a " .
+    "physical copy, but instead to allow students to make hyperlinks to specific documents while " .
     "studying the history of the Church. We count on the good faith of our users.";?>
 <p class="lead"><?php echo $this->escapeHtml($this->translate($description));?></p>
 <h3><?php echo $this->translate('Essential documents');?></h3>
@@ -39,8 +39,8 @@ $docs = [
 ];?>
 <ul class="list-unstyled">
 <?php foreach ($docs as $document => $dhNumber) :
-$text = $document.' (DH'.$dhNumber.')';?>
-<li><a href="<?php echo $this->url('dh/number', ['dh_number' => $dhNumber]);?>"><?php 
+    $text = $document . ' (DH' . $dhNumber . ')';?>
+<li><a href="<?php echo $this->url('dh/number', ['dh_number' => $dhNumber]);?>"><?php
 echo $this->escapeHtml($text);?></a></li>
 <?php endforeach;?>
 </ul>

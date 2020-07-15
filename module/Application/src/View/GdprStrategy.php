@@ -29,7 +29,7 @@ class GdprStrategy implements ListenerAggregateInterface
     /**
      * @var callable[] An array with callback functions or methods.
      */
-    protected $listeners = array();
+    protected $listeners = [];
 
     /**
      * @param string $template name of the template to use on unauthorized requests
@@ -44,8 +44,8 @@ class GdprStrategy implements ListenerAggregateInterface
      */
     public function attach(EventManagerInterface $events, $priority = 1)
     {
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, array($this, 'onFinish'), 5000);
+        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, [$this, 'onRoute'], -5000);
+        $this->listeners[] = $events->attach(MvcEvent::EVENT_FINISH, [$this, 'onFinish'], 5000);
     }
 
     /**
@@ -89,20 +89,20 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
         $route = $event->getRouteMatch();
-        if (!$hasConsented && 'zfcuser/login' === $route->getMatchedRouteName()) {
+        if (! $hasConsented && 'zfcuser/login' === $route->getMatchedRouteName()) {
             $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
             $newMatch->setMatchedRouteName('sign-in-no-cookies');
             $event->setRouteMatch($newMatch);
         }
         return $event;
     }
-    
+
     public function onFinish(MvcEvent $event)
     {
         $app = $event->getApplication();
         $sm = $app->getServiceManager();
         $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
-        if (!$hasConsented) {
+        if (! $hasConsented) {
             header_remove('Set-Cookie');
             /** @var \Zend\Session\ManagerInterface $sessionManager */
             $sessionManager = $sm->get(SessionManager::class);
@@ -121,7 +121,7 @@ class GdprStrategy implements ListenerAggregateInterface
     protected static function isGDPRCountry($countryCode)
     {
         static $countries;
-        if (!isset($countries)) {
+        if (! isset($countries)) {
             $countries = [
                 'BE' => 'Belgium',
                 'BG' => 'Bulgaria',

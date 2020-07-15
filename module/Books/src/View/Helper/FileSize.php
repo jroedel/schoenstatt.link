@@ -18,7 +18,7 @@ class FileSize extends AbstractHelper
         if ($value < 1) {
             return 'n/a';
         }
-        $sizes = array('Bytes', 'KB', 'MB', 'GB', 'TB');
+        $sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
         $power = floor(log($value) / log(1024));
         return sprintf(
             '%01.1f %s',

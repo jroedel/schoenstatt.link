@@ -15,7 +15,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
     public function __construct()
     {
         parent::__construct('dictionary-entry');
-        
+
         //@todo make a selectize element and fill it with existing keys
         $this->add([
             'name' => 'key',
@@ -28,7 +28,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                 'maxlength' => '255',
             ],
         ]);
-        
+
         $this->add([
             'name' => 'locale',
             'type' => 'Select',

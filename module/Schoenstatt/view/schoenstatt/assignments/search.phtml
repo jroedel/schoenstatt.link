@@ -1,6 +1,6 @@
 <?php
-$areResults = isset($this->entities) && 0!=count($this->entities);
-echo $this->partial('schoenstatt/schoenstatt/search-bar', ['form' => $form, 'centerOnPage' => !$areResults]);?>
+$areResults = isset($this->entities) && 0 != count($this->entities);
+echo $this->partial('schoenstatt/schoenstatt/search-bar', ['form' => $form, 'centerOnPage' => ! $areResults]);?>
 <div class="row">
 <?php if ($this->isAllowed('route/assignments/create')) :?>
 <a href="<?php echo $this->url('assignments/create')?>"><?php echo $this->translate('Add assignment');?></a>

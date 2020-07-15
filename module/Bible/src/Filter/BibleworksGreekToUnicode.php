@@ -6,7 +6,7 @@ use Zend\Filter\AbstractFilter;
 class BibleworksGreekToUnicode extends AbstractFilter
 {
     protected $rules;
-    
+
     /**
      *
      * {@inheritDoc}
@@ -15,7 +15,7 @@ class BibleworksGreekToUnicode extends AbstractFilter
     public function filter($value)
     {
         $this->getRules();
-        
+
         $replaced = $value;
         foreach ($this->rules as $r => $value) {
             if (strlen($value)) {
@@ -24,7 +24,7 @@ class BibleworksGreekToUnicode extends AbstractFilter
         }
         return $replaced;
     }
-    
+
     public function getRules()
     {
         if (isset($this->rules)) {
@@ -219,7 +219,7 @@ class BibleworksGreekToUnicode extends AbstractFilter
         'u-' => 'ὗ',
         'h-' => 'ἧ',
         'w-' => 'ὧ',
-        
+
         'A' => 'Α',
         'E' => 'Ε',
         'I' => 'Ι',
@@ -250,8 +250,8 @@ class BibleworksGreekToUnicode extends AbstractFilter
         'V' => '\'',
         'È' => ';',
         'Ε' => '.',
-        
-        
+
+
         'B' => 'Β',
         'b' => 'β',
         'C' => 'Χ',

@@ -11,10 +11,10 @@ $form->setAttribute('action', $this->url('persons/create'));
 $form->prepare();
 echo $this->form()->openTag($form);
 //don't include
-echo $this->partial('fields-partial', array(
+echo $this->partial('fields-partial', [
     'form' => $form,
     'entity' => 'person',
-));
+]);
 echo $this->formSubmit($form->get('submit'));
 echo $this->form()->closeTag();
 ?>

@@ -27,10 +27,10 @@ class FormatAssociation extends AbstractHelper
     {
         $locale = \Locale::getDefault();
         $display = isset($options['display']) ? $options['display'] : 'name';
-        $editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : $display=='name';
+        $editPencilOption = isset($options['editPencil']) ? (bool)$options['editPencil'] : $display == 'name';
         $showFlagOption = isset($options['showFlag']) ? (bool)$options['showFlag'] : true;
         $showLabelOption = isset($options['showLabel']) ? (bool)$options['showLabel'] : false;
-        $displayAsLink = isset($options['displayAsLink']) ? (bool)$options['displayAsLink'] : $display=='name';
+        $displayAsLink = isset($options['displayAsLink']) ? (bool)$options['displayAsLink'] : $display == 'name';
         $finalMarkup = '';
 
         if (isset($data['isDeleted']) && $data['isDeleted']) {
@@ -43,17 +43,17 @@ class FormatAssociation extends AbstractHelper
                 case self::DISPLAY_NAME:
                     //only show flag if we're looking at display_name
                     if ($showFlagOption && isset($data['country'])) {
-                        $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
+                        $finalMarkup .= $this->view->flag($data['country']) . "&nbsp;";
                     }
-                    
+
                     $text = $data['nameByLocale'][$locale];
                     break;
                 case self::DISPLAY_INTERNAL_NAME:
                     //only show flag if we're looking at display_name
                     if ($showFlagOption && isset($data['country'])) {
-                        $finalMarkup .= $this->view->flag($data['country'])."&nbsp;";
+                        $finalMarkup .= $this->view->flag($data['country']) . "&nbsp;";
                     }
-                    
+
                     if ($data['internalNameByLocale'][$locale]) {
                         $text = $data['internalNameByLocale'][$locale];
                     } else {
@@ -76,7 +76,7 @@ class FormatAssociation extends AbstractHelper
         $text = $this->view->escapeHtml($text);
 
         //@todo check resources too
-        $permissionToViewLink = $this->view->isAllowed('route/association'); 
+        $permissionToViewLink = $this->view->isAllowed('route/association');
 //             && $this->view->isAllowed($data['resourceId']);
         if ($displayAsLink && $permissionToViewLink) {
             $url = $this->view->url(
@@ -95,7 +95,7 @@ class FormatAssociation extends AbstractHelper
             $finalMarkup .= $text;
         }
         if ($showLabelOption && isset($this->associationTypeLabels[$data['kind']])) {
-            $finalMarkup .= '&nbsp;'.$this->view->label(
+            $finalMarkup .= '&nbsp;' . $this->view->label(
                 $this->associationTypeLabels[$data['kind']],
                 'label-info'
             );

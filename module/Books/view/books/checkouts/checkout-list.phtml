@@ -14,7 +14,7 @@ $columnNames = [
     'library'       => 'Library',
     'book'          => 'Book',
     'callNumber'    => 'Call number',
-    'withinLibraryId'=> 'Barcode',
+    'withinLibraryId' => 'Barcode',
     'borrower'      => 'Checked out by',
     'checkedOutOn'   => 'Checked out on',
     'dueOn'         => 'Due on',
@@ -36,9 +36,9 @@ if (isset($this->columns) && is_array($this->columns)) {
 }
 
 $persons = $this->persons && is_array($this->persons) ? $this->persons : null;
-$areResults = isset($this->entities) && 0!=count($this->entities);
+$areResults = isset($this->entities) && 0 != count($this->entities);
 if ($areResults) :
-$resultsTotal = 0;?>
+    $resultsTotal = 0;?>
 <div class="panel panel-default">
 <div id="book-list" class="table-responsive panel-body">
     <table class="table sortable">
@@ -50,7 +50,7 @@ $resultsTotal = 0;?>
         </tr>
         </thead>
         <tbody>
-        <?php foreach ($this->entities as $entity):
+        <?php foreach ($this->entities as $entity) :
             $resultsTotal++;
 
             $rowClass = null;
@@ -59,55 +59,69 @@ $resultsTotal = 0;?>
             } elseif ($entity['status'] == LibraryTable::CHECKOUT_STATUS_RETURNED) {
                 $rowClass = 'success';
             }
-        ?>
+            ?>
         <tr <?php if (isset($rowClass)) {
-    echo "class=\"$rowClass\"";
-}?>>
-<?php foreach ($columns as $col) :
-    switch ($col) :
-        case 'library':?>
-            <td><?php echo $this->formatEntity('library',
-                    $entity['book']['library'], ['displayEditPencil' => false]);
-            ?></td>
-        <?php break;
-        case 'book':?>
+            echo "class=\"$rowClass\"";
+            }?>>
+            <?php foreach ($columns as $col) :
+                switch ($col) :
+                    case 'library':
+                        ?>
+            <td><?php echo $this->formatEntity(
+                'library',
+                $entity['book']['library'],
+                ['displayEditPencil' => false]
+            );
+                ?></td>
+                        <?php
+                        break;
+                    case 'book':
+                        ?>
             <td><?php echo $this->formatEntity('book', $entity['book']);?></td>
-        <?php break;
-        case 'callNumber':?>
+                        <?php
+                        break;
+                    case 'callNumber':
+                        ?>
             <td><?php if (isset($entity['book']) && isset($entity['book']['callNumber'])) {
                 echo $this->escapeHtml($entity['book']['callNumber']);
-            }?></td>
-        <?php break;
-        case 'withinLibraryId':?>
+                }?></td>
+                        <?php
+                        break;
+                    case 'withinLibraryId':
+                        ?>
             <td><?php if (isset($entity['book']) && isset($entity['book']['withinLibraryId'])) {
                 echo $this->escapeHtml($entity['book']['withinLibraryId']);
-            }?></td>
-        <?php break;
-        case 'borrower':?>
+                }?></td>
+                        <?php
+                        break;
+                    case 'borrower':
+                        ?>
             <td><?php if (isset($persons[$entity['personId']])) {
-               echo $this->formatEntity('borrower', $this->persons[$entity['personId']]);
-            }?></td>
-        <?php break;
-        case 'dueOn':
-        case 'checkedOutOn':
-        case 'checkedInOn': ?>
+                           echo $this->formatEntity('borrower', $this->persons[$entity['personId']]);
+                }?></td>
+                        <?php
+                        break;
+                    case 'dueOn':
+                    case 'checkedOutOn':
+                    case 'checkedInOn':
+                        ?>
             <td><?php if (isset($entity[$col])) {
                 echo $this->dateFormat($entity[$col], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
-            }?></td><?php
-            break;
-    endswitch;
-endforeach;
-    ?></tr><?php
+                }?></td><?php
+                        break;
+                endswitch;
+            endforeach;
+            ?></tr><?php
         endforeach;
         ?></tbody>
     </table>
 </div>
 <div class="panel-footer"><?php
-    if ($this->isAllowed('export')) :
-        $queryParams = array_merge(['rendererType' => 'PHPExcel'], $_GET); //@todo this could be insecure, filter?>
+if ($this->isAllowed('export')) :
+    $queryParams = array_merge(['rendererType' => 'PHPExcel'], $_GET); //@todo this could be insecure, filter?>
     <span class="pull-right"><a href="<?php echo $this->url(null, [], ['query' => $queryParams], true);
-        ?>"><?php echo $this->translate("Export");?></a></span>
-    <?php endif;?>
+    ?>"><?php echo $this->translate("Export");?></a></span>
+<?php endif;?>
 </div>
 </div>
 <?php endif;

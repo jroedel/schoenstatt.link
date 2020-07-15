@@ -12,17 +12,19 @@ $name = $object['nameByLocale'][$locale];
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($name);?>
 <h1><?= $this->escapeHtml($name);?></h1>
-<?php if (isset($object['internalName'])):?><p><?php echo $this->escapeHtml($object['internalName']); 
+<?php if (isset($object['internalName'])) :
+    ?><p><?php echo $this->escapeHtml($object['internalName']);
 if (isset($internalName) && $object['internalName'] !== $internalName) {
-    echo ' ('.$this->escapeHtml($internalName).')';
+    echo ' (' . $this->escapeHtml($internalName) . ')';
 }
-?></p><?php endif;
-if ('sch-shrine' !== $object['kind']):?>
-<p>(<?= $this->formatEntity('association', $object, ['display' => 'kind']);?>)</p><?php 
+?></p><?php
+endif;
+if ('sch-shrine' !== $object['kind']) :?>
+<p>(<?= $this->formatEntity('association', $object, ['display' => 'kind']);?>)</p><?php
 endif;?>
 <div class="row"><?php
-if (!empty($object['photos'])):
-$mainPhoto = current($object['photos']);?>
+if (! empty($object['photos'])) :
+    $mainPhoto = current($object['photos']);?>
 <div class="col-md-3">
 <a href="<?= $this->escapeHtmlAttr($mainPhoto['2000px'])?>"><img src="<?= $this->escapeHtmlAttr($mainPhoto['400px'])
 ?>" class="img-responsive center-block" alt="<?= $this->escapeHtmlAttr($name)?>"></a>
@@ -32,27 +34,29 @@ $mainPhoto = current($object['photos']);?>
 <div class="col-md-9">
 <div class="panel panel-default" id="contactInfoPanel">
     <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-4">
-        	<h3 class="panel-title"><?= $this->translate('Contact Info'); //@todo add contact notes and modified date?>
+        <div class="row">
+        <div class="col-xs-4">
+            <h3 class="panel-title"><?= $this->translate('Contact Info'); //@todo add contact notes and modified date?>
         </h3>
         </div>
         <div class="col-xs-5">
-        	<?php if (isset($object['contactInfoUpdatedOn'])) :?>
-        		<span class="pull-right"><small><?= sprintf($this->translate('Updated %s'),
-        		    $this->diffForHumans($object['contactInfoUpdatedOn']));?></small></span>
-        	<?php endif;?>
+            <?php if (isset($object['contactInfoUpdatedOn'])) :?>
+                <span class="pull-right"><small><?= sprintf(
+                    $this->translate('Updated %s'),
+                    $this->diffForHumans($object['contactInfoUpdatedOn'])
+                );?></small></span>
+            <?php endif;?>
         </div>
         </div>
-	</div>
+    </div>
     <div class="panel-body">
-    	<div class="row">
-    	<!-- Here goes the logo -->
-    	<div class="col-md-7"><?php if (isset($object['email'])) :?>
+        <div class="row">
+        <!-- Here goes the logo -->
+        <div class="col-md-7"><?php if (isset($object['email'])) :?>
             <p><strong><?= $this->translate('Email'); ?>:</strong> <?php
              //@todo add checks for validated
             echo $this->email($object['email']);?></p><?php
-            endif;?>
+                              endif;?>
             <?php
             if (isset($object['geoPoint'])) :
                 //https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
@@ -60,8 +64,10 @@ $mainPhoto = current($object['photos']);?>
                 $geoUrlFormat = 'https://www.openstreetmap.org/?mlat=%s&mlon=%s#map=14/%s/%s&layers=N';
                 $mapUrl = sprintf(
                     $geoUrlFormat,
-                    $object['geoPoint']->latitude, $object['geoPoint']->longitude,
-                    $object['geoPoint']->latitude, $object['geoPoint']->longitude
+                    $object['geoPoint']->latitude,
+                    $object['geoPoint']->longitude,
+                    $object['geoPoint']->latitude,
+                    $object['geoPoint']->longitude
                 );
                 $pi = 3.14159;
                 $lat = $object['geoPoint']->latitude;
@@ -70,7 +76,7 @@ $mainPhoto = current($object['photos']);?>
                 $zoom = 13.0;
                 $n = 2.0 ** $zoom;
                 $x = $n * (($lon + 180.0) / 360.0);
-                $y = $n * (1.0 - (log(tan($lat_rad) + 1.0/(cos($lat_rad))) / $pi)) / 2.0;
+                $y = $n * (1.0 - (log(tan($lat_rad) + 1.0 / (cos($lat_rad))) / $pi)) / 2.0;
                 $xtile = floor($x);
                 $ytile = floor($y);
                 $img = "https://a.tile.openstreetmap.org/$zoom/$xtile/$ytile.png";
@@ -83,45 +89,47 @@ $mainPhoto = current($object['photos']);?>
         <div class="col-md-5">
             <?php foreach ($object['phones'] as $phoneRow) : ?>
                 <p><strong><?= $this->translate($phoneRow['label']); ?>:</strong>
-				<span><?= $this->telephone($phoneRow['number'],
-						isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
-						$this->isAllowed('route/persons/person/edit-contact-info'));?></span></p>
+                <span><?= $this->telephone(
+                    $phoneRow['number'],
+                    isset($phoneRow['whatsApp']) ? $phoneRow['whatsApp'] : false,
+                    $this->isAllowed('route/persons/person/edit-contact-info')
+                      );?></span></p>
             <?php endforeach;
             if (isset($object['phonesUpdatedOn'])) :  //@todo add a question mark here with text
                 //@todo use diffForHumans view helper
-        	    $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
+                $phoneUpdated = Carbon::instance($object['phonesUpdatedOn']); //@todo position this Up-to-date better ?>
                 <p class="text-right"><?= $this->tooltip('✓ Up-to-date', sprintf($this->translate('Updated by %s %s'), 'jeff', $phoneUpdated->diffForHumans()));?></p>
-        	<?php endif;?>
-        	<?php if (!empty($object['urls'])):?>
-        	<p><strong><?= $this->translate("Links"); ?>:</strong>
+            <?php endif;?>
+            <?php if (! empty($object['urls'])) :?>
+            <p><strong><?= $this->translate("Links"); ?>:</strong>
             <div class="row">
             <div class="col-md-12">
-            	<div class="row"><div class="col-md-12">
-            	<?php foreach ($object['urls'] as $urlRow) :?>
-            	<a target="_blank" href="<?= $this->escapeHtmlAttr($urlRow['url']);?>">
-            	    <img src="/<?= isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
-            	    ?>" alt="<?= $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
-            	</a>&nbsp;
-            	<?php endforeach;?>
-            	</div></div> <!-- Websites row and column -->
+                <div class="row"><div class="col-md-12">
+                <?php foreach ($object['urls'] as $urlRow) :?>
+                <a target="_blank" href="<?= $this->escapeHtmlAttr($urlRow['url']);?>">
+                    <img src="/<?= isset($urlRow['logo']) ? $this->escapeHtmlAttr($urlRow['logo']) : 'img/www.png';
+                    ?>" alt="<?= $this->escapeHtmlAttr($urlRow['label']);?>" class="img-circle" height="70px">
+                </a>&nbsp;
+                <?php endforeach;?>
+                </div></div> <!-- Websites row and column -->
             </div> <!-- Links column -->
             </div> <!-- Links row -->
             <?php endif;
             if (isset($object['address'])) :
                 $addressLabel = 'Postal address';?>
-    	    <p><strong><?= $this->translate($addressLabel)?>:</strong></p>
-    	    <?php
-    	    endif;
-    	    echo $this->address($object['address']);
-        	//if (isset($object['contactNotes'])) : @todo get rid of contactNotes @deprecated?><!-- 
-        		<p><strong><?php //echo $this->translate('Notes');?>:</strong></p>
-        		<div id="contactNotes"><?php //echo $this->markdown($object['contactNotes']);?></div>
-        	<?php //endif;?> -->
-        	<!--
-        	Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
-        	Please help in confirming and/or updating out-dated information.
-        	 -->
-		</div> <!-- phones column -->
+            <p><strong><?= $this->translate($addressLabel)?>:</strong></p>
+                <?php
+            endif;
+            echo $this->address($object['address']);
+            //if (isset($object['contactNotes'])) : @todo get rid of contactNotes @deprecated?><!-- 
+                <p><strong><?php //echo $this->translate('Notes');?>:</strong></p>
+                <div id="contactNotes"><?php //echo $this->markdown($object['contactNotes']);?></div>
+            <?php //endif;?> -->
+            <!--
+            Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
+            Please help in confirming and/or updating out-dated information.
+             -->
+        </div> <!-- phones column -->
         </div>
     </div> <!-- contact info panel body -->
 </div> <!-- contact info panel -->
@@ -131,17 +139,17 @@ $mainPhoto = current($object['photos']);?>
 <div class="col-md-12">
 <div class="panel panel-default" id="infoPanel">
     <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-6">
-        	<h3 class="panel-title"><?= $this->translate('Association Info'); ?></h3>
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title"><?= $this->translate('Association Info'); ?></h3>
         </div>
         <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/association-edit')): ?>
+            <?php if ($this->isAllowed('route/association-edit')) : ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
                     echo $this->url('association-edit', ['sw_id' => $entity['identifier']]);?>">
                     <?= $this->translate('Edit association');?></a>
                 </span>
-            <?php elseif ($this->isAllowed('route/association/suggest')):?>
+            <?php elseif ($this->isAllowed('route/association/suggest')) :?>
                 <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
                     echo $this->url('association/suggest', ['sw_id' => $entity['identifier']]);?>">
                     <?= $this->translate('Suggest change');?></a>
@@ -149,80 +157,80 @@ $mainPhoto = current($object['photos']);?>
             <?php endif;?>
         </div>
         </div>
-	</div>
+    </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
         <p><strong><?= $this->translate('Foundation date');?>:</strong>
         <?php if (isset($object['foundationDate'])) {
-        echo $this->dateFormat($object['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+            echo $this->dateFormat($object['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
         }?></p>
-		<?php if (isset($object['suppressionDate'])) :?>
-      		<p><strong><?= $this->translate('Suppression date');?>:</strong> <?php
+        <?php if (isset($object['suppressionDate'])) :?>
+            <p><strong><?= $this->translate('Suppression date');?>:</strong> <?php
                 echo $this->dateFormat($object['suppressionDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
             ?></p>
-		<?php endif;?>
-		<?php if (isset($object['country'])) :?>
-      		<p><strong><?= $this->translate('Country');?>:</strong> <?php
+        <?php endif;?>
+        <?php if (isset($object['country'])) :?>
+            <p><strong><?= $this->translate('Country');?>:</strong> <?php
                 echo $this->countryName($object['country'], true);
             ?></p>
-		<?php endif;?>
-		<?php if (isset($object['parent'])) :?>
-      		<p><strong><?= $this->translate('Parent organization');?>:</strong> <?php
+        <?php endif;?>
+        <?php if (isset($object['parent'])) :?>
+            <p><strong><?= $this->translate('Parent organization');?>:</strong> <?php
                 echo $this->formatEntity('association', $object['parent']);
             ?></p>
-		<?php endif;?>
-	</div> <!-- info 1 column -->
+        <?php endif;?>
+    </div> <!-- info 1 column -->
 
     <div class="col-md-6">
-		<?php if ($object['publicNotes']) : 
-		$publicNotes = isset($object['publicNotesByLocale']) && isset($object['publicNotesByLocale'][$locale])
-		  ? $object['publicNotesByLocale'][$locale] : $object['publicNotes'];?>
-			<p class="text-center"><strong><?= $this->translate('Additional Info');?></strong></p>
-			<?= $this->markdown($publicNotes);
-		endif;
-		if ($object['openingHoursHuman']) :?>
-			<p class="text-center"><strong><?= $this->translate('Opening hours');?>:</strong></p>
-			<?= $this->markdown($object['openingHoursHuman']);
-			endif;
-		if ($object['eventsHuman']) :?>
-			<p class="text-center"><strong><?= $this->translate('Mass, adoration, confession or other events');?>:</strong></p>
-			<?= $this->markdown($object['eventsHuman']);
-		endif;?>
-	</div> <!-- info 2 column -->
+        <?php if ($object['publicNotes']) :
+            $publicNotes = isset($object['publicNotesByLocale']) && isset($object['publicNotesByLocale'][$locale])
+            ? $object['publicNotesByLocale'][$locale] : $object['publicNotes'];?>
+            <p class="text-center"><strong><?= $this->translate('Additional Info');?></strong></p>
+            <?= $this->markdown($publicNotes);
+        endif;
+        if ($object['openingHoursHuman']) :?>
+            <p class="text-center"><strong><?= $this->translate('Opening hours');?>:</strong></p>
+            <?= $this->markdown($object['openingHoursHuman']);
+        endif;
+        if ($object['eventsHuman']) :?>
+            <p class="text-center"><strong><?= $this->translate('Mass, adoration, confession or other events');?>:</strong></p>
+            <?= $this->markdown($object['eventsHuman']);
+        endif;?>
+    </div> <!-- info 2 column -->
     </div></div> <!-- contact info panel body -->
 </div> <!-- course info 1 panel -->
 </div><!-- info 1 column -->
 </div> <!-- Info row -->
 
 <!-- photos -->
-<?php if (($photoCount = count($object['photos'])) > 1):?>
+<?php if (($photoCount = count($object['photos'])) > 1) :?>
 <div id="association-photos" class="row">
-  <?php for ($i = 1; $i < $photoCount; $i++) :?>
+    <?php for ($i = 1; $i < $photoCount; $i++) :?>
   <div class="col-xs-6 col-md-3">
     <a href="<?= $object['photos'][$i]['2000px'];?>" class="thumbnail">
       <img src="<?= $object['photos'][$i]['180px']?>" height="180px" alt="...">
     </a>
   </div>
-  <?php endfor;?>
+    <?php endfor;?>
 </div>
 <?php endif;?>
 
-<?php if (!empty($object['assignments']) || $this->isAllowed('route/assignments/create')):?>
+<?php if (! empty($object['assignments']) || $this->isAllowed('route/assignments/create')) :?>
 <div class="row">
 <div class="col-md-12">
 <div class="panel panel-default" id="assignmentsPanel">
     <div class="panel-heading">
-    	<div class="row">
-    	<div class="col-xs-6">
-        	<h3 class="panel-title"><?= $this->translate('Contact persons'); ?></h3>
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title"><?= $this->translate('Contact persons'); ?></h3>
         </div>
         <div class="col-xs-6">
-            <?php if ($this->isAllowed('route/assignments/create')):
-                $queryOptions= [];
+            <?php if ($this->isAllowed('route/assignments/create')) :
+                $queryOptions = [];
                 $newRoleId = null;
                 if (isset($entity['mainRole'])) {
                     $newRoleId = $entity['mainRole']['roleId'];
-                } elseif (!empty($entity['roles'])) {
+                } elseif (! empty($entity['roles'])) {
                     $newRoleId = current($entity['roles'])['roleId'];
                 }
                 if (isset($newRoleId)) {
@@ -235,38 +243,38 @@ $mainPhoto = current($object['photos']);?>
             <?php endif;?>
         </div>
         </div>
-	</div>
+    </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-    	<p>&nbsp;</p>
-    	<?= $this->partial('schoenstatt/assignments/assignments-table-partial', [
-    		'assignments' 	=> $object['assignments'],
-    		'showActive' 	=> true,
-    		'showInactive' 	=> false,
-    	]);?>
-	</div> <!-- assignments 1 column -->
+        <p>&nbsp;</p>
+        <?= $this->partial('schoenstatt/assignments/assignments-table-partial', [
+            'assignments'   => $object['assignments'],
+            'showActive'    => true,
+            'showInactive'  => false,
+      ]);?>
+    </div> <!-- assignments 1 column -->
     <div class="col-md-6">
-    	<?= $this->partial('schoenstatt/assignments/assignments-table-partial', [
-    		'assignments' 	=> $object['assignments'],
-    		'showActive' 	=> false,
-    		'showInactive' 	=> true,
-    		'headerText'	=> $this->translate('Past contacts'),
-    	]);?>
+        <?= $this->partial('schoenstatt/assignments/assignments-table-partial', [
+            'assignments'   => $object['assignments'],
+            'showActive'    => false,
+            'showInactive'  => true,
+            'headerText'    => $this->translate('Past contacts'),
+        ]);?>
     </div> <!-- assignments 2 column -->
-	</div></div>
-</div></div></div><?php 
+    </div></div>
+</div></div></div><?php
 endif;
 
-if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganizations'])):?>
+if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganizations'])) :?>
 <div class="panel panel-default">
 <!-- Default panel contents -->
 <div class="panel-heading">
-	<div class="row">
-	<div class="col-xs-6">
-    	<h3 class="panel-title"><?= $this->translate('National organizations'); ?></h3>
+    <div class="row">
+    <div class="col-xs-6">
+        <h3 class="panel-title"><?= $this->translate('National organizations'); ?></h3>
     </div>
     <div class="col-xs-6">
-        <?php if ($this->isAllowed('route/associations/create')):
+        <?php if ($this->isAllowed('route/associations/create')) :
                 $queryOptions = ['query' => ['country' => $entity['country']]];?>
             <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
                 echo $this->url('associations/create', [], $queryOptions);?>">
@@ -276,107 +284,112 @@ if ($object['kind'] == 'sch-national-movement' && isset($object['nationalOrganiz
     </div>
     </div>
 </div>
-<?php if (0 === count($object['nationalOrganizations'])) :?>
-    <div class="panel-body"><p><?= sprintf($this->translate('No other national organizations are registered in %s.'),
-            $this->countryName($object['country']));?></p></div>
-<?php else :
-    echo $this->partial('associations-table', [
+    <?php if (0 === count($object['nationalOrganizations'])) :?>
+    <div class="panel-body"><p><?= sprintf(
+        $this->translate('No other national organizations are registered in %s.'),
+        $this->countryName($object['country'])
+                               );?></p></div>
+    <?php else :
+        echo $this->partial('associations-table', [
         'objects' => $object['nationalOrganizations'],
-    ]);
-endif;?>
+        ]);
+    endif;?>
 </div>
 
-<?php //if we're not national, check if we have children
-elseif (!empty($object['childAssociations'])): ?>
+    <?php //if we're not national, check if we have children
+    elseif (! empty($object['childAssociations'])) : ?>
 <div class="panel panel-default">
 <!-- Default panel contents -->
 <div class="panel-heading">
-	<div class="row">
-	<div class="col-xs-6">
-    	<h3 class="panel-title"><?= $this->translate('Associated organizations'); ?></h3>
+    <div class="row">
+    <div class="col-xs-6">
+        <h3 class="panel-title"><?= $this->translate('Associated organizations'); ?></h3>
     </div>
     <div class="col-xs-6">
-    <?php if ($this->isAllowed('route/associations/create')):
-    $queryOptions = ['parentId' => $object['associationId']];
-    if (isset($object['country'])) {
-        $queryOptions['country'] = $object['country'];
-    }
-    if (isset($object['timeZoneId'])) {
-        $queryOptions['timeZoneId'] = $object['timeZoneId'];
-    }
-    if ('sch-shrine' === $object['kind']) {
-        $queryOptions['kind'] = 'sch-diocesan-apostolate';
-    }
-    ?>
+                                                    <?php if ($this->isAllowed('route/associations/create')) :
+                                                        $queryOptions = ['parentId' => $object['associationId']];
+                                                        if (isset($object['country'])) {
+                                                            $queryOptions['country'] = $object['country'];
+                                                        }
+                                                        if (isset($object['timeZoneId'])) {
+                                                            $queryOptions['timeZoneId'] = $object['timeZoneId'];
+                                                        }
+                                                        if ('sch-shrine' === $object['kind']) {
+                                                            $queryOptions['kind'] = 'sch-diocesan-apostolate';
+                                                        }
+                                                        ?>
         <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="<?php
             echo $this->url('associations/create', [], ['query' => $queryOptions]);?>">
-            <?php $addText = 'sch-shrine' === $object['kind'] ? 'Add apostolate/branch' : 'Add associated association';
-            echo $this->translate($addText);?></a>
+                                                        <?php $addText = 'sch-shrine' === $object['kind'] ? 'Add apostolate/branch' : 'Add associated association';
+                                                        echo $this->translate($addText);?></a>
         </span>
-    <?php endif;?>
+                                                    <?php endif;?>
     </div>
     </div>
 </div>
-    <?= $this->partial('associations-table', [
-        'objects' => $object['childAssociations'],
+                                                        <?= $this->partial('associations-table', [
+                                                        'objects' => $object['childAssociations'],
     ]);?>
 </div>
-<?php elseif ($this->isAllowed('route/associations/create')) :
-    $queryOptions = ['parentId' => $object['associationId']];
-    if (isset($object['country'])) {
-        $queryOptions['country'] = $object['country'];
-    }
-    if (isset($object['timeZoneId'])) {
-        $queryOptions['timeZoneId'] = $object['timeZoneId'];
-    }
-    if ('sch-shrine' === $object['kind']) {
-        $queryOptions['kind'] = 'sch-diocesan-apostolate';
-    }?><p><a target="_blank" class="btn btn-primary btn-sm" href="<?php
+        <?php elseif ($this->isAllowed('route/associations/create')) :
+            $queryOptions = ['parentId' => $object['associationId']];
+            if (isset($object['country'])) {
+                $queryOptions['country'] = $object['country'];
+            }
+            if (isset($object['timeZoneId'])) {
+                $queryOptions['timeZoneId'] = $object['timeZoneId'];
+            }
+            if ('sch-shrine' === $object['kind']) {
+                $queryOptions['kind'] = 'sch-diocesan-apostolate';
+            }?><p><a target="_blank" class="btn btn-primary btn-sm" href="<?php
             echo $this->url('associations/create', [], ['query' => $queryOptions]);?>">
-            <?php $addText = 'sch-shrine' === $object['kind'] ? 'Add apostolate/branch' : 'Add associated association';
-            echo $this->translate($addText);?></a>
+                <?php $addText = 'sch-shrine' === $object['kind'] ? 'Add apostolate/branch' : 'Add associated association';
+                echo $this->translate($addText);?></a>
         <p>
-<?php 
-endif;?>
+            <?php
+    endif;?>
 
 
 <!-- Left side roles, right side Admin notes -->
-<?php if ($this->isAllowed('route/associations/create')):?>
+<?php if ($this->isAllowed('route/associations/create')) :?>
 <div class="row">
 <div class="col-md-12">
 <div class="panel panel-default" id="adminPanel">
     <div class="panel-heading">
-    	<h3 class="panel-title"><?= $this->translate('Admin info'); ?></h3>
-	</div>
+        <h3 class="panel-title"><?= $this->translate('Admin info'); ?></h3>
+    </div>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
-    <?php if (!empty($object['roles'])): ?>
+    <?php if (! empty($object['roles'])) : ?>
     <p><?= $this->translate('Association roles');?></p>
     <ul class="list-group">
-    	<?php foreach ($object['roles'] as $roleId => $role) :?>
-    		<li class="list-group-item"><?= $this->formatEntity('role', $role);?>
-    		<a target="_blank" href="<?php
+        <?php foreach ($object['roles'] as $roleId => $role) :?>
+            <li class="list-group-item"><?= $this->formatEntity('role', $role);?>
+            <a target="_blank" href="<?php
                 echo $this->url('assignments/create', [], ['query' => ['roleId' => $role['roleId']]]);?>">
                 <span class="glyphicon glyphicon-plus">&nbsp;</span></a></li>
         <?php endforeach;?>
-	</ul>
-	<?php endif;
-	if ($this->isAllowed('route/roles/create')): ?>
+    </ul>
+    <?php endif;
+    if ($this->isAllowed('route/roles/create')) : ?>
         <p><a class="btn btn-default btn-sm" href="<?php
-            echo $this->url('roles/create', [],
-                ['query' => ['associationId' => $object['associationId']]]);?>">
+            echo $this->url(
+                'roles/create',
+                [],
+                ['query' => ['associationId' => $object['associationId']]]
+                                                   );?>">
             <span class="glyphicon glyphicon-plus">&nbsp;</span><?= $this->translate('Add role')?></a>
         </p>
     <?php endif;?>
-	</div>
-    <div class="col-md-6"><!-- Admin notes column -->
-		<?php if (isset($object['adminNotes'])):?>
-    		<p><strong><?= $this->translate('Admin notes');?>:</strong></p>
-    		<div><?= $this->markdown($object['adminNotes']);?></div>
-		<?php endif;?>
     </div>
-	</div></div>
-</div></div></div><?php 
+    <div class="col-md-6"><!-- Admin notes column -->
+        <?php if (isset($object['adminNotes'])) :?>
+            <p><strong><?= $this->translate('Admin notes');?>:</strong></p>
+            <div><?= $this->markdown($object['adminNotes']);?></div>
+        <?php endif;?>
+    </div>
+    </div></div>
+</div></div></div><?php
 endif;
 
 
@@ -388,14 +401,16 @@ if ($this->isAllowed('route/association-edit')) {
 }?>
 
 <div class="row"><div class="col-md-12">
-<?php if ($this->isAllowed('route/association-edit')): ?>
-      <p><a class="btn btn-primary" href="<?= $this->url('association-edit',
-          ['sw_id' => $object['identifier']]);?>"><?php
+<?php if ($this->isAllowed('route/association-edit')) : ?>
+      <p><a class="btn btn-primary" href="<?= $this->url(
+          'association-edit',
+          ['sw_id' => $object['identifier']]
+                                          );?>"><?php
     echo $this->translate("Edit details")?></a><p>
 <?php endif;?>
 <p><strong><?= $this->translate('Total views')?></strong>: <?= $this->visits['total']?> <strong><?= $this->translate('Views this month')?></strong>: <?= $this->visits['pastMonth']?></p>
 </div></div>
-<?php if (isset($this->schema)):
+<?php if (isset($this->schema)) :
     $schema = $this->schema;
     if ($schema instanceof BaseType) {
         echo $schema->toScript();

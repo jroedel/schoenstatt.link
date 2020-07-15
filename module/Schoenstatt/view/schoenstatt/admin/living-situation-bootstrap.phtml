@@ -1,27 +1,27 @@
 <table class="table">
-	<thead>
-	<tr>
-		<?php foreach ($this->columns as $key => $value) : ?>
-		    <th><?php echo $this->escapeHtml($value);?></th>
-		<?php endforeach;?>
-	</tr>
-	</thead>
-	<tbody>
-	
+    <thead>
+    <tr>
+        <?php foreach ($this->columns as $key => $value) : ?>
+            <th><?php echo $this->escapeHtml($value);?></th>
+        <?php endforeach;?>
+    </tr>
+    </thead>
+    <tbody>
+    
 <?php
 foreach ($this->entities as $person) :
-    if (!isset($person['status']) || !empty($person['livingSituations'])) {
+    if (! isset($person['status']) || ! empty($person['livingSituations'])) {
         continue;
-}?>
-	<tr>
-	<?php foreach ($this->columns as $key => $value) : ?>
-	    <td><?php if (is_object($person[$key])) {
-// 	        var_dump($person[$key]);
-	    } else {
-	    echo $this->escapeHtml($person[$key]);
-	    }?></td>
-	<?php endforeach;?>
-	</tr>
+    }?>
+    <tr>
+    <?php foreach ($this->columns as $key => $value) : ?>
+        <td><?php if (is_object($person[$key])) {
+//          var_dump($person[$key]);
+            } else {
+                echo $this->escapeHtml($person[$key]);
+            }?></td>
+    <?php endforeach;?>
+    </tr>
 <?php endforeach;?>
 </tbody>
 </table>

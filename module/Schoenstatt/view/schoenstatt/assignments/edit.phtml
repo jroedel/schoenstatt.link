@@ -4,8 +4,10 @@ $headText = 'Edit Assignment';
 $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php $form = $this->form;
-$form->setAttribute('action', $this->url('assignments/assignment/edit',
-		['assignment_id' => $this->entity['assignmentId']]));
+$form->setAttribute('action', $this->url(
+    'assignments/assignment/edit',
+    ['assignment_id' => $this->entity['assignmentId']]
+));
  $form->prepare();
  echo $this->form()->openTag($form);
  echo $this->partial('fields-partial', [
@@ -17,7 +19,7 @@ $form->setAttribute('action', $this->url('assignments/assignment/edit',
      echo $this->formButton($form->get('delete'));
  }
  echo $this->form()->closeTag();
-if ($this->isAllowed('route/assignments/assignment/delete')) :?>
+ if ($this->isAllowed('route/assignments/assignment/delete')) :?>
 <!-- Modal -->
 <div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
   <div class="modal-dialog modal-sm">
@@ -30,19 +32,21 @@ if ($this->isAllowed('route/assignments/assignment/delete')) :?>
         <p><?php echo $this->translate("Only delete an assignment if it was created by mistake!
         		If you wish change the person in charge, simply set an \"End Date\" in the past
         		and create a new assignment.");?></p>
-        <?php $form = $this->deleteForm;
-        	$form->setAttribute('action', $this->url('assignments/assignment/delete',
-        			['assignment_id' => $this->entityId]));
-        	$form->prepare();
- 			echo $this->form()->openTag($form);
-			echo $this->formRow($form->get('security'));
-			echo $this->formSubmit($form->get('submit'));
-			echo '&nbsp;';
-			echo $this->formButton($form->get('cancel'));
-			echo $this->form()->closeTag();
-        ?>
+         <?php $form = $this->deleteForm;
+            $form->setAttribute('action', $this->url(
+                'assignments/assignment/delete',
+                ['assignment_id' => $this->entityId]
+            ));
+            $form->prepare();
+            echo $this->form()->openTag($form);
+            echo $this->formRow($form->get('security'));
+            echo $this->formSubmit($form->get('submit'));
+            echo '&nbsp;';
+            echo $this->formButton($form->get('cancel'));
+            echo $this->form()->closeTag();
+            ?>
       </div>
     </div>
   </div>
 </div>
-<?php endif;?>
+    <?php endif;?>
