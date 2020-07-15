@@ -31,14 +31,14 @@ class IndexControllerFactory implements FactoryInterface
         $helperPluginManager = $container->get('ViewHelperManager');
         $config = $container->get('Config');
         $controller = new IndexController(
-            $navigation, 
-            $publicationsTable, 
-            $schoenstattTable, 
-            $eventTextTable, 
-            $dictionaryTable, 
-            $helperPluginManager, 
+            $navigation,
+            $publicationsTable,
+            $schoenstattTable,
+            $eventTextTable,
+            $dictionaryTable,
+            $helperPluginManager,
             $config
-            );
+        );
         return $controller;
     }
 

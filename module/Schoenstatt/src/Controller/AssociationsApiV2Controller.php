@@ -20,9 +20,9 @@ class AssociationsApiV2Controller extends AbstractRestfulController
      * @var array $config
      */
     protected $config;
-    
+
     protected $makeCacheable = false;
-    
+
     const BASE_URL = 'https://schoenstatt.link/api/v2';
 
     public function __construct(SchoenstattTable $schoenstattTable, array $config)
@@ -40,7 +40,7 @@ class AssociationsApiV2Controller extends AbstractRestfulController
         $md5s = null;
         $json = $table->getAssociationListSchemaV2($objects, $md5s, $locale);
         $md5 = md5(json_encode($md5s));
-        
+
         return new JsonModel([
             'items'         => $json,
             'locale'        => $locale,
@@ -51,7 +51,7 @@ class AssociationsApiV2Controller extends AbstractRestfulController
 
     public function get($id)
     {
-        if (!$id) {
+        if (! $id) {
             return $this->sendFailedMessage('Invalid association requested.');
         }
         $id = $this->processSiteWideIdentifier($id);
@@ -69,11 +69,11 @@ class AssociationsApiV2Controller extends AbstractRestfulController
         $locale = \Locale::getDefault();
         $object = $table->getAssociation($id);
         $place = $table->getAssociationSchemaV2($object, $locale);
-        if (!isset($place)) {
+        if (! isset($place)) {
             return $this->sendFailedMessage('Invalid shrine requested.', 404);
         }
         $return = [
-            'apiUrl'    => self::BASE_URL.'/associations/'.$object['identifier'],
+            'apiUrl'    => self::BASE_URL . '/associations/' . $object['identifier'],
             'locale'    => \Locale::getDefault(),
             'md5'       => $object['schemaOrgJsonMd5V1ByLocale'][$locale],
             'object'    => $place->toArray(),
@@ -81,13 +81,13 @@ class AssociationsApiV2Controller extends AbstractRestfulController
         $view = new JsonModel($return);//, ['prettyPrint' => true]);
         return $view;
     }
-    
+
     public function onDispatch(MvcEvent $e)
     {
         $this->makeCacheable();
         return parent::onDispatch($e);
     }
-    
+
     public function makeCacheable()
     {
         /** @var \Zend\Http\PhpEnvironment\Response $response */
@@ -113,11 +113,11 @@ class AssociationsApiV2Controller extends AbstractRestfulController
     public function findByKindAction()
     {
         $kind = $this->params()->fromQuery('kind');
-        if (!isset($kind)) {
+        if (! isset($kind)) {
             return $this->sendFailedMessage('Please pass a `kind` parameter.');
         }
         $kinds = array_keys($this->config['schoenstatt']['association_kinds']);
-        if (!in_array($kind, $kinds)) {
+        if (! in_array($kind, $kinds)) {
             return $this->sendFailedMessage('Please pass a valid `kind` parameter.');
         }
         $table = $this->schoenstattTable;
@@ -134,7 +134,7 @@ class AssociationsApiV2Controller extends AbstractRestfulController
             'objectMd5s'    => $md5s,
         ]);//, ['prettyPrint' => true]);
     }
-    
+
     public function findByKindMd5Action()
     {
         $view = $this->findByKindAction();
@@ -143,7 +143,7 @@ class AssociationsApiV2Controller extends AbstractRestfulController
         }
         return $view;
     }
-    
+
     public function shrinesJsonAction()
     {
         $table = $this->schoenstattTable;
@@ -164,7 +164,7 @@ class AssociationsApiV2Controller extends AbstractRestfulController
     protected function authenticateApiKey($key)
     {
         $config = $this->config['patres'];
-        if (!isset($config['api_keys']) || !is_array($config['api_keys'])) {
+        if (! isset($config['api_keys']) || ! is_array($config['api_keys'])) {
             throw new \Exception('No API keys set.');
         }
         return in_array($key, $config['api_keys']);
@@ -185,14 +185,14 @@ class AssociationsApiV2Controller extends AbstractRestfulController
     {
         static $validator;
         static $filter;
-        if (!isset($validator)) {
+        if (! isset($validator)) {
             $validator = new SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION);
         }
-        if (!$validator->isValid($identifier)) {
+        if (! $validator->isValid($identifier)) {
             return false;
         }
 
-        if (!isset($filter)) {
+        if (! isset($filter)) {
             $filter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION);
         }
         return $filter->filter($identifier);

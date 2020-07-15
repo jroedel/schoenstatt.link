@@ -34,14 +34,14 @@ class SchoenstattController extends AbstractActionController
 
     public function indexAction()
     {
-        if (!$this->zfcUserAuthentication()->hasIdentity()) {
+        if (! $this->zfcUserAuthentication()->hasIdentity()) {
             return $this->redirect()->toRoute('welcome');
         }
 
         $table = $this->schoenstattTable;
 
         $config = $this->schConfig;
-        if (!isset($config['general_presidium_id']) || !is_numeric($config['general_presidium_id'])) {
+        if (! isset($config['general_presidium_id']) || ! is_numeric($config['general_presidium_id'])) {
             throw new \Exception('Please set the "general_presidium_id" configuration.');
         }
         $generalPresidiumId = $config['general_presidium_id'];
@@ -52,7 +52,7 @@ class SchoenstattController extends AbstractActionController
 
         return new ViewModel([
             'form'              => $form,
-            'generalPresidiumId'=> $generalPresidiumId,
+            'generalPresidiumId' => $generalPresidiumId,
             'generalPresidium'  => $generalPresidium,
             'nationalLeaders'   => $nationalLeaders,
         ]);
@@ -67,17 +67,17 @@ class SchoenstattController extends AbstractActionController
     {
         $table = $this->schoenstattTable;
         $shrines = $table->getShrines();
-        
+
         //separate by countryRegion
         $regions = [];
         $regionStats = [];
         foreach ($shrines as $associationId => $object) {
-            if (!isset($regions[$object['countryRegion']])) {
+            if (! isset($regions[$object['countryRegion']])) {
                 $regions[$object['countryRegion']] = [];
             }
-            if (!isset($regionStats[$object['countryRegion']])) {
+            if (! isset($regionStats[$object['countryRegion']])) {
                 $regionStats[$object['countryRegion']] = [
-                    'id' => $object['countryRegion'].'-progress-bar',
+                    'id' => $object['countryRegion'] . '-progress-bar',
                     'maxScore' => 0,
                     'score' => 0,
                 ];
@@ -99,7 +99,7 @@ class SchoenstattController extends AbstractActionController
             }
         }
         $totalPercent = floor($totalScore / $totalMaxScore * 100);
-        
+
         return new ViewModel([
 //             'form'              => $form,
             'shrines'           => $shrines,
@@ -109,22 +109,22 @@ class SchoenstattController extends AbstractActionController
             'datasets'          => $this->getShrineDatasets(),
         ]);
     }
-    
+
     public function waysideShrinesAction()
     {
         $table = $this->schoenstattTable;
         $shrines = $table->getWaysideShrines();
-        
+
         //separate by countryRegion
         $regions = [];
         $regionStats = [];
         foreach ($shrines as $associationId => $object) {
-            if (!isset($regions[$object['countryRegion']])) {
+            if (! isset($regions[$object['countryRegion']])) {
                 $regions[$object['countryRegion']] = [];
             }
-            if (!isset($regionStats[$object['countryRegion']])) {
+            if (! isset($regionStats[$object['countryRegion']])) {
                 $regionStats[$object['countryRegion']] = [
-                    'id' => $object['countryRegion'].'-progress-bar',
+                    'id' => $object['countryRegion'] . '-progress-bar',
                     'maxScore' => 0,
                     'score' => 0,
                 ];
@@ -146,7 +146,7 @@ class SchoenstattController extends AbstractActionController
             }
         }
         $totalPercent = floor($totalScore / $totalMaxScore * 100);
-        
+
         $view = new ViewModel([
 //             'form'              => $form,
             'shrines'           => $shrines,
@@ -157,7 +157,7 @@ class SchoenstattController extends AbstractActionController
         ]);
         return $view;
     }
-    
+
     public function submittingPhotosAction()
     {
         /**
@@ -166,10 +166,10 @@ class SchoenstattController extends AbstractActionController
 //         $table = $this->userTable;
 //         $user = $table->findById(5);
 //         var_dump($user);
-        
+
         return new ViewModel([]);
     }
-    
+
     public function getShrineDatasets()
     {
         $datasets = [];
@@ -184,7 +184,7 @@ class SchoenstattController extends AbstractActionController
             ->telephone('+1 414 215 0318'));
         $datasetEn->name('Schoenstatt Shrine Database in English')
         ->description('Shrine database is a list of the Catholic Chapels belonging '
-            .'to the International Schoenstatt Movement')
+            . 'to the International Schoenstatt Movement')
         ->inLanguage('en')
         ->license('https://creativecommons.org/licenses/by-sa/3.0/')
         ->url('https://schoenstatt.link/en/shrines')
@@ -200,7 +200,7 @@ class SchoenstattController extends AbstractActionController
         $datasetEs = new Dataset();
         $datasetEs->name('Base de datos de Santuarios de Schoenstatt en Español')
         ->description('La base de datos de los santuarios es una lista de capillas católicas perteneciente '
-            .'al Movimiento Apostólico de Schoenstatt')
+            . 'al Movimiento Apostólico de Schoenstatt')
         ->inLanguage('es')
         ->license('https://creativecommons.org/licenses/by-sa/3.0/')
         ->url('https://schoenstatt.link/es/shrines')
@@ -429,13 +429,13 @@ class SchoenstattController extends AbstractActionController
 
     protected function addUrlToObject($url, $label, &$object)
     {
-        if (!isset($object['url1'])) {
+        if (! isset($object['url1'])) {
             $object['url1'] = $url;
             $object['url1Label'] = $label;
-        } elseif (!isset($object['url2'])) {
+        } elseif (! isset($object['url2'])) {
             $object['url2'] = $url;
             $object['url2Label'] = $label;
-        } elseif (!isset($object['url3'])) {
+        } elseif (! isset($object['url3'])) {
             $object['url3'] = $url;
             $object['url3Label'] = $label;
         } else {

@@ -35,7 +35,7 @@ class PersonsController extends SionController
 //             $showPhotos = $data['showPhotos'];
 //             $data['exMembers'] = false;
 //             unset($data['showPhotos']);
-            if (!empty($data)) {
+            if (! empty($data)) {
                 /** @var \Schoenstatt\Model\SchoenstattTable $table */
                 $table = $this->getSionTable();
                 $persons = $table->searchPersons($data);
@@ -52,9 +52,9 @@ class PersonsController extends SionController
 
     public function showAction()
     {
-        $id = (Int)$this->params()->fromRoute('person_id');
+        $id = (int)$this->params()->fromRoute('person_id');
         //var_dump($id);
-        if (!$id) {
+        if (! $id) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Person not found.');
@@ -63,7 +63,7 @@ class PersonsController extends SionController
         /** @var \Schoenstatt\Model\SchoenstattTable $table */
         $table = $this->getSionTable();
         $person = $table->getPerson($id);
-        if (!$person) {
+        if (! $person) {
             $this->flashMessenger()
             ->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Person not found.');
@@ -95,7 +95,7 @@ class PersonsController extends SionController
      */
     public function createPerson($data, $form)
     {
-        if (!$data['firstName'] && !$data['lastName']) {
+        if (! $data['firstName'] && ! $data['lastName']) {
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
                 ->addMessage('Either a first name or a last name is required.');
             return new ViewModel([
@@ -105,12 +105,12 @@ class PersonsController extends SionController
 
         $table = $this->getSionTable();
         $entity = $this->getEntity();
-        if (!($newId = $table->createEntity($entity, $data))) {
+        if (! ($newId = $table->createEntity($entity, $data))) {
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
                 ->addMessage('Error in form submission, please review.');
         } else {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage(ucwords($entity).' successfully created.');
+            ->addMessage(ucwords($entity) . ' successfully created.');
             $this->redirectAfterCreate((int) $newId);
         }
     }
@@ -143,7 +143,7 @@ class PersonsController extends SionController
         foreach ($urlConfig as $values) {
             if (isset($values[$deviceType]) &&
                 isset($values['userKey']) &&
-                !is_null($person[$values['userKey']])) {
+                ! is_null($person[$values['userKey']])) {
                 $url = [
                     'label' => $values['label'],
                     'url'   => sprintf($values[$deviceType], $person[$values['userKey']]),

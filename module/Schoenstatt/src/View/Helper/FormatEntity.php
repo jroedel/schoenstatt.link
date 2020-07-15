@@ -45,7 +45,7 @@ class FormatEntity extends \SionModel\View\Helper\FormatEntity
                     if (isset($data['isMainContact']) && $data['isMainContact']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Main contact', 'label-info');
                     }
-                    if (isset($data['isActive']) && !$data['isActive']) {
+                    if (isset($data['isActive']) && ! $data['isActive']) {
                         $finalMarkup .= '&nbsp;' . $this->view->label('Inactive', 'label-warning');
                     }
                 }

@@ -20,13 +20,13 @@ class CompositionsController extends SionController
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
-            if (!isset($swValidator)) {
+            if (! isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier();
             }
-            if (!$swValidator->isValid($id)) {
+            if (! $swValidator->isValid($id)) {
                 throw new \Exception('Invalid site-wide id');
             }
-            if (!isset($swFilter)) {
+            if (! isset($swFilter)) {
                 $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
             }
             $id = $swFilter->filter($id);
@@ -35,16 +35,16 @@ class CompositionsController extends SionController
         }
         return $id;
     }
-    
+
     public function indexAction()
     {
         $view = parent::indexAction();
-        
+
         $languages = $this->getSionTable()->getLanguageNames();
         $view->setVariable('languageNames', $languages);
         return $view;
     }
-    
+
     public function showAction()
     {
         $view = parent::showAction();
@@ -58,7 +58,7 @@ class CompositionsController extends SionController
         $view->setVariable('schema', $schema);
         return $view;
     }
-    
+
     public function importAction()
     {
         $table = $this->getSionTable();

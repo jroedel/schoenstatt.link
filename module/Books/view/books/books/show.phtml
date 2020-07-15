@@ -5,8 +5,10 @@ $object = $this->entity;
 $this->headMeta()->appendName('description', $object['title']);
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($object['title']);?>
-<h1><?php echo $this->escapeHtml($this->entity['title']);?><?php 
-if (!$object['isActive']) { echo sprintf("&nbsp;<span class=\"label label-warning\">%s</span>", $this->translate("Inactive"));}
+<h1><?php echo $this->escapeHtml($this->entity['title']);?><?php
+if (! $object['isActive']) {
+    echo sprintf("&nbsp;<span class=\"label label-warning\">%s</span>", $this->translate("Inactive"));
+}
 ?></h1>
 <?php
 echo $this->partial('book-info', ['object' => $this->entity, 'borrowers' => $this->borrowers]);
@@ -18,14 +20,14 @@ if (isset($this->entity['publication'])) {
 }
 
 //@todo "Add another copy" button
-if ($this->isAllowed($object['resourceId'], 'administrate')):?>
+if ($this->isAllowed($object['resourceId'], 'administrate')) :?>
 <!-- <p><a class="btn btn-default" href="<?php // echo $this->url('books/book/inactivate', [], [], true);?>"><?php
 //echo $this->translate('Add another edition');?></a></p> -->
 <?php endif;
-if ($this->isAllowed($object['resourceId'], 'administrate')): ?>
+if ($this->isAllowed($object['resourceId'], 'administrate')) : ?>
 <div class="row"><div class="col-xs-12"><a class="btn btn-default" href="<?php echo $this->url('books/create', ['library_id' => $this->entity['libraryId']], ['query' => ['copyBook' => $this->entityId]], true);
 ?>"><?php echo $this->translate("Add another copy to the library");?></a></div></div>
-<?php 
+    <?php
     echo $this->partial('sion-model/sion-model/entity-changes-panel', [
         'changes' => $this->changes,
         'panelTitle' => 'Change log'

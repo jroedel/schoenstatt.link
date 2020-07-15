@@ -12,16 +12,18 @@ $jsScript = '';
     $showTitle = $form->get('automaticTitle')->getValue() == 0;
     $form->get('automaticTitle')->setAttribute('aria-expanded', $showTitle ? 'true' : 'false');?>
     <div class="form-group">
-    	<?php echo $this->formRow($form->get('automaticTitle'));?>
+        <?php echo $this->formRow($form->get('automaticTitle'));?>
     </div>
- 	<div class="collapse <?php if ($showTitle) echo 'in';?>" id="titleGroup" aria-expanded="<?php
+    <div class="collapse <?php if ($showTitle) {
+        echo 'in';
+                         }?>" id="titleGroup" aria-expanded="<?php
         echo $showTitle ? 'true' : 'false';?>">
         <?php
         echo $this->formRow($form->get('manualTitle'));?>
-	</div>
-	<?php
-	$this->formSelect()->setTranslatorEnabled(false);
-	echo $this->formRow($form->get('spousePersonId'));
+    </div>
+    <?php
+    $this->formSelect()->setTranslatorEnabled(false);
+    echo $this->formRow($form->get('spousePersonId'));
     echo $this->formRow($form->get('country'));
     $this->formSelect()->setTranslatorEnabled(true);
     echo $this->formRow($form->get('isBorrower'));
@@ -172,7 +174,7 @@ $dayElement->setValueOptions([
     <hr>
     <h2><?php echo $this->translate('Private Info');?></h2>
     <?php
- $this->formSelect()->setTranslatorEnabled(false);
+    $this->formSelect()->setTranslatorEnabled(false);
     echo $this->formRow($form->get('adminNotes'));
     echo $this->formRow($form->get('adminTags'));
     echo $this->formRow($form->get('security'));
@@ -187,10 +189,10 @@ $("select[name='adminTags[]']").selectize({
 
 JS;
 
-$this->inlineScript()->captureStart();
-echo <<<JS
+    $this->inlineScript()->captureStart();
+    echo <<<JS
 $(function () {
 $jsScript
 });
 JS;
-$this->inlineScript()->captureEnd();
+    $this->inlineScript()->captureEnd();

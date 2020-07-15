@@ -5,71 +5,78 @@ $this->headTitle($headText);
 <table class="table">
 <thead>
 <tr>
-	<th><?php echo $this->translate("User")?></th>
-	<th><?php echo $this->translate('Entity')?></th>
-	<th><?php echo $this->translate("Status (View comments)")?></th>
-	<th><?php echo $this->translate('Submitted on')?></th>
-	<th></th>
+    <th><?php echo $this->translate("User")?></th>
+    <th><?php echo $this->translate('Entity')?></th>
+    <th><?php echo $this->translate("Status (View comments)")?></th>
+    <th><?php echo $this->translate('Submitted on')?></th>
+    <th></th>
 </tr>
 </thead>
 <tbody>
-<?php 
-foreach ($this->suggestions as $suggestion) : 
+<?php
+foreach ($this->suggestions as $suggestion) :
     $hasDedicatedForm = $suggestion['hasDedicatedModerateForm'];
     $inReview = $suggestion['suggestionStatus'] == 'In review';?>
 <tr>
-	<td><span><?php echo $this->userWithIp(isset($suggestion['suggestionByUser']) && is_array($suggestion['suggestionByUser']) ?
-	   $suggestion['suggestionByUser']['username'] : $suggestion['suggestionBy'], $suggestion['suggestionIpAddress']); ?></span></td>
-	<td><?php echo $this->formatScope($suggestion['suggestionEntity'], $suggestion['suggestionEntityName'], 
-	    $suggestion['suggestionEntityId'], null, (!$hasDedicatedForm && $inReview));
-	//var_dump($hasDedicatedForm); var_dump($inReview); var_dump(!$hasDedicatedForm && $inReview);?></td>
-	<td><?php switch ($suggestion['suggestionStatus']) {
-	    case 'In review':
-	       $labelAttribute = 'label-info';
-	       break;
-	    case 'Accepted':
-	        $labelAttribute = 'label-success';
-	        break;
+    <td><span><?php echo $this->userWithIp(isset($suggestion['suggestionByUser']) && is_array($suggestion['suggestionByUser']) ?
+       $suggestion['suggestionByUser']['username'] : $suggestion['suggestionBy'], $suggestion['suggestionIpAddress']); ?></span></td>
+    <td><?php echo $this->formatScope(
+        $suggestion['suggestionEntity'],
+        $suggestion['suggestionEntityName'],
+        $suggestion['suggestionEntityId'],
+        null,
+        (! $hasDedicatedForm && $inReview)
+    );
+    //var_dump($hasDedicatedForm); var_dump($inReview); var_dump(!$hasDedicatedForm && $inReview);?></td>
+    <td><?php switch ($suggestion['suggestionStatus']) {
+        case 'In review':
+            $labelAttribute = 'label-info';
+                      break;
+        case 'Accepted':
+            $labelAttribute = 'label-success';
+                      break;
         case 'Denied':
             $labelAttribute = 'label-danger';
-            break;
-	    default:
-	       $labelAttribute = 'label-info';
-	       break;
-	}
-	echo $this->label($suggestion['suggestionStatus'], $labelAttribute);
-	if (!$hasDedicatedForm && $suggestion['suggestionNotes']) {
-	    $suggestion['suggestionColumnsCount']++;
-	}
-	if ($suggestion['suggestionColumnsCount'] == 1) {
-	   $suggestionText = "%s suggestion";
-	} else {
-	   $suggestionText = "%s suggestions";
-	}
-	$fullSuggestionText = sprintf($this->translate($suggestionText), $suggestion['suggestionColumnsCount']);
-	echo '&nbsp;';
-	if (!$suggestion['suggestionNotes']) :
-	   echo $fullSuggestionText;
-    else:?>
-    	<a data-toggle="modal" data-target="#notesModal" data-modal-body="<?php 
-    	   echo $this->escapeHtmlAttr($suggestion['suggestionNotes']);?>"><?php 
-    	   echo $fullSuggestionText;?></a>
-    <?php endif;?></td>
-	<td><?php echo $this->diffForHumans($suggestion['suggestionOn']);?></td>
-	<td><?php if ($hasDedicatedForm && $inReview &&
-	    $this->isAllowed('route/'.$suggestion['moderationRoute'])):?>
-    	    <a class="btn btn-primary" href="<?php echo $this->url($suggestion['moderationRoute'], 
-    	        array($suggestion['moderationRouteKey'] => $suggestion['suggestionEntityId'],
-    	            'suggestion_id' => $suggestion['suggestionId']
-    	    ));?>"><?php 
-	    echo $this->translate("Review");?></a>
-	    <?php elseif ($inReview && !$hasDedicatedForm):?>
-    	    <a class="btn btn-primary" data-toggle="modal" data-target="#moderateModal" data-suggestion-id="<?php 
-    	    echo $this->escapeHtmlAttr($suggestion['suggestionId']);?>" data-entity-name="<?php 
-    	    echo $this->escapeHtmlAttr($suggestion['suggestionEntityName']);?>" data-modal-body="<?php 
-    	   echo $this->escapeHtmlAttr($suggestion['suggestionNotes']);?>"><?php 
-	       echo $this->translate("Review");?></a>
-	    <?php endif;?></td>
+                      break;
+        default:
+            $labelAttribute = 'label-info';
+                      break;
+        }
+        echo $this->label($suggestion['suggestionStatus'], $labelAttribute);
+        if (! $hasDedicatedForm && $suggestion['suggestionNotes']) {
+            $suggestion['suggestionColumnsCount']++;
+        }
+        if ($suggestion['suggestionColumnsCount'] == 1) {
+            $suggestionText = "%s suggestion";
+        } else {
+            $suggestionText = "%s suggestions";
+        }
+        $fullSuggestionText = sprintf($this->translate($suggestionText), $suggestion['suggestionColumnsCount']);
+        echo '&nbsp;';
+        if (! $suggestion['suggestionNotes']) :
+            echo $fullSuggestionText;
+        else :?>
+        <a data-toggle="modal" data-target="#notesModal" data-modal-body="<?php
+           echo $this->escapeHtmlAttr($suggestion['suggestionNotes']);?>"><?php
+           echo $fullSuggestionText;?></a>
+        <?php endif;?></td>
+    <td><?php echo $this->diffForHumans($suggestion['suggestionOn']);?></td>
+    <td><?php if ($hasDedicatedForm && $inReview &&
+        $this->isAllowed('route/' . $suggestion['moderationRoute'])) :?>
+            <a class="btn btn-primary" href="<?php echo $this->url(
+                $suggestion['moderationRoute'],
+                [$suggestion['moderationRouteKey'] => $suggestion['suggestionEntityId'],
+                    'suggestion_id' => $suggestion['suggestionId']
+                ]
+                                             );?>"><?php
+        echo $this->translate("Review");?></a>
+        <?php elseif ($inReview && ! $hasDedicatedForm) :?>
+            <a class="btn btn-primary" data-toggle="modal" data-target="#moderateModal" data-suggestion-id="<?php
+            echo $this->escapeHtmlAttr($suggestion['suggestionId']);?>" data-entity-name="<?php
+            echo $this->escapeHtmlAttr($suggestion['suggestionEntityName']);?>" data-modal-body="<?php
+           echo $this->escapeHtmlAttr($suggestion['suggestionNotes']);?>"><?php
+           echo $this->translate("Review");?></a>
+        <?php endif;?></td>
 </tr>
 <?php endforeach;
 $this->inlineScript()->captureStart();
@@ -120,21 +127,21 @@ JS;
         <h4 class="modal-title"><?php echo $this->translate('Moderate suggestion for');?> <span id="entityName"></span></h4>
       </div>
       <div class="modal-body">
-      <?php $form = $this->form; 
-        	$form->setAttribute('action', $this->url('admin/moderate'));
-        	$form->prepare();
- 			echo $this->form()->openTag($form);?>
+        <?php $form = $this->form;
+            $form->setAttribute('action', $this->url('admin/moderate'));
+            $form->prepare();
+            echo $this->form()->openTag($form);?>
           <div class="form-group ">
-          	<label><?php echo $this->translate("User suggestion");?></label>
-          	<p id="userSuggestionText"></p>
+            <label><?php echo $this->translate("User suggestion");?></label>
+            <p id="userSuggestionText"></p>
           </div>
-			<?php echo $this->formHidden($form->get('suggestionId'));
-			echo $this->formRow($form->get('suggestionResponse'));
-			echo $this->formHidden($form->get('security'));
-			echo $this->formSubmit($form->get('accept'));
-			echo '&nbsp;';
-			echo $this->formSubmit($form->get('deny'));
-			echo $this->form()->closeTag();?>
+            <?php echo $this->formHidden($form->get('suggestionId'));
+            echo $this->formRow($form->get('suggestionResponse'));
+            echo $this->formHidden($form->get('security'));
+            echo $this->formSubmit($form->get('accept'));
+            echo '&nbsp;';
+            echo $this->formSubmit($form->get('deny'));
+            echo $this->form()->closeTag();?>
       </div>
     </div>
   </div>

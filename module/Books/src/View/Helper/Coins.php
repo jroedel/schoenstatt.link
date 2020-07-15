@@ -8,7 +8,7 @@ use OpenURL\ContextObject;
 class Coins extends AbstractHelper
 {
     const RFR_ID           = 'info:sid/zotero.org:2';
-    
+
     public static $fieldPropertyMap = [
         'title'                 => 'rft.btitle',
         'authorsText'           => 'rft.au',
@@ -67,7 +67,7 @@ class Coins extends AbstractHelper
         foreach (self::$fieldPropertyMap as $field => $property) {
             switch ($field) {
                 case 'authorsText':
-                    if (!empty($publication['authorPersons'])) {
+                    if (! empty($publication['authorPersons'])) {
                         // @todo this
                     } elseif (isset($publication['authorsText'])) {
                         $authors = $publication['authorsText'];
@@ -135,7 +135,7 @@ class Coins extends AbstractHelper
 //                     break;
                 default:
                     if (array_key_exists($field, $publication) && isset($publication[$field]) &&
-                        (!is_array($publication[$field]) || !empty($publication[$field]))
+                        (! is_array($publication[$field]) || ! empty($publication[$field]))
                     ) {
                         $coinsArray[$property] = $publication[$field];
                     }

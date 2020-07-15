@@ -8,7 +8,7 @@ $this->headTitle($headText); ?>
 <li>The file to import must be of format xls or xlsx.</li>
 <li>Given a specified excel file and worksheet, the first row (A) must contain the column names.</li>
 <li>Each line of the worksheet must contain the withinLibraryId value, as well as a title.
-	The only exception is that a row with a publicationId need not have a title defined.</li>
+    The only exception is that a row with a publicationId need not have a title defined.</li>
 </ol>
 <p>Currently the column mappings are unconfigurable but are mapped as follows:</p>
 <dl class="dl-horizontal">
@@ -28,4 +28,4 @@ $form->setAttribute('action', $this->url(null, [], [], true));
      'form' => $form,
  ]);
  echo $this->form()->closeTag();
-?>
+    ?>

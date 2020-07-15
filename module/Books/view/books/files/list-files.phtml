@@ -9,7 +9,7 @@ $columns = $this->columns;
  * @var $objects mixed[]
  * @var $columns string[]
  */
-if (!isset($columns)) {
+if (! isset($columns)) {
     throw new \InvalidArgumentException('Please pass a list of columns to the publication-list partial');
 }
 $columnNames = [
@@ -23,44 +23,54 @@ $columnNames = [
 <div class="responsive-table">
 <table class="table"><thead>
 <tr><?php foreach ($columns as $key => $column) :
-    if (!isset($columnNames[$column])) {
+    if (! isset($columnNames[$column])) {
         unset($columns[$key]);
         continue;
     }?>
     <th><?php echo $this->translate($columnNames[$column]);?></th>
-<?php endforeach;?>
+    <?php endforeach;?>
 </tr></thead><tbody>
-<?php foreach($this->files as $entity) :?>
+<?php foreach ($this->files as $entity) :?>
 <tr><?php foreach ($columns as $column) :
-switch ($column) {
-    case 'fileName':?>
-		<td><a target="_blank" href="<?php echo $this->escapeHtmlAttr($entity['url']);?>"><?php echo $this->escapeHtml($entity['fileName']);?></a></td>
-    	<?php break;
-    case 'notes':?>
-		<td><?php if (isset($entity['notes'])) {
-		    echo $this->escapeHtml($entity['notes']);
-		}?></td>
-		<?php break;
-    case 'size':?>
-		<td><?php if (isset($entity['size'])) {
-		    echo $this->fileSize($entity['size']);
-		}?></td>
-    	<?php break;
-    case 'mimeType':?>
-		<td><?php if (isset($entity['mimeType'])) {
-		  echo $this->escapeHtml($entity['mimeType']);
-		}?></td>
-    	<?php break;
-    case 'tags':?>
-		<td><?php if (isset($entity['tags'])) {
-		  echo $this->escapeHtml($entity['tags']);
-		}?></td>
-    	<?php break;
-    default:
-        ;
-    break;
-}
-endforeach;?></tr><?php 
+    switch ($column) {
+        case 'fileName':
+            ?>
+        <td><a target="_blank" href="<?php echo $this->escapeHtmlAttr($entity['url']);?>"><?php echo $this->escapeHtml($entity['fileName']);?></a></td>
+            <?php
+            break;
+        case 'notes':
+            ?>
+        <td><?php if (isset($entity['notes'])) {
+            echo $this->escapeHtml($entity['notes']);
+            }?></td>
+            <?php
+            break;
+        case 'size':
+            ?>
+        <td><?php if (isset($entity['size'])) {
+            echo $this->fileSize($entity['size']);
+            }?></td>
+            <?php
+            break;
+        case 'mimeType':
+            ?>
+        <td><?php if (isset($entity['mimeType'])) {
+              echo $this->escapeHtml($entity['mimeType']);
+            }?></td>
+            <?php
+            break;
+        case 'tags':
+            ?>
+        <td><?php if (isset($entity['tags'])) {
+              echo $this->escapeHtml($entity['tags']);
+            }?></td>
+            <?php
+            break;
+        default:
+            ;
+            break;
+    }
+    endforeach;?></tr><?php
 endforeach; ?></tbody>
 </table>
 </div>

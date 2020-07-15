@@ -17,7 +17,7 @@ class LibrariesApiController extends AbstractRestfulController
         'checkoutPersonListKind', 'defaultCheckoutPersonId', 'isActive', 'adminNotes',
         'nextWithinLibraryId', 'bookCount', 'collections', 'contactPerson'
     ];
-    
+
     /**
      * @var LibraryTable $libraryTable
      */
@@ -40,12 +40,12 @@ class LibrariesApiController extends AbstractRestfulController
 //         $params = $this->params()->fromQuery();
         $table = $this->libraryTable;
         $objects = $table->getObjects('library');
-        
+
         return new JsonModel([
             'items'         => $objects,
         ], ['prettyPrint' => false]);
     }
-    
+
     public function get($id)
     {
         $table = $this->libraryTable;
@@ -53,7 +53,7 @@ class LibrariesApiController extends AbstractRestfulController
         self::prepLibraryObject($object);
         return new JsonModel($object, ['prettyPrint' => true]);
     }
-    
+
     public function pendingLabelsAction()
     {
         $libraryId = $this->params()->fromRoute('library_id');
@@ -66,25 +66,25 @@ class LibrariesApiController extends AbstractRestfulController
             'count' => count($objects),
         ], ['prettyPrint' => true]);
     }
-    
+
     public function finishPendingLabelsAction()
     {
         //get bookIds from query params
         $libraryId = $this->params()->fromRoute('library_id');
         $bookIdParam = $this->params()->fromQuery('bookIds');
         $validator = new Regex('/\d{1,8}(?:\|\d{1,8})*/');
-        if (!$validator->isValid($bookIdParam)) {
+        if (! $validator->isValid($bookIdParam)) {
             return $this->sendFailedMessage('Invalid bookId query parameter passed. It should be a pipe-separated list.');
         }
         $bookIds = explode('|', $bookIdParam);
-        
+
         //verify that they each have pending label changes
         $table = $this->libraryTable;
         $objects = $table->searchBooks([
             'libraryId' => $libraryId,
             'bookId' => $bookIds,
         ], ['onlyPendingBooks' => true]);
-        
+
         //make the database change (not manually, better to do it through updateEntity)
         $results = [];
         foreach ($objects as $object) {
@@ -94,7 +94,7 @@ class LibrariesApiController extends AbstractRestfulController
             ]);
             $results[$object['bookId']] = true;
         }
-        
+
         //report back how it went with each book
         $return = [];
         foreach ($bookIds as $bookId) {
@@ -104,10 +104,10 @@ class LibrariesApiController extends AbstractRestfulController
                 $return[$bookId] = false;
             }
         }
-        
+
         return new JsonModel(['results' => $return]);
     }
-    
+
     /**
      * This function formats a library array from the LibraryTable for standard API output
      * @param array $data
@@ -116,13 +116,13 @@ class LibrariesApiController extends AbstractRestfulController
     {
         //@todo write this
         foreach ($data as $key => $value) {
-            if (!in_array($key, self::LIBRARY_API_FIELDS, true)) {
+            if (! in_array($key, self::LIBRARY_API_FIELDS, true)) {
                 unset($data[$key]);
             }
         }
         self::jsonSerializeDateTimeObjects($data);
     }
-    
+
     /**
      * This function formats a library array from the LibraryTable for standard API output
      * @param array $data
@@ -130,13 +130,13 @@ class LibrariesApiController extends AbstractRestfulController
     protected static function prepLibraryObject(array &$data)
     {
         foreach ($data as $key => $value) {
-            if (!in_array($key, self::LIBRARY_API_FIELDS, true)) {
+            if (! in_array($key, self::LIBRARY_API_FIELDS, true)) {
                 unset($data[$key]);
             }
         }
         self::jsonSerializeDateTimeObjects($data);
     }
-    
+
     /**
      * Recursively look for Datetime objects and serialize them for use in JSON
      * @param array $data
@@ -151,7 +151,7 @@ class LibrariesApiController extends AbstractRestfulController
             }
         }
     }
-    
+
     protected function sendFailedMessage($message, $statusCode = 401)
     {
         $response = $this->getResponse();

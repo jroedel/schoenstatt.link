@@ -8,7 +8,7 @@ return [
         'cache_options' => [
             'adapter' => [
                 'name'    => 'apcu',
-                'ttl'       => 60*60*24, //1 day
+                'ttl'       => 60 * 60 * 24, //1 day
                 // With a namespace we can indicate the same type of items
                 // -> So we can simple use the db id as cache key
                 'options' => [
@@ -19,19 +19,19 @@ return [
     ],
     'zfcuser' => [
         'zend_db_adapter' => Zend\Db\Adapter\Adapter::class,
-        
+
         'auth_adapters' => [
 //             50 => \Application\Authentication\Adapter\JsonPost::class,
         ],
-        
+
         'enable_default_entities' => false,
 
         'enable_registration' => true,
-        
+
         'login_after_registration' => true,
 
         'use_registration_form_captcha' => true,
-        
+
         'use_login_form_captcha' => false,
 
         'form_captcha_options' => [

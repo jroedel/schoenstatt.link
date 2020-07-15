@@ -30,7 +30,7 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
         'Personal house phone' => 'Personal house phone',
         'Fax' => 'Fax',
     ];
-    
+
     public function __construct()
     {
         parent::__construct('edit_association');
@@ -53,16 +53,16 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Name for the public',
                 'help-block' => 'This is the name that would be published in Google Maps (if applicable). '
-                    .'Several association types include `name formats` that insert this field within a commonly '
-                    .'used format, for example `Schoenstatt Shrine [name]`. This simplifies mass translation, '
-                    .'but can be overridden below.
+                    . 'Several association types include `name formats` that insert this field within a commonly '
+                    . 'used format, for example `Schoenstatt Shrine [name]`. This simplifies mass translation, '
+                    . 'but can be overridden below.
 For Schoenstatt Shrine names, please use the name of the closest city to which the shrine would be associated'
-                .' (for example, Tucumán), '
-                .'or in the case of a little known city, add the State/Province separated by a comma '
-                .' (for example, Sleepy Eye, Minnesota). '
-                .'If there are multiple shrines in the same city, make sure to disambiguate one from the other. '
-                .'Try to keep names as short as possible, but avoid abbreviations. '
-                .'Longer names can be used for the `Name within Schoenstatt`.',
+                . ' (for example, Tucumán), '
+                . 'or in the case of a little known city, add the State/Province separated by a comma '
+                . ' (for example, Sleepy Eye, Minnesota). '
+                . 'If there are multiple shrines in the same city, make sure to disambiguate one from the other. '
+                . 'Try to keep names as short as possible, but avoid abbreviations. '
+                . 'Longer names can be used for the `Name within Schoenstatt`.',
             ],
             'attributes' => [
                 'required' => true,
@@ -102,9 +102,9 @@ For Schoenstatt Shrine names, please use the name of the closest city to which t
             'options' => [
                 'label' => 'Name within Schoenstatt',
                 'help-block' => 'This is the name that would be that will be shown to most users of the page '
-                    .'(supposing most users are Schoenstatters). This field has no name formats as the '
-                    .'public name field does. If the internal name would be the same as the public name, '
-                    .'please leave blank.',
+                    . '(supposing most users are Schoenstatters). This field has no name formats as the '
+                    . 'public name field does. If the internal name would be the same as the public name, '
+                    . 'please leave blank.',
             ],
             'attributes' => [
                 'required' => false,
@@ -227,8 +227,8 @@ so users can double-check. Warning: this field is not translated.',
             'attributes' => [
                 'required' => false,
                 'placeholder' => 'Covenant mass every 3rd Sunday, daily mass every Wednesday at 7am, '
-.'except in June and July. Confessions will be offered 30 minutes before every mass. '
-.'Youth adoration every 1st and 3rd Friday while school is in session. Please verify on the Facebook page.',
+            . 'except in June and July. Confessions will be offered 30 minutes before every mass. '
+            . 'Youth adoration every 1st and 3rd Friday while school is in session. Please verify on the Facebook page.',
             ],
         ]);
 //         $this->add([
@@ -239,7 +239,7 @@ so users can double-check. Warning: this field is not translated.',
 //                 'help-block' => 'Please see the <a href="https://schema.org/eventSchedule" target="_blank">
 // Event</a> and <a href="https://schema.org/eventSchedule" target="_blank">eventSchedule</a> specification
 // under format JSON+LD. Please make sure to include a location property linking to the shrine.'
-// //                 , and check 
+// //                 , and check
 // // the schema at Google\'s <a href="https://search.google.com/structured-data/testing-tool" target="_blank">
 // // Structured Data Tool</a>.
 // // ',
@@ -600,14 +600,14 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Google place ID',
                 'help-block' => 'Used for linking to the association\'s Google Place, for example, for reviews. '
-                .'Use the <a href="https://developers.google.com/places/place-id">Place ID finder.</a>',
+                . 'Use the <a href="https://developers.google.com/places/place-id">Place ID finder.</a>',
             ],
             'attributes' => [
                 'placeholder' => 'ChIJj61dQgK6j4AR4GeTYWZsKWw',
                 'maxlength' => '200',
             ],
         ]);
-        
+
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
             'type' => 'Textarea',
@@ -1141,20 +1141,20 @@ so users can double-check. Warning: this field is not translated.',
         ];
         return $this->filterSpec;
     }
-    
+
     public function setData($data)
     {
         $phoneLabels = self::PHONE_LABEL_VALUE_OPTIONS;
         $hasChanged = false;
-        if (isset($data['phone1Label']) && !isset($phoneLabels[$data['phone1Label']])) {
+        if (isset($data['phone1Label']) && ! isset($phoneLabels[$data['phone1Label']])) {
             $phoneLabels[$data['phone1Label']] = $data['phone1Label'];
             $hasChanged = true;
         }
-        if (isset($data['phone2Label']) && !isset($phoneLabels[$data['phone2Label']])) {
+        if (isset($data['phone2Label']) && ! isset($phoneLabels[$data['phone2Label']])) {
             $phoneLabels[$data['phone2Label']] = $data['phone2Label'];
             $hasChanged = true;
         }
-        if (isset($data['phone3Label']) && !isset($phoneLabels[$data['phone3Label']])) {
+        if (isset($data['phone3Label']) && ! isset($phoneLabels[$data['phone3Label']])) {
             $phoneLabels[$data['phone3Label']] = $data['phone3Label'];
             $hasChanged = true;
         }

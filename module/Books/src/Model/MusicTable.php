@@ -12,7 +12,7 @@ use Spatie\SchemaOrg\CreativeWork;
 class MusicTable extends SionTable
 {
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \SionModel\Db\Model\SionTable::getSelectPrototype()
      */
@@ -24,25 +24,25 @@ class MusicTable extends SionTable
         }
         return $select;
     }
-    
+
     protected function processCompositionRow($row)
     {
         static $identifierFilter;
-        if (!isset($identifierFilter)) {
+        if (! isset($identifierFilter)) {
             $identifierFilter = new ToSchoenstattLinkIdentifier('composition');
         }
         $id = $this->filterDbId($row['CompositionId']);
         $identifier = $identifierFilter->filter($id);
-        
+
         $name = $row['CompositionName'];
         $slug = $row['Slug'];
-        if (!isset($slug)) {
+        if (! isset($slug)) {
             $slug = SchoenstattTable::getSlug($name);
             if (isset($slug)) {
                 $this->slylyUpdateCompositionSlug($id, $slug);
             }
         }
-        
+
         $data = [
             'compositionId' => $id,
             'name' => $name,
@@ -74,16 +74,16 @@ class MusicTable extends SionTable
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
-            
+
             'identifier' => $identifier,
             //these fields integrate composerText and authors linked through predicates
             'composersAll' => [],
             'lyricistsAll' => [],
-            'jsonId' => "https://schoenstatt.link/en/".$identifier,
+            'jsonId' => "https://schoenstatt.link/en/" . $identifier,
         ];
         return $data;
     }
-    
+
     public function getCompositionSchemaV1($object)
     {
         $schema = new MusicComposition();
@@ -117,7 +117,7 @@ class MusicTable extends SionTable
         }
         return $schema;
     }
-    
+
     public function getCompositionListSchemaV1($objects)//, &$resultingMd5s)
     {
         $schemata = [];
@@ -130,21 +130,21 @@ class MusicTable extends SionTable
         }
         return $schemata;
     }
-    
+
     public function linkCompositions(&$objects)
     {
         //get linked composers/lyricists
-        
+
         //link 'em up
     }
-    
+
     protected function slylyUpdateCompositionSlug($compositionId, $slug)
     {
         $gateway = $this->getTableGatewayForEntity('composition');
         $result = $gateway->update(['Slug' => $slug], ['CompositionId' => $compositionId]);
         return $result;
     }
-    
+
     public function getTagsValueOptions()
     {
         $cacheKey = 'composition-tags-value-options';
@@ -155,7 +155,7 @@ class MusicTable extends SionTable
         $valueOptions = [];
         foreach ($objects as $object) {
             foreach ($object['tags'] as $tag) {
-                if (!isset($valueOptions[$tag])) {
+                if (! isset($valueOptions[$tag])) {
                     $valueOptions[$tag] = $tag;
                 }
             }
@@ -163,7 +163,7 @@ class MusicTable extends SionTable
         $this->cacheEntityObjects($cacheKey, $valueOptions, ['composition']);
         return $valueOptions;
     }
-    
+
     public function getCompositionValueOptions()
     {
         $cacheKey = 'composition-value-options';
@@ -183,7 +183,7 @@ class MusicTable extends SionTable
         $this->cacheEntityObjects($cacheKey, $valueOptions, ['composition']);
         return $valueOptions;
     }
-    
+
     public function getAuthorTextValueOptions()
     {
         $cacheKey = 'composition-author-texts';
@@ -195,7 +195,7 @@ class MusicTable extends SionTable
 UNION SELECT DISTINCT `LyricistText` AS Author FROM `mus_compositions` b) e
 GROUP BY Author ORDER BY Author";
         $results = $this->fetchSome(null, $sql, null);
-        
+
         $authors = [];
         $authorConcatenations = []; //these might be repeated so we have to check
         foreach ($results as $row) {
@@ -213,14 +213,14 @@ GROUP BY Author ORDER BY Author";
         }
         //factor in the concatenated authors, making sure not to push duplicates
         foreach ($authorConcatenations as $key => $value) {
-            if (!isset($authors[$key])) {
+            if (! isset($authors[$key])) {
                 $authors[$key] = $value;
             }
         }
         $this->cacheEntityObjects($cacheKey, $authors, ['composition']);
         return $authors;
     }
-    
+
     public function importMusicasJuly2019()
     {
         $ids = [45,141,27,89,243,49,267,1,29,307,114,142,118,355,335,62,36,37,215,248,61,270,193,
@@ -247,26 +247,26 @@ GROUP BY Author ORDER BY Author";
         $monospace = new MonospaceFormatter();
         $count = 0;
         foreach ($objects as $object) {
-            if (!isset($object['disambiguatingDescription'])) {
+            if (! isset($object['disambiguatingDescription'])) {
                 continue;
             }
-            
+
             //import file
-            $filename = "data/musicas/".$object['disambiguatingDescription'];
+            $filename = "data/musicas/" . $object['disambiguatingDescription'];
             if (file_exists($filename)) {
                 $myfile = fopen($filename, "r");
                 if (false === $myfile) {
                     throw new \Exception("Error reading $filename");
                 }
-                $text = trim(fread($myfile,filesize($filename)));
-                
+                $text = trim(fread($myfile, filesize($filename)));
+
                 $text = preg_replace($re, $subst, $text);
                 $data = ['chordProSpec' => $text];
                 fclose($myfile);
                 // Create song object after parsing txt
                 $song = $parser->parse($text);
                 $key = $song->getKey([]);
-                if (!isset($key)) {
+                if (! isset($key)) {
                     $key = $guessKey->guessKey($song);
                     var_dump($key);
                 }
@@ -275,10 +275,10 @@ GROUP BY Author ORDER BY Author";
                     $data['originalKey'] = $key;
                 }
                 $data['lyrics'] = $monospace->format($song, ['no_chords' => true]);
-                
+
                 //delete disambiguating description
                 $data['disambiguatingDescription'] = null;
-                
+
                 //update
                 $this->updateEntity('composition', $object['compositionId'], $data, [], false);
                 $count++;

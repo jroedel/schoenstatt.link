@@ -67,15 +67,15 @@ class LibraryTable extends SionTable implements
         'lib_institute' => 'Institute members',
         'lib_patres'    => 'Patres',
     ];
-    
+
     const SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION = 'collection-abbreviation';
     const SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS = 'regex-parameters';
-    
+
     const SORT_TEXT_FORMAT_PARAMETER_ORDER = [
         self::SORT_TEXT_FORMAT_PARAMETER_COLLECTION_ABBREVIATION,
         self::SORT_TEXT_FORMAT_PARAMETER_REGEX_PARAMETERS,
     ];
-    
+
     const PROBLEM_BOOK_MISSING_CALL_NUMBER = 'book-missing-call-number';
     const PROBLEM_BOOK_INVALID_CALL_NUMBER = 'book-invalid-call-number';
     const PROBLEM_LIBRARY_MISSING_CALL_NUMBER_FORMAT = 'library-missing-call-number-format';
@@ -94,7 +94,7 @@ class LibraryTable extends SionTable implements
      * @var int $libraryId
      */
     protected $libraryId;
-    
+
     /**
      * Used to store an associative array mapping collectionIds to their names, assigned by getCollectionNames
      * @var string[]
@@ -106,7 +106,7 @@ class LibraryTable extends SionTable implements
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $config;
     }
-    
+
     /**
      *
      * {@inheritDoc}
@@ -120,25 +120,25 @@ class LibraryTable extends SionTable implements
             $columns = array_values($entitySpec->updateColumns);
             $columns['current_checkout_id'] = new Expression(
                 '(SELECT MAX(`CheckoutId`) FROM `lib_checkouts` '
-                .'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
-                );
+                . 'WHERE (`BookId` = `book_id` AND ISNULL(`CheckedInOn`)))'
+            );
             $select->columns($columns);
             $select->join(
                 'lib_collections',
                 'lib_collections.CollectionId = lib_books.collection_id',
                 ['CollectionName', 'Abbreviation'],
                 Select::JOIN_LEFT
-                );
+            );
             $select->order(['library_id', 'sort_text']);
         } elseif ('library' === $entity) {
             $entitySpec = $this->getEntitySpecification($entity);
             $columns = array_values($entitySpec->updateColumns);
             $columns['BookCount'] = new Expression(
                 '(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`library_id` = LibraryId))'
-                );
+            );
             $columns['MaxWithinLibraryId'] = new Expression(
                 '(SELECT MAX(`original_id`) FROM `lib_books` b WHERE (b.`library_id` = LibraryId))'
-                );
+            );
             $select->columns($columns);
             $select->order(['LibraryName']);
         } elseif ('collection' === $entity) {
@@ -149,7 +149,7 @@ class LibraryTable extends SionTable implements
             $columns = array_values($entitySpec->updateColumns);
             $columns['BookCount'] = new Expression(
                 '(SELECT COUNT(*) FROM `lib_books` b WHERE (`is_active` = TRUE AND b.`collection_id` = CollectionId))'
-                );
+            );
             $select->columns($columns);
             $select->order(['LibraryId', 'IsActive' => Select::ORDER_DESCENDING, 'CollectionName']);
         }
@@ -190,7 +190,7 @@ class LibraryTable extends SionTable implements
                     break;
                 case self::BOOK_VALUE_OPTIONS_LABEL_ID_AUTHOR_TITLE:
                 default:
-                    $return[$bookId] = $withinLibraryId.'-'.$book['authorsText'].' '.$book['title'];
+                    $return[$bookId] = $withinLibraryId . '-' . $book['authorsText'] . ' ' . $book['title'];
                     break;
             }
         }
@@ -199,10 +199,10 @@ class LibraryTable extends SionTable implements
 
     public function getAuthorsValueOptions($libraryId = null)
     {
-        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+        if (! isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
-        $cacheKey = 'library-author-texts-'.$libraryId;
+        $cacheKey = 'library-author-texts-' . $libraryId;
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
@@ -228,7 +228,7 @@ class LibraryTable extends SionTable implements
         }
         //factor in the concatenated authors, making sure not to push duplicates
         foreach ($authorConcatenations as $key => $value) {
-            if (!isset($authors[$key])) {
+            if (! isset($authors[$key])) {
                 $authors[$key] = $value;
             }
         }
@@ -238,10 +238,10 @@ class LibraryTable extends SionTable implements
 
     public function getKeywordsValueOptions($libraryId = null)
     {
-        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+        if (! isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
-        $cacheKey = 'library-keywords-'.$libraryId;
+        $cacheKey = 'library-keywords-' . $libraryId;
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
@@ -267,7 +267,7 @@ class LibraryTable extends SionTable implements
         }
         //factor in the concatenated authors, making sure not to push duplicates
         foreach ($keywordConcatenations as $key => $value) {
-            if (!isset($keywords[$key])) {
+            if (! isset($keywords[$key])) {
                 $keywords[$key] = $value;
             }
         }
@@ -277,10 +277,10 @@ class LibraryTable extends SionTable implements
 
     public function getAdminKeywordsValueOptions($libraryId = null)
     {
-        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+        if (! isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
-        $cacheKey = 'library-admin-keywords-'.$libraryId;
+        $cacheKey = 'library-admin-keywords-' . $libraryId;
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
@@ -306,7 +306,7 @@ class LibraryTable extends SionTable implements
         }
         //factor in the concatenated authors, making sure not to push duplicates
         foreach ($keywordConcatenations as $key => $value) {
-            if (!isset($keywords[$key])) {
+            if (! isset($keywords[$key])) {
                 $keywords[$key] = $value;
             }
         }
@@ -316,10 +316,10 @@ class LibraryTable extends SionTable implements
 
     public function getPublishersValueOptions($libraryId = null)
     {
-        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+        if (! isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
-        $cacheKey = 'library-publishers-'.$libraryId;
+        $cacheKey = 'library-publishers-' . $libraryId;
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
@@ -343,10 +343,10 @@ ORDER BY `publisher`";
 
     public function getCategoryValueOptions($libraryId = null)
     {
-        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+        if (! isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
-        $cacheKey = 'library-categories-'.$libraryId;
+        $cacheKey = 'library-categories-' . $libraryId;
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
@@ -368,7 +368,7 @@ ORDER BY `publisher`";
 
     public function getCollectionValueOptions($libraryId = null)
     {
-        if (!isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
+        if (! isset($libraryId) && null === ($libraryId = $this->getLibraryId())) {
             throw new \InvalidArgumentException('This function can only be called for a specific library');
         }
         $collections = $this->queryObjects('collection', ['libraryId' => $libraryId]);
@@ -398,7 +398,7 @@ ORDER BY `publisher`";
 //         ];
 //         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'onlyPendingBooks'];
         $onlyPendingBooks = isset($options['onlyPendingBooks']) ? (bool) $options['onlyPendingBooks'] : false;
-        
+
         $fieldMap = $this->getEntitySpecification('book')->updateColumns;
         $gateway = $this->getTableGateway('lib_books');
         $select = $this->getSelectPrototype('book');
@@ -410,7 +410,7 @@ ORDER BY `publisher`";
             if (is_array($query['libraryId'])) {
                 $libraries = [];
                 foreach ($query['libraryId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $libraries)) {
+                    if (is_numeric($value) && ! in_array($value, $libraries)) {
                         $libraries[] = $value;
                     }
                 }
@@ -455,7 +455,7 @@ ORDER BY `publisher`";
             if (is_array($query['collectionId'])) {
                 $collections = [];
                 foreach ($query['collectionId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $collections)) {
+                    if (is_numeric($value) && ! in_array($value, $collections)) {
                         $collections[] = $value;
                     }
                 }
@@ -478,14 +478,14 @@ ORDER BY `publisher`";
                 $where->addPredicate($collectionIdClause, PredicateSet::OP_AND);
             }
         }
-        
+
         // Prepare withinLibraryId predicate
         if (isset($query['withinLibraryId'])) {
             $withinLibraryIdClause = null;
             if (is_array($query['withinLibraryId'])) {
                 $withinLibraryIds = [];
                 foreach ($query['withinLibraryId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $withinLibraryIds)) {
+                    if (is_numeric($value) && ! in_array($value, $withinLibraryIds)) {
                         $withinLibraryIds[] = $value;
                     }
                 }
@@ -500,7 +500,7 @@ ORDER BY `publisher`";
                     $fieldMap['withinLibraryId'],
                     Operator::OPERATOR_EQUAL_TO,
                     $query['withinLibraryId']
-                    );
+                );
             }
             if (isset($withinLibraryIdClause)) {
                 $where->addPredicate($withinLibraryIdClause, PredicateSet::OP_AND);
@@ -513,18 +513,18 @@ ORDER BY `publisher`";
             if (is_array($query['publicationId'])) {
                 $publications = [];
                 foreach ($query['publicationId'] as $value) {
-                    if (is_numeric($value) && !in_array($value, $publications)) {
+                    if (is_numeric($value) && ! in_array($value, $publications)) {
                         $publications[] = $value;
                     }
                 }
                 if (count($publications) === 1) {
                     $query['publicationId'] = $publications[0];
                 } elseif (count($publications) > 1) {
-                    $publicationIdClause= new In($fieldMap['publicationId'], $publications);
+                    $publicationIdClause = new In($fieldMap['publicationId'], $publications);
                 }
             }
             if (is_numeric($query['publicationId'])) {
-                $publicationIdClause= new Operator(
+                $publicationIdClause = new Operator(
                     $fieldMap['publicationId'],
                     Operator::OPERATOR_EQUAL_TO,
                     $query['publicationId']
@@ -541,14 +541,14 @@ ORDER BY `publisher`";
             if (is_array($query['category'])) {
                 $categories = [];
                 foreach ($query['category'] as $value) {
-                    if (0 !== strlen($value) && !in_array($value, $categories)) {
+                    if (0 !== strlen($value) && ! in_array($value, $categories)) {
                         $categories[] = $value;
                     }
                 }
                 if (count($categories) === 1) {
                     $query['category'] = $categories[0];
                 } elseif (count($categories) > 1) {
-                    $categoryClause= new In($fieldMap['category'], $categories);
+                    $categoryClause = new In($fieldMap['category'], $categories);
                 }
             }
             if (is_string($query['category']) && 0 !== strlen($query['category'])) {
@@ -577,7 +577,7 @@ ORDER BY `publisher`";
             $authorClause = new Operator($fieldMap['authorsText'], Operator::OPERATOR_EQUAL_TO, $query['author']);
             $where->addPredicate($authorClause, PredicateSet::OP_AND);
         }
-        
+
         //Prepare title predicate
         if (isset($query['inLanguage']) && 0 !== strlen($query['inLanguage'])) {
             $search = $query['inLanguage'];
@@ -585,28 +585,28 @@ ORDER BY `publisher`";
             $titleClause = new Like($fieldMap['inLanguage'], $query['inLanguage']);
             $where->addPredicate($titleClause, PredicateSet::OP_AND);
         }
-        
+
         //Prepare sortText predicate
         if (array_key_exists('sortText', $query)) {
-            if (!isset($query['sortText'])) {
+            if (! isset($query['sortText'])) {
                 $sortTextClause = new IsNull($fieldMap['sortText']);
             } else {
                 $sortTextClause = new Operator($fieldMap['sortText'], Operator::OPERATOR_EQUAL_TO, $query['sortText']);
             }
             $where->addPredicate($sortTextClause, PredicateSet::OP_AND);
         }
-        
+
         //Prepare isActive predicate, default to true unless caller sets it to null
-        if (!array_key_exists('isActive', $query) ||
-            (!is_bool($query['isActive']) && null !== $query['isActive'])
+        if (! array_key_exists('isActive', $query) ||
+            (! is_bool($query['isActive']) && null !== $query['isActive'])
         ) {
             $query['isActive'] = true;
         }
         if (isset($query['isActive'])) {
-            $isActiveClause= new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
+            $isActiveClause = new Operator($fieldMap['isActive'], Operator::OPERATOR_EQUAL_TO, $query['isActive']);
             $where->addPredicate($isActiveClause, PredicateSet::OP_AND);
         }
-        
+
         //Prepare onlyPendingBooks
         if ($onlyPendingBooks) {
             $pendingBooksClause = new IsNotNull($fieldMap['newCallNumber']);
@@ -617,7 +617,7 @@ ORDER BY `publisher`";
 
         //Set the where clause
         $select->where($where);
-        
+
         if (isset($options['limit']) && is_numeric($options['limit'])) {
             $select->limit($options['limit']);
         }
@@ -676,7 +676,7 @@ ORDER BY `publisher`";
     public function getBook($id)
     {
         $object = $this->getObject('book', $id);
-        if (!isset($object)) {
+        if (! isset($object)) {
             return null;
         }
         if (isset($object['libraryId'])) {
@@ -702,7 +702,7 @@ ORDER BY `publisher`";
     {
         if (empty($bookIds)) {
             $libraryId = $this->getLibraryId();
-            $cacheKey = !isset($libraryId) ? 'unlinked-books' : 'unlinked-books-'.$libraryId;
+            $cacheKey = ! isset($libraryId) ? 'unlinked-books' : 'unlinked-books-' . $libraryId;
             if (null !== $cache = $this->fetchCachedEntityObjects($cacheKey)) {
                 return $cache;
             }
@@ -711,7 +711,7 @@ ORDER BY `publisher`";
         //@todo simplify this function, maybe take out the $bookIds function
         $gateway = $this->getTableGateway('lib_books');
         $where = [];
-        if (!empty($bookIds)) {
+        if (! empty($bookIds)) {
             $where['book_id'] = $bookIds;
         }
         if (isset($libraryId)) {
@@ -721,7 +721,7 @@ ORDER BY `publisher`";
             $results = $gateway->selectWith($select);
         } else {
             $select = $this->getSelectPrototype('book');
-            if (!empty($where)) {
+            if (! empty($where)) {
                 $select->where($where);
             }
             $results = $gateway->selectWith($select);
@@ -736,7 +736,7 @@ ORDER BY `publisher`";
         }
         return $entities;
     }
-    
+
     /**
      * Takes a list of books by reference and links up their checkout records
      * @param mixed[] $books
@@ -749,11 +749,11 @@ ORDER BY `publisher`";
                 $checkoutIds[] = $object['currentCheckoutId'];
             }
         }
-        
+
         if (empty($checkoutIds)) {
             return;
         }
-        
+
         $checkouts = $this->queryObjects('checkout', ['checkoutId' => $checkoutIds]);
         foreach ($books as $id => $object) {
             if (isset($object['currentCheckoutId']) && isset($checkouts[$object['currentCheckoutId']])) {
@@ -761,7 +761,7 @@ ORDER BY `publisher`";
             }
         }
     }
-    
+
     /**
      * Manipulate a database book row into a standardized row
      * @param array $row
@@ -812,17 +812,17 @@ ORDER BY `publisher`";
             'adminNotesUpdatedOn'   => $this->filterDbDate($row['admin_notes_updated_at']),
             'adminNotesUpdatedBy'   => $this->filterDbId($row['admin_notes_updated_by']),
 
-            'resourceId'            => 'library_'.$libraryId,
+            'resourceId'            => 'library_' . $libraryId,
             'authors'               => $authors,
             'authorsPrettyText'     => $authorsPrettyText,
             'name'                  => $name,
-            'isAvailable'           => $isActive && !isset($row['current_checkout_id']),
+            'isAvailable'           => $isActive && ! isset($row['current_checkout_id']),
             'isCheckedOut'          => isset($row['current_checkout_id']),
             'currentCheckoutId'     => $this->filterDbId($row['current_checkout_id']),
             'currentCheckout'       => null,
             'library'               => null,
             'collectionName'        => $row['CollectionName'],
-            'collectionAbbreviation'=> $row['Abbreviation'],
+            'collectionAbbreviation' => $row['Abbreviation'],
         ];
         return $processedRow;
     }
@@ -835,12 +835,12 @@ ORDER BY `publisher`";
      */
     protected function preprocessBook($data, $entityData, $action)
     {
-        if (isset($data['authors']) && !isset($data['authorsText'])) {
+        if (isset($data['authors']) && ! isset($data['authorsText'])) {
             $data['authorsText'] = implode('|', $data['authors']);
         }
-        
+
         //update the sortText
-        if (!isset($data['sortText'])) {
+        if (! isset($data['sortText'])) {
             //make sure we pass everything fresh
             $completeData = $entityData;
             foreach ($data as $key => $value) {
@@ -848,7 +848,7 @@ ORDER BY `publisher`";
             }
             $data['sortText'] = $this->getBookSortText($completeData);
         }
-        
+
         return $data;
     }
 
@@ -858,10 +858,10 @@ ORDER BY `publisher`";
      */
     public function getLibraryBookLookup($libraryId = null, $includeInactive = false)
     {
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             throw new \InvalidArgumentException(
                 'There must by a libraryId set to get the active library book lookup list.'
             );
@@ -891,10 +891,10 @@ ORDER BY `publisher`";
      */
     public function getLibraryBookLookupWithActive($libraryId = null)
     {
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (!isset($libraryId) || !is_numeric($libraryId)) {
+        if (! isset($libraryId) || ! is_numeric($libraryId)) {
             throw new \InvalidArgumentException(
                 'There must by a libraryId set to get the active library book lookup list.'
             );
@@ -958,7 +958,7 @@ ORDER BY `publisher`";
         //If any books are left, create new checkout records for them
         if ($createCheckoutsForBooksWithNoCheckouts) {
             foreach ($booksToCheckin as $bookId => $alreadyCheckedIn) {
-                if (!$alreadyCheckedIn) {
+                if (! $alreadyCheckedIn) {
                     $data = [
                         'personId'              => $libraries[$books[$bookId]['libraryId']]['defaultCheckoutPersonId'],
                         'bookId'                => $bookId,
@@ -1016,8 +1016,8 @@ ORDER BY `publisher`";
      */
     public function checkoutWithinLibraryBooks($libraryId, array $data)
     {
-        if (!is_array($data) || !isset($data['personId']) ||
-            !isset($data['withinLibraryIds'])
+        if (! is_array($data) || ! isset($data['personId']) ||
+            ! isset($data['withinLibraryIds'])
         ) {
             throw new \InvalidArgumentException(
                 'Data must be an associative array containing at least \'personId\' and \'withinLibraryIds\' keys.'
@@ -1031,7 +1031,7 @@ ORDER BY `publisher`";
         $bookIds = [];
         $withinLibraryIdErrors = [];
         foreach ($data['withinLibraryIds'] as $withinLibraryId) {
-            if (!isset($withinLibraryIdLookup[$withinLibraryId]) ||
+            if (! isset($withinLibraryIdLookup[$withinLibraryId]) ||
                 false === $books[$withinLibraryIdLookup[$withinLibraryId]]['isActive'] //make sure book is active
             ) {
                 $withinLibraryIdErrors[] = $withinLibraryId;
@@ -1040,7 +1040,7 @@ ORDER BY `publisher`";
             }
         }
 
-        if (!empty($withinLibraryIdErrors)) {
+        if (! empty($withinLibraryIdErrors)) {
             throw new \InvalidArgumentException(sprintf(
                 "The following book(s) don't exist or are inactivated: (%s) Please try again.",
                 implode(', ', $withinLibraryIdErrors)
@@ -1054,7 +1054,7 @@ ORDER BY `publisher`";
         //many other fields are filled in within preprocessCheckout
         $paramsPrototype = $data;
         unset($paramsPrototype['withinLibraryIds']);
-        if (isset($paramsPrototype['checkedInOn']) && !$paramsPrototype['checkedInOn'] instanceof \DateTime) {
+        if (isset($paramsPrototype['checkedInOn']) && ! $paramsPrototype['checkedInOn'] instanceof \DateTime) {
             unset($paramsPrototype['checkedInOn']);
         }
 
@@ -1063,7 +1063,7 @@ ORDER BY `publisher`";
         foreach ($bookIds as $bookId) {
             $currentBook = $paramsPrototype;
             $currentBook['bookId'] = $bookId;
-            if (!$this->createEntity('checkout', $currentBook, false)) {
+            if (! $this->createEntity('checkout', $currentBook, false)) {
                 $badValues[] = $bookId;
             }
         }
@@ -1078,7 +1078,7 @@ ORDER BY `publisher`";
         $library = $this->getObject('library', $book['libraryId']);
         static $today;
         //if the dueDate hasn't arrived, extend it; else, from today's date
-        if (!isset($today)) {
+        if (! isset($today)) {
             $tz = new \DateTimeZone('UTC');
             $today = Carbon::today($tz);
         }
@@ -1103,7 +1103,7 @@ ORDER BY `publisher`";
 
         $entities = $this->getObjects('library');
         $books = $this->getUnlinkedBooks();
-        
+
         foreach ($books as $book) {
             if ($book['isActive'] && isset($book['libraryId']) && //don't do anything here with inactive books
                 isset($entities[$book['libraryId']])
@@ -1121,17 +1121,17 @@ ORDER BY `publisher`";
                     $category = $book['category'];
                 }
                 //statistics by category without respect for collections
-                if (!isset($entities[$libraryId]['categoryStatistics'][$category])) {
+                if (! isset($entities[$libraryId]['categoryStatistics'][$category])) {
                     $entities[$libraryId]['categoryStatistics'][$category] = 1;
                 } else {
                     $entities[$libraryId]['categoryStatistics'][$category]++;
                 }
 
                 //statistics on 2 levels: collection, category
-                if (!isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId])) {
+                if (! isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId])) {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId] = [];
                 }
-                if (!isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category])) {
+                if (! isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category])) {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category] = 1;
                 } else {
                     $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category]++;
@@ -1166,7 +1166,7 @@ ORDER BY `publisher`";
         $this->cacheEntityObjects('libraries', $entities, ['library', 'book', 'checkout']);
         return $entities;
     }
-    
+
     /**
      * Manipulate a database book row into a standardized row
      * @param array $row
@@ -1175,18 +1175,18 @@ ORDER BY `publisher`";
     protected function processLibraryRow($row)
     {
         static $options;
-        if (!is_array($options)) {
+        if (! is_array($options)) {
             $options = [];
         }
         static $collections;
-        if (!isset($collections)) {
+        if (! isset($collections)) {
             $collections = $this->getObjects('collection');
         }
         $id = $this->filterDbId($row['LibraryId']);
         $nextWithinLibraryId = $this->filterDbInt($row['MaxWithinLibraryId']);
         $nextWithinLibraryId = isset($nextWithinLibraryId) && is_numeric($nextWithinLibraryId) ?
         (int)$nextWithinLibraryId + 1 : null;
-        $resourceId = 'library_'.$id;
+        $resourceId = 'library_' . $id;
         $processedRow = [
             'libraryId'             => $id,
             'name'                  => $row['LibraryName'],
@@ -1196,14 +1196,14 @@ ORDER BY `publisher`";
             'callNumberExplanation' => $row['CallNumberExplanation'],
             'callNumberPlaceholder' => $row['CallNumberPlaceholder'],
             'callNumberRegex'       => $row['CallNumberRegex'],
-            'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
+            'enforceCallNumberRegex' => $this->filterDbBool($row['EnforceCallNumberRegex']),
             'filiationId'           => $this->filterDbId($row['FiliationId']),
             'contactPersonId'       => $this->filterDbId($row['ContactPerson']),
             'contactEmail'          => $this->filterEmailString($row['ContactEmail']),
             'sortTextFormat'        => $row['SortTextFormat'],
             'mainShowDisplay'       => $row['MainShowDisplay'],
             'useCollections'        => $this->filterDbBool($row['UseCollections']),
-            'allowCollectionlessBooks'=> $this->filterDbBool($row['AllowCollectionlessBooks']),
+            'allowCollectionlessBooks' => $this->filterDbBool($row['AllowCollectionlessBooks']),
             'mainCollectionId'      => $this->filterDbId($row['MainCollectionId']),
             'viewRole'              => $row['ViewRole'],
             'labelLine1'            => $row['LabelLine1'],
@@ -1215,8 +1215,8 @@ ORDER BY `publisher`";
             'checkoutBooksRole'     => $row['CheckoutBooksRole'],
             'createCheckoutsIfCheckingInANonCheckedOutBook' => $this->filterDbBool(
                 $row['CreateCheckoutsIfCheckingInANonCheckedOutBook']
-                ),
-            'checkoutPersonListKind'=> $row['CheckoutPersonListKind'],
+            ),
+            'checkoutPersonListKind' => $row['CheckoutPersonListKind'],
             'defaultCheckoutPersonId' => $this->filterDbId($row['DefaultCheckoutPersonId']),
             'isActive'              => $this->filterDbBool($row['IsActive']),
             'adminNotes'            => $row['AdminNotes'],
@@ -1226,7 +1226,7 @@ ORDER BY `publisher`";
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             'createdOn'             => $this->filterDbDate($row['CreatedOn']),
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
-            
+
             'resourceId'            => $resourceId,
             'nextWithinLibraryId'   => $nextWithinLibraryId,
             'bookCount'             => $this->filterDbInt($row['BookCount']),
@@ -1238,19 +1238,19 @@ ORDER BY `publisher`";
             'contactPerson'         => null,
             'options'               => null,
         ];
-        
+
         //this assures we don't have different instances of libraryOption floating around, just one per library
         $processedRow['options'] = isset($options[$id])
             ? $options[$id]
             : ($options[$id] = new LibraryOptions($processedRow));
-        
+
         foreach ($collections as $collectionId => $collection) {
             if ($collection['libraryId'] == $id) {
                 $collections[$collectionId] = &$collections[$collectionId];
                 $processedRow['options']->collections[$collectionId] = $collections[$collectionId]['options'];
                 //@todo fix
                 //set the libraryOptions of the collections
-                if (!isset($collections[$collectionId]['options']->libraryOptions)) {
+                if (! isset($collections[$collectionId]['options']->libraryOptions)) {
                     $collections[$collectionId]['options']->libraryOptions = $processedRow['options'];
                 }
             }
@@ -1266,14 +1266,14 @@ ORDER BY `publisher`";
      */
     public function getLibraryOptions($libraryId = null)
     {
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (!isset($libraryId) || !is_numeric($libraryId)) {
+        if (! isset($libraryId) || ! is_numeric($libraryId)) {
             throw new \InvalidArgumentException('getLibraryOptions requires an active libraryId');
         }
         $entities = $this->getLibrariesOptions();
-        if (!isset($entities[(int)$libraryId])) {
+        if (! isset($entities[(int)$libraryId])) {
             throw new \InvalidArgumentException('getLibraryOptions requires a valid libraryId');
         }
         return $entities[(int)$libraryId];
@@ -1293,7 +1293,7 @@ ORDER BY `publisher`";
         }
         return $entities;
     }
-    
+
     public function refreshLibrarySort($libraryId)
     {
         $books = $this->queryObjects('book', ['libraryId' => $libraryId]);
@@ -1303,16 +1303,16 @@ ORDER BY `publisher`";
             $gateway->update(['sort_text' => $sortText], ['book_id' => $bookId]);
         }
     }
-    
+
     protected function processCollectionRow($row)
     {
         static $options;
-        if (!is_array($options)) {
+        if (! is_array($options)) {
             $options = [];
         }
         $id = $this->filterDbId($row['CollectionId']);
         $libraryId = $this->filterDbId($row['LibraryId']);
-        
+
         $processedRow = [
             'collectionId'          => $id,
             'libraryId'             => $libraryId,
@@ -1325,7 +1325,7 @@ ORDER BY `publisher`";
             'callNumberExplanation' => $row['CallNumberExplanation'],
             'mainShowDisplay'       => $row['MainShowDisplay'],
             'requireCallNumbers'    => $this->filterDbBool($row['RequireCallNumbers']),
-            'enforceCallNumberRegex'=> $this->filterDbBool($row['EnforceCallNumberRegex']),
+            'enforceCallNumberRegex' => $this->filterDbBool($row['EnforceCallNumberRegex']),
             'labelLine1'            => $row['LabelLine1'],
             'labelLine2'            => $row['LabelLine2'],
             'labelLine3'            => $row['LabelLine3'],
@@ -1338,8 +1338,8 @@ ORDER BY `publisher`";
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             'createdOn'             => $this->filterDbDate($row['CreatedOn']),
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
-            
-            'resourceId'            => 'library_'.$libraryId,
+
+            'resourceId'            => 'library_' . $libraryId,
         ];
         if (isset($options[$id])) {
             $processedRow['options'] = $options[$id];
@@ -1348,24 +1348,24 @@ ORDER BY `publisher`";
         }
         return $processedRow;
     }
-    
+
     /**
      * Get an associative array mapping collectionId to its name
      * @return string[]
      */
     public function getCollectionNames($libraryId = null)
     {
-        if (isset($this->collectionNames) && !isset($libraryId)) {
+        if (isset($this->collectionNames) && ! isset($libraryId)) {
             return $this->collectionNames;
         }
         $select = $this->getSelectPrototype('collection');
         $select->columns(['CollectionId', 'CollectionName', 'LibraryId']);
         $gateway = $this->getTableGateway('lib_collections');
         $results = $gateway->selectWith($select);
-        
+
         $entities = [];
         foreach ($results as $row) {
-            if (!isset($libraryId) || $row['LibraryId'] == $libraryId) {
+            if (! isset($libraryId) || $row['LibraryId'] == $libraryId) {
                 $entities[$row['CollectionId']] = $row['CollectionName'];
             }
         }
@@ -1375,15 +1375,15 @@ ORDER BY `publisher`";
 
     public function getLibraryBooksStatuses($libraryId = null)
     {
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $libraryId = $this->getLibraryId();
         }
-        if (!isset($libraryId) || !is_numeric($libraryId)) {
+        if (! isset($libraryId) || ! is_numeric($libraryId)) {
             throw new \InvalidArgumentException('getLibraryBooksStatuses requires an active libraryId');
         }
         $books = $this->getObjects('book', ['libaryId' => $libraryId]);
         $this->linkCurrentCheckoutsToBook($books);
-        
+
         $entities = [];
         foreach ($books as $entity) {
             $currentCheckout = $entity['currentCheckout'];
@@ -1409,7 +1409,7 @@ ORDER BY `publisher`";
      */
     public function inactivateWithinLibraryBooks($libraryId, array $data)
     {
-        if (!is_array($data) || !isset($data['withinLibraryIds'])
+        if (! is_array($data) || ! isset($data['withinLibraryIds'])
         ) {
             throw new \InvalidArgumentException(
                 'data must be an associative array containing at least the \'withinLibraryIds\' key.'
@@ -1421,14 +1421,14 @@ ORDER BY `publisher`";
         $bookIds = [];
         $withinLibraryIdErrors = [];
         foreach ($data['withinLibraryIds'] as $withinLibraryId) {
-            if (!isset($withinLibraryIdLookup[$withinLibraryId])) {
+            if (! isset($withinLibraryIdLookup[$withinLibraryId])) {
                 $withinLibraryIdErrors[] = $withinLibraryId;
             } else {
                 $bookIds[] = $withinLibraryIdLookup[$withinLibraryId];
             }
         }
 
-        if (!empty($withinLibraryIdErrors)) {
+        if (! empty($withinLibraryIdErrors)) {
             throw new \InvalidArgumentException(sprintf(
                 "There was a problem inactivating one or more books: (%s) Please try again.",
                 implode(', ', $withinLibraryIdErrors)
@@ -1458,7 +1458,7 @@ ORDER BY `publisher`";
         $this->removeDependentCacheItems('book'); //refresh the cache
         return empty($badValues) ? true : $badValues;
     }
-    
+
     /**
      * For a given book, formulate a string by which the library's books can be sorted
      * @todo this function needs a lot of work to accept all the library options
@@ -1470,19 +1470,19 @@ ORDER BY `publisher`";
     {
         static $collectionLibraryFilters;
         $callNumber = $useNewCallNumber ? $book['newCallNumber'] : $book['callNumber'];
-        if (!isset($callNumber)) {
+        if (! isset($callNumber)) {
             return null;
         }
         $libraryId = $book['libraryId'];
         $collectionId = $book['collectionId'];
-        
-        if (!is_array($collectionLibraryFilters)) {
+
+        if (! is_array($collectionLibraryFilters)) {
             $collectionLibraryFilters = [];
         }
-        if (!key_exists($libraryId, $collectionLibraryFilters)) {
+        if (! key_exists($libraryId, $collectionLibraryFilters)) {
             $collectionLibraryFilters[$libraryId] = [];
         }
-        if (!key_exists($collectionId, $collectionLibraryFilters[$libraryId])) {
+        if (! key_exists($collectionId, $collectionLibraryFilters[$libraryId])) {
             try {
                 $collectionLibraryFilters[$libraryId][$collectionId] = $this->getCollectionSortTextFilter($collectionId, $libraryId);
             } catch (\Exception $e) {
@@ -1497,12 +1497,12 @@ ORDER BY `publisher`";
         }
         return null;
     }
-    
+
     public function getCollectionSortTextFilter($collectionId, $libraryId)
     {
         static $libraries;
         static $collections;
-        if (!isset($libraries)) {
+        if (! isset($libraries)) {
             /** @var \Books\Model\LibraryOptions $libraries */
             $libraries = $this->getObjects('library');
             $collectionArrays = [];
@@ -1514,7 +1514,7 @@ ORDER BY `publisher`";
             }
             $collections = $this->keyCollections($collections, 'collectionId', true);
         }
-        
+
         if (isset($collectionId) && isset($collections[$collectionId])) {
             return $collections[$collectionId]->getSortTextFilter();
         } elseif (isset($libraryId) && isset($libraries[$libraryId])) {
@@ -1522,7 +1522,7 @@ ORDER BY `publisher`";
         }
         return null;
     }
-    
+
     /**
      * Take an array of CollectionOptions and key the array by the collectionId
      * @param CollectionOptions[] $collections
@@ -1536,7 +1536,7 @@ ORDER BY `publisher`";
         }
         return $results;
     }
-    
+
     /**
      * @todo factor out
      * @return mixed[]
@@ -1544,7 +1544,7 @@ ORDER BY `publisher`";
     public function getLibraryImports()
     {
         if (null !== ($libraryId = $this->getLibraryId())) {
-            $cacheKey = 'library-imports-'.$libraryId;
+            $cacheKey = 'library-imports-' . $libraryId;
         } else {
             $cacheKey = 'library-imports';
         }
@@ -1552,7 +1552,7 @@ ORDER BY `publisher`";
             return $cache;
         }
 
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $sql = "SELECT ImportId, ImportName, LibraryId, Description, Status,
 ColumnMapping, Worksheet, FilePath, IsCompleteImport, BooksUpdated, BooksCreated, BooksDeleted,
 UpdatedOn, UpdatedBy, CreatedOn, CreatedBy
@@ -1594,7 +1594,7 @@ ORDER BY CreatedOn DESC";
                 'updatedOn'                 => $this->filterDbDate($row['UpdatedOn']),
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
 
-                'resourceId'                => 'library_'.$libraryId,
+                'resourceId'                => 'library_' . $libraryId,
                 'columnMapping'             => unserialize($columnMappingSerialized),
                 'fileAvailable'             => $fileAvailable,
             ];
@@ -1613,7 +1613,7 @@ ORDER BY CreatedOn DESC";
     {
         $entities = $this->getLibraryImports();
 
-        if (!isset($entities[$id]) || !($entity = $entities[$id])) {
+        if (! isset($entities[$id]) || ! ($entity = $entities[$id])) {
             return null;
         }
 
@@ -1640,7 +1640,7 @@ ORDER BY CreatedOn DESC";
     protected function getCheckoutSelectPrototype()
     {
         static $select;
-        if (!isset($select)) {
+        if (! isset($select)) {
             $select = new Select('lib_checkouts');
 //         $select->columns(['TheMonth' => new Expression('MONTH(`modified_on`)'),
 //          'TheYear' => new Expression('YEAR(`modified_on`)'), 'Count' => new Expression('Count(*)')]);
@@ -1661,7 +1661,7 @@ ORDER BY CreatedOn DESC";
     protected function processCheckoutRow($row)
     {
         static $today;
-        if (!isset($today)) {
+        if (! isset($today)) {
             $tz = new \DateTimeZone('UTC');
             $today = new \DateTime(null, $tz);
         }
@@ -1714,7 +1714,7 @@ ORDER BY CreatedOn DESC";
     public function getCheckoutsForPerson($personId)
     {
         static $gateway;
-        if (!isset($gateway)) {
+        if (! isset($gateway)) {
             $gateway = $this->getTableGateway('lib_checkouts');
         }
         $select = $this->getCheckoutSelectPrototype();
@@ -1722,7 +1722,7 @@ ORDER BY CreatedOn DESC";
         $result = $gateway->selectWith($select);
         $results = $result->toArray();
 
-        if (!isset($results[0])) {
+        if (! isset($results[0])) {
             return null;
         }
         $objects = [];
@@ -1764,8 +1764,8 @@ ORDER BY CreatedOn DESC";
         foreach ($checkouts as $checkoutId => $checkout) {
             if ($checkout['book']['libraryId'] == $libraryId &&
                 ($subset == 'all' || ($subset == 'current' &&
-                !isset($checkout['checkedInOn'])) ||
-                ($subset == 'overdue' && !isset($checkout['checkedInOn'])
+                ! isset($checkout['checkedInOn'])) ||
+                ($subset == 'overdue' && ! isset($checkout['checkedInOn'])
                     && is_object($checkout['dueOn']) && $now > $checkout['dueOn'])
             )) {
                 $entities[$checkoutId] = $checkout;
@@ -1789,7 +1789,7 @@ ORDER BY CreatedOn DESC";
         //ennumerate bookIds to avoid processing ALL books
         $bookIds = [];
         foreach ($entities as $checkout) {
-            if (!isset($bookIds[$checkout['bookId']])) {
+            if (! isset($bookIds[$checkout['bookId']])) {
                 $bookIds[$checkout['bookId']] = true;
             }
         }
@@ -1823,7 +1823,7 @@ ORDER BY CreatedOn DESC";
     public function getCheckout($id)
     {
         static $gateway;
-        if (!isset($gateway)) {
+        if (! isset($gateway)) {
             $gateway = $this->getTableGateway('lib_checkouts');
         }
         $select = $this->getCheckoutSelectPrototype();
@@ -1831,7 +1831,7 @@ ORDER BY CreatedOn DESC";
         $result = $gateway->selectWith($select);
         $results = $result->toArray();
 
-        if (!isset($results[0])) {
+        if (! isset($results[0])) {
             return null;
         }
         $object = $this->processCheckoutRow($results[0]);
@@ -1853,12 +1853,12 @@ ORDER BY CreatedOn DESC";
         $gateway = $this->getTableGateway('lib_checkouts');
 
         $where = [];
-        if (!empty($checkoutIds)) {
+        if (! empty($checkoutIds)) {
             $where['CheckoutId'] = $checkoutIds;
         }
 
         $select = $this->getCheckoutSelectPrototype();
-        if (!empty($where)) {
+        if (! empty($where)) {
             $select->where($where);
         }
         $results = $gateway->selectWith($select);
@@ -1891,21 +1891,21 @@ ORDER BY CreatedOn DESC";
         static $librariesOptions;
         static $books;
         if ($action == self::ENTITY_ACTION_CREATE) {
-            if (!isset($data['bookId'])) {
+            if (! isset($data['bookId'])) {
                 throw new \InvalidArgumentException('bookId is required to create a checkout.');
             }
-            if (!isset($data['checkedOutOn'])) {
-                if (!isset($now)) {
+            if (! isset($data['checkedOutOn'])) {
+                if (! isset($now)) {
                     $now = new \DateTime(null, new \DateTimeZone('UTC'));
                 }
                 $data['checkedOutOn'] = $now;
             }
 
-            if (!isset($data['checkedOutBy'])) {
+            if (! isset($data['checkedOutBy'])) {
                 $data['checkedOutBy'] = $this->getActingUserId();
             }
 
-            if (!isset($data['checkedOutIp'])) {
+            if (! isset($data['checkedOutIp'])) {
                 $data['checkedOutIp'] = $_SERVER['REMOTE_ADDR'];
             }
 
@@ -1915,18 +1915,18 @@ ORDER BY CreatedOn DESC";
 //             }
 
             //calculate the dueDate
-            if (!isset($data['dueOn'])) {
-                if (!isset($librariesOptions)) {
+            if (! isset($data['dueOn'])) {
+                if (! isset($librariesOptions)) {
                     $librariesOptions = $this->getLibrariesOptions();
                 }
-                if (!isset($books)) {
+                if (! isset($books)) {
                     $books = $this->getUnlinkedBooks();
                 }
-                if (!isset($books[$data['bookId']])) {
+                if (! isset($books[$data['bookId']])) {
                     throw new \InvalidArgumentException('Invalid book attempting to be checked out.');
                 }
                 $daysToLend = $librariesOptions[$books[$data['bookId']]['libraryId']]->defaultCheckoutTimePeriodInDays;
-                if (!is_numeric($daysToLend)) { //shouldn't happen
+                if (! is_numeric($daysToLend)) { //shouldn't happen
                     $daysToLend = self::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
                 }
                 if ($data['checkedOutOn'] instanceof \DateTime) {
@@ -1942,7 +1942,7 @@ ORDER BY CreatedOn DESC";
         }
         return $data;
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Problem\ProblemProviderInterface::getProblems()
@@ -1951,7 +1951,7 @@ ORDER BY CreatedOn DESC";
     {
         return array_merge($this->getLibrariesProblems($minimumSeverity), $this->getCollectionProblems($minimumSeverity));
     }
-    
+
     /**
      * @todo add problems for unacceptable call numbers
      * @param number $libraryId
@@ -1961,7 +1961,7 @@ ORDER BY CreatedOn DESC";
     public function getLibraryBookProblems($libraryId, $minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
 //         $persons = $this->getPersons();
-        
+
         $problems = [];
 //         foreach ($persons as $person) {
 //             if (!isset($person['email'])) {
@@ -1973,7 +1973,7 @@ ORDER BY CreatedOn DESC";
 //         }
         return $problems;
     }
-    
+
     public function getLibrariesProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         $problems = [];
@@ -1984,7 +1984,7 @@ ORDER BY CreatedOn DESC";
         }
         return $problems;
     }
-    
+
     public function getLibraryProblems(array $libraryObject, $minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         $problems = [];
@@ -1992,7 +1992,7 @@ ORDER BY CreatedOn DESC";
         $libraryOptions = $libraryObject['options'];
         if ($libraryOptions->requireCallNumbers
             && $libraryOptions->enforceCallNumberRegex
-            && !isset($libraryOptions->callNumberRegex)
+            && ! isset($libraryOptions->callNumberRegex)
             //don't throw a problem if they require collections
             && ( $libraryOptions->allowCollectionlessBooks
                 || empty($libraryOptions->collections))
@@ -2014,7 +2014,7 @@ ORDER BY CreatedOn DESC";
         $problems = array_merge($problems, $collectionsProblems);
         return $problems;
     }
-    
+
     public function getCollectionProblems($minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         $problems = [];
@@ -2025,19 +2025,19 @@ ORDER BY CreatedOn DESC";
         }
         return $problems;
     }
-    
+
     protected function getLibraryCollectionProblems(array $libraryObject, $minimumSeverity = EntityProblem::SEVERITY_INFO)
     {
         $problems = [];
         /** @var \Books\Model\LibraryOptions $libraryOptions */
         $libraryOptions = $libraryObject['options'];
-        
+
         $libraryHasRegex = isset($libraryOptions->callNumberRegex);
         foreach ($libraryOptions->collections as $collection) {
             if ($libraryHasRegex
                 && $collection->requireCallNumbers
                 && $collection->enforceCallNumberRegex
-                && !isset($collection->callNumberRegex)
+                && ! isset($collection->callNumberRegex)
             ) {
                 $obj = clone $this->entityProblemPrototype;
                 $obj->setProblem(self::PROBLEM_COLLECTION_MISSING_CALL_NUMBER_FORMAT)
@@ -2052,10 +2052,10 @@ ORDER BY CreatedOn DESC";
                 $problems[] = $obj;
             }
         }
-        
+
         return $problems;
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Problem\ProblemProviderInterface::autoFixProblems()
@@ -2072,8 +2072,8 @@ ORDER BY CreatedOn DESC";
                 $obj->setProblem(self::PROBLEM_COLLECTION_INVALID_CALL_NUMBER_FORMAT)
                     ->setData($object);
                 $problems[] = $obj;
-                if (!$simulate) {
-                    if (!isset($tableGateway)) {
+                if (! $simulate) {
+                    if (! isset($tableGateway)) {
                         $tableGateway = $this->getTableGateway('lib_books');
                     }
                     $tableGateway->update(['sort_text' => $sortText], ['book_id' => $object['bookId']]);

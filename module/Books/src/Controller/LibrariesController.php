@@ -22,12 +22,12 @@ class LibrariesController extends SionController
     {
         $libraryId = $this->params()->fromRoute('library_id');
         $limit = (int)$this->params()->fromQuery('limit', 25);
-        if (!is_numeric($limit)) {
+        if (! is_numeric($limit)) {
             $limit = 10;
         }
         $params = $this->params()->fromQuery();
         $params['libraryId'] = $libraryId;
-        
+
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
         $library = $table->getObject('library', $libraryId);
@@ -51,21 +51,21 @@ class LibrariesController extends SionController
             'filters' => $filters,
         ]);
     }
-    
+
     public function refreshSortAction()
     {
         $libraryId = $this->params()->fromRoute('library_id');
         $table = $this->getSionTable()->refreshLibrarySort($libraryId);
         return new ViewModel([]);
     }
-    
+
     protected function updateSortValues(&$books)
     {
         foreach ($books as $key => $object) {
             $books[$key]['sortText'] = $this->getSionTable()->getBookSortText($object);
         }
     }
-    
+
     protected function separateBooksByCollectionId($books)
     {
         $collectionGroupings = [];
@@ -75,14 +75,14 @@ class LibrariesController extends SionController
         }
         return $collectionGroupings;
     }
-    
+
     public function showAction()
     {
         $view = parent::showAction();
         if ($view instanceof \Zend\Stdlib\ResponseInterface) {
             return $view;
         }
-        
+
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();
         $libraryId = $view->getVariable('entityId');
@@ -96,7 +96,7 @@ class LibrariesController extends SionController
         if ($form->isValid()) {
             $data = $form->getData();
             foreach ($data as $key => $value) {
-                if (!isset($value)) {
+                if (! isset($value)) {
                     unset($data[$key]);
                 }
             }
@@ -113,7 +113,7 @@ class LibrariesController extends SionController
         }
 
         $object = $table->getLibraries()[$libraryId];
-        
+
         $view->setVariable('entity', $object);
         $view->setVariable('publications', $this->getPublications());
         $view->setVariable('books', $books);
@@ -125,24 +125,24 @@ class LibrariesController extends SionController
 
     public function labelManagementAction()
     {
-        $resourceId = 'library_'.$this->getLibraryId();
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $this->getLibraryId();
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
     }
 
     public function batchOperationsAction()
     {
-        $resourceId = 'library_'.$this->getLibraryId();
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $this->getLibraryId();
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
     }
 
     public function getBookListJsonAction()
     {
-        $resourceId = 'library_'.$this->getLibraryId();
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $this->getLibraryId();
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         /** @var LibraryTable $table */
@@ -164,8 +164,8 @@ class LibrariesController extends SionController
     public function adminAction()
     {
         $view = $this->showAction();
-        $resourceId = 'library_'.$this->getLibraryId();
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $this->getLibraryId();
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         $config = $this->config['books'];
@@ -209,7 +209,7 @@ class LibrariesController extends SionController
         ]);
         return $view;
     }
-    
+
     public function dataProblemsAction()
     {
         /** @var LibraryTable $table */
@@ -235,7 +235,7 @@ class LibrariesController extends SionController
         $libraryId = $this->getLibraryId();
         $object = $table->getObject('library', $libraryId);
         $problems = array_merge($table->getLibraryProblems($object), $table->getLibraryBookProblems($libraryId));
-        
+
         $problemCounts = [
             EntityProblem::SEVERITY_ERROR => 0,
             EntityProblem::SEVERITY_WARNING => 0,
@@ -267,7 +267,7 @@ class LibrariesController extends SionController
         if ($form->isValid()) {
             $data = $form->getData();
 
-            if (!empty($data)) {
+            if (! empty($data)) {
                 /** @var LibraryTable $table */
                 $table = $this->getSionTable();
 //                 $data['notAllowed'] = $notAllowed;
@@ -294,8 +294,8 @@ class LibrariesController extends SionController
 
     public function inactivateBooksAction()
     {
-        $resourceId = 'library_'.$this->getLibraryId();
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $this->getLibraryId();
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         //get the parameter
@@ -340,8 +340,8 @@ class LibrariesController extends SionController
     public function bookListAction()
     {
         $libraryId = $this->getLibraryId();
-        $resourceId = 'library_'.$libraryId;
-        if (!$this->isAllowed($resourceId, 'show')) {
+        $resourceId = 'library_' . $libraryId;
+        if (! $this->isAllowed($resourceId, 'show')) {
             throw new UnAuthorizedException();
         }
         /** @var LibraryTable $table */
@@ -366,8 +366,8 @@ class LibrariesController extends SionController
         ) {
             $apiKeys = $config['schoenstatt']['api_keys'];
         }
-        $resourceId = 'library_'.$this->getLibraryId();
-        if (!$this->isAllowed($resourceId, 'administrate') && !in_array($key, $apiKeys)) {
+        $resourceId = 'library_' . $this->getLibraryId();
+        if (! $this->isAllowed($resourceId, 'administrate') && ! in_array($key, $apiKeys)) {
             throw new UnAuthorizedException();
         }
         $libraryId = $this->getLibraryId();
@@ -393,7 +393,7 @@ class LibrariesController extends SionController
     {
         $entities = [];
         foreach ($books as $book) {
-            if (!isset($entities[$book['libraryId']])) {
+            if (! isset($entities[$book['libraryId']])) {
                 $entities[$book['libraryId']] = $book['library'];
             }
             $entities[$book['libraryId']]['books'][] = $book;
@@ -415,8 +415,8 @@ class LibrariesController extends SionController
      */
     protected function getLibraryId()
     {
-        $id = ( int ) $this->params()->fromRoute('library_id');
-        if (!$id) {
+        $id = (int) $this->params()->fromRoute('library_id');
+        if (! $id) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
             ->addMessage('Library not found.');
             return $this->redirect()->toRoute('libraries');

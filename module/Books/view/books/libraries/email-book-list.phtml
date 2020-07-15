@@ -5,13 +5,13 @@ use Books\Model\LibraryTable;
  * @param mixed[] $checkouts
  */
 foreach ($this->checkouts as $object) {
-    if (!isset($object['book'])) {
+    if (! isset($object['book'])) {
         continue;
     }
     $book = $object['book'];
     echo $this->escapeHtml($book['title']);
     if (isset($book['authorPrettyText'])) {
-        echo ' - '.$this->escapeHtml($book['authorPrettyText']);
+        echo ' - ' . $this->escapeHtml($book['authorPrettyText']);
     }
     echo '<br>';
 //     echo $this->translate('Barcode').': '.$book['withinLibraryId'].'<br>';
@@ -19,12 +19,12 @@ foreach ($this->checkouts as $object) {
 //         echo $this->translate('Collection').': '.$book['collection']['name'].'<br>';
 //     }
     if (isset($book['callNumber'])) {
-        echo $this->translate('Call number').': '.$this->escapeHtml($book['callNumber']).'<br>';
+        echo $this->translate('Call number') . ': ' . $this->escapeHtml($book['callNumber']) . '<br>';
     }
-    echo $this->translate('Due on').': '.$this->dateFormat($object['dueOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+    echo $this->translate('Due on') . ': ' . $this->dateFormat($object['dueOn'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
 
     if ($object['status'] === LibraryTable::CHECKOUT_STATUS_OVERDUE) {
-        echo ' ('.$this->translate('Overdue').')';
+        echo ' (' . $this->translate('Overdue') . ')';
     }
     echo '<br><br>';
 }

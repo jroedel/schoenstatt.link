@@ -5,5 +5,5 @@ use SionModel\Controller\SionController;
 
 class GreekRootController extends SionController
 {
-    
+
 }

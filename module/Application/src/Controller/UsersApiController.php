@@ -9,19 +9,19 @@ use Zend\Math\Rand;
 class UsersApiController extends ApiController
 {
     protected $adapter;
-    
+
     public function __construct(JsonPost $adapter)
     {
         $this->adapter = $adapter;
     }
-    
+
     public function loginAction()
     {
         /**
          * @var \Zend\Authentication\Result $auth
          */
         $auth = $this->adapter->authenticate();
-        if (!$auth->isValid()) {
+        if (! $auth->isValid()) {
             if (\Zend\Authentication\Result::FAILURE_UNCATEGORIZED === $auth->getCode()) {
                 $this->httpStatusCode = 400;
             } else {

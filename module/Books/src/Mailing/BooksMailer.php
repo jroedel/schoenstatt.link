@@ -43,8 +43,8 @@ class BooksMailer extends Mailer
         $borrowersToContact = [];
         //first loop through once to get our list of persons
         foreach ($checkouts as $checkoutId => $object) {
-            if ((!$onlyIfBorrowerHasOverdueBook || LibraryTable::CHECKOUT_STATUS_OVERDUE === $object['status']) &&
-                !in_array($object['personId'], $borrowersToContact) &&
+            if ((! $onlyIfBorrowerHasOverdueBook || LibraryTable::CHECKOUT_STATUS_OVERDUE === $object['status']) &&
+                ! in_array($object['personId'], $borrowersToContact) &&
                 (empty($borrowerSubset) || in_array($object['personId'], $borrowerSubset)) //make sure the person is in our subset
             ) {
                 $borrowersToContact[] = $object['personId'];
@@ -55,7 +55,7 @@ class BooksMailer extends Mailer
         //now loop through checkouts again to fill up the person list
         foreach ($checkouts as $checkoutId => $object) {
             if (isset($borrowers[$object['personId']])) {
-                if (!isset($borrowers[$object['personId']]['checkouts'])) {
+                if (! isset($borrowers[$object['personId']]['checkouts'])) {
                     $borrowers[$object['personId']]['checkouts'] = [];
                     $borrowers[$object['personId']]['mailingStatus'] = self::STATUS_NOT_SENT;
                     $borrowers[$object['personId']]['hasOverdueBook'] = false;
@@ -68,9 +68,9 @@ class BooksMailer extends Mailer
         }
         //@todo delete the following when getPersons is finished
         foreach ($borrowers as $personId => $object) {
-            if (!isset($object['mailingStatus']) || !in_array($personId, $borrowersToContact)) {
+            if (! isset($object['mailingStatus']) || ! in_array($personId, $borrowersToContact)) {
                 unset($borrowers[$personId]);
-            } elseif ($onlyIfBorrowerHasOverdueBook && !$object['hasOverdueBook']) {
+            } elseif ($onlyIfBorrowerHasOverdueBook && ! $object['hasOverdueBook']) {
                 unset($borrowers[$personId]);
             }
         }
@@ -92,7 +92,7 @@ class BooksMailer extends Mailer
         $subjectBase = '%s - Overdue notice';
         $localizedSubject = [];
         $template = 'sion-model/mailing/action-email';
-        $tags = 'book-checkouts|library'.$library['libraryId']; //pipe-separated
+        $tags = 'book-checkouts|library' . $library['libraryId']; //pipe-separated
         $textDomain = 'Books';
         $paragraphPrototype = [
             'salutation' => [ //salutation
@@ -146,15 +146,15 @@ class BooksMailer extends Mailer
 //             $debugCount++;
             $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : \Locale::getDefault();
             $salutation = (isset($object['title']) ?
-                $this->translator->translate($object['title'], 'Schoenstatt', $locale).' ' :
-                '').$object['firstName'];
-            if (!isset($localizedSubject[$locale])) {
+                $this->translator->translate($object['title'], 'Schoenstatt', $locale) . ' ' :
+                '') . $object['firstName'];
+            if (! isset($localizedSubject[$locale])) {
                 $localizedSubject[$locale] = sprintf(
                     $this->translator->translate($subjectBase, $textDomain, $locale),
                     $this->translator->translate($library['name'], $textDomain, $locale)
                 );
             }
-            if (!isset($localizedLibraryName[$locale])) {
+            if (! isset($localizedLibraryName[$locale])) {
                 $localizedLibraryName[$locale] = $this->translator->translate($library['name'], $textDomain, $locale);
             }
             $trackingToken = self::getNewTrackingToken();
@@ -186,7 +186,7 @@ class BooksMailer extends Mailer
             $message->setBody($body);
             $result = $mailService->send();
             $exception = null;
-            if (!$result->isValid()) {
+            if (! $result->isValid()) {
                 if ($result->hasException()) {
                     $exception = $result->getException();
                 } else {

@@ -19,10 +19,10 @@ class SearchFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var LibraryTable $table **/
-        $table= $container->get(LibraryTable::class);
+        $table = $container->get(LibraryTable::class);
 
         $form = new SearchForm();
-        $collections =  $table->getCollectionValueOptions();
+        $collections = $table->getCollectionValueOptions();
         $form->get('collectionId')->setValueOptions($collections);
         return $form;
     }

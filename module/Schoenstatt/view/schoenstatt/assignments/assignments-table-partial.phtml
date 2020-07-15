@@ -30,30 +30,30 @@ $columnHeaders = [
 //count assignments to print
 $count = 0;
 foreach ($assignments as $assignment) {
-if (($assignment['isActive'] && $showActive) || (!$assignment['isActive'] && $showInactive)) {
-		$count++;
-	}
+    if (($assignment['isActive'] && $showActive) || (! $assignment['isActive'] && $showInactive)) {
+        $count++;
+    }
 }
-if ($count > 0):
-    if ($wrapInPanel):?>
+if ($count > 0) :
+    if ($wrapInPanel) :?>
     <div class="panel panel-default">
         <!-- Default panel contents -->
-        <?php if (isset($this->headerText)):?>
-        	<div class="panel-heading"><?php echo $this->headerText;?></div>
+        <?php if (isset($this->headerText)) :?>
+            <div class="panel-heading"><?php echo $this->headerText;?></div>
         <?php endif;?>
         <!--<div class="panel-body">
          <p>...</p>
         </div>-->
     <?php endif;
-	if (isset($this->headerText) && !$wrapInPanel):?>
-		<p class="text-center"><strong><u><?php echo $this->headerText;?></u></strong></p>
-	<?php endif;?>
+    if (isset($this->headerText) && ! $wrapInPanel) :?>
+        <p class="text-center"><strong><u><?php echo $this->headerText;?></u></strong></p>
+    <?php endif;?>
 <div id="assignments" class="table-responsive panel-body">
-	<table class="table sortable">
+    <table class="table sortable">
     <thead><tr>
     <?php foreach ($columns as $column) {
         if (key_exists($column, $columnHeaders)) {
-            echo '<th>'. $this->translate($columnHeaders[$column]). '</th>';
+            echo '<th>' . $this->translate($columnHeaders[$column]) . '</th>';
         } else {
             array_unshift($columns, $column);
         }
@@ -61,54 +61,61 @@ if ($count > 0):
     </tr></thead>
     <tbody>
     <?php foreach ($assignments as $assignment) :
-    	if (($assignment['isActive'] && $showActive) || (!$assignment['isActive'] && $showInactive)):?>
-        	<tr>
+        if (($assignment['isActive'] && $showActive) || (! $assignment['isActive'] && $showInactive)) :?>
+            <tr>
             <?php foreach ($columns as $column) :
                 switch ($column) :
-                    case 'association': ?>
-                		<td><?php if (isset($assignment['association'])) {
-                		    echo $this->formatEntity('association', $assignment['association'], $associationFormatOptions);
-                		}?></td>
-                        <?php break;
-                    case 'role': ?>
-                		<td><?php if (isset($assignment['roleTitle'])) {
-                		    echo $this->formatEntity('assignment', $assignment, ['displayAsLink' => false]);
-                		    //@todo add date range
-                        }
-//                 		    echo $this->escapeHtml($assignment['roleTitle']).
+                    case 'association':
+                        ?>
+                        <td><?php if (isset($assignment['association'])) {
+                            echo $this->formatEntity('association', $assignment['association'], $associationFormatOptions);
+                            }?></td>
+                        <?php
+                        break;
+                    case 'role':
+                        ?>
+                        <td><?php if (isset($assignment['roleTitle'])) {
+                            echo $this->formatEntity('assignment', $assignment, ['displayAsLink' => false]);
+                            //@todo add date range
+                            }
+//                          echo $this->escapeHtml($assignment['roleTitle']).
 //                                 ' '.$this->shortDateRange($assignment['startDate'], $assignment['endDate']);
-//                 		}
-?></td>
-                        <?php break;
-                    case 'person': ?>
-                        <td><?php if (isset($assignment['person']) && !empty($assignment['person'])) {
+//                      }
+                            ?></td>
+                        <?php
+                        break;
+                    case 'person':
+                        ?>
+                        <td><?php if (isset($assignment['person']) && ! empty($assignment['person'])) {
                             echo $this->formatEntity('person', $assignment['person'], $personFormatOptions);
                             echo $this->editPencil('assignment', $assignment['assignmentId']);
-                        }
-        				?></td><?php
-    				    break;
-                    case 'email': ?>
-                		<td><?php if (isset($assignment['person']) && !empty($assignment['person'])) {
-                		    echo $this->email($assignment['person']['email']);
-                		} elseif (isset($assignment['association']) && !empty($assignment['association'])) {
-                		    echo $this->email($assignment['association']['email']);
-                		}?></td><?php
+                            }
+                            ?></td><?php
                         break;
-                    case 'telephone': ?>
-                		<td><?php if (isset($assignment['person']) && !empty($assignment['person'])) {
-                		    echo $this->telephone($assignment['person']['cellPhone']);
-                		} elseif (isset($assignment['association']) && !empty($assignment['association'])) {
-                		    echo $this->telephone($assignment['association']['phone1']);
-                		} ?></td><?php
+                    case 'email':
+                        ?>
+                        <td><?php if (isset($assignment['person']) && ! empty($assignment['person'])) {
+                            echo $this->email($assignment['person']['email']);
+                            } elseif (isset($assignment['association']) && ! empty($assignment['association'])) {
+                                echo $this->email($assignment['association']['email']);
+                            }?></td><?php
+                        break;
+                    case 'telephone':
+                        ?>
+                        <td><?php if (isset($assignment['person']) && ! empty($assignment['person'])) {
+                            echo $this->telephone($assignment['person']['cellPhone']);
+                            } elseif (isset($assignment['association']) && ! empty($assignment['association'])) {
+                                echo $this->telephone($assignment['association']['phone1']);
+                            } ?></td><?php
                         break;
                 endswitch;?>
-        	<?php endforeach;?>
-        	</tr>
-    	<?php endif;
-	endforeach;?>
+            <?php endforeach;?>
+            </tr>
+        <?php endif;
+    endforeach;?>
     </tbody></table>
 </div>
-    <?php if ($wrapInPanel):?>
+    <?php if ($wrapInPanel) :?>
     </div>
     <?php endif;
 endif;?>

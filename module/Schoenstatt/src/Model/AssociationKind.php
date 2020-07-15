@@ -67,10 +67,10 @@ class AssociationKind
 
     public function __construct($name, $entitySpecification)
     {
-        if (!isset($name)) {
+        if (! isset($name)) {
             throw new \InvalidArgumentException('Name is a required parameter.');
         }
-        if (!is_array($entitySpecification)) {
+        if (! is_array($entitySpecification)) {
             throw new \InvalidArgumentException('Entity specification must be an array.');
         }
         $this->name = $name;
@@ -81,7 +81,7 @@ class AssociationKind
                 $this->$key = $value;
             }
         }
-        if (!isset($this->sort) || !is_numeric($this->sort)) {
+        if (! isset($this->sort) || ! is_numeric($this->sort)) {
             $this->sort = 999;
         }
     }

@@ -1,19 +1,22 @@
 <?php /** @var \Zend\View\Renderer\PhpRenderer $this */
-if (!empty($this->entity['categoryStatistics']) && is_null($this->books)):?>
+if (! empty($this->entity['categoryStatistics']) && is_null($this->books)) :?>
     <ul class="list-group">
     <?php foreach ($this->entity['categoryStatistics'] as $category => $count) : ?>
       <li class="list-group-item">
         <span class="badge"><?php echo $this->escapeHtml($count);?></span>
-        <a href="<?php echo $this->url('libraries/library', ['library_id' => $this->entityId],
-                ['query' => ['category' => $category]]);?>"><?php
-            if (is_null($category) || strlen($category) === 0) {
-                $category = sprintf('(%s)', $this->translate('none'));
-            }
+        <a href="<?php echo $this->url(
+            'libraries/library',
+            ['library_id' => $this->entityId],
+            ['query' => ['category' => $category]]
+                 );?>"><?php
+if (is_null($category) || strlen($category) === 0) {
+    $category = sprintf('(%s)', $this->translate('none'));
+}
             echo $this->escapeHtml($category);?></a>
       </li>
-      <?php endforeach;?>
+    <?php endforeach;?>
     </ul>
-<?php else:
+<?php else :
     echo $this->partial('books/library/book-list', [
         'entities'  => $this->books,
         'publications'  => $this->publications,

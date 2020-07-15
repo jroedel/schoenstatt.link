@@ -1,10 +1,10 @@
 <?php foreach ($this->verses as $book) : ?>
 <h1><?php echo $this->bookAbbrev[$book['book']]; ?></h1>
-<?php foreach ($book as $chapter) : ?>
-<h2><?php echo $this->bookAbbrev[$chapter[1]->book]." ".$chapter[1]->chapter;?></h2>
-<?php foreach ($chapter as $verse) : ?>
-<p><strong><?php echo sprintf("%s:%s  ", $verse->chapter, $verse->verse);?></strong><?php 
+    <?php foreach ($book as $chapter) : ?>
+<h2><?php echo $this->bookAbbrev[$chapter[1]->book] . " " . $chapter[1]->chapter;?></h2>
+        <?php foreach ($chapter as $verse) : ?>
+<p><strong><?php echo sprintf("%s:%s  ", $verse->chapter, $verse->verse);?></strong><?php
 echo sprintf($verse->text);?></p>
-<?php endforeach; ?>
-<?php endforeach;?>
+        <?php endforeach; ?>
+    <?php endforeach;?>
 <?php endforeach; ?>

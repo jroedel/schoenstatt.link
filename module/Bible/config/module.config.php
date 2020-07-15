@@ -236,7 +236,7 @@ return [
                 'sion_model_class'                          => Model\BibleTable::class,
                 'sion_controllers'                          => [Controller\BibleController::class],//BorrowersController::class],
                 'controller_services'                       => [
-                    
+
                 ],
                 'row_processor_function'                    => 'processVerseRow',
 //                 'get_object_function'                       => 'getVerses',
@@ -306,7 +306,7 @@ return [
                 'sion_model_class'                          => Model\BibleTable::class,
 //                 'sion_controllers'                          => [Controller\BibleController::class],//BorrowersController::class],
                 'controller_services'                       => [
-                    
+
                 ],
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
@@ -384,7 +384,7 @@ return [
                 'sion_model_class'                          => Model\BibleTable::class,
                 'sion_controllers'                          => [Controller\GreekRootController::class],//BorrowersController::class],
                 'controller_services'                       => [
-                    
+
                 ],
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
@@ -458,7 +458,7 @@ return [
                 'sion_model_class'                          => Model\BibleTable::class,
 //                 'sion_controllers'                          => [Controller\BibleController::class],//BorrowersController::class],
                 'controller_services'                       => [
-                    
+
                 ],
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
@@ -526,7 +526,7 @@ return [
                 'sion_model_class'                          => Model\DhTable::class,
                 'sion_controllers'                          => [Controller\DhController::class],//BorrowersController::class],
                 'controller_services'                       => [
-                    
+
                 ],
 //                 'get_object_function'                       => 'getVerses',
 //                 'get_objects_function'                      => 'getUnlinkedTexts',
@@ -613,7 +613,7 @@ return [
             ],
         ],
     ],
-    
+
     'view_manager' => [
         'template_map' => include __DIR__ . '/template_map.config.php',
         'template_path_stack' => [

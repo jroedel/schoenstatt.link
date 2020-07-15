@@ -14,33 +14,33 @@ use Zend\Db\Sql\Expression;
 
 class DictionaryTable extends SionTable
 {
-    
+
     const DICTIONARY_TITLE_FORMAT = "Fr. Kentenich dictionary German to %s";
-    
+
     /**
      * @var RouteStackInterface $router
      */
     protected $router;
-    
+
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId)
     {
         $this->router = $serviceLocator->get(RouteStackInterface::class);
         return parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
     }
-    
+
     protected function preprocessDictionaryEntry($data, $entityData, $action)
     {
         //calculate slug
         static $filter;
-        if (!isset($data['key'])) {
+        if (! isset($data['key'])) {
             return $data;
         }
-        if (!isset($filter)) {
+        if (! isset($filter)) {
             $filter = new Slugify();
         }
         $slug = $filter->slugify($data['key']);
         $data['slug'] = $slug;
-        
+
         //check for a duplicate slug-locale
         if (self::ENTITY_ACTION_CREATE === $action
             && isset($data['slug'])
@@ -49,10 +49,10 @@ class DictionaryTable extends SionTable
         ) {
             throw new DuplicateKeyException('There is already a dictionary entry for given key and locale');
         }
-        
+
         return $data;
     }
-    
+
     protected function postprocessDictionaryEntry($data, $newEntityData, $action)
     {
         //update the links of all the same slug
@@ -61,7 +61,7 @@ class DictionaryTable extends SionTable
             $gateway->update(['Links' => $this->formatDbArray($data['links'])], ['Slug' => $newEntityData['slug']]);
         }
     }
-    
+
     /**
      * Check if there's a pre-existing slug-locale pair in the database
      * @param string $slug
@@ -74,17 +74,17 @@ class DictionaryTable extends SionTable
         $tableName  = $entitySpec->tableName;
         $gateway    = $this->getTableGateway($tableName);
         $result     = $gateway->select(['Slug' => $slug, 'Locale' => $locale]);
-        if (!$result instanceof ResultSetInterface || 0 === $result->count()) {
+        if (! $result instanceof ResultSetInterface || 0 === $result->count()) {
             return false;
         }
         return true;
     }
-    
+
     protected function formatDictionaryEntrySchema($object)
     {
         //@todo also add a universal id to dictionary items
         $inLanguage = isset($object['inLanguage']) ? $object['inLanguage'] : null;
-        
+
         $schema = new DefinedTerm();
         $schema->name($object['key'])
             ->description($object['entry']);
@@ -94,7 +94,7 @@ class DictionaryTable extends SionTable
         }
         return $schema;
     }
-    
+
     /**
      * Get the URL identifier for a particular language's dictionary
      * @param string $inLanguage
@@ -102,21 +102,21 @@ class DictionaryTable extends SionTable
      */
     protected function getDictionaryUrl($inLanguage)
     {
-        if (!isset($inLanguage)) {
+        if (! isset($inLanguage)) {
             return null;
         }
-        
+
         static $serverUrlHelper;
         static $urlHelper;
         static $inLanguageUrls;
-        if (!isset($serverUrlHelper)) {
+        if (! isset($serverUrlHelper)) {
             $serverUrlHelper = new ServerUrl();
         }
-        if (!isset($urlHelper)) {
+        if (! isset($urlHelper)) {
             $urlHelper = new Url();
             $urlHelper->setRouter($this->router);
         }
-        if (isset($inLanguage) && !isset($inLanguageUrls[$inLanguage])) {
+        if (isset($inLanguage) && ! isset($inLanguageUrls[$inLanguage])) {
             $inLanguageUrls[$inLanguage] = $serverUrlHelper->__invoke($urlHelper->__invoke(
                 'dictionary/inLanguage',
                 ['inLanguage' => $inLanguage]
@@ -124,7 +124,7 @@ class DictionaryTable extends SionTable
         }
         return isset($inLanguageUrls[$inLanguage]) ? $inLanguageUrls[$inLanguage] : null;
     }
-    
+
     /**
      *
      * {@inheritDoc}
@@ -153,10 +153,10 @@ class DictionaryTable extends SionTable
         }
         return $data;
     }
-    
+
     public function getDictionarySchema($inLanguage)
     {
-        if (!isset($inLanguage)) {
+        if (! isset($inLanguage)) {
             throw new \InvalidArgumentException('Pass a language to get dictionary schema');
         }
         $url = $this->getDictionaryUrl($inLanguage);
@@ -170,7 +170,7 @@ class DictionaryTable extends SionTable
         }
         return $schema;
     }
-    
+
     public function getLinksValueOptions()
     {
         $cacheKey = 'links-value-options';
@@ -185,7 +185,7 @@ class DictionaryTable extends SionTable
         $this->cacheEntityObjects($cacheKey, $result, ['dictionary-entry']);
         return $result;
     }
-    
+
     /**
      * Returns an associative array mapping locale to an array of other information
      * including 2-digit ISO639 language codes
@@ -202,12 +202,12 @@ class DictionaryTable extends SionTable
             ->group(['Locale'])
             ->where(['IsActive' => '1'])
             ->reset(Select::ORDER);
-        
+
         $gateway = $this->getTableGateway('sch_dictionary_entries');
         $results = $gateway->selectWith($select);
         $languageNames = $this->getLanguageNames();
         $dictionaries = [];
-        
+
         foreach ($results as $row) {
             $locale = $row['Locale'];
             $inLanguage = \Locale::getPrimaryLanguage($locale);
@@ -221,7 +221,7 @@ class DictionaryTable extends SionTable
         $this->cacheEntityObjects($cacheKey, $dictionaries, ['dictionary-entry']);
         return $dictionaries;
     }
-    
+
     /**
      *
      * {@inheritDoc}

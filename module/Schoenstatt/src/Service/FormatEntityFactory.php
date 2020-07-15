@@ -23,7 +23,7 @@ class FormatEntityFactory implements FactoryInterface
         $parentLocator = $container->getServiceLocator();
         /** @var AssociationKindsService $kindsService */
         $kindsService = $parentLocator->get(AssociationKindsService::class);
-        $valueOptions= $kindsService->getValueOptions();
+        $valueOptions = $kindsService->getValueOptions();
 
         $entityService = $parentLocator->get(EntitiesService::class);
         $viewHelper = new FormatEntity($entityService, $valueOptions, true);

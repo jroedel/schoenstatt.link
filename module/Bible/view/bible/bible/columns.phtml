@@ -1,4 +1,4 @@
-<?php $headTitle = $this->book['name'].' '.$this->chapter;
+<?php $headTitle = $this->book['name'] . ' ' . $this->chapter;
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headTitle);
 // echo $this->partial('search-bar', ['form' => $this->form]);
@@ -13,24 +13,24 @@ $columnInfoByTranslationCount = [
 ];
 $columnInfo = $columnInfoByTranslationCount[$translationCount];
 foreach ($this->verseTranslations as $translations) :
-$i = 0;?>
+    $i = 0;?>
 <div class="row">
     <?php $isFirstTranslation = true;
     foreach ($this->translations as $translation) :
-        if (!isset($translations[$translation])) {
+        if (! isset($translations[$translation])) {
             continue;
         }
         $object = $translations[$translation];?>
         <div class="col-md-<?php echo $columnInfo['width'];
         if ($i === 0 && $columnInfo['offset'] > 0) {
-            echo ' col-md-offset-'.$columnInfo['offset'];
+            echo ' col-md-offset-' . $columnInfo['offset'];
         }?>"<?php if ($isFirstTranslation) {
             echo sprintf(" id=\"%s\"", $this->escapeHtmlAttr($object['verse']));
         }?>>
 
-		<?php echo '<strong>'.$this->escapeHtml($object['verse']).' </strong>'.$this->escapeHtml($object['text']);?>
-        </div><?php 
+        <?php echo '<strong>' . $this->escapeHtml($object['verse']) . ' </strong>' . $this->escapeHtml($object['text']);?>
+        </div><?php
         $i++;
         $isFirstTranslation = false;
-        endforeach;?>
-</div><?php endforeach;?>
+    endforeach;?>
+<?php endforeach;?>

@@ -10,7 +10,7 @@ class SlackWebhook extends AbstractWriter
 {
     protected $webhookUrl;
     protected $minimumSeverity;
-    
+
     public function __construct($webhookUrl, $minimumSeverity = Logger::INFO, $options = [])
     {
         parent::__construct($options);
@@ -20,15 +20,15 @@ class SlackWebhook extends AbstractWriter
             $this->formatter = new SimpleFormatter();
         }
     }
-    
+
     protected function doWrite(array $event)
     {
-        if (!isset($this->webhookUrl)) {
+        if (! isset($this->webhookUrl)) {
             throw new \Exception('Invalid webhook URL');
         }
-        
+
         $line = $this->formatter->format($event);
-        
+
         $json = Json::encode([
             'text' => $line,
         ]);

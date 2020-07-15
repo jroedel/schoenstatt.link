@@ -6,7 +6,7 @@ use Zend\Filter\AbstractFilter;
 class FromBibleworksMorphosyntacticCode extends AbstractFilter
 {
     protected $codes;
-    
+
     /**
      *
      * {@inheritDoc}
@@ -14,7 +14,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
      */
     public function filter($value)
     {
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             return $value;
         }
         $this->getCodes();
@@ -23,7 +23,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
         }
         return $value;
     }
-    
+
     public static function getPartOfSpeechCodes()
     {
         return [
@@ -40,7 +40,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
             'i' => 'interjection',
         ];
     }
-    
+
     /**
      * Get a full list of possible morphosyntactic codes with their english equivalent
      * @return array
@@ -53,7 +53,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
             ['m' => 'masc.', 'f' => 'fem.', 'n' => 'neu.'],
             ['s' => 'sing.', 'p' => 'plu.'],
             ['c' => 'comm.', 'p' => 'prop.'],
-            
+
         ];
         $participles = [
             ['v' => 'verb'],
@@ -130,7 +130,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
             't' => 'indeclinable noun',
             'i' => 'interjection',
         ];
-        
+
         $return = [];
         $return = array_merge($return, self::codeHelper('', '', $nouns));
         $return = array_merge($return, self::codeHelper('', '', $participles));
@@ -147,7 +147,7 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
         $return = array_merge($return, $various);
         return $return;
     }
-    
+
     /**
      * Appends the keys of the first array of $array onto $key
      * and appends the values of the element of $array onto $text
@@ -163,17 +163,17 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
         if (empty($arrays)) {
             return [$key => $text];
         }
-        if (!is_array($arrays[0])) {
+        if (! is_array($arrays[0])) {
             throw \Exception("HELP my arrays isn't an array");
         }
         if (empty($arrays[0])) {
             throw \Exception("HELP");
         }
-        
+
         $return = [];
         $cArray = array_shift($arrays);
         foreach ($cArray as $keyi => $valuei) {
-            $return = array_merge($return, self::codeHelper($key.$keyi, $text.' '.$valuei, $arrays));
+            $return = array_merge($return, self::codeHelper($key . $keyi, $text . ' ' . $valuei, $arrays));
         }
         return $return;
     }

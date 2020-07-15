@@ -29,13 +29,13 @@ class TextsController extends SionController
         $objects    = $table->getObjects($entity, [], ['columns' => $columns]);
         $view = new ViewModel([
             'entity'    => $entity,
-            'entitySpec'=> $entitySpec,
+            'entitySpec' => $entitySpec,
             'objects'   => $objects,
         ]);
-        
+
         return $view;
     }
-    
+
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
@@ -45,7 +45,7 @@ class TextsController extends SionController
         $search = null;
         if ($form->isValid()) {
             $data = $form->getData();
-            if (!empty($data)) {
+            if (! empty($data)) {
                 /** @var \Books\Model\PublicationsTable $table */
                 $table = $this->getSionTable();
 //                 $options = [];
@@ -53,7 +53,7 @@ class TextsController extends SionController
 //                 if (!isset($data['showEditionsSeparately']) || $data['showEditionsSeparately'] != '1') {
 //                     $options['noSubEditions'] = true;
 //                 }
-                
+
                 $fieldMap = $this->getEntitySpecification()->updateColumns;
                 $where = new PredicateSet();
                 if (isset($data['search'])) {
@@ -74,11 +74,11 @@ class TextsController extends SionController
 //                 }
             }
         }
-        
+
         if (is_array($objects) && empty($objects)) {
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
-        
+
         $view = new ViewModel([
             'objects'  => $objects,
             'form'      => $form,
@@ -87,19 +87,19 @@ class TextsController extends SionController
         $view->setTemplate('books/texts/index');
         return $view;
     }
-    
+
     public function importJkTextsAction()
     {
         $table = $this->getSionTable();
         $table->importJkTexts(false);
     }
-    
+
     public function getEntityObject($id)
     {
         $object = $this->getSionTable()->getObject('text', $id);
         return $this->object[$id] = $object;
     }
-    
+
     /**
      * Makes sure this function returns the textId if passed a site-wide id
      *
@@ -112,13 +112,13 @@ class TextsController extends SionController
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
-            if (!isset($swValidator)) {
+            if (! isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier('text');
             }
-            if (!$swValidator->isValid($id)) {
+            if (! $swValidator->isValid($id)) {
                 throw new \Exception('Invalid site-wide id');
             }
-            if (!isset($swFilter)) {
+            if (! isset($swFilter)) {
                 $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier('text');
             }
             $id = $swFilter->filter($id);
@@ -127,7 +127,7 @@ class TextsController extends SionController
         }
         return $id;
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterEdit()
@@ -136,7 +136,7 @@ class TextsController extends SionController
     {
         return $this->redirect()->toRoute('text', ['sw_id' => $updatedObject['identifier'], 'slug' => $updatedObject['slug']]);
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterCreate()
@@ -148,7 +148,7 @@ class TextsController extends SionController
         $slug = SchoenstattTable::getSlug($data['title']);
         return $this->redirect()->toRoute('text', ['sw_id' => $identifier, 'slug' => $slug]);
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \SionModel\Controller\SionController::redirectAfterDelete()

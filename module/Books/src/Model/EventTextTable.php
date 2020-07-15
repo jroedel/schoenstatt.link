@@ -24,27 +24,27 @@ class EventTextTable extends SionTable implements
     const TEXT_KIND_BLOG_DRAFT = 'blog-draft';
     //kind of text for translating blog posts
     const TEXT_KIND_BLOG_TRANSLATION = 'blog-translation';
-    
+
     const TEXT_KIND_JK_TEXT = 'jk-text';
-    
-    const TEXT_KIND_OTHER =  'other';
+
+    const TEXT_KIND_OTHER = 'other';
     /**
      * @var array $config
      */
     protected $config;
-    
+
     /**
      * @var string[] $usernames
      */
     protected $usernames;
-    
+
     public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, array $config, $usernames)
     {
         parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
         $this->config = $config;
         $this->usernames = $usernames;
     }
-    
+
     protected function getSelectPrototype($entity)
     {
         $select = parent::getSelectPrototype($entity);
@@ -59,7 +59,7 @@ class EventTextTable extends SionTable implements
         }
         return $select;
     }
-    
+
     /**
      * Returns a list of existing text tags according to the kind of text
      * @param string|array $kind
@@ -69,7 +69,7 @@ class EventTextTable extends SionTable implements
     {
         $cacheKey = 'text-tags';
         if (isset($kind)) {
-            $cacheKey.='-'.$kind;
+            $cacheKey .= '-' . $kind;
         }
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
@@ -87,7 +87,7 @@ class EventTextTable extends SionTable implements
         foreach ($results as $row) {
             $theseTags = $this->filterDbArray($row['Tags']);
             foreach ($theseTags as $tag) {
-                if (!isset($tags[$tag])) {
+                if (! isset($tags[$tag])) {
                     $tags[$tag] = $tag;
                 }
             }
@@ -96,7 +96,7 @@ class EventTextTable extends SionTable implements
         $this->cacheEntityObjects($cacheKey, $tags, ['text']);
         return $tags;
     }
-    
+
     /**
      * Manipulate a database book row into a standardized row
      * @param array $row
@@ -169,7 +169,7 @@ class EventTextTable extends SionTable implements
         ];
         return $processedRow;
     }
-    
+
     /**
      * Manipulate a database book row into a standardized row
      * @param array $row
@@ -184,25 +184,25 @@ class EventTextTable extends SionTable implements
         if (isset($createdBy) && isset($this->usernames[$createdBy])) {
             $createdByUsername = $this->usernames[$createdBy];
         }
-        
-        if (!isset($swFilter)) {
+
+        if (! isset($swFilter)) {
             $swFilter = new ToSchoenstattLinkIdentifier('text');
         }
         $identifier = $swFilter->filter($id);
         $title = $row['Title'];
         $slug = $row['Slug'];
-        if (!isset($slug)) {
+        if (! isset($slug)) {
             $slug = SchoenstattTable::getSlug($title);
             $this->slylyUpdateTextSlug($id, $slug);
         }
-        
+
         $legacyFile = $row['LegacyFile'];
         $filenamePlusTitle = '';
         if (isset($legacyFile)) {
             $filenamePlusTitle .= str_replace('.md', '', $legacyFile);
         }
         if (strlen($filenamePlusTitle) > 0 && $title !== $legacyFile) {
-            $filenamePlusTitle .= ': '.$title;
+            $filenamePlusTitle .= ': ' . $title;
         }
         $processedRow = [
             'textId'                => $id,
@@ -228,26 +228,26 @@ class EventTextTable extends SionTable implements
             'legacyEventId'         => $row['LegacyEventId'],
             'legacyFile'            => $row['LegacyFile'],
             'legacyPathDate'        => $row['LegacyPathDate'],
-            'legacyFileDateModified'=> $row['LegacyFileDateModified'],
+            'legacyFileDateModified' => $row['LegacyFileDateModified'],
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
             'createdOn'             => $this->filterDbDate($row['CreatedOn']),
             'createdBy'             => $this->filterDbId($row['CreatedBy']),
-            
+
             'identifier'            => $identifier,
             'createdByUsername'     => $createdByUsername,
             'filenamePlusTitle'     => $filenamePlusTitle,
         ];
         return $processedRow;
     }
-    
+
     protected function slylyUpdateTextSlug($textId, $slug)
     {
         $gateway = $this->getTableGatewayForEntity('text');
         $result = $gateway->update(['Slug' => $slug], ['TextId' => $textId]);
         return $result;
     }
-    
+
     /**
      * Process text data before putting into the database.
      * @param mixed[] $data
@@ -260,23 +260,23 @@ class EventTextTable extends SionTable implements
         static $html2Text;
         static $now;
         //generate slug
-        if (!isset($data['slug']) && isset($data['title'])) {
+        if (! isset($data['slug']) && isset($data['title'])) {
             $data['slug'] = SchoenstattTable::getSlug($data['title']);
             //@todo check here that the slug doesn't exist, if it does try adding different numbers until it works
         }
-        
-        if (isset($data['markdownText']) && !isset($data['htmlText']) 
+
+        if (isset($data['markdownText']) && ! isset($data['htmlText'])
             && self::TEXT_KIND_JK_TEXT !== $entityData['kind']
         ) {
             //generate HTML
-            if (!isset($mdParser)) {
+            if (! isset($mdParser)) {
                 $parsedown = new \Parsedown();
                 $parsedown->setSafeMode(true);
             }
             $data['htmlText'] = $parsedown->text($data['markdownText']);
-            
+
             //generate plain text
-            if (!isset($html2Text)) {
+            if (! isset($html2Text)) {
                 $html2Text = new Html2Text();
             }
             $html2Text->setHtml($data['htmlText']);
@@ -284,7 +284,7 @@ class EventTextTable extends SionTable implements
         }
 
         //generate resourceId when creating blog posts
-        if (self::ENTITY_ACTION_CREATE === $action && !isset($data['resourceId'])) {
+        if (self::ENTITY_ACTION_CREATE === $action && ! isset($data['resourceId'])) {
             $kind = isset($data['kind']) ? $data['kind'] : null;
             if (isset($kind) && self::TEXT_KIND_BLOG === $kind) {
                 if (isset($this->actingUserId)) {
@@ -295,22 +295,22 @@ class EventTextTable extends SionTable implements
                 }
             }
         }
-        
+
         //if changing blog post from draft to published, reset the creation date
         if (self::ENTITY_ACTION_UPDATE === $action
             && $entityData['isDraft']
             && isset($data['isDraft'])
-            && !$data['isDraft']
+            && ! $data['isDraft']
         ) {
-            if (!isset($now)) {
+            if (! isset($now)) {
                 $now = (new \DateTime(null, new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
             }
             $data['createdOn'] = $now;
         }
-        
+
         return $data;
     }
-    
+
     /**
      * Import markdown and html files into the JK text db
      * @param boolean $simulate
@@ -326,38 +326,38 @@ class EventTextTable extends SionTable implements
         $results = [];
         foreach ($objects as $objectId => $object) {
             $filename = $object['legacyFile'];
-            if (!isset($filename)) {
+            if (! isset($filename)) {
                 continue;
             }
             $data = [];
-            if (!isset($object['markdownText']) || !isset($object['htmlText']) || !isset($object['plainText'])) {
+            if (! isset($object['markdownText']) || ! isset($object['htmlText']) || ! isset($object['plainText'])) {
                 //check if we have the md file,
-                $filePath = 'data/texts/'.$filename;
+                $filePath = 'data/texts/' . $filename;
                 if (file_exists($filePath)) {
                     try {
                         //import it,
                         $file = fopen($filePath, "r");
-                        $markdownText = fread($file,filesize($filePath));
+                        $markdownText = fread($file, filesize($filePath));
                         //normalize utf8
                         $data['markdownText'] = UTF8::filter($markdownText);
                         fclose($file);
-                        
+
                         $pathInfo = pathinfo($filePath);
-                        $pathWithoutExtension = 'data/texts/'.$pathInfo['filename'];
-                        
+                        $pathWithoutExtension = 'data/texts/' . $pathInfo['filename'];
+
                         //also the html
-                        $htmlFilePath = $pathWithoutExtension.'.html';
+                        $htmlFilePath = $pathWithoutExtension . '.html';
                         $file = fopen($htmlFilePath, "r");
-                        $data['htmlText'] = fread($file,filesize($htmlFilePath));
+                        $data['htmlText'] = fread($file, filesize($htmlFilePath));
                         fclose($file);
-                        
+
                         //also the plain text for a better word count
-                        $plainFilePath = $pathWithoutExtension.'.txt';
+                        $plainFilePath = $pathWithoutExtension . '.txt';
                         $file = fopen($plainFilePath, "r");
-                        $data['plainText'] = fread($file,filesize($plainFilePath));
+                        $data['plainText'] = fread($file, filesize($plainFilePath));
                         $data['wordCount'] = str_word_count($data['plainText']);
                         fclose($file);
-                        
+
                         //@todo for search text: replace word chars, strip non word chars
                     } catch (\Exception $e) {
                         if (isset($this->logger)) {
@@ -366,8 +366,8 @@ class EventTextTable extends SionTable implements
                     }
                 }
             }
-            
-            if (!empty($data)) {
+
+            if (! empty($data)) {
                 if (false === $simulate) {
                     //looks like we've got some updating to do
                     $result = $this->updateEntity('text', $objectId, $data, [], false);
@@ -380,7 +380,7 @@ class EventTextTable extends SionTable implements
         }
         return $results;
     }
-    
+
     public static function getBlogPostSchema(array $textObject)
     {
         $schema = new BlogPosting();
@@ -398,12 +398,12 @@ class EventTextTable extends SionTable implements
             $schema->setProperty('dateModified', $textObject['updatedOn']->format('Y-m-d')); //? 'Y-m-d H:i:s'
         }
         //@todo add url
-        if (!empty($textObject['tags'])) {
+        if (! empty($textObject['tags'])) {
             $schema->setProperty('keywords', implode(',', $textObject['tags']));
         }
         return $schema;
     }
-    
+
     /**
      * Create a resource for each blog user, in the format "blog_post_3", where 3 is the userId
      * Each resource will be a child of the "blog_post" resource
@@ -415,10 +415,10 @@ class EventTextTable extends SionTable implements
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        
+
         $sql = "SELECT DISTINCT `AclResourceId` FROM `texts` ORDER BY AclResourceId";
         $results = $this->fetchSome(null, $sql, null);
-        
+
         $return = [
             'blog_post' => [],
         ];
@@ -435,7 +435,7 @@ class EventTextTable extends SionTable implements
         $this->cacheEntityObjects($cacheKey, $return, ['text']);
         return $return;
     }
-    
+
     /**
      * {@inheritDoc}
      * @see \BjyAuthorize\Provider\Rule\ProviderInterface::getRules()
@@ -449,19 +449,19 @@ class EventTextTable extends SionTable implements
             [['blog_administrator'], 'blog_post', 'edit'],
             [['blog_administrator'], 'blog_post', 'delete'],
         ];
-        if (!isset($resources['blog_post']) || !is_array($resources['blog_post']) || empty($resources['blog_post'])) {
+        if (! isset($resources['blog_post']) || ! is_array($resources['blog_post']) || empty($resources['blog_post'])) {
             return ['allow' => $allow];
         }
         $blogPosts = $resources['blog_post'];
         $userIdFilter = new BlogPostUserIdFilter();
-        
+
         foreach ($blogPosts as $postResource) {
             //check if post is public
             $allow[] = [['user'], $postResource, 'show'];
-            
+
             //extract userId
             $userId = $userIdFilter->filter($postResource);
-            
+
             if (is_numeric($userId)) {
                 //set permissions for individual user
                 $allow[] = [["user_$userId"], $postResource, 'show'];

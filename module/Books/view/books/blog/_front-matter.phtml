@@ -1,6 +1,6 @@
 <p><i class="fa fa-user"></i> <?php echo sprintf($this->translate('by %s'), $this->entity['createdByUsername']);
 ?>  <i class="fa fa-calendar"></i> <?php echo $this->translate('Posted');?> <?php echo $this->diffForHumans($this->entity['createdOn']);?></p>
-<p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php 
+<p><i class="fa fa-tags"></i> <?php echo $this->translate('Tags');?>: <?php
 foreach ($this->entity['tags'] as $tag) : ?>
 <a href=""><span class="badge badge-info"><?php echo $this->escapeHtml($tag); //@todo translate this later?></span></a> 
 <?php endforeach;?></p>

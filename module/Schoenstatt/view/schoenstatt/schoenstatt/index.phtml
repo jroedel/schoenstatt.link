@@ -9,12 +9,14 @@ echo $this->partial('schoenstatt/assignments//assignments-table-partial', [
     'wrapInPanel' => true,
     'showActive' => true,
     'showInactive' => false,
-    'headerText'  => '<a href="'.$this->url('association',
+    'headerText'  => '<a href="' . $this->url(
+        'association',
         [
             'sw_id' => $associationSwIdFilter->filter($this->generalPresidiumId),
             'slug' => $this->generalPresidium['slugByLocale'][$locale]
-        ]).'">'.
-        $this->translate($this->generalPresidium['name']).'</a>',
+        ]
+    ) . '">' .
+        $this->translate($this->generalPresidium['name']) . '</a>',
     'columns'       => ['role', 'person', 'email', 'telephone'],
 ]);
 echo $this->partial('schoenstatt/assignments//assignments-table-partial', [

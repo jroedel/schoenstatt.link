@@ -70,7 +70,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
                 'multiple' => true,
             ],
         ]);
-        
+
         $this->add([
             'name' => 'isDraft',
             'type' => 'Checkbox',

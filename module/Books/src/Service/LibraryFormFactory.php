@@ -20,7 +20,7 @@ class LibraryFormFactory implements FactoryInterface
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
         /** @var SchoenstattTable $schoenstattTable **/
-        $schoenstattTable= $container->get(SchoenstattTable::class);
+        $schoenstattTable = $container->get(SchoenstattTable::class);
 
         $persons = $schoenstattTable->getPersonValueOptions();
         $config = $container->get('Books\Config');
@@ -28,14 +28,14 @@ class LibraryFormFactory implements FactoryInterface
         $schConfig = $container->get('Schoenstatt\Config');
         $personValueOptionsOptions = [];
         foreach ($schConfig['person_value_options_providers'] as $key => $options) {
-            if (!isset($options['label'])) {
+            if (! isset($options['label'])) {
                 throw new \Exception('person_value_options_providers must have a \'label\' key set');
             }
             $personValueOptionsOptions[$key] = $options['label'];
         }
-        
+
         $form = new LibraryForm();
-        
+
         /** @var \Zend\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id');

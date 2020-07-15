@@ -18,20 +18,20 @@ $this->headTitle($headText);
 <?php echo $this->partial('search-bar', [
     'form' => $this->form,
 ]);
-if ($this->isAllowed('route/publications/create')):?>
+if ($this->isAllowed('route/publications/create')) :?>
 <p><a class="btn btn-primary pull-right" href="<?php echo $this->url('publications/create');?>"><?php echo $this->translate('Add publication');?></a>
 <?php endif;?>
 
 <div class="row">
 
 <div class="col-md-9">
-<?php 
+<?php
 foreach ($this->objects as $categoryName => $category) :
-if (empty($category['objects'])) {
-continue;
-}?>
+    if (empty($category['objects'])) {
+        continue;
+    }?>
 <h3 id="<?php echo $category['bookmark'];?>"><?php echo $this->escapeHtml($this->translate($categoryName));?></h3>
-<?php 
+    <?php
     echo $this->partial('publication-list', [
         'objects' => $category['objects'],
         'columns' => [
@@ -48,12 +48,14 @@ endforeach;?>
     <ul class="nav nav-pills nav-stacked" data-spy="affix" data-offset-top="275">
     <?php $firstTime = true;
     foreach ($this->objects as $categoryName => $category) :
-    if (empty($category['objects'])) {
-    continue;
-    }?>
-       <li><a href="#<?php echo $this->escapeHtmlAttr($category['bookmark']);?>" <?php if ($firstTime) echo 'class="active"';?>><?php echo $this->escapeHtml($this->translate( $categoryName ));?></a></li>
-       <?php $firstTime = false;
-       endforeach;?>
+        if (empty($category['objects'])) {
+            continue;
+        }?>
+       <li><a href="#<?php echo $this->escapeHtmlAttr($category['bookmark']);?>" <?php if ($firstTime) {
+            echo 'class="active"';
+                     }?>><?php echo $this->escapeHtml($this->translate($categoryName));?></a></li>
+        <?php $firstTime = false;
+    endforeach;?>
     </ul>
  </nav>
  <!--Affix end-->

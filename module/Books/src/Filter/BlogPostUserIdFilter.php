@@ -9,7 +9,7 @@ class BlogPostUserIdFilter extends AbstractFilter
 
     public function filter($value)
     {
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             throw new \Exception('String expected');
         }
 

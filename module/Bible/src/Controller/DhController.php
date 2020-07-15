@@ -23,7 +23,7 @@ class DhController extends SionController
             'objects' => $objects,
         ]);
     }
-    
+
     protected function getEntityIdParam($action = 'show', $default = null)
     {
         //when the user is looking for a particular dh number, run the function to find the pageNumber
@@ -37,51 +37,51 @@ class DhController extends SionController
         }
         return parent::getEntityIdParam($action, $default);
     }
-    
+
     public function importAction()
     {
         $really = $this->params()->fromQuery('really') === 'yes';
-        if (!$really) {
+        if (! $really) {
             return new ViewModel(['results' => []]);
         }
         $doIt = $this->params()->fromQuery('doit') === 'yes';
-        
+
         $table = $this->getSionTable();
         $objects = $table->getObjects('dh-page');
-        
+
         $reHeader = '/(?<!\(|\d)(\d{1,4})(?!\)|\d)/';
-        
+
         $lastHeaderNumber = 0;
         $results = [];
         foreach ($objects as $object) {
             $pageNumber = $object['pageNumber'];
             $fileName = $object['fileName'];
-            $filePath = 'public/dh/'.$fileName;
-            if (!file_exists($filePath)) {
+            $filePath = 'public/dh/' . $fileName;
+            if (! file_exists($filePath)) {
                 throw new \Exception('File doesnt exist');
             }
-            
+
             $fileNameWoExt = substr($fileName, 0, strlen($fileName) - 4);
-            
+
             //get image information
             list($width, $height) = getimagesize($filePath);
-            
+
             //parse header
             $headerPath = "public/dh/headers/$pageNumber.txt";
             $headerHandle = fopen($headerPath, "r");
-            if ($headerHandle && !feof($headerHandle)) {
+            if ($headerHandle && ! feof($headerHandle)) {
                 $headerText = fgets($headerHandle);
             }
             fclose($headerHandle);
             $headerText = trim($headerText);
-            
+
             $headerDhNumber = null;
             if ($pageNumber >= 54) {
                 $matches = null;
                 preg_match_all($reHeader, $headerText, $matches);
                 $closestIndex = -1;
                 $closestDifference = 10000;
-                if ($matches && isset($matches[1]) && !empty($matches[1])) {
+                if ($matches && isset($matches[1]) && ! empty($matches[1])) {
                     foreach ($matches[1] as $key => $value) {
                         $number = (int)$value;
                         if ($number < $lastHeaderNumber) {
@@ -99,12 +99,12 @@ class DhController extends SionController
                     }
                 }
             }
-            
+
             //get full text
-            $textFile = $fileNameWoExt.'.markdown';
-            $textFilePath = 'public/dh/'.$textFile;
+            $textFile = $fileNameWoExt . '.markdown';
+            $textFilePath = 'public/dh/' . $textFile;
             $fullText = file_get_contents($textFilePath);
-            
+
             $data = [
                 'pageNumber' => $pageNumber,
                 'widthInPixels' => $width,
@@ -115,7 +115,7 @@ class DhController extends SionController
                 'fullTextFileName' => $textFile,
             ];
 //             var_dump($data);
-            
+
             if ($doIt) {
                 unset($data['pageNumber']);
                 $table->updateEntity('dh-page', $pageNumber, $data, [], false);
@@ -127,37 +127,37 @@ class DhController extends SionController
             'results' => $results,
         ]);
     }
-    
+
     protected function removeHyphens()
     {
         $table = $this->getSionTable();
         $objects = $table->getObjects('dh-page');
-        
+
         $reHyphen = '/-\n([a-záéíóúñ])/';
         $reHyphenSubst = '\\1';
         $results = [];
         foreach ($objects as $object) {
             $fileName = $object['fileName'];
-            $filePath = 'public/dh/'.$fileName;
-            if (!file_exists($filePath)) {
+            $filePath = 'public/dh/' . $fileName;
+            if (! file_exists($filePath)) {
                 throw new \Exception('File doesnt exist');
             }
-            
+
             $fileNameWoExt = substr($fileName, 0, strlen($fileName) - 4);
-            $textFile = $fileNameWoExt.'.txt';
-            $textFilePath = 'public/dh/'.$textFile;
+            $textFile = $fileNameWoExt . '.txt';
+            $textFilePath = 'public/dh/' . $textFile;
             $fullTextFileContents = file_get_contents($textFilePath);
-            
+
             $result = preg_replace($reHyphen, $reHyphenSubst, $fullTextFileContents);
-            $newTextFile = 'public/dh/'.$fileNameWoExt.'-nohyphens'.'.txt';
+            $newTextFile = 'public/dh/' . $fileNameWoExt . '-nohyphens' . '.txt';
             file_put_contents($newTextFile, $result);
-            $finalTextFile = $fileNameWoExt.'.markdown';
+            $finalTextFile = $fileNameWoExt . '.markdown';
             $command = "pandoc -t markdown -o $finalTextFile $newTextFile";
             $results[] = $command;
         }
         return $results;
     }
-    
+
     protected function initialImport()
     {
         $table = $this->getSionTable();
@@ -165,11 +165,11 @@ class DhController extends SionController
         for ($pageNumber = 1; $pageNumber <= 1631; $pageNumber++) {
             //get a nonce
             $nonce = Rand::getString(14, 'abcdefghijklmnopqrstuvwxyz0123456789');
-            $filePageNumber = $pageNumber-1;
+            $filePageNumber = $pageNumber - 1;
             $origFilePath = "data/dh-orig/page_$filePageNumber.png";
-            $newFileName = $nonce."-page$pageNumber.png";
+            $newFileName = $nonce . "-page$pageNumber.png";
             $newFilePath = "public/dh/$newFileName";
-            
+
             $rename = "mv $origFilePath $newFilePath";
             //put together insert data
             $data = [

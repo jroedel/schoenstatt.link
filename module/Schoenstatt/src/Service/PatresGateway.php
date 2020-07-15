@@ -39,9 +39,9 @@ class PatresGateway
      * @var string $personListUri
      */
     protected $personListUri;
-    
+
     /**
-     * 
+     *
      * @var LoggerInterface $logger
      */
     protected $logger;
@@ -86,7 +86,7 @@ class PatresGateway
     public function getPersonList()
     {
         $cacheKey = 'patres-gateway-person-list';
-        if (isset($this->schoenstattTable) 
+        if (isset($this->schoenstattTable)
             && null !== ($cache = $this->schoenstattTable->fetchCachedEntityObjects($cacheKey))
         ) {
             return $cache;
@@ -103,7 +103,7 @@ class PatresGateway
             $logger = $this->getLogger();
             if (isset($logger)) {
                 $logger->err("Error requesting the person list from schoenstatt-fathers.link. Reason: "
-                    .$e->getMessage());
+                    . $e->getMessage());
             }
             throw $e;
         }
@@ -113,7 +113,7 @@ class PatresGateway
                 . $response->getStatusCode());
         }
         $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
-        if (!isset($data['data'])) {
+        if (! isset($data['data'])) {
             throw new \Exception('Failed to retrieve list of fathers from Patres. No data returned');
         }
         $persons = $data['data'];
@@ -195,13 +195,13 @@ class PatresGateway
         $response = $client->send();
 
         if (200 != $response->getStatusCode()) {
-            throw new \Exception('Request for information on father \''.$personId.'\' failed. Status code: '
-                .$response->getStatusCode());
+            throw new \Exception('Request for information on father \'' . $personId . '\' failed. Status code: '
+                . $response->getStatusCode());
         }
         $data = Json::decode($response->getBody(), Json::TYPE_ARRAY);
-        if (!isset($data['data'])) {
-            throw new \Exception('Request for information on father \''.$personId
-                .'\' failed. No information returned.');
+        if (! isset($data['data'])) {
+            throw new \Exception('Request for information on father \'' . $personId
+                . '\' failed. No information returned.');
         }
         $person = $data['data'];
         if (isset($person['bishopDate'])) {
@@ -251,7 +251,7 @@ class PatresGateway
      */
     public function updateSchoenstattTablePerson($personId, $options = [])
     {
-        if (!$personData = $this->getPersonInSchoenstattTable($personId)) {
+        if (! $personData = $this->getPersonInSchoenstattTable($personId)) {
             return false;
         }
         $this->complementSchoenstattTablePersonDataKeysWithOptions($personData, $options);
@@ -298,7 +298,7 @@ class PatresGateway
      */
     public function getSchoenstattConfig()
     {
-        if (!is_array($this->schoenstattConfig)) {
+        if (! is_array($this->schoenstattConfig)) {
             throw new \Exception('No config set');
         }
         return $this->schoenstattConfig;
@@ -325,7 +325,7 @@ class PatresGateway
             $config = $this->getSchoenstattConfig();
             $this->personListUri = $config['patres_api_person_list_uri'];
         }
-        if (!is_string($this->personListUri)) {
+        if (! is_string($this->personListUri)) {
             throw new \Exception('No person list URI available');
         }
         return $this->personListUri;
@@ -352,7 +352,7 @@ class PatresGateway
             $config = $this->getSchoenstattConfig();
             $this->apiKey = $config['patres_api_key'];
         }
-        if (!is_string($this->apiKey)) {
+        if (! is_string($this->apiKey)) {
             throw new \Exception('No API key available');
         }
         return $this->apiKey;
@@ -371,7 +371,7 @@ class PatresGateway
 
     public function getPersonUri($personId)
     {
-        if (!is_numeric($personId)) {
+        if (! is_numeric($personId)) {
             throw new \InvalidArgumentException('personId should be numeric');
         }
         $uriFormat = $this->getPersonUriFormat();
@@ -384,11 +384,11 @@ class PatresGateway
     */
     public function getPersonUriFormat()
     {
-        if (!$this->personUriFormat) {
+        if (! $this->personUriFormat) {
             $config = $this->getSchoenstattConfig();
             $this->setPersonUriFormat($config['patres_api_get_person_uri']);
         }
-        if (!$this->personUriFormat) {
+        if (! $this->personUriFormat) {
             throw new \Exception('No person URI set');
         }
         return $this->personUriFormat;
@@ -414,7 +414,7 @@ class PatresGateway
      */
     public function getSchoenstattTable()
     {
-        if (!$this->schoenstattTable instanceof SchoenstattTable) {
+        if (! $this->schoenstattTable instanceof SchoenstattTable) {
             throw new \Exception('No schoenstatt table set');
         }
         return $this->schoenstattTable;
@@ -430,13 +430,13 @@ class PatresGateway
         $this->schoenstattTable = $schoenstattTable;
         return $this;
     }
-    
+
     public function setLogger(LoggerInterface $logger)
     {
         $this->logger = $logger;
         return $this;
     }
-    
+
     public function getLogger()
     {
         return $this->logger;

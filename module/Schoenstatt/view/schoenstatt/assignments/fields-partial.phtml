@@ -4,10 +4,10 @@ $this->formSelect()->setTranslatorEnabled(false);
 echo $this->formRow($form->get('associationId'));
 echo $this->formRow($form->get('personId'));
 $this->formSelect()->setTranslatorEnabled(true);
-if (!$form->get('personId')->getAttribute('disabled') && $this->isAllowed('route/persons/create')):?>
+if (! $form->get('personId')->getAttribute('disabled') && $this->isAllowed('route/persons/create')) :?>
 <p><?php echo $this->translate('New person?')?> <a target="_blank" href="<?php
 echo $this->url('persons/create');?>"><?php echo $this->translate('Add new person'); ?></a>
-    <?php if ($this->isAllowed('route/admin/import-father')):?>
+    <?php if ($this->isAllowed('route/admin/import-father')) :?>
     or <a target="_blank" href="<?php echo $this->url('admin/import-father');?>"><?php echo $this->translate('Import from Patres')?></a>
     <?php endif;
 endif;

@@ -19,14 +19,14 @@ $smtpOptions = [
      * Default value is an empty string
      */
     'username' => 'webmaster@schoenstatt.link',
-    
+
     /**
      * The SMTP authentication credential.
      *
      * Default value is an empty string
      */
     'password' => 'xxxxxxxxxxxxx',
-    
+
     /**
      * This defines the encryption type to be used, 'ssl' or 'tls'.
      * Null should be used to disable SSL.
@@ -35,7 +35,7 @@ $smtpOptions = [
      */
     'ssl'   => 'tls',
     'port'  => 587,
-    'server'=> 'mail.your-server.de',
+    'server' => 'mail.your-server.de',
 ];
 
 return [
@@ -61,14 +61,14 @@ return [
     ],
     'schoenstatt' => [
         'gdpr_ip_address_exceptions' => [
-            
+
         ],
         'api_keys' => [
             'xxxxxxxxxxxxxxxxxxxxx',
         ],
         'patres_api_key' => 'xxxxxxxxxxxxxxxxxxxxxxxx',
         'patres_api_person_list_uri' => 'https://schoenstatt-fathers.link/api/persons',
-        'patres_api_get_person_uri' =>  'https://schoenstatt-fathers.link/api/persons/%s',
+        'patres_api_get_person_uri' => 'https://schoenstatt-fathers.link/api/persons/%s',
     ],
     'service_manager' => [
         'factories' => [
@@ -86,7 +86,7 @@ return [
     'acmailer_options' => [
         // Default mail service
         'default' => [
-            
+
             'smtp_options' => [
                 'connection_config' => $smtpOptions,
             ],
@@ -94,8 +94,8 @@ return [
     ],
     'smtp_options' => $smtpOptions,
     'session_config' => [
-    	'cookie_secure' => true,
-    	'cookie_http_only' => true,
+        'cookie_secure' => true,
+        'cookie_http_only' => true,
     ],
     'ApiRequest' => [
         'jwtAuth' => [

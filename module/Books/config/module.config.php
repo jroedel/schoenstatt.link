@@ -98,7 +98,7 @@ return [
             'Purchase'  => 'Purchase',
             'Borrow'    => 'Borrow',
             'Wikipedia' => 'Wikipedia',
-            'Information'=> 'Information',
+            'Information' => 'Information',
         ],
         'admin_pages' => [
             'books/create'            => [
@@ -108,35 +108,35 @@ return [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'checkouts/library/current'=> [
+            'checkouts/library/current' => [
                 'label' => "Review checkouts",
                 'description' => 'List and review current checkouts for this library.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'checkouts/library/overdue'=> [
+            'checkouts/library/overdue' => [
                 'label' => "Review overdue books",
                 'description' => 'List and review overdue checkouts for this library.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'libraries/library/checkin'=> [
+            'libraries/library/checkin' => [
                 'label' => "Check-in books",
                 'description' => 'Check books back into the library.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'libraries/library/mass-checkout'=> [
+            'libraries/library/mass-checkout' => [
                 'label' => "Mass book checkouts",
                 'description' => 'Register offline checkout notices.',
                 'route_parameters' => [
                     'library_id' => ':libraryId',
                 ],
             ],
-            'libraries/library/inactivate-books'=> [
+            'libraries/library/inactivate-books' => [
                 'label' => "Mass book inactivation",
                 'description' => 'Inactivate books in bulk.',
                 'route_parameters' => [
@@ -546,7 +546,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
                             '/^$'
-                            ),
+                        ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
@@ -563,7 +563,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\PublicationsController::class,
@@ -579,7 +579,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\PublicationsController::class,
@@ -595,7 +595,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\PublicationsController::class,
@@ -611,7 +611,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\PublicationsController::class,
@@ -979,7 +979,7 @@ return [
                 'options' => [
                     'route'    => '/borrowers',
                     'defaults' => [
-                        'controller'=> Controller\BorrowersController::class,
+                        'controller' => Controller\BorrowersController::class,
                         'action'    => 'index',
                     ],
                 ],
@@ -1013,7 +1013,7 @@ return [
                 'options' => [
                     'route'    => '/library-imports',
                     'defaults' => [
-                        'controller'=> Controller\LibraryImportsController::class,
+                        'controller' => Controller\LibraryImportsController::class,
                     ],
                 ],
                 'may_terminate' => false,
@@ -1082,7 +1082,7 @@ return [
                 'options' => [
                     'route'    => '/checkouts',
                     'defaults' => [
-                        'controller'=> Controller\CheckoutsController::class,
+                        'controller' => Controller\CheckoutsController::class,
                         'action'    => 'index',
                     ],
                 ],
@@ -1289,7 +1289,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
                             '/^$'
-                            ),
+                        ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
@@ -1306,7 +1306,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\TextsController::class,
@@ -1322,7 +1322,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\TextsController::class,
@@ -1361,7 +1361,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
                             '/^$'
-                            ),
+                        ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
@@ -1378,7 +1378,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\EventsController::class,
@@ -1394,7 +1394,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_EVENT],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\EventsController::class,
@@ -1421,7 +1421,7 @@ return [
                                 'sw_id' => trim(
                                     SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
                                     '/^$'
-                                    ),
+                                ),
                                 'slug' => '[a-z0-9-]{1,200}',
                             ],
                             'defaults' => [
@@ -1438,7 +1438,7 @@ return [
                                         'sw_id' => trim(
                                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
                                             '/^$'
-                                            ),
+                                        ),
                                     ],
                                     'defaults' => [
                                         'action'     => 'delete',
@@ -1453,7 +1453,7 @@ return [
                                         'sw_id' => trim(
                                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
                                             '/^$'
-                                            ),
+                                        ),
                                     ],
                                     'defaults' => [
                                         'action'     => 'edit',
@@ -1481,7 +1481,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
                             '/^$'
-                            ),
+                        ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [
@@ -1498,7 +1498,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\CompositionsController::class,
@@ -1514,7 +1514,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
                             '/^$'
-                            ),
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\CompositionsController::class,
@@ -1777,7 +1777,7 @@ return [
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'libraries/library',
                 'create_action_redirect_route_key'      => 'library_id',
-                'create_action_redirect_route_key_field'=> 'libraryId',
+                'create_action_redirect_route_key_field' => 'libraryId',
 //                 'create_action_template'                 => 'project/events/create',
 //                 'touch_default_field'                => 'eventId',
 //                 'touch_field_route_key'                  => 'event_id',
@@ -1811,11 +1811,11 @@ return [
                     'contactEmail'          => 'ContactEmail',
                     'mainShowDisplay'       => 'MainShowDisplay',
                     'useCollections'        => 'UseCollections',
-                    'allowCollectionlessBooks'=> 'AllowCollectionlessBooks',
+                    'allowCollectionlessBooks' => 'AllowCollectionlessBooks',
                     'mainCollectionId'      => 'MainCollectionId',
                     'requireCallNumbers'    => 'RequireCallNumbers',
                     'callNumberRegex'       => 'CallNumberRegex',
-                    'enforceCallNumberRegex'=> 'EnforceCallNumberRegex',
+                    'enforceCallNumberRegex' => 'EnforceCallNumberRegex',
                     'labelLine1'            => 'LabelLine1',
                     'labelLine2'            => 'LabelLine2',
                     'labelLine3'            => 'LabelLine3',
@@ -1824,7 +1824,7 @@ return [
                     'defaultCheckoutPersonId' => 'DefaultCheckoutPersonId',
                     'defaultCheckoutTimePeriodInDays' => 'DefaultCheckoutTimePeriodInDays',
                     'enableCheckouts'       => 'EnableCheckouts',
-                    'checkoutPersonListKind'=> 'CheckoutPersonListKind',
+                    'checkoutPersonListKind' => 'CheckoutPersonListKind',
                     'checkoutBooksRole'     => 'CheckoutBooksRole',
                     'viewRole'              => 'ViewRole',
                     'isActive'              => 'IsActive',
@@ -2077,7 +2077,7 @@ return [
                 'create_action_valid_data_handler'      => 'createCheckouts',
                 'create_action_redirect_route'          => 'borrowers/borrower',
                 'create_action_redirect_route_key'      => 'person_id',
-                'create_action_redirect_route_key_field'=> 'personId',
+                'create_action_redirect_route_key_field' => 'personId',
                 'create_action_template'                => 'books/checkouts/multiple-checkouts',
 //                 'touch_default_field'                => 'eventId',
 //                 'touch_field_route_key'                  => 'event_id',
@@ -2169,7 +2169,7 @@ return [
 //                 'create_action_valid_data_handler'       => 'createEvent',
                 'create_action_redirect_route'          => 'publication',
                 'create_action_redirect_route_key'      => 'sw_id',
-                'create_action_redirect_route_key_field'=> 'identifier',
+                'create_action_redirect_route_key_field' => 'identifier',
 //                 'create_action_template'                 => 'project/events/create',
 //                 'touch_default_field'                => 'publicationId',
 //                 'touch_field_route_key'                  => 'sw_id',
@@ -2220,7 +2220,7 @@ return [
                     'url3'                      => 'Url3',
                     'url3Label'                 => 'Url3Label',
                     'mainPublicationId'         => 'MainPublicationId', //mainEntity
-                    'translatedFromPublicationId'=> 'TranslatedFromPublicationId',
+                    'translatedFromPublicationId' => 'TranslatedFromPublicationId',
                     'volumeNumber'              => 'VolumeNumber',
                     'containedIn'               => 'ContainedIn',
                     'containedInIsbn'           => 'ContainedInIsbn',
@@ -2799,7 +2799,7 @@ return [
                 ['route' => 'api-v1/libraries/books', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/pending-labels', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/pending-labels/finish-pending-labels', 'roles' => ['guest', 'user']],
-                
+
                 ['route' => 'api-v1/dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary/list', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/dictionary/list/entry', 'roles' => ['guest', 'user']],
@@ -2809,7 +2809,7 @@ return [
                 ['route' => 'api-v1/slugify-terms', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/literature', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/test', 'roles' => ['lib_user']],
-                
+
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
@@ -2820,16 +2820,16 @@ return [
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/export', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/one-fifty-preguntas', 'roles' => ['guest', 'user']],
-                
+
                 ['route' => 'publications/publication-old', 'roles' => ['guest', 'user']],
                 ['route' => 'publication', 'roles' => ['guest', 'user']],
                 ['route' => 'publication-edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-delete', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-create-new-edition', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-upload-cover', 'roles' => ['pub_moderator']],
-                
+
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
-                
+
                 ['route' => 'text', 'roles' => ['texts_user']], //extra checks in controller
                 ['route' => 'texts', 'roles' => ['texts_user']],
                 ['route' => 'text-edit', 'roles' => ['texts_moderator']],
@@ -2837,22 +2837,22 @@ return [
                 ['route' => 'text-delete', 'roles' => ['texts_moderator']],
                 ['route' => 'texts/jk-import', 'roles' => ['administrator']],
                 ['route' => 'texts/create', 'roles' => ['texts_moderator']],
-                
+
                 ['route' => 'blog', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/create', 'roles' => ['blog_contributor']],
                 ['route' => 'blog/blog-post', 'roles' => ['guest', 'user']],
                 ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
                 ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
-                
+
                 ['route' => 'dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'dictionary/inLanguage', 'roles' => ['guest', 'user']],
                 ['route' => 'dictionary/entry/edit', 'roles' => ['dict_administrator']],
                 ['route' => 'dictionary/create', 'roles' => ['dict_administrator']],
-                
+
                 ['route' => 'books/book', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
                 ['route' => 'books/create', 'roles' => ['lib_user']],
-                
+
                 ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
@@ -2890,14 +2890,14 @@ return [
                 ['route' => 'library-imports/library/create', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
-                
+
                 ['route' => 'music', 'roles' => ['guest', 'user']],
                 ['route' => 'composition', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'composition-edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'music/create-composition', 'roles' => ['sch_user']],
                 ['route' => 'music/import', 'roles' => ['administrator']],
-                
+
                 ['route' => 'events', 'roles' => ['user', 'guest']],
             ],
         ],

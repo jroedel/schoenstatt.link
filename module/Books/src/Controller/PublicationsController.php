@@ -18,14 +18,14 @@ use Zend\Json\Json;
 class PublicationsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 1000;
-    
+
     public function oneFiftyPreguntasAction()
     {
         $view = new ViewModel();
         $view->setTemplate('books/publications/one-fifty-preguntas');
         return $view;
     }
-    
+
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('publication_id');
@@ -36,9 +36,9 @@ class PublicationsController extends SionController
                  * @var \Zend\Http\Response $response
                  */
                 $response = $this->redirect()->toRoute(
-                    'publication', 
+                    'publication',
                     ['sw_id' => $object['identifier'], 'slug' => $object['slug']]
-                    );
+                );
                 $response->setStatusCode(301);
                 return $response;
             }
@@ -46,11 +46,11 @@ class PublicationsController extends SionController
         $entity = $this->getEntity();
         $entitySpec = $this->getEntitySpecification();
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
-        ->addMessage(ucwords($entity).' not found.');
+        ->addMessage(ucwords($entity) . ' not found.');
         $redirectRoute = $entitySpec->indexRoute ? $entitySpec->indexRoute : $this->getDefaultRedirectRoute();
         return $this->redirect()->toRoute($redirectRoute);
     }
-    
+
     public function showAction()
     {
         $view = parent::showAction();
@@ -93,13 +93,13 @@ class PublicationsController extends SionController
         $libraries = $libraryTable->getObjects('library');
         //check which libraries the user has access to
         foreach ($libraries as $libraryId => $library) {
-            if (!$this->isAllowed($library['resourceId'], 'show')) {
+            if (! $this->isAllowed($library['resourceId'], 'show')) {
                 unset($libraries[$libraryId]);
             }
         }
         //gather the publicationIds to search for
         $publicationIds = [$entityObject['publicationId']];
-        if (isset($entityObject['subEditions']) && is_array($entityObject['subEditions']) && !empty($entityObject['subEditions'])) {
+        if (isset($entityObject['subEditions']) && is_array($entityObject['subEditions']) && ! empty($entityObject['subEditions'])) {
             $publicationIds = array_merge($publicationIds, $entityObject['subEditions']);
         }
         //search the viewable libraries for pubId's related to this item (including subeditions)
@@ -131,11 +131,11 @@ class PublicationsController extends SionController
 
         $dictionaries = $this->getDictionaries();
         $libraries = $this->getLibraries();
-        
+
         $view = new ViewModel([
             'form'      => $form,
             'entity'    => $entity,
-            'entitySpec'=> $entitySpec,
+            'entitySpec' => $entitySpec,
             'languages' => $languages,
             'objects'   => $objects,
             'dictionaries' => $dictionaries,
@@ -143,16 +143,16 @@ class PublicationsController extends SionController
         ]);
         return $view;
     }
-    
+
     protected function getDictionaries()
     {
         /** @var DictionaryTable $dictionaryTable */
         $dictionaryTable = $this->services[DictionaryTable::class];
         $dictionaries = $dictionaryTable->getAvailableDictionaryLanguages();
-        
+
         return $dictionaries;
     }
-    
+
     protected function getLibraries()
     {
         /** @var LibraryTable $table */
@@ -160,7 +160,7 @@ class PublicationsController extends SionController
         $objects = $table->getObjects('library');
         return $objects;
     }
-    
+
     public function indexAction()
     {
         /** @var \Books\Model\PublicationsTable $table */
@@ -169,9 +169,9 @@ class PublicationsController extends SionController
         $entitySpec = $this->getEntitySpecification();
         $language   = $this->params()->fromRoute('inLanguage');
         $objects    = $table->searchPublications(
-            ['inLanguage' => $language], 
+            ['inLanguage' => $language],
             ['noSubEditions' => true, 'isAwaitingMerger' => false]
-            );
+        );
         $objects    = $this->groupPublicationsByCategory($objects);
 
         $form = $this->services[PublicationsSearchForm::class];
@@ -187,7 +187,7 @@ class PublicationsController extends SionController
             'form'      => $form,
             'language'  => $language,
             'entity'    => $entity,
-            'entitySpec'=> $entitySpec,
+            'entitySpec' => $entitySpec,
             'objects'   => $objects,
             'files'     => $publicationFiles,
         ]);
@@ -202,7 +202,7 @@ class PublicationsController extends SionController
         $noCategoryObjects = [];
         foreach ($objects as $pubId => $object) {
             if (isset($object['categoryName'])) {
-                if (!isset($categories[$object['categoryName']])) { //add this group array key
+                if (! isset($categories[$object['categoryName']])) { //add this group array key
                     $bookmark = preg_replace("/\s+/", "-", strtolower(trim($object['categoryName'])));
                     $bookmark = preg_replace("/[^a-z-]+/", "", $bookmark);
                     $bookmark = trim($bookmark, '- ');
@@ -307,12 +307,12 @@ class PublicationsController extends SionController
         if ($form->isValid()) {
             $data = $form->getData();
 
-            if (!empty($data)) {
+            if (! empty($data)) {
                 /** @var \Books\Model\PublicationsTable $table */
                 $table = $this->getSionTable();
                 $options = [];
                 $options['maxResults'] = self::MAX_SEARCH_RESULTS;
-                if (!isset($data['showEditionsSeparately']) || $data['showEditionsSeparately'] != '1') {
+                if (! isset($data['showEditionsSeparately']) || $data['showEditionsSeparately'] != '1') {
                     $options['noSubEditions'] = true;
                 }
                 $entities = $table->searchPublications($data, $options);
@@ -342,11 +342,11 @@ class PublicationsController extends SionController
     {
         /** @var PublicationsTable $table */
         $table      = $this->getSionTable();
-        $id         = (Int)$this->getEntityIdParam('show');
+        $id         = (int)$this->getEntityIdParam('show');
         $object     = $this->getEntityObject($id);
 
         //set the new mainPublicationId to the old publicationId
-        if (!isset($object['mainPublicationId'])) { //else, leave it as it was
+        if (! isset($object['mainPublicationId'])) { //else, leave it as it was
             $object['mainPublicationId'] = $object['publicationId'];
         }
 
@@ -400,14 +400,14 @@ class PublicationsController extends SionController
 //                 var_dump($data);
                 /** @var FilesTable $filesTable */
                 $filesTable = $this->services[FilesTable::class];
-                if (!$newId = $filesTable->createEntity('file', $data)) {
+                if (! $newId = $filesTable->createEntity('file', $data)) {
                     //update the publication record
                     $publicationData = [
                         'bookCoverFileId' => $newId
                     ];
                     $publicationTable = $this->getSionTable();
                     $publicationTable->updateEntity('publication', $id, $publicationData);
-                    
+
                     $swFilter = new ToSchoenstattLinkIdentifier('publication');
                     $identifier = $swFilter->filter($id);
                     return $this->redirect()->toRoute('publication', ['sw_id' => $identifier]);
@@ -442,10 +442,10 @@ class PublicationsController extends SionController
         $changes = [];
         foreach ($publications as $publicationId => $object) {
             $trimmed = trim($object['title'], '. ');
-            $howMany = strlen($object['title'])-strlen($trimmed);
+            $howMany = strlen($object['title']) - strlen($trimmed);
             if ($howMany !== 0 && $howMany < 3) {
                 $changes[$object['title']] = $trimmed;
-                if (!$simulate) {
+                if (! $simulate) {
                     $table->updateEntity('publication', $publicationId, ['title' => $trimmed], [], false);
                 }
             }
@@ -493,7 +493,7 @@ class PublicationsController extends SionController
         ]);
         return $view;
     }
-    
+
     /**
      * Makes sure this function returns the publicationId if passed a site-wide id
      *
@@ -506,13 +506,13 @@ class PublicationsController extends SionController
         static $swFilter;
         $id = $this->params()->fromRoute('sw_id');
         if (isset($id)) {
-            if (!isset($swValidator)) {
+            if (! isset($swValidator)) {
                 $swValidator = new SchoenstattLinkIdentifier();
             }
-            if (!$swValidator->isValid($id)) {
+            if (! $swValidator->isValid($id)) {
                 throw new \Exception('Invalid site-wide id');
             }
-            if (!isset($swFilter)) {
+            if (! isset($swFilter)) {
                 $swFilter = new \Schoenstatt\Filter\SchoenstattLinkIdentifier();
             }
             $id = $swFilter->filter($id);

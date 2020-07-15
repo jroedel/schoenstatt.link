@@ -30,7 +30,7 @@ class Module
         'blog-pages',
         'music-pages',
     ];
-    
+
     /**
      * @param MvcEvent $e
      */
@@ -40,17 +40,17 @@ class Module
         $sm = $app->getServiceManager();
         $strategy = $sm->get(GdprStrategy::class);
         $strategy->attach($app->getEventManager());
-        
+
         /** @var StorageInterface $cache */
         $cache = $sm->get('SionModel\PersistentCache');
         $locale = \Locale::getDefault();
-        if (!array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
+        if (! array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
             $locale = 'en_US';
         }
         $pagesByCacheKey = $cache->getItems(self::PAGES_CACHE_KEYS);
-        
-        
-        if (!isset($pagesByCacheKey['dictionary-pages'])) {
+
+
+        if (! isset($pagesByCacheKey['dictionary-pages'])) {
             $dictionaryPages = [];
             /** @var DictionaryTable $dictionaryTable */
             $dictionaryTable = $sm->get(DictionaryTable::class);
@@ -60,26 +60,26 @@ class Module
                     'label' => sprintf('German to %s Dictionary', $object['inLanguageName']),
                     'route' => 'dictionary/inLanguage',
                     'params' => ['inLanguage' => $object['inLanguage']],
-                    'id'    => 'dict_'.$object['inLanguage'],
+                    'id'    => 'dict_' . $object['inLanguage'],
                 ];
             }
             $pagesByCacheKey['dictionary-pages'] = $dictionaryPages;
             $cache->setItem('dictionary-pages', $dictionaryPages);
         }
-        
-        if (!isset($pagesByCacheKey['publication-pages'])) {
+
+        if (! isset($pagesByCacheKey['publication-pages'])) {
             $publicationPages = [];
             $pagesByLanguage = [];
             $table = $sm->get(PublicationsTable::class);
             $publications = $table->getObjects('publication');
             foreach ($publications as $publicationId => $object) {
                 if ($object['resourceId'] === 'publication_public') {
-                    $inLanguage = isset($object['inLanguage']) 
-                        && is_array($object['inLanguage']) 
-                        && isset($object['inLanguage'][0]) 
-                        ? $object['inLanguage'][0] 
+                    $inLanguage = isset($object['inLanguage'])
+                        && is_array($object['inLanguage'])
+                        && isset($object['inLanguage'][0])
+                        ? $object['inLanguage'][0]
                         : null;
-                    if (!array_key_exists($inLanguage, $pagesByLanguage)) {
+                    if (! array_key_exists($inLanguage, $pagesByLanguage)) {
                         $pagesByLanguage[$inLanguage] = [];
                     }
                     $pagesByLanguage[$inLanguage][] = [
@@ -89,12 +89,12 @@ class Module
                             'sw_id' => $object['identifier'],
                             'slug' => $object['slug'],
                         ],
-                        'id'    => 'pub_'.$publicationId,
+                        'id'    => 'pub_' . $publicationId,
                     ];
                 }
             }
-            
-            if (!isset($dictionaryTable)) {
+
+            if (! isset($dictionaryTable)) {
                 /** @var DictionaryTable $dictionaryTable */
                 $dictionaryTable = $sm->get(DictionaryTable::class);
             }
@@ -102,10 +102,10 @@ class Module
             foreach ($pagesByLanguage as $languageCode => $pages) {
                 $languageName = isset($languageNames[$languageCode]) ? $languageNames[$languageCode] : 'Other';
                 $publicationPages[] = [
-                    'label' => $languageName.' Schoenstatt Literature',
+                    'label' => $languageName . ' Schoenstatt Literature',
                     'route' => 'publications/index',
                     'params' => ['inLanguage' => $languageCode],
-                    'id'    => 'pub_lang_'.$languageCode,
+                    'id'    => 'pub_lang_' . $languageCode,
                     'pages' => $pages,
                 ];
             }
@@ -114,23 +114,23 @@ class Module
                 'route' => 'publications/one-fifty-preguntas',
                 'id'    => 'pub_one_fifty_preguntas',
             ];
-            
+
             $pagesByCacheKey['publication-pages'] = $publicationPages;
             $cache->setItem('publication-pages', $publicationPages);
         }
-        
-        if (!isset($pagesByCacheKey['association-pages'])) {
+
+        if (! isset($pagesByCacheKey['association-pages'])) {
             $associationPages = [
                 'movement' => [],
                 'shrinesByRegion' => [],
                 'shrinesWorld' => [],
                 'waysideShrines' => [],
             ];
-            
+
             /** @var SchoenstattTable $schoenstattTable */
             $schoenstattTable = $sm->get(SchoenstattTable::class);
             $associations = $schoenstattTable->getObjects('association');
-            
+
             foreach ($associations as $object) {
                 if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {
                     //@todo this could be subdivided heirarchically
@@ -143,7 +143,7 @@ class Module
                         ],
                     ];
                 }
-                if (!isset($object['countryRegion'])) {
+                if (! isset($object['countryRegion'])) {
                     $associationPages['shrinesWorld'][] = [
                         'label' => $object['name'],
                         'route' => 'association',
@@ -154,7 +154,7 @@ class Module
                     ];
                 } else {
                     $key = $object['countryRegion'];
-                    if (!isset($associationPages['shrinesByRegion'][$key])) {
+                    if (! isset($associationPages['shrinesByRegion'][$key])) {
                         $associationPages['shrinesByRegion'][$key] = [
                             'label' => $key,
                             'route' => 'shrines',
@@ -172,18 +172,18 @@ class Module
                     ];
                 }
             }
-            
+
             $pagesByCacheKey['association-pages'] = $associationPages;
             $cache->setItem('association-pages', $associationPages);
         }
-        
-        if (!isset($pagesByCacheKey['library-pages'])) {
+
+        if (! isset($pagesByCacheKey['library-pages'])) {
             $libraryPages = [];
             /** @var LibraryTable $libraryTable */
             $libraryTable = $sm->get(LibraryTable::class);
             $libraries = $libraryTable->getObjects('library');
             foreach ($libraries as $object) {
-                if (!$object['isActive']) {
+                if (! $object['isActive']) {
                     continue;
                 }
                 $libraryPages[] = [
@@ -191,14 +191,14 @@ class Module
                     'route' => 'libraries/library',
                     'params' => ['library_id' => $object['libraryId']],
     //                 'resource' => $object['viewRole'],
-                    'id'    => 'lib_'.$object['libraryId'],
+                    'id'    => 'lib_' . $object['libraryId'],
                 ];
             }
             $pagesByCacheKey['library-pages'] = $libraryPages;
             $cache->setItem('library-pages', $libraryPages);
         }
-        
-        if (!isset($pagesByCacheKey['blog-pages'])) {
+
+        if (! isset($pagesByCacheKey['blog-pages'])) {
             $blogPages = [];
             /** @var EventTextTable $eventTextTable */
             $eventTextTable = $sm->get(EventTextTable::class);
@@ -209,14 +209,14 @@ class Module
                     'route' => 'blog/blog-post',
                     'params' => ['sw_id' => $object['identifier'], 'slug' => $object['slug']],
                     //                 'resource' => $object['viewRole'],
-                    'id'    => 'blog_'.$object['textId'],
+                    'id'    => 'blog_' . $object['textId'],
                 ];
             }
             $pagesByCacheKey['blog-pages'] = $blogPages;
             $cache->setItem('blog-pages', $blogPages);
         }
-        
-        if (!isset($pagesByCacheKey['music-pages'])) {
+
+        if (! isset($pagesByCacheKey['music-pages'])) {
             $musicPages = [];
             /** @var MusicTable $musicTable */
             $musicTable = $sm->get(MusicTable::class);
@@ -227,13 +227,13 @@ class Module
                     'route' => 'composition',
                     'params' => ['sw_id' => $object['identifier'], 'slug' => $object['slug']],
                     //                 'resource' => $object['viewRole'],
-                    'id'    => 'composition_'.$object['compositionId'],
+                    'id'    => 'composition_' . $object['compositionId'],
                 ];
             }
             $pagesByCacheKey['music-pages'] = $musicPages;
             $cache->setItem('music-pages', $musicPages);
         }
-        
+
         //build out the navigation a little
         /** @var Navigation $navigation */
         $navigation = $sm->get(Navigation::class);
@@ -245,7 +245,7 @@ class Module
         $libPage = $navigation->findOneBy('route', 'libraries');
         $blogPage = $navigation->findOneBy('route', 'blog');
         $musicPage = $navigation->findOneBy('route', 'music');
-        
+
         $dictionaryPage->addPages($pagesByCacheKey['dictionary-pages']);
         $publicationsPage->addPages($pagesByCacheKey['publication-pages']);
         $movement->addPages($pagesByCacheKey['association-pages']['movement']);
@@ -254,11 +254,11 @@ class Module
         $libPage->addPages($pagesByCacheKey['library-pages']);
         $blogPage->addPages($pagesByCacheKey['blog-pages']);
         $musicPage->addPages($pagesByCacheKey['music-pages']);
-        
+
         $navFixer = new FixNavigationPages();
         $navFixer->attach($app->getEventManager());
     }
-    
+
     public function getConfig()
     {
         return include __DIR__ . '/../config/module.config.php';

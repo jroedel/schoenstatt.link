@@ -18,14 +18,14 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
     public function __construct()
     {
         parent::__construct('composition');
-        
+
         $urlLabels = [
             'Album' => 'Album',
             'Lyrics' => 'Lyrics',
             'Media' => 'Media',
             'Reference' => 'Reference',
         ];
-        
+
         $this->add([
             'name' => 'name',
             'type' => 'Text',
@@ -50,7 +50,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '50',
             ],
         ]);
-        
+
         $this->add([
             'name' => 'inLanguage',
             'type' => 'Select',
@@ -76,7 +76,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'required' => false
             ],
         ]);
-        
+
         $this->add([
             'name' => 'yearPublished',
             'type' => 'Text',
@@ -141,7 +141,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Chord pro specification',
                 'help-block' => 'See <a href="https://www.chordpro.org/">Chord pro markup</a>. '
-                .'The metadata will be automatically added afterwards. Html tags are not allowed.',
+                . 'The metadata will be automatically added afterwards. Html tags are not allowed.',
             ],
             'attributes' => [
                 'maxlength' => '2000',
@@ -154,7 +154,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Lyrics',
                 'help-block' => 'If song is specified with chord pro, it\'s not '
-                .'necessary to fill in the lyrics separately.',
+                . 'necessary to fill in the lyrics separately.',
             ],
             'attributes' => [
                 'maxlength' => '500',
@@ -184,7 +184,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Copyright info',
                 'required' => false,
                 'help-block' => 'Include information about the copyright owner, contact information, '
-                .'and under what licence it has been published.',
+                . 'and under what licence it has been published.',
             ],
             'attributes' => [
                 'maxlength' => '500',
@@ -315,7 +315,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             ],
         ]);
     }
-        
+
     public function getInputFilterSpecification()
     {
         return [
@@ -397,8 +397,8 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'lyricistsAll' => [ //@todo add a validator
                 'required' => false,
             ],
-            
-            
+
+
             'copyrightInfo' => [
                 'required' => false,
                 'filters' => [
@@ -467,7 +467,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
-            
+
             'url1' => [
                 'required' => false,
                 'filters' => [

@@ -9,7 +9,7 @@ class EventsJson extends AbstractValidator
     const NOT_STRING = 'notString';
     const INVALID_JSON = 'invalidJson';
     const JSON_NOT_EVALUATED_AS_OBJECT = 'jsonNotEvaluatedAsObject';
-    
+
     /**
      * Validation failure message template definitions
      *
@@ -20,18 +20,18 @@ class EventsJson extends AbstractValidator
         self::INVALID_JSON => "The input could not be parsed as valid JSON",
         self::JSON_NOT_EVALUATED_AS_OBJECT => "The JSON does not describe an object or an array",
     ];
-    
+
     /**
-     * 
+     *
      * {@inheritDoc}
      * @see \Zend\Validator\ValidatorInterface::isValid()
      */
     public function isValid($value)
     {
-        if (!isset($value) || '' === $value) {
+        if (! isset($value) || '' === $value) {
             return true;
         }
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             $this->error(self::NOT_STRING);
             return false;
         }
@@ -41,7 +41,7 @@ class EventsJson extends AbstractValidator
             $this->error(self::INVALID_JSON);
             return false;
         }
-        if (!is_array($json)) {
+        if (! is_array($json)) {
             $this->error(self::JSON_NOT_EVALUATED_AS_OBJECT);
             return false;
         }

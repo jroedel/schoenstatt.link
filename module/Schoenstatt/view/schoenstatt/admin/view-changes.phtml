@@ -8,41 +8,45 @@ $this->headTitle($headText);
 <h1><?php echo $this->translate("Database edits")?></h1>
 <table class="table">
 <?php $standingTimeString = '';?>
-	<?php foreach ($this->changes as $row): 
-	$cTimeString = $this->dateFormat($row['updateDateTime'], IntlDateFormatter::SHORT, IntlDateFormatter::NONE);
-	if ($cTimeString != $standingTimeString) :
-	$standingTimeString = $cTimeString;?>
-	<thead>
-	<tr>
-		<th><?php echo $cTimeString;?></th>
-		<th><?php echo $this->translate("Entity");?></th>
-		<th><?php echo $this->translate("Field");?></th>
-		<th><?php echo $this->translate("Old Value");?></th>
-		<th><?php echo $this->translate("New Value");?></th>
-	</tr>
-	</thead>
-	<?php endif;?>
-	<?php $geoText = $row['ipAddress'].' ';
-    $geo = $this->geoip($row['ipAddress']);
-    $filter = new HtmlEntities();
-	if ($geo&&$geo->getCity()) $geoText .= ' ' . $filter->filter(mb_convert_encoding($geo->getCity(),"UTF-8","auto")).", ";
-	if ($geo&&$geo->getCountryName()) $geoText .= $filter->filter(mb_convert_encoding($geo->getCountryName(),"UTF-8","auto"));?>
-	<tr>
-    	<td><span <?php if ($geoText):?>data-toggle="tooltip" data-placement="bottom" data-container="body" 
-    	title="<?php echo $this->escapeHtmlAttr($geoText);
-    	endif;?>"><?php echo $this->escapeHtml($row['user']['username'])?></span>
-    	</td>
-		<td><?php 
-            if (isset($row['object']) && !is_null($row['object']) && 
-                isset($row['scope']) && !is_null($row['scope'])) 
-            {
-                echo $this->formatScopeObj($row['scope'], $row['object'], ['editPencil' => true]);
-            } else {
+    <?php foreach ($this->changes as $row) :
+        $cTimeString = $this->dateFormat($row['updateDateTime'], IntlDateFormatter::SHORT, IntlDateFormatter::NONE);
+        if ($cTimeString != $standingTimeString) :
+            $standingTimeString = $cTimeString;?>
+    <thead>
+    <tr>
+        <th><?php echo $cTimeString;?></th>
+        <th><?php echo $this->translate("Entity");?></th>
+        <th><?php echo $this->translate("Field");?></th>
+        <th><?php echo $this->translate("Old Value");?></th>
+        <th><?php echo $this->translate("New Value");?></th>
+    </tr>
+    </thead>
+        <?php endif;?>
+        <?php $geoText = $row['ipAddress'] . ' ';
+        $geo = $this->geoip($row['ipAddress']);
+        $filter = new HtmlEntities();
+        if ($geo && $geo->getCity()) {
+            $geoText .= ' ' . $filter->filter(mb_convert_encoding($geo->getCity(), "UTF-8", "auto")) . ", ";
+        }
+        if ($geo && $geo->getCountryName()) {
+            $geoText .= $filter->filter(mb_convert_encoding($geo->getCountryName(), "UTF-8", "auto"));
+        }?>
+    <tr>
+        <td><span <?php if ($geoText) :
+            ?>data-toggle="tooltip" data-placement="bottom" data-container="body" 
+        title="<?php echo $this->escapeHtmlAttr($geoText);
+                  endif;?>"><?php echo $this->escapeHtml($row['user']['username'])?></span>
+        </td>
+        <td><?php
+        if (isset($row['object']) && ! is_null($row['object']) &&
+                isset($row['scope']) && ! is_null($row['scope'])) {
+            echo $this->formatScopeObj($row['scope'], $row['object'], ['editPencil' => true]);
+        } else {
 //                 var_dump($row);
-            }?></td>
-		<td><?php echo $this->escapeHtml($row['column']);?></td>
-		<td><?php echo $this->escapeHtml(Text::truncate($row['oldValue'],150));?></td>
-		<td><?php echo $this->escapeHtml(Text::truncate($row['newValue'],150));?></td>
-		<?php endforeach; ?>
-	</tr>
+        }?></td>
+        <td><?php echo $this->escapeHtml($row['column']);?></td>
+        <td><?php echo $this->escapeHtml(Text::truncate($row['oldValue'], 150));?></td>
+        <td><?php echo $this->escapeHtml(Text::truncate($row['newValue'], 150));?></td>
+    <?php endforeach; ?>
+    </tr>
 </table>

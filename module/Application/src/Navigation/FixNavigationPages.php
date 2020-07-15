@@ -26,7 +26,7 @@ class FixNavigationPages implements ListenerAggregateInterface
      */
     public function attach(EventManagerInterface $events, $priority = 1)
     {
-        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, array($this, 'onRoute'), -5000);
+        $this->listeners[] = $events->attach(MvcEvent::EVENT_ROUTE, [$this, 'onRoute'], -5000);
     }
 
     /**
@@ -55,7 +55,7 @@ class FixNavigationPages implements ListenerAggregateInterface
         $navigation = $event->getApplication()->getServiceManager()->get(Navigation::class);
         self::injectMvcPages($navigation->getPages(), $router, $matches);
     }
-    
+
     protected static function injectMvcPages($pages, $router, $matches)
     {
         foreach ($pages as $page) {

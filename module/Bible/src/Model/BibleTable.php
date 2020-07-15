@@ -40,7 +40,7 @@ class BibleTable extends SionTable
         }
         return $select;
     }
-    
+
     public function processVerseRow($row)
     {
         $data = [
@@ -54,7 +54,7 @@ class BibleTable extends SionTable
         ];
         return $data;
     }
-    
+
     public function processBookRow($row)
     {
         $data = [
@@ -76,7 +76,7 @@ class BibleTable extends SionTable
         ];
         return $data;
     }
-    
+
     /**
      * Takes an array of verses and double keys them, first my verseId, then by translation in an associative array
      * @param mixed[] $verses
@@ -88,14 +88,14 @@ class BibleTable extends SionTable
         foreach ($verses as $object) {
             $verseId = $object['verseId'];
             $translationId = $object['translation'];
-            if (!isset($verseTranslations[$verseId])) {
+            if (! isset($verseTranslations[$verseId])) {
                 $verseTranslations[$verseId] = [];
             }
             $verseTranslations[$verseId][$translationId] = $object;
         }
         return $verseTranslations;
     }
-    
+
     protected function processBookAbbreviationRow($row)
     {
         $data = [
@@ -107,7 +107,7 @@ class BibleTable extends SionTable
         ];
         return $data;
     }
-    
+
     /**
      * Get a simple associative array that maps bible book abbreviations to their respective bookId.
      * Lower case versions are automatically added
@@ -120,12 +120,12 @@ class BibleTable extends SionTable
             return $cache;
         }
         $abbreviationMap = [];
-        
+
         $objects = $this->getObjects('bible-book-abbreviation');
         foreach ($objects as $object) {
             $abbreviationMap[strtolower($object['abbreviation'])] = $object['bookId'];
         }
-        
+
         $objects = $this->getObjects('bible-book');
         foreach ($objects as $object) {
             $abbreviationMap[strtolower($object['name'])] = $object['bookId'];
@@ -142,11 +142,11 @@ class BibleTable extends SionTable
                 $abbreviationMap[strtolower($object['nameFr'])] = $object['bookId'];
             }
         }
-        
+
         $this->cacheEntityObjects($cacheKey, $abbreviationMap, ['bible-book-abbreviation']);
         return $abbreviationMap;
     }
-    
+
     //@todo this should all be covered by the SionModel::queryObjects function!
     public function getVerses($query = [], $options = [])
     {
@@ -156,7 +156,7 @@ class BibleTable extends SionTable
         $select = $this->getSelectPrototype('bible-verse');
         $select->order('book_id, chapter, verse');
         $where = new Where();
-        
+
         if (isset($query['chapter'])) {
             if (is_string($query['chapter'])) {
                 $chapterClause = new Operator($fieldMap['chapter'], Operator::OPERATOR_EQUAL_TO, $query['chapter']);
@@ -189,16 +189,16 @@ class BibleTable extends SionTable
             }
             $where->addPredicate($verseClause);
         }
-        
+
         if (isset($options['limit'])) {
             $select->limit($options['limit']);
         }
-        
+
         $select->where($where);
         $results = $gateway->selectWith($select);
         return $results->toArray();
     }
-    
+
     /**
      * Move data from bib_verses to new table
      */
@@ -210,7 +210,7 @@ class BibleTable extends SionTable
         $gateway = $this->getTableGateway('bib_verses');
         $result = $gateway->selectWith($select);
         $results = $result->toArray();
-        
+
         $bookNumberLookup = $this->getBookNumberLookup();
         //prepare rows to insert
         $updates = [];
@@ -222,8 +222,8 @@ class BibleTable extends SionTable
             $i++;
             $id = $row['id'];
             $bookAbbrev = $row['book_old_id'];
-            if (!isset($bookNumberLookup[$bookAbbrev])) {
-                throw new \Exception('Unknown book: '.$bookAbbrev);
+            if (! isset($bookNumberLookup[$bookAbbrev])) {
+                throw new \Exception('Unknown book: ' . $bookAbbrev);
             }
             //create the composite book/chapter/verse id
             $bookNumber = $bookNumberLookup[$bookAbbrev];
@@ -243,7 +243,7 @@ class BibleTable extends SionTable
             $destGateway->update($set, ['id' => $id]);
         }
     }
-    
+
     public function getBookNumberLookup()
     {
         $books = $this->getObjects('bible-book');
@@ -255,7 +255,7 @@ class BibleTable extends SionTable
         }
         return $lookup;
     }
-    
+
     public function createGreekReference()
     {
         /*
@@ -293,17 +293,17 @@ class BibleTable extends SionTable
         $bntCleanupSubstitution = '/[,.\]\[\(\)·;]/u';
         $morphoFilter = new FromBibleworksMorphosyntacticCode();
         $morphoCodes = $morphoFilter->getGrammarCodes();
-        
+
         $rootWords = [];
         $verseWords = [];
-        
+
         $i = 0;
         foreach ($verseTranslations as $verseId => $verse) {
 //             if ($i > 1000) {
 //                 break;
 //             }
-            if (!isset($verse['bnt2']) || !isset($verse['bnm2'])) {
-                throw new \Exception('Missing entry '.$verseId);
+            if (! isset($verse['bnt2']) || ! isset($verse['bnm2'])) {
+                throw new \Exception('Missing entry ' . $verseId);
             }
             $textBnt = UTF8::trim($verse['bnt2']['text']);
             $textBnm = UTF8::trim($verse['bnm2']['text']);
@@ -312,10 +312,10 @@ class BibleTable extends SionTable
             }
             $wordsBnt = preg_split("/[ ᾽]+/u", $textBnt);
             $wordsBnm = preg_split("/[ ᾽]+/u", $textBnm);
-            
-            for ($j = count($wordsBnm)-1; $j >= 0; $j--) {
+
+            for ($j = count($wordsBnm) - 1; $j >= 0; $j--) {
                 //remove non-words. In Bnm, all should have a '@'
-                if (!is_string($wordsBnm[$j])) {
+                if (! is_string($wordsBnm[$j])) {
                     unset($wordsBnm[$j]);
                     continue;
                 }
@@ -326,8 +326,8 @@ class BibleTable extends SionTable
                 }
             }
             //cleanup punctuation
-            for ($j = count($wordsBnt)-1; $j >= 0; $j--) {
-                if (!is_string($wordsBnt[$j])) {
+            for ($j = count($wordsBnt) - 1; $j >= 0; $j--) {
+                if (! is_string($wordsBnt[$j])) {
                     unset($wordsBnt[$j]);
                     continue;
                 }
@@ -336,12 +336,12 @@ class BibleTable extends SionTable
                     unset($wordsBnt[$j]);
                 }
             }
-            
+
             if (count($wordsBnt) !== count($wordsBnm)) {
                 var_dump($textBnt);
                 var_dump($wordsBnt);
                 var_dump($wordsBnm);
-                throw new \Exception('Uneven arrays at '.$verseId);
+                throw new \Exception('Uneven arrays at ' . $verseId);
             }
             foreach ($wordsBnm as $wordKey => $wordWithCode) {
 //                 $matches = null;
@@ -365,7 +365,7 @@ class BibleTable extends SionTable
                 $word = new GreekWord($wordsBnt[$wordKey], $wordsBnm[$wordKey]);
                 $root = $word->getRoot();
                 $lowerRoot = UTF8::strtolower($root);
-                if (!isset($rootWords[$lowerRoot])) {
+                if (! isset($rootWords[$lowerRoot])) {
                     $rootWords[$lowerRoot] = [
                         'root' => $root,
                         'partOfSpeech' => $word->getPartOfSpeech(),
@@ -378,13 +378,13 @@ class BibleTable extends SionTable
                 } else {
                     $rootWords[$lowerRoot]['occurrenceCount']++;
                     $morphoCode = $word->getMorphologyCode();
-                    if (!in_array($morphoCode, $rootWords[$lowerRoot]['formsAvailable'], true)) {
+                    if (! in_array($morphoCode, $rootWords[$lowerRoot]['formsAvailable'], true)) {
                         $rootWords[$lowerRoot]['formsAvailable'][] = $morphoCode;
                     }
                 }
                 if ($verse['bnt2']['book'] == 43) {
                     $rootWords[$lowerRoot]['johnOccurrenceCount']++;
-                    if (!isset($rootWords[$lowerRoot]['johnFirstVerseOccurrence'])) {
+                    if (! isset($rootWords[$lowerRoot]['johnFirstVerseOccurrence'])) {
                         $rootWords[$lowerRoot]['johnFirstVerseOccurrence'] = $verseId;
                     }
                 }
@@ -403,11 +403,11 @@ class BibleTable extends SionTable
         }
         return $rootWords;
     }
-    
+
     public function normalizeBnmUtf8($sourceTranslation, $destinationTranslation)
     {
         $check = $this->getObjects('bible-verse', ['translation' => $destinationTranslation]);
-        if (!empty($check)) {
+        if (! empty($check)) {
             throw new \Exception("Tried creating $destinationTranslation bible again");
         }
         $verses = $this->getObjects('bible-verse', ['translation' => $sourceTranslation]);
@@ -419,7 +419,7 @@ class BibleTable extends SionTable
             $this->createEntity('bible-verse', $aNewVerse);
         }
     }
-    
+
     protected function processGreekRootRow($row)
     {
         $root = $row['root'];
@@ -430,11 +430,11 @@ class BibleTable extends SionTable
         $paradigmPart4 = $row['paradigm_part_4'];
         $paradigm = null;
         if (in_array($partOfSpeech, ['noun', 'verb', 'adjective'], true)) {
-            $paradigm = $root.', '
-                .(isset($paradigmPart2) ? $paradigmPart2 : '———').', '
-                .(isset($paradigmPart3) ? $paradigmPart3 : '———');
+            $paradigm = $root . ', '
+                . (isset($paradigmPart2) ? $paradigmPart2 : '———') . ', '
+                . (isset($paradigmPart3) ? $paradigmPart3 : '———');
             if ('verb' === $partOfSpeech) {
-                $paradigm .= ', '.(isset($paradigmPart4) ? $paradigmPart4 : '———');
+                $paradigm .= ', ' . (isset($paradigmPart4) ? $paradigmPart4 : '———');
             }
         }
         $data = [
@@ -452,12 +452,12 @@ class BibleTable extends SionTable
             'dictionaryEntryId' => $row['dictionary_entry_id'],
             'johnOccurrenceCount' => $row['john_occurrence_count'],
             'johnFirstVerseOccurrence' => $row['john_first_verse_occurrence'],
-            
+
             'paradigm' => $paradigm,
         ];
         return $data;
     }
-    
+
     /**
      * @todo get rid of this, unecessary
      * @return string[]
@@ -465,7 +465,7 @@ class BibleTable extends SionTable
     public function getBookAbbrev()
     {
         static $abbrevs;
-        if (!isset($abbrevs)) {
+        if (! isset($abbrevs)) {
             $abbrevs = [
                 'Gen' => 'Genesis',
                 'Exo' => 'Exodus',

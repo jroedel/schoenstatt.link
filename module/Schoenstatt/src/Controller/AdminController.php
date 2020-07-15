@@ -33,7 +33,7 @@ class AdminController extends AbstractActionController
     protected $schoenstattTable;
     /** @var \Schoenstatt\Service\PatresGateway $patresGateway */
     protected $patresGateway;
-    
+
     public function __construct(
         TranslationsTable $translationsTable,
         ProblemService $problemService,
@@ -47,7 +47,7 @@ class AdminController extends AbstractActionController
         $this->schoenstattTable = $schoenstattTable;
         $this->patresGateway = $patresGateway;
     }
-    
+
     public function indexAction()
     {
         $pages = [
@@ -117,7 +117,7 @@ class AdminController extends AbstractActionController
         $changes = [];
         foreach ($persons as $personId => $object) {
             $hasPriestTag = in_array('priest', $object['personTags']);
-            if ($hasPriestTag && !isset($object['priestDate'])) {
+            if ($hasPriestTag && ! isset($object['priestDate'])) {
                 $personTags = $object['personTags'];
                 foreach ($personTags as $key => $value) {
                     if ('priest' === $value) {
@@ -125,8 +125,8 @@ class AdminController extends AbstractActionController
                         break;
                     }
                 }
-                if (!$simulate) {
-                    $table->updateEntity('person', $personId, ['personTags'=>$personTags]);
+                if (! $simulate) {
+                    $table->updateEntity('person', $personId, ['personTags' => $personTags]);
                 }
                 $changes[] = $personId;
             }

@@ -2,25 +2,25 @@
 <div class="table-responsive">
 <table class="table">
 <tr>
-	<th><?php echo $this->translate('Association');?></th>
-	<th><?php echo $this->translate('Kind');?></th>
-	<th><?php echo $this->translate('Website');?></th>
-	<th><?php echo $this->translate('Email');?></th>
-	<th><?php echo $this->translate('Phone');?></th>
-	<th><?php echo $this->translate('Primary contact');?></th>
+    <th><?php echo $this->translate('Association');?></th>
+    <th><?php echo $this->translate('Kind');?></th>
+    <th><?php echo $this->translate('Website');?></th>
+    <th><?php echo $this->translate('Email');?></th>
+    <th><?php echo $this->translate('Phone');?></th>
+    <th><?php echo $this->translate('Primary contact');?></th>
 </tr>
 <?php foreach ($this->objects as $entityId => $entity) :?>
 <tr>
-	<td><?php echo $this->formatEntity('association', $entity);?></td>
-	<td><?php echo $this->formatEntity('association', $entity, ['display' => 'kind']);?></td>
-	<td><?php if (!empty($entity['urls'])) {
-	    echo $this->formatUrlObject($entity['urls'][0]);
-	}?></td>
-	<td><?php echo $this->email($entity['email']);?></td>
-	<td><?php echo $this->telephone($entity['phone1']);?></td>
-	<td><?php if (!is_null($entity['mainPerson'])) {
-	    echo $this->formatEntity('person', $entity['mainPerson']);
-	}?></td>
+    <td><?php echo $this->formatEntity('association', $entity);?></td>
+    <td><?php echo $this->formatEntity('association', $entity, ['display' => 'kind']);?></td>
+    <td><?php if (! empty($entity['urls'])) {
+        echo $this->formatUrlObject($entity['urls'][0]);
+        }?></td>
+    <td><?php echo $this->email($entity['email']);?></td>
+    <td><?php echo $this->telephone($entity['phone1']);?></td>
+    <td><?php if (! is_null($entity['mainPerson'])) {
+        echo $this->formatEntity('person', $entity['mainPerson']);
+        }?></td>
 </tr>
 <?php endforeach;?>
 </table>

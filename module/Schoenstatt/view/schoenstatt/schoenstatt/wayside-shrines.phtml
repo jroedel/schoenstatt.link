@@ -13,32 +13,32 @@ $str3 = "Until 2019-10-18, this page will be oriented towards data-maintainers a
 <p><?= sprintf($this->escapeHtml($this->translate($str2)), '<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-wayside-shrine" target="_blank">', '</a>')?></p>
 <p><?= sprintf($this->escapeHtml($this->translate($str4)), "<a href=\"$photosUrl\">", "</a>");?>
 <p><?= $this->escapeHtml($this->translate($str3))?></p>
-<?php 
+<?php
 $isModerator = $this->isAllowed('route/association-edit');
 
-if ($isModerator):
-$totalPercent = $this->totalPercent;?>
+if ($isModerator) :
+    $totalPercent = $this->totalPercent;?>
 <p><strong><?= $this->translate('Total shrine progress')?>:</strong></p>
 <div class="progress">
   <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="<?= $totalPercent?>" aria-valuemin="0" aria-valuemax="100">
-    <?= $totalPercent.$this->translate('% Complete')?>
+    <?= $totalPercent . $this->translate('% Complete')?>
   </div>
 </div>
-<?php 
+    <?php
 endif;
 $partial = $isModerator
     ? 'schoenstatt/associations/shrines-table'
     : 'schoenstatt/associations/associations-table';
 foreach ($this->regions as $region => $objects) :?>
 <h3 id="<?= $region ?>"><?= $this->translate($region);?></h3>
-<?php if ($isModerator):?>
+    <?php if ($isModerator) :?>
 <div class="progress">
   <div id="<?= $this->regionStats[$region]['id']?>" class="progress-bar" role="progressbar" aria-valuenow="<?= $this->regionStats[$region]['percent']?>" aria-valuemin="0" aria-valuemax="100">
-    <?= $this->regionStats[$region]['percent'].$this->translate('% Complete')?>
+        <?= $this->regionStats[$region]['percent'] . $this->translate('% Complete')?>
   </div>
 </div>
-<?php
-endif;
+        <?php
+    endif;
     echo $this->partial($partial, [
         'objects' => $objects,
         //     'wrapInPanel' => true,
@@ -52,21 +52,21 @@ endif;
     ]);
 endforeach;?>
 <p><?= $this->translate('Initial shrine database courtesy of Matías Fortuño, Vínculo Magazine and schoenstatt.org.')?></p>
-<?php 
+<?php
 $datasets = $this->datasets;
-if (isset($datasets) && is_array($datasets) && !empty($datasets)) :?>
+if (isset($datasets) && is_array($datasets) && ! empty($datasets)) :?>
 <script type="application/ld+json">
-<?php $json = json_encode($datasets, JSON_PRETTY_PRINT);
-if (false !== $json) {
-    echo $json;
-}?>
+    <?php $json = json_encode($datasets, JSON_PRETTY_PRINT);
+    if (false !== $json) {
+        echo $json;
+    }?>
 </script>
 <?php endif;
 
 //code to set the width json of the progress bars. Must be done by javascript because
 //CSP doesn't allow us to use inline-styles
 $regionJson = json_encode($this->regionStats);
-$totalPercent = '"'.$totalPercent.'%"';
+$totalPercent = '"' . $totalPercent . '%"';
 $this->inlineScript()->captureStart();
 echo <<<JS
 $(function () {

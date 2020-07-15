@@ -13,20 +13,20 @@ class BorrowersController extends AbstractActionController
 {
     /** @var SchoenstattTable $schoenstattTable */
     protected $schoenstattTable;
-    
+
     /** @var LibraryTable $libraryTable */
     protected $libraryTable;
-    
+
     /** @var PatresGateway $patresGateway */
     protected $patresGateway;
-    
+
     public function __construct(SchoenstattTable $schoenstattTable, LibraryTable $libraryTable, PatresGateway $patresGateway)
     {
         $this->schoenstattTable = $schoenstattTable;
         $this->libraryTable = $libraryTable;
         $this->patresGateway = $patresGateway;
     }
-    
+
     /**
      * @todo start using the person table to look up person information. The same person
      *      should be able to be used as an author, movement role, or a borrower
@@ -35,8 +35,8 @@ class BorrowersController extends AbstractActionController
     public function showAction()
     {
         //get the parameter
-        $id = ( int ) $this->params()->fromRoute('person_id');
-        if (!$id) {
+        $id = (int) $this->params()->fromRoute('person_id');
+        if (! $id) {
             $this->getOutOfHere();
         }
 
@@ -99,7 +99,7 @@ class BorrowersController extends AbstractActionController
 //                 var_dump($checkout);
                 continue;
             }
-            if (!key_exists($checkout['personId'], $patresToSchPersonMap)) {
+            if (! key_exists($checkout['personId'], $patresToSchPersonMap)) {
                 if (false === $schPersonId = $gateway->importRemotePerson($checkout['personId'], true, ['isBorrower' => true])) {
 //                     var_dump("Error importing $checkoutId");
                     continue;

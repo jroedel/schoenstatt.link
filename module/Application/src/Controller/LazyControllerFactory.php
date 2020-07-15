@@ -11,7 +11,7 @@ class LazyControllerFactory implements AbstractFactoryInterface
         list( $module, ) = explode('\\', __NAMESPACE__, 2);
         return strstr($requestedName, $module . '\Controller') !== false;
     }
-    
+
     /**
      * These aliases work to substitute class names with SM types that are buried in ZF
      * @var array
@@ -21,7 +21,7 @@ class LazyControllerFactory implements AbstractFactoryInterface
         'Zend\Validator\ValidatorPluginManager' => 'ValidatorManager',
         'Zend\Mvc\I18n\Translator' => 'translator',
     ];
-    
+
     /**
      * Create an object
      *
@@ -47,7 +47,7 @@ class LazyControllerFactory implements AbstractFactoryInterface
                         if (array_key_exists($cn, $this->aliases)) {
                             $cn = $this->aliases[$cn];
                         }
-                        
+
                         try {
                             $parameter_instances[] = $parentLocator->get($cn);
                         } catch (\Exception $x) {
@@ -64,7 +64,7 @@ class LazyControllerFactory implements AbstractFactoryInterface
                 return $class->newInstanceArgs($parameter_instances);
             }
         }
-        
-        return new $requestedName;
+
+        return new $requestedName();
     }
 }

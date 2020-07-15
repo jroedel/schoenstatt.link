@@ -11,19 +11,19 @@ use Books\Filter\KentenichPeriodFromDate;
 class EventsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 150;
-    
+
     public function indexAction()
     {
         $table = $this->getSionTable();
         $objects = $table->queryObjects('event');
         $periods = $this->groupEventsByEpochAndYear($objects);
-        
+
         return new ViewModel([
             'objects' => $objects,
             'periods' => $periods,
         ]);
     }
-    
+
     public function groupEventsByEpochAndYear(array $eventObjects)
     {
         $periods = [];
@@ -32,18 +32,18 @@ class EventsController extends SionController
         $periodFilter = new KentenichPeriodFromDate();
         foreach ($eventObjects as $object) {
             $period = $periodFilter->filter($object['startDate']);
-            if (!isset($periods[$period])) {
+            if (! isset($periods[$period])) {
                 $periods[$period] = [];
             }
             $year = $object['startDate']->format('Y');
-            if (!isset($periods[$period][$year])) {
+            if (! isset($periods[$period][$year])) {
                 $periods[$period][$year] = [];
             }
             $periods[$period][$year][$object['eventId']] = $object;
         }
         return $periods;
     }
-    
+
     public function searchAction()
     {
         $params = $this->params()->fromQuery();
@@ -51,11 +51,11 @@ class EventsController extends SionController
         $form = $this->services[EventsSearchForm::class];
         $form->setData($params);
         $entities = null;
-        
+
         if ($form->isValid()) {
             $data = $form->getData();
-            
-            if (!empty($data)) {
+
+            if (! empty($data)) {
                 /** @var \Books\Model\EventTextTable $table */
                 $table = $this->getSionTable();
                 $options = ['maxResults' => self::MAX_SEARCH_RESULTS];
@@ -65,11 +65,11 @@ class EventsController extends SionController
                 }
             }
         }
-    
+
         if (is_array($entities) && empty($entities)) {
             $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
         }
-    
+
         return new ViewModel([
             'entities'  => $entities,
             'form'      => $form,

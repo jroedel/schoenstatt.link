@@ -11,7 +11,7 @@ class LibraryInfo extends AbstractHelper
      * @var LibraryTable $libraryTable
      */
     protected $libraryTable;
-    
+
     /**
      * @var RouteMatch $routeMatch
      */
@@ -20,25 +20,25 @@ class LibraryInfo extends AbstractHelper
     public function __invoke()
     {
         $libraryId = $this->getLibraryId();
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             return null;
         }
         $table = $this->getLibraryTable();
-        if (!$table instanceof LibraryTable) {
+        if (! $table instanceof LibraryTable) {
             return null;
         }
         $info = $table->getObject('library', $libraryId);
         return $info;
     }
-    
+
     public function getLibraryId()
     {
         $match = $this->getRouteMatch();
-        if (!isset($match)) {
+        if (! isset($match)) {
             return null;
         }
         $libraryId = $match->getParam('library_id'); //this should return null if not found
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $bookId = $match->getParam('book_id');
             if (isset($bookId)) {
                 $bookData = $this->getLibraryTable()->getObject('book', $bookId);
@@ -51,19 +51,19 @@ class LibraryInfo extends AbstractHelper
         }
         return $libraryId;
     }
-    
+
     /**
      * Get the routeMatch value
      * @return RouteMatch
      */
     public function getRouteMatch()
     {
-        if (!isset($this->routeMatch)) {
+        if (! isset($this->routeMatch)) {
             throw new \Exception('Something went wrong, no routeMatch available');
         }
         return $this->routeMatch;
     }
-    
+
     /**
      * Set the routeMatch value
      * @param RouteMatch $routeMatch
@@ -83,7 +83,7 @@ class LibraryInfo extends AbstractHelper
     {
         return $this->libraryTable;
     }
-    
+
     /**
      * Set the libraryTable value
      * @param LibraryTable $libraryTable

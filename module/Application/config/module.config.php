@@ -109,7 +109,7 @@ return [
                         'sw_id' => trim(
                             SchoenstattLinkIdentifier::GENERAL_OLD_REGEX,
                             '/^$'
-                            ),
+                        ),
                         'slug' => '[a-z0-9-]{1,200}',
                     ],
                     'defaults' => [

@@ -39,7 +39,7 @@ trait SortTextAwarenessTrait
      * @var bool $enforceCallNumberRegex
      */
     public $enforceCallNumberRegex = false;
-    
+
     /**
      * Get a filter for formulating sort text strings from a book object
      * @return \Books\Filter\SortText|NULL
@@ -48,7 +48,7 @@ trait SortTextAwarenessTrait
     {
         if (isset($this->callNumberRegex) && isset($this->sortTextFormat)) {
             return new SortText($this->callNumberRegex, $this->sortTextFormat);
-        } elseif (property_exists($this, 'libraryOptions') 
+        } elseif (property_exists($this, 'libraryOptions')
             && isset($this->libraryOptions)
             && $this->libraryOptions instanceof LibraryOptions
             && $this->libraryOptions->callNumberRegex

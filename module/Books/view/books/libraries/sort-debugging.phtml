@@ -8,7 +8,7 @@ $this->headTitle($headText);
 $options = $this->libraryOptions;
 $regexValidator = new RegularExpression();
 $libraryRegex = $options->callNumberRegex;
-if (!$regexValidator->isValid($libraryRegex)) {
+if (! $regexValidator->isValid($libraryRegex)) {
     $libraryRegex = null;
 }
 ?>
@@ -17,34 +17,34 @@ if (!$regexValidator->isValid($libraryRegex)) {
  library is `<strong><?= $this->escapeHtml($options->callNumberRegex) ?></strong>`</p>
 <p>The sort text print format is `<strong><?= $this->escapeHtml($options->sortTextFormat) ?></strong>`</p>
 <p><a href="<?= $this->url('libraries/library/refresh-sort', [], [], true) ?>" class="btn btn-default">Refresh all library sort text</a></p>
-<?php 
+<?php
 $collections = $options->collections;
 if (isset($this->objects[""])) {
     $collections[""] = null;
 }
 /** @var \Books\Model\CollectionOptions $collection */
 foreach ($collections as $key => $collection) :
-$books = isset($this->objects[$key]) ? $this->objects[$key] : [];
-if (isset($collection)):
-$regex = $collection->callNumberRegex;
-if (!$regexValidator->isValid($regex)) {
-    $regex = null;
-}
-?>
+    $books = isset($this->objects[$key]) ? $this->objects[$key] : [];
+    if (isset($collection)) :
+        $regex = $collection->callNumberRegex;
+        if (! $regexValidator->isValid($regex)) {
+            $regex = null;
+        }
+        ?>
 <h3><?= $this->formatEntity('collection', $collection->getArrayCopy()) ?><?php ?></h3>
-<p>Call number regex: `<strong><?= $this->escapeHtml($collection->callNumberRegex)?></strong>`<?php 
-if (isset($collection->callNumberRegex) && !isset($regex)) {
-echo ' (INVALID)!';
+<p>Call number regex: `<strong><?= $this->escapeHtml($collection->callNumberRegex)?></strong>`<?php
+if (isset($collection->callNumberRegex) && ! isset($regex)) {
+    echo ' (INVALID)!';
 }?></p>
 <p>Sort text format: `<strong><?= $this->escapeHtml($collection->sortTextFormat)?></strong>`</p>
-<?php var_dump($this->filters[$collection->collectionId]);?>
-<?php else:
-if (!isset($collection->callNumberRegex)) { //don't take on library regex if the collection one is invalid
-    $regex = $libraryRegex;
-}?>
+        <?php var_dump($this->filters[$collection->collectionId]);?>
+    <?php else :
+        if (! isset($collection->callNumberRegex)) { //don't take on library regex if the collection one is invalid
+            $regex = $libraryRegex;
+        }?>
 <h3>Books without collection:</h3>
-<?php endif;?>
-<?php if (!empty($books)):?>
+    <?php endif;?>
+    <?php if (! empty($books)) :?>
 <div class="table-responsive">
 <table class="table">
 <thead>
@@ -56,19 +56,19 @@ if (!isset($collection->callNumberRegex)) { //don't take on library regex if the
 </tr>
 </thead>
 <tbody>
-<?php foreach ($books as $object) :
-$isMatch = false;
-$matches = null;
-if (isset($regex) && isset($object['callNumber'])) {
-    $isMatch = preg_match($regex, $object['callNumber'], $matches, PREG_OFFSET_CAPTURE, 0);
-    if ($isMatch) {
-        $easierReadMatches = [];
-        for ($i = 1; $i < count($matches); $i++) {
-            $easierReadMatches[] = $matches[$i][0];
-        }
-        $matches = $easierReadMatches;
-    }
-}?>
+        <?php foreach ($books as $object) :
+            $isMatch = false;
+            $matches = null;
+            if (isset($regex) && isset($object['callNumber'])) {
+                $isMatch = preg_match($regex, $object['callNumber'], $matches, PREG_OFFSET_CAPTURE, 0);
+                if ($isMatch) {
+                    $easierReadMatches = [];
+                    for ($i = 1; $i < count($matches); $i++) {
+                        $easierReadMatches[] = $matches[$i][0];
+                    }
+                    $matches = $easierReadMatches;
+                }
+            }?>
 <tr>
 <td><?= $this->formatEntity('book', $object)?></td>
 <td><?php echo $this->escapeHtml($object['callNumber']);
@@ -77,16 +77,16 @@ if ($isMatch) {
 } elseif ($isMatch === 0) {
     echo '<span class="glyphicon glyphicon-remove"></span>';
 }?></td>
-<td><?php print_r($matches); 
+<td><?php print_r($matches);
 ?></td>
 <td><?php if (isset($this->filters[$object['collectionId']])) {
     $sortText = $this->filters[$object['collectionId']]->filter($object);
     echo $this->escapeHtml($sortText);
-}?></td>
+    }?></td>
 </tr>
-<?php endforeach;?>
+        <?php endforeach;?>
 </tbody>
 </table>
 </div>
-<?php endif;
+    <?php endif;
 endforeach;?>

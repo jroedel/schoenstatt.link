@@ -2,8 +2,8 @@
 <table class="table">
 <thead>
 <tr>
-	<th>Author</th>
-	<th>Publications</th>
+    <th>Author</th>
+    <th>Publications</th>
 </tr>
 </thead>
 <tbody>
@@ -14,8 +14,8 @@ foreach ($authors as $authorsText => $publications) :
         $publicationTexts[] = $this->formatEntity('publication', $publication);
     }?>
 <tr>
-	<td><?php echo $this->escapeHtml($authorsText);?></td>
-	<td><?php echo implode(', ', $publicationTexts);?></td>
+    <td><?php echo $this->escapeHtml($authorsText);?></td>
+    <td><?php echo implode(', ', $publicationTexts);?></td>
 </tr>
 <?php endforeach;?>
 </tbody>

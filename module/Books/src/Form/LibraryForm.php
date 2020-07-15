@@ -127,8 +127,8 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 'label' => 'Sort text format',
                 'required' => false,
                 'help-block' => 'Format text to pass to sprintf. See '
-                .'https://secure.php.net/manual/en/function.sprintf.php for more info. The first parameter passed is '
-                .'the collection abbreviation followed by the capture groups of the call number.',
+                . 'https://secure.php.net/manual/en/function.sprintf.php for more info. The first parameter passed is '
+                . 'the collection abbreviation followed by the capture groups of the call number.',
             ],
             'attributes' => [
                 'placeholder' => '{collectionAbbreviation}%1$06.2f{author}{title}%2$02d',

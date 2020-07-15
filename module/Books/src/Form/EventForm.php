@@ -205,7 +205,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
         ]);
-        
+
         $this->add([
             'name' => 'tags',
             'type' => 'Select',
@@ -221,7 +221,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'multiple' => true,
             ],
         ]);
-        
+
         $this->add([
             'name' => 'adminTags',
             'type' => 'Select',
@@ -246,12 +246,12 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'value_options' => [],
             ],
         ]);
-            
-        
-        
-        
-        
-        
+
+
+
+
+
+
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
             'type' => 'Textarea',
@@ -282,7 +282,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'rows' => 8,
             ],
         ]);
-        
+
 //We won't allow editing the legacy columns
         $this->add([
             'name' => 'submit',

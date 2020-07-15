@@ -5,12 +5,12 @@ use Books\View\Helper\FormatPublication;
  * @var mixed[] $object
  */
 $object = $this->object;
-$showCover = !isset($this->options) || !isset($this->options['showCover']) || false !== $this->options['showCover'];
-$panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) || 'book-title-and-link' != $this->options['panelTitle']) ?
+$showCover = ! isset($this->options) || ! isset($this->options['showCover']) || false !== $this->options['showCover'];
+$panelTitle = (! isset($this->options) || ! isset($this->options['panelTitle']) || 'book-title-and-link' != $this->options['panelTitle']) ?
     'text' : 'book-title-and-link';
 ?>
 <div class="row">
-<?php if ($showCover):?>
+<?php if ($showCover) :?>
 <div class="col-md-3">
     <?php if (file_exists(sprintf('public/covers/%s-400px.jpg', $object['publicationId']))) : ?>
         <a href="<?= $this->basePath() . sprintf("/covers/%s.jpg", $object['publicationId']); ?>">
@@ -19,9 +19,9 @@ $panelTitle = (!isset($this->options) || !isset($this->options['panelTitle']) ||
     <?php endif;?>
 <p class="align-center"><?php //echo $this->escapeHtml(ucwords($object['condition']));?></p>
 </div>
-<?php 
+    <?php
     $infoPanelColumnLength = 9;
-else:
+else :
     $infoPanelColumnLength = 12;
 endif;?>
 <div class="col-md-<?= $infoPanelColumnLength?>">
@@ -29,7 +29,7 @@ endif;?>
     <div class="panel-heading">
         <div class="row">
         <div class="col-xs-6">
-            <h3 class="panel-title"><?php 
+            <h3 class="panel-title"><?php
             if ('book-title-and-link' === $panelTitle) {
                 echo $this->formatEntity('publication', $object);
             } else {
@@ -38,7 +38,7 @@ endif;?>
         </div>
 
         <div class="col-xs-6">
-            <?php if ($this->isAllowed($object['resourceId'], 'edit')): ?>
+            <?php if ($this->isAllowed($object['resourceId'], 'edit')) : ?>
                 <span class="pull-right"><a class="btn btn-primary btn-sm" href="<?php
                     echo $this->url('publication-edit', ['sw_id' => $object['identifier']]);?>">
                     <?= $this->translate('Edit publication')?></a>
@@ -50,40 +50,43 @@ endif;?>
     <div class="panel-body"><div class="row">
     <div class="col-md-6">
           <p><strong><?= $this->translate('Author(s)');?>:</strong></p>
-          <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
-          $otherEditions = array_merge($object['subEditions'], $object['translations']);
-      if (!empty($otherEditions)):?>
+            <?php echo $this->formatEntity('publication', $object, ['display' => 'authors']);
+            $otherEditions = array_merge($object['subEditions'], $object['translations']);
+            if (! empty($otherEditions)) :?>
       <p><strong><?= $this->translate('Other editions');?>:</strong></p><?php
-      foreach ($otherEditions as $subPublication) :?>
+        foreach ($otherEditions as $subPublication) :?>
           <p><?php echo $this->formatEntity('publication', $subPublication);
-          echo ' ';
-          echo $this->formatEntity('publication', $subPublication, ['display' => FormatPublication::DISPLAY_EDITION]);?></p>
-      <?php endforeach;
-      endif;?>
+            echo ' ';
+            echo $this->formatEntity('publication', $subPublication, ['display' => FormatPublication::DISPLAY_EDITION]);?></p>
+        <?php endforeach;
+            endif;?>
     </div> <!-- info 1 column -->
 
     <div class="col-md-6">
         <p><strong><?= $this->translate('Language');?>:</strong> <?php
-        if (!empty($object['inLanguage'])) {
+        if (! empty($object['inLanguage'])) {
             $languageNames = [];
             foreach ($object['inLanguage'] as $language) {
                 $languageNames[] = $this->languageName($language);
             }
             echo implode(', ', $languageNames);
         }?></p>
-        <?php if (!is_null($object['mainPublication'])) :?>
+        <?php if (! is_null($object['mainPublication'])) :?>
         <p><strong><?= $this->translate('Current publication');?>:</strong> <?php
         echo $this->formatEntity('publication', $object['mainPublication'], ['display' => FormatPublication::DISPLAY_DISAMBIGUATING_TITLE]);?></p>
         <?php endif;
-        if (!is_null($object['translatedFromPublication'])) :?>
+        if (! is_null($object['translatedFromPublication'])) :?>
         <p><strong><?= $this->translate('Translated from');?>:</strong> <?php
         echo $this->formatEntity('publication', $object['translatedFromPublication']);?></p>
         <?php endif;
         echo $this->formatField('ISBN', $object['isbn'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Edition', $object['bookEdition'], ['displayOnlyIfNotNull' => true]);
-        if (!empty($object['translatorsAll'])) {
-            echo sprintf('<p><strong>%s</strong>: %s</p>', $this->translate('Translator(s)'),
-                    $this->formatPublication('publication', $object,['display' => FormatPublication::DISPLAY_TRANSLATORS]));
+        if (! empty($object['translatorsAll'])) {
+            echo sprintf(
+                '<p><strong>%s</strong>: %s</p>',
+                $this->translate('Translator(s)'),
+                $this->formatPublication('publication', $object, ['display' => FormatPublication::DISPLAY_TRANSLATORS])
+            );
         }
         echo $this->formatField('Number of pages', $object['numberOfPages'], ['displayOnlyIfNotNull' => true]);
         echo $this->formatField('Date published', $object['datePublishedText'], ['displayOnlyIfNotNull' => true]);
@@ -119,7 +122,7 @@ endif;?>
 //     ]);
 // }?>
 
-  <?php if (isset($object['publicNotes']) && 0 !== strlen($object['publicNotes'])):?>
+    <?php if (isset($object['publicNotes']) && 0 !== strlen($object['publicNotes'])) :?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="notesPanel">
@@ -133,10 +136,10 @@ endif;?>
 </div> <!-- notes panel -->
 </div> <!-- notes column 12 -->
 </div> <!-- notes row -->
-<?php endif;?>
+    <?php endif;?>
 
-  <?php if (isset($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
-          $this->isAllowed($object['resourceId'], 'show-admin-info')):?>
+    <?php if (isset($object['adminNotes']) && 0 !== strlen($object['adminNotes']) &&
+          $this->isAllowed($object['resourceId'], 'show-admin-info')) :?>
 <div class="row"> <!-- notes row -->
 <div class="col-md-12">
 <div class="panel panel-default" id="adminNotesPanel">
@@ -150,8 +153,8 @@ endif;?>
 </div> <!-- notes panel -->
 </div> <!-- notes column 12 -->
 </div> <!-- notes row -->
-<?php endif;
+    <?php endif;
 
-echo $this->booksJsonLd('publication', $object);
-echo $this->coins('publication', $object);
-?>
+    echo $this->booksJsonLd('publication', $object);
+    echo $this->coins('publication', $object);
+    ?>

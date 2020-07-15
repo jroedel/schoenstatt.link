@@ -26,7 +26,7 @@ class BookFormFactory implements FactoryInterface
         /** @var \Zend\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id');
-        if (!isset($libraryId)) {
+        if (! isset($libraryId)) {
             $bookId = $routeMatch->getParam('book_id');
             $object = $table->getObject('book', $bookId);
             $libraryId = isset($object['libraryId']) ? $object['libraryId'] : null;
@@ -41,14 +41,14 @@ class BookFormFactory implements FactoryInterface
         $authors = $table->getAuthorsValueOptions($libraryId);
         $collections = $table->getCollectionValueOptions($libraryId);
         $publishers = $table->getPublishersValueOptions();
-        if (!isset($publishers)) {
+        if (! isset($publishers)) {
             $publishers = null;
         }
-        
+
         $languageInfo = new LanguageSupport();
         $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
         $languages = $languageInfo->getLanguageNames($lang);
-        
+
         $keywords = $table->getKeywordsValueOptions();
         $adminTags = $table->getAdminKeywordsValueOptions();
         $categories = $table->getCategoryValueOptions();

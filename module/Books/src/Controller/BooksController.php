@@ -10,8 +10,8 @@ class BooksController extends SionController
 {
     public function createAction()
     {
-        $resourceId = 'library_'.$this->params()->fromRoute('library_id');
-        if (!$this->isAllowed($resourceId, 'administrate')) {
+        $resourceId = 'library_' . $this->params()->fromRoute('library_id');
+        if (! $this->isAllowed($resourceId, 'administrate')) {
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
@@ -28,7 +28,7 @@ class BooksController extends SionController
                 if ($table->existsEntity('book', $copyBook)) {
                     $copyBookObj = $table->getObject('book', $copyBook);
                     //allow copying books from other libraries as long as the user has show permissions
-                    if ($this->isAllowed('library_'.$copyBookObj['libraryId'], 'show')) {
+                    if ($this->isAllowed('library_' . $copyBookObj['libraryId'], 'show')) {
                         $form = $view->getVariable('form');
                         $form->get('title')->setValue($copyBookObj['title']);
                         $form->get('authors')->setValue($copyBookObj['authors']);
@@ -81,7 +81,7 @@ class BooksController extends SionController
             $entity['publication'] = $publication;
         }
         $view->setVariable('entity', $entity);
-        
+
         /* this code accepts a list of breadcrumbs arrays in the format
         * [
         *  0 => ['location' => 'shrines', 'label' => 'Shrines', 'shouldTranslateLabel' => true],
@@ -93,7 +93,7 @@ class BooksController extends SionController
             ['route' => 'publications', 'label' => 'Literature', 'shouldTranslateLabel' => true],
             [
                 'route' => 'libraries/library',
-                'params' => ['library_id' => $library['libraryId']], 
+                'params' => ['library_id' => $library['libraryId']],
                 'label' => $library['name']
             ],
         ];
@@ -104,7 +104,7 @@ class BooksController extends SionController
             if (isset($entity['category'])) {
                 $breadcrumbs[] = [
                     'route' => 'libraries/library',
-                    'params' => ['library_id' => $library['libraryId']], 
+                    'params' => ['library_id' => $library['libraryId']],
                     'options' => ['query' => ['category' => $entity['category']]],
                     'label' => $entity['category'],
                 ];
@@ -121,9 +121,9 @@ class BooksController extends SionController
                 ];
         }
         $breadcrumbs[] = [
-            'route' => null, 
-            'label' => $entity['title'], 
-            'reuseMatchedParams' => true, 
+            'route' => null,
+            'label' => $entity['title'],
+            'reuseMatchedParams' => true,
             'active' => true
         ];
         $this->layout()->breadcrumbsList = $breadcrumbs;

@@ -10,11 +10,11 @@ class FormatPublicationUrlObject extends FormatUrlObject
 {
     public function __invoke($url, $openInNewTab = true)
     {
-        if (is_array($url) && key_exists('label', $url) && !is_null($url['label']) &&
+        if (is_array($url) && key_exists('label', $url) && ! is_null($url['label']) &&
             in_array($url['label'], ['Borrow', 'Purchase', 'Download'])
         ) {
             $urlObject = new Http($url['url']);
-            $labelFormat = $this->view->translate($url['label']." at %s");
+            $labelFormat = $this->view->translate($url['label'] . " at %s");
             $label = sprintf($labelFormat, $urlObject->getHost());
         } else {
             return parent::__invoke($url, $openInNewTab);

@@ -2,18 +2,20 @@
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 $object = $this->entity;
 //@todo add edition information and author into meta description
-$this->headMeta()->appendName('description',
-    sprintf($this->translate('Bibliographical information about "%s".'), $object['title']));
+$this->headMeta()->appendName(
+    'description',
+    sprintf($this->translate('Bibliographical information about "%s".'), $object['title'])
+);
 $this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($object['title']);?>
 <h1><?php echo $this->formatPublication('publication', $this->entity, ['link' => false, 'displayEditPencil' => false]);?></h1>
 <?php echo $this->partial('publication-info', ['object' => $this->entity]);
 
-if ($this->isAllowed('route/publication-create-new-edition')):?>
+if ($this->isAllowed('route/publication-create-new-edition')) :?>
 <p><a class="btn btn-default" href="<?php echo $this->url('publication-create-new-edition', [], [], true);?>"><?php
 echo $this->translate('Add another edition');?></a></p>
 <?php endif;
-if (!empty($object['files']) && $this->isAllowed('publication_drive')) {
+if (! empty($object['files']) && $this->isAllowed('publication_drive')) {
     echo $this->partial('books/files/files-list-panel', [
         'files' => $object['files'],
         'columns' => ['fileName', 'notes', 'size', 'mimeType'],
