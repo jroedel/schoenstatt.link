@@ -9,19 +9,22 @@ The observation of Schoenstatt Link is that there have been huge investments of 
 
 Schoenstatt Link hopes to provide APIs for consumption by anyone willing to maintain mobile apps or more developed websites.
 
-This project is just getting started, but won't get very far without establishing a support community of developers. Schoenstatt Link is build in PHP using Zend Framework 2. The codebase is currently hosted bitbucket, but I would be happy to migrate it to github if a couple are willing to come on board.
+This project is just getting started, but won't get very far without establishing a support community of developers. Schoenstatt Link is built in PHP using Zend Framework 3 (now [Laminas](https://getlaminas.org/)). The codebase is currently hosted bitbucket, but I would be happy to migrate it to github if a couple are willing to come on board.
 
 Here are a few things on the todo list:
 
-- ✔️Privacy policy
-- ✔️Upgrade to ZF3
-- ✔️JSON ld renderer
-- ✔️Automatic registration and email verification system
-- ✔️Comment system
+- ✔ Privacy policy
+- ✔ Upgrade to ZF3
+- ✔ JSON ld renderer
+- ✔ Automatic registration and email verification system
+- ✔ Comment system
 - Integration with other data APIs (wikidata, library thing, etc)
 - Online email forwarding system (to allow contacting movement persons without giving away email addresses)
 - Full text indexing and search system (integrate the [tntsearch](https://github.com/teamtnt/tntsearch) library)
-- Automated HTML-[Markdown](http://daringfireball.net/projects/markdown) conversion process for Fr. Kentenich texts
+- Make REST APIs available for all resources
+- Create a data merging system for the different sources of bibliography information
+- Allow posting events being hosted by shrines, including mass, adoration and confession times.
+- ✔ Automated HTML-[Markdown](http://daringfireball.net/projects/markdown) conversion process for Fr. Kentenich texts
 
 Lot's of work to do! [Contact us now](mailto:webmaster@schoenstatt.link)
 
@@ -29,15 +32,10 @@ Lot's of work to do! [Contact us now](mailto:webmaster@schoenstatt.link)
 
 - Books (list of Schoenstatt publications)
 - Libraries (indexing of Schoenstatt libraries)
-- Kentenich timeline
+- Fr. Kentenich timeline
 - Full-text kentenich library
 - Shrine database
-
-## Timeline
-
-As of June 2017, all sub-projects are well underway with the goal of a first release in September 2017. The September release hopes to bring basic International Schoenstatt structure to light, as well as an early-release of the most developed Schoenstatt book entries for indexing by Google Search. At that point, Schoenstatt members should be able to create personal accounts to be able to contribute to existing datasets.
-
-The next step would be to launch a baseline Shrine database by Christmas 2017.
+- Fr. Kentenich dictionary
 MD
 ];
 echo $this->markdown($text['en']);

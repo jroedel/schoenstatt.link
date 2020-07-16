@@ -84,19 +84,6 @@ class IndexController extends AbstractActionController
             'blogPosts' => $blogPosts,
         ]);
     }
-    
-    public function newHomeAction()
-    {
-        //         $changeCounts = $this->get6MonthsChanges();
-        $blogPosts = $this->eventTextTable->getObjects(
-            'text',
-            ['kind' => EventTextTable::TEXT_KIND_BLOG],
-            ['limit' => 5]
-            );
-        return new ViewModel([
-            'blogPosts' => $blogPosts,
-        ]);
-    }
 
     public function redirectPreApril2020SlIdAction()
     {
