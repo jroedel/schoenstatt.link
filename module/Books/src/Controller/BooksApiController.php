@@ -8,8 +8,6 @@ use RestApi\Controller\ApiController;
 use Zend\View\Model\ModelInterface;
 use Books\Model\PublicationsTable;
 use Zend\InputFilter\InputFilter;
-use Books\Filter\SortText;
-use Zend\View\Model\ViewModel;
 
 class BooksApiController extends ApiController
 {
@@ -69,16 +67,21 @@ class BooksApiController extends ApiController
         $table = $this->libraryTable;
         $objects = array_values($table->searchBooks($params));
         LibrariesApiController::jsonSerializeDateTimeObjects($objects);
-        return new JsonModel([
-            'items'         => $objects,
-        ]);//, ['prettyPrint' => true]);
+        $this->httpStatusCode = 200;
+        $this->apiResponse = $objects;
+        return $this->createResponse();
     }
 
     public function get($id)
     {
         $table = $this->libraryTable;
-        $object = $table->getBook($id);
-        return new JsonModel($object, ['prettyPrint' => true]);
+        $object = $table->getObject('book', $id);
+        unset($object['currentCheckout']);
+        unset($object['library']);
+        LibrariesApiController::jsonSerializeDateTimeObjects($object);
+        $this->httpStatusCode = 200;
+        $this->apiResponse = $object;
+        return $this->createResponse();
     }
 
     /**
@@ -319,8 +322,6 @@ class BooksApiController extends ApiController
                 if ($inputFilter->has($bookField) && ! $inputFilter->get($bookField)->setValue($value)->isValid()) {
                     //don't add the data if it's going to fail our input filter
                     //@todo this would be interesting to log
-                    var_dump($publication['publicationId']);
-                    var_dump($publicationField);
                     continue;
                 }
                 $book[$bookField] = $value;

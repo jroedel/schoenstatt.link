@@ -236,7 +236,7 @@ class BibleTable extends SionTable
                 'book_id' => $bookNumber,
             ];
         }
-        var_dump($updates);
+//         var_dump($updates);
         //insert rows to new table
         $destGateway = $this->getTableGatewayForEntity('bible-verse');
         foreach ($updates as $id => $set) {
