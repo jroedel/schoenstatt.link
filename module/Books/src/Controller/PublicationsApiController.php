@@ -32,7 +32,7 @@ class PublicationsApiController extends AbstractRestfulController
 
     public function __construct(PublicationsTable $table, array $config)
     {
-        $this->setIdentifierName('library_id');
+        $this->setIdentifierName('publication_id');
         $this->table = $table;
         $this->config = $config;
     }

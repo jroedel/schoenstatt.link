@@ -358,16 +358,6 @@ return [
         'routes' => [
             'api-v1' => [
                 'child_routes' => [
-                    'test' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'      => '/test',
-                            'defaults'  => [
-                                'controller' => Controller\BooksApiController::class,
-                                'action'     => 'test',
-                            ],
-                        ],
-                    ],
                     'libraries' => [
                         'type'    => Segment::class,
                         'options' => [
@@ -2809,7 +2799,6 @@ return [
                 ['route' => 'api-v1/dictionary/create', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/slugify-terms', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/literature', 'roles' => ['guest', 'user']],
-                ['route' => 'api-v1/test', 'roles' => ['lib_user']],
 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
