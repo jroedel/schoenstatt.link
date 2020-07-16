@@ -1,137 +1,32 @@
-<?php
-// $this->inlineScript()->appendFile('/js/Chart.bundle.min.js', 'text/javascript', ['nonce' => $GLOBALS['inline-nonce']]);
-// $schCounts = $this->changeCounts['schoenstatt'];
-// $pubCounts = $this->changeCounts['publications'];
-// $transCounts = $this->changeCounts['translations'];
-// $untranslatedMonths = array_keys($schCounts);
-// $months = [];
-// foreach ($untranslatedMonths as $value) {
-//     $months[] = '"'.$this->translate($value, 'default').'"';
-// }
-?>
-<div class="jumbotron">
-  <div class="container">
-    <div class="row">
-        <div class="col-md-8">
-            <h1><?php echo $this->translate("We need your help!");?></h1>
-            <p><?php echo sprintf(
-                $this->translate("Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt's web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!"),
-                sprintf('<a href="%s" target="_blank">%s</a>', $this->translate('https://en.wikipedia.org/wiki/Knowledge_Graph'), $this->translate('Google Knowledge Graph'))
-            ); ?></p>
-            <!-- <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more »</a></p> -->
-        </div>
-        <div class="col-md-4">
-        <!--<img src="/img/home.png" class="img-responsive center-block" alt="Schoenstatt Link">
-            <canvas id="myChart" width="100%" height="100%"></canvas>
-            
-            ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
-                'rgba(255, 99, 132, 0.2)',
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(255, 206, 86, 0.2)',
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(153, 102, 255, 0.2)',
-                'rgba(255, 159, 64, 0.2)'
--->
-<?php
-/*
-$vars = [
-    'months' => $months,
-    'schLabel' => $this->translate('schoenstatt edits'),
-    'schCounts' => $schCounts,
-    'pubLabel' => $this->translate('publication edits'),
-    'pubCounts' => $pubCounts,
-    'tranLabel' => $this->translate('translation edits'),
-    'tranCounts' => $schCounts,
-];
-$varEncoded = json_encode($vars);
-$jsScript = <<<JS
-var ctx = document.getElementById("myChart").getContext('2d');
-var myChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-        labels: vars['month'],
-        datasets: [{
-            label: vars['schLabel'],
-            data: vars['schCounts'],
-            backgroundColor:
-                'rgba(75, 192, 192, 0.2)',
-            borderColor:
-                'rgba(75, 192, 192,1)',
-            borderWidth: 1
-        },
-        {
-            label: vars['pubLabel'],
-            data: vars['pubCounts'],
-            backgroundColor:
-                'rgba(54, 162, 235, 0.2)',
-            borderColor:
-                'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-        },
-        {
-            label: vars['tranLabel'],
-            data: vars['tranCounts'],
-            backgroundColor:
-                'rgba(255, 206, 86, 0.2)',
-            borderColor:
-                'rgba(255, 206, 86, 1)',
-            borderWidth: 1
-        },
-        ]
-    },
-    options: {
-        scales: {
-            xAxes: [{
-                stacked: true
-            }],
-            yAxes: [{
-                stacked: true,
-                ticks: {
-                    beginAtZero:true
-                }
-            }]
-        }
-    }
-});
-JS;
+<?php $text = [
+    'en' => <<<EOT
+## Our mission
 
-$this->inlineScript()->captureStart();
-echo <<<JS
-$(function () {
-var vars = $varEncoded;
-$jsScript
-});
-JS;
-$this->inlineScript()->captureEnd();
-*/
+Schoenstatt Link is effectively a database for anything related to the Schoenstatt Movement. 
+We hope to encourage the creation of new widely-featured phone applications. We provide a 
+framework for wide, multi-lingual data collection projects. 
+**Please [create an account](user/register) and help us make Schoenstatt accessible to all!**
+
+This site is currently coordinated by Fr. Jeff Roedel, a US Schoenstatt Father, and is maintained by many volunteers. It was developed in communication with, and at the service of the General Presidium and the [International Coordination](https://schoenstatt.com).
+
+## Who are we reaching out to?
+
+We have three main audiences we wish to serve:
+
+1. **Schoenstatt Movement leaders**. By modeling Schoenstatt's organizational structure, we hope to provide a dynamic way to maintain movement contacts throughout the world while respecting everyone's privacy.
+2. **Schoenstatt academics**. Hundreds of thousands of hours have gone into researching our founder, Fr. Joseph Kentenich, yet it is often difficult to access these resources. We hope provide a comprehensive list of [Schoenstatt-related literature](literature) published, especially academic papers. This list links to digital copies of materials and [library catalogue entries](libraries) where physical copies may be found.
+3. **Web and phone application developers**. Our [REST APIs](https://docs.google.com/spreadsheets/d/1yht-M2D9kM-Y-LU84LO2CBZuHGrkIYOCbjJY59FKl7M/edit?usp=sharing) expose direct access to our database. We hope this will encourage programmers to innovate and invest in new Schoenstatt applications.
+
+## How can I help?
+
+1. **Updating data**. Is your [shrine information](/shrines) up-to-date? [Create an account](user/register) to update it.
+2. **Translating**. We try to keep this website and its data available in 5 languages: English, Spanish, German, Portuguese, and Italian. Please email [webmaster@schoenstatt.link](mailto:webmaster@schoenstatt.link) if you can help.
+3. **Programming**. The schoenstatt.link web application is written in PHP in the [Laminas framework](https://getlaminas.org/). Our codebase is hosted privately on bitbucket. Please email [webmaster@schoenstatt.link](mailto:webmaster@schoenstatt.link) if you can help.
+
+EOT
+];
 ?>
-        </div>
-    </div>
-  </div>
-</div>
-<div class="container">
-  <!-- Example row of columns -->
-  <div class="row">
-    <div class="col-md-4">
-      <h2><?php echo $this->translate("Latest blog posts");?></h2>
-<?php
-if (isset($this->blogPosts) && is_array($this->blogPosts)) :
-    foreach ($this->blogPosts as $post) :?>
-      <p><strong><a href="<?php echo $this->url('blog/blog-post', ['sw_id' => $post['identifier'], 'slug' => $post['slug']]);?>"><?php echo $this->translate($post['title']);?></a></strong></p>
-        <?php
-    endforeach;
-endif;?>
-      <!-- <p><a class="btn btn-default" href="mailto:webmaster@schoenstatt.link" role="button"><?php echo $this->translate('Contact us');?> »</a></p> -->
-    </div>
-    <div class="col-md-4">
-      <h2><?php echo $this->translate("Are you bilingual?");?></h2>
-      <p><?php echo $this->translate("Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!");?></p>
-      <p><a class="btn btn-default" href="mailto:webmaster@schoenstatt.link" role="button"><?php echo $this->translate('Contact us');?> »</a></p>
-   </div>
-    <div class="col-md-4">
-      <h2><?php echo $this->translate('Are you a developer?');?></h2>
-      <p><?php echo $this->translate("About half of the work to maintain a reliable, centralized source of information depends on programmers who can provide the easy-to-use tools to submit and access the data.");?></p>
-      <p><a class="btn btn-default" href="<?php echo $this->url('developers');?>" role="button"><?php echo $this->translate('Learn more');?> »</a></p>
-    </div>
-  </div>
-</div>
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+<?php echo $this->markdown($text['en']);?>
+</div></div>

@@ -51,16 +51,6 @@ return [
                     ],
                 ],
             ],
-            'new-home' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/new-home',
-                    'defaults' => [
-                        'controller' => Controller\IndexController::class,
-                        'action'     => 'newHome',
-                    ],
-                ],
-            ],
             'sitemap' => [
                 'type' => Literal::class,
                 'options' => [
