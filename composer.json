@@ -22,7 +22,7 @@
         "zfc-datagrid/zfc-datagrid": "^1.4",
         "phpoffice/phpexcel": "^1.8",
     	"neilime/zf2-mobile-detect": "^2.2",
-        "kokspflanze/bjy-authorize": "dev-master",
+        "kokspflanze/bjy-authorize": "^1.7",
         "zf-commons/zfc-user": "3.x@dev",
         "matriphe/iso-639": "^1.0",
 		"cakephp/utility": "^3.2.0",
@@ -114,6 +114,6 @@
     "scripts": {
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",
-        "serve": "php -S 0.0.0.0:8080 -t public"
+        "serve": "php -S 127.0.0.1:8080 -t public"
     }
 }
