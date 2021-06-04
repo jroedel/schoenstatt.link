@@ -256,7 +256,7 @@ class EventTextTable extends SionTable implements
      */
     protected function preprocessText($data, $entityData, $action)
     {
-        static $mdParser;
+        static $parsedown;
         static $html2Text;
         static $now;
         //generate slug
@@ -269,7 +269,7 @@ class EventTextTable extends SionTable implements
             && self::TEXT_KIND_JK_TEXT !== $entityData['kind']
         ) {
             //generate HTML
-            if (! isset($mdParser)) {
+            if (! isset($parsedown)) {
                 $parsedown = new \Parsedown();
                 $parsedown->setSafeMode(true);
             }

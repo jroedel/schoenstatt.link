@@ -23,6 +23,7 @@ use Application\View\GdprStrategy;
 use Application\Service\JsonPostFactory;
 use Zend\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
+use Zend\Log\LoggerInterface;
 
 return [
     'router' => [
@@ -132,6 +133,10 @@ return [
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
             Authentication\Adapter\JsonPost::class => JsonPostFactory::class,
+        ],
+        'aliases' => [
+            //this helps clarify throughout the app which kind of Logger we should expect.
+            LoggerInterface::class => 'SionModel\Logger',
         ],
         'lazy_services' => [
             // Mapping services to their class names is required

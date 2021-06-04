@@ -1302,7 +1302,12 @@ return [
                 'options' => [
                     'route'    => '/:sw_id/edit',
                     'constraints' => [
-                        'sw_id' => 'SL1[0-9]{4,4}A',
+                        'sw_id' => trim(
+                            Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[
+                            Validator\SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
+                            ],
+                            '/^$'
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\AssociationsController::class,
