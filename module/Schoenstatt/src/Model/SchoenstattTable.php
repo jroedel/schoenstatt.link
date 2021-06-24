@@ -368,8 +368,7 @@ class SchoenstattTable extends SionTable implements
             $columns = array_values($entitySpec->updateColumns);
             $columns = array_merge($columns, ['SchemaOrgJsonMd5V1En','SchemaOrgJsonMd5V1Es','SchemaOrgJsonMd5V1Pt','SchemaOrgJsonMd5V1De',
                 'SchemaOrgJsonMd5V1It', 'SlugEn', 'SlugEs', 'SlugDe', 'SlugPt', 'SlugIt']);
-            $columns['GeoPoint'] = new Expression('AsText(`Location`)');
-//             $columns['TotalViews'] = new Expression('AsText(`Location`)');
+            $columns['GeoPoint'] = new Expression('ST_AsText(`Location`)');
             $select->columns($columns);
         }
         return $select;
