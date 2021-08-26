@@ -19,6 +19,14 @@ class PublicationsController extends SionController
 {
     const MAX_SEARCH_RESULTS = 1000;
 
+    public function migrateDataSourceStructureAction()
+    {
+        $results = $this->getSionTable()->migrateDataSourceStructure();
+        return new ViewModel([
+            'results' => $results
+        ]);
+    }
+
     public function oneFiftyPreguntasAction()
     {
         $view = new ViewModel();
