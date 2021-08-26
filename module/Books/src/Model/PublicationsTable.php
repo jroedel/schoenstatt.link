@@ -694,14 +694,20 @@ ORDER BY `Publisher`";
             'adminTags'                 => $this->filterDbArray($row['AdminTags']),
             'isAccessibleForFree'       => $this->filterDbBool($row['IsAccessableForFree']),
             'isScientificWork'          => $this->filterDbBool($row['IsScientificWork']),
-            'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
 
             'hasNoExplictEditionNumber' => $this->filterDbBool($row['HasNoExplictEditionNumber']),
             'hasNoISBN'                 => $this->filterDbBool($row['HasNoISBN']),
             'isRevisedWithBookInHand'   => $this->filterDbBool($row['IsRevisedWithBookInHand']),
             'isFormallyPublished'       => $this->filterDbBool($row['IsFormallyPublished']),
 
+            //@todo delete fields hasBeenMerged, isAwaitingMerge
             'hasBeenMerged'             => $this->filterDbBool($row['HasBeenMerged']),
+            'isAwaitingMerge'           => $this->filterDbBool($row['IsAwaitingMerge']),
+            'mergedIntoPublicationId'   => $this->filterDbId($row['MergedIntoPublicationId']),
+            'dataSource'                => $row['DataSource'],
+            'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
+            'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
+
             'jkQuality'                 => $row['JkQuality'],
             'jkQualityNotes'            => $row['JkQualityNotes'],
             'jkPeriodId'                => $this->filterDbId($row['JkPeriod']),
@@ -713,9 +719,6 @@ ORDER BY `Publisher`";
             'url2Label'                 => $row['Url2Label'],
             'url3'                      => $row['Url3'],
             'url3Label'                 => $row['Url3Label'],
-            'dataSource'                => $row['DataSource'],
-            'dataSourceId'              => $this->filterDbId($row['DataSourceId']),
-            'dataSourceUpdatedOn'       => $this->filterDbDate($row['DataSourceUpdatedOn']),
 
             'editionNotes'              => $row['EditionNotes'],
             'publicNotes'               => $row['PublicNotes'],
@@ -1711,6 +1714,11 @@ ORDER BY `Publisher`";
         $clause = new Operator('TranslatedFromPublicationId', Operator::OPERATOR_EQUAL_TO, $publicationId);
         $where->addPredicate($clause, PredicateSet::OP_OR);
         $gateway->update(['CategoryId' => $categoryId], $where);
+    }
+
+    public function migrateDataSourceStructure()
+    {
+
     }
 
     public function getCategories()

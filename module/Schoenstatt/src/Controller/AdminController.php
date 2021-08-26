@@ -60,6 +60,7 @@ class AdminController extends AbstractActionController
             'juser'                     => "User Management",
             'jtranslate'                => "Manage Translations",
             'sion-model/data-problems'  => "Data problems",
+            'admin/literature-maintenance'  => "Literature maintenance",
         ];
         $badges = [];
 

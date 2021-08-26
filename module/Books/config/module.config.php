@@ -225,7 +225,7 @@ return [
             ],
 //             'sion-model/auto-fix-data-problems' => [
 //                 'label' => "Auto-fix data problems",
-//                 'description' => 'Try to automatically fix some of the data problems.',
+//                 'description' => 'Try to automatically fix some data problems.',
 //             ],
 //             'admin/website-status'      => [
 //                 'label' => "Website status",
@@ -356,6 +356,20 @@ return [
     ],
     'router' => [
         'routes' => [
+            'admin' => [
+                'child_routes' => [
+                    'literature-maintenance' => [
+                        'type'    => Literal::class,
+                        'options' => [
+                            'route'    => '/literature-maintenance',
+                            'defaults' => [
+                                'controller' => Controller\PublicationsController::class,
+                                'action'     => 'migrateDataSourceStructure',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
             'api-v1' => [
                 'child_routes' => [
                     'libraries' => [
@@ -2219,7 +2233,6 @@ return [
                     'isAccessibleForFree'       => 'IsAccessableForFree',
                     'isScientificWork'          => 'IsScientificWork',
                     //if the row hasn't been reconciled against the main corpus, isAwaitingMerge=true
-                    'isAwaitingMerge'           => 'IsAwaitingMerge',
 
                     'hasNoExplictEditionNumber' => 'HasNoExplictEditionNumber',
                     'hasNoISBN'                 => 'HasNoISBN',
@@ -2227,8 +2240,45 @@ return [
                     'publishDataAsJsonLd'       => 'PublishDataAsJsonLd',
                     'isFormallyPublished'       => 'IsFormallyPublished',
 
-                    //has the row been merged into another? This implies being hidden
-                    'hasBeenMerged'             => 'HasBeenMerged',
+                    /**
+                     * Initial meaning: has the row been merged into another? This implies being hidden
+                     *
+                     * 2021-08-26:
+                     * Now we're maintaining a complete copy of each dataSource record
+                     * Any datasource record we want to integrate into our database will be copied.
+                     * The newly copied record won't have any dataSource value, but the original will point to the new
+                     * one.
+                     *
+                     * The big question is how to we prep the data for this change?
+                     * All record which have hasBeenMerged=true should actually be copied to a new row and the old
+                     * row should point to the newly created ID.
+                     *
+                     * To get an idea of what's going on, look at this query:
+                     * SELECT InLanguage, `DataSource`, `IsAwaitingMerge`, COUNT(*) FROM `sch_publications`
+                     * GROUP BY DataSource, InLanguage, `IsAwaitingMerge`
+                     * ORDER BY `sch_publications`.`InLanguage` ASC, `sch_publications`.`IsAwaitingMerge` ASC
+                     *
+                     * `Here's the plan:
+                     * 1. Copy all the rows that have a Non-null dataSource and isAwaitingMerge=0. At the same time
+                     *      also add the mergedIntoPublicationId pointing the old record to the new one
+                     * 2. DROP the two columns hasBeenMerged, isAwaitingMerge
+                     * 3. Put together a map from old PublicationId to the main corpus
+                     * 4. Only display the rows that have a NULL dataSource
+                     * 5. Update the PublicationId's from the following sources:
+                     *      - MainPublicationId (only if they have a NULL dataSource
+                     *      - lib_books.publication_id
+                     *      - Archivos PK
+                     *      - Cover image files
+                     * 6. Pull everything into a spreadsheet and start linking up/copying dataSource records
+                     *      to real records
+                     */
+                    'hasBeenMerged'             => 'HasBeenMerged', //@todo get rid of hasBeenMerged, it's just all 0's
+                    'isAwaitingMerge'           => 'IsAwaitingMerge', //@todo get rid of IsAwaitingMerge
+                    'dataSource'                => 'DataSource', //the name of the data source ex. forschungsbibliothek
+                    'dataSourceId'              => 'DataSourceId', //the id in the orig. data source
+                    'dataSourceUpdatedOn'       => 'DataSourceUpdatedOn', //the last time we imported data from source
+                    'mergedIntoPublicationId'   => 'MergedIntoPublicationId', //the final home of the merged data
+
                     'editionNotes'              => 'EditionNotes',
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',
@@ -2242,9 +2292,6 @@ return [
                     'createdOn'                 => 'CreatedOn',
                     'createdBy'                 => 'CreatedBy',
 
-                    'dataSource'                => 'DataSource',
-                    'dataSourceId'              => 'DataSourceId',
-                    'dataSourceUpdatedOn'       => 'DataSourceUpdatedOn',
                     'jkQuality'                 => 'JkQuality',
                     'jkQualityNotes'            => 'JkQualityNotes',
                     'jkPeriod'                  => 'JkPeriod',
@@ -2786,6 +2833,8 @@ return [
         ],
         'guards' => [
             Route::class => [
+                ['route' => 'admin/literature-maintenance', 'roles' => ['pub_administrator']],
+
                 ['route' => 'api-v1/libraries', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/libraries/books', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/pending-labels', 'roles' => ['guest', 'user']],
