@@ -21,10 +21,119 @@ class PublicationsController extends SionController
 
     public function migrateDataSourceStructureAction()
     {
-        $results = $this->getSionTable()->migrateDataSourceStructure();
+        $copyDataSourcedRowToFirstClassCitizen = $this->getSionTable()->copyDataSourcedRowToFirstClassCitizen(true);
+        $countCopyDataSourcedRowToFirstClassCitizen = count($copyDataSourcedRowToFirstClassCitizen);
+
+        $updateMainPublicationIdReferences = $this->getSionTable()->updateMainPublicationIdReferences(true);
+        $countUpdateMainPublicationId = count($updateMainPublicationIdReferences);
+
+        $updateTranslatedFromPublicationIdReferences = $this->getSionTable()->updateTranslatedFromPublicationIdReferences(true);
+        $countUpdateTranslatedFromPublicationIdReferences = count($updateTranslatedFromPublicationIdReferences);
+
+        $updateCoverImages = $this->getSionTable()->updateCoverImages(true);
+        $countUpdateCoverImages = count($updateCoverImages);
+
+
         return new ViewModel([
+            'copyDataSourcedRowToFirstClassCitizen' => $countCopyDataSourcedRowToFirstClassCitizen,
+            'countUpdateMainPublicationId' => $countUpdateMainPublicationId,
+            'countUpdateTranslatedFromPublicationIdReferences' => $countUpdateTranslatedFromPublicationIdReferences,
+            'countUpdateCoverImages' => $countUpdateCoverImages,
+        ]);
+    }
+
+    public function copyDataSourcedRowToFirstClassCitizenAction()
+    {
+        //it's not a simulation unless the client specifies 1 or true
+        $simulateParam = $this->params()->fromQuery('simulate');
+        $isSimulation = $simulateParam !== 'false' && $simulateParam !== '0';
+        $results = $this->getSionTable()->copyDataSourcedRowToFirstClassCitizen($isSimulation);
+
+        $view = new ViewModel([
+            'rowAction' => 'Duplicate and relink',
+            'fields' => [
+                'Action',
+                'Result',
+                'Data source',
+                'Language',
+                'PubId',
+                'Title',
+            ],
+            'isSimulation' => $isSimulation,
             'results' => $results
         ]);
+        $view->setTemplate('books/publications/migrate-data-source-work');
+        return $view;
+    }
+
+    public function updateMainPublicationIdsAction()
+    {
+        //it's not a simulation unless the client specifies 1 or true
+        $simulateParam = $this->params()->fromQuery('simulate');
+        $isSimulation = $simulateParam !== 'false' && $simulateParam !== '0';
+        $results = $this->getSionTable()->updateMainPublicationIdReferences($isSimulation);
+
+        $view = new ViewModel([
+            'rowAction' => 'Update mainPublicationId',
+            'fields' => [
+                'Action',
+                'PubId',
+                'Language',
+                'Title',
+                'MainPubId',
+                'Result',
+            ],
+            'isSimulation' => $isSimulation,
+            'results' => $results
+        ]);
+        $view->setTemplate('books/publications/migrate-data-source-work');
+        return $view;
+    }
+
+    public function updateTranslatedFromPublicationIdReferencesAction()
+    {
+        //it's not a simulation unless the client specifies 1 or true
+        $simulateParam = $this->params()->fromQuery('simulate');
+        $isSimulation = $simulateParam !== 'false' && $simulateParam !== '0';
+        $results = $this->getSionTable()->updateTranslatedFromPublicationIdReferences($isSimulation);
+
+        $view = new ViewModel([
+            'rowAction' => 'Update translatedFromPublicationId',
+            'fields' => [
+                'Action',
+                'PubId',
+                'Language',
+                'Title',
+                'TranslatedFromPubId',
+                'Result',
+            ],
+            'isSimulation' => $isSimulation,
+            'results' => $results
+        ]);
+        $view->setTemplate('books/publications/migrate-data-source-work');
+        return $view;
+    }
+
+    public function updateCoverImagesAction()
+    {
+        //it's not a simulation unless the client specifies 1 or true
+        $simulateParam = $this->params()->fromQuery('simulate');
+        $isSimulation = $simulateParam !== 'false' && $simulateParam !== '0';
+        $results = $this->getSionTable()->updateCoverImages($isSimulation);
+
+        $view = new ViewModel([
+            'rowAction' => 'Update file name',
+            'fields' => [
+                'Action',
+                'PubId',
+                'File name',
+                'Result',
+            ],
+            'isSimulation' => $isSimulation,
+            'results' => $results
+        ]);
+        $view->setTemplate('books/publications/migrate-data-source-work');
+        return $view;
     }
 
     public function oneFiftyPreguntasAction()
@@ -178,7 +287,7 @@ class PublicationsController extends SionController
         $language   = $this->params()->fromRoute('inLanguage');
         $objects    = $table->searchPublications(
             ['inLanguage' => $language],
-            ['noSubEditions' => true, 'isAwaitingMerger' => false]
+            ['noSubEditions' => true, 'isFromDataSource' => false]
         );
         $objects    = $this->groupPublicationsByCategory($objects);
 
@@ -191,7 +300,7 @@ class PublicationsController extends SionController
         } catch (\Exception $e) {
         }
 
-        $view = new ViewModel([
+        return new ViewModel([
             'form'      => $form,
             'language'  => $language,
             'entity'    => $entity,
@@ -199,7 +308,6 @@ class PublicationsController extends SionController
             'objects'   => $objects,
             'files'     => $publicationFiles,
         ]);
-        return $view;
     }
 
     protected function groupPublicationsByCategory($objects)

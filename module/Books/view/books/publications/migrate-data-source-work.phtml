@@ -12,25 +12,49 @@ if ($this->isSimulation) : ?>
 <div class="responsive-table">
     <table class="table">
         <tr>
-            <th>Action</th>
-            <th>Result</th>
-            <th>Data source</th>
-            <th>Language</th>
-            <th>PubId</th>
-            <th>Title</th>
+            <?php foreach ($this->fields as $field) :?>
+            <th><?= $field?></th>
+            <?php endforeach; ?>
         </tr>
         <?php foreach ($this->results as $result) :?>
             <tr>
-                <td>Duplicate and relink</td>
-                <td><?php
-                if (isset($result['result'])) {
-                    echo $this->escapeHtml($result['result']);
-                }
-                ?></td>
-                <td><?= $this->escapeHtml($result['dataSource'])?></td>
-                <td><?= $this->escapeHtml(implode('|',$result['inLanguage']))?></td>
-                <td><?= $this->escapeHtml($result['publicationId'])?></td>
-                <td><?= $this->escapeHtml($result['title'])?></td>
+                <?php foreach ($this->fields as $field) :?>
+                <td>
+                    <?php switch ($field):
+                        case 'Action':
+                            echo $this->rowAction;
+                            break;
+                        case 'Result':
+                            if (isset($result['result'])) {
+                                echo $this->escapeHtml($result['result']);
+                            }
+                            break;
+                        case 'Data source':
+                            echo $this->escapeHtml($result['dataSource']);
+                            break;
+                        case 'Language':
+                            echo $this->escapeHtml(implode('|',$result['inLanguage']));
+                            break;
+                        case 'PubId':
+                            echo $this->escapeHtml($result['publicationId']);
+                            break;
+                        case 'Title':
+                            echo $this->escapeHtml($result['title']);
+                            break;
+                        case 'MainPubId':
+                            echo $this->escapeHtml($result['mainPublicationId']);
+                            break;
+                        case 'TranslatedFromPubId':
+                            echo $this->escapeHtml($result['translatedFromPublicationId']);
+                            break;
+                        case 'File name':
+                            echo $this->escapeHtml($result['fileName']);
+                            break;
+
+                        default:
+                            echo '';
+                        endswitch;?>
+                </td><?php endforeach; ?>
             </tr>
         <?php endforeach;?>
     </table>
