@@ -367,6 +367,51 @@ return [
                                 'action'     => 'migrateDataSourceStructure',
                             ],
                         ],
+                        'may_terminate' => true,
+                        'child_routes' => [
+                            'copy-data-sourced-row-to-first-class-citizen' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/copy-data-sourced-row-to-first-class-citizen',
+                                    'defaults' => [
+                                        'controller' => Controller\PublicationsController::class,
+                                        'action'     => 'copyDataSourcedRowToFirstClassCitizen',
+                                    ],
+                                ],
+                            ],
+                            'update-main-publication-ids' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/update-main-publication-ids',
+                                    'defaults' => [
+                                        'controller' => Controller\PublicationsController::class,
+                                        'action'     => 'updateMainPublicationIds',
+                                    ],
+                                ],
+                            ],
+                            'update-translated-from-publication-id' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/update-translated-from-publication-id',
+                                    'defaults' => [
+                                        'controller' => Controller\PublicationsController::class,
+                                        'action'     => 'updateTranslatedFromPublicationIdReferences',
+                                    ],
+                                ],
+                            ],
+                            'update-cover-images' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/update-cover-images',
+                                    'defaults' => [
+                                        'controller' => Controller\PublicationsController::class,
+                                        'action'     => 'updateCoverImages',
+                                    ],
+                                ],
+                            ],
+
+
+                        ],
                     ],
                 ],
             ],
@@ -2265,7 +2310,8 @@ return [
                      * 3. Put together a map from old PublicationId to the main corpus
                      * 4. Only display the rows that have a NULL dataSource
                      * 5. Update the PublicationId's from the following sources:
-                     *      - MainPublicationId (only if they have a NULL dataSource
+                     *      - MainPublicationId (only if they have a NULL dataSource)
+                     *      - TranslatedFromPublicationId
                      *      - lib_books.publication_id
                      *      - Archivos PK
                      *      - Cover image files
@@ -2294,7 +2340,7 @@ return [
 
                     'jkQuality'                 => 'JkQuality',
                     'jkQualityNotes'            => 'JkQualityNotes',
-                    'jkPeriod'                  => 'JkPeriod',
+                    'jkPeriodId'                => 'JkPeriod',
                     'jkEventId'                 => 'JkEventId',
                 ],
             ],
@@ -2834,6 +2880,22 @@ return [
         'guards' => [
             Route::class => [
                 ['route' => 'admin/literature-maintenance', 'roles' => ['pub_administrator']],
+                [
+                    'route' => 'admin/literature-maintenance/copy-data-sourced-row-to-first-class-citizen',
+                    'roles' => ['pub_administrator']
+                ],
+                [
+                    'route' => 'admin/literature-maintenance/update-main-publication-ids',
+                    'roles' => ['pub_administrator']
+                ],
+                [
+                    'route' => 'admin/literature-maintenance/update-translated-from-publication-id',
+                    'roles' => ['pub_administrator']
+                ],
+                [
+                    'route' => 'admin/literature-maintenance/update-cover-images',
+                    'roles' => ['pub_administrator']
+                ],
 
                 ['route' => 'api-v1/libraries', 'roles' => ['guest', 'user']],
                 ['route' => 'api-v1/libraries/books', 'roles' => ['guest', 'user']],
