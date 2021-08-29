@@ -174,14 +174,13 @@ ORDER BY `Publisher`";
         return $valueOptions;
     }
 
-    public function getEditionValueOptions($onlyMainEditions = false)
+    public function getEditionValueOptions()
     {
-        // @todo if we implement $onlyMainEditions, we have to adjust caching
         $cacheKey = 'publication-edition-value-options';
         if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
             return $cache;
         }
-        $entities = $this->getObjects('publication');
+        $entities = $this->queryObjects('publication', new IsNull('DataSource'));
         $return = [];
         foreach ($entities as $entityId => $entityObject) {
             $return[$entityId] = $entityObject['disambiguatingTitle'];
