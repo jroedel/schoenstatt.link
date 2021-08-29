@@ -33,12 +33,16 @@ class PublicationsController extends SionController
         $updateCoverImages = $this->getSionTable()->updateCoverImages(true);
         $countUpdateCoverImages = count($updateCoverImages);
 
+        $listMap = $this->getSionTable()->compileMapFromDataSourcedRecordsToFirstClassCitizens();
+        $countListMap = count($listMap);
+
 
         return new ViewModel([
             'copyDataSourcedRowToFirstClassCitizen' => $countCopyDataSourcedRowToFirstClassCitizen,
             'countUpdateMainPublicationId' => $countUpdateMainPublicationId,
             'countUpdateTranslatedFromPublicationIdReferences' => $countUpdateTranslatedFromPublicationIdReferences,
             'countUpdateCoverImages' => $countUpdateCoverImages,
+            'countListMap' => $countListMap
         ]);
     }
 
@@ -136,6 +140,15 @@ class PublicationsController extends SionController
         return $view;
     }
 
+    public function listMergedPublicationIdMapAction()
+    {
+        $results = $this->getSionTable()->compileMapFromDataSourcedRecordsToFirstClassCitizens();
+
+        return new ViewModel([
+            'map' => $results
+        ]);
+    }
+
     public function oneFiftyPreguntasAction()
     {
         $view = new ViewModel();
@@ -175,6 +188,23 @@ class PublicationsController extends SionController
             return $view;
         }
         $entityObject = $view->getVariable('entity');
+
+        //redirect iff this pub has been merged and the client is not logged in
+        if (isset($entityObject['mergedIntoPublicationId']) && ! $this->isAllowed('publication_user', 'show')) {
+            $queryResults = $this->getSionTable()->queryObjects('publication', ['publicationId' => $entityObject['mergedIntoPublicationId']]);
+            if (is_array($queryResults) && count($queryResults) === 1) {
+                $mergedInto = current($queryResults);
+                if (isset($mergedInto) && isset($mergedInto['identifier']) && isset($mergedInto['slug'])) {
+                    $response = $this->redirect()->toRoute(
+                        'publication',
+                        ['sw_id' => $mergedInto['identifier'], 'slug' => $mergedInto['slug']]
+                    );
+                    $response->setStatusCode(301);
+                    return $response;
+                }
+            }
+        }
+
         if (isset($entityObject['bookCoverFileId'])) {
             $bookCoverFileId = $entityObject['bookCoverFileId'];
             /** @var FilesTable $filesTable */

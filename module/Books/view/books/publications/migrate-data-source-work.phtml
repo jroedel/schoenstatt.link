@@ -1,6 +1,7 @@
 <?php
 /** @var \Zend\View\Renderer\PhpRenderer $this */
 ?>
+<p><a href="<?= $this->url('admin/literature-maintenance')?>">Return to literature maintenance menu</a></p>
 <?php
 if ($this->isSimulation) : ?>
 <p>This is a simulation. <a href="?simulate=0" class="btn btn-danger">Do the real deal</a></p>
