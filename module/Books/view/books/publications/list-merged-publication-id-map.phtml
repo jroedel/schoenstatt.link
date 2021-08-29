@@ -1,0 +1,16 @@
+
+<p><a href="<?= $this->url('admin/literature-maintenance')?>">Return to literature maintenance menu</a></p>
+<div class="responsive-table">
+    <table class="table">
+        <tr>
+            <th>Data sourced pubId</th>
+            <th>Merged into pubId</th>
+        </tr>
+        <?php foreach ($this->map as $dataSourcedPublicationId => $firstClassCitizenPublicationId) :?>
+        <tr>
+            <td><?= $this->escapeHtml($dataSourcedPublicationId)?></td>
+            <td><?= $this->escapeHtml($firstClassCitizenPublicationId)?></td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
+</div>

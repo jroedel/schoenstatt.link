@@ -409,8 +409,16 @@ return [
                                     ],
                                 ],
                             ],
-
-
+                            'list-merged-publication-id-map' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/list-merged-publication-id-map',
+                                    'defaults' => [
+                                        'controller' => Controller\PublicationsController::class,
+                                        'action'     => 'listMergedPublicationIdMap',
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -2894,6 +2902,10 @@ return [
                 ],
                 [
                     'route' => 'admin/literature-maintenance/update-cover-images',
+                    'roles' => ['pub_administrator']
+                ],
+                [
+                    'route' => 'admin/literature-maintenance/list-merged-publication-id-map',
                     'roles' => ['pub_administrator']
                 ],
 

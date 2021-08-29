@@ -102,6 +102,22 @@ endif;?>
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
         echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
             'displayOnlyWithPermission' => 'route/publication-edit']);
+        if (isset($object['dataSource']) || isset($object['dataSourceId']) || isset($object['mergedIntoPublicationId'])) {
+            echo '<hr>';
+        }
+        echo $this->formatField('Data source', $object['dataSource'], ['displayOnlyIfNotNull' => true]);
+        echo $this->formatField('Original ID within data source', $object['dataSourceId'], ['displayOnlyIfNotNull' => true]);
+        if (isset($object['mergedIntoPublicationId'])) :
+            $swIdBuilder = new \Schoenstatt\Filter\ToSchoenstattLinkIdentifier('publication');
+            $mergedIntoUrl = $this->url(
+                'publication',
+                ['sw_id' => $swIdBuilder->filter($object['mergedIntoPublicationId'])]
+            );?>
+            <p><strong><?=$this->translate('Merged into')?></strong>:
+                <a href="<?=$this->escapeHtmlAttr($mergedIntoUrl)?>">
+                    <?=$this->escapeHtml($object['mergedIntoPublicationId'])?></a>
+            </p>
+        <?php endif;
         foreach ($object['urls'] as $urlObject) :
             ?><p><?= $this->formatPublicationUrlObject($urlObject);?></p><?php
         endforeach;
