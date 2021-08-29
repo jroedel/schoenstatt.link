@@ -30,6 +30,12 @@
                 <h4 class="list-group-item-heading">Update cover images</h4>
                 <p class="list-group-item-text">Check for cover image file names pointing to data-sourced rows and update them.</p>
             </a>
+            <a href="<?php echo $this->url('admin/literature-maintenance/update-library-book-publication-references');?>"
+               class="list-group-item">
+                <span class="badge badge-info"><?= $this->countUpdateLibraryBooks?></span>
+                <h4 class="list-group-item-heading">Update library book to publication references</h4>
+                <p class="list-group-item-text">Check all library books for references to data-sourced publications.</p>
+            </a>
             <a href="<?php echo $this->url('admin/literature-maintenance/list-merged-publication-id-map');?>"
                class="list-group-item">
                 <span class="badge badge-info"><?= $this->countListMap?></span>

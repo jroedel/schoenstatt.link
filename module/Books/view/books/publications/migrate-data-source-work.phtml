@@ -1,5 +1,7 @@
 <?php
 /** @var \Zend\View\Renderer\PhpRenderer $this */
+
+$swIdBuilder = new \Schoenstatt\Filter\ToSchoenstattLinkIdentifier('publication');
 ?>
 <p><a href="<?= $this->url('admin/literature-maintenance')?>">Return to literature maintenance menu</a></p>
 <?php
@@ -37,7 +39,11 @@ if ($this->isSimulation) : ?>
                             echo $this->escapeHtml(implode('|',$result['inLanguage']));
                             break;
                         case 'PubId':
-                            echo $this->escapeHtml($result['publicationId']);
+                            if (isset($result['publicationId'])) : ?>
+                            <a href="<?=$this->url('publication', ['sw_id' => $swIdBuilder->filter($result['publicationId'])])?>">
+                                <?= $this->escapeHtml($result['publicationId']) ?>
+                            </a>
+                            <?php endif;
                             break;
                         case 'Title':
                             echo $this->escapeHtml($result['title']);
@@ -50,6 +56,14 @@ if ($this->isSimulation) : ?>
                             break;
                         case 'File name':
                             echo $this->escapeHtml($result['fileName']);
+                            break;
+                        case 'BookId':
+                            if (isset($result['bookId'])) : ?>
+                                <a href="<?=$this->url('books/book', ['book_id' => $result['bookId']])?>">
+                                    <?= $this->escapeHtml($result['bookId']) ?>
+                                </a>
+                            <?php
+                            endif;
                             break;
 
                         default:

@@ -295,7 +295,8 @@ ORDER BY `Publisher`";
 //             'mainPublicationId', 'translatedFromPublicationId', 'publicationId',
 //             'resourceId' //@todo finish this (we should be limiting on the search action)
 //         ];
-//         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions'];
+//         $possibleOptions = ['maxResults', 'page', 'resultsPerPage', 'orCombination', 'noLink', 'noSubEditions',
+//              'includeDataSources'];
 
         $fieldMap = $this->getEntitySpecification('publication')->updateColumns;
         $fieldMap['category'] = 'CategoryName';
@@ -436,13 +437,8 @@ ORDER BY `Publisher`";
         }
 
         //Prepare inLanguage predicate
-        if (key_exists('inLanguage', $query)) {
-            if (null === $query['inLanguage']) {
-                $inLanguageClause = new IsNull($fieldMap['inLanguage']);
-            } else {
-                $inLanuageText = $query['inLanguage'];
-                $inLanguageClause = new Like($fieldMap['inLanguage'], "%$inLanuageText%");
-            }
+        if (isset($query['inLanguage'])) {
+            $inLanguageClause = new In($fieldMap['inLanguage'], $query['inLanguage']);
             $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
         }
 
@@ -453,25 +449,16 @@ ORDER BY `Publisher`";
             $where->addPredicate($noSubEditionClause, PredicateSet::OP_AND);
         }
 
-        //@todo check if this really works
-        //Prepare NOT isAwaitingMerger predicate, by default, don't filter
-        if (isset($options['isAwaitingMerger'])) {
-            $isAwaitingMergerClause = new Operator(
-                $fieldMap['isAwaitingMerge'],
-                Operator::OPERATOR_EQUAL_TO,
-                $options['isAwaitingMerger'] ? '1' : '0'
-            );
-            $where->addPredicate($isAwaitingMergerClause, PredicateSet::OP_AND);
-        }
-
-        //@todo check if this really works
-        //Prepare NOT isFromDataSource predicate, by default, don't filter
-        if (isset($options['isFromDataSource'])) {
-            if ($options['isFromDataSource']) {
-                $isFromDataSourceClause = new IsNotNull($fieldMap['dataSource']);
-            } else {
-                $isFromDataSourceClause = new IsNull($fieldMap['dataSource']);
-            }
+        /*
+         * @todo check if this really works
+         *
+         * Prepare isFromDataSource predicate, by default, don't admit records with dataSource
+         *
+         * Read like this: If the user hasn't set an option including data sources,
+         * then add a predicate to filter them out
+         */
+        if (! isset($options['includeDataSources']) || ! $options['includeDataSources']) {
+            $isFromDataSourceClause = new IsNull($fieldMap['dataSource']);
             $where->addPredicate($isFromDataSourceClause, PredicateSet::OP_AND);
         }
 
