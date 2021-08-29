@@ -53,7 +53,7 @@ class BookFormFactory implements FactoryInterface
         $adminTags = $table->getAdminKeywordsValueOptions();
         $categories = $table->getCategoryValueOptions();
 
-        /** @var PublicationsTable */
+        /** @var PublicationsTable $publicationsTable */
         $publicationsTable = $container->get(PublicationsTable::class);
         $allEditions = $publicationsTable->getEditionValueOptions(false);
 
