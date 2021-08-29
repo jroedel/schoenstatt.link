@@ -409,6 +409,16 @@ return [
                                     ],
                                 ],
                             ],
+                            'update-library-book-publication-references' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/update-library-book-publication-references',
+                                    'defaults' => [
+                                        'controller' => Controller\PublicationsController::class,
+                                        'action'     => 'updateLibraryBookPublicationReferences',
+                                    ],
+                                ],
+                            ],
                             'list-merged-publication-id-map' => [
                                 'type'    => Literal::class,
                                 'options' => [
@@ -2902,6 +2912,10 @@ return [
                 ],
                 [
                     'route' => 'admin/literature-maintenance/update-cover-images',
+                    'roles' => ['pub_administrator']
+                ],
+                [
+                    'route' => 'admin/literature-maintenance/update-library-book-publication-references',
                     'roles' => ['pub_administrator']
                 ],
                 [

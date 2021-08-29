@@ -36,13 +36,18 @@ class PublicationsController extends SionController
         $listMap = $this->getSionTable()->compileMapFromDataSourcedRecordsToFirstClassCitizens();
         $countListMap = count($listMap);
 
+        /** @var LibraryTable $table */
+        $libraryTable = $this->services[LibraryTable::class];
+        $updateLibraryBooks = $libraryTable->updateLibraryBookPublicationReferences(true, $listMap);
+        $countUpdateLibraryBooks = count($updateLibraryBooks);
 
         return new ViewModel([
             'copyDataSourcedRowToFirstClassCitizen' => $countCopyDataSourcedRowToFirstClassCitizen,
             'countUpdateMainPublicationId' => $countUpdateMainPublicationId,
             'countUpdateTranslatedFromPublicationIdReferences' => $countUpdateTranslatedFromPublicationIdReferences,
             'countUpdateCoverImages' => $countUpdateCoverImages,
-            'countListMap' => $countListMap
+            'countListMap' => $countListMap,
+            'countUpdateLibraryBooks' => $countUpdateLibraryBooks,
         ]);
     }
 
@@ -131,6 +136,34 @@ class PublicationsController extends SionController
                 'Action',
                 'PubId',
                 'File name',
+                'Result',
+            ],
+            'isSimulation' => $isSimulation,
+            'results' => $results
+        ]);
+        $view->setTemplate('books/publications/migrate-data-source-work');
+        return $view;
+    }
+
+    //update-library-book-publication-references
+    public function updateLibraryBookPublicationReferencesAction()
+    {
+        //it's not a simulation unless the client specifies 1 or true
+        $simulateParam = $this->params()->fromQuery('simulate');
+        $isSimulation = $simulateParam !== 'false' && $simulateParam !== '0';
+        $map = $this->getSionTable()->compileMapFromDataSourcedRecordsToFirstClassCitizens();
+            /** @var LibraryTable $table */
+        $libraryTable = $this->services[LibraryTable::class];
+        $results = $libraryTable->updateLibraryBookPublicationReferences($isSimulation, $map);
+
+        $view = new ViewModel([
+            'rowAction' => 'Update book pubId',
+            'fields' => [
+                'Action',
+                'BookId',
+                'PubId',
+                'Language',
+                'Title',
                 'Result',
             ],
             'isSimulation' => $isSimulation,
@@ -316,8 +349,8 @@ class PublicationsController extends SionController
         $entitySpec = $this->getEntitySpecification();
         $language   = $this->params()->fromRoute('inLanguage');
         $objects    = $table->searchPublications(
-            ['inLanguage' => $language],
-            ['noSubEditions' => true, 'isFromDataSource' => false]
+            ['inLanguage' => [$language]],
+            ['noSubEditions' => true]
         );
         $objects    = $this->groupPublicationsByCategory($objects);
 
@@ -463,7 +496,10 @@ class PublicationsController extends SionController
                 }
                 $entities = $table->searchPublications($data, $options);
                 if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {
-                    $this->nowMessenger()->addMessage("More than the max number of publications match your search. Only the first 300 results shown.", NowMessenger::NAMESPACE_INFO);
+                    $this->nowMessenger()->addMessage(
+                        "More than the max number of publications match your search. Only the first 300 results shown.",
+                        NowMessenger::NAMESPACE_INFO
+                    );
                 }
             }
         }

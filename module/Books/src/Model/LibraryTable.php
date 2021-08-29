@@ -916,6 +916,45 @@ ORDER BY `publisher`";
         return $lookup;
     }
 
+    public function updateLibraryBookPublicationReferences(bool $isSimulation, array $oldIdToNewIdMap): array
+    {
+//        var_dump($oldIdToNewIdMap);
+        //ex. 1862
+
+        $query = [
+            new IsNotNull('publication_id')
+        ];
+        $queryResults = $this->queryObjects('book', $query);
+
+        $maxProcessedRows = 200;
+        $i = 0;
+        $results = [];
+        foreach ($queryResults as $result) {
+            if ($i >= $maxProcessedRows) {
+                break;
+            }
+            $cBookId = $result['bookId'];
+            if (! isset($oldIdToNewIdMap[$result['publicationId']])) {
+                continue;
+            }
+            $newId = $oldIdToNewIdMap[$result['publicationId']];
+            $results[$cBookId] = $result;
+            $results[$cBookId]['result'] = $newId;
+            if (! $isSimulation) {
+                $this->updateEntity(
+                    'book',
+                    $cBookId,
+                    ['publicationId' => $newId],
+                    [],
+                    false
+                );
+                $i++;
+            }
+        }
+
+        return $results;
+    }
+
     /**
      * Checks in the bookId's passed to the function. If requested, a book that wasn't checked
      * out will be first checked out and then back in.

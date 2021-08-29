@@ -71,12 +71,14 @@ $object = $this->object;
         echo $this->formatField('Keywords', $object['keywords'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false]);
         echo $this->formatField('Admin tags', $object['adminTags'], ['displayOnlyIfNotNull' => true, 'translateLabel' => false,
             'displayOnlyWithPermission' => $object['resourceId']]);
-        if (isset($this->borrowers[$object['currentCheckout']['personId']])) {
+        if (isset($object['currentCheckout']) && isset($this->borrowers[$object['currentCheckout']['personId']])) {
             echo $this->formatField('Checked out by', $this->borrowers[$object['currentCheckout']['personId']], ['displayOnlyIfNotNull' => true,
                 'displayOnlyWithPermission' => 'view_checkout_person']);
         }
-        echo $this->formatField('Due on', $object['currentCheckout']['dueOn'], ['displayOnlyIfNotNull' => true,
-            'displayOnlyWithPermission' => 'view_checkout_person']);
+        if (isset($object['currentCheckout'])) {
+            echo $this->formatField('Due on', $object['currentCheckout']['dueOn'], ['displayOnlyIfNotNull' => true,
+                'displayOnlyWithPermission' => 'view_checkout_person']);
+        }
         echo $this->formatField('Inactivation reason', $object['inactivationReason'], ['displayOnlyIfNotNull' => true,
             'displayOnlyWithPermission' => 'route/libraries/library/inactivate-books']);
         ?>
