@@ -29,15 +29,18 @@ $form->prepare();?>
                     <?php endif;?>
                 </div>
                 <div id="options" class= "collapse row">
-                    <div class="checkbox col-md-4">
+                    <div class="checkbox col-md-3">
                         <?php echo $this->formCheckbox($form->get('showEditionsSeparately')); ?>
                     </div>
-                    <div class="checkbox col-md-4">
+                    <div class="checkbox col-md-3">
+                        <?php echo $this->formCheckbox($form->get('includeDataSources')); ?>
+                    </div>
+                    <div class="checkbox col-md-3">
                         <div class="pull-right"><?php
                         $this->formSelect()->setTranslatorEnabled(false);
                         echo $this->formLabel($form->get('inLanguage')); ?></div>
                     </div>
-                    <div class="checkbox col-md-4">
+                    <div class="checkbox col-md-3">
                         <?php
                         echo $this->formSelect($form->get('inLanguage'));
                         $this->formSelect()->setTranslatorEnabled(true);
