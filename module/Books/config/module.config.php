@@ -654,6 +654,22 @@ return [
                     ],
                 ],
             ],
+            'publication-copy-to-main-corpus' => [
+                'type'    => Segment::class,
+                'options' => [
+                    'route'    => '/:sw_id/copy-to-main-corpus',
+                    'constraints' => [
+                        'sw_id' => trim(
+                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_PUBLICATION],
+                            '/^$'
+                        ),
+                    ],
+                    'defaults' => [
+                        'controller' => Controller\PublicationsController::class,
+                        'action'     => 'copyToMainCorpus',
+                    ],
+                ],
+            ],
             'publication-delete' => [
                 'type'    => Segment::class,
                 'options' => [
@@ -2953,7 +2969,9 @@ return [
                 ['route' => 'publication-edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-delete', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-create-new-edition', 'roles' => ['pub_moderator']],
-                ['route' => 'publication-upload-cover', 'roles' => ['pub_moderator']],
+                ['route' => 'publication-publication-copy-to-main-corpus', 'roles' => ['pub_moderator']],
+
+                ['route' => 'publication-copy-to-main-corpus', 'roles' => ['pub_moderator']],
 
                 ['route' => 'home', 'roles' => ['guest', 'lib_user']],
 

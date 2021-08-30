@@ -182,6 +182,31 @@ class PublicationsController extends SionController
         ]);
     }
 
+    public function copyToMainCorpusAction()
+    {
+        $view = parent::showAction();
+        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+            return $view;
+        }
+        $entityObject = $view->getVariable('entity');
+
+        if (! $entityObject['dataSource']) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
+                ->addMessage('Only data-sourced publications can be copied.');
+            return $this->redirect()->toRoute(
+                'publication',
+                ['sw_id' => $entityObject['identifier'], 'slug' => $entityObject['slug']]
+            );
+        }
+
+        $newId = $this->getSionTable()->copyPublicationToMainCorpus($entityObject['publicationId']);
+        $swFilter = new ToSchoenstattLinkIdentifier('publication');
+        $newSwId = $swFilter->filter($newId);
+        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+            ->addMessage('Publication copied into main literature corpus.');
+        return $this->redirect()->toRoute('publication', ['sw_id' => $newSwId]);
+    }
+
     public function oneFiftyPreguntasAction()
     {
         $view = new ViewModel();

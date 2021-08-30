@@ -1758,6 +1758,43 @@ ORDER BY `Publisher`";
         return $results;
     }
 
+    public function copyPublicationToMainCorpus($publicationId)
+    {
+        $results = $this->queryObjects('publication', ['publicationId' => $publicationId]);
+        if (! is_array($results) || 1 !== count($results)) {
+            throw new \Exception('No publication found');
+        }
+        $publication = current($results);
+
+        if (! isset($publication['dataSource'])) {
+            throw new \Exception('Publication is not a data sourced row');
+        }
+        //insert a duplicate row unsetting several fields
+        unset($publication['publicationId']);
+        unset($publication['dataSource']);
+        unset($publication['dataSourceId']);
+        unset($publication['dataSourceUpdatedOn']);
+        unset($publication['mergedIntoPublicationId']);
+        unset($publication['createdBy']);
+        unset($publication['createdOn']);
+        unset($publication['updatedBy']);
+        unset($publication['updatedOn']);
+
+        //@todo double check if mainPublicationId needs to be remapped
+        //@todo double check if translatedFromPublicationId needs to be remapped
+
+//        var_dump($publication);
+
+        $newId = $this->createEntity('publication', $publication);
+//        var_dump("New id is $newId");
+        if (! is_numeric($newId)) {
+            throw new \Exception('We were expecting a numeric result from the creation of a new publication');
+        }
+        //with the resulting PublicationId, update the old record
+        $this->updateEntity('publication', $publicationId, ['mergedIntoPublicationId' => $newId], [], false);
+        return $newId;
+    }
+
     public function updateMainPublicationIdReferences(bool $isSimulation): array
     {
         $oldIdToNewIdMap = $this->compileMapFromDataSourcedRecordsToFirstClassCitizens();
