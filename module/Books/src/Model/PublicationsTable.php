@@ -417,7 +417,6 @@ ORDER BY `Publisher`";
             }
         }
 
-        //@todo this should be LIKE
         //Prepare title predicate
         if (isset($query['title']) && 0 !== strlen($query['title'])) {
             $search = $query['title'];
@@ -426,7 +425,6 @@ ORDER BY `Publisher`";
             $where->addPredicate($titleClause, $combination);
         }
 
-        //@todo this should be LIKE
         //Prepare author predicate
         if (isset($query['authorsText']) && 0 !== strlen($query['authorsText'])) {
             $search = $query['authorsText'];
@@ -441,7 +439,6 @@ ORDER BY `Publisher`";
             $where->addPredicate($inLanguageClause, PredicateSet::OP_AND); //I don't think it would ever make sense combine with OR here
         }
 
-        //@todo check if this really works
         //Prepare isSubEdition predicate, by default, don't filter
         if (isset($options['noSubEditions']) && $options['noSubEditions']) {
             $noSubEditionClause = new IsNull($fieldMap['mainPublicationId']);

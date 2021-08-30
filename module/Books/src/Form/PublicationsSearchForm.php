@@ -39,6 +39,19 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
             ],
         ]);
         $this->add([
+            'name' => 'includeDataSources',
+            'type' => 'Checkbox',
+            'options' => [
+                'label' => 'Show data sources?',
+                'checked_value' => '1',
+                'unchecked_value' => '0',
+                'use_hidden_element' => true,
+            ],
+            'attributes' => [
+                'value'   => '0',
+            ],
+        ]);
+        $this->add([
             'name' => 'inLanguage',
             'type' => 'Select',
             'options' => [

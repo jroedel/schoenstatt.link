@@ -494,6 +494,9 @@ class PublicationsController extends SionController
                 if (! isset($data['showEditionsSeparately']) || $data['showEditionsSeparately'] != '1') {
                     $options['noSubEditions'] = true;
                 }
+                if (isset($data['includeDataSources']) && $data['includeDataSources'] === '1') {
+                    $options['includeDataSources'] = true;
+                }
                 $entities = $table->searchPublications($data, $options);
                 if (is_array($entities) && count($entities) == self::MAX_SEARCH_RESULTS) {
                     $this->nowMessenger()->addMessage(

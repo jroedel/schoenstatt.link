@@ -31,12 +31,13 @@ class FormatPublication extends FormatEntity
 
         //set defaults
         if (isset($options['display'])) {
-            if ($options['display'] === self::DISPLAY_AUTHORS ||
+            if (
+                $options['display'] === self::DISPLAY_AUTHORS ||
                 $options['display'] === self::DISPLAY_TITLE ||
                 $options['display'] === self::DISPLAY_DISAMBIGUATING_TITLE ||
                 $options['display'] === self::DISPLAY_EDITION ||
-                $options['display'] === self::DISPLAY_TRANSLATORS ||
-                $options['display'] === self::DISPLAY_ILLUSTRATORS) {
+                $options['display'] === self::DISPLAY_TRANSLATORS
+            ) {
                 $displayOption = $options['display'];
             } else {
                 $displayOption = self::DISPLAY_TITLE;
@@ -54,6 +55,12 @@ class FormatPublication extends FormatEntity
         $showResourceLabel = isset($options['displayResourceLabel']) ? (bool)$options['displayResourceLabel'] : false;
         $showHandChecked   = isset($options['displayHandChecked'])
             ? (bool)$options['displayHandChecked']
+            : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
+        $showDataSource   = isset($options['displayDataSource'])
+            ? (bool)$options['displayDataSource']
+            : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
+        $showMerged   = isset($options['displayMerged'])
+            ? (bool)$options['displayMerged']
             : $displayOption === self::DISPLAY_TITLE || $displayOption === self::DISPLAY_DISAMBIGUATING_TITLE;
 
         $finalMarkup = '';
@@ -178,6 +185,19 @@ class FormatPublication extends FormatEntity
                 $this->view->translate('Information has been hand checked')
             );
         }
+        if ($showDataSource && isset($data['dataSource'])) {
+            $finalMarkup .= sprintf(
+                '&nbsp;<span class="fa fa-database" title="%s"></span>',
+                $this->view->translate('This row comes from an external data source')
+            );
+        }
+        if ($showMerged && isset($data['mergedIntoPublicationId'])) {
+            $finalMarkup .= sprintf(
+                '&nbsp;<span class="fa fa-sign-in" title="%s"></span>',
+                $this->view->translate('This row has been merged into the main corpus')
+            );
+        }
+
         return $finalMarkup;
     }
 
