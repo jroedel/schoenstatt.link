@@ -1,0 +1,3138 @@
+# 150 preguntas sobre Schoenstatt
+
+Autor: Rafael Fernández
+
+Usado con permiso
+
+## I. Preguntas generales
+
+**1. ¿Qué es Schoenstatt?**
+
+Schoenstatt es un Movimiento apostólico de renovación, nacido en el seno
+de la Iglesia. Su centro espiritual es el Santuario de Schoenstatt,
+donde María se muestra de modo especial como la Madre y Educadora que da
+a luz a Cristo en nosotros, conformándonos según su imagen.
+
+El Movimiento de Schoenstatt abarca diversas comunidades que forman la
+"Familia" u "Obra" de Schoenstatt. Como Movimiento de renovación
+posee un marcado carácter apostólico y laical; una pedagogía y
+espiritualidad propias, particularmente aptas para quienes viven en
+medio del mundo y deben enfrentar un ambiente cada vez más
+descristianizado y materialista.
+
+Su finalidad es formar una nueva comunidad sobre la base de hombres
+nuevos que superen la masificación propia de nuestro tiempo y sean
+capaces de forjar una nueva cultura impregnada por el espíritu de
+Cristo. (\> 4-5)
+
+**2. ¿Qué significa el nombre "Schoenstatt"?**
+
+La palabra "Schoenstatt" designa originariamente un lugar geográfico:
+Schoenstatt, que se sitúa en la zona oriente de la pequeña ciudad
+alemana de Vallendar, junto a la ribera derecha del Rin, en las
+proximidades de la ciudad de Coblenza. Está situado a unos 90 Km. al sur
+de Colonia.
+
+Literalmente, "Schoenstatt" significa "lugar hermoso", del alemán:
+"eine schoene Statt". Como su centro espiritual --el Santuario-- y su
+origen histórico están íntimamente ligados a este lugar, se introdujo en
+forma natural la designación del Movimiento bajo este nombre.
+
+**3. ¿Cuándo comenzó el Movimiento de Schoenstatt?**
+
+El inicio del Movimiento de Schoenstatt se remonta a los tiempos de la
+primera guerra mundial; más específicamente, al acontecimiento del 18 de
+Octubre de 1914. En esta fecha el Padre Kentenich, junto a un grupo de
+jóvenes, sellan un pacto o alianza de amor con María, pidiéndole que
+ella se estableciese espiritualmente en la capillita que había sido
+puesta a su disposición y convirtiese ese lugar en un lugar de
+peregrinación.
+
+**4. ¿Quién es el Padre Kentenich?**
+
+El P. Kentenich es el Fundador de la Familia de Schoenstatt. Nació a
+fines del siglo pasado, el 18 de Noviembre de 1885, en la ciudad de
+Gymnich, Alemania. En 1906 ingresó a la comunidad de los Padres
+palotinos, siendo ordenado sacerdote en 1910. Dos años después de su
+ordenación, le fue encomendado por los superiores el cargo de Director
+Espiritual de los alumnos del Seminario Menor de los Padres Palotinos.
+Como educador desarrolló una fecunda labor con ellos, labor que culminó
+con la fundación del Movimiento en 1914. A partir de allí consagró toda
+su vida a la Familia de Schoenstatt. (\>5-6)
+
+Después de una vida rica en bendiciones, falleció el 15 de Septiembre de
+1965, dejando como herencia una Obra de dimensiones universales
+
+5\. ¿Por qué se acentúa tanto la vinculación al Padre Fundador en el
+Movimiento de Schoenstatt?
+
+No debe extrañarnos que la Familia de Schoenstatt acentúe tanto su
+vinculación al Fundador. Es un hecho que todas las comunidades ven en su
+fundador un instrumento predilecto del Señor y reconocen en él la
+voluntad de Dios para con ellas. Piénsese, por ejemplo, en San Benito y
+los benedictinos; en San Francisco y los franciscanos; en San Ignacio y
+la Compañía de Jesús; en Santa Teresa de Avila y las carmelitas; y, en
+nuestro tiempo, en Santiago Alberione y la Familia paulina; en José
+María Escrivá y el Opus Dei etc. Los últimos Papas han acentuado la
+necesidad de que las comunidades religiosas profundicen y vivan lo más
+intensamente posible el carisma de su fundador y se distingan por un
+fiel seguimiento a su persona y sus enseñanzas. Así se asegura la
+vitalidad del Cuerpo de Cristo, que muestra su riqueza y unidad en la
+diversidad de los carismas que reparte el Espíritu Santo.
+
+Junto a estas razones, válidas para cualquier comunidad en la Iglesia,
+hay que agregar que la profunda vinculación afectiva de la Familia de
+Schoenstatt a su Fundador, está también íntimamente ligada a la
+originalidad misma del carisma de Schoenstatt. En medio de un mundo en
+el cual experimentamos cada día en forma más intensa la destrucción y
+disgregación de todos los lazos de amor o vínculos interpersonales,
+tanto en el campo familiar como laboral, Schoenstatt quiere cultivar en
+profundidad todos los vínculos queridos por Dios. Y dentro de éstos la
+relación filial con el Fundador ocupa un lugar central.
+
+**6. ¿Por qué estuvo el Padre Kentenich en el exilio?**
+
+El Padre Kentenich sufrió dos grandes pruebas en su vida de Fundador.
+Primero, el nazismo lo confinó por tres años y medio al campo de
+concentración de Dachau. La segunda gran prueba vino de parte de la
+misma Iglesia y, por ello, fue mucho más dolorosa que la del nazismo. El
+Santo Oficio lo separó de su Obra y relegó por catorce años a Milwaukee,
+en Estados Unidos. Esto no debe extrañarnos si consideramos la suerte de
+los fundadores a lo largo de la historia de la Iglesia. Son pruebas que
+Dios permite a fin de purificar la fe y la entrega de sus instrumentos y
+hacerlos fecundos en el orden de la gracia, que brota de la cruz.
+
+El motivo concreto por qué el Santo Oficio tomó la medida de separarlo
+de su Familia fue la falta de comprensión de su carisma y pedagogía. En
+la Iglesia preconciliar no existía todavía una plena comprensión para
+una espiritualidad y pedagogía que aplicaban, en todo y
+consecuentemente, la armonía de lo natural y lo sobrenatural; que veía
+en el amor humano una expresión, un camino y una garantía del amor a
+Dios; que no acentuaba lo negativo y el peligro de lo creado (la "huida
+del mundo"), sino lo positivo, sin dejar de ver por ello la realidad de
+una naturaleza herida por el pecado. (Espiritualidad de Schoenstatt. \>
+64-74)
+
+La rehabilitación del Padre Kentenich se produjo, por eso, al término
+del Concilio Vaticano II. La nueva visión de la Iglesia permitió
+reconsiderar su caso y restituirlo a la Familia. En 1965 Pablo VI le
+otorga la plena libertad y, más tarde, Juan Pablo II destaca --al
+cumplirse 100 años de su nacimiento-- su personalidad dentro de la
+Iglesia y avala plenamente su carisma como Fundador de Schoenstatt. (\>
+109-119)
+
+**7. ¿Qué es el Santuario de Schoenstatt?**
+
+El Santuario de Schoenstatt es un lugar de gracias. El hecho de la
+existencia de lugares de gracias es una realidad histórica y actual en
+la vida de la Iglesia. Dios elige determinados lugares para manifestar
+en forma especial su presencia y su acción. Dios no es "abstracto" en
+su pedagogía; respeta nuestra sicología; sabe que estamos hechos no sólo
+de espíritu, sino de cuerpo y alma. Por eso llega a nosotros a través de
+lo sensible. En este contexto "encarnacional" --"el Verbo se hizo
+carne"-- se inscribe la pedagogía divina de los santuarios o lugares de
+gracias.
+
+María sigue el mismo camino. Ella, la Medianera de todas las gracias,
+quiere manifestar su poder intercesor de modo especial eligiendo lugares
+en los cuales hace efectiva su poderosa intercesión. Lourdes y Fátima
+son muestras claras de esta realidad en este último siglo.
+
+Schoenstatt es, antes que todo, un lugar de gracias. El origen de
+Schoenstatt como lugar de gracias o de peregrinación es diverso a muchos
+otros lugares de gracias, pues no se remonta a milagros, apariciones o
+hechos extraordinarios, como es el caso de la gran mayoría. Por otra
+parte, también las gracias que se reciben de María en él no son, en
+primer lugar, curaciones milagrosas, sino "milagros de transformación
+interior". María quiere mostrarse en su Santuario de Schoenstatt en
+modo particular como "Madre y Educadora", quiere darnos allí las
+gracias de un profundo arraigo en Dios; de una honda transformación
+interior en Cristo Jesús y de una gran fecundidad apostólica. (\> 38-41)
+
+**8. ¿No se "encierran" los schoenstattianos en su "capillita"?**
+
+Los schoenstattianos están fuertemente vinculados a su Santuario. Ven en
+él su hogar espiritual y el taller donde María los transforma. En el
+Santuario reciben también las fuerzas y el impulso para comprometerse
+apostólicamente. "Encerrarse" en el Santuario sería una contradicción
+y un claro signo de no haber comprendido lo que es y pretende ser
+Schoenstatt.
+
+El Movimiento de Schoenstatt es un movimiento de Iglesia; tiene como
+lema y característica la frase que está inscrita en la tumba de su
+fundador: "Dilexit Ecclesiam", amó a la Iglesia. Es decir, el
+Movimiento se sintió y se siente profundamente miembro de la Iglesia y
+quiere ser garantía, en medio de la Iglesia, del amor a ella y de la
+unidad en ella. Su misión, como la de la Iglesia, es evangelizar. Por
+eso decimos que, en el Santuario, María nos regala la gracia de la
+fecundidad y envío apsotólico.
+
+Tener una identidad propia, fruto de un carisma propio --distinto, pero
+no contrario al de otras comunidades--, no puede ser considerado como un
+"encerrase" o aislarse del resto de la Iglesia. Al contrario, en el
+Cuerpo de Cristo existen muchos miembros; cada cual tiene su
+originalidad y función propia, y de esta forma están cada uno al
+servicio del todo. Una concepción "monolítica" o "niveladora" de la
+Iglesia es tan contraria a su naturaleza como el "individualismo" o
+"aislacionismo" eclesial. Schoenstatt aboga por una concepción
+"orgánica" de la Iglesia; la considera como Familia de Dios y Cuerpo
+de Cristo. En él cada miembro está llamado a regalar lo que Dios le ha
+dado para la edificación del todo. Y esto es lo que Schoenstatt procura
+hacer.
+
+**9. ¿Quién es la "Mater"?**
+
+En los años 50 se introdujo en Chile y, posteriormente en otros países
+de habla hispana, la costumbre familiar de llamar a la "Mater Ter
+Admirabilis", simplemente "Mater", "Madre", mamá; costumbre que ha
+perdurado en muchos lugares hasta hoy.
+
+**10. ¿Por qué los schoenstattianos le dan a María una importancia tan
+central? ¿No va esto en desmedro de Cristo?**
+
+La relación con María en el Movimiento de Schoenstatt se funda en la
+posición objetiva que ocupa la Sma. Virgen en el plan de redención; es
+decir, en el lugar y la función que Dios le asignó a María en el orden
+de la redención. Ella no es una figura lateral en la Iglesia. No se
+puede equiparar nuestra relación a María con la relación a otros santos,
+pues todos ellos no ocupan el lugar esencial que ella ocupa en la
+Iglesia.
+
+La Santísima Virgen es la Madre de Cristo y, a la vez, por su relación
+con Cristo, es la Madre de la Iglesia. Es la encarnación perfecta de la
+nueva creatura redimida y de la Iglesia; es la "plena de gracia".
+
+Ella junto con encarnar el ideal del hombre redimido, también despliega
+activamente la tarea de Madre y Educadora que el Señor le confió frente
+a la Iglesia y a cada uno de los hijos de Dios.
+
+Schoenstatt toma en serio todas estas verdades básicas de la fe y trata
+de ponerlas en práctica lo más fielmente posible. Es así como ha podido
+experimentar siempre y continuamente la presencia maternal y el poder de
+María a lo largo de su historia.
+
+Junto a esto, el Movimiento de Schoenstatt posee una vinculación
+especialísima con María pues ve en ella la respuesta a los problemas
+antropológicos de nuestro tiempo. Hoy, cuando lo que está en juego es la
+dignidad y la misión del hombre, cuando se ha roto ampliamente la
+relación del hombre con Dios y la armonía de lo natural con lo
+sobrenatural, la presencia de María adquiere una importancia decisiva.
+En ella puede encontrar el cristiano actual, como lo afirman los
+documentos del magisterio, "la estrella de la evangelización", un
+norte claro y seguro en medio del desconcierto y el desánimo de muchos.
+"Esta es, afirma el Documento de Puebla, la hora de María". Desde el
+inicio ésta ha sido la convicción de Schoenstatt. Por todo esto
+Schoenstatt es un Movimiento marcadamente mariano.
+
+**11. ¿Por qué acudir a María y no ir, en cambio, directamente a
+Cristo?**
+
+Sólo una piedad mariana no educada, sentimentalista o fetichista, puede
+desviar de Cristo. La verdadera devoción a María --tal como Schoenstatt
+busca practicarla-- nunca puede desviarnos de él; pues todo lo que es
+María se lo debe a Cristo y todo en ella nos lleva hacia Cristo. Si el
+encuentro con una persona cercana a Cristo o el encuentro con un santo
+nos conduce al Señor y aviva nuestro amor por él, cómo no va a suceder
+lo mismo, y mucho más cuando nos acercamos a la Santísima Virgen y le
+confiamos a ella nuestra vida. Quién nos va a dar a Cristo más que María
+que trajo a Cristo al mundo.
+
+Sólo una visión inorgánica y desligada del plan de Dios puede sostener
+que el camino más directo para llegar a Cristo es aquel que resta
+importancia o, incluso, suprime los "intermediarios" para llegar "más
+directamente" a él. Desencarnar la religión de este modo, no sólo
+contradice el plan de Dios, sino que, al mismo tiempo, la empobrece y
+desnuda. Se "sobrenaturaliza" tanto la religión que se termina
+"volatilizándola".
+
+El Dios que vino a nosotros en y por María quiere y espera que también
+nosotros lleguemos a él en y a través de María. De allí que Schoenstatt,
+justamente por ser marcadamente mariano, quiere distinguirse por un
+profundo e íntimo amor y entrega al Señor. Para Schoenstatt no existe
+entre la entrega a Cristo y a María ninguna contradicción. Quien posee
+un hondo amor a Cristo, por medio de ese mismo amor, llega
+necesariamente a María. No se podría amar verdaderamente al Señor sin
+amar lo que él ama, y el ser que él más ama, por sobre todas las
+criaturas, es María.
+
+**12. ¿Cuál es el origen de la imagen de la MTA?**
+
+En el año 1914-15 la Congregación Mariana buscaba una imagen adecuada de
+la Virgen María para la capilla de su congregación. Un profesor del
+colegio (Huggle) les regaló una reproducción litográfica de un
+
+cuadro del pintor italiano Crossio. Al inicio esta imagen no les agradó
+especialmente, ya que, para algunos, merecía reparos desde el punto de
+vista estético. Como no tenían dinero para comprar otra, colocaron esta
+imagen en la capilla el 19 de agosto de 1915. Desde ese momento, ha
+permanecido siempre en el Santuario.
+
+**13. ¿Cuál es el origen de la advocación "Madre Tres Veces
+Admirable"?**
+
+Originalmente la imagen que se colocó en la capillita de Schoenstatt
+tenía el nombre de "Refugium peccatorum", "Refugio de los
+pecadores". Sin embargo, leyendo el libro del sacerdote jesuita, P.
+Hattler, "El P. Rem y sus conferencias marianas", los estudiantes de
+la Congregación Mariana de Schoenstatt, encontraron que, en tiempos de
+la Reforma protestante, los Congregantes de Ingolstadt habían actuado
+activamente en la transformación cristiana de su época. Constataron el
+gran parentesco que existía entre sus propias metas y las de éstos Los
+congregantes de Ingolstadt veneraban la imagen de la Santísima Virgen
+María en forma especialísima bajo la advocación de "Mater Ter
+Admirabilis", Madre Tres Veces Admirable.
+
+Ahora bien, en la Congregación Mariana de Ingolstadt (Ingolstadt queda a
+80 Km al norte de München, en el sur de Alemania), se empezó a llamar a
+la Virgen "Tres Veces Admirable", porque el Padre Rem, su asesor o
+Padre Espiritual, en una oportunidad le pidió a la Virgen que le
+indicara bajo qué titulo quería que se le invocara en ese lugar. Tuvo
+entonces la inspiración, mientras se cantaba en las letanías lauretanas
+la advocación "Mater admirabilis" ("Madre Admirable"), que a María
+le agradaba ese titulo y pidió que se repitiera tres veces esta
+advocación. Por eso, desde ese momento se empezó a cantarlo así. De allí
+surgió el nombre "Mater Ter Admirabilis de Ingolstadt".
+
+En recuerdo de ello los congregantes schoenstattianos dieron el mismo
+nombre a su imagen. "MTA" es la abreviación de Mater Ter Admirabilis.
+Fue a mediados del año 1916 cuando se empezó a venerar la imagen de la
+Santísima Virgen en el Santuario de Schoenstatt bajo este título.
+
+**14. ¿Qué significa el nombre MTA?**
+
+"MTA" es la abreviación de la advocación en lengua latina: "Mater Ter
+Admirabilis", Madre Tres Veces Admirable. En la pregunta anterior se
+explica el origen de este título.El significado gramatical del título
+podría ser "Madre Muy Admirable", pues el "ter" en latín implica un
+superlativo. Posteriormente se le ha explicado en forma simbólica. Así,
+por ejemplo, se la llama Tres Veces Admirable como Madre de Dios, Madre
+del Redentor y Madre de los redimidos; o bien, admirable por su fe, su
+amor y su esperanza, etc.
+
+**15. ¿Por qué se habla tanto de fechas en Schoenstatt; por ejemplo, del
+"18 de Octubre", del "31 de Mayo", etc.?**
+
+Schoenstatt, más que una ideología, una organización o un sistema
+pedagógico, es un acontecimiento. El núcleo de Schoenstatt es la Alianza
+de Amor sellada el 18 de Octubre de 1914: un hecho que se dio en una
+historia concreta, entre personas concretas y en un lugar concreto. Y
+esa Alianza fue el origen de un desarrollo histórico marcado por fechas
+que conmemoran momentos cruciales de la intervención de Dios y de la
+respuesta de la Familia a lo largo del tiempo. El 20 de Enero de 1942 y
+el 31 de Mayo de 1949, marcan y recuerdan hitos importantes de esa
+historia; por eso se les celebra en forma especial.
+
+Esto no debe extrañarnos si consideramos que todo el cristianismo no es,
+en primer lugar una doctrina o un conjunto de normas morales, sino un
+acontecimiento salvífico. De allí que la liturgia de la Iglesia,
+constantemente recuerde y reviva fechas, hechos históricos: la
+Anunciación, el nacimiento de Cristo; la Semana Santa; Pentecostés etc.
+Al hacerlo, confiesa que Dios interviene en la historia y en el
+acontecer
+
+humano. Nuestro Dios no es un Dios teórico, atemporal o difuso, que está
+lejos de la realidad, es un Dios vivo y de la vida. Esta ha sido la
+experiencia de Schoenstatt, por eso nuestras fechas.
+
+**16. ¿Qué papel desempeñan los laicos en el Movimiento?**
+
+Los laicos no son en la Obra de Schoenstatt una "tercera orden" de los
+Institutos Seculares que en ella existen. Ellos son, por así decir, el
+cuerpo central de Schoenstatt, a cuyo servicio están quienes han sido
+llamados a una vida consagrada al Señor. Desempeñan, por lo tanto "un
+papel esencial y protagónico. Schoenstatt es un Movimiento marcadamente
+laical. Su espiritualidad posee un marcado carácter laical o secular (de
+quienes viven en este "seculum"), en medio del mundo. Los Institutos
+Seculares del Movimiento (incluyendo los sacerdotales) también comparten
+la misma espiritualidad secular.
+
+La estructura de Schoenstatt evita, además, todo tipo de clericalismo,
+pues los asesores no poseen ningún derecho jurídico sobre las
+comunidades del Movimiento, sino que sólo les ofrecen su servicio. (\>
+88-105)
+
+**17. ¿Cómo puede incorporarse una persona a Schoenstatt?**
+
+La incorporación a Schoenstatt se produce esencialmente cuando una
+persona sella su Alianza de Amor con María en su Santuario. No se
+requiere, para ser schoenstattiano, pertenecer a una determinada
+comunidad. Sin embargo, para las personas que lo deseen, existen
+diversas comunidades que se diversifican de acuerdo al tipo de
+compromiso apostólico, comunitario y ascético. (\> 89-105)
+
+## II\. Preguntas sobre los grandes objetivos de Schoenstatt
+
+**18. ¿Cuáles son los fines de Schoenstatt?**
+
+El P. José Kentenich los ha resumido en tres:
+
+> a\. La nueva comunidad a base de hombres nuevos, ambos impulsados por la
+> fuerza fundamental del amor.
+>
+> b\. El rescate de la misión salvífica de Occidente.
+>
+> c\. La Confederación Apostólica Universal.
+
+**19. ¿Cuál es el primer fin de Schoenstatt en particular?**
+
+Es la creación de una nueva comunidad formada por hombres nuevos.
+
+Schoenstatt quiere forjar una nueva comunidad basada en hombres nuevos,
+que sea fermento de un nuevo orden cristiano de la sociedad, una
+comunidad fraterna, libre y solidaria, animada por la fuerza del amor y
+del espíritu apostólico universal. (\> 20; 21; 24-27)
+
+**20. ¿Cómo se define el "hombre nuevo"?**
+
+Sobre la base del concepto de hombre nuevo cristiano (cf 1Cor) el P.
+Kentenich, mirando al tiempo actual, define al hombre nuevo, al cual
+Schoenstatt aspira, del siguiente modo:
+
+"El hombre nuevo es la personalidad autónoma, de una gran interioridad,
+con una voluntad y disposición permanente a autodecidir, responsable
+ante su propia conciencia e interiormente libre, que se aleja tanto de
+una rígida esclavitud a las formas como de una arbitrariedad que no
+conoce normas."
+
+En esta definición el P. Kentenich acentúa especialmente la libertad y
+con ella la capacidad de decidir. Esto como contrapartida del hombre sin
+yo, despersonalizado y atomizado interiormente que hoy abunda por todas
+partes.
+
+En otras definiciones del hombre nuevo destaca otro aspecto esencial,
+diciendo: es el hombre profundamente filial, capaz de establecer
+vínculos personales y personalizantes con Dios, con las personas, con
+las cosas y el trabajo.
+
+Esta definición apunta a la necesidad de superar el hombre actual,
+herido y enfermo en su capacidad de dar y recibir amor.
+
+**21. ¿Qué se entiende por la "nueva comunidad"?**
+
+Por el bautismo formamos un solo cuerpo en Cristo Jesús. El ideal de la
+nueva comunidad busca vivir profundamente esa realidad en el contexto de
+un mundo que ha destruido los vínculos interpersonales, que sólo conoce
+el estar el uno al lado del otro, yuxtapuesto al otro, o, incluso, el
+uno contra el otro; donde las personas se unen sólo por el interés o la
+necesidad.
+
+La esencia de la nueva comunidad consiste en que las personas que la
+conforman viven la una *en*, *con* y *para* la otra; en que el lazo del
+amor que las une les lleva a sentirse profunda y solidariamente
+responsables la una de la otra. Es la comunidad animada por el vínculo
+del amor que el Espíritu Santo infunde en nuestros corazones, que vence
+tanto el colectivismo masificante como el individualismo atomizante.
+
+**22. ¿En qué consiste el rescate de la misión salvífica de Occidente,
+el segundo fin de Schoenstatt?**
+
+El rescate de la misión salvífica de Occidente es el segundo fin de
+Schoenstatt. Con esta expresión entiende el Padre Kentenich dos cosas:
+primero, rescatar el impulso misionero y apostólico que asumió Occidente
+luego del envío que hizo el Señor a sus discípulos a evangelizar a todos
+los pueblos. Y, segundo, encarnar y proclamar la armonía de lo
+sobrenatural y lo natural, de la gracia y la naturaleza, de la fe y la
+vida, de la cultura y el Evangelio.
+
+Pertenece a la esencia del cristianismo la conciencia misionera y
+evangelizadora. Esto en un momento en que esta conciencia misionera se
+encuentra enormemente debilitada, sobre todo en los países que antaño
+fueron los baluartes de la evangelización, Schoenstatt se siente llamado
+a avivar y dinamizar la conciencia de misión y el compromiso
+evangelizador.
+
+Por otra parte, en Occidente, el pensamiento cristiano desarrolló una
+visión particularmente orgánica de la realidad, es decir, destacó la
+armonía entre lo sobrenatural y lo natural, que permite una integración
+de los valores cristianos en la cultura de cada país.
+
+**Si se compara el espíritu que ha animado al Oriente con el que ha
+animado a Occidente, se puede decir que Oriente se caracteriza por dar
+especial importancia a la trascendencia de Dios, y que Occidente --a
+partir de la filosofía y teología de las causas segundas-- por acentuar
+la inmanencia de Dios. "La gracia no destruye la naturaleza sino la
+presupone, la sana y la eleva", es el principio que anima esta visión.
+El P. Kentenich, en este sentido, piensa que el cristianismo occidental
+en su evangelización debe luchar por un cristianismo que encarne y luche
+por la "armonía de la naturaleza y la gracia" en todos los órdenes.**
+
+**La espiritualidad y pedagogía de Schoenstatt quieren asegurar y
+posibilitar este tipo de hombre, capaz de conquistar una síntesis vital
+entre fe y vida, entre naturaleza y gracia. En otras palabras, un hombre
+de un pensar, amar y vivir orgánicos, que sabe unir las diversas
+dimensiones de su vida y crea vínculos sanos y profundos con Dios, con
+los hombres, con su trabajo y con las cosas. (\> 28-31; 77, 80)**
+
+**23. ¿En qué consiste el tercer fin de Schoenstatt: la Confederación
+Apostólica Universal?**
+
+Con el nombre de "Confederación Apostólica Universal" (CAU), el Padre
+Kentenich describe el tercer fin de Schoenstatt: promover la unión de
+las fuerzas apostólicas --a nivel parroquial, diocesano, nacional e
+internacional--, en todos los campos, para afrontar en común el desafío
+y la tarea evangelizadora que presenta la realidad actual a la Iglesia.
+
+Cada comunidad debe aportar a esta Confederación su riqueza y carisma
+propios, produciendo así la unidad en la pluralidad y, a la vez,
+potenciando la eficacia y fecundidad del apostolado.
+
+Esta finalidad la asumió el Padre Kentenich de san Vicente Pallotti,
+pionero del apostolado de los laicos y fundador de la Sociedad del
+Apostolado Católico. Schoenstatt hizo suyas creadoramente la idea y la
+misión de san Vicente Pallotti, confiando en la Alianza de Amor con
+María en su Santuario. La
+
+Confederación Apostólica Universal implica la superación del espíritu
+divisionista, de las rivalidades y el individualismo que caracterizó
+muchas veces a las comunidades religiosas en los siglos pasados, y que
+siempre amenaza la unidad de la Iglesia (\> 32-33).
+
+**24. ¿Qué se entiende por "nuevo orden social"?**[^1]
+
+La nueva comunidad conformada por hombres nuevos está concebida como
+germen y alma de un nuevo orden social. Es decir, de una sociedad
+marcada por el Espíritu de Cristo, donde triunfe el respeto por la
+dignidad humana y los hombres puedan vivir y trabajar en justicia,
+libertad, paz y fraternidad; donde las leyes que rigen el orden
+familiar, político, económico y cultural, sean expresión y garantía de
+la esencia de la nueva comunidad.
+
+**El "nuevo orden social" genera así estructuras que protejen,
+expresan y cultivan la dignidad de la persona y la mutua solidaridad.
+Estructuras que promueven la verdadera humanización del hombre,
+devolviéndole la capacidad de ser persona y de vincularse en forma
+personal y creadora con Dios, con los hombres, con las cosas y con el
+trabajo; que sean expresión concreta del Reino de Dios aquí en la
+tierra.** **(\> 21)**
+
+**25. ¿Qué se entiende por "Iglesia de las nuevas playas"?**
+
+El P. Kentenich usa a menudo esta expresión para describir la Iglesia
+renovada o el paso de la Iglesia "preconciliar" a la Iglesia
+"posconciliar". La renovación de la Iglesia, base de toda auténtica
+transformación del mundo, está supeditada a una profunda renovación y
+revitalización. Schoenstatt siempre ha querido ser alma de esa
+renovación profunda del Pueblo de Dios, por eso su mirada se ha dirigido
+constantemente a la Iglesia "en las nuevas playas" o en la "nueva
+ribera". El Concilio Vaticano II oficializó, por así decirlo, esta
+aspiración y le dio un cauce universal.
+
+**26. ¿Cuáles son las características básicas de la Iglesia en las
+nuevas playas?**
+
+Es una Iglesia marcadamente *dinámica*, siempre en proceso de conversión
+interna y de renovación en su encuentro con Dios y los hombres; que se
+separa del anquilosamiento e inmovilismo que le impide llegar al hombre
+y asumir su realidad y sus problemas.
+
+Es una Iglesia *Familia* o Pueblo de Dios, donde se redescubre el valor
+de la fraternidad, de la corresponsabilidad y el sentimiento comunitario
+de sus miembros; una Iglesia que ha superado el individualismo y la
+masificación.
+
+Es una Iglesia *guiada por el Espíritu Santo*, fuente de nuestra
+confianza y de nuestras esperanzas; una Iglesia que no pone su esperanza
+en primer lugar en los medios humanos, en el poder social, político o
+económico, sino en Cristo y la fuerza de su gracia.
+
+Es una Iglesia *pobre y humilde*, que se sabe limitada en su humanidad y
+que incluso, pide perdón por sus faltas; una Iglesia que se ha despojado
+de todo triunfalismo, desposándose con el Cristo pobre y humilde, en
+quien funda su victoriosidad.
+
+Es una Iglesia que quiere ser *alma del mundo*; que quiere forjar e
+inspirar una nueva cultura, dignificadora y liberadora del hombre; una
+Iglesia que no es enemiga del hombre, sino que se acerca a él como el
+buen samaritano.
+
+**27. ¿Qué se entiende por "novísimos tiempos"?**
+
+El P. Kentenich afirmaba que el parto de una nueva cultura inspirada por
+los valores evangélicos sería una tarea ardua. En este sentido,
+afirmaba: no nos pertenece el mañana, sino el "pasado mañana". Por eso
+llamaba ardientemente a trabajar en el hoy y el mañana para preparar así
+los "tiempos más nuevos", la cultura adveniente del tercer milenio.
+
+**28. ¿Qué se entiende por armonía entre naturaleza y gracia?**
+
+El "drama de nuestro tiempo", según la expresión de Pablo VI en
+Evangelii Nuntiandi, es la separación entre cultura y Evangelio. Este
+drama, que corroe nuestra sociedad, --pues la "apostasía de Dios
+conduce a la descomposición", y el "humanismo sin religiosidad se
+traduce en brutalidad"-- debe ser superado por una síntesis vital de fe
+y vida.
+
+Más allá del marco teórico que proporciona la filosofía y teología de
+las "causas segundas", debe darse una espiritualidad y pedagogía que
+permita alcanzar en la práctica esta armonía y ser fermento de la misma
+en medio del mundo. Esto es lo que Schoenstatt siempre ha buscado
+realizar. (\> 22 )
+
+**29. ¿Qué se entiende por "causas segundas"?**
+
+Por "causas segundas" se entienden las creaturas, en cuanto éstas
+dependen instrumentalmente de Dios: "Causa Primera" u origen de todo.
+Existen causas segundas "libres", (el hombre), y causas segundas
+inanimadas (el resto de la creación material). La expresión "causa
+segunda" está tomada del lexicon aristotélico-tomista. El Padre
+Kentenich sostiene que junto a una "teología y filosofía" de las
+causas segundas, debe darse también una "sicología, espiritualidad y
+pedagogía" de las causas segundas. Schoenstatt se siente especialmente
+responsable de ello.
+
+**30. ¿Qué se entiende por "organismo de vinculaciones natural y
+sobrenatural"?**
+
+La armonía entre la naturaleza y la gracia, entre el orden natural y
+sobrenatural, encuentra su expresión principal en la armonía de los
+vínculos de amor que nos relacionan con las personas, cosas y lugares en
+el orden natural y los vínculos de amor que nos unen con las personas y
+realidades del mundo sobrenatural.
+
+Entendemos por "vínculo" justamente el lazo de amor que brota desde el
+interior de la persona, que es, por lo tanto, libre y que la lleva a
+establecer una relación personal permanente, cargada de afecto, con el
+mundo natural y sobrenatural. La persona posee una interioridad, y a
+partir de esa interioridad es capaz de entregarse, de comunicarse, de
+conocer y amar personalmente. El "organismo" de vinculaciones es el
+conjunto o red de vínculos que establecemos, del cual nos alimentamos y
+en el cual crecemos y somos fecundos como personas.
+
+Ahora bien, la realidad natural, particularmente las personas, son una
+imagen o reflejo de Dios y del mundo sobrenatural. Por ello constituyen
+un camino apto para conocer y amar a Dios. Por lo mismo, el amor en el
+plano natural es una garantía y protección de nuestro amor a Dios. De
+hecho, llegamos al amor "de lo invisible" a través del amor a lo
+visible; amamos a Dios en las creaturas y a través de ellas. Y el amor a
+Dios, por otra parte, afianza y purifica nuestro amor a las creaturas.
+
+Esta mutua relación del organismo natural y sobrenatural está hoy
+perturbada y en gran parte destruida. El hombre actual no sabe amar ni
+recibir amor, está enfermo en su capacidad de amar y de recibir amor.
+
+Desconoce la profundidad y fidelidad de una vinculación personal sana.
+En otras palabras, ha "pulverizado" o "atomizado" tanto el organismo
+natural como el sobrenatural de vinculaciones y su mutua relación.
+
+La instauración y afianzamiento de ambos organismos de vinculaciones y
+de su mutua relación constituye un objetivo y misión central para
+Schoenstatt. Esta misión está íntimamente relacionada con la tarea de
+forjar un hombre nuevo y una nueva comunidad, especialmente en la
+perspectiva de la misión salvífica de Occidente. El P. Kentenich llamó
+expresamente a la Familia de Schoenstatt a iniciar una cruzada en este
+sentido, el 31 de Mayo de 1949. (\> 140; \[31 de Mayo\])
+
+**31. ¿Cuáles son los pilares del organismo de vinculaciones según el P.
+Kentenich?**
+
+Son dos, a saber: en el organismo sobrenatural de vinculaciones, la
+vinculación a la Santísima Virgen; y en el orden natural de
+vinculaciones, la vinculación al padre en la familia.
+
+La Santísima Virgen es para nosotros la puerta de acceso vital para
+adentrarnos en la Santísima Trinidad y el Reino de Dios. Ella, como
+Madre de Dios y colaboradora de Cristo, es el punto de convergencia
+donde ambos órdenes se encuentran.
+
+En el orden natural la vinculación al padre de familia es para el Padre
+Kentenich otro pilar fundamental. La imagen del padre en el orden
+natural está desfigurada y ha perdido su consistencia. Ello obstaculiza
+seriamente que éste pueda ser, de acuerdo al plan de Dios, expresión,
+camino y garantía de la vinculación a Dios Padre.
+
+Deformación de la autoridad y de la paternidad en el orden natural no
+sólo significa desintegración para el orden natural sino también uno de
+los obstáculos centrales en el plano sicológico para alcanzar un acceso
+vital a Dios. De allí que se imponga, según el Padre Kentenich, la
+necesidad de una cruzada por el "renacimiento de la figura paterna":
+del ser, sentir y actuar del padre en el orden natural tal como Dios lo
+concibió. (\> \[31 de Mayo\])
+
+**32. ¿Quién es Vicente Pallotti?**
+
+**Vicente Pallotti es el fundador del Apostolado Católico y de la
+Sociedad del Apostolado Católico, (Padres Palotinos). Nació en 1795 y
+falleció en 1850. Sus ideas principales al fundar esta Obra, en 1835,
+eran: 1) la creación de una organización universal del apostolado que
+abarcara el mundo entero y que ayudara a la Iglesia a cumplir su tarea
+en los nuevos tiempos. 2) Y, posteriormente, en 1846, la formación de
+una comunidad sacerdotal mariana, sin votos, que estuviera al servicio
+de este apostolado.**
+
+**El Papa Pío XI lo llamó "el precursor de la Acción Católica". Fue
+canonizado el 20 de enero de l963 por el Papa Juan XXIII.**
+
+**33. ¿Quiénes son los Padres Palotinos?**
+
+San Vicente Pallotti fundó la Sociedad del Apostolado Católico (SAC), o
+Padres Palotinos, como parte motriz y central del "Apostolado
+Católico". Después de la muerte del fundador se dedicaron a diversas
+obras apostólicas. En Alemania se orientaron a las misiones en Camerún,
+Africa. El P. Kentenich ingresó a la SAC pues tenía interés en ir a las
+misiones. Por su enfermedad al pulmón, sin embargo, debió permanecer en
+Alemania. Posteriormente, él vio en Schoenstatt una posibilidad concreta
+que Dios ofrecía a la Sociedad del Apostolado Católico de recuperar la
+idea original de Pallotti. Los acontecimientos llevaron a los Padres de
+Schoenstatt a asumir esta misión específica en relación al Movimiento.
+
+La relación de la Sociedad del Apostolado Católico y del Movimiento de
+Schoenstatt en general con san Vicente Pallotti, está dada
+particularmente por su tarea de ser alma de la "Confederación
+Apostólica Universal" (CAU) (\> 23)
+
+## III\. Preguntas sobre el Santuario
+
+**34 ¿Qué significa "lugar de gracias"?**
+
+Dios está presente y actúa en todas partes. Sin embargo, en ciertos
+lugares, se manifiestan y se hacen experimentables y fecundos, de manera
+especial, su cercanía, su amor y su acción. A estos lugares se les
+denomina "lugares de gracias", lugares de peregrinación o
+"santuarios".
+
+Su origen es diverso. Muchas veces se remontan a intervenciones
+extraordinarias o milagrosas de Dios, de María o de algún santo. Sólo
+los hechos que allí acontecen (el flujo de peregrinos, la renovación de
+la fe, eventualmente los milagros de orden físico) muestran
+concretamente la realidad de la intervención especial de Dios.
+
+**Así como en la naturaleza encontramos unas zonas más fértiles que
+otras, así sucede también con los lugares de peregrinación. Es como la
+acción del sol, que en algunas regiones hace madurar frutos más
+maravillosos que en otras. O, tomando otra imagen, así como en ciertos
+lugares existen saludables fuentes termales, así también en el Reino de
+Dios encontramos determinados lugares donde el Espíritu de Dios se
+muestra especialmente activo y eficaz.**
+
+Que la gracia de Dios o la intervención de María se ligue especialmente
+a ciertos lugares, no debe extrañarnos: corresponde al modo de
+conducción normal de Dios en la economía de la salvación: él toma en
+serio a la naturaleza de su creatura y ésta comprende el espíritu y el
+cuerpo. Por ello el Señor se vale de lo material (del agua en el
+bautismo, del pan y del vino en la Eucaristía, etc.) para hacernos
+llegar su gracia a través de lo sensible. En el caso de los santuarios,
+se vale de lugares elegidos por su Providencia Divina.
+
+**35. ¿Es Schoenstatt un lugar de gracias?**
+
+Schoenstatt es un lugar de gracias. Los hechos han confirmado que la
+Providencia Divina ha escogido ese lugar como fuente de una poderosa
+corriente de gracias, de vida y de ideas, destinada a impulsar la
+renovación de la Iglesia y del mundo de nuestro tiempo. Esta es la
+experiencia de Schoenstatt.
+
+En el año 1914, después de un tiempo de oración y meditación, el Padre
+Kentenich, invitó a los jóvenes congregantes que él dirigía, a pedir a
+la Virgen que estableciera espiritualmente su trono de gracias en la
+capillita que había sido puesta a su disposición. (\> \[1er. Hito\]
+\>122)
+
+La historia de Schoenstatt ha demostrado que la Santísima Virgen se ha
+establecido espiritualmente allí de modo especial, y que desde allí ha
+manifestado, en muchas formas, su gloria. A él acuden, año tras año,
+miles de peregrinos. El Santuario de Schoenstatt es un lugar de alianza
+con María y de profundo encuentro con Dios. Es un lugar donde los
+hombres --como fruto de ese encuentro-- son, a su vez, transformados en
+Cristo,por mediación de María y enviados como apóstoles a dar fruto en
+la construcción del reino de Dios aquí en la tierra.
+
+Nuestra convicción profunda es que el Santuario de María posee una
+misión de gran importancia para la Iglesia y el mundo actual. Recordamos
+las palabras que pronunciara el P. Kentenich en 1929: "A la sombra de
+este Santuario se ayudará --de un modo esencial-- a codecidir los
+destinos de la Iglesia y del mundo por siglos".
+
+María se ha establecido en el Santuario de Schoenstatt para regalar en
+él especialmente las gracias del
+
+arraigo en Dios, de la transformación interior y de la fecundidad
+apostólica. Esas gracias posibilitan la realización de los tres fines de
+Schoenstatt (\> 40-431).
+
+**36. ¿Cuál es la peculiaridad del origen del Santuario de
+Schoenstatt?**
+
+En el origen del Santuario de Schoenstatt no se da ninguna aparición
+extraordinaria, ningún sueño profético, ningún hecho deslumbrante.
+Simplemente nos encontramos con una plática de un sacerdote en la que
+éste propone a un grupo de muchachos convertir la antigua y abandonada
+capillita de Schoenstatt en un Santuario, pidiéndole a la Santísima
+Virgen que establezca en aquel lugar su morada y derrame desde allí sus
+gracias. Pareciera pura y simple iniciativa humana: un hombre que invita
+a Dios y a la Virgen a cooperar en un plan que se le ha ocurrido a él.
+Sin embargo, si calamos más hondo, nos damos cuenta de que esa
+iniciativa humana no fue lo primero, sino más bien una respuesta en la
+fe a la iniciativa de Dios. Lo que el Padre Kentenich hizo fue tratar de
+descubrir la voluntad de Dios manifestada en las circunstancias.
+Auscultando esas voces de Dios, llegó a la conclusión de que él le
+insinuaba invitar a María a establecer su trono de gracias en la pequeña
+capillita de Schoenstatt.
+
+Si el P. Kentenich llegó a proponer al grupo de jóvenes que él dirigía,
+la original idea de convertir la abandonada capillita del antiguo
+cementerio de Schoenstatt en un lugar de gracias, fue única y
+exclusivamente porque estaba convencido de que Dios así lo quería. Llegó
+a dicho convencimiento después de haber puesto la mayor atención y
+fidelidad posible a los mensajes que la Divina Providencia le dirigía a
+través de todos y cada uno de los acontecimientos. En la meditación y
+oración llegó al convencimiento que era Dios mismo quien deseaba que
+María estableciera allí su trono de gracias. Por eso, el 18 de octubre
+de 1914, el día en que pronunció la famosa plática que hoy conocemos con
+el nombre de "Acta de Fundación de Schoenstatt", les propuso a los
+jóvenes congregantes esta audaz idea de ofrecer a María su serio
+esfuerzo por la santidad a fin de atraerla para que ella se estableciese
+espiritualmente en la capillita, transformándola en su Santuario y desde
+allí iniciara un Movimiento de renovación para la Iglesia. (\> 1 hito +
+AA)
+
+**37. ¿Cuáles fueron los signos que el P. Kentenich interpretó para
+llegar al convencimiento de que María quería establecerse en forma
+especial en la capillita de Schoenstatt?**
+
+Los signos de la Divina Providencia que detectó el Padre para pedir a la
+Santísima Virgen que se estableciese en la pequeña capillita de
+Schoenstatt, fueron los siguientes. (\> 56)
+
+1\. El desarrollo positivo de la Congregación Mariana: "Quien conoce el
+pasado de nuestra Congregación no tendrá dificultades en creer que la
+Divina Providencia tiene designios especiales respecto a ella".
+
+2\. La ley general del actuar divino lo confirma: "¡Cuántas veces en la
+historia del mundo ha sido lo pequeño e insignificante el origen de lo
+grande, de lo más grande!".
+
+3\. La primera guerra mundial fue un claro y urgente llamado de Dios:
+Todo lo que se había hecho hasta entonces parecía caer por tierra si la
+Santísima Virgen no tomaba totalmente en sus manos la educación de los
+jóvenes. Esto se acentuaba al no poder estar el P. Kentenich en contacto
+directo con los jóvenes cuando ellos partieran al campo de batalla. La
+guerra era la oportunidad de santificación, de exigirse al máximo.
+
+4\. El hecho de que la Capilla de San Miguel hubiese sido puesta a
+disposición de los jóvenes, desde el 8 de julio de l914: "¿Podemos
+acaso encontrar en este feliz acontecimiento un presagio favorable del
+futuro desarrollo de nuestra joven Congregación?".
+
+5\. La lectura del artículo del P. Cyprian Fröhlich, en "Die Allgemeine
+Rundschau", del 18 de julio de l914, donde se relataba cómo Bartolo
+Longo, un abogado italiano, en la ciudad de Pompeya, imploró una acción
+especial de María para que ella manifestase su poder de Mediadora de las
+gracias en el Santuario de Pompeya.
+
+La fe práctica en la Divina Providencia que llevó a descubrir la
+voluntad de Dios por los signos en que ésta le manifestaba al P.
+Kentenich, se tradujo, al mismo tiempo, en un serio compromiso de
+entrega y seguimiento filial.
+
+**Les dice a los jóvenes: "Todos nosotros haremos todo lo posible".
+Harán "suave violencia" a María y así realizarán el "pensamiento
+audaz" que había sugerido la Divina Providencia: Convertir la Capilla
+de San Miguel en un Santuario donde María estableciese su trono de
+gracias y obrase milagros de transformación.**
+
+**38. ¿Quién es Bartolo Longo y cuál fue su obra? ¿Qué influencia
+ejerció en el origen de Schoenstatt?**
+
+Bartolo Longo fue un abogado italiano del siglo pasado. En su juventud
+perdió la fe y tuvo contacto con grupos masónicos y anticlericales, en
+la época de Garibaldi. Más tarde recuperó la fe y empezó a visitar a la
+Virgen en una capilla donde se la veneraba bajo la advocación del
+Rosario. Se dedicó a difundir la fe cristiana y a hacer diversas obras
+de caridad, como la fundación de una institución para niños pobres. En
+1875, Bartolo Longo llevó una imagen de Nuestra Señora del Rosario a
+Pompeya. y como fruto de su sacrificada y piadosa labor y de la acción
+maternal de María, nació el Santuario en el Valle de Pompeya, junto a
+Nápoles. Este lugar, en pocas décadas,se convirtió en uno de los centros
+de peregrinación más visitados y más bendecidos de Italia y donde era
+innegable la actuación de la Santísima Virgen.
+
+En 1914, el P. Kentenich leyó, en un semanario de Munich del 18 de
+julio, un relato del conocido capuchino Cyprian Fröhlich, sobre el
+origen de esas peregrinaciones al Santuario de Pompeya. Este relato fue
+una luz que encendió el corazón del P. Kentenich y lo llevó a una
+convicción llena de fe de que en el valle de Schoenstatt la Santísima
+Virgen también querría realizar una iniciativa semejante a la de
+Pompeya.
+
+A comienzos de 1980, Bartolo Longo fue beatificado bajo el pontificado
+de Juan Pablo II.
+
+**39. ¿Qué significa que el Santuario nació de una Alianza de Amor?**
+
+El Santuario de Schoenstatt no nació a partir de una intervención
+milagrosa ni de apariciones, sino según la forma ordinaria del actuar de
+Dios: a través del actuar normal de sus criaturas, especialmente a
+través de los hombres que como instrumentos libres se ponen en sus
+manos. Dios quiso hacer surgir el Santuario de Schoenstatt mediante la
+cooperación libre y activa del Padre Fundador y de los jóvenes
+congregantes; acción que estuvo guiada en todo momento por el plan que
+Dios mismo, poco a poco, les iba mostrando.
+
+El nacimiento del Santuario de Schoenstatt se produce por lo mismo,
+conscientemente, como fruto de un acto de Alianza entre Dios y los
+hombres. Es decir, junto con ser fruto de una especialísima iniciativa
+divina, es también fruto de una intensa cooperación humana. Dios habla
+primero al P. Kentenich a través de diversas circunstancias y éste lo
+escucha y responde en la fe.
+
+El P. Kentenich toma parte activa en la decisión, es decir, en el acto
+mismo que da nacimiento al Santuario. Y esta decisión consiste en sellar
+una alianza con la Santísima Virgen. El Santuario que se remonta a este origen, sólo subsistirá como tal mientras permanezca la
+activa cooperación y la fidelidad humana a esa Alianza con Dios que le
+dio origen, a través de las "contribuciones al Capital de Gracias" (\>
+59-122)
+
+**40. ¿En qué consiste el poder de la Santísima Virgen que se manifiesta
+en el Santuario y cuáles son las gracias que ella concede en él?**
+
+**El poder que la Santísima Virgen manifiesta en el Santuario es un
+poder moral, un poder de intercesión. Ella manifiesta allí,
+principalmente, su poder de Madre, Reina y Educadora. Las gracias
+principales que regala en el Santuario son tres: la gracia del arraigo
+en Dios; la gracia de la transformación interior en Cristo, y la gracia
+del envío y fecundidad apostólica.**
+
+**41. ¿En qué consiste la gracia del arraigo o del cobijamiento interior
+en Dios?**
+
+La gracia del arraigo o cobijamiento interior es la gracia de un
+profundo encuentro en el corazón maternal de la Santísima Virgen y, a
+través suyo, con el corazón de Cristo y de Dios Padre. Esta gracia nos
+comunica la seguridad de la fe, la certeza de la confianza de hijos de
+Dios; el sabernos de verdad miembros de Cristo, revestidos de nobleza
+divina y partícipes de su misión.
+
+Por esta gracia del Santuario, María quiere sanar una honda llaga del
+hombre actual: un hombre desvinculado, sin hogar, sin familia, que
+desconoce el arraigo en un tú humano y en el tú divino. Este hombre es
+acogido en el corazón de María. En ese corazón es amado y puede echar
+raíces, entregar toda su miseria y debilidad y sentir su dignidad como
+hijo de Dios, especialmente amado por él.
+
+María nos regala a la vez su Santuario como símbolo y signo sensible de
+este cobijamiento profundo en su corazón y en el corazón de Dios. Por
+eso podemos decir con toda convicción que el Santuario es nuestro hogar.
+De allí también que el Movimiento de Schoenstatt se sienta tan
+profundamente una *Familia.* El arraigo y cobijamiento en Dios lleva al
+arraigo y cobijamiento comunitario. Leemos en el Acta de Fundación:
+
+"Todos los que acudan acá para orar deben experimentar la gloria de
+María y confesar: \'¡Qué bien estamos aquí! ¡Establezcamos aquí nuestra
+tienda! ¡Este es nuestro rincón predilecto!".
+
+La gracia del arraigo en Dios vence la angustia típica de nuestro
+tiempo, ese nerviosismo e inseguridad existencial en la cual nos movemos
+atemorizados por el presente y el futuro, en todos los órdenes de
+nuestra vida. Con María nos sentimos seguros como "sobre roca"; bajo
+su manto nada podemos temer. Esa es la convicción que recibimos en el
+Santuario. La inscripción que lleva el marco de su imagen en el
+Santuario nos confirma la realidad de esta gracia del arraigo o
+cobijamiento en el corazón maternal de María: "Servus Mariae numquam
+peribit", "un siervo de María nunca perecerá".
+
+**42. ¿En qué consiste la gracia de la transformación personal?**
+
+María implora para nosotros en el Santuario al Espíritu Santo. El, que
+la cubrió con su sombra en la Anunciación; que por medio de ella
+santificó a Isabel y su hijo; que descendió por sus ruegos en el
+Cenáculo sobre los apóstoles, accede también a sus ruegos y muestra su
+fuerza transformadora en el Santuario, forjando en nosotros vivas
+imágenes de Cristo. Encuentros con María en el Santuario significan para
+nosotros ponernos en contacto vital con la "llena de gracias", la
+mujer "vestida de sol", que nos baña de su luz, nos educa y ennoblece.
+
+**La gracia de la transformación interior hace fecundo el esfuerzo por
+nuestra autoformación y nos lleva a**
+
+**vencer en nosotros al "hombre viejo", que se aparta de Dios por el
+pecado y se conforma con una vida mediocre y egoísta. Nos hace sensibles
+a la voz del Señor y dispuestos a seguir en todo la voluntad del Padre;
+nos libera de las múltiples esclavitudes que nos atan y frenan nuestro
+crecimiento interior; nos saca de la cárcel del yo, para convertirnos en
+personas abiertas al tú y dispuestas a servir a los hermanos, a ser, en
+verdad, hombres nuevos en Cristo Jesús.**
+
+**43. ¿En qué consiste la gracia de la fecundidad apostólica?**
+
+La gracia de la fecundidad apostólica, que María nos regala en el
+Santuario, en virtud de la Alianza, viene a completar el sentido de las
+dos gracias anteriores. En efecto, la gracia del arraigo y de la
+transformación interior no son únicamente un don que Dios nos hace
+personalmente, sino que representan, en primer lugar, un regalo para el
+mundo y la Iglesia. Porque esas gracias se nos dan para transmitirlas a
+los demás. A María le importa cooperar con la redención de Cristo,
+quiere co-redimir y para ello nos llama y elige como sus instrumentos en
+la Alianza.
+
+María nos dice que cada uno de nosotros tiene una misión apostólica y
+que ella implora constantemente para nosotros la luz y la fuerza para
+que cumplamos esa misión. Así como ella imploró en el Cenáculo al
+Espíritu Santo para la Iglesia naciente y los primeros apóstoles, así
+ahora también implora en el Santuario la gracia de la fecundidad
+apostólica que nos lleva a realizar un apostolado fecundo. Nos mueve a
+tomar iniciativas y a comprometernos activamente en la transformación de
+la sociedad para llenarla del espíritu de Cristo. Ella nos muestra que
+nos acompaña, que nos apoya y hace fecunda nuestra acción desde el
+Santuario: "Ella es la gran misionera, ella realizará milagros".
+
+**44. ¿Qué significan los símbolos que hay en el Santuario original de
+Schoenstatt?**
+
+A la izquierda del retablo está la estatua del arcángel San Miguel. La
+capilla del cementerio del antiguo convento de Schoenstatt estaba
+dedicada a él. A ambos lados del tabernáculo, están las estatuas de los
+Apóstoles Pedro y Pablo. Estas nos recuerdan la finalidad apostólica del
+Movimiento.
+
+En la muralla del lado izquierdo del Santuario original vemos en un
+cuadro las llamadas "Cruces de Hierro". Son las que ganaron los
+jóvenes del tiempo de fundación del Movimiento de Schoenstatt durante la
+Primera Guerra Mundial en su servicio militar como soldados.
+
+En la muralla del lado derecho, hay una placa en la cual están inscritos
+los nombres de los primeros congregantes fundadores de Schoenstatt.
+
+Sobre la imagen de la Santísima Virgen, hay una corona de oro. El 18 de
+octubre de l939, con ocasión de la celebración de los 25 años de la
+fundación de Schoenstatt y cuando arreciaba el peligro y la persecución
+nazi, se le obsequió esa corona a la Santísima Virgen. La imagen fue
+coronada como Reina, el 10 de diciembre de 1939.
+
+La luz del Santísimo está en una esfera, que representa el mundo,
+colocada sobre una patena adornada con una cruz con las iniciales MTA.
+La parte inferior de la patena tiene tres cruces que recuerdan la
+herencia de los caídos en la guerra que pertenecieron a la primera
+generación fundadora, caídos en la guerra. El soporte de esta lámpara
+lleva la inscripción: "Ver Sacrum", Primavera Sagrada, ideal de la
+generación que regaló este símbolo al Santuario en la noche del Año
+Nuevo de 1940.
+
+En cielo raso del coro de la capillita hay una paloma, símbolo del
+Espíritu Santo. Nos recuerda el Cenáculo, donde los Apóstoles reunidos
+en la misma sala de la Ultima Cena, en torno a la Santísima Virgen,
+imploraron la venida del Espíritu Santo. De igual forma, la Santísima
+Virgen quiere implorar para
+
+nosotros el Espíritu Santo en el Santuario de Schoenstatt. La generación
+sacerdotal del Cenáculo colocó este símbolo del Espíritu Santo en el
+Santuario el 4 de octubre de l946.
+
+Junto al comulgatorio, al lado derecho, hay una escultura en la cual
+aparecen representantes masculinos y femeninos de la Obra de
+Schoenstatt, quienes ofrecen el Santuario a san Vicente Pallotti. Fue
+colocada después de la beatificación de Vicente Pallotti, en 1950.
+Vicente Pallotti fue canonizado posteriormente, el 20 de enero de 1963,
+por el Papa Juan XXIII.
+
+Al lado izquierdo del comulgatorio está la estatua de san José. En 1933
+las Hermanas de María regalaron al P. Kentenich la estatua de San José y
+ese mismo año fue colocada en el costado izquierdo del Santuario
+original. En 1953, por iniciativa de los Hermanos Pallottinos, el 26 de
+abril, fiesta de San José, la estatua original fue reemplazada por una
+nueva en que san José figura como Protector de la Iglesia.
+
+La pila de agua bendita es obsequio de la comunidad de los "exiliados
+de su patria" (después de la segunda guerra mundial); y la piedra del
+altar con las reliquias de los santos, es obsequio del Apostolado de los
+Enfermos.
+
+La cruz oriental, que es colocada cada jueves en el retablo del altar,
+es un regalo de los estudiantes del Seminario de los Padres Pallottinos,
+y expresa su anhelo de entregarse por los cristianos de los países
+orientales. En esta cruz fue inscrustada en su pedestal una pequeña cruz
+con rubíes, que había sido regalada para el Santuario de la Madre Tres
+Veces Admirable por rusos a un Padre palotino, durante la segunda guerra
+mundial.
+
+El Padre Kentenich regaló para el Santuario Original un "Símbolo del
+Padre" que aún no ha sido colocado en éste. Por primera vez, en la
+Nochebuena de 1948, se había colocado un símbolo de Dios Padre en el
+Santuario filial de Nueva Helvecia (Uruguay). Este símbolo quería
+expresar el "patrocrentrismo" de Schoenstatt (todo en su
+espiritualidad converge hacia Dios Padre). Posteriormente, en muchos
+otros Santuarios filiales, ha sido colocado este símbolo.
+
+Sobre el arco del Santuario original hay un marco con un bordado con la
+inscripción "Ave María", regalado por los Hermanos Pallottinos.
+
+**45. ¿Es esencial el cuadro de la MTA para Schoenstatt?**
+
+En un comienzo, esta imagen no se consideraba esencial para Schoenstatt.
+Perfectamente podría haberse colocado otra imagen en su lugar. Sin
+embargo, se demostró que la Divina Providencia lo había previsto de esta
+manera a través de muchos acontecimientos e ideales que nacieron en
+vinculación con ella. Esta imagen y la capillita llegaron a ser una sola
+unidad, de tal modo que la contemplamos como algo esencial e inseparable
+del Santuario.
+
+**46. ¿Qué significa la inscripción "Servus Mariae numquam peribit"
+que circunda la imagen de la MTA en el Santuario?**
+
+Esa inscripción significa: "Un siervo de María nunca perecerá".
+Expresa nuestra confianza ilimitada en el poder, amor y sabiduría de la
+Santísima Virgen.
+
+**47. ¿Cuáles son las diversas formas de Santuario, que existen en la
+Familia de Schoenstatt?**
+
+Son el "Santuario original" y los "Santuarios filiales", el
+"Santuario Hogar"; el "Santuario del corazón" y el
+
+"Santuario del trabajo".
+
+**48. ¿Qué son el Santuario original y los "Santuarios filiales"?**
+
+El Santuario original es el de Schoenstatt, donde el P. Kentenich y los
+jóvenes sellaron la Alianza de Amor con María, el 18 de octubre de 1914.
+Los Santuarios filiales son réplicas más o menos exactas del Santuario
+original. A través de ellos, Schoenstatt se expande en el mundo y
+mantiene un signo exterior de unidad.
+
+El primer Santuario filial fue construido en Nueva Helvecia, Uruguay, en
+1943, en el tiempo de la segunda guerra mundial, mientras el Padre
+Fundador estaba en el campo de concentración de Dachau. Hoy existen más
+de ciento treinta Santuarios filiales en todo el mundo.
+
+**49. ¿Qué es el "Santuario Hogar"?**
+
+Hacia el final del tiempo de exilio del Padre Fundador en Milwaukee, se
+gesta una nueva forma de vivencia en la Alianza de Amor dentro de la
+Familia de Schoenstatt: el Santuario Hogar. El P. Kentenich bendice
+numerosos hogares en Milwaukee consagrándolos a la Madre Tres Veces
+Admirable de Schoenstatt. En ellos, cada matrimonio sella en forma
+original con María la Alianza de Amor.
+
+El Santuario Hogar es un lugar de oración y de encuentro espiritual de
+la familia en el hogar. A imagen de las pequeñas iglesias domésticas de
+la Iglesia primitiva, las familias --células vivas de la Iglesia-- se
+reúnen en el hogar frente a la imagen de María. Allí renuevan la Alianza
+de Amor, ofrecen sus contribuciones al Capital de Gracias y piden a la
+Madre Tres Veces Admirable que se establezca con su presencia moral y
+acompañe a toda la familia en su camino de santidad y vivencia familiar
+y la haga fecunda apostólicamente.
+
+**La vida ha demostrado que la existencia de los Santuarios Hogar tiene
+una gran importancia para la renovación espiritual y moral de la familia
+y es un medio eficaz para la nueva evangelización. Ese fue el
+convencimiento del P. Kentenich al expresar: "Así como la Virgen actuó
+en casa de Isabel, así quiere actuar en nuestro hogar. Ya que hemos
+consagrado nuestra casa como Santuario Hogar, consideramos santas todas
+sus habitaciones y rincones. Sin embargo, tendremos un lugar especial
+para la Virgen, desde el cual ella irradiará su espíritu por toda la
+casa. Desde allí ella derramará abundantes gracias hacia todos los
+rincones de nuestro hogar".**
+
+**Hoy existen innumerables Santuarios Hogar en torno a los Santuarios de
+Schoenstatt, que prolongan y hacen eficaz la acción de María en la
+Iglesia y sociedad, desde el seno de las familias.**
+
+**50. ¿Qué es el "Santuario del corazón"?**
+
+Es la realidad de la Alianza de Amor en la dimensión personal e íntima
+con Dios y la Santísima Virgen. San Pablo hace referencia explícita en
+sus escritos a la "inhabitación" de Dios en nuestra alma. "El amor de
+Dios ha sido derramado en nuestros corazones por el Espíritu Santo que
+nos ha sido dado" (Rom 5, 5). "¿No sabéis que sois Santuario de Dios y
+que el Espíritu de Dios habita en vosotros?" (1Cor 3,16). Nos habla de
+una alianza escrita por Dios "pero no con tinta sino con el Espíritu
+del Dios vivo; no en tablas de piedras, sino en las tablas de carne del
+corazón" (2Cor 3, 3). En este mismo sentido pedimos a María por
+nuestras contribuciones al Capital de Gracias, que se establezca en
+nuestro corazón como en su Santuario, y que nosotros, como santuarios
+vivos, seamos portadores de las gracias del arraigo en Dios, de la
+transformación y envío apostólico.
+
+**51. ¿Qué es el "Santuario del trabajo"?**
+
+EL Santuario del trabajo surgió de la vida de la Familia como expresión
+de la voluntad de atraer a la Virgen al lugar de trabajo y pedirle que
+ella se glorificase allí como Madre y Reina, que ella estableciese en
+ese medio y regalase en él las gracias del arraigo en Dios, de la
+transformación y fecundidad apostólica, haciéndolo fuente de una
+floreciente santidad de la vida diaria. Esto ha llevado a muchos a
+ofrecer a María abundantes contribuciones al Capital de Gracias para
+atraerla a su lugar de trabajo y hacer de éste, a semejanza del
+Santuario Hogar, un lugar de gracias especiales.
+
+**52. ¿Qué papel especial desempeña la persona del Fundador entre los
+contrayentes humanos de la Alianza?**
+
+En la historia de la Iglesia todo fundador ha desempeñado siempre un
+papel de capital importancia en su fundación. Esto vale especialmente
+para Schoenstatt. Si quisiéramos sintetizar esta importancia, deberíamos
+señalar en particular:
+
+-- que al sellarse la primera Alianza de Amor, el Fundador estuvo como
+representante del contrayente humano de la Alianza;
+
+-- que en la forjación de la Obra, fue un instrumento especial de la
+Santísima Virgen;
+
+-- que en la conducción de Schoenstatt fue portador de una paternidad
+espiritual extraordinaria.
+
+Schoenstatt es fruto de la visión original del Fundador para la
+educación del hombre nuevo y de la comunidad nueva. En los momentos
+decisivos de la historia del Movimiento estuvo él como personificación
+de la historia. Los así llamados "hitos" de Schoenstatt se centraron
+en su persona, pues él fue el intérprete concreto del querer divino para
+Schoenstatt. (\> 4; 121)
+
+## IV. Preguntas sobre la Alianza de Amor
+
+**53. ¿Por qué somos marianos?**
+
+María desempeña en Schoenstatt un papel central, tanto en relación al
+fin mismo de Schoenstatt, como a la tarea histórica que éste posee, y a
+la fuerza creadora con que cuenta.
+
+La superación del hombre viejo, la instauración del organismo de
+vinculaciones, todos los fines de Schoenstatt implican una tarea
+marcadamente mariana. Schoenstatt tiene en María la gran señal de luz y
+esperanza que Dios mismo ha hecho brillar en el horizonte de nuestra
+época, con el fin de vencer las herejías antropológicas, renovar la
+Iglesia y crear un mundo nuevo.
+
+Cristo no llevó a cabo la redención solo, sino que quiso tener a su
+lado, en forma especialísima y única, a María. El la llamó a ser su
+compañera y colaboradora en toda su Obra redentora. María está al inicio
+de la redención al dar su "sí" a la encarnación del Verbo. Dios la
+eligió aún muy joven, para confiar a ese sí el vuelco más decisivo de la
+historia: la venida del Mesías. Con ello María no realiza un acto que
+sólo le concierne a ella: es toda la humanidad la que está pendiente de
+ese "sí". Un "sí" que nos compromete a todos. María estuvo junto a
+la cruz como co-redentora, co-sufriendo y co-ofreciendo junto a Cristo.
+El Señor la proclama desde la cruz verdaderamente Madre nuestra al decir
+a Juan: "he ahí a tu Madre", y a ella, "ahí tienes a tu hijo".
+
+Ahora bien, María no sólo fue la socia y compañera del Señor durante su
+vida en la tierra. El Señor no podía dejar de tenerla en el cielo junto
+a sí con cuerpo y alma. Esa misma presencia con que acompañó los
+primeros pasos de la Iglesia naciente, quiso seguir entregándosela con
+su amor, sabiduría y poder de Madre mientras ésta peregrina a través de
+los siglos. Como Medianera de todas las gracias, asunta en alma y cuerpo
+al cielo, reina junto a Cristo.
+
+Es Dios quien establece la modalidad de la redención. Es él quien
+imprimió a la redención una modalidad esencialmente mariana. Schoenstatt
+trata de comprender por qué él lo quiso así y de acoger consecuentemente
+su voluntad. Schoenstatt es un Movimiento mariano, porque quiere acatar
+el orden objetivo de Dios en toda su amplitud y sacar de él todas las
+consecuencias aplicándolas en la práctica.
+
+**54. ¿Qué significa que Schoenstatt tenga un carácter peculiarmente
+mariano?**
+
+El carácter marcadamente mariano de Schoenstatt nace de su historia y
+significa que Cristo quiere que nos encontremos allí con él y con su
+Padre a través de la persona de María. El ha querido manifestar su poder
+por el poder que él mismo ha querido poner en la mediación de María.
+
+Significa, además, que desde su origen, María tomó posesión del terruño
+de Schoenstatt; y que está espiritualmente presente en él; que ha
+establecido en él su trono de gracias y que, desde allí, actúa y
+manifiesta su poder de Reina.
+
+Significa además, que la misión que Cristo quiere anunciar desde el
+Santuario es eminentemente mariana. Todo lo que Schoenstatt es y todo el
+misterio de su Santuario y de su misión debe entenderse, en último
+término, a la luz del misterio y de la misión personal de María. El
+hombre nuevo que Schoenstatt pretende formar, es un hombre eminentemente
+mariano, en el sentido que encarna --a semejanza de María-- la armonía
+entre la naturaleza y la gracia. Y ese hombre nuevo es, a la vez,
+forjado por el poder de educadora de María, como Madre de la Iglesia y
+Madre nuestra. Dios quiere que María se manifieste en nuestro tiempo
+especialmente en y desde su Santuario de Schoenstatt como la gran
+educadora que
+
+vence las herejías antropológicas de nuestro tiempo e instaura, como
+Compañaera y Colaboradora de Cristo, el Reino del Padre aquí en la
+tierra.
+
+**55. ¿Cuándo sellaron el P. Kentenich y los Congregantes la Alianza de
+Amor con María en el Santuario?**
+
+El 18 de octubre de l914. En aquella ocasión pronunció el Padre
+Kentenich una memorable plática que, más tarde, pasó a considerarse como
+la "Primera Acta de Fundación". En ella se expresaban los términos
+fundamentales de esta Alianza de Amor.
+
+**56. ¿Cuáles son las afirmaciones básicas más importantes del "Acta de
+Fundación"?**
+
+Transcribimos algunos pasajes centrales de esta Acta de Fundación:
+
+-- "Programa: aceleración del desarrollo de nuestra propia
+santificación y, de esta manera, transformación de nuestra capillita en
+un lugar de peregrinación". (Así titula el P. Kentenich la plática del
+18 de octubre de l914)."
+
+-- "Mi exigencia se refiere a algo incomparablemente superior: cada uno
+de nosotros ha de alcanzar el mayor grado posible de perfección y
+santidad, según su estado. No simplemente lo grande ni lo más grande,
+sino precisamente lo más excelso ha de ser el objeto de nuestros
+esfuerzos intensificados."
+
+-- "San Pedro, después de haber contemplado la gloria de Dios en el
+Tabor, exclamó arrobado: \'¡Qué bien estamos aquí! ¡Hagamos aquí tres
+tiendas!". Una y otra vez vienen a mi mente estas palabras y me he
+preguntado ya muy a menudo: ¿Acaso no sería posible que la capillita de
+nuestra congregación llegara a ser nuestro Tabor, donde se manifieste la
+gloria de María? Sin duda alguna, no podríamos realizar una acción
+apostólica más grande, ni dejar a nuestros sucesores una herencia más
+preciosa que inducir a nuestra Señora y Soberana a que erija aquí su
+trono de manera especial, que reparta sus tesoros y obre milagros de
+gracia. Ustedes sospecharán lo que pretendo: quisiera convertir este
+lugar en un lugar de peregrinación, en un lugar de gracia para nuestra
+casa y toda la provincia alemana y quizás más allá. Todos los que acudan
+acá a orar deben experimentar la gloria de María y confesar: ¡Qué bien
+estamos aquí! ¡Establezcamos aquí nuestra tienda! ¡Este es nuestro
+rincón predilecto!."
+
+"Un pensamiento audaz, casi demasiado audaz para el público, pero no
+demasiado audaz para ustedes. ¡Cuántas veces en la historia del mundo ha
+sido lo pequeño, lo insignificante, el origen de lo grande, de lo más
+grande! ¿Por qué no podría suceder también lo mismo con nosotros?"
+
+"Quien conoce el pasado de nuestra Congregación no tendrá dificultades
+en creer que la Divina Providencia tiene designios especiales respecto a
+ella."
+
+-- "Así también esa capillita de nuestra Congregación será para
+nosotros cuna de santidad. Y esta santidad hará suave violencia a
+nuestra Madre Celestial y la hará descender hasta nosotros."
+
+-- "Se me figura que nuestra Señora, en estos momentos, en la antigua
+capillita de San Miguel, nos dirige estas palabras por boca del santo
+arcángel:
+
+\'No se preocupen por la realización de su deseo. Ego diligentes me
+diligo, amo a los que me aman. Pruébenme primero por hechos que me aman
+realmente y que toman en serio su propósito. Ahora tienen para ello la
+mejor oportunidad. Y no crean que es algo extraordinario si ustedes
+suben al máximo, más allá de las generaciones pasadas, las exigencias
+que se ponen a sí mismos dado el tiempo tan serio y
+
+tan grande como es el que vivimos actualmente."
+
+"Según el plan de la Divina Providencia debe ser la guerra mundial, con
+sus poderosos impulsos, un medio extraordinariamente provechoso para
+ustedes, en la obra de su propia santificación. Es esta santificación la
+que exijo de ustedes. Ella es la coraza que tienen que ponerse, la
+espada con la que deben luchar para la consecución de sus deseos.
+Tráiganme con frecuencia contribuciones al Capital de Gracias. Adquieran
+por medio del fiel y fidelísimo cumplimiento del deber y por la intensa
+vida de oración, muchos méritos y pónganlos a mi disposición. Entonces,
+con gusto me estableceré en medio de ustedes y distribuiré abundantes
+dones y gracias. Entonces atraeré desde aquí los corazones jóvenes hacia
+mí y los educaré como instrumentos aptos en mi mano."
+
+**57. ¿En qué contexto entendemos la Alianza de Amor sellada el 18 de
+octubre de l914?**
+
+Esta Alianza de Amor sellada con María es una actualización original de
+la Alianza de Amor que Dios hace con los hombres. La palabra "alianza"
+expresa la trama fundamental que atraviesa toda la historia de
+salvación. Esta es la historia de la alianza de Dios sellada con su
+Pueblo y con personas concretas. Recordamos , por ejemplo, a Noé,
+Abraham, Isaac, Moisés, la Santísima Virgen. Esta alianza tiene su
+culminación en la "nueva y eterna Alianza" sellada por Cristo y en
+Cristo. Cristo selló la alianza definitiva entre Dios y el hombre, y la
+ofrece como camino de salvación a la humanidad.
+
+Los cristianos nos incorporamos en la Nueva Alianza mediante el
+bautismo. Por el bautismo pasamos a formar parte del nuevo Pueblo de la
+Alianza, la Familia de Dios, que es la Iglesia. En este contexto
+entendemos la Alianza de Amor en Schoenstatt, como una forma original de
+asumir la alianza bautismal, de renovarla y profundizarla en estrecha
+unión a María.
+
+La Alianza del 18 de octubre de l914 es una concreción más de la
+voluntad de Dios de entrar en diálogo con el hombre, por medio de María.
+Esta búsqueda encontró respuesta en el P. Kentenich, quien asoció en su
+respuesta a los jóvenes que tenía a su cargo como Director Espiritual.
+Por la fe práctica en la Divina Providencia reconoce la invitación de
+Dios a sellar una Alianza con María en la pequeña capilla que poseía la
+Congregación Mariana. Convencido de la voluntad de Dios, expone a los
+jóvenes su "secreta idea predilecta", su "pensamiento audaz": atraer
+a María, por el fiel y fidelísimo cumplimiento del deber y una intensa
+vida de oración" para que ella se estableciese en el Santuario.
+
+**58. ¿Cómo se concreta en Schoenstatt la cooperación humana que
+requiere la Alianza de Amor?**
+
+Nuestra cooperación se expresa a través de las contribuciones al Capital
+de Gracias. En el Acta de Fundación, el P. Kentenich nos señala la forma
+concreta en que debemos llevar a cabo la lucha por la santidad: "Es
+esta santificación la que exijo de ustedes. Ella es la coraza que tienen
+que ponerse, la espada con la que deben luchar por la consecución de sus
+deseos. Tráiganme con frecuencia contribuciones al Capital de Gracias.
+Adquieran muchos méritos por medio del fiel y fidelísimo cumplimiento
+del deber y por una intensa vida de oración y pónganlos a mi
+disposición..." (\> 59-60)
+
+**59. ¿Qué significa "Capital de Gracias"?**
+
+Por el bautismo, hemos sido hechos uno con Cristo, miembros de su Cuerpo
+Místico, la Iglesia (cfr 1Cor 12). Con esto también estamos unidos unos
+con otros en Cristo y podemos implorar, por nuestra vida y por nuestra
+oración, la benevolencia de Dios y su gracia para nuestros hermanos. San
+Pablo se expresa así: "Completo en mi carne mortal lo que falta todavía
+a los padecimientos de Cristo por su Cuerpo que es la Iglesia" (Col
+1,24).
+
+Los jóvenes co-fundadores de Schoenstatt se unían en la oración y el
+sacrificio con la intención común de que la Santísima Virgen hiciera
+nacer, desde el Santuario, un Movimiento de renovación para el tiempo
+actual. "Capital de Gracias" es una expresión gráfica para describir
+este proceso vital. Tal como el Señor recurre en el Evangelio a términos
+o realidades de orden económico (los "talentos", por ejemplo), así
+también lo hace el P. Kentenich. El capital es esencial para movilizar
+las empresas. Nuestro "capital" son las obras meritorias, todo lo que
+hacemos, rezamos y sufrimos con amor, lo ofrecemos a María como don de
+nuestro amor.
+
+El Capital de Gracias es así, en primer lugar, una reafirmación práctica
+del carácter "aliancista" de toda la vida cristiana y de la vida
+schoenstattiana en particular. Porque la idea misma de juntar méritos
+para formar un "Capital de Gracias" implica la conciencia de estar
+respondiendo a un pacto, a un compromiso, a una alianza.
+
+El P. Kentenich invita a los jóvenes, por las contribuciones al Capital
+de Gracias, a entrar de inmediato en acción: No basta la buena voluntad,
+sino que hay que comenzar a santificarse mediante hechos concretos,
+adquiriendo muchos méritos, realizando muchas obras buenas, cumpliendo
+fidelísimamente el deber de cada uno, rezando mucho más que antes. ¿Para
+qué? Para llevarlo todo al Santuario y formarle allí a la Santísima
+Virgen una especie de "capital" de gracias del que ella pueda disponer
+a voluntad, al servicio de la gran misión del Santuario. La idea de las
+contribuciones al Capital de Gracias moviliza así a los jóvenes a
+emprender una lucha activa por la santificación, claramente centrada en
+torno al Santuario y al apostolado.
+
+**60. ¿Cómo se expresa, en el Acta de Fundación, el mutuo compromiso de
+la Alianza de Amor?**
+
+*El compromiso del contrayente humano de la alianza* es condición para
+que la Santísima Virgen se establezca en el Santuario. Leemos en el Acta
+de Fundación: "Pruébenme por hechos que me aman realmente y que toman
+en serio su propósito"; "es esta propia santificación (autoformación)
+la que exijo de ustedes".
+
+Esto significa que
+
+> 1\) Tenemos que probar con obras que la amamos realmente y que tomamos en
+> serio lo propuesto;
+>
+> 2\) esforzarnos seriamente por la autoformación por nuestra
+> transformación y crecimiento interior;
+>
+> 3\) subir al máximo las exigencias, en otras palabras, ser magnánimos;
+>
+> 4\) distinguirnos por un fiel y fidelísimo cumplimiento del deber de
+> estado y
+>
+> 5\) por una vida de intensa oración.
+>
+> 6\) Por último, ofrecer todo lo anterior como contribuciones al Capital
+> de Gracias.
+
+*El compromiso de María* (según las palabras del Acta de Fundación nos
+dice de lo anterior (las contribuciones al Capital de Gracias): "Esta
+santidad hará suave violencia a nuestra Madre celestial y la hará
+descender hacia nosotros".
+
+Lo cual significa que:
+
+> 1\) ella se establecerá espiritualmente en la Capillita;
+>
+> 2\) distribuirá desde allí abundantes dones de gracias;
+>
+> 3\) atraerá hacia sí los corazones jóvenes;
+>
+> 4\) los educará;
+>
+> 5\) hará de ellos instrumentos aptos en sus manos;
+>
+> **6) y con ellos, en la medida que se abandonen en sus manos,
+> emprenderá un Movimiento de renovación.**
+
+**61. ¿Qué significa la Alianza de Amor para Schoenstatt?**
+
+La Alianza de Amor con María es la forma original que tiene Schoenstatt
+de vivir la alianza bautismal. En ella se expresa y se garantiza nuestra
+alianza con la Santísima Trinidad. Entendida así, es "la fuente de la
+vitalidad y el centro de la espiritualidad de Schoenstatt", el corazón
+de Schoenstatt.
+
+El amor a María, expresado en esta Alianza, se transforma en el medio
+más rápido y seguro de vivir en un contacto vivo y permanente con el
+Dios de nuestra vida y de nuestra historia. Por la Alianza de Amor nos
+convertimos en "Familia", pues todos los que sellan la Alianza se
+saben y sienten hijos de María y, por ello, hermanos entre sí.
+
+De esta Alianza de Amor, vivida en profundidad, nace también una fuerte
+conciencia de misión; lleva a quienes la sellan, a convertirse en
+eficaces instrumentos en manos de María para colaborar con ella en la
+renovación religioso-moral del mundo. Por esta Alianza de Amor
+Schoenstatt realiza su compromiso de construir la historia en
+dependencia y contacto filial, libre y total con Cristo, el Señor de la
+historia, a través de María, su Colaboradora permanente.
+
+**62. ¿Qué expresa la frase "Nada sin ti, nada sin nosotros"?**
+
+Esta frase o lema expresa en forma simple y concreta el compromiso mutuo
+que encierra la Alianza de Amor que sellamos en Schoenstatt. Toda
+alianza de Dios con los hombres posee este rasgo: es un compromiso mutuo
+entre él y el hombre. Y Schoenstatt nació de una alianza, es decir, del
+actuar conjunto de Dios, a través de María, y de los hombres. El se
+compromete, pero también exige un compromiso de aquel a quien ha llamado
+a sellar esa alianza. El amor verdadero debe ser recíproco.
+
+El "nada sin ti" significa que Schoenstatt no puede existir ni
+realizar su misión sin la presencia y acción constantes de María, desde
+su Santuario. Ella se ha comprometido a establecer allí su trono y a
+distribuir desde allí abundantes dones y gracias para la realización de
+su misión de renovación del mundo. Ella se ha comprometido a regalar
+gracias especiales y propias desde el Santuario. (\>40)
+
+El "nada sin nosotros" significa la colaboración humana activa con
+esas gracias. La acción de María está supeditada en Schoenstatt a
+nuestra colaboración activa con las gracias que ella nos regala. No
+podemos construir si no existe un serio esfuerzo de cooperación humana
+con la gracia. Dios, que nos creó libres, se condiciona a nuestra
+libertad; no nos quita la responsabilidad, sino requiere nuestra
+cooperación libre.
+
+## V. Preguntas sobre la espiritualidad de Schoenstatt
+
+**63. ¿Qué se entiende por "piedad tridimensional"?**
+
+El Padre Kentenich usa esta expresión para designar tres dimensiones
+esenciales de la espiritualidad schoenstattiana, a saber: La Alianza de
+Amor con María o Piedad de la Alianza; la Piedad o Espiritualidad
+Instrumental, y la Santidad de la Vida Diaria. Estas dimensiones de la
+espiritualidad schoenstattiana se refieren principalmente a las virtudes
+teologales de la caridad y la esperanza en el Dios Uno y Trino, en y a
+través de la Alianza de Amor con María. En relación a la virtud teologal
+de la fe, Schoenstatt acentúa especialmente la fe práctica en la Divina
+Providencia. (\> 64-66)
+
+**64. ¿Qué se entiende por "espiritualidad de la Alianza de Amor"?**
+
+La espiritualidad de la Alianza tiene su fundamento en la revelación.
+Ella nos muestra a Dios como el Dios de la Alianza, quien, por amor,
+sella una alianza con el pueblo de Israel, a la que éste es infiel. Por
+segunda vez Dios toma la iniciativa enviando a su Hijo al mundo, el cual
+sella la nueva y definitiva alianza. El cristiano entra en la alianza
+por el sacramento del bautismo; por eso se habla de la "alianza
+bautismal".
+
+La espiritualidad de la Alianza es la espiritualidad que hace suya esta
+Alianza y busca conformar toda la vida de acuerdo a ella. La Alianza, en
+este sentido, funda una profunda comunidad de vida, de amor, de bienes y
+de intereses con el Dios vivo en Cristo Jesús.
+
+Schoenstatt vive esta Alianza de Amor en estrecha unión a María.
+Sellamos una Alianza de Amor con la Madre y Reina Tres Veces Admirable
+de Schoenstatt en el Santuario como expresión, camino y garantía de la
+alianza bautismal con el Dios Uno y Trino en Cristo Jesús.
+
+**65. ¿Qué se entiende por "Piedad Instrumental"?**
+
+La Alianza de Amor sellada con María comprende necesariamente una
+proyección apostólica. Todo cristiano está llamado por la Alianza al
+compromiso de construir el Reino de Dios aquí en la tierra como
+discípulo y apóstol del Señor. El schoenstattiano comprende su
+compromiso con María, la Compañera y Colaboradora permanente de Cristo
+en toda la obra de la redención, como un compromiso a colaborar con ella
+y con Cristo en ésta. Para ello se pone enteramente a su disposición,
+abandonándose en sus manos, sabiendo que si se deja guiar por María, en
+la fuerza de la gracia, podrá contribuir eficaz y fecundamente en la
+viña del Señor.
+
+**66. ¿Qué se entiende por "Santidad de la Vida Diaria"?**
+
+El Padre Kentenich habla de una "santidad de los días domingos" y de
+una "santidad de la vida diaria o del trabajo". Con ello indica que
+nuestra relación con Dios no puede reducirse a momentos en los que
+expresamente participamos en alguna celebración litúrgica, sino que debe
+extenderse a la totalidad de nuestra vida. Es la santidad que une
+armónicamente fe y vida. Por ello trata de hacer "las cosas ordinarias
+en forma extraordinaria", es decir, con el mayor amor posible. La
+santidad de la vida diaria se define como la armonía querida por Dios y
+cargada de afecto entre la vinculación a Dios, a las personas, a las
+cosas y al trabajo.
+
+**67. ¿En qué consiste la "fe práctica en la Divina Providencia"?**
+
+La fe práctica en la Divina Providencia es la fe de que el Dios sabio,
+poderoso y fiel, tiene un plan de amor
+
+para la humanidad y para cada persona en ella. Se habla de fe
+"práctica" en el sentido que podemos conocer, por la luz de la fe, a
+través de las voces del tiempo, del alma y del ser, ese plan y conformar
+nuestra vida concreta de acuerdo a él.
+
+La fe práctica en la Divina Providencia nos lleva a buscar activamente
+la voluntad de Dios en la vida y los acontecimientos y a responderle
+filial y eficazmente. Es una fe "receptiva", en cuanto está abierta a
+recibir las indicaciones de Dios y a abandonarse a su voluntad, y
+"activa", en cuanto busca activamente esa voluntad y trata de
+realizarla. (\> 68-72)
+
+**68. ¿Qué se entiende por "voces del tiempo"?**
+
+Dios gobierna el mundo a través de causas segundas. Dios interviene en
+la historia concreta del mundo, de las comunidades, de cada persona.
+Quien se guía por la fe práctica en la Divina Providencia, trata de
+detectar la presencia y el deseo de Dios manifestado a través de los
+acontecimientos, en los signos del tiempo o en las circunstancias. En
+ellos percibe su voluntad.
+
+**69. ¿Qué se entiende por "voces del alma"?**
+
+Dios también nos habla en nuestro interior por las inspiraciones del
+Espíritu Santo. Quien se guía por la fe práctica en la Divina
+Providencia busca discernir, en los anhelos de su corazón y los impulsos
+que laten en él, la voluntad de Dios.
+
+**70. ¿Qué se entiende por "voces del ser"?**
+
+Es aquello que Dios nos dice a través del orden de ser de la realidad
+natural y sobrenatural. La estructura de ser de las cosas y de las
+personas, su naturaleza, lleva inscrita la voluntad de Dios: son
+pensamientos encarnados de Dios y, como tales, son deseos encarnados de
+Dios. En otras palabras, según el adagio tomista, al orden de ser debe
+seguirse un orden de actuar (Ordo essendi est ordo agendi).
+
+**71. ¿Qué es la "ley de la puerta abierta"?**
+
+Esta expresión se remonta a San Pablo y significa descubrir el querer de
+Dios a través de las "puertas", o posibilidades, que él nos abre y de
+otras que él nos cierra (cfr. 1 Cor 16, 9; 2Cor 2, 12; Col 4,3; Hech
+14,27). Por esta ley se ha conducido la historia de Schoenstatt:
+"Schoenstatt vive y actúa en todo según la ley de la puerta abierta"
+(P. Kentenich).
+
+**72. ¿Qué es la "ley de la resultante creadora"?**
+
+Es un criterio confirmatorio o rectificatorio de la interpretación del
+querer divino. Cuanto más clara y positiva es la resultante, tanto más
+se tiene la seguridad moral de haber interpretado correctamente el plan
+de Dios.
+
+La vivencia de la fe práctica en la Divina Providencia involucra riesgo,
+presupone mucha confianza en Dios y una actitud de profunda
+victoriosidad. Tal fe no es un puro acto mental: toda la persona se
+halla comprometida. Por sobre todo, debe ser un proceso vital: "El
+justo vivirá por la fe" (Rom 1,17). Cuando la persona ha hecho el
+discernimiento de la voluntad de Dios, toma una decisión concreta. Para
+ello normalmente sólo cuenta con la seguridad moral que ha interpretado
+bien su querer. Por eso, posteriormente debe revisar y ponderar por los
+frutos (frutos evangélicos: paz interior, alegría, crecimiento en Dios,
+etc.) si verdaderamente su decisión fue correcta. En el caso de una
+resultante creadora negativa, deberá revisar y rectificar su
+discernimiento.
+
+**73. ¿Qué se entiende por "Poder en Blanco"?**
+
+Con este término se expresa una consagración a María que encierra una
+disposición de abertura total al querer divino. Es una proclamación
+renovada, alegre, clara e irrevocable de la entrega total a los deseos y
+a la voluntad del Padre Eterno. Se le llama también entrega de "Cheque
+en Blanco". En Octubre de 1939, a instancias del Fundador que veía
+avecinarse duros tiempos para la Familia a causa de la guerra, la
+Familia de Schoenstatt sella la consagración de "Poder en Blanco" con
+María.
+
+La consagración de Poder en Blanco equivale a lo que en la escuela
+ignaciana se denomina "santa indiferencia", y en la escuela carmelita
+"abandono" a la voluntad del Padre. El Poder en Blanco es la esencia
+de la santidad, pues ésta consiste en la total conformidad con el querer
+divino. Supone como fundamento, la lucha contra el pecado grave, el
+venial y las imperfeciones, y se asegura en la actitud de Inscriptio o
+de amor a la cruz. (\> Pregunta siguiente)
+
+**74. ¿Qué se entiende por "Inscriptio"?**
+
+Esta expresión tiene su origen en una designación del amor como
+"inscriptio cordis in cor", vale decir, una mutua inscripción de
+corazones. Palabras que provienen, probablemente, de San Agustín y que
+el P. Kentenich usa por primera vez en 1941, para indicar un crecimiento
+en la Alianza de Amor, según el cual no sólo se acepta la cruz, sino
+que, por amor, es solicitada en la medida que esté contemplada en el
+plan divino.
+
+**75. ¿Qué es la "Cruz de la Unidad"?**
+
+La Cruz de la Unidad es la imagen propia del "Cristo de las
+vinculaciones", cuyo anhelo más profundo es que "todos sean uno",
+como él y el Padre son uno. Muestra a Cristo, el Hijo profunda e
+íntimamente ligado a María, su Madre, Compañera y Colaboradora
+Permanente en la obra de la Redención. Es el Cristo de la Unidad que, en
+la fuerza de su sacrificio y entrega, y extendiendo ampliamente sus
+brazos, une el cielo con la tierra y la tierra con el cielo.
+
+Esta cruz se gestó como símbolo de la primera generación de sacerdotes
+chilenos que estudiaban en Brasil y Suiza. Nació en un momento de
+grandes tensiones en Bellavista, cuando reinaba la desconfianza y la
+falta de entendimiento.
+
+**La Cruz de la Unidad fue colocada en Bellavista en la Navidad de 1960.
+Su fruto fue el "Milagro de la Unidad" de la Familia del Schoenstatt
+chileno. En 1965 esta Cruz es regalada al Padre Fundador quien, a su
+vez, la regala a la Provincia del Instituto de Nuestra Señora de
+Schoenstatt en Stuttgart, Alemania.**
+
+## VI. Preguntas sobre la pedagogía de Schoenstatt
+
+**76. ¿En qué consiste la Pedagogía de Schoenstatt?**
+
+El sistema pedagógico de Schoenstatt se basa en la práctica pedagógica y
+la concepción de educación del P. Kentenich. Educar para él, consiste
+básicamente en engendrar vida y servir a la vida. Schoenstatt como
+Movimiento quiere ser "un oficial de enlace entre la teoría y la
+práctica". Con ello indica que lo que le interesa no es, en primer
+lugar, la proclamación de la doctrina en sí misma, sino que ésta se
+encarne y haga vida. Servir desinteresadamente la vida que el educador
+engendra, por su paternidad-maternal o maternidad-paternal, significa
+servir la originalidad y peculiaridad ajena; es decir, la vida que Dios
+ha depositado en cada persona y comunidad. El educador no es dueño de la
+vida sino sólo un instrumento de Cristo Buen Pastor,y participa como
+educador de su tarea profética, sacerdotal y pastoral.
+
+Para el P. Kentenich contar con "educadores educados", que despierten
+vida no sólo con su palabra sino con su ejemplo y por la fuerza de su
+amor, constituye un imperativo de nuestro tiempo. (\> 77-85)
+
+**77. ¿Cuáles son los principios que orientan la pedagogía de
+Schoenstatt?**
+
+Tres principios inspiran la concepción pedagógica de Schoenstatt. Los
+dos primeros son de origen tomista, y el tercero responde a una
+formulación propia de san Francisco de Sales.
+
+Primer principio: *El "orden de ser determina el orden de actuar"*
+
+El orden de ser objetivo, tanto natural como sobrenatural, que Dios ha
+impreso en la creatura, debe ser norma y directriz constante de toda
+praxis pedagógica.
+
+Segundo principio: *"La gracia no destruye sino que presupone, sana,
+eleva y perfecciona la naturaleza".*
+
+Este principio se refiere a la relación entre el orden natural y
+sobrenatural, entre lo creado y Dios; entre la naturaleza y la gracia.
+El P. Kentenich aplica este principio en toda su pedagogía. Su ideal es
+el de un auténtico humanismo que armoniza lo humano con la acción
+gratuita de Dios y que sabe conjugar el impulso natural del hombre con
+el impulso de la vida sobrenatural que Dios ha infundido en su ser. La
+gracia sana las heridas del pecado original, personal y social y eleva
+al hombre y a la sociedad a un nivel superior, que lo enaltece más allá
+de sus límites.
+
+Tercer principio: *"El amor es la ley fundamental y universal del
+mundo".*
+
+El amor debe llegar a ser la ley fundamental de nuestra vida y de
+nuestro actuar pedagógico. El amor, afirma el P. Kentenich, no sólo es
+la mayor potencia en el cielo y en la tierra, sino que ha de ser
+considerado y valorado como el gran poder creador en la educación.
+Educadores verdaderos y auténticos, agrega, son genios del amor. Así
+como Dios hace todo *por*, *para* y *en* el amor, así también el
+educador debe actuar en todo *por*, *para* y *en* el amor.
+
+La pedagogía schoenstattiana es así, esencialmente, una pedagogía del
+amor o de las vinculaciones. La pedagogía de vinculaciones capitaliza
+esta múltiple energía del amor y la desarrolla en todas sus dimensiones.
+Pues el educando, para crecer sanamente, debe vincularse a personas, al
+terruño, a cosas y a ideas. De este hecho se derivan los diversos
+caminos pedagógicos o estrategia pedagógica que Schoenstatt aplica
+
+**78. ¿Cuáles son los pilares fundamentales del sistema pedagógico del
+P. Kentenich?**
+
+Son dos, a saber, la "pedagogía del ideal" y la "pedagogía de las
+vinculaciones".
+
+**79. ¿Qué se entiende por "pedagogía del ideal"?**
+
+Schoenstatt proporciona un mundo de ideales que enaltecen y estimulan a
+la persona y provocan en ella una dinámica creadora que la impulsa a la
+superación de sí misma y a un vigoroso afán de conquista. La pedagogía
+del ideal está orientada a formar personas libres y autónomas en medio
+de una sociedad masificada y despersonalizada.
+
+**80. ¿Qué se entiende por "pedagogía de vinculaciones"?**
+
+La "pedagogía de vinculaciones" o "pedagogía del amor" corresponde a
+la aplicación concreta de la ley universal del amor en la pedagogía.
+Esta pedagogía responde al imperativo de formar una persona según la
+imagen de Dios (Dios es amor), y con ello, además, a superar
+particularmente el hombre atomizado o desarraigado de nuestro tiempo.
+
+La pedagogía de las vinculaciones se basa en el hecho que el amor posee
+una fuerza unitiva, asemejadora y creadora. Opera según la ley "por la
+vinculación a la actitud", es decir, el educador cultivando un vínculo
+profundamente afectivo y estable, obtiene como fruto en el educando una
+actitud y un estilo de trabajo conforme al de la persona a la cual éste
+se ha vinculado (es decir, a Cristo, a María, al Padre Fundador, a la
+misma persona del educador.). Si el educando logra establecer una red de
+vínculos sanos y estables con Dios, con las personas, podrá crecer y
+desarrollarse sanamente. (\>81)
+
+**81. ¿Qué se entiende por "pedagogía de alianza" o "pedagogía
+mariana"?**
+
+El camino más apto que Schoenstatt posee para conseguir una eficaz
+educación de la fe es lograr que el educador conduzca al educando a una
+relación personal, cálida, íntima y vigorosa con la persona de María.
+Esto lo logra a través de un movimiento de valores marianos, según la
+perspectiva de intereses de las personas o de la comunidad. El vínculo
+personal a María despliega entonces toda su fuerza unitiva, asemejadora
+y creadora. Por el amor a María la persona y la comunidad reciben
+fuerzas para superarse y conformarse interiormente según la imagen de
+Cristo.
+
+**82. ¿Cuál es la táctica o el método pedagógico de Schoenstatt?**
+
+Tanto la pedagogía del ideal como la pedagogía de vinculaciones suponen
+en su aplicación metodológica o metodología:
+
+> la pedagogía de movimiento,
+>
+> la pedagogía de confianza,
+>
+> la pedagogía de libertad.
+
+**83. ¿En qué consiste la "pedagogía de movimiento"?**
+
+Para el P. Kentenich educar significa despertar, captar, fomentar,
+cuidar y encauzar la vida, movilizando valores de acuerdo a la
+perspectiva de intereses del educando. En este contexto, Schoenstatt da
+especial relieve a la vitalidad de la persona y a los intereses de la
+comunidad, que responden a los signos del tiempo y a la conducción
+interior del Espíritu Santo. Se distingue una triple perspectiva de
+intereses:
+
+> inconsciente (los instintos, las pasiones, los afectos, etc.)
+>
+> consciente (los intereses racionales, el "espíritu objetivo del
+> tiempo", etc.)
+>
+> sobrenatural (los intereses o impulsos que brotan del alma en gracia).
+
+La pedagogía de movimiento se opone a una pedagogía "lógica" o
+"estática", que no parte de las personas sino que busca simplemente
+aplicar el ideal abstracto y genérico, prescindiendo de la realidad
+concreta de la persona y de la comunidad.
+
+**84. ¿En qué consiste la "pedagogía de confianza"?**
+
+El educador schoenstattiano ejerce su labor básicamente apoyado en la
+confianza, lo cual significa que actúa movido por la convicción de la
+realidad del poder, sabiduría y misericordia de Dios, quien ha regalado
+al educando la capacidad y fuerzas necesarias para alcanzar su pleno
+desarrollo. La pedagogía de confianza apela siempre a lo bueno que hay
+en la naturaleza humana; cree en la fuerza de la gracia que sana y
+perfecciona la naturaleza, herida por el pecado.
+
+La pedagogía de confianza se opone a una pedagogía que acentúa
+unilateralmente el control, la vigilancia o el castigo, que desconfía de
+la capacidad de superación y crecimiento del mismo educando.
+
+**85. ¿En qué consiste la "pedagogía de libertad"?**
+
+Schoenstatt fomenta y posibilita la libertad, entendida como la
+capacidad que posee la persona humana de decidir por sí mismo y de
+realizar lo decidido. Procura, por lo mismo, que la persona llegue a la
+plena posesión de sí a través de la corresponsabilidad y la puesta en
+acción de lo que ha decidido.
+
+La pedagogía de libertad es contraria a una pedagogía que acentúa
+unilateralmente las obligaciones o el deber por el deber. Quiere formar
+hombres plenamente libres con la libertad de los hijos de Dios.
+
+**86. ¿Qué es el "Ideal Personal"?**
+
+Así como el educador aplica una pedagogía del ideal, el educando, al
+internalizar esos ideales, actúa de acuerdo a su Ideal Personal. El
+Ideal Personal es una vocación, un llamado que Dios nos hace
+personalmente y que él nos va desvelando progresivamente a lo largo de
+nuestra vida cotidiana.
+
+El Padre Kentenich da tres definiciones del Ideal Personal.
+
+*Desde es punto de vista filosófico*, es "la idea original preexistente
+en la mente divina respecto a cada persona". *Desde el punto de vista
+teológico* es "la imitación y manifestación original de las
+perfecciones humano-divinas de Cristo". Y, *desde el punto de vista
+sicológico*, es "el impulso y la disposición fundamental que Dios
+depositó en lo más íntimo del alma, que fielmente cultivada nos lleva a
+la plena libertad de los hijos de Dios.
+
+¿Cómo lo descubrimos? Existen diversos caminos. Por ejemplo, en la
+medida que, paulatinamente, vamos detectando el designio particular que
+la Divina Providencia tiene para nosotros. Si nos basamos en el hecho de
+que Dios tiene un plan de amor con nosotros, haremos de la reflexión
+sobre nuestra historia personal un camino predilecto de la búsqueda de
+nuestro ideal. Interpretamos entonces nuestra historia a la luz de la
+Divina Providencia y vemos cómo Dios nos llama la atención y nos señala
+una tarea de vida por los variados sucesos o vivencias a lo largo de
+nuestra historia.
+
+También puede llegarse a él a través de la consideración de la
+estructura sicológica personal con sus impulsos fundamentales.
+
+Muchas veces podemos llegar a nuestro Ideal Personal a partir, por
+ejemplo, de caminos más intuitivos, tales como: nuestra oración
+predilecta o nuestras vivencias religiosas más profundas. En ellas se
+refleja el núcleo de nuestra personalidad.
+
+El Ideal Personal debe convertirse en la motivación principal y
+constante, en la estrella que ilumine nuestro camino, en nuestro
+criterio de decisión y acción. Normalmente formulamos el Ideal Personal
+en un lema y lo expresamos en un símbolo.
+
+En la medida que el Ideal Personal se "internaliza" llega a ser como
+una "segunda naturaleza" para nosotros, de tal manera que actuamos no
+sólo reflexiva sino espontáneamente en el sentido del ideal.
+
+**87. ¿Qué entendemos por "Examen Particular" o "Propósito
+Particular"?**
+
+El crecimiento personal orientado por el Ideal Personal se realiza
+básicamente por medio del Examen Particular. La persona se pregunta qué
+le pide Dios concretamente en el momento que se encuentra; en qué debe
+crecer ya sea personalmente, en sus relaciones con los demás, en el
+ámbito del trabajo o en su relación con Dios. Para ello consulta las
+"voces del tiempo" (los acontecimientos, su situación, los signos de
+Dios a su alrededor) y las "voces del alma" (las inquietudes que ha
+puesto el Espíritu Santo en su corazón). Así llega a visualizar un campo
+determinado, más exactamente, una actitud a conquistar y hace de ella su
+Examen Particular o Propósito Particular.
+
+Une, entonces, esa actitud a su Ideal Personal (confronta las voces del
+tiempo y del alma con las voces del ser), lo valoriza sopesando en la
+oración y meditación cuán necesario y positivo es para él luchar por la
+conquista de esa actitud. Es decir, se propone cultivarla hasta
+apropiarse de ella. Este proceso puede durar meses o aún más.
+
+De vital importancia en el trabajo con el Examen Particular son las
+renovaciones del mismo (al menos en la mañana, a medio día, en la tarde
+y en la noche), renovaciones que luego se controlan por escrito. A veces
+es conveniente elegir un seguro concreto del Examen Particular para que
+su conquista sea aún más efectiva, sobre todo si se trata de superar
+algún defecto. Pero el Examen Particular no debe reducirse a este
+seguro. Lo importante es mantener vivo el interés por apropiarse de la
+actitud por la cual se lucha en las diversas circunstancias del día,
+objetivo que se logra especialmente a través de las renovaciones del
+Examen Particular.
+
+**88. ¿Qué es el "Horario Espiritual"?**
+
+El sistema de autoformación schoenstattiano encuentra una valiosa ayuda
+y un medio más eficaz para el desarrollo de la personalidad en el
+Horario Espiritual. Dicho nombre lo tomó el Padre Kentenich de la
+tradición ascética de la Iglesia y le dio un sentido y un contenido
+propios. Está en estrecha relación, junto con el Propósito Particular,
+con el Ideal Personal.
+
+El Horario Espiritual quiere asegurar nuestro "nivel espiritual"
+normal, es el sustento que necesitamos para mantener viva nuestra fe y
+nuestro amor a Dios y al prójimo; garantiza la "organicidad" de
+nuestra vida. Contempla puntos concretos y determinados. Por ejemplo, la
+oración de la mañana y de la noche, un tiempo de estudio, etc. No fija
+actitudes, como "servicialidad" o "espíritu de oración", que son
+materia específica más bien del Propósito Particular, sino actos
+concretos.
+
+**Por el Horario Espiritual aseguramos el desarrollo del Ideal Personal
+en sus dimensiones básicas: nuestra relación con Dios, con los hermanos,
+con el trabajo y con nosotros mismos, rescatando así el día de trabajo
+para Dios, poniéndonos en el camino de un crecimiento armónico de
+nuestra personalidad,**
+
+**mediante un ritmo de vida armónico.**
+
+**El P. Kentenich aconseja el control diario por escrito tanto del
+Examen Particular como del Horario Espiritual, para evitar el olvido y
+para no dejarnos atrapar por la ley de la pesantez que llevamos en
+nosotros por el pecado original.**
+
+## VII. Preguntas sobre la estructura de Schoenstatt
+
+**89. ¿Cuál es la diferencia entre estructura y organización?**
+
+Entendemos por estructura de una comunidad el ordenamiento fundamental
+que establece sus grandes categorías y niveles. Entendemos por
+organización de una comunidad el modo en que se relacionan los
+diferentes miembros al interior de cada categoría y nivel para el logro
+de la finalidad de la comunidad.
+
+**90. ¿Cuáles son los principios que orientan la estructura y
+organización de Schoenstatt?**
+
+Todo el desarrollo en Schoenstatt se ha encauzado según los grandes
+principios por los cuales el P. Kentenich orientó su Obra. Estos
+principios son:
+
+a\) *La primacía de la vida:*
+
+La principal preocupación y meta del P. Kentenich fue siempre la
+gestación y el cultivo de una poderosa corriente de vida. Por eso la
+estructura y organización de Schoenstatt han sido consideradas
+secundarias, en tanto la prioridad la tienen las fuentes vitales.
+
+El P. Kentenich formuló este principio de la siguiente manera: *"Una
+adecuada limitación de poder jurídico y de organización, unida a una
+extraordinaria plenitud de poder vital"*.
+
+Otra formulación que él consideraba básica para la constitución de la
+Familia de Schoenstatt y de cada comunidad al interior de ella, es:
+*"Libertad, todo lo posible; obligaciones, solamente las necesarias,
+pero, por sobre todo, un completo y asegurado cultivo del espíritu".*
+
+b\) *La ley de la polaridad*
+
+Esta ley se da en todo organismo vivo y sano. El P. Kentenich buscó
+desarrollar siempre al máximo la vida propia de cada miembro y de cada
+comunidad de la Familia de Schoenstatt, porque para su desarrollo total
+es necesaria la plenitud de vida de cada parte. Estas partes constituyen
+polos diferentes dentro de la totalidad. Polos que tienen su propia
+historia y sus propios talentos. La estructura y organización se
+esfuerzan para que cada uno de estos polos, autónomos entre sí, aporten
+su identidad y su riqueza a la totalidad. Para lograrlo, es necesario
+que entren en comunicación unos con otros, en un proceso de tensiones
+creadoras entre ellos, lo que permite su complementación y, de este
+modo, un mejor desarrollo de cada miembro y de la comunidad total.
+
+Suprimir uno de los polos, oponer uno al otro, apartarlos extrapolando
+su autonomía, son algunos de los errores que suelen cometerse contra la
+ley de la polaridad, que sabe cultivar tanto la autonomía como la
+solidaridad de ambos polos en el marco de la totalidad del organismo.
+
+c\) *La ley de la solidaridad*
+
+La estructura y organización de Schoenstatt, conjuntamente con el
+proceso de polaridad, estimulan la ley de la solidaridad. Es decir, las
+partes o polos deben concebirse como integrantes del todo. Para la
+perfección de cada miembro es necesaria la complementación con los otros
+miembros. Asimismo, para la perfección del todo, es necesaria la
+presencia y participación de cada uno de los polos. Con esta solidaridad
+mutua se enriquecen los miembros y el organismo total y se estimula la
+conciencia de
+
+necesidad mutua para lograr su finalidad.
+
+d\) *El principio de gobierno*
+
+El P. Kentenich consideró de gran importancia una clara comprensión de
+la autoridad. Consideró que la forma como se ejercita la autoridad
+influye decisivamente en el desarrollo de la vida de la comunidad. El
+formuló así la función de la autoridad: *"En nuestra forma de gobierno
+afirmamos el fundamento de la autoridad sin vacilación alguna; pero en
+la aplicación y en los efectos del ejercicio de autoridad --al igual que
+Dios-- se debe tener suma consideración y tacto con las necesidades
+individuales y sociales de la naturaleza humana"*. Lo que resumidamente
+podemos expresar como sigue: *"Afirmamos un claro principio de
+autoridad y lo ejercemos democráticamente".*
+
+e\) *Principio de construcción :*
+
+Este principio apunta a el tipo y cantidad de obligaciones que se
+imponen en la estructura y organización de la comunidad. En este
+sentido, el Padre Kentenich es partidario de que exista el mínimo
+necesario de obligaciones; pero, como contrapartida, pide el máximo en
+relación al cultivo del espíritu, es decir, del idealismo, de los
+vínculos interpersonales tanto naturales como sobrenaturales; en una
+palabra, de la magnanimidad.
+
+El principio lo formula así:*"Libertad toda la posible, vínculos
+obligatorios sólo los necesarios, pero, por sobre todo, un intenso
+cultivo del espíritu".*
+
+**91 ¿Cómo se estructura Schoenstatt?**
+
+La Familia de Schoenstatt se estructura fundamentalmente basándose en
+dos criterios:
+
+a\) *Por el estado de vida de sus miembros :*
+
+Según este criterio, la Familia de Schoenstatt expresa su universalismo.
+A ella puede pertenecer toda persona bautizada, cualquiera sea su edad y
+estado de vida. Desde este punto de vista, los miembros de Schoenstatt
+se agrupan en cuatro grandes columnas: hombres, mujeres, familias,
+sacerdotes.
+
+b\) *Por el tipo de compromiso*
+
+El compromiso apostólico determina los correspondientes compromisos
+ascéticos y comunitarios de sus miembros, por cuanto una mayor
+proyección apostólica requiere necesariamente un cultivo más cuidadoso
+de la vida espiritual y comunitaria.
+
+Desde este punto de vista, la Familia de Schoenstatt se agrupa en cuatro
+grandes niveles:
+
+> -- Peregrinos (Movimiento Popular y de Peregrinos)
+>
+> -- Ligas Apostólicas
+>
+> -- Federaciones Apostólicas
+>
+> -- Institutos Seculares.
+
+**92. ¿Qué es el Movimiento Popular y de Peregrinos?**
+
+Es la base más amplia de la Familia de Schoenstatt. A él pertenecen
+todas aquellas personas que han adherido personalmente a las fuentes
+vitales de Schoenstatt: la Madre Tres Veces Admirable de Schoenstatt, el
+Santuario, el P. Kentenich, y ofrecen su vida cotidiana como
+contribución al Capital de
+
+Gracias. No asumen ningún tipo de compromiso apostólico, ni comunitario,
+ni ascético.
+
+**93. ¿Qué son las "Ligas Apostólicas"?**
+
+Las Ligas Apostólicas están constituídas por aquellas personas que,
+aspirando a la santidad, se dejan educar por Schoenstatt y así se
+esfuerzan por realizar un servicio apostólico en su medio. Son de
+carácter diocesano. Existen la Liga Apostólica de Familias, la Liga
+Apostólica de Sacerdotes Diocesanos, la Liga Apostólica de Hombres, la
+Liga Apostólica de Mujeres (solteras), la Liga Apostólica de Señoras y
+la Liga Apostólica de Enfermos.
+
+**94. ¿Qué formas de pertenencia a la Liga existen?**
+
+Existen dos formas de pertenencia a la Liga Apostólica: los *miembros
+militantes* y los *colaboradores*.
+
+*Los miembros militantes* se comprometen a mantener un espíritu
+apostólico permanente en su medio. Su dirección propia es diocesana,
+dependiendo, por lo tanto, de la autoridad del obispo, quien la ejerce a
+través de un sacerdote de su diócesis, llamado Director Diocesano.
+
+*Los miembros colaboradores* se esfuerzan por cultivar su vida cristiana
+y desarrollan acciones apostólicas esporádicas. Participan de la
+dirección diocesana de los miembros militantes.
+
+**95. ¿Cuáles son los compromisos propios de los miembros o militantes
+de la Liga Apostólica?**
+
+**Se comprometen:**
+
+> **-- primero, en relación al apostolado, a un apostolado permanente en
+> su ambiente;**
+>
+> **-- segundo, en relación al compromiso ascético, al trabajo con los
+> medios ascéticos propios del Movimiento: Ideal Personal, Examen
+> Particular, Horario Espiritual controlado por escrito, y cuenta
+> mensual, en lo posible, a un confesor estable;**
+>
+> **-- tercero, en relación a lo comunitario, se comprometen a la
+> participación en las actividades que organiza la Rama con carácter
+> oficial (la participación en un grupo estrecho de vida es libre).**
+
+**96. ¿Cuáles son los compromisos de los "colaboradores" de la Liga?**
+
+Se comprometen,
+
+> -- primero, en relación al apostolado, a un apostolado ocasional;
+>
+> -- segundo, en relación a lo ascético, se les ofrecen los medios
+> propios de Schoenstatt, pero no se les pide un compromiso expreso al
+> respecto, y,
+>
+> -- tercero, en el plano comunitario, la Rama organiza encuentros,
+> retiros, etc. para los colaboradores, a los cuales se les invita.
+
+**97. ¿Qué son las "Federaciones Apostólicas"?**
+
+Son comunidades que aspiran al más alto grado de santidad en virtud de
+un esfuerzo libre y magnánimo. Se comprometen:
+
+> -- primero, en relación al apostolado, a mantener un espíritu
+> apostólico permanente y universal, a nivel de dirigentes. Para las
+> Federaciones, como estructura, este apostolado se extiende a todos los
+> ambientes.
+>
+> -- segundo, en lo ascético, es el mismo del militante de la Liga; lo
+> único que se agrega es el compromiso de informar al responsable de la
+> comunidad oficial si se ha dado la cuenta de conciencia mensual al
+> confesor (estrictamente este compromiso es expresión del vínculo
+> comunitario).
+>
+> -- En tercer lugar, el compromiso comunitario consiste en la
+> pertenencia a una doble comunidad: a la comunidad libre (el curso), y
+> a la comunidad oficial.
+
+Existe la Federación Apostólica de Sacerdotes Diocesanos, la Federación
+Apostólica de Familias, la Federación Apostólica de Madres, la
+Federación Apostólica de Mujeres (solteras) y la Federación Apostólica
+de Hombres.
+
+**98. ¿Qué Institutos Seculares existen en Schoenstatt?**
+
+Los Institutos Seculares son comunidades de vida consagrada, es decir,
+que se han comprometido a una entrega a Dios en el espíritu de los
+Consejos Evangélicos (de castidad, pobreza y obediencia) de acuerdo a su
+estado de vida (virginal o matrimonial). POseen un carácter marcadamente
+secular, es decir, realizan su ideal de entrega a Dios en medio del
+mundo.
+
+En Schoenstatt existen el Instituto Secular de los Padres de
+Schoenstatt; el Instituto Secular de los Sacerdotes Diocesanos de
+Schoenstatt; el Instituto Secular de los Hermanos de María; el Instituto
+Secular de las Hermanas de María; el Instituto de Nuestra Señora de
+Schoenstatt, y el Instituto Secular de Familias. (Este último aún no ha
+sido aprobado oficialmente por la Iglesia).
+
+**Los compromisos de los Institutos poseen un carácter de vínculo
+jurídico, que están regulados de acuerdo a las constituciones propias de
+cada Instituto.**
+
+**99. ¿Cómo se organiza la juventud en Schoenstatt?**
+
+Existen las ramas de Juventud Masculina y Femenina organizadas por
+separado. La Juventud Masculina comprende la Juventud Universitaria, la
+Juventud Mayor (jóvenes que, a partir de la enseñanza secundaria han
+asumido una actividad laboral a tiempo completo) y la Juventud
+Secundaria. Esta última se divide en tres etapas según la edad:
+Escuderos (8 a 10 años), Cruzados (11 a 13 años) y Pioneros (13 a 17
+años). Esta división y nominación no es igual en todos los paises.
+
+La Juventud Femenina comprende la Juventud Universitaria, la Juventud
+Mayor y la Juventud Secundaria que se divide en dos etapas: Apóstoles de
+María (10 a 14 años) y Secundarias (14 a 18 años). Esta división y
+nominación no es igual en todos los paises.
+
+Organizativamente, las ramas de juventud se asimilan al nivel de la Liga
+Apostólica, aunque tienen sus formas propias de vida apostólica,
+comunitaria y ascética que no se ajustan totalmente a ésta. Por su misma
+naturaleza las ramas juveniles se consideran etapas en transición.
+
+**100. ¿Qué es la "Central de Asesores" del Movimiento?**
+
+La Central de Asesores del Movimiento está formada fundamentalmente por
+miembros de los Institutos que han sido nombrados y puestos a
+disposisión para la animación de las ramas del Movimiento y del
+Movimiento Popular y de Peregrinos. Desde el punto de vista jurídico no
+posee atribuciones, sino su encargo se orienta al cultivo del espíritu,
+asesoría pedagógica, y, en general, a velar por su servicio que el
+Movimiento encarne el auténtico espíritu del Fundador y se capacite de
+este modo a servir a la Iglesia y ser levadura de un nuevo orden
+cristiano de la sociedad. A la cabeza del cuerpo de asesores está el
+"Director del Movimiento", que es un sacerdote schoenstattiano
+nombrado por el "Consejo Nacional de Familia".
+
+**101. ¿Qué es el "Consejo Nacional de Familia"?**
+
+El Consejo Nacional de Familia es el órgano máximo de coordinación de
+toda la Familia de Schoenstatt a nivel nacional. Es la instancia regular
+de coordinaión de todas las agrupaciones que pertenecen a la Familia y
+tiene, por eso, la responsabilidad por los asuntos comunes a nivel
+nacional. Al Consejo corresponde la representación oficial de
+Schoenstatt.
+
+En el Consejo Nacional de Familia participan los Superiores nacionales
+de los diversos Institutos Seculares, los Jefes nacionales de las
+Federaciones Apostólicas, además del Director del Movimiento, quien
+representa a las Ramas de la Liga Apostólica y a los Peregrinos.
+Normalmente es presidido por el Superior Regional del Instituto de los
+Padres de Schoenstatt.
+
+**102. ¿Qué es la "Dirección Diocesana" del Movimiento?**
+
+La Dirección Diocesana del Movimiento, presidida normalmente por un
+Director Diocesano, es la entidad que tiene la responsabilidad inmediata
+por las Ramas de la Liga Apostólica y por el Movimiento Popular y de
+Peregrinos en una diócesis.
+
+Ella promueve el intercambio entre las diferentes comunidades del
+Movimiento en ese lugar y orienta la estrategia apostólica de éste
+asumiendo las líneas pastorales de la Iglesia diocesana. En unión con
+los asesores, la Dirección diocesana vela por el espíritu apostólico, la
+interioridad de vida y la cohesión comunitaria del Movimiento en una
+diócesis.
+
+Cuando alguna iniciativa compromete de manera especial al conjunto de la
+Familia de Schoenstatt, la Dirección Diocesana debe consultar al Consejo
+Nacional de Familia. Esto vale especialmente para el caso en que el
+Movimiento de una diócesis considere que ya se ha alcanzado la madurez
+necesaria para construir un Santuario de Schoenstatt.
+
+**103. ¿Quién es el "Director Diocesano" del Movimiento?**
+
+El Director Diocesano del Movimiento es la persona que preside la
+Dirección Diocesana del Movimiento en una diócesis. Representa al Obispo
+diocesano y sus orientaciones ante las Ramas de la Liga Apostólica y el
+Movimiento Popular y de Peregrinos. A su vez, hace presente ante el
+Obispo las inquietudes y necesidades del Movimiento y le informa
+regularmente acerca de su desarrollo.
+
+El puesto de Director Diocesano del Movimiento debe ocuparlo un
+sacerdote schoenstattiano que reside en esa diócesis. En su nombramiento
+intervienen necesariamente el Obispo diocesano y el Consejo Nacional de
+Familia. Habiendo hecho las consultas pertinentes, el Consejo Nacional
+de Familia lo designa y el Obispo diocesano lo nombra en el cargo (que
+tiene una duración de tres años renovables).
+
+Como cabeza del Movimiento en la diócesis tiene diversas funciones en
+relación a su dirección y animación. Especialmente importante es, por
+ejemplo, que él confirma (previa consulta a los asesores) a los jefes de
+Rama que cada Rama diocesana elige.
+
+**104. ¿Quién es el "Coordinador Diocesano" del Movimiento?**
+
+El Coordinador Diocesano es quien preside la Dirección Diocesana en
+ausencia del Director Diocesano o cuando éste aún no ha sido nombrado en
+una diócesis. Hace de nexo con el Obispo diocesano y dirige las
+actividades comunes. Los Coordinadores diocesanos pueden ser sacerdotes
+o laicos, y son nombrados por el Consejo Nacional de Familia a
+instancias del Movimiento de cada lugar.
+
+Tanto los directores y los coordinadores diocesanos, como todos los
+jefes y miembros del Movimiento, tienen un contacto permanente con los
+Asesores.
+
+**105. ¿Qué es el "Consejo o Presidencia internacional de
+Schoenstatt"?**
+
+**Es el gremio que reúne a todos los superiores de los Institutos
+Seculares de Schoenstatt; a los Directores Generales de los Institutos
+femeninos, y a los jefes de las Federaciones internacionalmente
+constituidas. Actualmente representa en éste a la Liga el Director de la
+Central de asesores de Alemania en nombre de los Directores de las
+Centrales nacionales. Este gremio es de carácter federativo y no posee
+un poder jurídico respecto a la Obra de Schoenstatt.**
+
+**106. ¿Qué diferencia existe entre "Familia de Schoenstatt" y
+"Movimiento de Schoenstatt"?**
+
+Ambas expresiones se usan muchas veces como sinónimos. Estrictamente,
+"Familia de Schoenstatt" designa a los Institutos y Federaciones.
+"Movimiento de Schoenstatt" designa a los Peregrinos y a las Ligas
+Apostólicas (Ramas del Movimiento).
+
+**107. ¿En cuántos continentes está Schoenstatt?**
+
+Schoenstatt está presente en todos los continentes.
+
+**108. ¿En qué paises de Europa está más difundido?**
+
+**Schoenstatt está mayormente difundido en Alemania, Austria, España,
+Inglaterra, y Portugal.**
+
+**109. ¿En qué paises de América Latina se ha difundido mayormente?**
+
+**En Argentina, Brasil, Bolivia, Chile, Colombia, Ecuador, México,
+Paraguay, Perú, Puerto Rico, República Dominicana y Uruguay.**
+
+**8. Preguntas sobre la historia de Schoenstatt**
+
+**110. ¿Dónde está el lugar de Schoenstatt?**
+
+En la región llamada Renania, en el centro de Alemania, donde el Rin y
+el Mosela se juntan, se encuentra la ciudad de Coblenza. Seis kilómetros
+más abajo de ésta, a la orilla derecha del Rin, está la pequeña ciudad
+de Vallendar. Allí se abre la zona boscosa llamada Westerwald (nombre de
+una cadena de cerros) formando un pequeño y muy cortado valle. Un
+kilómetro hacia adentro de este valle está el lugar llamado Schoenstatt.
+
+**111. ¿Cómo se llegó al nombre de Schoenstatt?**
+
+En un acta del año 1143 aparece por primera vez la designación de este
+lugar como "eine Schöne statt", que significa "lugar hermoso". Este
+nombre lo inspiró, seguramente, la belleza del paisaje. Ya en aquel
+entonces, este lugar estaba bajo la especial protección de la Santísima
+Virgen. En un antiguo sello o cuño románico, de fines del siglo XII,
+aparece la Santísima Virgen en el trono; en su mano izquierda sostiene
+al Niño y en su derecha, una vara de lirios. Una leyenda en latín sobre
+el sello, dice: Sigilum sanctae Mariae in Vallindere (sello de la
+Santísima María en Vallindere) .
+
+**112. ¿Qué se entiende por "antiguo Schoenstatt"?**
+
+Con la expresión "antiguo Schoenstatt" se designa un período de la
+historia de este lugar, que se extiende por aproximadamente cuatro
+siglos. Allí se desarrolló una floreciente vida religiosa desde mediados
+del siglo XII a la mitad del siglo XVI. Testigo de la vida existente en
+aquel tiempo es la antigua torre románica en el valle de Schoenstatt, en
+las cercanías del Santuario.
+
+**113. ¿Cómo era el antiguo Schoenstatt originalmente?**
+
+En el año 1143, se consagró a Nuestra Señora de Schoenstatt una basílica
+y un convento para la comunidad de las Monjas Agustinas que provenían
+del cercano lugar de Lonnig. Durante la Guerra de los Treinta Años,
+tanto la basílica como el convento fueron destruidos por los suecos. Hoy
+todavía podemos contemplar la torre norte, testigo de aquel esplendoroso
+tiempo. La torre gemela, la torre sur, se derrumbó en 1932, cuando se
+realizaban en ella trabajos de reparación.
+
+En la Edad Media floreció una fuerte vida religiosa en el convento del
+antiguo Schoenstatt. Incluso, en 1226, el arzobispo Teodorico llegó a
+determinar que no se podía aceptar a más de cien monjas, puesto que no
+había lugar para todas ellas en dicho convento.
+
+Las monjas agustinas vivían en ese convento, muy cerca de la basílica.
+La así llamada Casa Antigua en Schoenstatt, está construida sobre los
+fundamentos de aquel convento.
+
+Frente a él, estaba el cementerio donde había una pequeña capilla. Por
+primera vez se hace mención de ella en un acta del año 1319. Seguramente
+fue destruida por los suecos en 1633. En 1681 fue reconstruida en su
+forma actual sobre los antiguos fundamentos.
+
+**114. ¿Cómo se derrumbó el antiguo Schoenstatt?**
+
+*a) Por razones externas:*
+
+> -- Las guerras destrozaron la Iglesia y los otros edificios de ese
+> lugar.
+>
+> -- La reforma protestante hizo otro tanto.
+
+*b) Por razones internas:*
+
+La disciplina conventual y la administración llegaron a un gran
+desorden, de modo que la vida monástica fue cayendo bajo la influencia
+colectiva del espíritu mundano. En 1434 el convento fue sancionado por
+dos años. Un florecimiento momentáneo hizo que se levantara la sanción
+durante un corto tiempo. A mediados del siglo XVI, las últimas monjas
+fueron trasladadas desde Schoenstatt a Coblenza. Los edificios quedaron
+vacíos y desolados.
+
+Después de la partida de las últimas monjas el convento pasó a propiedad
+de los príncipes del lugar. Posteriormente cambió repetidas veces de
+propietario y, consecuentemente, el uso que se hacía de él también fue
+cambiando. En ocasiones, los edificios sirvieron a las labores
+agrícolas, en otras a actividades fabriles, etc. En el siglo pasado, las
+así llamadas "Hermanas Grises" (Grauen Schwestern), trataron de erigir
+un pensionado en Schoenstatt. Pero fueron alejadas de allí por el
+Kulturkampf (El Kulturkampf fue la política que reinó bajo Guillermo I,
+siendo canciller Bismarck que, con el pretexto de luchar por una cultura
+propia en Alemania, combatía toda influencia del catolicismo con medidas
+tales como la prohibición de fundar órdenes religiosas). Luego los
+edificios pasaron nuevamente a ser propiedad privada (familia
+Dorsemagen).
+
+**115. ¿Cuándo surgió el "nuevo Schoenstatt"?**
+
+En 1901 la Sociedad del Apostolado Católico, los Padres Palotinos,
+adquirieron el antiguo convento. De este modo, Schoenstatt se convirtió
+nuevamente en un centro de vida religiosa. Con el correr de los años se
+fueron adquiriendo otros edificios del lugar y edificándose nuevos, ya
+que los antiguos no satisfacían las necesidades de los Padres Palotinos.
+
+**116. ¿Qué aspecto muestra Schoenstatt en la actualidad?**
+
+Schoenstatt, actualmente, es sede internacional de las diversas
+comunidades que lo componen. Estas se han instalado en las colinas que
+lo conforman y en el valle. Así, por ejemplo, los Padres de Schoenstatt
+están en el "Monte Sión"; el Instituto de Sacerdotes Diocesanos en el
+"Monte Moria"; los Hermanos de María, en el "Monte de María"; el
+Instituto de Nuestra Señora de Schoenstatt, en el "Monte Regina"; las
+Hermanas de María, en el "Monte de Schoenstatt"; la Federación de
+Mujeres, en la "Casa Mariengart"; la Federación de Sacerdotes en el
+"Marienau". Existen también casas para los Peregrinos, las juventudes,
+las Comunidades Femeninas en "Marienland"; la Obra de Familias, en el
+"Hogar de las Familias". La mayoría de estos centros posee un
+Santuario propio de su comunidad. Así, Schoenstatt ha llegado a ser una
+pequeña ciudad cuyo centro es el Santuario original (ver plano adjunto)
+
+**117. ¿Cuál es la prehistoria del Movimiento de Schoenstatt?**
+
+El desarrollo histórico de Schoenstatt está íntimamente ligado a la
+historia de su Fundador, el P. Kentenich.
+
+El período que va desde 1885, año del nacimiento del P. Kentenich, a
+1914, es considerado como la prehistoria del Movimiento de Schoenstatt,
+durante el cual suceden los siguientes acontecimientos:
+
+-- El P. José Kentenich nace el 18 de noviembre de l885, en Gymnich, al
+sur de Colonia, Alemania. Tuvo una infancia difícil; cuando no tenía aún
+nueve años de edad, su madre, imposibilitada de atender bien a su hijo,
+lo lleva a un orfanato.
+
+-- Al ingresar allí, su madre lo consagra al cuidado maternal de la
+Santísima Virgen, ante una estatua de Nuestra Señora de Pompeya. Esta
+consagración marcará decisivamente su historia personal y la del
+Movimiento de Schoenstatt. Ella encierra germinalmente toda la
+espiritualidad de su Obra.
+
+-- En 1904 ingresa al Seminario de los Padres Pallottinos, y el 8 de
+julio de l910 es ordenado sacerdote. En octubre de l912 es nombrado
+Director Espiritual de los estudiantes en la nueva casa que se acababa
+de construir en Schoenstatt.
+
+**118. ¿Qué se entiende por "Acta de Prefundación"?**
+
+El 27 de octubre de l912 el P. Kentenich propone a sus alumnos un
+programa de autoeducación. Programa que más tarde se considerará como el
+"Acta de Prefundación" del Movimiento de Schoenstatt. El programa que
+presenta a los jóvenes en esa ocasión dice así: "Bajo la protección de
+María queremos autoeducarnos como personalidades sólidas, libres y
+sacerdotales".
+
+**119. ¿Cuándo se fundó la Congregación Mariana?**
+
+El 19 de abril de 1914 el P. Kentenich funda con los jóvenes estudiantes
+una Congregación Mariana, de la cual, poco después, nacerá el Movimiento
+de Schoenstatt. El 8 de julio del mismo año se pone a disposición de la
+Congregación Mariana la antigua capillita del cementerio de Schoenstatt,
+dedicada a San Miguel.
+
+**120. ¿Cuándo se inicia propiamente la historia de Schoenstatt como
+Movimiento?**
+
+Se inicia el 18 de Octubre de 1914, fecha que constituye el primer hito
+de su historia.
+
+**121. ¿Cuáles son los hitos de la historia de Schoenstatt?**
+
+La historia de Schoenstatt está jalonada por momentos cumbres que
+señalan una especial intervención de Dios tanto en su naciminto como en
+su desarrollo. A esta intervención de Dios --o "irrupción de lo divino
+en lo humano"-- corresponde una respuesta y compromiso de parte del
+hombre, en nuestro caso, del Fundador y de la Familia.
+
+El P. Kentenich señaló cuatro hitos fundamentales de la historia de
+Schoenstatt, que se relacionan con determinadas fechas, a saber:
+
+> • Primer hito: el 18 de Octubre de 1914.
+>
+> • Segundo hito: el 20 de Enero de 1942, y su entorno.
+>
+> • Tercer hito: el 31 de Mayo de l949.
+>
+> • Cuarto hito: el 22 de Octubre de 1965 y otras fechas relacionadas
+> con ésta.
+
+**122. ¿Cuál es el primer hito de la "historia de Schoenstatt"?**
+
+Hablamos de *"historia de Schoenstatt"* para referirnos al período que
+se inicia con 1914.
+
+El primer hito, o punto crucial, de la historia de Schoenstatt lo
+constituye el 18 de Octubre de 1914. Se lo titula: "En la luz divina"
+(aludiendo con ello a que fue un paso dado en la fe)
+
+El 18 de octubre de l914 marca el comienzo de la historia de
+Schoenstatt. Ese día, el P. Kentenich da una plática a la Congregación
+Mariana en la cual propone a los jóvenes un plan osado: inducir a la
+Santísima Virgen, a través de las "contribuciones al Capital de
+Gracias" (es decir, ofreciéndole todo su esfuerzo y entrega, su amor
+demostrado en obras), para que ella se establezca espiritualmente en la
+capilla, que hasta entonces servía a los jóvenes como lugar de reunión,
+y que los transformase interiormente para usarlos como instrumentos
+suyos e iniciar con ellos, desde allí, un Movimiento de renovación.
+
+**123 ¿Qué se entiende por "Primera Acta de Fundación"?**
+
+La plática dada el 18 de Octubre de l914 es considerada como la Primera
+Acta de Fundación. Ella contiene el texto de la Alianza de Amor sellada
+por el P. Kentenich y los jóvenes con la Santísima Virgen, en la pequeña
+capillita de Schoenstatt la que, por esta Alianza, llegó a ser el
+Santuario de Schoenstatt.
+
+**124. ¿Qué se entiende por "Paralelo Ingolstadt-Schoenstatt"?**
+
+En el año 1595, el P. Jakob Rem había organizado el llamado "Coloquium
+Marianum". Se trataba de una elite dentro de la Congregación Mariana de
+Ingolstadt.. Esta llegó a un florecimiento tal que contribuyó
+notablemente a la renovación de la vida de la Iglesia en la Alemania
+meridional El P. Kentenich fijó su atención en la labor del P. Rem y su
+"Colloquium" y planteó un desafío a los congregantes en Schoenstatt:
+"¿Qué pasaría si el Ingolstadt de la Edad Media se transformara en un
+Vallendar de la Edad Contemporánea?(...)Vallendar debe llegar a ser
+realmente un segundo Ingolstadt (...). Nuestra capillita tiene que ser,
+a imagen de Ingolstadt, el punto de partida Bajo esa consigna se
+expresaba la misión del naciente Schoenstatt. Este debía significar para
+la renovación religioso-moral del mundo algo semejante a la renovación
+de la Alemania meridional lograda por el florecimiento de la
+Congregación Mariana de Ingolstadt en la época de la contrarreforma.
+
+**125. ¿Quiénes fueron llamados "congregantes-héroes?**
+
+A partir de 1915 muchos miembros de la Congregación Mariana de
+Schoenstatt partieron al campo de batalla. La pequeña Familia de
+Schoenstatt se extendió y proliferó consideráblemente durante la guerra
+y fue bendecida con la entrega heroica de la vida de sus primeros
+congregantes. Los que entregaron su vida por Schoenstatt son conocidos
+como "Congregantes Héroes", por ejemplo, José Engling, Hans Wormer,
+Max Brunner y otros.
+
+**126. ¿Qué se entiende por "Cruces Negras" en Schoenstatt?**
+
+Por "cruces negras" se designa a aquellos Congregantes que cayeron en
+la primera guerra mundial y ofrecieron heroicamente su vida por
+Schoenstatt, los así llamados "Congregantes héroes". La expresión
+"cruz negra" proviene de las cruces de los cementerios en que se les
+sepultaba.
+
+**127. ¿Cuándo incorpora a Schoenstatt el Padre Kentenich la Idea
+original de Vicente Pallotti?**
+
+**A la idea del paralelo Ingolstadt-Schoenstatt añadió el P. Kentenich
+en 1916 un complemento significativo, a saber, la idea de la
+"Confederación Apostólica Universal", que procedía de San Vicente
+Pallotti, fundador de los Padres Palotinos. Con ello se determina una de
+las tres finalidades de Schoenstatt: la de ser alma de dicha
+Confederación.**
+
+**128. ¿Cómo crece el Movimiento de Schoenstatt entre 1919 y 1928?**
+
+Al término de la primera guerra mundial el Movimiento de Schoenstatt
+crece progresivamente tanto en profundidad -viviéndose en él cada vez
+más intensamente la Alianza de Amor--, como en extensión. Fueron
+fundadas nuevas ramas, tanto de laicos (hombres y mujeres), como de
+sacerdotes y religiosas.
+
+Hechos principales de este período son:
+
+a\. La fundación de la "Federación Apostólica de Schoenstatt"
+
+El 20 de agosto de l919, en Hörde, se realiza un congreso de los
+congregantes de Schoenstatt tanto de los que pertenecían a los Palotinos
+como los que ingresaron durante la guerra: los de la "Congregación
+Mariana externa", y se funda la Federación Apostólica, constituyéndose
+así oficialmente el Movimiento Apostólico de Schoenstatt.
+
+b\. La fundación de la "Liga Apostólica"
+
+En 1920, se funda la Comunidad Apostólica del Movimiento y se admite el
+ingreso de las primeras mujeres a la Federación Apostólica.
+
+c\. La fundación del Instituto Secular de las Hermanas de María
+
+En 1926, se funda el Instituto Secular de las Hermanas de María.
+
+**129. ¿Qué sucedió entre 1929 y 1934?**
+
+El crecimiento externo del Movimiento de Schoenstatt exigió reconquistar
+el espíritu original y heroico del primer tiempo. Se dio una fuerte
+corriente de vida en torno a la Alianza y Schoenstatt salió a la
+publicidad. En ese tiempo de crecimiento se dieron los siguientes
+momentos culminantes que confirmaron la trascendencia de la misión de
+Schoenstatt:
+
+a\. En 1929 el P. Kentenich en una plática pronuncia una osada frase: "A
+la sombra del Santuario se codecidirán esencialmente los destinos de la
+Iglesia para Alemania y más allá aún, en los próximos siglos".
+
+b\. En 1933, el nacional socialismo asume el poder en Alemania. La
+Familia de Schoenstatt deberá prepararse para afrontar las grandes
+dificultades que se avecinan.
+
+c\. En 1934 se forma la generación de las "Cruces Negras" por la
+juventud masculina de la época. Su nombre es tomado en relación a las
+cruces negras de los cementerios de los soldados alemanes caídos en la
+primera guerra mundial. Ellos traen a Schoenstatt los restos de Hans
+Wormer y Max Brunner. Movidos por seguir su ejemplo, y, especialmente,
+por el ejemplo de José Engling, formulan el lema:"¡Guardamos su
+herencia!"
+
+**130. ¿Cómo siguió el desarrollo histórico entre 1935 y 1939?**
+
+En una época de grandes dificultades y de la persecución nazi,
+Schoenstatt deberá crecer más aún en profundidad. La Familia se decide a
+dar un nuevo paso en la Alianza y a entregarse a María en forma más
+radical y heroica. Es una etapa decisiva en la historia de Schoenstatt
+
+Los hechos más relevantes durante estos años son:
+
+a\. En abril de l939, la Gestapo requisa la Casa de Estudios en
+Schoenstatt y la usa como escuela para profesores nazis.
+
+b\. En 1939, de las filas de los jóvenes nace la Generación de la
+"Primavera Sagrada".
+
+c\. Ante el peligro que corre el Santuario de Schoenstatt de ser también
+requisado por la Gestapo, las Hermanas de María forman una cadena viva
+en torno a él ofreciendo su vida si fuera necesario, por defenderlo.
+
+d\. Estalla la Segunda Guerra Mundial.
+
+e\. En la Familia de Schoenstatt nace una corriente de una entrega más
+radical y heroica en las manos de María por el Poder en Blanco. El 18 de
+octubre de l939, la Familia hace su entrega de Poder en Blanco a la
+Santísma Virgen. Asimismo, se despierta una corriente de coronación: se
+reconoce a la Mater en su soberanía sobre Schoenstatt. Ella tiene que
+tomar el cetro y guiar la barca de la Familia en medio de la nueva
+crisis mundial.
+
+**131. ¿Cuál es la "Segunda Acta de Fundación"?**
+
+El 18 de octubre de 1939 el P. Kentenich, que se encontraba en Suiza,
+envía a la Familia en Schoenstatt las "Palabras de Ocasión", para
+conmemorar los 25 años de la Primera Acta de Fundación. Este documento
+es conocido como la *Segunda Acta de Fundación*. Es un texto de acción
+de gracias y de renovación del compromiso contraido por la Alianza de
+Amor con María. Destaca todo lo que ha hecho la Sma. Virgen en y con
+Schoenstatt: "Ella se ha mostrado como la Madre tres veces
+admirablemente bondadosa, admirable y fiel".
+
+En este escrito recalca el Padre Kentenich la necesidad de cultivar con
+esmero la conciencia de la misión y de ser instrumentos en manos de
+María; la necesidad de mantener inquebrantablemente el sello mariano de
+nuestras vidas, y, la necesidad de poner en primer plano las
+contribuciones al Capital de Gracias.
+
+**132. ¿Cómo se dio el desarrollo histórico entre 1940 y 1945?**
+
+a\. En septiembre de l941 la Gestapo detiene al P. Kentenich mientras
+predica un retiro para sacerdotes en Schoenstatt. El Padre consigue
+posponer su arresto hasta concluir el retiro. Se presenta en el cuartel
+de la Gestapo de Coblenza el 20 de septiembre. Allí debe permanecer en
+el "Bunker" durante un mes.
+
+b\. El 24 y 25 de diciembre de l941, nace la corriente del "Jardín de
+Maria" .
+
+**133. ¿Qué es el Jardín de María?**
+
+a\. El hecho histórico:
+
+En 1941 el P. Kentenich es llevado a la cárcel de Coblenza por la
+Gestapo. El 23 de diciembre de ese mismo año, en vísperas de la Navidad,
+la Hermana Mariengard, perteneciente a la Comunidad de las Hermanas de
+María del Hospital de San José de Coblenza, tuvo la inspiración de
+escribir una carta al Niño Jesús pidiendo el milagro de liberar al Padre
+de la cárcel. Esta carta, que expresaba un gran cariño y ternura filial
+hacia el Padre, fue entregada a la Hermana Superiora quien la hizo
+llegar al Padre en la cárcel. El Padre la contestó, haciendo un juego de
+palabras entre Mariengard (el nombre de la Hermana) y Mariengarten
+(Jardín de María), diciéndole: "Cumpliré tu deseo cuando tu corazón y
+el corazón de toda nuestra Familia se haya convertido en un floreciente
+Jardín de María".
+
+Las Hermanas asumen la invitación del Padre a esforzarse por ser un
+floreciente Jardín de María y se despliega un increíble esfuerzo por la
+santidad, para obtener así la liberación del Padre. De este modo se
+establece un entrelazamiento de destinos, una comunidad de corazones, de
+misión y de tarea entre el Padre y las Hermanas. Nace una profunda
+corriente de solidaridad que más tarde será asumida por toda la Familia
+de Schoenstatt.
+
+Posteriormente, el Padre definirá el Jardín de María diciendo: "El
+Jardín de María está formado por pequeñas Marías que se han conformado
+en Cristo, que son portadoras de Cristo y que dan a luz a Cristo en el
+mundo, y que, con Cristo y en Cristo, giran en torno a Dios Padre".
+
+b\. Su significado
+
+En la corriente de vida del Jardín de María se hace patente la realidad
+de la "nueva comunidad" que persigue encarnar Schoenstatt como
+respuesta a nuestro tiempo, un tiempo donde reina el individualismo, la
+masificación y el secularismo materialista.
+
+En el Jardín de María se pone de manifiesto un tipo de aspiración a la
+santidad en el cual el amor y solidaridad humanos están íntimamente
+ligados al amor y solidaridad en el plano sobrenatural. El espíritu de
+la nueva comunidad --el estar el uno "en,para y con" el otro-- es
+vivido intensamente.
+
+Por otra parte, el Jardín de María ejemplariza la realidad de la
+redención por y en la cruz: nos dice que no hay purificación y elevación
+de la naturaleza, no hay fecundidad verdadera "si la semilla no cae en
+la tierra y muere"; que nuestra vida debe consistir en la plena y
+heroica entrega filial al Padre Dios en Cristo Jesús.
+
+Otro aspecto esencial que se vive profundamente en el Jardín de María es
+la solidaridad de destinos de la Familia respecto al Fundador. El 20 de
+Enero de 1942 llevará en este sentido a su máxima expresión toda la vida
+en torno al Jardín de María.
+
+**134. ¿Cuál es el segundo hito de la historia de Schoenstatt?**
+
+El segundo hito de la historia de Schoenstatt gira en torno al 20 de
+enero de 1942. Tiene como título: "En la confianza divina".
+
+El P. Kentenich renuncia, voluntariamente y por amor a los suyos, a las
+posibilidades de liberación que se le ofrecía y prefirió ser llevado al
+campo de concentración de Dachau. Cree que ésta es la voluntad de Dios:
+ofrecer su libertad exterior para conquistar la libertad interior de los
+hijos de Schoenstatt. Con este paso que da, llama a la Familia a
+profundizar la Alianza de Amor en el sentido de la Inscriptio, es decir,
+del amor a la cruz, para alcanzar así la verdadera libertad de quien se
+sabe hijo de Dios. Este paso debía también convencer definitivamente a
+la Familia que la Santísima Virgen era la dueña de la Obra y que Ella no
+la iba a abandonar. El 20 de Enero de 1942 fue el día clave en que, en
+la práctica, se decidía la partida del Padre al campo de concentración.
+Esa fecha y todo lo que, a partir de ella, se desencadenó para el Padre
+y la Familia, marca profundamente la historia de Schoenstatt.
+
+En el mes de marzo el Padre es trasladado desde la prisión de Coblenza
+al campo de concentración de Dachau, situado al norte de München.
+Durante todo el tiempo de Dachau, se toma mayor conciencia de la
+posición del Padre como Fundador y Cabeza de la Familia y del
+indisoluble entrelazamiento de destinos entre él y los suyos. Esto
+condujo a una extraordinaria conciencia de unidad entre el Padre y la
+Familia, y a una profunda convicción del carácter marcadamente
+sobrenatural de Schoenstatt como obra e instrumento e Dios.
+
+**135. ¿Cuál es la relación entre el Jardín de María y el 20 de Enero?**
+
+La relación entre estas fechas y hechos tiene un sentido profundo y no
+se las puede separar.
+
+La corriente del Jardín de María, que nace en la Navidad de 1941 (\>
+134) es fundamental para lo que se desencadenará posteriormente, a
+partir del 20 de Enero de 1942. El Jardín de María significó una
+corriente de amor natural y sobrenatural entre el Fundador y su Familia,
+un mutuo entrelazamiento y solidaridad de destinos, lo cual se
+desarrollará con más intensidad a partir del 20 de Enero de 1942 y se
+profundizará durante todo el tiempo de Dachau. Este entrelazamiento y
+solidaridad se expresó en la
+
+mutua responsabilidad del uno por el otro, en el esfuerzo por ganar la
+santidad de uno por la del otro, por obtener la libertad interior de uno
+por la libertad exterior del otro.
+
+Más tarde, esta experiencia vital de mutuo amor natural y sobrenatural,
+de entrelazamiento y solidaridad de destinos entre Padre y su Familia,
+será cuestionada y desencadenará la visitación canónica a Schoenstatt.
+El P. Kentenich respondiendo a las observaciones que se hacía en este
+aspecto, escribe la "Epistola perlonga", cuya primera parte entregó el
+31 de Mayo de 1949.
+
+**136. ¿Cómo fue la actividad del P. Kentenich en Dachau?**
+
+En medio del infierno de Dachau, el P. Kentenich desarrolla una intensa
+actividad dirigiendo espiritualmente a muchos compañeros de cautiverio,
+dando pláticas y retiros. Escribe, además, una abundante literatura
+ascética y espiritual. Funda el Instituto de los Hermanos de María, el
+Instituto de Familias y la Internacional de Schoenstatt.
+
+**137. ¿Cuál es la Tercera Acta de Fundación?**
+
+**En 1944 el P. Kentenich pronuncia en Dachau las pláticas que son
+llamadas Tercera Acta de Fundación. (la primera, el 24 se septiembre; la
+segunda el 18 de octubre y la tercera, el 8 de diciembre de ese mismo
+año).**
+
+Las tres pláticas en su conjunto presentan en forma detallada las
+actitudes básicas con que se ha de dar el paso hacia el Schoenstatt
+Internacional, a saber: el espíritu de fundadores, el espíritu de
+comunidad, el espíritu de jefes y el espíritu de instrumentos. Todo lo
+cual tiene su fundamento en un amor que lleva a la entrega absoluta y
+total del hombre entero, a lo largo de toda la vida, a la realización de
+los planes salvíficos de Dios sobre el universo.
+
+**138. ¿Cuándo se bendice el primer Santuario filial?**
+
+El 18 de octubre de l943, mientras el Padre está en el campo de
+concentración, se construye el primer Santuario filial, igual al
+Santuario original de Schoenstatt, en Nueva Helvecia, Uruguay.
+
+**139. ¿Cuándo regresa el P. Kentenich a Schoenstatt?**
+
+El 25 de marzo de l945 las tropas norteamericanas ocupan Schoenstatt y,
+el 6 de abril de este mismo año, es liberado el Padre en Dachau. Regresa
+a Schoenstatt en mayo. Así se realiza el "Milagro de la Noche Buena",
+por el cual había pedido la Familia durante todo este tiempo.
+
+**140.¿Qué ocurre en Schoenstatt después de 1945?**
+
+Es el tiempo de los viajes del P. Kentenich al extranjero. Después de su
+liberación de Dachau el P. Kentenich empieza a viajar al extranjero,
+convencido de que la Santísima Virgen quería glorificarse en todo el
+mundo a partir del Santuario.
+
+Entre los años 1947 y 1951 viaja a Africa, a Norteamérica, a Brasil,
+Uruguay, Argentina y Chile. En todos los lugares visita las casas de los
+Padres Palotinos y de las Hermanas de María y consolida el Movimiento
+incipiente, persuadido, como estaba, de la importancia de educar el
+hombre nuevo que la Iglesia necesita en los tiempos actuales.
+
+Durante estos años, se reorganiza la rama de Sacerdotes Diocesanos de
+Schoenstatt; la Federación Apostólica de Sacerdotes se constituye como
+rama independiente y pasa a ser instituto (18.10.1945). Sobre las normas
+de derecho privado, se erigió el Instituto de Sacerdotes Diocesanos de
+Schoenstatt. En 1946, se funda el Instituto Secular de Nuestra Señora de
+Schoenstatt.
+
+En marzo de 1947 se concede al Padre una audiencia privada con el Papa
+Pío XII. En ella se habló sobre el documento papal "Provida Mater
+Ecclesia", donde se establecían las bases canónicas para los Institutos
+Seculares, que era lo que el P. Kentenich había soñado para los
+Institutos fundados por él. A continuación viaja por primera vez a
+Sudamérica.
+
+En 1948 el Padre viaja nuevamente a Sudamérica y el 11 de abril de este
+año bendice el Santuario filial en Santa María, Brasil. Durante todos
+estos años se profundiza en las diversas ramas de la Familia la
+"corriente de seguimiento", prometiéndole un seguimiento filial al
+Padre como Fundador y Cabeza de la Familia. El 20 de mayo de 1949
+bendice el Santuario filial de Bellavista.
+
+**141. ¿Cuál es el "tercer hito" de la historia de Schoenstatt?**
+
+El tecer hito de la historia de Schoenstatt se sitúa en el 31 de mayo de
+1949. Tiene como título: "En la fuerza divina"
+
+El Padre Fundador deseaba que Schoenstatt fuese aprobado oficialmente
+por la Iglesia. Y en febrero de 1949 se lleva a cabo la Visita Canónica
+episcopal a las Hermanas de María, por el obispo auxiliar de
+
+Tréveris. A esta Visitación se siguieron algunas observaciones del
+Visitador, a las que el Padre Kentenich respondió ampliamente en una
+carta a los Obispos alemanes, en la así llamada "Epistola perlonga"
+(largísima carta).
+
+La primera parte de esta carta la envía desde el Santuario de
+Bellavista, el 31 de Mayo de l949, fecha que marca el tercer hito de la
+historia de Schoenstatt.
+
+Unido al acontecimiento del 31 de Mayo de 1949 está la proclamación que
+hace el Padre Kentenich, desde el Santuario de Bellavista, de una
+cruzada por el pensar, amar y vivir orgánicos, y, el 5 de Junio (fiesta
+de Pentecostés de ese año) la coronación de la MTA como Reina de la
+cruzada recién proclamada.
+
+La cruzada iniciada por el Padre tiene en vista particularmente los
+destinos de Occidente "Vemos cómo Occidente camina a la ruina y creemos
+que desde aquí vamos a realizar un trabajo de salvataje, de construcción
+y edificaciónn", afirmaba el P. Kentenich en su plática del 31 de Mayo.
+Esto requería que Schoenstatt llegase a ejercer "una influencia más
+poderosa en la forjación de los destinos de la Iglesia en el espacio
+cultural de Occidente", lo que más tarde expresó el mismo P. Kentneich
+con la frase: "Schoenstatt, corazón de la Iglesia".
+
+El 31 de Mayo implica, además, que desde el Santuario de Bellavista en
+unión con todos los Santuarios filiales llamados a esta cruzada, surja
+una "contracorriente", que vaya en ayuda del Santuario original de
+Schoenstatt para que pueda derribar el "muro del pensar mecanicista" y
+María se muestre en él como la gran Vencedora de las herejías
+antropológicas de nuestro tiempo. Es por esto que la realización de la
+misión del 31 de Mayo exige también la formación y fortalecimiento de la
+"Internacional Schoenstattiana", nacida en el campo de concentración
+de Dachau.
+
+**142. ¿Qué consecuencias acarreó el paso del 31 de Mayo de 1949?**
+
+La franqueza y claridad del P. Kentenich en su respuesta no fueron bien
+comprendidas. Sin tenerse reparos respecto a la ortodoxia en la
+doctrina, el Santo Oficio decidió su separación de la Familia, sin
+desmedro para la aprobación de su Obra.
+
+En Semana Santa de 1951 se inicia la Visita Apostólica a Schoenstatt,
+encargada por el Santo Oficio. Y en agosto de este mismo año se comunica
+al P. Kentenich la destitución de su cargo como Director General de las
+Hermanas de María. En octubre, debe abandonar Schoenstatt.
+
+El 17 de enero de l952 el Padre viaja a Argentina y bendice allí, el 20
+de enero, el Santuario de Florencio Varela. Viaja a Chile y en junio de
+este mismo año parte al destierro en Milwaukee (USA) donde, durante 14
+años, tuvo que sufrir la soledad y la cruz de la obediencia. Había
+luchado por la libertad necesaria dentro de la Iglesia y tuvo el valor
+de exponer sus ideas, pero se lo sometió a prueba. Obedeció fielmente y
+supo esperar (en Milwaukee) 14 años, sabiendo que la misma Madre Iglesia
+que lo crucificaba, también lo bajaría de la cruz.
+
+**143. ¿Cuál es la relación entre el 20 de Enero y el 31 de Mayo?**
+
+El Jardín de María y el 20 de Enero pierden su dimensión y proyección
+histórica si se desconectan vitalmente del 31 de Mayo y vicersa. Y ello
+ocurre porque la experiencia de vida del Jardín de María está en el
+trasfondo del 31 de Mayo. Después de Dachau, el P. Kentenich reafirmó su
+convencimiento de que Schoenstatt es una obra divina y que como tal, es
+para la Iglesia. Por esta razón, él siente la urgencia de que
+Schoenstatt sea reconocido por la Iglesia y que corriente de vida que
+surge del Jardín de María y del 20 de Enero sea recibida por ella como
+una experiencia vital de la fe en un tiempo en el cual celebra su
+triunfo la separación mecanicista de fe y vida, de Dios y el hombre, de
+lo divino de lo humano, de gracia y naturaleza.
+
+La vida surgida en torno al Jardín de María y el 20 de Enero mostraba en
+forma concreta un caso clásico de la armonía entre naturaleza y gracia.
+Fue esto lo que no logró comprender el Visitador y que planteó como
+objeción a Schoenstatt, lo cual originó la carta-respuesta del P.
+Kentenich. Con la proclamación de la cruzada del 31 de Mayo, el P.
+Kentenich manifiesta su anhelo de que aquello que vivió la Familia --la
+pedagogía y espiritualidad que está en el trasfondo del Jardín de María
+y el 20 de Enero-- llegue a fecundar la vida de la Iglesia y a suscitar
+en ella una vivencia análoga a la vivida por la Familia de Schoenstatt.
+
+**144. ¿Cuántas veces vino el P. Kentenich a Latinoamérica?**
+
+El *primer viaje* se inició el 15 de marzo de 1947. Desde Roma, después
+de una audiencia privada con Pío XII, viaja a Brasil, Uruguay, Argentina
+y Chile. El 12 de septiembre regresa desde Río de Janeiro a Roma.
+
+El *segundo viaje* se inicia el 17 de abril de 1948; arriba a Río de
+Janeiro, en Brasil, desde Johannesburgo. El 11 de abril bendice el
+Santuario filial de Santa María (Río Grande do Sul). El 6 de junio viaja
+a Norteamérica.
+
+*Tercer viaje*: el 7 de septiembre regresa a Santiago y aloja en la casa
+que las Hermanas de María tenían en la calle Manuel Montt. El 18 de
+octubre bendice la primera piedra del Santuario de Bellavista (Chile).
+
+El 20 de mayo de 1949 bendice el Santuario filial en Bellavista. El 31
+de Mayo de ese mismo año el P. Kentenich pone en el Santuario de
+Bellavista la primera parte de su respuesta a las objeciones hechas por
+el visitador a Schoenstatt. El 5 de junio, estando todavía en
+Bellavista, corona la imagen de la Madre Tres Veces Admirable en el
+Santuario recién inaugurado.
+
+El 19 de enero de 1950 vuelve a Roma para participar en la beatificación
+de Vicente Pallotti, el 22 de enero.
+
+El *cuarto viaje* : el 18 de enero de 1951, llega a Argentina, visita
+Chile, Uruguay y Brasil. Regresa a Roma el 19 de abril de l951.
+
+El *quinto viaje* a Latinoamérica, se inicia el 17 de enero de 1952. En
+Argentina bendice el Santuario filial de Florencio Varela, el 20 de
+enero. El 20 de junio viaja desde Chile al destierro en Milwaukee, en
+los Estados Unidos.
+
+**145. ¿Cómo se desarrolló el Movimiento durante los años de exilio del
+Padre Fundador?**
+
+Durante todo este tiempo, en la Familia de Schoenstatt se desencadenó
+una corriente de oración y de sacrificio por el retorno del Fundador.
+Fue un movimiento espontáneo, de alto espíritu de fe y de esperanza
+heroica, que no mermó durante los años sino que creció y se manifestó a
+veces en ofrendas heroicas. La corriente de vinculación y solidaridad
+con el Padre como su Fundador y Cabeza, surgida en los años de Dachau,
+se hizo aún más fecunda.
+
+La Familia, año tras año, mostró una gran fidelidad a la Iglesia y
+guardó un silencio total, ateniéndose a la convicción que inspiraba al
+P. Kentenich: "María será glorificada. No nos cansemos ni nos dejemos
+arrastrar por el desaliento en hacer lo nuestro. Pero mi liberación y la
+liberación de la Familia de Schoenstatt es asunto que se ha reservado a
+la Santísima Virgen".
+
+Por su parte, el P. Kentenich, igual que durante toda su vida, desde
+Milwaukee desarrolló una intensa labor. Fue el hombre de una
+correspondencia epistolar amplia y personal, al servicio, en su mayor
+parte, de la dirección espiritual. Este trabajo minucioso e incansable
+en las almas era la causa del secreto de la eficacia del P. Kentenich.
+Era la experiencia de lo sobrenatural, del más allá, de lo divino, que
+se vivía bajo la dirección personal del P. Kentenich, lo que
+verdaderamente impulsaba a adherirse a Schoenstatt.
+
+En aquella época se consolida la Obra de Familias y se gesta una nueva
+forma de vivencia en la Alianza dentro del Movimiento de Schoenstatt: el
+Santuario Hogar. El mismo Padre bendijo numerosos Santuarios Hogar de
+las familias en Milwaukee.
+
+Durante este tiempo ocurrieron celebraciones de relieve en la vida del
+Padre. En septiembre de 1956 celebró las bodas de oro de su profesión
+religiosa. En 1960 celebra sus bodas de oro sacerdotales.
+
+En 1959 se hizo cargo de la parroquia alemana de San Miguel. Desde allí
+promovió una rica actividad pastoral: introdujo fiestas parroquiales
+propias, promovió la formación de un coro parroquial, editó una hoja
+informativa; alentó peregrinaciones a los Santuarios marianos y desplegó
+una adecuada actividad con los emigrantes europeos. La temática de sus
+prédicas dominicales tocaba los problemas medulares de la época. En toda
+esta actividad fue decisiva su personalidad y vida plenamente
+sacerdotal, marcada por lo sobrenatural y por su profundo amor a esa
+Iglesia que lo tenía en la cruz.
+
+En el año 1962 el Papa Juan XXIII abre el Concilio Vaticano II. La
+atmósfera que se dio en el transcurso del Concilio contribuyó mucho a
+abrir y fomentar una mejor comprensión de Schoenstatt y de su Fundador.
+
+**146. ¿Cómo terminó este período de exilio impuesto por la Iglesia?**
+
+Mientras se llevaba a cabo la última sesión del Concilio Vaticano II, el
+Padre Kentenich es llamado a Roma. El 22 de octubre de 1965, el Papa
+Paulo VI firma el decreto del Santo Oficio que implica la rehabilitación
+del P. Kentenich, y el 22 de diciembre le recibe en audiencia especial.
+El P. Kentenich pudo regresar a Schoenstatt en la Noche Buena del mismo
+año. Así acabó oficialmente el destierro del P. Kentenich. El 22 de
+octubre de 1951 había dejado Schoenstatt, y su "liberación" ocurría
+exactamente catorce años después. Sucedió como él mismo lo había
+predicho: La misma Iglesia que lo había crucificado sería quien lo
+bajaría de la cruz.
+
+En noviembre de l965 el P. Kentenich se retira de la Comunidad de los
+Palotinos y es recibido por Mons. Höffner en la diócesis de Münster.
+Celebra sus 80 años en libertad, en Roma, junto a representantes de
+todos los Institutos y comunidades de la Familia de Schoenstatt.
+
+**147. ¿Cómo se consolidó la fundación de la Obra desde 1965 a 1968?**
+
+Después de su regreso a Schoenstatt, el P. Kentenich trabaja
+intensamente, a pesar de su avanzada edad, uniendo y vitalizando su Obra
+por medio de incontables retiros, jornadas y consultas personales y
+comunitarias. Muestra nuevamente a la Familia la irrupción de Dios en su
+historia, toma posición ante las corrientes del tiempo y las interpreta
+a la luz de la Divina Providencia, mostrando cómo Schoenstatt es una
+
+obra preparada y destinada por Dios para servir a la Iglesia en esta
+etapa posconciliar y para ayudarla a alcanzar las nuevas playas hacia
+las cuales camina.
+
+Entre los suyos era mucho más padre que antes. La energía que le animaba
+se traducía como nunca en una luminosa y bondadosa paternidad, que
+irradiaba de su persona con una claridad y espontaneidad meridianas. Su
+salud era débil pero, como buen pastor, no se preocupa dando la vida por
+los suyos y amándolos hasta el fin.
+
+En septiembre de 1968 el P. Kentenich da como lema a la Familia la
+consigna: "Alegres por la esperanza, con María, seguros de la victoria,
+hacia los tiempos más nuevos".
+
+**148. ¿Cuándo falleció el P. Kentenich?**
+
+El 15 de septiembre el Padre Kentenich fallece sorpresivamente en la
+sacristía de la Iglesia de la Santísima Trinidad, después de celebrar la
+Eucaristía. Para resumir lo más profundo de su vida, pidió que en su
+lápida mortuoria aparecieran solamente las palabras: "Dilexit
+Ecclesiam", "Amó a la Iglesia". Amó a la Iglesia con todas sus
+fuerzas y la sirvió ofreciéndole una nueva Obra que es la Familia de
+Schoenstatt. Amó a la Iglesia, porque amó a María, figura y Madre de la
+Iglesia. Todo su amor lo entregó a la Iglesia, toda su vida fue para la
+Iglesia, para la Iglesia del presente y sobre todo para la Iglesia del
+futuro.
+
+**149. ¿Qué sucedió después de la muerte del Padre Kentenich?**
+
+Tras su muerte surgió en forma espontánea una veneración al P.
+Kentenich. Pablo VI, Juan Pablo II, obispos, sacerdotes y fieles
+manifiestan su admiración y amor hacia él. El lugar de su muerte, la
+sacristía de la Iglesia de la Santísima Trinidad en el Monte
+Schoenstatt, se ha transformado en la sencilla "Capilla del Fundador".
+El número de peregrinos que acuden hasta allí crece de año en año. La
+veneración al Padre se propaga por todo el mundo.
+
+La actividad fecunda del P. Kentenich después de su muerte, se
+manifiesta en su poder de intercesión. Las oraciones y súplicas
+escuchadas que se atribuyen a su mediación aumentan de día en día y
+provienen de muchos paises y en numerosas lenguas.
+
+Con el proceso de su beatificación que se ha iniciado en 1975,
+Schoenstatt quiere ofrecer a toda la Iglesia la riqueza de la misión del
+P. Kentenich en su camino hacia las nuevas playas.
+
+Muchos en la Iglesia esperan el impulso de Schoenstatt y sus respuestas
+a las interrogantes vitales del tiempo actual. Al igual que en el tiempo
+de su fundación, muchos buscan en la fecundidad de la Alianza de Amor,
+el valor y la confianza en Dios.
+
+**150. ¿Cuál es el cuarto hito de la historia de Schoenstatt?**
+
+Está asociado a tres fechas: el 22 de octubre (el Santo Padre Pablo VI
+confirma del decreto del Santo Oficio, por el cual el P. Kentenich
+quedaba liberado), el 22 de diciembre (audiencia papal) y el "24 de
+diciembre de l965" en que el Padre regresa a Schoenstatt, en la
+"victoriosidad divina", segundo milagro de la Nochebuena, después de
+pasar 14 años de exilio en Milwaukee. Con este hito se relaciona también
+la clausura del Concilio Vaticano II, el 8 de diciembre de l965, a la
+cual el Fundador se asocia bendiciendo simbólicamente la primera piedra
+del futuro Santuario de Schoenstatt en Roma, y la promesa hecha a Pablo
+VI, en su audiencia del 22 de diciembre, mediante la cual Schoenstatt se
+compromete a colaborar en la realización del programa elaborado por el
+Concilio.
+
+[^1]: En las preguntas siguientes se especifican algunos puntos sobre
+    los tres fines de Schoenstatt.
