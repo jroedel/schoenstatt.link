@@ -117,10 +117,13 @@ endif;?>
                 <a href="<?=$this->escapeHtmlAttr($mergedIntoUrl)?>">
                     <?=$this->escapeHtml($object['mergedIntoPublicationId'])?></a>
             </p>
-        <?php elseif (isset($object['dataSource'])) : ?>
-            <a href="<?=$this->url('publication-copy-to-main-corpus', [], [], true)?>" class="btn btn-default">
+        <?php elseif (isset($object['dataSource'])) :?>
+            <p><a href="<?=$this->url(
+                'publication-copy-to-main-corpus',
+                ['sw_id' => $object['identifier'], 'slug' => $object['slug'] ?? null]
+            )?>" class="btn btn-default">
                 <?=$this->translate('Copy into main corpus')?>
-            </a>
+            </a></p>
         <?php endif;
         foreach ($object['urls'] as $urlObject) :
             ?><p><?= $this->formatPublicationUrlObject($urlObject);?></p><?php
