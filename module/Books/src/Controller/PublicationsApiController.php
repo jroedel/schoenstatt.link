@@ -41,7 +41,7 @@ class PublicationsApiController extends AbstractRestfulController
     {
 //         $params = $this->params()->fromQuery();
         $table = $this->table;
-        $objects = $table->getObjects('publication');
+        $objects = $table->searchPublications();
         self::prepPublicationObjects($objects);
 
         return new JsonModel([

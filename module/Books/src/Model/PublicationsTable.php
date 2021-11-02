@@ -280,7 +280,7 @@ ORDER BY `Publisher`";
      * @param mixed[] $query
      * @return mixed[]
      */
-    public function searchPublications($query, $options = [])
+    public function searchPublications($query = [], $options = [])
     {
         //@todo we're not searching authors described by author personId's
         $filter = new ToAscii();
