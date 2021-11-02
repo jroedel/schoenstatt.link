@@ -110,10 +110,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Main library view screen',
-                'required' => false,
-                'empty_option' => '',
-                'unselected_value' => '',
-                'disable_inarray_validator' => false,
+                'required' => true,
                 'value_options' => [],
             ],
             'attributes' => [
@@ -501,9 +498,25 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
             'filiationId' => [
                 'required' => false,
+                'filters' => [
+                    [
+                        'name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
             ],
             'contactPersonId' => [
                 'required' => false,
+                'filters' => [
+                    [
+                        'name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
             ],
             'contactEmail' => [
                 'required' => false,
@@ -528,7 +541,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                 ],
             ],
             'mainShowDisplay' => [
-                'required' => false,
+                'required' => true,
                 'filters' => [
                     ['name' => 'StripTags'],
                     ['name' => 'StripNewlines'],
@@ -583,6 +596,13 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
             'mainCollectionId' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
             ],
             'requireCallNumbers' => [
                 'required' => false,
@@ -734,6 +754,13 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
             'defaultCheckoutPersonId' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => 'ToNull',
+                        'options' => [
+                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
             ],
             'defaultCheckoutTimePeriodInDays' => [
                 'required' => true,
