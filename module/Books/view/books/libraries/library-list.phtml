@@ -1,4 +1,9 @@
 <?php /** @var \Zend\View\Renderer\PhpRenderer $this */?>
+
+<?php if ($this->isAllowed('route/libraries/create')) : ?>
+    <p><a href="<?= $this->url('libraries/create')?>" class="btn btn-primary pull-right">
+            <?=$this->translate('Create new library');?></a></p>
+<?php endif; ?>
 <div class="row">
 <div class="col-md-8 col-md-offset-2">
 <div class="list-group">

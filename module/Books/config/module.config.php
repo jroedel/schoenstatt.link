@@ -2998,7 +2998,8 @@ return [
                 ['route' => 'books/book/edit', 'roles' => ['lib_user']],
                 ['route' => 'books/create', 'roles' => ['lib_user']],
 
-                ['route' => 'libraries', 'roles' => ['guest', 'lib_user']],
+                ['route' => 'libraries', 'roles' => ['lib_administrator']],
+                ['route' => 'libraries/create', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/create', 'roles' => ['lib_user']],
