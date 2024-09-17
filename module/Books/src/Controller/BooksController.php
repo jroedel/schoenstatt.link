@@ -47,7 +47,6 @@ class BooksController extends SionController
                         $form->get('category')->setValue($copyBookObj['category']);
                         $form->get('isbn')->setValue($copyBookObj['isbn']);
                         $form->get('numberOfPages')->setValue($copyBookObj['numberOfPages']);
-                        $form->get('copyrightYear')->setValue($copyBookObj['copyrightYear']);
                         $form->get('publisher')->setValue($copyBookObj['publisher']);
                         $form->get('publishingPlace')->setValue($copyBookObj['publishingPlace']);
                         $form->get('keywords')->setValue($copyBookObj['keywords']);
