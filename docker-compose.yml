@@ -1,0 +1,50 @@
+# Local "time capsule" environment: reproduces production as verified 2026-08-01
+# (PHP 7.4.33 + Apache, MariaDB 10.11). See CLAUDE.md, "Modernization mandate".
+#
+#   docker compose up -d          # app: http://localhost:8080, mail UI: http://localhost:8025
+#
+# Database: drop a production dump (.sql or .sql.gz) into database/dumps/ BEFORE
+# the first `up` — MariaDB imports docker-entrypoint-initdb.d only when its data
+# volume is empty. To re-import: docker compose down -v && docker compose up -d
+
+services:
+  app:
+    build:
+      context: ./docker
+      args:
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/schoenstatt.link
+      - ./docker/local.docker.php:/var/www/schoenstatt.link/config/autoload/local.php
+    environment:
+      APP_ENV: development
+    depends_on:
+      - db
+      - mailpit
+
+  db:
+    image: mariadb:10.11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      # Must match the CREATE DATABASE inside the production dump
+      MARIADB_DATABASE: ourlink_db1
+      MARIADB_USER: schoenstatt
+      MARIADB_PASSWORD: schoenstatt
+    volumes:
+      - db-data:/var/lib/mysql
+      # Contains the production dump plus zz-db6.3.sql (the only migration newer
+      # than the dump) — initdb runs files alphabetically.
+      - ./database/dumps:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "33306:3306"
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+
+volumes:
+  db-data:
