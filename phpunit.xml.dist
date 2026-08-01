@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
+         bootstrap="test/bootstrap.php"
+         colors="true"
+         failOnWarning="true"
+         cacheResultFile="data/cache/.phpunit.result.cache">
+    <testsuites>
+        <testsuite name="smoke">
+            <directory>test/Smoke</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <!-- Base URL of the running app. Inside the docker app container the
+             site is served on port 80, so the default works via:
+             docker compose exec -T app php tools/phpunit.phar -->
+        <env name="SMOKE_BASE_URL" value="http://localhost" />
+    </php>
+</phpunit>
