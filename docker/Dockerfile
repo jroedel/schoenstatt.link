@@ -4,9 +4,13 @@ FROM php:7.4-apache
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         libzip-dev \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
         unzip \
         git \
-    && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip opcache \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip opcache gd \
     && pecl install apcu-5.1.22 \
     && docker-php-ext-enable apcu \
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
