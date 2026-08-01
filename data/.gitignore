@@ -4,5 +4,8 @@
 /fonts/*
 /musicas/
 /texts/
-/sitemap/
+# Generated sitemap files stay ignored, but the directory must exist or the
+# sitemap route 500s (samdark/sitemap won't create it).
+/sitemap/*
+!/sitemap/.gitkeep
 /scans/*
