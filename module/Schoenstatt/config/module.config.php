@@ -2019,16 +2019,14 @@ return [
         ],
     ],
     'bjyauthorize' => [
-        // Resource providers to be used to load all available resources into Zend\Permissions\Acl\Acl
-        // Keys are the provider service names, values are the options to be passed to the provider
-        'resource_providers'    => [
-            Model\SchoenstattTable::class => [],
-        ],
-        // Rule providers to be used to load all available rules into Zend\Permissions\Acl\Acl
-        // Keys are the provider service names, values are the options to be passed to the provider
-        'rule_providers'        => [
-            Model\SchoenstattTable::class => [],
-        ],
+        // NOTE (2026-08-01): commit 988c24d registered SchoenstattTable as
+        // resource/rule provider here, but its getRules() is unfinished 2020
+        // code referencing roles (sch_international_leader,
+        // sch_institute_member) that don't exist in the production DB — the
+        // app cannot boot with it active. Production has always run WITHOUT
+        // these providers (a duplicate-key bug silently discarded them), so
+        // they stay disabled for the production-faithful baseline. Finishing
+        // this feature is tracked in BACKLOG.md.
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['sch_moderator']],
