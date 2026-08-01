@@ -12,7 +12,7 @@
     "homepage": "http://framework.zend.com/",
     "require": {
         "php": "^7.3",
-        "nesbot/carbon": "^1.28",
+        "nesbot/carbon": "^2.62",
         "giggsey/libphonenumber-for-php": "^8.11",
         "neitanod/forceutf8": "^2.0",
         "tedivm/jshrink": "^1.1",
@@ -23,17 +23,16 @@
         "phpoffice/phpexcel": "^1.8",
     	"neilime/zf2-mobile-detect": "^2.2",
         "kokspflanze/bjy-authorize": "^1.7",
-        "zf-commons/zfc-user": "3.x@dev",
+        "zf-commons/zfc-user": "3.x-dev#5ded56ce79909f62eb7d18db6fd6df50b9d79a11",
         "matriphe/iso-639": "^1.0",
 		"cakephp/utility": "^3.2.0",
-        "mledoze/countries": "^1.8",
         "spatie/schema-org": "^2.2",
         "slm/locale": "^0.3",
-        "zendframework/zend-component-installer": "^1.0",
         "zendframework/zend-permissions-acl": "^2.7",
         "zendframework/zend-navigation": "^2.9",
         "zendframework/zend-authentication": "^2.6",
-        "roave/security-advisories": "dev-master",
+        "zendframework/zend-json": "^3.1",
+        "zendframework/zend-mail": "^2.10",
         "zendframework/zend-mvc-form": "^1.0",
         "jroedel/zf-snap-geoip": "^3.0",
         "ocramius/proxy-manager": "^2.2",
@@ -41,18 +40,15 @@
         "zendframework/zend-mvc-i18n": "^1.1",
         "zendframework/zend-captcha": "^2.8",
         "zendframework/zend-text": "^2.7",
-        "talis/niso-openurl": "dev-master",
         "beaucal/beaucal-invalid-session": "^0.3.0",
         "zendframework/zend-mvc-plugin-prg": "^1.1",
         "swiftmailer/swiftmailer": "^6.0",
         "cocur/slugify": "^3.1",
         "erusev/parsedown": "^1.7",
         "erusev/parsedown-extra": "^0.7.1",
-        "multidots/zf3-rest-api": "dev-master",
+        "firebase/php-jwt": "^6.0",
         "spatie/opening-hours": "^2.0",
-        "zfr/zfr-cors": "dev-optimized-cors-preflight",
         "jmikola/geojson": "1.0",
-        "cyberprojekt/libkml": "dev-master",
         "scottconnerly/timezone": "^0.2.0",
         "nicolaswurtz/chordpro-php": "dev-master",
         "samdark/sitemap": "^2.2",
@@ -62,44 +58,61 @@
         "ext-pdo_mysql":"*"
     },
     "require-dev": {
-        "bjyoungblood/bjy-profiler": "^1.1",
         "zendframework/zend-developer-tools": "^1.1",
         "squizlabs/php_codesniffer": "^3.3"
     },
 	"repositories": [
 	   {
 	     "type": "vcs",
-	     "url": "https://github.com/basz/SlmLocale"
+	     "url": "https://github.com/basz/SlmLocale",
+	     "no-api": true
 	   },
 	   {
 	     "type": "vcs",
-	     "url": "https://github.com/kokspflanze/BjyAuthorize"
+	     "url": "https://github.com/kokspflanze/BjyAuthorize",
+	     "no-api": true
 	   },
 	   {
 	     "type": "vcs",
-	     "url": "https://github.com/jroedel/ZfSnapGeoip"
+	     "url": "https://github.com/jroedel/ZfSnapGeoip",
+	     "no-api": true
 	   },
 	   {
 	     "type": "vcs",
-	     "url": "https://github.com/jroedel/chordpro-php"
+	     "url": "https://github.com/jroedel/chordpro-php",
+	     "no-api": true
 	   },
 	   {
 	     "type": "vcs",
-	     "url": "https://github.com/jroedel/ZfcUser"
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/boesing/zfr-cors"
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/zf3-rest-api"
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/php-niso-openurl"
+	     "url": "https://github.com/jroedel/ZfcUser",
+	     "no-api": true
 	   }
 	],
+	"config": {
+		"platform": {
+            "php": "7.4.33",
+            "ext-intl": "7.4.33",
+            "ext-pdo": "7.4.33",
+            "ext-pdo_mysql": "7.4.33",
+            "ext-dom": "7.4.33",
+            "ext-simplexml": "7.4.33",
+            "ext-xmlwriter": "7.4.33",
+            "ext-gd": "7.4.33",
+            "lib-icu": "67.1",
+            "ext-xml": "7.4.33",
+            "ext-mbstring": "7.4.33"
+        },
+        "policy": {
+            "advisories": {
+                "ignore": {
+                    "phpoffice/phpexcel": "abandoned; migration to phpoffice/phpspreadsheet is planned in the Phase 3 ladder (BACKLOG.md)"
+                },
+                "ignore-id": {
+                    "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743."
+                }
+            }
+        }
+	},
 	"autoload": {
     	"psr-4": {
         	"Application\\": "module/Application/src/",
@@ -107,6 +120,7 @@
         	"Books\\": "module/Books/src/",
         	"JTranslate\\": "module/JTranslate/src/",
         	"JUser\\": "module/JUser/src/",
+        	"RestApi\\": "module/RestApi/src/",
         	"Schoenstatt\\": "module/Schoenstatt/src/",
         	"SionModel\\": "module/SionModel/src/"
     	}
