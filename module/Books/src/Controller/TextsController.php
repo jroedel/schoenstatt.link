@@ -4,12 +4,12 @@ namespace Books\Controller;
 use SionModel\Controller\SionController;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Books\Form\TextSearchForm;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Zend\Db\Sql\Predicate\PredicateSet;
-use Zend\Db\Sql\Predicate\Predicate;
-use Zend\Db\Sql\Predicate\Like;
-use Zend\Db\Sql\Predicate\Operator;
+use Laminas\Db\Sql\Predicate\PredicateSet;
+use Laminas\Db\Sql\Predicate\Predicate;
+use Laminas\Db\Sql\Predicate\Like;
+use Laminas\Db\Sql\Predicate\Operator;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
 

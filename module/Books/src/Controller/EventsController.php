@@ -2,7 +2,7 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\EventsSearchForm;
 use Books\Model\EventTextTable;

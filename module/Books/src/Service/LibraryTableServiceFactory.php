@@ -2,9 +2,9 @@
 namespace Books\Service;
 
 use Books\Model\LibraryTable;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Zend\Db\Adapter\Adapter;
+use Laminas\Db\Adapter\Adapter;
 
 /**
  * Factory responsible of priming the LibraryTable service

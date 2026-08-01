@@ -1,6 +1,6 @@
 <?php
 use Application\Service\DbAdapterServiceFactory;
-use Zend\Db\Adapter\Adapter;
+use Laminas\Db\Adapter\Adapter;
 
 /**
  * Global Configuration Override
@@ -116,6 +116,13 @@ return [
     'service_manager' => [
         'factories' => [
             Adapter::class => DbAdapterServiceFactory::class,
+        ],
+        'aliases' => [
+            //ZfcUser's Module::getServiceConfig() aliases this to the legacy
+            //Zend adapter name; service configs provided by module METHODS
+            //bypass the ZendFrameworkBridge config post-processor, so point
+            //it at the Laminas-named service ourselves
+            'zfcuser_zend_db_adapter' => Adapter::class,
         ],
     ],
 ];

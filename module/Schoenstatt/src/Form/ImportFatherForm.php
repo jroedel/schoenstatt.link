@@ -2,7 +2,7 @@
 namespace Schoenstatt\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class ImportFatherForm extends SionForm implements InputFilterProviderInterface
 {

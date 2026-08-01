@@ -18,29 +18,29 @@ return [
 
             /**
              * The mail adapter to be used.
-             * You can define any class implementing Zend\Mail\Transport\TransportInterface,
+             * You can define any class implementing Laminas\Mail\Transport\TransportInterface,
              * either the fully qualified class name as string or the instance to be used.
              *
              * For standard mail transports, you can use these aliases:
-             *      - sendmail  => Zend\Mail\Transport\Sendmail
-             *      - smtp      => Zend\Mail\Transport\Smtp
-             *      - file      => Zend\Mail\Transport\File
-             *      - null      => Zend\Mail\Transport\Null (<=ZF2.3) or Zend\Mail\Transport\InMemory (>=ZF2.4)
-             *      - in_memory => Zend\Mail\Transport\Null (<=ZF2.3) or Zend\Mail\Transport\InMemory (>=ZF2.4)
+             *      - sendmail  => Laminas\Mail\Transport\Sendmail
+             *      - smtp      => Laminas\Mail\Transport\Smtp
+             *      - file      => Laminas\Mail\Transport\File
+             *      - null      => Laminas\Mail\Transport\Null (<=ZF2.3) or Laminas\Mail\Transport\InMemory (>=ZF2.4)
+             *      - in_memory => Laminas\Mail\Transport\Null (<=ZF2.3) or Laminas\Mail\Transport\InMemory (>=ZF2.4)
              *
              * If for some reason you need to use a custom adapter which is complex to be created, you can also define
-             * the name of a service that returns a Zend\Mail\Transport\TransportInterface instance. When the
+             * the name of a service that returns a Laminas\Mail\Transport\TransportInterface instance. When the
              * MailService is created, it will automatically check if this is an existing service.
              *
-             * Default value is \Zend\Mail\Transport\Sendmail
+             * Default value is \Laminas\Mail\Transport\Sendmail
              */
-            //'mail_adapter' => '\Zend\Mail\Transport\Sendmail',
+            //'mail_adapter' => '\Laminas\Mail\Transport\Sendmail',
             'mail_adapter' => 'smtp',
 
             /**
              * An alias for the 'mail_adapter' option. Use just one or another.
              */
-            //'transport' => '\Zend\Mail\Transport\Sendmail',
+            //'transport' => '\Laminas\Mail\Transport\Sendmail',
 
 
             /************
@@ -49,7 +49,7 @@ return [
 
             /*
              * The renderer service name to be used to render email templates.
-             * Default value is mailviewrenderer, which is an alias to the standard viewrenderer registered by Zend\Mvc
+             * Default value is mailviewrenderer, which is an alias to the standard viewrenderer registered by Laminas\Mvc
              */
             //'renderer' => 'mailviewrenderer',
 
@@ -193,7 +193,7 @@ return [
              **********************/
 
             /**
-             * SMTP concrete options that will be used only when the adapter is a Zend\Mail\Transport\Smtp.
+             * SMTP concrete options that will be used only when the adapter is a Laminas\Mail\Transport\Smtp.
              * This will be ignored otherwise.
              *
              * NOTE: It is a best practice to avoid committing credentials in Git. You can override these settings in
@@ -256,7 +256,7 @@ return [
              **********************/
 
             /**
-             * File concrete options that will be used only when the adapter is a Zend\Mail\Transport\File.
+             * File concrete options that will be used only when the adapter is a Laminas\Mail\Transport\File.
              * This will be ignored otherwise.
              */
             'file_options' => [
@@ -268,7 +268,7 @@ return [
                 //'path' => 'data/mail/output',
 
                 /**
-                 * A callable that will get the Zend\Mail\Transport\File object as an argument and should return the
+                 * A callable that will get the Laminas\Mail\Transport\File object as an argument and should return the
                  * filename.
                  *
                  * Default value is null, in which case an empty callable will be used.

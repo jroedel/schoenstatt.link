@@ -4,7 +4,7 @@ namespace Application\Controller;
 use RestApi\Controller\ApiController;
 use Application\Authentication\Adapter\JsonPost;
 use Carbon\Carbon;
-use Zend\Math\Rand;
+use Laminas\Math\Rand;
 
 class UsersApiController extends ApiController
 {
@@ -18,11 +18,11 @@ class UsersApiController extends ApiController
     public function loginAction()
     {
         /**
-         * @var \Zend\Authentication\Result $auth
+         * @var \Laminas\Authentication\Result $auth
          */
         $auth = $this->adapter->authenticate();
         if (! $auth->isValid()) {
-            if (\Zend\Authentication\Result::FAILURE_UNCATEGORIZED === $auth->getCode()) {
+            if (\Laminas\Authentication\Result::FAILURE_UNCATEGORIZED === $auth->getCode()) {
                 $this->httpStatusCode = 400;
             } else {
                 $this->httpStatusCode = 401;

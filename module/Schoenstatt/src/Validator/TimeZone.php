@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Validator;
 
-use Zend\Validator\AbstractValidator;
+use Laminas\Validator\AbstractValidator;
 use ScottConnerly\TimeZone\TimeZoneSelect;
 
 class TimeZone extends AbstractValidator
@@ -22,7 +22,7 @@ class TimeZone extends AbstractValidator
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Validator\ValidatorInterface::isValid()
+     * @see \Laminas\Validator\ValidatorInterface::isValid()
      */
     public function isValid($value)
     {

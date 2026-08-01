@@ -4,7 +4,7 @@ use Schoenstatt\Model\SchoenstattTable;
 return [
     'juser' => [
         'person_provider' => SchoenstattTable::class,
-        // cache options have to be compatible with Zend\Cache\StorageFactory::factory
+        // cache options have to be compatible with Laminas\Cache\StorageFactory::factory
         'cache_options' => [
             'adapter' => [
                 'name'    => 'apcu',
@@ -18,7 +18,7 @@ return [
         ],
     ],
     'zfcuser' => [
-        'zend_db_adapter' => Zend\Db\Adapter\Adapter::class,
+        'zend_db_adapter' => Laminas\Db\Adapter\Adapter::class,
 
         'auth_adapters' => [
 //             50 => \Application\Authentication\Adapter\JsonPost::class,
@@ -121,7 +121,7 @@ return [
     ],
     'service_manager' => [
         'aliases' => [
-            'JUser\Logger' => \Zend\Log\LoggerInterface::class
+            'JUser\Logger' => \Laminas\Log\LoggerInterface::class
         ],
     ],
 ];

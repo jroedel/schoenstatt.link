@@ -8,16 +8,16 @@
 
 namespace Application\View;
 
-use Zend\EventManager\EventManagerInterface;
-use Zend\EventManager\ListenerAggregateInterface;
-use Zend\Http\Response as HttpResponse;
-use Zend\Mvc\MvcEvent;
-use Zend\Stdlib\ResponseInterface as Response;
+use Laminas\EventManager\EventManagerInterface;
+use Laminas\EventManager\ListenerAggregateInterface;
+use Laminas\Http\Response as HttpResponse;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Stdlib\ResponseInterface as Response;
 use ZfSnapGeoip\Service\Geoip;
-use Zend\Session\SessionManager;
-use Zend\View\Model\ViewModel;
+use Laminas\Session\SessionManager;
+use Laminas\View\Model\ViewModel;
 use Application\Controller\IndexController;
-use Zend\Router\Http\RouteMatch;
+use Laminas\Router\Http\RouteMatch;
 
 class GdprStrategy implements ListenerAggregateInterface
 {
@@ -104,7 +104,7 @@ class GdprStrategy implements ListenerAggregateInterface
         $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
         if (! $hasConsented) {
             header_remove('Set-Cookie');
-            /** @var \Zend\Session\ManagerInterface $sessionManager */
+            /** @var \Laminas\Session\ManagerInterface $sessionManager */
             $sessionManager = $sm->get(SessionManager::class);
             //expire session
             $sessionManager->expireSessionCookie();

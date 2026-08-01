@@ -2,11 +2,11 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
-use Zend\Db\Sql\Select;
-use Zend\Db\Adapter\AdapterInterface;
+use Laminas\Db\Sql\Select;
+use Laminas\Db\Adapter\AdapterInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
-use Zend\Permissions\Acl\Resource\GenericResource;
+use Laminas\Permissions\Acl\Resource\GenericResource;
 use Schoenstatt\Filter\BlogPostUserIdFilter;
 use voku\Html2Text\Html2Text;
 use Spatie\SchemaOrg\BlogPosting;
@@ -407,7 +407,7 @@ class EventTextTable extends SionTable implements
     /**
      * Create a resource for each blog user, in the format "blog_post_3", where 3 is the userId
      * Each resource will be a child of the "blog_post" resource
-     * @return \Zend\Permissions\Acl\Resource\GenericResource[]
+     * @return \Laminas\Permissions\Acl\Resource\GenericResource[]
      */
     public function getResources()
     {

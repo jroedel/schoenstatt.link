@@ -1,14 +1,14 @@
 <?php
 namespace Books\Filter;
 
-use Zend\Filter\AbstractFilter;
+use Laminas\Filter\AbstractFilter;
 
 class BookList extends AbstractFilter
 {
     /**
      * @todo Allow other barcode patterns for future library schemas
      * {@inheritDoc}
-     * @see \Zend\Filter\FilterInterface::filter()
+     * @see \Laminas\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {

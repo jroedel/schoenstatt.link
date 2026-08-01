@@ -2,11 +2,11 @@
 namespace Bible\Model;
 
 use SionModel\Db\Model\SionTable;
-use Zend\Db\Sql\Predicate\Operator;
-use Zend\Db\Sql\Where;
-use Zend\Db\Sql\Predicate\In;
-use Zend\Db\Sql\Select;
-use Zend\Db\Sql\Predicate\IsNull;
+use Laminas\Db\Sql\Predicate\Operator;
+use Laminas\Db\Sql\Where;
+use Laminas\Db\Sql\Predicate\In;
+use Laminas\Db\Sql\Select;
+use Laminas\Db\Sql\Predicate\IsNull;
 use Bible\Filter\FromBibleworksMorphosyntacticCode;
 use voku\helper\UTF8;
 

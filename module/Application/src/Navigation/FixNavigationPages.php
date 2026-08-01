@@ -8,11 +8,11 @@
 
 namespace Application\Navigation;
 
-use Zend\EventManager\EventManagerInterface;
-use Zend\EventManager\ListenerAggregateInterface;
-use Zend\Mvc\MvcEvent;
-use Zend\Navigation\Page\Mvc;
-use Zend\Navigation\Navigation;
+use Laminas\EventManager\EventManagerInterface;
+use Laminas\EventManager\ListenerAggregateInterface;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Navigation\Page\Mvc;
+use Laminas\Navigation\Navigation;
 
 class FixNavigationPages implements ListenerAggregateInterface
 {

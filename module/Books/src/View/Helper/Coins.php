@@ -1,7 +1,7 @@
 <?php
 namespace Books\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 use Spatie\SchemaOrg\Schema;
 use Books\OpenUrl\ContextObject;
 

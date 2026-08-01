@@ -3,8 +3,8 @@
 
 namespace Schoenstatt\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
-use Zend\Math\Rand;
+use Laminas\View\Helper\AbstractHelper;
+use Laminas\Math\Rand;
 
 class ClipboardButton extends AbstractHelper
 {

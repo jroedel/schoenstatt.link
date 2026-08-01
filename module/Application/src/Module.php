@@ -9,9 +9,9 @@
 
 namespace Application;
 
-use Zend\Mvc\MvcEvent;
+use Laminas\Mvc\MvcEvent;
 use Application\View\GdprStrategy;
-use Zend\Navigation\Navigation;
+use Laminas\Navigation\Navigation;
 use Books\Model\DictionaryTable;
 use Books\Model\PublicationsTable;
 use Application\Navigation\FixNavigationPages;

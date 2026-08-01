@@ -1,8 +1,8 @@
 <?php
 namespace Books\Controller;
 
-use Zend\Mvc\Controller\AbstractRestfulController;
-use Zend\View\Model\JsonModel;
+use Laminas\Mvc\Controller\AbstractRestfulController;
+use Laminas\View\Model\JsonModel;
 use Books\Model\PublicationsTable;
 
 class PublicationsApiController extends AbstractRestfulController

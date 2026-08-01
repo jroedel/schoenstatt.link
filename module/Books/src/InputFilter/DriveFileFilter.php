@@ -1,7 +1,7 @@
 <?php
 namespace Books\InputFilter;
 
-use Zend\InputFilter\InputFilter;
+use Laminas\InputFilter\InputFilter;
 
 class DriveFileFilter extends InputFilter
 {
@@ -11,7 +11,7 @@ class DriveFileFilter extends InputFilter
             'name'       => 'eventId',
             'required'   => false,
             'validators' => [
-                ['name' => \Zend\Validator\Digits::class ],
+                ['name' => \Laminas\Validator\Digits::class ],
             ],
             'filters' => [],
         ]);
@@ -19,7 +19,7 @@ class DriveFileFilter extends InputFilter
             'name'       => 'publicationId',
             'required'   => false,
             'validators' => [
-                ['name' => \Zend\Validator\Digits::class ],
+                ['name' => \Laminas\Validator\Digits::class ],
             ],
             'filters' => [],
         ]);
@@ -34,8 +34,8 @@ class DriveFileFilter extends InputFilter
             'required'   => true,
             'validators' => [],
             'filters' => [
-                ['name' => \Zend\Filter\StripNewlines::class],
-                ['name' => \Zend\Filter\StripTags::class],
+                ['name' => \Laminas\Filter\StripNewlines::class],
+                ['name' => \Laminas\Filter\StripTags::class],
             ],
         ]);
         $this->add([
@@ -43,7 +43,7 @@ class DriveFileFilter extends InputFilter
             'required'   => true,
             'validators' => [
                 [
-                    'name' => \Zend\Validator\Uri::class,
+                    'name' => \Laminas\Validator\Uri::class,
                     'options' => [
                         'allowRelative' => false,
                     ],
@@ -55,7 +55,7 @@ class DriveFileFilter extends InputFilter
             'name'       => 'size',
             'required'   => false,
             'validators' => [
-                ['name' => \Zend\Validator\Digits::class ],
+                ['name' => \Laminas\Validator\Digits::class ],
             ],
             'filters' => [
             ],
@@ -65,15 +65,15 @@ class DriveFileFilter extends InputFilter
             'required'   => false,
             'validators' => [
                 [
-                    'name' => \Zend\Validator\StringLength::class,
+                    'name' => \Laminas\Validator\StringLength::class,
                     'options' => [
                         'max' => 300
                     ],
                 ],
             ],
             'filters' => [
-                ['name' => \Zend\Filter\StripNewlines::class],
-                ['name' => \Zend\Filter\StripTags::class],
+                ['name' => \Laminas\Filter\StripNewlines::class],
+                ['name' => \Laminas\Filter\StripTags::class],
             ],
         ]);
         $this->add([
@@ -81,15 +81,15 @@ class DriveFileFilter extends InputFilter
             'required'   => false,
             'validators' => [
                 [
-                    'name' => \Zend\Validator\StringLength::class,
+                    'name' => \Laminas\Validator\StringLength::class,
                     'options' => [
                         'max' => 70
                     ],
                 ],
             ],
             'filters' => [
-                ['name' => \Zend\Filter\StripNewlines::class],
-                ['name' => \Zend\Filter\StripTags::class],
+                ['name' => \Laminas\Filter\StripNewlines::class],
+                ['name' => \Laminas\Filter\StripTags::class],
             ],
         ]);
         $this->add([
@@ -97,15 +97,15 @@ class DriveFileFilter extends InputFilter
             'required'   => false,
             'validators' => [
                 [
-                    'name' => \Zend\Validator\StringLength::class,
+                    'name' => \Laminas\Validator\StringLength::class,
                     'options' => [
                         'max' => 255
                     ],
                 ],
             ],
             'filters' => [
-                ['name' => \Zend\Filter\StripNewlines::class],
-                ['name' => \Zend\Filter\StripTags::class],
+                ['name' => \Laminas\Filter\StripNewlines::class],
+                ['name' => \Laminas\Filter\StripTags::class],
             ],
         ]);
     }

@@ -1,6 +1,6 @@
 <?php
 use Books\Model\LibraryTable;
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Laminas\View\Renderer\PhpRenderer $this */
 if ($this->isAllowed('route/library-imports/library/create')) :?>
 <p><a class="btn btn-primary" href="<?php
     echo $this->url('library-imports/library/create', ['library_id' => $this->libraryId]);?>"><?php echo $this->translate('Start new import');?></a></p>

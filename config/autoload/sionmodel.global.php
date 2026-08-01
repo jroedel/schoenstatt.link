@@ -22,7 +22,7 @@ return [
             //https://csp-evaluator.withgoogle.com
             'csp_string' => $csp,
             //if this header isn't set, no Content-Security-Policy header will be set
-            'inject_headers_event' => \Zend\Mvc\MvcEvent::EVENT_RENDER,
+            'inject_headers_event' => \Laminas\Mvc\MvcEvent::EVENT_RENDER,
         ],
         /**
          * Database table name of where to store change records

@@ -9,10 +9,10 @@
 
 namespace Schoenstatt\Controller;
 
-use Zend\Mvc\Controller\AbstractActionController;
+use Laminas\Mvc\Controller\AbstractActionController;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\SearchForm;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use Spatie\SchemaOrg\Dataset;
 use Spatie\SchemaOrg\Organization;
 use Spatie\SchemaOrg\ContactPoint;
