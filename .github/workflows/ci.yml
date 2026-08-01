@@ -1,0 +1,35 @@
+# CI v1 for the legacy baseline: PHP 7.4 syntax lint only.
+#
+# Deliberately dependency-free: `composer install` from the 2020 lock relies on
+# eight VCS forks whose availability in CI is unproven, so PHPStan (needs
+# vendor/autoload.php) and the smoke suite (needs the docker environment with a
+# production DB dump) run locally for now — see BACKLOG.md Phase 2. Expand this
+# as the modernization removes those constraints.
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  lint-php74:
+    name: PHP 7.4 syntax lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP 7.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "7.4"
+          coverage: none
+      - name: php -l all application code
+        run: |
+          set -eu
+          FAILED=0
+          while IFS= read -r -d '' f; do
+            if ! php -l "$f" > /dev/null; then
+              FAILED=1
+            fi
+          done < <(find module config public/index.php test -name '*.php' -print0)
+          exit "$FAILED"
