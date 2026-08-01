@@ -20,13 +20,44 @@ be allowed on person/association resources, create any missing roles in
 Also consider the boot-time cost: both methods query all persons/associations
 on every ACL build.
 
-## Phase 2: safety net (next up)
+## Dead/orphaned ACL guard entries (config rot found 2026-08-01)
 
-- HTTP smoke/characterization tests over the working routes (homepage, login,
-  guarded redirects, public sections) running against the Docker time capsule.
-- PHPUnit harness; PHPStan with generated baseline; wire both into CI.
-- Pull a fresh 2026 production dump (current one is 2021-06-24) before
-  finalizing characterization tests.
+Route-config analysis found BjyAuthorize guard entries referencing route names
+that don't exist (no-ops today, confusing tomorrow):
+
+- `new-home` (module/Application config)
+- `home` (module/Books config)
+- `change-password` in `config/autoload/juser.global.php` — the real zfcuser
+  child route is `zfcuser/changepassword`, so the change-password page may be
+  unintentionally blocked (BjyAuthorize is default-deny). Verify intent before
+  fixing.
+- `sign-in-no-cookies` route (module/Application) exists but is whitelisted in
+  no guard — blocked for everyone under default-deny. Dead feature or bug?
+- Bare `checkouts` route (module/Books) is likewise not whitelisted (only its
+  `checkouts/library` child is).
+
+## Broken pages found during smoke-suite characterization (2026-08-01)
+
+- `/en/dictionary` → 404: the route in `module/Books/config/module.config.php`
+  (~line 1280) declares `DictionaryController` with no `'action'` default, so
+  dispatch falls to a nonexistent `indexAction`. One-line config fix; verify
+  against production intent first (production may 404 identically).
+- `/en/blog` renders PHP notices into the page body ("Trying to access array
+  offset on value of type null", vendor/erusev/parsedown-extra line 241) —
+  user-visible warning text inside post content.
+
+## Phase 2: safety net
+
+- [x] HTTP smoke/characterization suite (38 tests green against the time
+  capsule; excluded: `/en/associations/do-work` (side effects), `/en/dictionary`
+  (broken, see above)).
+- [x] PHPUnit 9.6 + PHPStan 1.12 phars pinned via `tools/fetch.sh`.
+- [x] PHPStan level 0 green with `phpstan-baseline.neon` (56 legacy errors).
+- [x] CI v1: PHP 7.4 syntax lint (GitHub Actions).
+- [ ] Expand CI: prove `composer install` works from the 2020 lock in CI (eight
+  VCS forks), then add the PHPStan job.
+- [ ] Pull a fresh 2026 production dump (current one is 2021-06-24) and
+  re-verify the smoke suite against it.
 
 ## Phase 3: migration ladder
 
