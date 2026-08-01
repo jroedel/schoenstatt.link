@@ -56,8 +56,11 @@ that don't exist (no-ops today, confusing tomorrow):
 - [x] CI v1: PHP 7.4 syntax lint (GitHub Actions).
 - [ ] Expand CI: prove `composer install` works from the 2020 lock in CI (eight
   VCS forks), then add the PHPStan job.
-- [ ] Pull a fresh 2026 production dump (current one is 2021-06-24) and
-  re-verify the smoke suite against it.
+- [x] Fresh production dump (2026-08-01) imported and smoke suite re-verified
+  green. Excluded as junk: `bib_*_temp`, `sch_visits_rollover_*`; schema-only
+  (no data): `bib_*`, `b_*`, `csp_reports`, `sch_visits` — see
+  database/dumps/. The Bible/bibliography sections therefore render empty
+  locally; if work ever touches them, revisit what data they need.
 
 ## Phase 3: migration ladder
 
