@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
 
 class RoleForm extends SionForm implements InputFilterProviderInterface
@@ -138,7 +138,7 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]],
                 ],
                 'validators' => [
@@ -157,7 +157,7 @@ class RoleForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ]
                     ],
                 ],

@@ -2,13 +2,13 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Stdlib\ResponseInterface;
+use Laminas\Stdlib\ResponseInterface;
 use Books\Model\EventTextTable;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 
 class BlogController extends SionController
 {

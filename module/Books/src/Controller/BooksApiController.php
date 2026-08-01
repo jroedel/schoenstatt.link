@@ -1,13 +1,13 @@
 <?php
 namespace Books\Controller;
 
-use Zend\View\Model\JsonModel;
+use Laminas\View\Model\JsonModel;
 use Books\Model\LibraryTable;
 use Books\Form\BookForm;
 use RestApi\Controller\ApiController;
-use Zend\View\Model\ModelInterface;
+use Laminas\View\Model\ModelInterface;
 use Books\Model\PublicationsTable;
-use Zend\InputFilter\InputFilter;
+use Laminas\InputFilter\InputFilter;
 
 class BooksApiController extends ApiController
 {
@@ -93,7 +93,7 @@ class BooksApiController extends ApiController
      * The libraryId query parameter is required.
      *
      * {@inheritDoc}
-     * @see \Zend\Mvc\Controller\AbstractRestfulController::patchList()
+     * @see \Laminas\Mvc\Controller\AbstractRestfulController::patchList()
      */
     public function patchList($data)
     {
@@ -356,7 +356,7 @@ class BooksApiController extends ApiController
 
     /**
      * Retrieve an input filter to validate api-submitted dictionary entries
-     * @return \Zend\InputFilter\InputFilterInterface
+     * @return \Laminas\InputFilter\InputFilterInterface
      */
     public function getInputFilter()
     {

@@ -15,7 +15,7 @@ The easiest way to create a new ZF2 project is to use [Composer](https://getcomp
 
 Create your new ZF2 project:
 
-    composer create-project -n -sdev zendframework/skeleton-application path/to/install
+    composer create-project -n -sdev laminas/skeleton-application path/to/install
 
 
 

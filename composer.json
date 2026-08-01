@@ -21,27 +21,27 @@
         "neilime/zf2-twb-bundle": "3.*@stable",
         "zfc-datagrid/zfc-datagrid": "^1.4",
         "phpoffice/phpexcel": "^1.8",
-    	"neilime/zf2-mobile-detect": "^2.2",
+        "neilime/zf2-mobile-detect": "^2.2",
         "kokspflanze/bjy-authorize": "^1.7",
         "zf-commons/zfc-user": "3.x-dev#5ded56ce79909f62eb7d18db6fd6df50b9d79a11",
         "matriphe/iso-639": "^1.0",
-		"cakephp/utility": "^3.2.0",
+        "cakephp/utility": "^3.2.0",
         "spatie/schema-org": "^2.2",
         "slm/locale": "^0.3",
-        "zendframework/zend-permissions-acl": "^2.7",
-        "zendframework/zend-navigation": "^2.9",
-        "zendframework/zend-authentication": "^2.6",
-        "zendframework/zend-json": "^3.1",
-        "zendframework/zend-mail": "^2.10",
-        "zendframework/zend-mvc-form": "^1.0",
+        "laminas/laminas-permissions-acl": "^2.7",
+        "laminas/laminas-navigation": "^2.9",
+        "laminas/laminas-authentication": "^2.6",
+        "laminas/laminas-json": "^3.1",
+        "laminas/laminas-mail": "^2.10",
+        "laminas/laminas-mvc-form": "^1.0",
         "jroedel/zf-snap-geoip": "^3.0",
         "ocramius/proxy-manager": "^2.2",
-        "zendframework/zend-mvc-plugin-identity": "^1.1",
-        "zendframework/zend-mvc-i18n": "^1.1",
-        "zendframework/zend-captcha": "^2.8",
-        "zendframework/zend-text": "^2.7",
+        "laminas/laminas-mvc-plugin-identity": "^1.1",
+        "laminas/laminas-mvc-i18n": "^1.1",
+        "laminas/laminas-captcha": "^2.8",
+        "laminas/laminas-text": "^2.7",
         "beaucal/beaucal-invalid-session": "^0.3.0",
-        "zendframework/zend-mvc-plugin-prg": "^1.1",
+        "laminas/laminas-mvc-plugin-prg": "^1.1",
         "swiftmailer/swiftmailer": "^6.0",
         "cocur/slugify": "^3.1",
         "erusev/parsedown": "^1.7",
@@ -52,44 +52,47 @@
         "scottconnerly/timezone": "^0.2.0",
         "nicolaswurtz/chordpro-php": "dev-master",
         "samdark/sitemap": "^2.2",
-        "lib-icu":">=4.4",
-        "ext-intl":"*",
-        "ext-pdo":"*",
-        "ext-pdo_mysql":"*"
+        "lib-icu": ">=4.4",
+        "ext-intl": "*",
+        "ext-pdo": "*",
+        "ext-pdo_mysql": "*",
+        "laminas/laminas-dependency-plugin": "^2.1",
+        "laminas/laminas-form": "~2.14.3",
+        "laminas/laminas-router": "~3.3.0"
     },
     "require-dev": {
-        "zendframework/zend-developer-tools": "^1.1",
+        "laminas/laminas-developer-tools": "^1.1",
         "squizlabs/php_codesniffer": "^3.3"
     },
-	"repositories": [
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/basz/SlmLocale",
-	     "no-api": true
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/kokspflanze/BjyAuthorize",
-	     "no-api": true
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/ZfSnapGeoip",
-	     "no-api": true
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/chordpro-php",
-	     "no-api": true
-	   },
-	   {
-	     "type": "vcs",
-	     "url": "https://github.com/jroedel/ZfcUser",
-	     "no-api": true
-	   }
-	],
-	"config": {
-		"platform": {
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/basz/SlmLocale",
+            "no-api": true
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/kokspflanze/BjyAuthorize",
+            "no-api": true
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/jroedel/ZfSnapGeoip",
+            "no-api": true
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/jroedel/chordpro-php",
+            "no-api": true
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/jroedel/ZfcUser",
+            "no-api": true
+        }
+    ],
+    "config": {
+        "platform": {
             "php": "7.4.33",
             "ext-intl": "7.4.33",
             "ext-pdo": "7.4.33",
@@ -108,23 +111,27 @@
                     "phpoffice/phpexcel": "abandoned; migration to phpoffice/phpspreadsheet is planned in the Phase 3 ladder (BACKLOG.md)"
                 },
                 "ignore-id": {
-                    "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743."
+                    "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743.",
+                    "PKSA-q54w-zbs8-w6dj": "laminas-form XSS fixed only in 2.17.2+, which needs laminas-hydrator ^3.2; the ZfcUser and ZfSnapGeoip forks cap hydrator at ^2. Production runs the equivalent zend-form 2.14.3 today. Pay at Phase 3 rung 3 when LmcUser replaces ZfcUser and the forks are re-evaluated."
                 }
             }
+        },
+        "allow-plugins": {
+            "laminas/laminas-dependency-plugin": true
         }
-	},
-	"autoload": {
-    	"psr-4": {
-        	"Application\\": "module/Application/src/",
-        	"Bible\\": "module/Bible/src/",
-        	"Books\\": "module/Books/src/",
-        	"JTranslate\\": "module/JTranslate/src/",
-        	"JUser\\": "module/JUser/src/",
-        	"RestApi\\": "module/RestApi/src/",
-        	"Schoenstatt\\": "module/Schoenstatt/src/",
-        	"SionModel\\": "module/SionModel/src/"
-    	}
-	},
+    },
+    "autoload": {
+        "psr-4": {
+            "Application\\": "module/Application/src/",
+            "Bible\\": "module/Bible/src/",
+            "Books\\": "module/Books/src/",
+            "JTranslate\\": "module/JTranslate/src/",
+            "JUser\\": "module/JUser/src/",
+            "RestApi\\": "module/RestApi/src/",
+            "Schoenstatt\\": "module/Schoenstatt/src/",
+            "SionModel\\": "module/SionModel/src/"
+        }
+    },
     "scripts": {
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",

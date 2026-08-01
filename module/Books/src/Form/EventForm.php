@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class EventForm extends SionForm implements InputFilterProviderInterface
 {
@@ -306,7 +306,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -328,7 +328,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -350,7 +350,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -372,7 +372,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -394,7 +394,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -416,7 +416,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -428,7 +428,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -449,7 +449,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -470,7 +470,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -491,7 +491,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -512,7 +512,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -538,7 +538,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ]
                     ],
                 ],
@@ -548,7 +548,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -558,7 +558,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -586,7 +586,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -597,7 +597,7 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

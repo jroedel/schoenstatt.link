@@ -1,15 +1,15 @@
 <?php
 namespace Schoenstatt\Controller;
 
-use Zend\View\Model\JsonModel;
+use Laminas\View\Model\JsonModel;
 use SionModel\Controller\SionController;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
-use Zend\Filter\StripTags;
+use Laminas\Filter\StripTags;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Schoenstatt\Validator\TimeZone;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class AssociationsController extends SionController
 {
@@ -22,7 +22,7 @@ class AssociationsController extends SionController
             if (isset($object)) {
                 $locale = \Locale::getDefault();
                 /**
-                 * @var \Zend\Http\Response $response
+                 * @var \Laminas\Http\Response $response
                  */
                 $response = $this->redirect()->toRoute(
                     'association',
@@ -40,7 +40,7 @@ class AssociationsController extends SionController
             if (isset($object)) {
                 $locale = \Locale::getDefault();
                 /**
-                 * @var \Zend\Http\Response $response
+                 * @var \Laminas\Http\Response $response
                  */
                 $response = $this->redirect()->toRoute(
                     'association',
@@ -89,7 +89,7 @@ class AssociationsController extends SionController
     public function editAction()
     {
         $view = parent::editAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $entity = $view->getVariable('entity');
@@ -129,7 +129,7 @@ class AssociationsController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         //set nationalOrganizations
@@ -167,7 +167,7 @@ class AssociationsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
 

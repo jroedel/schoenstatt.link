@@ -1,7 +1,7 @@
 <?php
 namespace Books\View\Helper;
 
-use Zend\Form\View\Helper\FormSelect;
+use Laminas\Form\View\Helper\FormSelect;
 
 class FormSelectWithoutOptions extends FormSelect
 {

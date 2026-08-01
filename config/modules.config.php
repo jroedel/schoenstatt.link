@@ -14,19 +14,24 @@ $toolsOrNot = [];
 $env = getenv('APP_ENV') ?: 'production';
 $inDevelopment = $env != 'production';
 if ($inDevelopment) {
-    $toolsOrNot[] = 'ZendDeveloperTools';
+    $toolsOrNot[] = 'Laminas\DeveloperTools';
 }
 $modules = [
+    //must be first: rewrites legacy Zend\* config keys/service names at runtime
+    'Laminas\ZendFrameworkBridge',
     'BeaucalInvalidSession',
-    'Zend\Router',
-    'Zend\I18n',
-    'Zend\Form',
-    'Zend\Navigation',
-    'Zend\Mvc\Plugin\Identity',
-    'Zend\Mvc\Plugin\FlashMessenger',
-    'Zend\Mvc\Plugin\Prg',
-    'Zend\Mvc\I18n',
-    'Zend\Validator',
+    'Laminas\Router',
+    'Laminas\I18n',
+    'Laminas\Form',
+    'Laminas\Navigation',
+    'Laminas\Mvc\Plugin\Identity',
+    'Laminas\Mvc\Plugin\FlashMessenger',
+    'Laminas\Mvc\Plugin\Prg',
+    'Laminas\Mvc\I18n',
+    'Laminas\Validator',
+    //provides session factories + legacy Zend\Session\* aliases for
+    //not-yet-migrated third-party modules (BeaucalInvalidSession)
+    'Laminas\Session',
 //     'MaglMarkdown',
     'ZfSnapGeoip',
     'ZfcUser',

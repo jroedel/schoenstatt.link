@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Form\RoleForm;
@@ -22,7 +22,7 @@ class RoleFormFactory implements FactoryInterface
     {
         /** @var SchoenstattTable $table **/
         $table = $container->get(SchoenstattTable::class);
-        /** @var \Zend\I18n\Translator\Translator $translator */
+        /** @var \Laminas\I18n\Translator\Translator $translator */
         $translator = $container->get('translator');
 
         $associations = $table->getAssociationValueOptions();

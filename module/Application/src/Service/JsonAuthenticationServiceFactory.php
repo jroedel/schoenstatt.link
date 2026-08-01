@@ -3,16 +3,16 @@
 namespace Application\Service;
 
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\Factory\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Zend\Authentication\Storage\NonPersistent;
+use Laminas\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\ServiceLocatorInterface;
+use Laminas\Authentication\Storage\NonPersistent;
 use Application\Authentication\Adapter\JsonPost;
 
 class JsonAuthenticationServiceFactory implements FactoryInterface
 {
     public function __invoke(ContainerInterface $serviceLocator, $requestedName, array $options = null)
     {
-        return new \Zend\Authentication\AuthenticationService(
+        return new \Laminas\Authentication\AuthenticationService(
             $serviceLocator->get(NonPersistent::class),
             $serviceLocator->get(JsonPost::class)
         );

@@ -5,11 +5,11 @@
 
 namespace RestApi\Controller;
 
-use Zend\Mvc\Controller\AbstractRestfulController;
-use Zend\View\Model\JsonModel;
+use Laminas\Mvc\Controller\AbstractRestfulController;
+use Laminas\View\Model\JsonModel;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Zend\EventManager\EventManagerInterface;
+use Laminas\EventManager\EventManagerInterface;
 
 class ApiController extends AbstractRestfulController
 {
@@ -38,7 +38,7 @@ class ApiController extends AbstractRestfulController
 
     /**
      * set Event Manager to check Authorization
-     * @param \Zend\EventManager\EventManagerInterface $events
+     * @param \Laminas\EventManager\EventManagerInterface $events
      */
     public function setEventManager(EventManagerInterface $events)
     {
@@ -48,7 +48,7 @@ class ApiController extends AbstractRestfulController
 
     /**
      * This Function call from eventmanager to check authntication and token validation
-     * @param \Zend\Mvc\MvcEvent $event
+     * @param \Laminas\Mvc\MvcEvent $event
      * 
      */
     public function checkAuthorization($event)
@@ -89,7 +89,7 @@ class ApiController extends AbstractRestfulController
 
     /**
      * Check Request object have Authorization token or not 
-     * @param \Zend\Stdlib\RequestInterface $request
+     * @param \Laminas\Stdlib\RequestInterface $request
      * @return string
      */
     public function findJwtToken($request)
@@ -146,7 +146,7 @@ class ApiController extends AbstractRestfulController
 
     /**
      * Create Response for api Assign require data for response and check is valid response or give error
-     * @return \Zend\View\Model\JsonModel
+     * @return \Laminas\View\Model\JsonModel
      */
     public function createResponse()
     {

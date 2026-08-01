@@ -3,13 +3,13 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use Books\Form\SearchForm;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use SionModel\Problem\EntityProblem;
 use SionModel\Service\ProblemService;
-use Zend\View\Model\JsonModel;
+use Laminas\View\Model\JsonModel;
 use Books\Form\InactivationForm;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\PublicationsTable;
 use Books\Mailing\BooksMailer;
@@ -79,7 +79,7 @@ class LibrariesController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
 
@@ -354,7 +354,7 @@ class LibrariesController extends SionController
 
     /**
      * Send notices to users
-     * @return \Zend\View\Model\ViewModel
+     * @return \Laminas\View\Model\ViewModel
      */
     public function sendBookNoticesAction()
     {

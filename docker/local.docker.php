@@ -45,7 +45,7 @@ return [
     ],
     'service_manager' => [
         'factories' => [
-            \Zend\Db\Adapter\Adapter::class => \Application\Service\DbAdapterServiceFactory::class,
+            \Laminas\Db\Adapter\Adapter::class => \Application\Service\DbAdapterServiceFactory::class,
         ],
     ],
     'recaptcha' => [

@@ -9,16 +9,16 @@
 
 namespace Application\Controller;
 
-use Zend\Mvc\Controller\AbstractActionController;
-use Zend\View\Model\ViewModel;
+use Laminas\Mvc\Controller\AbstractActionController;
+use Laminas\View\Model\ViewModel;
 use Carbon\Carbon;
-use Zend\Navigation\Navigation;
+use Laminas\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\EventTextTable;
 use Books\Model\DictionaryTable;
 use samdark\sitemap\Sitemap;
-use Zend\View\HelperPluginManager;
+use Laminas\View\HelperPluginManager;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use function False\true;
@@ -146,7 +146,7 @@ class IndexController extends AbstractActionController
     {
         $navigation = $this->navigation;
         $plugins = $this->helperPluginManager;
-        /** @var \Zend\View\Helper\Navigation\Sitemap $sitemapHelper */
+        /** @var \Laminas\View\Helper\Navigation\Sitemap $sitemapHelper */
         $sitemapHelper = $plugins->get('navigation')->sitemap();
         $sitemapFile = 'data/sitemap/sitemap.xml';
         $sitemap = new Sitemap($sitemapFile, true);

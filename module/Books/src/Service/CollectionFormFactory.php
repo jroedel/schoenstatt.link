@@ -1,7 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\LibraryTable;
 use Books\Form\CollectionForm;
@@ -23,7 +23,7 @@ class CollectionFormFactory implements FactoryInterface
         /** @var LibraryTable $table **/
         $table = $container->get(LibraryTable::class);
 
-        /** @var \Zend\Router\RouteMatch $routeMatch */
+        /** @var \Laminas\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id');
         if (! isset($libraryId)) {

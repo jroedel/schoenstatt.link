@@ -2,8 +2,8 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Validator\NotEmpty;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Validator\NotEmpty;
 
 class CheckoutForm extends SionForm implements InputFilterProviderInterface
 {
@@ -78,7 +78,7 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     [
-                        'name' => 'Zend\Validator\NotEmpty',
+                        'name' => 'Laminas\Validator\NotEmpty',
                         'options' => [
                             'type' => NotEmpty::EMPTY_ARRAY
                         ],

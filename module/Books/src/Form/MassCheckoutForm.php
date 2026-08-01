@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class MassCheckoutForm extends SionForm implements InputFilterProviderInterface
 {

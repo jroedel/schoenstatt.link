@@ -2,9 +2,9 @@
 namespace Schoenstatt;
 
 use SionModel\Problem\EntityProblem;
-use Zend\ServiceManager\Proxy\LazyServiceFactory;
-use Zend\Router\Http\Segment;
-use Zend\Router\Http\Literal;
+use Laminas\ServiceManager\Proxy\LazyServiceFactory;
+use Laminas\Router\Http\Segment;
+use Laminas\Router\Http\Literal;
 use Spatie\SchemaOrg\Organization;
 use Spatie\SchemaOrg\EducationalOrganization;
 use Spatie\SchemaOrg\WebSite;

@@ -1,11 +1,11 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use JTranslate\Model\CountriesInfo;
-use Zend\Db\Adapter\Adapter;
+use Laminas\Db\Adapter\Adapter;
 use JTranslate\Model\TranslationsTable;
 
 /**

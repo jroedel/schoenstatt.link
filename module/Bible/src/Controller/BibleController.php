@@ -1,14 +1,14 @@
 <?php
 namespace Bible\Controller;
 
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use SionModel\Controller\SionController;
 use Bible\Model\BibleTable;
-use Zend\Db\Sql\Predicate\Between;
-use Zend\Db\Sql\Predicate\PredicateSet;
-use Zend\Db\Sql\Predicate\In;
+use Laminas\Db\Sql\Predicate\Between;
+use Laminas\Db\Sql\Predicate\PredicateSet;
+use Laminas\Db\Sql\Predicate\In;
 use Bible\Form\BibleSearchForm;
-use Zend\Db\Sql\Predicate\Like;
+use Laminas\Db\Sql\Predicate\Like;
 use voku\helper\UTF8;
 
 class BibleController extends SionController

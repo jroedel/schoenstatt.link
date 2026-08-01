@@ -1,7 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Form\LibraryForm;
 use Schoenstatt\Model\SchoenstattTable;
@@ -36,7 +36,7 @@ class LibraryFormFactory implements FactoryInterface
 
         $form = new LibraryForm();
 
-        /** @var \Zend\Router\RouteMatch $routeMatch */
+        /** @var \Laminas\Router\RouteMatch $routeMatch */
         $routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
         $libraryId = $routeMatch->getParam('library_id');
         if (isset($libraryId)) {

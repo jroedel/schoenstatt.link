@@ -2,7 +2,7 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class ImportForm extends SionForm implements InputFilterProviderInterface
 {
@@ -111,7 +111,7 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -136,7 +136,7 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -158,7 +158,7 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -180,7 +180,7 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

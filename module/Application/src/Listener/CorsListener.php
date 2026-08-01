@@ -2,11 +2,11 @@
 
 namespace Application\Listener;
 
-use Zend\EventManager\AbstractListenerAggregate;
-use Zend\EventManager\EventManagerInterface;
-use Zend\Http\Request;
-use Zend\Http\Response;
-use Zend\Mvc\MvcEvent;
+use Laminas\EventManager\AbstractListenerAggregate;
+use Laminas\EventManager\EventManagerInterface;
+use Laminas\Http\Request;
+use Laminas\Http\Response;
+use Laminas\Mvc\MvcEvent;
 
 /**
  * Minimal CORS support for the public read-only APIs, replacing the abandoned

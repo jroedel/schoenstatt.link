@@ -1,7 +1,7 @@
 <?php
 namespace Books\Controller;
 
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use SionModel\Controller\SionController;
 use Books\Form\PublicationsSearchForm;
@@ -12,8 +12,8 @@ use Books\Model\LibraryTable;
 use Books\Model\DictionaryTable;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Zend\Json\Json;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\Json\Json;
 
 class PublicationsController extends SionController
 {
@@ -185,7 +185,7 @@ class PublicationsController extends SionController
     public function copyToMainCorpusAction()
     {
         $view = parent::showAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $entityObject = $view->getVariable('entity');
@@ -221,7 +221,7 @@ class PublicationsController extends SionController
             $object = $this->getEntityObject($id);
             if (isset($object)) {
                 /**
-                 * @var \Zend\Http\Response $response
+                 * @var \Laminas\Http\Response $response
                  */
                 $response = $this->redirect()->toRoute(
                     'publication',
@@ -242,7 +242,7 @@ class PublicationsController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $entityObject = $view->getVariable('entity');
@@ -443,7 +443,7 @@ class PublicationsController extends SionController
     public function editAction()
     {
         $view = parent::editAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $entityId = $view->getVariable('entityId');
@@ -454,7 +454,7 @@ class PublicationsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $entityId = $view->getVariable('entityId');

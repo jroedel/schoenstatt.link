@@ -39,7 +39,7 @@ class DictionaryApiController extends ApiController
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Mvc\Controller\AbstractRestfulController::get()
+     * @see \Laminas\Mvc\Controller\AbstractRestfulController::get()
      */
     public function get($id)
     {
@@ -60,7 +60,7 @@ class DictionaryApiController extends ApiController
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Mvc\Controller\AbstractRestfulController::update()
+     * @see \Laminas\Mvc\Controller\AbstractRestfulController::update()
      */
     public function update($id, $data)
     {
@@ -83,7 +83,7 @@ class DictionaryApiController extends ApiController
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Mvc\Controller\AbstractRestfulController::create()
+     * @see \Laminas\Mvc\Controller\AbstractRestfulController::create()
      */
     public function create($data)
     {
@@ -120,7 +120,7 @@ class DictionaryApiController extends ApiController
     /**
      * This is for replacing the whole online dictionary.
      * {@inheritDoc}
-     * @see \Zend\Mvc\Controller\AbstractRestfulController::replaceList()
+     * @see \Laminas\Mvc\Controller\AbstractRestfulController::replaceList()
      */
     public function replaceList($data)
     {
@@ -335,7 +335,7 @@ class DictionaryApiController extends ApiController
 
     /**
      * Retrieve an input filter to validate api-submitted dictionary entries
-     * @return \Zend\InputFilter\InputFilterInterface
+     * @return \Laminas\InputFilter\InputFilterInterface
      */
     public function getInputFilter()
     {

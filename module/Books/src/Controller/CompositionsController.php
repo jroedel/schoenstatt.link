@@ -2,9 +2,9 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Stdlib\ResponseInterface;
+use Laminas\Stdlib\ResponseInterface;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 
 class CompositionsController extends SionController
 {

@@ -1,9 +1,9 @@
 <?php
 namespace Books;
 
-use Zend\Db\Adapter\Adapter;
-use Zend\Router\Http\Literal;
-use Zend\Router\Http\Segment;
+use Laminas\Db\Adapter\Adapter;
+use Laminas\Router\Http\Literal;
+use Laminas\Router\Http\Segment;
 use Books\Mailing\BooksMailer;
 use Schoenstatt\Model\SchoenstattTable;
 use BjyAuthorize\Guard\Route;
@@ -12,13 +12,13 @@ use Schoenstatt\Service\PatresGateway;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
-use Zend\ServiceManager\Proxy\LazyServiceFactory;
+use Laminas\ServiceManager\Proxy\LazyServiceFactory;
 use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
-use Zend\Router\Http\Method;
+use Laminas\Router\Http\Method;
 use Books\Model\DictionaryTable;
-use Zend\Navigation\Navigation;
+use Laminas\Navigation\Navigation;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 $textColumns = [

@@ -3,23 +3,23 @@ namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
 use JUser\Model\UserTable;
-use Zend\Db\Adapter\AdapterInterface;
+use Laminas\Db\Adapter\AdapterInterface;
 use Carbon\Carbon;
-use Zend\Db\Sql\Select;
-use Zend\Db\Sql\Predicate\Expression;
-use Zend\Db\Sql\Where;
-use Zend\Db\Sql\Predicate\Predicate;
-use Zend\Db\Sql\Predicate\Like;
-use Zend\Db\Sql\Predicate\Operator;
-use Zend\Db\Sql\Predicate\PredicateSet;
-use Zend\Db\Sql\Predicate\In;
+use Laminas\Db\Sql\Select;
+use Laminas\Db\Sql\Predicate\Expression;
+use Laminas\Db\Sql\Where;
+use Laminas\Db\Sql\Predicate\Predicate;
+use Laminas\Db\Sql\Predicate\Like;
+use Laminas\Db\Sql\Predicate\Operator;
+use Laminas\Db\Sql\Predicate\PredicateSet;
+use Laminas\Db\Sql\Predicate\In;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
-use Zend\Permissions\Acl\Resource\GenericResource;
+use Laminas\Permissions\Acl\Resource\GenericResource;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
-use Zend\Db\Sql\Predicate\IsNull;
-use Zend\Db\Sql\Predicate\IsNotNull;
+use Laminas\Db\Sql\Predicate\IsNull;
+use Laminas\Db\Sql\Predicate\IsNotNull;
 use Books\Filter\SortText;
 
 class LibraryTable extends SionTable implements
@@ -1674,7 +1674,7 @@ ORDER BY CreatedOn DESC";
     /**
      * Get a standardized select object to retrieve records from the database
      * @todo factor out
-     * @return \Zend\Db\Sql\Select
+     * @return \Laminas\Db\Sql\Select
      */
     protected function getCheckoutSelectPrototype()
     {

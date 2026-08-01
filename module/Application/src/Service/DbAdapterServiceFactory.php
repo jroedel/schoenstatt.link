@@ -1,7 +1,7 @@
 <?php
 namespace Application\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 
 /**
@@ -32,7 +32,7 @@ class DbAdapterServiceFactory implements FactoryInterface
 
         //bjyoungblood/bjy-profiler (dev query profiling) was dropped 2026-08-02:
         //abandoned, and it required the vulnerable monolithic zendframework metapackage
-        return new \Zend\Db\Adapter\Adapter([
+        return new \Laminas\Db\Adapter\Adapter([
             'driver'    => 'pdo',
             'dsn'       => 'mysql:dbname=' . $dbParams['database'] . ';host=' . $dbParams['hostname'],
             'database'  => $dbParams['database'],

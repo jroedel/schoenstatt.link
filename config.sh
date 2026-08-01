@@ -16,8 +16,8 @@ chmod 740 .phploy
 if [ ! -f config/autoload/local.php ]; then
   cp config/autoload/local.php.dist config/autoload/local.php
 fi
-if [ ! -f config/autoload/zenddevelopertools.local.php ]; then
-  cp config/autoload/zenddevelopertools.local.php.dist config/autoload/zenddevelopertools.local.php
+if [ ! -f config/autoload/laminas-developer-tools.local.php ]; then
+  cp config/autoload/laminas-developer-tools.local.php.dist config/autoload/laminas-developer-tools.local.php
 fi
 if [ ! -f config/autoload/cache.local.php ]; then
   cp config/autoload/cache.local.php.dist config/autoload/cache.local.php

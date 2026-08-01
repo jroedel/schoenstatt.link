@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Validator;
 
-use Zend\Validator\AbstractValidator;
-use Zend\Json\Json;
+use Laminas\Validator\AbstractValidator;
+use Laminas\Json\Json;
 use Spatie\OpeningHours\OpeningHours;
 use Spatie\OpeningHours\Exceptions\MaximumLimitExceeded;
 
@@ -30,7 +30,7 @@ class OpeningHoursSpecificationJson extends AbstractValidator
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Validator\ValidatorInterface::isValid()
+     * @see \Laminas\Validator\ValidatorInterface::isValid()
      */
     public function isValid($value)
     {

@@ -1,7 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Mailing\BooksMailer;
 use Books\Model\LibraryTable;
