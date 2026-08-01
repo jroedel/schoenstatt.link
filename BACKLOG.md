@@ -66,9 +66,33 @@ that don't exist (no-ops today, confusing tomorrow):
 
 Each rung verified by the Phase 2 suite:
 
-1. Latest ZF3-compatible dependency versions.
+1. [x] Latest ZF3-compatible dependency versions (2026-08-02, commit
+   "Phase 3 rung 1"). Composer 1.9 → 2.10; six dead/abandoned packages
+   eliminated (zfr-cors → CorsListener, multidots → module/RestApi, talis →
+   Books\OpenUrl, mledoze data vendored into JTranslate, libkml unused,
+   bjy-profiler); roave/security-advisories superseded by Composer's native
+   advisory blocking. 5 VCS forks remain: SlmLocale, BjyAuthorize,
+   ZfSnapGeoip, chordpro-php, ZfcUser (pinned to 2020 commit — its 2022 head
+   breaks JUser's UserTable; moot once LmcUser replaces it).
 2. ZF → Laminas via `laminas/laminas-migration`.
 3. Replace abandoned packages (SwiftMailer → symfony/mailer, PHPExcel →
    PhpSpreadsheet, ZfcUser/BjyAuthorize → LM-Commons successors, …) and
    re-evaluate each pinned personal VCS fork in composer.json.
 4. PHP 8.0 → 8.1 → … → 8.4, one version at a time.
+
+Advisory debts consciously carried (documented in composer.json
+`config.policy`), to be paid at the rung named:
+
+- `phpoffice/phpexcel` — multiple XSS + one high XXE advisory; used by 3
+  files (library import + 2 export views, all behind auth). Pay at rung 3
+  with the PhpSpreadsheet migration.
+- `firebase/php-jwt` 6.11 — low-severity CVE-2025-45769; the fixed v7
+  requires PHP >= 8.0. Pay at rung 4.
+
+Removed dev nicety: bjy-profiler DB query profiling (DbAdapterServiceFactory
+now always returns a plain adapter). If query profiling is missed, pick a
+maintained tool after the Laminas migration.
+
+The countries dataset is now static (module/JTranslate/data/countries.json,
+vendored 2026-08-02 from mledoze/countries 1.8); refresh occasionally from
+upstream if country data matters.
