@@ -16,5 +16,3 @@ node_modules
 .idea/
 .env
 tools/*.phar
-data/sitemap/*
-!data/sitemap/.gitkeep
