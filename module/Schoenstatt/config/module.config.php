@@ -147,20 +147,6 @@ return [
             'languageChooser'       => View\Helper\LanguageChooser::class,
         ],
     ],
-
-    'bjyauthorize' => [
-            // Resource providers to be used to load all available resources into Zend\Permissions\Acl\Acl
-            // Keys are the provider service names, values are the options to be passed to the provider
-            'resource_providers'    => [
-                Model\SchoenstattTable::class => [],
-            ],
-
-            // Rule providers to be used to load all available rules into Zend\Permissions\Acl\Acl
-            // Keys are the provider service names, values are the options to be passed to the provider
-            'rule_providers'        => [
-                Model\SchoenstattTable::class => [],
-            ],
-    ],
     'schoenstatt' => [
         'general_presidium_id' => 71,
         'person_value_options_providers' => [
@@ -2033,6 +2019,16 @@ return [
         ],
     ],
     'bjyauthorize' => [
+        // Resource providers to be used to load all available resources into Zend\Permissions\Acl\Acl
+        // Keys are the provider service names, values are the options to be passed to the provider
+        'resource_providers'    => [
+            Model\SchoenstattTable::class => [],
+        ],
+        // Rule providers to be used to load all available rules into Zend\Permissions\Acl\Acl
+        // Keys are the provider service names, values are the options to be passed to the provider
+        'rule_providers'        => [
+            Model\SchoenstattTable::class => [],
+        ],
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['sch_moderator']],
