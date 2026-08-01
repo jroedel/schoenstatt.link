@@ -74,11 +74,27 @@ Each rung verified by the Phase 2 suite:
    advisory blocking. 5 VCS forks remain: SlmLocale, BjyAuthorize,
    ZfSnapGeoip, chordpro-php, ZfcUser (pinned to 2020 commit — its 2022 head
    breaks JUser's UserTable; moot once LmcUser replaces it).
-2. ZF → Laminas via `laminas/laminas-migration`.
+2. [x] ZF → Laminas via `laminas/laminas-migration` (2026-08-02, commit
+   "Phase 3 rung 2"). The ZendFrameworkBridge module + dependency-plugin
+   carry the not-yet-migrated third-party modules (ZfcUser, BjyAuthorize,
+   SlmLocale, BeaucalInvalidSession, zfc-datagrid, TwbBundle, ZfSnapGeoip).
+   Temporary pins to revisit at rung 3: laminas-form ~2.14.3,
+   laminas-router ~3.3.0.
 3. Replace abandoned packages (SwiftMailer → symfony/mailer, PHPExcel →
    PhpSpreadsheet, ZfcUser/BjyAuthorize → LM-Commons successors, …) and
-   re-evaluate each pinned personal VCS fork in composer.json.
-4. PHP 8.0 → 8.1 → … → 8.4, one version at a time.
+   re-evaluate each pinned personal VCS fork in composer.json. Rung-2
+   additions to this list:
+   - zf-snap-geoip: its MaxMind GeoLiteCity.dat legacy database was
+     discontinued upstream in 2019 and lives inside vendor/ (wiped on fresh
+     install; rescue copy in data/geoip/, gitignored). Replace with
+     GeoLite2 + maxmind-db/reader, or drop geoip features.
+   - Lifting the ZfcUser/ZfSnapGeoip hydrator ^2 caps unlocks laminas-form
+     2.17.2+ (XSS fix) and laminas-router 3.4+.
+   - The merged runtime config still contains ~84 legacy Zend\* strings
+     from un-migrated vendor modules (bridge handles the known ones);
+     sweep when those modules are replaced.
+4. PHP 8.0 → 8.1 → … → 8.4, one version at a time. (Also upgrade
+   firebase/php-jwt to ^7 at the 8.0 rung — see advisory ignore.)
 
 Advisory debts consciously carried (documented in composer.json
 `config.policy`), to be paid at the rung named:
