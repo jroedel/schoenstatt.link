@@ -257,6 +257,9 @@ class Module
 
         $navFixer = new FixNavigationPages();
         $navFixer->attach($app->getEventManager());
+
+        $corsListener = new Listener\CorsListener();
+        $corsListener->attach($app->getEventManager());
     }
 
     public function getConfig()

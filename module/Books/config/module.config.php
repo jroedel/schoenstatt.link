@@ -443,10 +443,7 @@ return [
                                 'action' => null,
                                 'isAuthorizationRequired' => true,
                                 'controller' => Controller\LibrariesApiController::class,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
-                                ],
+                                'cors' => true,
                             ],
                             'constraints' => [
                                 'library_id' => '[0-9]{1,3}',
@@ -462,10 +459,7 @@ return [
                                         'action' => null,
                                         'isAuthorizationRequired' => true,
                                         'controller' => Controller\BooksApiController::class,
-                                        \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                            'allowed_origins' => ['*'],
-                                            'allowed_methods' => ['GET'],
-                                        ],
+                                        'cors' => true,
                                     ],
                                     'constraints' => [
                                         'book_id' => '[0-9]{1,8}',
@@ -528,10 +522,7 @@ return [
                                 'action' => null,
                                 'controller' => Controller\DictionaryApiController::class,
                                 'isAuthorizationRequired' => true,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
-                                ],
+                                'cors' => true,
                             ],
                         ],
                         'may_terminate' => false,
@@ -593,10 +584,7 @@ return [
                             'defaults' => [
                                 'action' => null,
                                 'controller' => Controller\PublicationsApiController::class,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
-                                ],
+                                'cors' => true,
                             ],
                             'constraints' => [
                                 'publication_id' => '[0-9]{1,8}',

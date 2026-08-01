@@ -18,8 +18,24 @@ abstract class SmokeTestCase extends TestCase
     /** @return array{status: int, redirect: string, body: string, contentType: string} */
     protected function get(string $path, bool $followRedirects = false): array
     {
+        return $this->request('GET', $path, [], $followRedirects);
+    }
+
+    /**
+     * @param string[] $extraHeaders e.g. ['Origin: https://example.org']
+     * @return array{status: int, redirect: string, body: string, contentType: string,
+     *               headers: array<string, string>}
+     */
+    protected function request(
+        string $method,
+        string $path,
+        array $extraHeaders = [],
+        bool $followRedirects = false
+    ): array {
+        $responseHeaders = [];
         $ch = curl_init($this->baseUrl() . $path);
         curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => $followRedirects,
             CURLOPT_MAXREDIRS => 5,
@@ -30,7 +46,14 @@ abstract class SmokeTestCase extends TestCase
             CURLOPT_ENCODING => '',
             // The app sniffs Accept-Language for locale detection; pin it so
             // results don't depend on the environment.
-            CURLOPT_HTTPHEADER => ['Accept-Language: en'],
+            CURLOPT_HTTPHEADER => array_merge(['Accept-Language: en'], $extraHeaders),
+            CURLOPT_HEADERFUNCTION => function ($ch, string $line) use (&$responseHeaders): int {
+                if (false !== strpos($line, ':')) {
+                    [$name, $value] = explode(':', $line, 2);
+                    $responseHeaders[strtolower(trim($name))] = trim($value);
+                }
+                return strlen($line);
+            },
         ]);
         $body = curl_exec($ch);
         if ($body === false) {
@@ -45,6 +68,7 @@ abstract class SmokeTestCase extends TestCase
             'redirect' => (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL),
             'body' => (string) $body,
             'contentType' => (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE),
+            'headers' => $responseHeaders,
         ];
         curl_close($ch);
         return $result;
