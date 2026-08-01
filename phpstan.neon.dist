@@ -1,0 +1,22 @@
+includes:
+    - phpstan-baseline.neon
+
+# Static analysis for the legacy baseline. Level is deliberately low and all
+# pre-existing errors live in phpstan-baseline.neon: the contract is "no NEW
+# errors", not "the legacy code is clean". Raise the level as modernization
+# proceeds. Run inside the docker app container:
+#   docker compose exec -T app php -d memory_limit=1G tools/phpstan.phar analyse
+parameters:
+    level: 0
+    phpVersion: 70400
+    paths:
+        - module/Application/src
+        - module/Bible/src
+        - module/Books/src
+        - module/JTranslate/src
+        - module/JUser/src
+        - module/Schoenstatt/src
+        - module/SionModel/src
+    bootstrapFiles:
+        - vendor/autoload.php
+    reportUnmatchedIgnoredErrors: false
