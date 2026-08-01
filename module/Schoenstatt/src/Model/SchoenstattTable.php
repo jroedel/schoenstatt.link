@@ -11,6 +11,7 @@ use Zend\Db\TableGateway\TableGatewayInterface;
 use Zend\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
+use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Zend\Permissions\Acl\Resource\GenericResource;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Expression;
@@ -43,7 +44,8 @@ use Cocur\Slugify\Slugify;
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
     PersonValueOptionsProviderInterface,
-    ResourceProviderInterface
+    ResourceProviderInterface,
+    RuleProviderInterface
 {
     const TRANSLATOR_DOMAIN = 'Schoenstatt';
 
