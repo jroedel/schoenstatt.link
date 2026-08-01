@@ -13,3 +13,4 @@ phploy.log
 .phploy
 /language/
 node_modules
+.idea/
