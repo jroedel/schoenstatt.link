@@ -92,6 +92,17 @@ Each rung verified by the Phase 2 suite:
    PhpSpreadsheet, BjyAuthorize → LM-Commons successor, …) and re-evaluate
    each pinned personal VCS fork in composer.json (3 left: SlmLocale,
    BjyAuthorize, chordpro-php).
+   - CORRECTION (2026-08-02, verified against packagist): two of these
+     framings are wrong. **BjyAuthorize needs no successor** — upstream
+     `kokspflanze/bjy-authorize` 3.0.0 supports PHP 8.2–8.5, so the item is a
+     fork retirement, not an LM-Commons migration. **SwiftMailer is not a
+     PHP 8 blocker** — 6.3.0 declares `php >=7.0.0` and installs on 8.3, so
+     symfony/mailer stays decoupled from rung 4 (still worth doing: the
+     package is abandoned). `slm/locale` 1.2.0 supports 8.3, retiring that
+     fork too. TwbBundle 3.3.1 declares `>=5.3.2` so it installs freely; its
+     risk is runtime deprecations, not resolution — and once bjy-authorize
+     and slm/locale are on Laminas-native upstreams, **TwbBundle is the only
+     remaining reason the ZendFrameworkBridge is loaded.**
    - [x] ZfcUser eliminated (2026-08-02, "Rung 3a"): passwordless
      magic-link auth implemented in JUser itself (not LmcUser — its
      password-centric surface would have been dead weight). Password auth
@@ -132,8 +143,55 @@ Each rung verified by the Phase 2 suite:
    - API magic-code login does NOT auto-create accounts (web flow does);
      an allow-list validator for API registration is an open product
      decision (old @todo in LoginV1ApiController).
-4. PHP 8.0 → 8.1 → … → 8.4, one version at a time. (Also upgrade
-   firebase/php-jwt to ^7 at the 8.0 rung — see advisory ignore.)
+4. PHP 8.3. **The app already runs green on 8.3** (2026-08-02): capsule
+   flipped via `PHP_VERSION=8.3`/`APCU_VERSION=5.1.24` in `.env`, one real
+   blocker found and fixed (JTranslate `adcdd8a`: a vestigial PDO bound
+   param that 7.4's emulated prepares ignored and 8.0+ rejects with HY093 —
+   it ran in `Application::onBootstrap`, so it fataled *every* route), then
+   smoke 52/52 on PHP 8.3.33. A full-suite run under `E_ALL` logging found
+   **zero deprecations from our own modules**; all of the ~50-per-request
+   noise is old vendor Laminas predating 8.1 return-type enforcement, masked
+   by `index.php`'s `~E_DEPRECATED`. So the "one version at a time" plan is
+   moot — the remaining work is not runtime, it is composer resolution.
+
+   Moving `config.platform.php` off 7.4.33 makes Composer refuse every
+   package still capped below 8. Upstream has caught up on all of them:
+
+   | package | locked | target | note |
+   | --- | --- | --- | --- |
+   | `laminas/laminas-cache` | 2.9.0 | 4.3.0 | the only real code work; see below |
+   | `kokspflanze/bjy-authorize` | 1.7.1 (fork) | 3.0.0 | retires a fork |
+   | `slm/locale` | 0.3.0 (fork) | 1.2.0 | retires a fork |
+   | `laminas/laminas-serializer` | 2.9.1 | 3.3.0 | mechanical |
+   | `laminas/laminas-log` | 2.12.0 | 2.17.1 | mechanical |
+   | `laminas/laminas-developer-tools` | 1.3.2 | 2.10.0 | dev-only |
+   | `spatie/schema-org` | 2.16.0 | 4.0.2 | two majors of API change to review |
+   | `firebase/php-jwt` | 6.10.0 | ^7 | clears the deferred CVE ignore |
+
+   These cannot be bumped one at a time under the 7.4 pin (each target
+   requires ≥8.1, which conflicts with the pin), so the platform pin and the
+   whole set move in a single `composer update` resolution pass.
+
+   **laminas-cache 2.9 → 4.x, sized 2026-08-02.** Smaller than feared. The
+   item API (`getItem`/`setItem`/`getItems`/`removeItem`, `$success`,
+   `$casToken`) and `StorageInterface` are unchanged, so SionCacheTrait's
+   ~10 call sites and `Books\Service\DriveGateway` need nothing. The break is:
+   - `Laminas\Cache\StorageFactory::factory()` was removed in 3.0 — **3 call
+     sites**: `Application\Service\CacheFactory`,
+     `JUser\Service\CacheFactory`, `JTranslate\Service\CacheFactory`. They
+     inject `Laminas\Cache\Service\StorageAdapterFactoryInterface` and call
+     `createFromArrayConfiguration()` instead.
+   - storage adapters are separate packages now: add
+     `laminas/laminas-cache-storage-adapter-apcu` and `-filesystem`.
+   - the config array shape changes (`adapter.name` → `adapter` as a plain
+     string, `ttl` moves into `options`, `plugins` entries become
+     `['name' => …]`): `config/autoload/cache.local.php.dist`,
+     `jtranslate.global.php`, `juser.global.php`,
+     `module/JTranslate/config/module.config.php`.
+   - **deploy gotcha**: `config/autoload/cache.local.php` is untracked,
+     machine-specific state (same disease as `public/.htaccess`), so
+     production's server-side copy must be reshaped *during* the deploy or
+     the app fatals on boot. Plan that step explicitly in DEPLOY.md.
 5. Passkeys (WebAuthn) after the PHP 8.1 rung: web-auth/webauthn-lib
    current major, credential table, enrollment inside an authenticated
    session, magic link remains the fallback. Decided 2026-08-02.
@@ -370,9 +428,43 @@ HTTP 200 is a *symptom*, not a diagnosis.)
 Advisory debts consciously carried (documented in composer.json
 `config.policy`), to be paid at the rung named:
 
-- `phpoffice/phpexcel` — multiple XSS + one high XXE advisory; used by 3
-  files (library import + 2 export views, all behind auth). Pay at rung 3
-  with the PhpSpreadsheet migration.
+- `phpoffice/phpexcel` — multiple XSS + one high XXE advisory. **Reassessed
+  2026-08-02: this is a hard PHP 8 blocker, not just an advisory debt, and
+  the feature is already silently dead on 8.3.** PHPExcel 1.8.2 does not
+  merely deprecate under PHP 8 — it fails to *parse*
+  (`Array and string offset access syntax with curly braces is no longer
+  supported`, Shared/String.php:526, removed in 8.0). The smoke suite is
+  green on 8.3 only because no test autoloads a PHPExcel class. Scope is
+  also far smaller than recorded here: not 3 files but **one method, six
+  calls** — `importSpreadsheetFile()` in `LibraryImportsController`. The two
+  export views died with zfc-datagrid. All six calls (`IOFactory::load`,
+  `getSheetByName`, `getHighestDataRow`, `getHighestDataColumn`,
+  `rangeToArray`, `disconnectWorksheets`) survive unchanged through
+  PhpSpreadsheet 5.x.
+  The feature is live and worth migrating rather than eliminating: 14 rows in
+  `lib_imports`, all `.xlsx`, library 3 (Colegio Mayor), last successful
+  import 2019-09 (annual *jornada de trabajo* sessions). The 2021 attempt is
+  still `pending` because the form takes a hand-typed *server* path and
+  someone entered a Windows desktop path — the `@todo` about accepting a real
+  upload is the actual product bug here.
+  Decided 2026-08-02: go straight to `^5` (needs `php ^8.2`), which means the
+  rung-4 platform bump lands **before** this, not after; extract the reading
+  into a testable `Books\Service\SpreadsheetReader` rather than swapping
+  class names in place; verify by golden-master diff against a real
+  historical production `.xlsx`. Watch one specific behavior change:
+  PhpSpreadsheet 1.28 made `toFormattedString` always return a string, which
+  changes `rangeToArray` output. Most consumers are safe (`copyrightYear`,
+  `withinLibraryId`, `publicationId` all go through `is_numeric` + `(int)`),
+  but `$foundAValue = … || isset($rowColumns[$columnIndex])` is not: if empty
+  cells come back `''` instead of `null`, empty-row skipping breaks silently
+  and blank books get created. Also add a null guard on `getSheetByName()` —
+  a wrong worksheet name currently fatals on `null->getHighestDataRow()`.
+  `config.platform` needs seven more ext pins for PhpSpreadsheet
+  (`ctype`, `fileinfo`, `iconv`, `libxml`, `xmlreader`, `zip`, `zlib`); the
+  capsule has all thirteen it wants. **Verify them on production first** via
+  the authenticated `/sm/phpinfo` page — `config.platform` overrides real
+  platform detection on the server too, so a wrong pin converts a resolution
+  error into a runtime fatal.
 - `firebase/php-jwt` 6.11 — low-severity CVE-2025-45769; the fixed v7
   requires PHP >= 8.0. Pay at rung 4.
 
