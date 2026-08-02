@@ -170,6 +170,39 @@ class AuthSmokeTest extends SmokeTestCase
     }
 
     /**
+     * Redeeming a link proves the address works, for EVERY account — not just
+     * brand-new ones. Regression test for a gap where only inactive accounts
+     * (via activateUser) ever got email_verified set: an account that was
+     * already active but never verified could sign in forever without the
+     * flag flipping.
+     */
+    public function testSignInMarksEmailVerifiedEvenForActiveAccounts(): void
+    {
+        $email = $this->uniqueEmail();
+        $jar = $this->newCookieJar();
+
+        // create the account and obtain a live token the normal way
+        $this->requestSignInLink($jar, $email);
+        $verifyPath = $this->toLocalPath($this->extractVerifyUrl($this->awaitMessageFor($email)['Text']));
+
+        // force the gap scenario: active, but email never verified
+        $update = $this->pdo()->prepare('UPDATE user SET state = 1, email_verified = 0 WHERE email = :email');
+        $update->execute(['email' => $email]);
+        $this->assertSame(1, $update->rowCount(), 'the account should exist by now');
+
+        $verify = $this->get($verifyPath, false, $jar);
+        $this->assertSame(302, $verify['status'], 'the link should still sign the user in');
+
+        $row = $this->pdo()->prepare(
+            'SELECT email_verified, verification_token FROM user WHERE email = :email'
+        );
+        $row->execute(['email' => $email]);
+        $state = $row->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame('1', (string) $state['email_verified'], 'redeeming the link must verify the address');
+        $this->assertNull($state['verification_token'], 'and still burn the token');
+    }
+
+    /**
      * Cookies are load-bearing for the whole flow, so without consent the app
      * reroutes even the verify link to the explainer instead of failing it.
      * That matters: the token stays unspent and the link still works once the
@@ -337,10 +370,9 @@ class AuthSmokeTest extends SmokeTestCase
      * Drop the role links first, then the accounts themselves — user_role_linker
      * cascades on delete, but being explicit keeps this honest if that changes.
      */
-    private function purgeAccounts(): void
+    private function pdo(): PDO
     {
-        $pattern = self::EMAIL_PREFIX . '%' . self::EMAIL_DOMAIN;
-        $pdo = new PDO(
+        return new PDO(
             sprintf(
                 'mysql:host=%s;dbname=%s;charset=utf8mb4',
                 getenv('SMOKE_DB_HOST') ?: 'db',
@@ -350,6 +382,12 @@ class AuthSmokeTest extends SmokeTestCase
             getenv('SMOKE_DB_PASSWORD') ?: 'schoenstatt',
             [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
+    }
+
+    private function purgeAccounts(): void
+    {
+        $pattern = self::EMAIL_PREFIX . '%' . self::EMAIL_DOMAIN;
+        $pdo = $this->pdo();
 
         $linker = $pdo->prepare(
             'DELETE FROM user_role_linker'
