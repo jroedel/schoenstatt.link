@@ -1,5 +1,14 @@
-# Time capsule: matches production as verified 2026-08-01 (PHP 7.4.33 + Apache)
-FROM php:7.4-apache
+# Time capsule. PHP_VERSION selects the target:
+#   7.4 — production as verified 2026-08-01 (the pre-rung-4 baseline)
+#   8.3 — the rung-4 target (production offers 5.3 through 8.5)
+# Switch with PHP_VERSION in .env, then `docker compose build && docker compose up -d`.
+# vendor/ is bind-mounted and platform-specific, so re-run composer install after
+# switching — the two versions resolve to different package sets.
+ARG PHP_VERSION=7.4
+FROM php:${PHP_VERSION}-apache
+
+# APCu 5.1.22 is the last release that builds on 7.4; 8.x needs 5.1.24+.
+ARG APCU_VERSION=5.1.22
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
@@ -11,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip opcache gd \
-    && pecl install apcu-5.1.22 \
+    && pecl install "apcu-${APCU_VERSION}" \
     && docker-php-ext-enable apcu \
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
     # 32M default is too small for this app's entity caches; exhaustion used to
