@@ -114,6 +114,53 @@ Each rung verified by the Phase 2 suite:
    current major, credential table, enrollment inside an authenticated
    session, magic link remains the fallback. Decided 2026-08-02.
 
+## Production deploy checklist (first modernization deploy)
+
+The current branch state is the intended first deploy: same PHP (7.4.33) as
+production, rehearsed 2026-08-02 in the capsule under production conditions
+(`APP_ENV` unset → config+module-map caching on, `composer install --no-dev`)
+— 50/50 smoke tests green.
+
+Discovery from that rehearsal: `public/.htaccess` carries a hardcoded
+`SetEnv "APP_ENV" "development"` (present since 2016) — so production has
+been running in development mode (no config caching, dev modules loaded,
+dev packages required) its whole life. NOTE: `.htaccess` was untracked and
+gitignored in 2017, so phploy does NOT deploy it — the local copy (line now
+removed) only configures the capsule, and the production copy must be
+edited by hand on the server (step 3a below). Consider re-tracking a
+canonical `.htaccess` (or a `.htaccess.dist` template) later so this file
+stops being invisible, machine-specific state.
+
+Operator steps (Dave never deploys; Fr. Jeff runs these):
+
+1. Backups: `mysqldump` of ourlink_db1 + tar of the app dir (code rollback =
+   restore tar; the DB migration is backward-compatible).
+2. Verify on the server before cutting over: `git --version` exists (the
+   three composer VCS forks install via git clone), and the SMTP credentials
+   in prod `config/autoload/local.php` still send (magic links are the ONLY
+   way to sign in after this deploy).
+3. Deploy files with phploy from the chosen branch. Confirm phploy also
+   syncs the three submodule dirs (module/SionModel, JUser, JTranslate).
+   3a. Fetch the server's `public/.htaccess`, diff it against the local
+   copy, and remove its `SetEnv "APP_ENV" "development"` line — this is
+   what switches production out of development mode. Do NOT delete
+   server-specific rules that may live in that file.
+4. On the server: `mysql ourlink_db1 < database/db6.4.sql`, then
+   `php composer.phar install --no-dev` (deployed composer.phar is 2.10;
+   it will also delete zf-snap-geoip + GeoLiteCity.dat from vendor).
+5. Ensure `data/config/` exists and is writable by the web user (config
+   cache lives there now). On EVERY future deploy: delete
+   `data/config/module-*-cache.*.php` after syncing files.
+6. php.ini (hosting panel): `apc.shm_size=256M` (APCu exhaustion at the
+   default 32M is what triggered the fatal-200 wedge),
+   `display_errors=Off` (currently On, leaks paths). Then clear APCu once
+   (temporary token-protected script, or the panel's PHP restart).
+7. Smoke-check: homepage; full magic-link round trip with a real mailbox;
+   replaying the used link → 400; several cold entity pages from the
+   sitemap (fatal-200 regression); an admin page; API code flow if used.
+8. Users: passwords stop working — brief note that sign-in is now "enter
+   email, click the link".
+
 ## Shared-library convergence plan (decided 2026-08-02)
 
 The shared submodule repos (laminas-sion-model, laminas-juser) have a second
