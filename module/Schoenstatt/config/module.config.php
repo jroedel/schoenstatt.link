@@ -2,7 +2,6 @@
 namespace Schoenstatt;
 
 use SionModel\Problem\EntityProblem;
-use Laminas\ServiceManager\Proxy\LazyServiceFactory;
 use Laminas\Router\Http\Segment;
 use Laminas\Router\Http\Literal;
 use Spatie\SchemaOrg\Organization;
@@ -84,50 +83,6 @@ return [
             Form\ImportFatherForm::class            => Service\ImportFatherFormFactory::class,
             'Schoenstatt\PersonTagsValueOptions'    => Service\PersonTagsValueOptionsFactory::class,
             Service\AssociationKindsService::class  => Service\AssociationKindsServiceFactory::class,
-        ],
-        'lazy_services' => [
-            // Mapping services to their class names is required
-            // since the ServiceManager is not a declarative DIC.
-            'class_map' => [
-                Form\ImportFatherForm::class => Form\ImportFatherForm::class,
-                Service\PatresGateway::class => Service\PatresGateway::class,
-                Model\SchoenstattTable::class => Model\SchoenstattTable::class,
-                Form\PersonForm::class => Form\PersonForm::class,
-                Form\AdvancedSearchForm::class => Form\AdvancedSearchForm::class,
-                Form\AssignmentForm::class => Form\AssignmentForm::class,
-                Form\EditAssignmentForm::class => Form\EditAssignmentForm::class,
-                Form\AssociationForm::class => Form\AssociationForm::class,
-                Form\RoleForm::class => Form\RoleForm::class,
-            ],
-        ],
-        'delegators' => [
-            Form\ImportFatherForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Service\PatresGateway::class => [
-                LazyServiceFactory::class,
-            ],
-            Model\SchoenstattTable::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\PersonForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\AdvancedSearchForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\AssignmentForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\EditAssignmentForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\AssociationForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\RoleForm::class => [
-                LazyServiceFactory::class,
-            ],
         ],
     ],
     'view_manager' => [
