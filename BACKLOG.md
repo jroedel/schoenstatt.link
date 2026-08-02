@@ -142,7 +142,9 @@ source and port, don't merge.**
   fatal-200 fix), then retire the `0.3.x`/`1.0.x` branches.
 - NOTE: patres's `1.0.x` SionCacheService still contains the fatal-200
   `unset($this->memoryCache)` bug (worse on PHP 8: typed property →
-  immediate Error). Interim fix proposed via PR on laminas-sion-model.
+  immediate Error). Interim fix pushed as branch
+  `fix/cache-write-failure-wedge` on laminas-sion-model; the PR against
+  `1.0.x` must be opened by hand (the gh token lacks access there).
 
 ## Fixed: production fatal-under-HTTP-200 wedge (2026-08-02)
 
