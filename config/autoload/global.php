@@ -1,4 +1,5 @@
 <?php
+
 use Application\Service\DbAdapterServiceFactory;
 use Laminas\Db\Adapter\Adapter;
 
@@ -118,10 +119,8 @@ return [
             Adapter::class => DbAdapterServiceFactory::class,
         ],
         'aliases' => [
-            //ZfcUser's Module::getServiceConfig() aliases this to the legacy
-            //Zend adapter name; service configs provided by module METHODS
-            //bypass the ZendFrameworkBridge config post-processor, so point
-            //it at the Laminas-named service ourselves
+            //legacy service name still consumed by JUser factories and the
+            //bjy-authorize identity provider factory
             'zfcuser_zend_db_adapter' => Adapter::class,
         ],
     ],

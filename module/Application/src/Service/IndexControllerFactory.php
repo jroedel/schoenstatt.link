@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BjyAuthorize Module (https://github.com/bjyoungblood/BjyAuthorize)
  *
@@ -11,7 +12,6 @@ namespace Application\Service;
 use Interop\Container\ContainerInterface;
 use Laminas\ServiceManager\FactoryInterface;
 use Laminas\ServiceManager\ServiceLocatorInterface;
-use Application\Authentication\Adapter\JsonPost;
 use Application\Controller\IndexController;
 use Laminas\Navigation\Navigation;
 use Books\Model\PublicationsTable;
@@ -47,6 +47,6 @@ class IndexControllerFactory implements FactoryInterface
      */
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
-        return $this($serviceLocator, JsonPost::class);
+        return $this($serviceLocator, IndexController::class);
     }
 }

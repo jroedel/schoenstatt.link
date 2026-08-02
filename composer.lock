@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "67a63102ee98e39e555ca0067d67b9bb",
+    "content-hash": "3c2984aefba9059f417283fa3fef6a0c",
     "packages": [
         {
             "name": "beaucal/beaucal-invalid-session",
@@ -1585,16 +1585,16 @@
         },
         {
             "name": "laminas/laminas-crypt",
-            "version": "3.3.1",
+            "version": "3.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-crypt.git",
-                "reference": "5f5dfe3ca08c965cc1f44f95831a83a81a93bf78"
+                "reference": "a058eeb2fe57824b958ac56753faff790a649e18"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-crypt/zipball/5f5dfe3ca08c965cc1f44f95831a83a81a93bf78",
-                "reference": "5f5dfe3ca08c965cc1f44f95831a83a81a93bf78",
+                "url": "https://api.github.com/repos/laminas/laminas-crypt/zipball/a058eeb2fe57824b958ac56753faff790a649e18",
+                "reference": "a058eeb2fe57824b958ac56753faff790a649e18",
                 "shasum": ""
             },
             "require": {
@@ -1603,25 +1603,19 @@
                 "laminas/laminas-math": "^3.0",
                 "laminas/laminas-stdlib": "^2.7.7 || ^3.1",
                 "laminas/laminas-zendframework-bridge": "^1.0",
-                "php": "^5.6 || ^7.0"
+                "php": "^7.3 || ~8.0.0"
             },
             "replace": {
-                "zendframework/zend-crypt": "self.version"
+                "zendframework/zend-crypt": "^3.3.1"
             },
             "require-dev": {
                 "laminas/laminas-coding-standard": "~1.0.0",
-                "phpunit/phpunit": "^5.7.27 || ^6.5.8 || ^7.1.2"
+                "phpunit/phpunit": "^9.3"
             },
             "suggest": {
                 "ext-openssl": "Required for most features of Laminas\\Crypt"
             },
             "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "3.3.x-dev",
-                    "dev-develop": "3.4.x-dev"
-                }
-            },
             "autoload": {
                 "psr-4": {
                     "Laminas\\Crypt\\": "src/"
@@ -1645,41 +1639,48 @@
                 "rss": "https://github.com/laminas/laminas-crypt/releases.atom",
                 "source": "https://github.com/laminas/laminas-crypt"
             },
+            "funding": [
+                {
+                    "url": "https://funding.communitybridge.org/projects/laminas-project",
+                    "type": "community_bridge"
+                }
+            ],
             "abandoned": true,
-            "time": "2019-12-31T16:33:24+00:00"
+            "time": "2021-02-11T19:40:03+00:00"
         },
         {
             "name": "laminas/laminas-db",
-            "version": "2.11.0",
+            "version": "2.12.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-db.git",
-                "reference": "26422b5469ed894b916ea6b8377a7332206178cc"
+                "reference": "80cbba4e749f9eb7d8036172acb9ad41e8b6923f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-db/zipball/26422b5469ed894b916ea6b8377a7332206178cc",
-                "reference": "26422b5469ed894b916ea6b8377a7332206178cc",
+                "url": "https://api.github.com/repos/laminas/laminas-db/zipball/80cbba4e749f9eb7d8036172acb9ad41e8b6923f",
+                "reference": "80cbba4e749f9eb7d8036172acb9ad41e8b6923f",
                 "shasum": ""
             },
             "require": {
-                "laminas/laminas-stdlib": "^2.7 || ^3.0",
+                "laminas/laminas-stdlib": "^3.3",
                 "laminas/laminas-zendframework-bridge": "^1.0",
-                "php": "^5.6 || ^7.0"
+                "php": "^7.3 || ~8.0.0"
             },
             "replace": {
-                "zendframework/zend-db": "self.version"
+                "zendframework/zend-db": "^2.11.0"
             },
             "require-dev": {
                 "laminas/laminas-coding-standard": "~1.0.0",
-                "laminas/laminas-eventmanager": "^2.6.2 || ^3.0",
-                "laminas/laminas-hydrator": "^1.1 || ^2.1 || ^3.0",
-                "laminas/laminas-servicemanager": "^2.7.5 || ^3.0.3",
-                "phpunit/phpunit": "^5.7.27 || ^6.5.14"
+                "laminas/laminas-eventmanager": "^3.3",
+                "laminas/laminas-hydrator": "^3.2 || ^4.0",
+                "laminas/laminas-servicemanager": "^3.3",
+                "phpspec/prophecy-phpunit": "^2.0",
+                "phpunit/phpunit": "^9.3"
             },
             "suggest": {
                 "laminas/laminas-eventmanager": "Laminas\\EventManager component",
-                "laminas/laminas-hydrator": "Laminas\\Hydrator component for using HydratingResultSets",
+                "laminas/laminas-hydrator": "(^3.2 || ^4.0) Laminas\\Hydrator component for using HydratingResultSets",
                 "laminas/laminas-servicemanager": "Laminas\\ServiceManager component"
             },
             "type": "library",
@@ -1687,10 +1688,6 @@
                 "laminas": {
                     "component": "Laminas\\Db",
                     "config-provider": "Laminas\\Db\\ConfigProvider"
-                },
-                "branch-alias": {
-                    "dev-master": "2.11.x-dev",
-                    "dev-develop": "2.12.x-dev"
                 }
             },
             "autoload": {
@@ -1716,7 +1713,13 @@
                 "rss": "https://github.com/laminas/laminas-db/releases.atom",
                 "source": "https://github.com/laminas/laminas-db"
             },
-            "time": "2019-12-31T19:56:10+00:00"
+            "funding": [
+                {
+                    "url": "https://funding.communitybridge.org/projects/laminas-project",
+                    "type": "community_bridge"
+                }
+            ],
+            "time": "2021-02-22T22:27:56+00:00"
         },
         {
             "name": "laminas/laminas-dependency-plugin",
@@ -3081,45 +3084,38 @@
         },
         {
             "name": "laminas/laminas-mvc-plugin-flashmessenger",
-            "version": "1.2.0",
+            "version": "1.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laminas/laminas-mvc-plugin-flashmessenger.git",
-                "reference": "f5a522c3aab215a9b89a0630beb91582f4a3f202"
+                "reference": "178339e7eb0e34e220e2fe543832f4eed7fb5705"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laminas/laminas-mvc-plugin-flashmessenger/zipball/f5a522c3aab215a9b89a0630beb91582f4a3f202",
-                "reference": "f5a522c3aab215a9b89a0630beb91582f4a3f202",
+                "url": "https://api.github.com/repos/laminas/laminas-mvc-plugin-flashmessenger/zipball/178339e7eb0e34e220e2fe543832f4eed7fb5705",
+                "reference": "178339e7eb0e34e220e2fe543832f4eed7fb5705",
                 "shasum": ""
             },
             "require": {
                 "laminas/laminas-mvc": "^3.0",
                 "laminas/laminas-session": "^2.8.5",
                 "laminas/laminas-stdlib": "^3.2.1",
-                "laminas/laminas-view": "^2.10",
-                "laminas/laminas-zendframework-bridge": "^1.0",
-                "php": "^5.6 || ^7.0"
+                "laminas/laminas-view": "^2.12",
+                "php": "^7.3 || ~8.0.0 || ~8.1.0"
             },
             "conflict": {
-                "laminas/laminas-mvc": "<3.0.0"
-            },
-            "replace": {
-                "zendframework/zend-mvc-plugin-flashmessenger": "self.version"
+                "laminas/laminas-mvc": "<3.0.0",
+                "zendframework/zend-mvc-plugin-flashmessenger": "*"
             },
             "require-dev": {
                 "laminas/laminas-coding-standard": "~1.0.0",
                 "laminas/laminas-i18n": "^2.8",
-                "phpunit/phpunit": "^5.7.27 || ^6.5.8 || ^7.1.4"
+                "phpunit/phpunit": "^9.3"
             },
             "type": "library",
             "extra": {
                 "laminas": {
                     "component": "Laminas\\Mvc\\Plugin\\FlashMessenger"
-                },
-                "branch-alias": {
-                    "dev-master": "1.2.x-dev",
-                    "dev-develop": "1.3.x-dev"
                 }
             },
             "autoload": {
@@ -3145,7 +3141,13 @@
                 "rss": "https://github.com/laminas/laminas-mvc-plugin-flashmessenger/releases.atom",
                 "source": "https://github.com/laminas/laminas-mvc-plugin-flashmessenger"
             },
-            "time": "2019-12-31T17:33:46+00:00"
+            "funding": [
+                {
+                    "url": "https://funding.communitybridge.org/projects/laminas-project",
+                    "type": "community_bridge"
+                }
+            ],
+            "time": "2021-12-08T07:02:11+00:00"
         },
         {
             "name": "laminas/laminas-mvc-plugin-identity",
@@ -6853,92 +6855,6 @@
             "time": "2021-04-19T16:34:45+00:00"
         },
         {
-            "name": "zf-commons/zfc-user",
-            "version": "3.x-dev",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ZF-Commons/ZfcUser.git",
-                "reference": "5ded56ce79909f62eb7d18db6fd6df50b9d79a11"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ZF-Commons/ZfcUser/zipball/5ded56ce79909f62eb7d18db6fd6df50b9d79a11",
-                "reference": "5ded56ce79909f62eb7d18db6fd6df50b9d79a11",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^5.5|^7.0",
-                "zendframework/zend-authentication": "^2.5",
-                "zendframework/zend-crypt": "^3.0",
-                "zendframework/zend-db": "^2.8",
-                "zendframework/zend-form": "^2.9",
-                "zendframework/zend-http": "^2.5",
-                "zendframework/zend-hydrator": "^2.0",
-                "zendframework/zend-i18n": "^2.7",
-                "zendframework/zend-inputfilter": "^2.7",
-                "zendframework/zend-loader": "^2.5",
-                "zendframework/zend-modulemanager": "^2.7",
-                "zendframework/zend-mvc": "^3.0",
-                "zendframework/zend-mvc-plugin-flashmessenger": "^1.0",
-                "zendframework/zend-mvc-plugin-prg": "^1.0",
-                "zendframework/zend-servicemanager": "^3.0",
-                "zendframework/zend-session": "^2.7",
-                "zendframework/zend-stdlib": "^3.0",
-                "zendframework/zend-validator": "^2.8",
-                "zendframework/zend-view": "^2.8"
-            },
-            "require-dev": {
-                "phpmd/phpmd": "1.4.*",
-                "phpunit/phpunit": ">=3.7,<4",
-                "squizlabs/php_codesniffer": "1.4.*",
-                "zendframework/zend-captcha": "^2.6"
-            },
-            "suggest": {
-                "zendframework/zend-captcha": "Zend\\Captcha if you want to use the captcha component"
-            },
-            "default-branch": true,
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "0.1.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "ZfcUser": "src/"
-                },
-                "classmap": [
-                    "./Module.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "BSD-3-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Evan Coury",
-                    "email": "me@evancoury.com",
-                    "homepage": "http://blog.evan.pro/"
-                },
-                {
-                    "name": "Kyle Spraggs",
-                    "email": "theman@spiffyjr.me",
-                    "homepage": "http://www.spiffyjr.me/"
-                }
-            ],
-            "description": "A generic user registration and authentication module for ZF2. Supports Zend\\Db and Doctrine2.",
-            "homepage": "https://github.com/ZF-Commons/ZfcUser",
-            "keywords": [
-                "zf2"
-            ],
-            "support": {
-                "issues": "https://github.com/ZF-Commons/ZfcUser/issues",
-                "source": "https://github.com/ZF-Commons/ZfcUser/tree/3.x"
-            },
-            "time": "2018-08-25T16:54:11+00:00"
-        },
-        {
             "name": "zfc-datagrid/zfc-datagrid",
             "version": "v1.5.0",
             "source": {
@@ -7282,8 +7198,7 @@
     "minimum-stability": "stable",
     "stability-flags": {
         "neilime/zf2-twb-bundle": 0,
-        "nicolaswurtz/chordpro-php": 20,
-        "zf-commons/zfc-user": 20
+        "nicolaswurtz/chordpro-php": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

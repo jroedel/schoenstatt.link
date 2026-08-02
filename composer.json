@@ -23,7 +23,6 @@
         "phpoffice/phpexcel": "^1.8",
         "neilime/zf2-mobile-detect": "^2.2",
         "kokspflanze/bjy-authorize": "^1.7",
-        "zf-commons/zfc-user": "3.x-dev#5ded56ce79909f62eb7d18db6fd6df50b9d79a11",
         "matriphe/iso-639": "^1.0",
         "cakephp/utility": "^3.2.0",
         "spatie/schema-org": "^2.2",
@@ -58,7 +57,10 @@
         "ext-pdo_mysql": "*",
         "laminas/laminas-dependency-plugin": "^2.1",
         "laminas/laminas-form": "~2.14.3",
-        "laminas/laminas-router": "~3.3.0"
+        "laminas/laminas-router": "~3.3.0",
+        "laminas/laminas-db": "^2.11",
+        "laminas/laminas-mvc-plugin-flashmessenger": "^1.2",
+        "laminas/laminas-crypt": "^3.3"
     },
     "require-dev": {
         "laminas/laminas-developer-tools": "^1.1",
@@ -83,11 +85,6 @@
         {
             "type": "vcs",
             "url": "https://github.com/jroedel/chordpro-php",
-            "no-api": true
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/jroedel/ZfcUser",
             "no-api": true
         }
     ],
