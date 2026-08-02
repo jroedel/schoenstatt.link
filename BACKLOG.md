@@ -165,6 +165,34 @@ Operator steps (Dave never deploys; Fr. Jeff runs these):
 8. Users: passwords stop working — brief note that sign-in is now "enter
    email, click the link".
 
+## Deploy ops (post-first-deploy, 2026-08-02)
+
+Current procedure lives in DEPLOY.md. Improvements queued, none urgent:
+
+- **phploy upstream PRs** (banago/PHPloy — served well for years, worth
+  fixing): (1) the directory-purge bug: after deleting files it deletes
+  their whole parent-directory chains recursively, wiping unchanged and
+  even freshly-uploaded files (took out module/JUser/src on deploy day);
+  (2) `--list` mode silently skips submodules — the listing code inside
+  the submodule loop is unreachable (it sits in the non-list branch).
+- **Automate the two remaining manual steps** (`composer install --no-dev`
+  and the submodule tar extract) as `post-deploy[]` hooks wrapping
+  `ssh -t` — blocked on whether the managed server allows exec with a
+  PTY; plain exec is refused ("exec request failed on channel 0").
+  Test: `ssh -t ourlink@… 'echo works'`.
+- **Console route for cache clearing**: /sm/clear-persistent-cache is a
+  web endpoint gated by a long-lived API key in the URL (appears in
+  shell history and access logs). Replace with a CLI command at the
+  laminas-cli rung so deploys clear APCu without a web-exposed secret.
+- **Real database migrations** (Phinx or doctrine/migrations) instead of
+  hand-run dumps in database/. Constraint: the web app's DB user lacks
+  DDL rights, so migrations need separate credentials stored only on
+  the server (e.g. a config/autoload/migrations.local.php outside the
+  web-app config), never in the repo.
+- If phploy's limits keep chafing after the PHP 8 rung: evaluate
+  Deployer (atomic release dirs + symlink switch would also kill the
+  mid-deploy broken window this deploy suffered).
+
 ## Shared-library convergence plan (decided 2026-08-02)
 
 The shared submodule repos (laminas-sion-model, laminas-juser) have a second
