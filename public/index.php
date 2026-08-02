@@ -38,8 +38,12 @@ if (file_exists(__DIR__ . '/../config/development.config.php')) {
 
 // Report all errors except E_DEPRECATED
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
-ini_set('display_errors', 1);
-ini_set('xdebug.var_display_max_depth', 1);
+// Only ever SHOW them outside production; in production php.ini decides
+// (rendering errors leaks paths and stack traces to visitors)
+if ('production' !== (getenv('APP_ENV') ?: 'production')) {
+    ini_set('display_errors', 1);
+    ini_set('xdebug.var_display_max_depth', 1);
+}
 ini_set('memory_limit', '512M');
 
 // Run the application!
