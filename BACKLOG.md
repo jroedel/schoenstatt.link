@@ -114,6 +114,36 @@ Each rung verified by the Phase 2 suite:
    current major, credential table, enrollment inside an authenticated
    session, magic link remains the fallback. Decided 2026-08-02.
 
+## Shared-library convergence plan (decided 2026-08-02)
+
+The shared submodule repos (laminas-sion-model, laminas-juser) have a second
+line of history: patres was migrated to Laminas in 2020–2022 on the `1.0.x`
+branches (31/27 commits of PHP 8 typing, refactors, Mailer rework — frozen
+since 2022-12, requires PHP ^8.0, JUser side still password/ZfcUser/geoip
+based). Our `modernization` branches forked from the older commits
+schoenstatt.link had pinned, so the lines share no recent history and cannot
+be git-merged — both rewrote the same files.
+
+Decision: **converge on `modernization`; treat `1.0.x` as a frozen review
+source and port, don't merge.**
+
+- [x] First ports done 2026-08-02: cache-dependency learning fix into
+  SionModel (from 1.0.x 04fb783); "email verified on every token
+  redemption" semantics into JUser (from 2020 master 8c3beda) with a
+  smoke regression test. Replay-attack protection (7abae4c) was verified
+  already present and stronger in the rung-3a implementation.
+- At each remaining rung, diff the files being touched against `1.0.x`
+  first ("Simplify cacheKeys"/SionCacheService and the typing work belong
+  naturally to the PHP 8 rung; Mailer work to the symfony/mailer rung).
+- Sweep the `1.0.x`/old-master language-file additions (de/en/es/pt) when
+  doing an i18n pass over the new auth views/emails.
+- After the PHP 8 rung stabilizes the shared libs: migrate patres onto the
+  converged line (it inherits passwordless auth, geoip removal, the
+  fatal-200 fix), then retire the `0.3.x`/`1.0.x` branches.
+- NOTE: patres's `1.0.x` SionCacheService still contains the fatal-200
+  `unset($this->memoryCache)` bug (worse on PHP 8: typed property →
+  immediate Error). Interim fix proposed via PR on laminas-sion-model.
+
 ## Fixed: production fatal-under-HTTP-200 wedge (2026-08-02)
 
 Root cause found by the auth smoke tests: SionCacheTrait's failed-write
