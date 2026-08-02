@@ -39,8 +39,6 @@ $modules = [
     'JUser',
     'SionModel',
     'JTranslate',
-    'Neilime\MobileDetect',
-//    'ZfcDatagrid',
     'Bible',
     'Books',
     'Schoenstatt',
