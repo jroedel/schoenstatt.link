@@ -16,9 +16,6 @@ use Laminas\I18n\Translator\TranslatorServiceFactory;
 use Laminas\Log\LoggerAbstractServiceFactory;
 use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
 use BjyAuthorize\Guard\Route;
-use SionModel\Service\ProblemService;
-use JTranslate\Model\TranslationsTable;
-use Laminas\ServiceManager\Proxy\LazyServiceFactory;
 use Laminas\Cache\Storage\StorageInterface;
 use Application\View\GdprStrategy;
 use Laminas\Router\Http\Segment;
@@ -122,22 +119,6 @@ return [
         'aliases' => [
             //this helps clarify throughout the app which kind of Logger we should expect.
             LoggerInterface::class => 'SionModel\Logger',
-        ],
-        'lazy_services' => [
-            // Mapping services to their class names is required
-            // since the ServiceManager is not a declarative DIC.
-            'class_map' => [
-                ProblemService::class => ProblemService::class,
-                TranslationsTable::class => TranslationsTable::class,
-            ],
-        ],
-        'delegators' => [
-            ProblemService::class => [
-                LazyServiceFactory::class,
-            ],
-            TranslationsTable::class => [
-                LazyServiceFactory::class,
-            ],
         ],
     ],
 //     'translator' => [

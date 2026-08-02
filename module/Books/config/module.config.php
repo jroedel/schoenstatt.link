@@ -12,7 +12,6 @@ use Schoenstatt\Service\PatresGateway;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
-use Laminas\ServiceManager\Proxy\LazyServiceFactory;
 use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
@@ -274,50 +273,6 @@ return [
             Form\DictionaryEntryForm::class     => Service\DictionaryEntryFormFactory::class,
             Model\MusicTable::class             => Service\MusicTableFactory::class,
             Form\CompositionForm::class         => Service\CompositionFormFactory::class,
-        ],
-        'lazy_services' => [
-            // Mapping services to their class names is required
-            // since the ServiceManager is not a declarative DIC.
-            'class_map' => [
-                Form\LibraryForm::class => Form\LibraryForm::class,
-                Form\SearchForm::class => Form\SearchForm::class,
-                BooksMailer::class => BooksMailer::class,
-                Model\PublicationsTable::class => Model\PublicationsTable::class,
-                Model\DictionaryTable::class => Model\DictionaryTable::class,
-                Model\LibraryTable::class => Model\LibraryTable::class,
-                Form\TextForm::class => Form\TextForm::class,
-                Form\BookForm::class => Form\BookForm::class,
-                Form\CompositionForm::class => Form\CompositionForm::class,
-            ],
-        ],
-        'delegators' => [
-            Form\LibraryForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\SearchForm::class => [
-                LazyServiceFactory::class,
-            ],
-            BooksMailer::class => [
-                LazyServiceFactory::class,
-            ],
-            Model\PublicationsTable::class => [
-                LazyServiceFactory::class,
-            ],
-            Model\DictionaryTable::class => [
-                LazyServiceFactory::class,
-            ],
-            Model\LibraryTable::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\TextForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\BookForm::class => [
-                LazyServiceFactory::class,
-            ],
-            Form\CompositionForm::class => [
-                LazyServiceFactory::class,
-            ],
         ],
     ],
     'view_helpers' => [
