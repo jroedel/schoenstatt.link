@@ -116,12 +116,5 @@ if ($areResults) :
         ?></tbody>
     </table>
 </div>
-<div class="panel-footer"><?php
-if ($this->isAllowed('export')) :
-    $queryParams = array_merge(['rendererType' => 'PHPExcel'], $_GET); //@todo this could be insecure, filter?>
-    <span class="pull-right"><a href="<?php echo $this->url(null, [], ['query' => $queryParams], true);
-    ?>"><?php echo $this->translate("Export");?></a></span>
-<?php endif;?>
-</div>
 </div>
 <?php endif;

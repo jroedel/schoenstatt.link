@@ -132,11 +132,7 @@ if (count($counts) > 1) {
 if (! empty($counts)) {
      echo implode(', ', $counts);
 }
-if ($this->isAllowed('export')) :
-    $queryParams = array_merge(['rendererType' => 'PHPExcel'], $_GET);?>
-    <span class="pull-right"><a href="<?php echo $this->url(null, [], ['query' => $queryParams], true);
-    ?>"><?php echo $this->translate("Export");?></a></span>
-<?php endif;?>
+?>
 </div>
 </div>
 <?php endif;

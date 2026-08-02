@@ -70,11 +70,6 @@ class PersonsController extends SionController
             return $this->redirect()->toRoute('persons');
         }
 
-        /** @var MobileDetect $mobileDetect */
-//         $mobileDetect = $this->mobileDetect(); //Retrieve "\Mobile_Detect" object
-
-//         $deviceType = $mobileDetect->isAndroidOS() ? 'android' :
-//             $mobileDetect->isiOS() ? 'ios' : 'default'; //android, ios, default
         $deviceType = 'default';
         $this->addUserNamesToUrlList($person, $deviceType); //$person is ByRef
 
