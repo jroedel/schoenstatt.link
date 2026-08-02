@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BjyAuthorize Module (https://github.com/bjyoungblood/BjyAuthorize)
  *
@@ -89,7 +90,12 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
         $route = $event->getRouteMatch();
-        if (! $hasConsented && 'zfcuser/login' === $route->getMatchedRouteName()) {
+        //all auth entry points need cookies (session + CSRF); without consent,
+        //onFinish() strips Set-Cookie, so sign-in would silently fail. Show the
+        //explainer instead. Magic-link tokens are only consumed on successful
+        //redemption, so the emailed link still works after consenting.
+        $authRoutes = ['zfcuser/login', 'zfcuser/register', 'zfcuser/verify'];
+        if (! $hasConsented && in_array($route->getMatchedRouteName(), $authRoutes, true)) {
             $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
             $newMatch->setMatchedRouteName('sign-in-no-cookies');
             $event->setRouteMatch($newMatch);

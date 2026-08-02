@@ -1,4 +1,5 @@
 <?php
+
 use Schoenstatt\Model\SchoenstattTable;
 
 return [
@@ -16,53 +17,6 @@ return [
                 ],
             ],
         ],
-    ],
-    'zfcuser' => [
-        'zend_db_adapter' => Laminas\Db\Adapter\Adapter::class,
-
-        'auth_adapters' => [
-//             50 => \Application\Authentication\Adapter\JsonPost::class,
-        ],
-
-        'enable_default_entities' => false,
-
-        'enable_registration' => true,
-
-        'login_after_registration' => true,
-
-        'use_registration_form_captcha' => true,
-
-        'use_login_form_captcha' => false,
-
-        'form_captcha_options' => [
-                'class'   => 'image',
-                'options' => [
-                        'font'      => './data/fonts/OpenSans-Regular.ttf',
-                        'imgDir'   => 'public/img/captcha/',
-                        'imgUrl'   => '/img/captcha/',
-                        'wordLen'    => 5,
-                        'useNumbers' => false,
-                        'expiration' => 300,
-                        'timeout'    => 300,
-                        'lineNoiseLevel' => 3,
-                        'dotNoiseLevel' => 50,
-                ],
-        ],
-        'enable_display_name' => true,
-
-        'enable_username' => true,
-
-        'login_redirect_route' => 'welcome',
-
-        'logout_redirect_route' => 'zfcuser/login',
-
-        'use_redirect_parameter_if_present' => true,
-
-        'enable_user_state' => true,
-        //the user state will stay at 0 until the user has been validated
-        'default_user_state' => 0,
-
-        'allowed_login_states' => [1],
     ],
     'slm_locale' => [
         'default' => 'en_US',
@@ -102,17 +56,16 @@ return [
              * access to all routes unless they are specified here.
             */
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'zfcuser/login', 'roles' => ['guest', null]],
-                ['route' => 'zfcuser/logout', 'roles' => ['user', null]],
-                ['route' => 'change-password', 'roles' => ['user']],
+                ['route' => 'zfcuser/login', 'roles' => ['guest', 'user']],
+                ['route' => 'zfcuser/logout', 'roles' => ['user']],
 //                 ['route' => 'change-email', 'roles' => ['user']],
                 ['route' => 'zfcuser/register', 'roles' => ['guest']],
+                ['route' => 'zfcuser/verify', 'roles' => ['guest', 'user']],
                 ['route' => 'juser/verify-email', 'roles' => ['guest', 'user', null]],
                 ['route' => 'juser/thanks', 'roles' => ['guest', 'user', null]],
                 ['route' => 'juser', 'roles' => ['administrator']],
                 ['route' => 'juser/user/edit', 'roles' => ['administrator']],
                 ['route' => 'juser/user/delete', 'roles' => ['administrator']],
-                ['route' => 'juser/user/change-password', 'roles' => ['administrator']],
                 ['route' => 'juser/user/show', 'roles' => ['administrator']],
                 ['route' => 'juser/create', 'roles' => ['administrator']],
                 ['route' => 'juser/create-role', 'roles' => ['administrator']],

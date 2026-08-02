@@ -34,7 +34,6 @@ $modules = [
     'Laminas\Session',
 //     'MaglMarkdown',
     'ZfSnapGeoip',
-    'ZfcUser',
     'BjyAuthorize',
     'SlmLocale',
     'RestApi',

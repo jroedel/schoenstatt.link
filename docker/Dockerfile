@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pecl install apcu-5.1.22 \
     && docker-php-ext-enable apcu \
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
+    # 32M default is too small for this app's entity caches; exhaustion used to
+    # trigger the SionCacheTrait fatal-200 wedge and still costs cache misses
+    && echo "apc.shm_size=256M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
     && a2enmod rewrite headers deflate expires \
     && rm -rf /var/lib/apt/lists/*
 
