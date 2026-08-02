@@ -1,0 +1,244 @@
+{
+    "truncate": [
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            150,
+            [],
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die ..."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            100,
+            [],
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie..."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            50,
+            [],
+            "Die Gottesmutter hat sich im Heiligtum von Scho..."
+        ],
+        [
+            "Categoría, Páginas, Año y Categorías del libro",
+            20,
+            [],
+            "Categoría, Página..."
+        ],
+        [
+            "日本語のテキストはここにあります、これは全角文字です",
+            20,
+            [],
+            "日本語のテキストはここにあります、..."
+        ],
+        [
+            "short",
+            150,
+            [],
+            "short"
+        ],
+        [
+            "",
+            150,
+            [],
+            ""
+        ],
+        [
+            "exactly ten",
+            11,
+            [],
+            "exactly ten"
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            40,
+            {
+                "exact": false
+            },
+            "Die Gottesmutter hat sich im..."
+        ],
+        [
+            "Categoría, Páginas, Año y Categorías del libro",
+            25,
+            {
+                "exact": false
+            },
+            "Categoría, Páginas,..."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            60,
+            {
+                "ellipsis": "…"
+            },
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt nied…"
+        ],
+        [
+            "日本語のテキストはここにあります、これは全角文字です",
+            10,
+            {
+                "exact": false
+            },
+            "日本語のテキストはこ..."
+        ]
+    ],
+    "truncateByWidth": [
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            1000,
+            [],
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            60,
+            [],
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt ni..."
+        ],
+        [
+            "日本語のテキストはここにあります、これは全角文字です",
+            20,
+            [],
+            "日本語のテキスト..."
+        ],
+        [
+            "Categoría, Páginas, Año y Categorías del libro",
+            20,
+            [],
+            "Categoría, Página..."
+        ]
+    ],
+    "highlight": [
+        [
+            "The Blessed Mother of Schoenstatt",
+            "mother",
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "The Blessed <mark>Mother</mark> of Schoenstatt"
+        ],
+        [
+            "Schoenstatt and schoenstatt and SCHOENSTATT",
+            "schoenstatt",
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "<mark>Schoenstatt</mark> and <mark>schoenstatt</mark> and <mark>SCHOENSTATT</mark>"
+        ],
+        [
+            "Categoría, Páginas, Año y Categorías del libro",
+            "año",
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "Categoría, Páginas, <mark>Año</mark> y Categorías del libro"
+        ],
+        [
+            "regex (meta) chars |a|b| here",
+            "(meta)",
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "regex <mark>(meta)</mark> chars |a|b| here"
+        ],
+        [
+            "nothing matches",
+            "zzz",
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "nothing matches"
+        ],
+        [
+            "empty needle stays",
+            "",
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "empty needle stays"
+        ],
+        [
+            "default format applies",
+            "format",
+            [],
+            "default <span class=\"highlight\">format</span> applies"
+        ],
+        [
+            "limit one two one two",
+            "one",
+            {
+                "format": "<mark>\\1</mark>",
+                "limit": 1
+            },
+            "limit <mark>one</mark> two one two"
+        ],
+        [
+            "array a and b",
+            [
+                "a",
+                "b"
+            ],
+            {
+                "format": "<mark>\\1</mark>"
+            },
+            "<mark>a</mark>rr<mark>a</mark>y <mark>a</mark> <mark>a</mark>nd <mark>b</mark>"
+        ]
+    ],
+    "excerpt": [
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            "Gnade",
+            100,
+            "...",
+            "...smutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            "Gnade",
+            20,
+            "...",
+            "...irkt sie Wunder der Gnade in den Herzen der M..."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            "Die",
+            20,
+            "...",
+            "Die Gottesmutter hat si..."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            "anvertrauen",
+            20,
+            "...",
+            "...kommen und sich ihr anvertrauen wollen."
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            "notpresent",
+            20,
+            "...",
+            "Die Gottesmutter hat..."
+        ],
+        [
+            "",
+            "x",
+            20,
+            "...",
+            ""
+        ],
+        [
+            "Die Gottesmutter hat sich im Heiligtum von Schoenstatt niedergelassen, und von dort aus wirkt sie Wunder der Gnade in den Herzen der Menschen, die zu ihr kommen und sich ihr anvertrauen wollen.",
+            "",
+            20,
+            "...",
+            "Die Gottesmutter hat sich im Heiligtu..."
+        ],
+        [
+            "Categoría, Páginas, Año y Categorías del libro",
+            "Año",
+            10,
+            "...",
+            "... Páginas, Año y Categor..."
+        ]
+    ]
+}
