@@ -36,7 +36,6 @@
         "laminas/laminas-mvc-i18n": "^1.1",
         "laminas/laminas-captcha": "^2.8",
         "laminas/laminas-text": "^2.7",
-        "beaucal/beaucal-invalid-session": "^0.3.0",
         "laminas/laminas-mvc-plugin-prg": "^1.1",
         "swiftmailer/swiftmailer": "^6.0",
         "cocur/slugify": "^3.1",

@@ -19,7 +19,6 @@ if ($inDevelopment) {
 $modules = [
     //must be first: rewrites legacy Zend\* config keys/service names at runtime
     'Laminas\ZendFrameworkBridge',
-    'BeaucalInvalidSession',
     'Laminas\Router',
     'Laminas\I18n',
     'Laminas\Form',
@@ -29,8 +28,7 @@ $modules = [
     'Laminas\Mvc\Plugin\Prg',
     'Laminas\Mvc\I18n',
     'Laminas\Validator',
-    //provides session factories + legacy Zend\Session\* aliases for
-    //not-yet-migrated third-party modules (BeaucalInvalidSession)
+    //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',
 //     'MaglMarkdown',
     'BjyAuthorize',
