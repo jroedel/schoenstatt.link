@@ -118,52 +118,34 @@ Each rung verified by the Phase 2 suite:
    current major, credential table, enrollment inside an authenticated
    session, magic link remains the fallback. Decided 2026-08-02.
 
-## Production deploy checklist (first modernization deploy)
+## First modernization deploy: DONE 2026-08-02
 
-The current branch state is the intended first deploy: same PHP (7.4.33) as
-production, rehearsed 2026-08-02 in the capsule under production conditions
-(`APP_ENV` unset → config+module-map caching on, `composer install --no-dev`)
-— 50/50 smoke tests green.
+The modernization branch went to production on 2026-08-02 (PRs #1–#3),
+same PHP (7.4.33) as before. Full prod smoke pass that evening: blog with
+zero notices, unknown web/API URLs → clean 404s, magic-link sign-in
+working, random cold sitemap pages (of ~14,640) with zero fatals — the
+fatal-under-HTTP-200 era is over in production. Passwords no longer work
+anywhere; sign-in is email magic links.
 
-Discovery from that rehearsal: `public/.htaccess` carries a hardcoded
-`SetEnv "APP_ENV" "development"` (present since 2016) — so production has
-been running in development mode (no config caching, dev modules loaded,
-dev packages required) its whole life. NOTE: `.htaccess` was untracked and
-gitignored in 2017, so phploy does NOT deploy it — the local copy (line now
-removed) only configures the capsule, and the production copy must be
-edited by hand on the server (step 3a below). Consider re-tracking a
-canonical `.htaccess` (or a `.htaccess.dist` template) later so this file
-stops being invisible, machine-specific state.
+The living deploy procedure is **DEPLOY.md** (single command:
+`php8.0 phploy.phar`; hooks handle submodules, composer, config cache and
+APCu). Lessons that shaped it are recorded there and under "Deploy ops"
+below.
 
-Operator steps (Dave never deploys; Fr. Jeff runs these):
+Leftovers from deploy day, deliberately open:
 
-1. Backups: `mysqldump` of ourlink_db1 + tar of the app dir (code rollback =
-   restore tar; the DB migration is backward-compatible).
-2. Verify on the server before cutting over: `git --version` exists (the
-   three composer VCS forks install via git clone), and the SMTP credentials
-   in prod `config/autoload/local.php` still send (magic links are the ONLY
-   way to sign in after this deploy).
-3. Deploy files with phploy from the chosen branch. Confirm phploy also
-   syncs the three submodule dirs (module/SionModel, JUser, JTranslate).
-   3a. Fetch the server's `public/.htaccess`, diff it against the local
-   copy, and remove its `SetEnv "APP_ENV" "development"` line — this is
-   what switches production out of development mode. Do NOT delete
-   server-specific rules that may live in that file.
-4. On the server: `mysql ourlink_db1 < database/db6.4.sql`, then
-   `php composer.phar install --no-dev` (deployed composer.phar is 2.10;
-   it will also delete zf-snap-geoip + GeoLiteCity.dat from vendor).
-5. Ensure `data/config/` exists and is writable by the web user (config
-   cache lives there now). On EVERY future deploy: delete
-   `data/config/module-*-cache.*.php` after syncing files.
-6. php.ini (hosting panel): `apc.shm_size=256M` (APCu exhaustion at the
-   default 32M is what triggered the fatal-200 wedge),
-   `display_errors=Off` (currently On, leaks paths). Then clear APCu once
-   (temporary token-protected script, or the panel's PHP restart).
-7. Smoke-check: homepage; full magic-link round trip with a real mailbox;
-   replaying the used link → 400; several cold entity pages from the
-   sitemap (fatal-200 regression); an admin page; API code flow if used.
-8. Users: passwords stop working — brief note that sign-in is now "enter
-   email, click the link".
+- [ ] `apc.shm_size` is still 32M in `/home/httpd/php74-ini/ourlink/php.ini`
+  — Fr. Jeff cannot edit that file; needs a Hetzner/konsoleH support
+  request ("please set apc.shm_size = 256M for PHP 7.4"), then one
+  `pkill -u ourlink -f php`. Not urgent: the SionCacheTrait fix makes
+  cache-write failures degrade gracefully now; the raise just makes them
+  rarer.
+- [ ] `public/.htaccess` is untracked/gitignored (since 2017) and was
+  hand-edited on the server (`SetEnv APP_ENV` removed → production mode).
+  Consider re-tracking a canonical `.htaccess` (or `.htaccess.dist`) so it
+  stops being invisible, machine-specific state.
+- [ ] Announce passwordless sign-in to users if confused-user replies
+  start arriving.
 
 ## Deploy ops (post-first-deploy, 2026-08-02)
 
@@ -175,11 +157,13 @@ Current procedure lives in DEPLOY.md. Improvements queued, none urgent:
   even freshly-uploaded files (took out module/JUser/src on deploy day);
   (2) `--list` mode silently skips submodules — the listing code inside
   the submodule loop is unreachable (it sits in the non-list branch).
-- **Automate the two remaining manual steps** (`composer install --no-dev`
-  and the submodule tar extract) as `post-deploy[]` hooks wrapping
-  `ssh -t` — blocked on whether the managed server allows exec with a
-  PTY; plain exec is refused ("exec request failed on channel 0").
-  Test: `ssh -t ourlink@… 'echo works'`.
+- [x] Automate the manual steps: done 2026-08-02 — the port-22 exec
+  refusal was Hetzner's restricted SFTP jail; the full shell listens on
+  port 222. `phploy.ini` now carries `post-deploy[]` hooks (submodule
+  rsync via tools/deploy-submodules.sh, then remote config-cache clear +
+  `composer install --no-dev`, then the two wgets). Proven end-to-end on
+  the PR #3 deploy. Remember: phploy.ini is untracked — on a new machine
+  re-add the hooks per DEPLOY.md.
 - **Console route for cache clearing**: /sm/clear-persistent-cache is a
   web endpoint gated by a long-lived API key in the URL (appears in
   shell history and access logs). Replace with a CLI command at the
@@ -225,16 +209,26 @@ source and port, don't merge.**
   `fix/cache-write-failure-wedge` on laminas-sion-model; the PR against
   `1.0.x` must be opened by hand (the gh token lacks access there).
 
-## Fixed: production fatal-under-HTTP-200 wedge (2026-08-02)
+## Fixed: the fatal-under-HTTP-200 family (2026-08-02, DEPLOYED)
 
-Root cause found by the auth smoke tests: SionCacheTrait's failed-write
-handler did `unset($this->memoryCache)`, destroying the declared property;
-every later access fell through to AbstractTableGateway::__get() and
-fataled on every request until APCu was cleared. Fixed in SionModel
-(assign [] instead) + docker APCu raised to 256M (32M default exhaustion
-was the trigger). **Production still runs the broken code until the
-modernization branch deploys** — until then the live-site workaround
-remains clearing APCu.
+Two independent bugs produced fatals under HTTP 200; both fixed and live
+in production as of 2026-08-02:
+
+1. **Cold-page cache wedge**: SionCacheTrait's failed-write handler did
+   `unset($this->memoryCache)`, destroying the declared property; every
+   later access fell through to AbstractTableGateway::__get() and fataled
+   on every request until APCu was cleared. Fixed in SionModel (assign []
+   instead). Trigger was APCu exhaustion at the 32M default — raising
+   prod's apc.shm_size is still open (see deploy leftovers above); the
+   patres line has the same bug, fix branch awaiting its PR.
+2. **Every unknown URL** (since ~2020): the multidots '/:*' catch-all
+   route named int-404 + default-deny guard + RedirectionStrategy
+   explode() TypeError. Fixed in PR #2: catch-all scoped to /api as
+   'api-route-not-found'; JUser's strategy hardened; unknown web URLs now
+   render the normal error/404 page. Related: public/index.php no longer
+   forces display_errors outside development, and the blog's parsedown
+   version mismatch (leaked notices) is fixed — errors go to logs, not
+   visitors.
 
 Advisory debts consciously carried (documented in composer.json
 `config.policy`), to be paid at the rung named:
