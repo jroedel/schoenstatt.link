@@ -213,13 +213,27 @@ Each rung verified by the Phase 2 suite:
    the 7.4 pin — the platform pin and the whole set move in a single
    `composer update` resolution pass.
 
-   **`cakephp/core` + `cakephp/utility` 3.10.5 (`>=5.6.0,<8.0.0`) block every
-   PHP 8 target and must be eliminated, not upgraded.** Sole usage is
-   `Cake\Utility\Text` across 11 call sites in view scripts: `truncate` (×6),
-   `highlight` (×2), `excerpt`, `truncateByWidth`, plus a `Text::class`
-   reference in `Bible\Form\BibleSearchForm`. A small view helper replaces
-   them (per "prefer dependency elimination"). Note one is in a SionModel
-   view, so the helper belongs in the shared library.
+   - [x] **`cakephp/core` + `cakephp/utility` eliminated** (2026-08-02). They
+     declared `>=5.6.0,<8.0.0` and so blocked every PHP 8 target while being
+     used for nothing but four string functions: `Cake\Utility\Text`'s
+     `truncate` (×6), `highlight` (×2), `excerpt` and `truncateByWidth`,
+     across 7 view scripts. (The `Text::class` in `Bible\Form\BibleSearchForm`
+     is `Laminas\Form\Element\Text` — unrelated; an earlier note here was
+     wrong.) Replaced by `SionModel\Text\Text`, a deliberate drop-in in the
+     shared library — one of the call sites is a SionModel view, and patres
+     inherits the fix — so only the `use` statements changed.
+     Verified by differential testing rather than by reading: a script ran
+     both implementations over 33 cases (accented Spanish, CJK full-width,
+     regex metacharacters in search terms, needle arrays, `limit`,
+     `exact => false`) while cakephp was still installed — **0 mismatches** —
+     and Cake's own output was then baked into
+     `test/Unit/fixtures/text-expectations.json`. This added the repo's first
+     **unit** test suite (`test/Unit`, `php composer.phar unit`; `test` runs
+     both suites). Two deliberate divergences: the `html` option is not ported
+     and throws rather than silently returning differently-shaped output, and
+     `removeLastWord` implements the documented intent instead of Cake's bug
+     there (`mb_strrpos($text, $spacepos)` passes a position where a needle
+     belongs). Blockers 45 → 43.
 
    **Staging decided 2026-08-02 — rung 4a to 8.3, rung 4b to 8.4:**
    - *4a*: the 45-package stack bump + the cakephp elimination, declaring
