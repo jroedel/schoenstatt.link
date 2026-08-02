@@ -263,13 +263,31 @@ class of cycle rather than the one instance and removed the ad-hoc
 
 Still open:
 
-- [ ] **Four factories still call `$container->get('JUser\AuthService')
-  ->getIdentity()` during construction**: `SchoenstattTableFactory`,
-  `TranslationsTableFactory`, `FilesTableFactory`, `PredicatesTableFactory`
-  (ProblemTableFactory was the fifth and is fixed). That eager-identity pattern
-  is what generates these cycles; it is the first thing to suspect if one
-  reappears. Passing the identity in lazily — or not at all, where the table
-  never writes — would retire the pattern.
+- [x] **Eager-identity pattern retired app-wide (2026-08-02).** The count was
+  never four: thirteen factories resolved `JUser\AuthService` during
+  construction (all eight app-module table factories, three in SionModel,
+  `TranslationsTableFactory`, plus `UserTableFactory` passing a hardcoded
+  null around its 2014 "@todo how can we get an identity if the process
+  requires this very UserTable?"). All now inject
+  `SionModel\Service\ActingUserProviderInterface` — one method,
+  `getActingUserId(): ?int` — implemented by
+  `JUser\Service\AuthServiceActingUserProvider`, which resolves AuthService
+  lazily on first call and never caches the id. `SionTable` (and
+  `TranslationsTable`, which had the same disease without being a SionTable —
+  it froze a whole `User` object) consult it at write time via
+  `getActingUserId()`. Consequences beyond the cycle class being closed:
+  - a mid-request login (magic-link redemption) is now observed — the old
+    scalar was frozen at whatever identity existed when the container first
+    built the table, so post-redemption writes stamped `createdBy = null`;
+  - user-role inserts finally stamp `create_by` (UserTable had passed null
+    since 2014);
+  - `SionTable::setActingUserId(?int)` survives as an explicit override that
+    wins over the provider — the Books API controllers need it because they
+    authenticate by JWT (`tokenPayload->sub`), not session, so the provider
+    sees no identity on those requests. `getActingUserId()` stayed public for
+    `SionModel\Mailing\Mailer`'s `mailingBy` stamp.
+  Verified 2026-08-02: smoke 52/52, PHPStan level 0 clean, phpcs
+  neutral-or-better on every touched file.
 - [ ] **`SionTable::$entityProblemPrototype` is still resolved eagerly**, on
   purpose. Subclasses read it as a raw property (`clone
   $this->entityProblemPrototype` in `Books\Model\LibraryTable` and
@@ -278,7 +296,13 @@ Still open:
   check both consumers before touching it.
 - [ ] **patres will hit this identically** when it converges onto the
   `modernization` line: same base classes, same eager-identity factories. See
-  the convergence plan above.
+  the convergence plan above. The provider seam now ships with the shared
+  libs, so patres's migration is mechanical: convert its table factories to
+  inject `ActingUserProviderInterface`, and convert any subclass that read
+  `$this->actingUserId` raw — the property is gone; `getActingUserId()` (now
+  public) replaces it. Check patres for `setActingUserId()` callers: the
+  method survives but is an override for token-auth contexts, not the primary
+  channel.
 
 Technique worth reusing: temporarily patch
 `vendor/laminas/laminas-servicemanager/src/ServiceManager.php` so `get()` pushes

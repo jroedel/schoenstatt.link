@@ -4,6 +4,7 @@ namespace Bible\Service;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Bible\Model\BibleTable;
+use SionModel\Service\ActingUserProviderInterface;
 
 class BibleTableFactory implements FactoryInterface
 {
@@ -17,11 +18,9 @@ class BibleTableFactory implements FactoryInterface
         $config = $container->get('Config');
         $dbAdapter = $container->get($config['books']['books_db_adapter']);
 
-        $authService = $container->get('zfcuser_auth_service');
-        $user = $authService->getIdentity();
-        $actingUserId = $user ? $user->id : null;
+        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
-        $table = new BibleTable($dbAdapter, $container, $actingUserId);
+        $table = new BibleTable($dbAdapter, $container, $actingUserProvider);
         return $table;
     }
 }

@@ -16,6 +16,7 @@ use Laminas\Permissions\Acl\Resource\GenericResource;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
+use SionModel\Service\ActingUserProviderInterface;
 use SionModel\Db\GeoPoint;
 use Laminas\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
@@ -180,13 +181,13 @@ class SchoenstattTable extends SionTable implements
     public function __construct(
         AdapterInterface $dbAdapter,
         $serviceLocator,
-        $actingUserId,
+        ?ActingUserProviderInterface $actingUserProvider,
         $config,
         $countriesInfo,
         $translator,
         TranslationsTable $translationsTable
     ) {
-        parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
+        parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
         $this->config = $config;
 
         $this->languageLocaleMap = $config['slm_locale']['aliases'];

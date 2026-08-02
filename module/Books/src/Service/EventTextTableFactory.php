@@ -5,6 +5,7 @@ use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\EventTextTable;
 use JUser\Model\UserTable;
+use SionModel\Service\ActingUserProviderInterface;
 
 /**
  * Factory responsible of priming the EventTextTableFactory service
@@ -23,15 +24,13 @@ class EventTextTableFactory implements FactoryInterface
         $config = $container->get('Config');
         $dbAdapter = $container->get($config['books']['books_db_adapter']);
 
-        $authService = $container->get('zfcuser_auth_service');
-        $user = $authService->getIdentity();
-        $actingUserId = $user ? $user->id : null;
+        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
         /** @var UserTable $userTable */
         $userTable = $container->get(UserTable::class);
         $userNames = $userTable->getUserNames();
 
-        $table = new EventTextTable($dbAdapter, $container, $actingUserId, $config, $userNames);
+        $table = new EventTextTable($dbAdapter, $container, $actingUserProvider, $config, $userNames);
 
 //         $schTable = $container->get(SchoenstattTable::class);
 //         $table->setSchoenstattTable($schTable);

@@ -12,6 +12,7 @@ use voku\Html2Text\Html2Text;
 use Spatie\SchemaOrg\BlogPosting;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Model\SchoenstattTable;
+use SionModel\Service\ActingUserProviderInterface;
 use voku\helper\UTF8;
 
 class EventTextTable extends SionTable implements
@@ -38,9 +39,14 @@ class EventTextTable extends SionTable implements
      */
     protected $usernames;
 
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, array $config, $usernames)
-    {
-        parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
+    public function __construct(
+        AdapterInterface $dbAdapter,
+        $serviceLocator,
+        ?ActingUserProviderInterface $actingUserProvider,
+        array $config,
+        $usernames
+    ) {
+        parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
         $this->config = $config;
         $this->usernames = $usernames;
     }
@@ -287,9 +293,9 @@ class EventTextTable extends SionTable implements
         if (self::ENTITY_ACTION_CREATE === $action && ! isset($data['resourceId'])) {
             $kind = isset($data['kind']) ? $data['kind'] : null;
             if (isset($kind) && self::TEXT_KIND_BLOG === $kind) {
-                if (isset($this->actingUserId)) {
-                    $userId = $this->actingUserId;
-                    $data['resourceId'] = "blog_post_$userId";
+                $actingUserId = $this->getActingUserId();
+                if (null !== $actingUserId) {
+                    $data['resourceId'] = "blog_post_$actingUserId";
                 } else {
                     $data['resourceId'] = "blog_post";
                 }

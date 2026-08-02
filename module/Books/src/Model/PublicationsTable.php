@@ -221,10 +221,12 @@ ORDER BY `Publisher`";
 
         $languages = [];
         foreach ($entities as $object) {
-            if (('publication_public' === $object['resourceId'] && (isset($this->actingUserId) || $object['isRevisedWithBookInHand'])) ||
-                ($includeUser && 'publication_user' === $object['resourceId']) ||
-                ($includeInstitute && 'publication_institute' === $object['resourceId']) ||
-                ($includePatres && 'publication_patres' === $object['resourceId'])
+            if (
+                ('publication_public' === $object['resourceId']
+                    && (null !== $this->getActingUserId() || $object['isRevisedWithBookInHand']))
+                || ($includeUser && 'publication_user' === $object['resourceId'])
+                || ($includeInstitute && 'publication_institute' === $object['resourceId'])
+                || ($includePatres && 'publication_patres' === $object['resourceId'])
             ) {
                 if (! isset($object['inLanguage'])) {
                     if (! isset($languages['xx'])) {
@@ -2195,6 +2197,7 @@ WHERE 1";
                     $quality = null;
                 }
             }
+            $actingUserId = $this->getActingUserId();
             $entities[] = [
 //                 'publicationId'          => null,
 
@@ -2239,14 +2242,14 @@ WHERE 1";
                 'dataSourceUpdatedOn'       => $now,
                 'publicNotes'               => $publicNotes,
                 'publicNotesUpdatedOn'      => $publicNotes ? $now : null,
-                'publicNotesUpdatedBy'      => $publicNotes ? $this->actingUserId : null,
+                'publicNotesUpdatedBy'      => $publicNotes ? $actingUserId : null,
                 'adminNotes'                => $originalSource,
                 'adminNotesUpdatedOn'       => $originalSource ? $now : null,
-                'adminNotesUpdatedBy'       => $originalSource ? $this->actingUserId : null,
+                'adminNotesUpdatedBy'       => $originalSource ? $actingUserId : null,
                 'createdOn'                 => $now,
-                'createdBy'                 => $this->actingUserId,
+                'createdBy'                 => $actingUserId,
                 'updatedOn'                 => $now,
-                'updatedBy'                 => $this->actingUserId,
+                'updatedBy'                 => $actingUserId,
             ];
         }
 

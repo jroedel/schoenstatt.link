@@ -5,6 +5,7 @@ use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
+use SionModel\Service\ActingUserProviderInterface;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
@@ -23,11 +24,9 @@ class PublicationsTableFactory implements FactoryInterface
         $config = $container->get('Config');
         $dbAdapter = $container->get($config['books']['books_db_adapter']);
 
-        $authService = $container->get('zfcuser_auth_service');
-        $user = $authService->getIdentity();
-        $actingUserId = $user ? $user->id : null;
+        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
-        $table = new PublicationsTable($dbAdapter, $container, $actingUserId);
+        $table = new PublicationsTable($dbAdapter, $container, $actingUserProvider);
 
         $schTable = $container->get(SchoenstattTable::class);
         $table->setSchoenstattTable($schTable);

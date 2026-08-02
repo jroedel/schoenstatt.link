@@ -5,6 +5,7 @@ use Books\Model\LibraryTable;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Laminas\Db\Adapter\Adapter;
+use SionModel\Service\ActingUserProviderInterface;
 
 /**
  * Factory responsible of priming the LibraryTable service
@@ -23,11 +24,9 @@ class LibraryTableServiceFactory implements FactoryInterface
         $dbAdapter = $container->get(Adapter::class);
 
         $config = $container->get('Config');
-        $authService = $container->get('zfcuser_auth_service');
-        $user = $authService->getIdentity();
-        $actingUserId = $user ? $user->id : null;
+        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
-        $table = new LibraryTable($dbAdapter, $container, $actingUserId, $config);
+        $table = new LibraryTable($dbAdapter, $container, $actingUserProvider, $config);
         return $table;
     }
 }

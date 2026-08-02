@@ -11,6 +11,7 @@ use Laminas\View\Helper\Url;
 use Laminas\Router\RouteStackInterface;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
+use SionModel\Service\ActingUserProviderInterface;
 
 class DictionaryTable extends SionTable
 {
@@ -22,10 +23,13 @@ class DictionaryTable extends SionTable
      */
     protected $router;
 
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId)
-    {
+    public function __construct(
+        AdapterInterface $dbAdapter,
+        $serviceLocator,
+        ?ActingUserProviderInterface $actingUserProvider
+    ) {
         $this->router = $serviceLocator->get(RouteStackInterface::class);
-        return parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
+        return parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
     }
 
     protected function preprocessDictionaryEntry($data, $entityData, $action)
