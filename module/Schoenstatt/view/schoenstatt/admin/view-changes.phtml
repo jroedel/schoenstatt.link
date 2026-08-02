@@ -1,7 +1,6 @@
 <?php
 use Cake\Utility\Text;
 use Laminas\Filter\UpperCaseWords;
-use Laminas\Filter\HtmlEntities;
 $headText = 'View Changes';
 $this->headTitle($headText);
 ?>
@@ -22,15 +21,7 @@ $this->headTitle($headText);
     </tr>
     </thead>
         <?php endif;?>
-        <?php $geoText = $row['ipAddress'] . ' ';
-        $geo = $this->geoip($row['ipAddress']);
-        $filter = new HtmlEntities();
-        if ($geo && $geo->getCity()) {
-            $geoText .= ' ' . $filter->filter(mb_convert_encoding($geo->getCity(), "UTF-8", "auto")) . ", ";
-        }
-        if ($geo && $geo->getCountryName()) {
-            $geoText .= $filter->filter(mb_convert_encoding($geo->getCountryName(), "UTF-8", "auto"));
-        }?>
+        <?php $geoText = $row['ipAddress'];?>
     <tr>
         <td><span <?php if ($geoText) :
             ?>data-toggle="tooltip" data-placement="bottom" data-container="body" 

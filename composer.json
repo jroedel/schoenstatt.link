@@ -33,7 +33,6 @@
         "laminas/laminas-json": "^3.1",
         "laminas/laminas-mail": "^2.10",
         "laminas/laminas-mvc-form": "^1.0",
-        "jroedel/zf-snap-geoip": "^3.0",
         "ocramius/proxy-manager": "^2.2",
         "laminas/laminas-mvc-plugin-identity": "^1.1",
         "laminas/laminas-mvc-i18n": "^1.1",
@@ -56,8 +55,8 @@
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
         "laminas/laminas-dependency-plugin": "^2.1",
-        "laminas/laminas-form": "~2.14.3",
-        "laminas/laminas-router": "~3.3.0",
+        "laminas/laminas-form": "^2.17.1",
+        "laminas/laminas-router": "^3.3",
         "laminas/laminas-db": "^2.11",
         "laminas/laminas-mvc-plugin-flashmessenger": "^1.2",
         "laminas/laminas-crypt": "^3.3"
@@ -75,11 +74,6 @@
         {
             "type": "vcs",
             "url": "https://github.com/kokspflanze/BjyAuthorize",
-            "no-api": true
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/jroedel/ZfSnapGeoip",
             "no-api": true
         },
         {
@@ -108,8 +102,7 @@
                     "phpoffice/phpexcel": "abandoned; migration to phpoffice/phpspreadsheet is planned in the Phase 3 ladder (BACKLOG.md)"
                 },
                 "ignore-id": {
-                    "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743.",
-                    "PKSA-q54w-zbs8-w6dj": "laminas-form XSS fixed only in 2.17.2+, which needs laminas-hydrator ^3.2; the ZfcUser and ZfSnapGeoip forks cap hydrator at ^2. Production runs the equivalent zend-form 2.14.3 today. Pay at Phase 3 rung 3 when LmcUser replaces ZfcUser and the forks are re-evaluated."
+                    "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743."
                 }
             }
         },

@@ -14,7 +14,6 @@ use Laminas\EventManager\ListenerAggregateInterface;
 use Laminas\Http\Response as HttpResponse;
 use Laminas\Mvc\MvcEvent;
 use Laminas\Stdlib\ResponseInterface as Response;
-use ZfSnapGeoip\Service\Geoip;
 use Laminas\Session\SessionManager;
 use Laminas\View\Model\ViewModel;
 use Application\Controller\IndexController;
@@ -122,43 +121,5 @@ class GdprStrategy implements ListenerAggregateInterface
                 '/'
             );
         }
-    }
-
-    protected static function isGDPRCountry($countryCode)
-    {
-        static $countries;
-        if (! isset($countries)) {
-            $countries = [
-                'BE' => 'Belgium',
-                'BG' => 'Bulgaria',
-                'CZ' => 'Czech Republic',
-                'DK' => 'Denmark',
-                'DE' => 'Germany',
-                'EE' => 'Estonia',
-                'IE' => 'Ireland',
-                'GR' => 'Greece',
-                'ES' => 'Spain',
-                'FR' => 'France',
-                'HR' => 'Croatia',
-                'IT' => 'Italy',
-                'CY' => 'Cyprus',
-                'LV' => 'Latvia',
-                'LT' => 'Lithuania',
-                'LU' => 'Luxembourg',
-                'HU' => 'Hungary',
-                'MT' => 'Malta',
-                'NL' => 'Netherlands',
-                'AT' => 'Austria',
-                'PL' => 'Poland',
-                'PT' => 'Portugal',
-                'RO' => 'Romania',
-                'SI' => 'Slovenia',
-                'SK' => 'Slovakia',
-                'FI' => 'Finland',
-                'SE' => 'Sweden',
-                'GB' => 'United Kingdom'
-            ];
-        }
-        return isset($countries[$countryCode]);
     }
 }

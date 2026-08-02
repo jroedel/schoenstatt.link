@@ -32,6 +32,3 @@ php composer.phar install
 # make sure important data directories exist
 mkdir -p data/logs
 mkdir -p data/config
-
-# download geoip data
-wget -q -O vendor/jroedel/zf-snap-geoip/data/GeoLiteCity.dat https://schoenstatt.link/REDACTED-PATH/GeoLiteCity.dat

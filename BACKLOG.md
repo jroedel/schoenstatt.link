@@ -72,29 +72,36 @@ Each rung verified by the Phase 2 suite:
    Books\OpenUrl, mledoze data vendored into JTranslate, libkml unused,
    bjy-profiler); roave/security-advisories superseded by Composer's native
    advisory blocking. 5 VCS forks remain: SlmLocale, BjyAuthorize,
-   ZfSnapGeoip, chordpro-php, ZfcUser (pinned to 2020 commit — its 2022 head
-   breaks JUser's UserTable; moot once LmcUser replaces it).
+   ZfSnapGeoip (since eliminated), chordpro-php, ZfcUser (since eliminated).
 2. [x] ZF → Laminas via `laminas/laminas-migration` (2026-08-02, commit
    "Phase 3 rung 2"). The ZendFrameworkBridge module + dependency-plugin
    carry the not-yet-migrated third-party modules (ZfcUser, BjyAuthorize,
    SlmLocale, BeaucalInvalidSession, zfc-datagrid, TwbBundle, ZfSnapGeoip).
    Temporary pins to revisit at rung 3: laminas-form ~2.14.3,
-   laminas-router ~3.3.0.
+   laminas-router ~3.3.0 (both lifted at rung 3b, see below).
 3. Replace abandoned packages (SwiftMailer → symfony/mailer, PHPExcel →
    PhpSpreadsheet, BjyAuthorize → LM-Commons successor, …) and re-evaluate
-   each pinned personal VCS fork in composer.json (4 left: SlmLocale,
-   BjyAuthorize, ZfSnapGeoip, chordpro-php).
+   each pinned personal VCS fork in composer.json (3 left: SlmLocale,
+   BjyAuthorize, chordpro-php).
    - [x] ZfcUser eliminated (2026-08-02, "Rung 3a"): passwordless
      magic-link auth implemented in JUser itself (not LmcUser — its
      password-centric surface would have been dead weight). Password auth
      is gone app-wide; the `user.password` column is now unread — drop it
      in a later deliberate migration once passwordless has soaked.
-   - zf-snap-geoip: its MaxMind GeoLiteCity.dat legacy database was
-     discontinued upstream in 2019 and lives inside vendor/ (wiped on fresh
-     install; rescue copy in data/geoip/, gitignored). Replace with
-     GeoLite2 + maxmind-db/reader, or drop geoip features. It is now the
-     ONLY thing capping laminas-hydrator at ^2, which blocks laminas-form
-     2.17.2+ (XSS fix) and laminas-router 3.4+.
+   - [x] IP geolocation eliminated entirely (2026-08-02, "Rung 3b"), by
+     product decision — the decision carries over to patres, the other
+     SionModel/JUser consumer. zf-snap-geoip and its discontinued
+     GeoLiteCity.dat are gone (local rescue copy deleted; the .dat still
+     exists in production's vendor dir and at the download URL config.sh
+     used, see git history). JUser's ipPlace/userWithIp helpers survive
+     but render the plain IP (patres views keep working). The Bible
+     special-countries rule provider (guest access from CL/AR/PY) was
+     deleted: Bible/DH routes now require a logged-in bib_user for
+     everyone. Payoff: laminas-hydrator 2.4 → 4.3, laminas-form → 2.17.1
+     (XSS advisory PKSA-q54w-zbs8-w6dj no longer fires — its ignore is
+     removed), laminas-router → 3.4.5, the abandoned real
+     zendframework/zend-router package dropped from the lock, and
+     laminas-console removed.
    - The merged runtime config still contains legacy Zend\* strings from
      un-migrated vendor modules (bridge handles the known ones); sweep
      when those modules are replaced.
