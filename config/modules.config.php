@@ -33,7 +33,6 @@ $modules = [
     //not-yet-migrated third-party modules (BeaucalInvalidSession)
     'Laminas\Session',
 //     'MaglMarkdown',
-    'ZfSnapGeoip',
     'BjyAuthorize',
     'SlmLocale',
     'RestApi',

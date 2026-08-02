@@ -9,4 +9,3 @@
 /sitemap/*
 !/sitemap/.gitkeep
 /scans/*
-/geoip/*
