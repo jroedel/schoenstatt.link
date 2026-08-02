@@ -48,9 +48,11 @@ that don't exist (no-ops today, confusing tomorrow):
 
 ## Phase 2: safety net
 
-- [x] HTTP smoke/characterization suite (38 tests green against the time
-  capsule; excluded: `/en/associations/do-work` (side effects), `/en/dictionary`
-  (broken, see above)).
+- [x] HTTP smoke/characterization suite (38 tests at the time, **52/193
+  assertions today**) green against the time capsule; excluded:
+  `/en/associations/do-work` (side effects), `/en/dictionary` (broken, see
+  above). Run it with `php composer.phar smoke`, one process at a time — see
+  "Local capsule: resource ceilings" below for why that matters.
 - [x] PHPUnit 9.6 + PHPStan 1.12 phars pinned via `tools/fetch.sh`.
 - [x] PHPStan level 0 green with `phpstan-baseline.neon` (56 legacy errors).
 - [x] CI v1: PHP 7.4 syntax lint (GitHub Actions).
@@ -79,8 +81,11 @@ Each rung verified by the Phase 2 suite:
    ZfSnapGeoip (since eliminated), chordpro-php, ZfcUser (since eliminated).
 2. [x] ZF → Laminas via `laminas/laminas-migration` (2026-08-02, commit
    "Phase 3 rung 2"). The ZendFrameworkBridge module + dependency-plugin
-   carry the not-yet-migrated third-party modules (ZfcUser, BjyAuthorize,
-   SlmLocale, BeaucalInvalidSession, zfc-datagrid, TwbBundle, ZfSnapGeoip).
+   carried seven not-yet-migrated third-party modules; four have since been
+   eliminated outright (ZfcUser, ZfSnapGeoip, BeaucalInvalidSession,
+   zfc-datagrid), leaving **BjyAuthorize, SlmLocale and TwbBundle** as the
+   only reason the bridge is still loaded. Dropping the bridge is the
+   natural close-out once those three are dealt with at rung 3.
    Temporary pins to revisit at rung 3: laminas-form ~2.14.3,
    laminas-router ~3.3.0 (both lifted at rung 3b, see below).
 3. Replace abandoned packages (SwiftMailer → symfony/mailer, PHPExcel →
@@ -106,6 +111,21 @@ Each rung verified by the Phase 2 suite:
      removed), laminas-router → 3.4.5, the abandoned real
      zendframework/zend-router package dropped from the lock, and
      laminas-console removed.
+   - [x] Three more dead dependencies eliminated 2026-08-02 (per
+     "prefer elimination over rescue"): **zfc-datagrid** and
+     **zf2-mobile-detect** (37a59a0) — neither had run since the ZF3
+     migration and both cap at PHP 7.x; **beaucal/beaucal-invalid-session**
+     (6f6259f) — abandoned since 2016, its 30 lines moved into
+     `JUser::onBootstrap`. Removing zfc-datagrid also stranded the two
+     "Export" links, which built a `rendererType=PHPExcel` query no PHP has
+     read since 2017; if export is wanted back it lands with the
+     PhpSpreadsheet migration below.
+   - [x] **ocramius/proxy-manager eliminated** 2026-08-02 (8f3d49a, with
+     SionModel c648cf6/038557a and JUser 092c0a3). It existed only to back
+     the ServiceManager's `lazy_services`, used as a construction-cost
+     optimisation in five modules. Removing it exposed a genuine dependency
+     cycle those proxies had been deferring past — see "Service-graph
+     cycles" below, which lists what is still open.
    - The merged runtime config still contains legacy Zend\* strings from
      un-migrated vendor modules (bridge handles the known ones); sweep
      when those modules are replaced.
@@ -203,16 +223,109 @@ source and port, don't merge.**
 - After the PHP 8 rung stabilizes the shared libs: migrate patres onto the
   converged line (it inherits passwordless auth, geoip removal, the
   fatal-200 fix), then retire the `0.3.x`/`1.0.x` branches.
+- NOTE: patres also inherits the service-graph cycle work — it shares the
+  SionTable/UserTable base classes and the eager-identity factories, so it
+  will hit the same recursion the moment it drops proxy-manager. Read
+  "Service-graph cycles" below before starting that migration; the two open
+  items there (eager identity, `$entityProblemPrototype`) need checking
+  against patres's own subclasses, which are not visible from this repo.
 - NOTE: patres's `1.0.x` SionCacheService still contains the fatal-200
   `unset($this->memoryCache)` bug (worse on PHP 8: typed property →
   immediate Error). Interim fix pushed as branch
   `fix/cache-write-failure-wedge` on laminas-sion-model; the PR against
   `1.0.x` must be opened by hand (the gh token lacks access there).
 
+## Service-graph cycles (found and cut 2026-08-02, branch-only)
+
+Dropping `ocramius/proxy-manager` (and with it `lazy_services`) exposed a
+four-way cycle in the shared libraries that the lazy proxies had been quietly
+deferring past, probably for years:
+
+```
+JUser\Model\UserTable          (a SionTable — its constructor asks for...)
+  -> SionModel\Service\ProblemService
+  -> SionModel\Problem\ProblemTable
+  -> JUser\AuthService          (needs the UserTable still being built)
+  -> JUser\Model\UserTable
+```
+
+Every route recursed through `ServiceManager::doCreate` until it hit the 512M
+`memory_limit`, then answered with a PHP fatal under HTTP 200 — the same
+*symptom* as the family below, an unrelated *cause*. It never reached
+production: the whole episode lived on `feat/php-83`.
+
+Cut in two places, both lossless because `ProblemTable` is read-only:
+`ProblemTableFactory` no longer resolves `AuthService` just to derive an acting
+user id it discards, and `SionTable` now resolves the UserTable lazily in
+`getUserTable()` instead of during construction (038557a), which closes the
+class of cycle rather than the one instance and removed the ad-hoc
+`! $this instanceof X` guards.
+
+Still open:
+
+- [ ] **Four factories still call `$container->get('JUser\AuthService')
+  ->getIdentity()` during construction**: `SchoenstattTableFactory`,
+  `TranslationsTableFactory`, `FilesTableFactory`, `PredicatesTableFactory`
+  (ProblemTableFactory was the fifth and is fixed). That eager-identity pattern
+  is what generates these cycles; it is the first thing to suspect if one
+  reappears. Passing the identity in lazily — or not at all, where the table
+  never writes — would retire the pattern.
+- [ ] **`SionTable::$entityProblemPrototype` is still resolved eagerly**, on
+  purpose. Subclasses read it as a raw property (`clone
+  $this->entityProblemPrototype` in `Books\Model\LibraryTable` and
+  `Schoenstatt\Model\SchoenstattTable`), so moving it behind a lazy getter
+  would silently hand them null. Any patres subclass has the same exposure —
+  check both consumers before touching it.
+- [ ] **patres will hit this identically** when it converges onto the
+  `modernization` line: same base classes, same eager-identity factories. See
+  the convergence plan above.
+
+Technique worth reusing: temporarily patch
+`vendor/laminas/laminas-servicemanager/src/ServiceManager.php` so `get()` pushes
+each name onto a per-container stack and dumps it on the first repeat. It named
+the cycle in a single request, and running the smoke suite under it proved no
+cycle survives anywhere. Key it by `spl_object_id($this)`, not globally — a
+plugin manager delegating a name upward to the parent container is not a cycle
+and a global stack reports it as one.
+
+## Local capsule: resource ceilings (added 2026-08-02, after two host OOMs)
+
+The time capsule could consume the whole development machine, and twice did —
+15.5 GB of host RAM exhausted and all eight cores pinned. Two compounding
+causes: nothing bounded the containers, and the stock `php:*-apache` image
+allows **150** mpm_prefork workers, which against the 512M `memory_limit` that
+`public/index.php` sets is a ~75 GB ceiling. The trigger was the smoke suite
+being run as several concurrent processes against an app that was fataling on
+every route (the cycle above).
+
+Now bounded in three layers — `docker-compose.yml` (app 4g/2 CPUs, db 1g,
+mailpit 256m, `memswap_limit == mem_limit` so a leak dies instead of thrashing
+swap), `docker/apache-limits.conf` (6 workers, recycled every 200 connections,
+60s Timeout) and `docker/php-limits.ini` (60s `max_execution_time`). Sizing is
+measured, not guessed: a flat 3g was observed OOM-killing a worker at full
+concurrency, so the app gets 4g and the cgroup backstops runaways rather than
+ordinary requests. Verified at 40 concurrent requests: 6 children, ~200% of
+800% CPU, 1.0 GB peak, no kills.
+
+- **Run the smoke suite with `php composer.phar smoke`, one process at a
+  time.** Never fan it out across parallel agents or shells. This is also in
+  CLAUDE.md.
+- Changing a limit needs `docker compose build && docker compose up -d`.
+- Useful when diagnosing: `docker compose exec -T app cat
+  /sys/fs/cgroup/memory.events` reports `oom_kill` counts, and `anon` in
+  `memory.stat` separates real RSS from page cache (`docker stats` conflates
+  them, which will otherwise mislead you).
+- [ ] Production runs FastCGI, not prefork, so none of this applies there —
+  but the same question ("what bounds concurrent PHP memory?") has never been
+  asked of the Hetzner account. Worth checking at the PHP 8 rung.
+
 ## Fixed: the fatal-under-HTTP-200 family (2026-08-02, DEPLOYED)
 
 Two independent bugs produced fatals under HTTP 200; both fixed and live
-in production as of 2026-08-02:
+in production as of 2026-08-02. (A third cause of the same symptom turned up
+later that day during the proxy-manager removal — see "Service-graph cycles"
+above. It never left the branch, but it is a reminder that an ~800-byte
+HTTP 200 is a *symptom*, not a diagnosis.)
 
 1. **Cold-page cache wedge**: SionCacheTrait's failed-write handler did
    `unset($this->memoryCache)`, destroying the declared property; every
