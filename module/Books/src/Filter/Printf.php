@@ -1,14 +1,14 @@
 <?php
 namespace Books\Filter;
 
-use Zend\Filter\AbstractFilter;
+use Laminas\Filter\AbstractFilter;
 
 class Printf extends AbstractFilter
 {
     /**
      * @see https://stackoverflow.com/a/446599
      * {@inheritDoc}
-     * @see \Zend\Filter\FilterInterface::filter()
+     * @see \Laminas\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {

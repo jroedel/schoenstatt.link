@@ -2,8 +2,8 @@
 namespace Bible\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Math\Rand;
-use Zend\View\Model\ViewModel;
+use Laminas\Math\Rand;
+use Laminas\View\Model\ViewModel;
 
 class DhController extends SionController
 {
@@ -123,7 +123,7 @@ class DhController extends SionController
             }
             $results[] = $data;
         }
-        return new \Zend\View\Model\ViewModel([
+        return new \Laminas\View\Model\ViewModel([
             'results' => $results,
         ]);
     }
@@ -182,7 +182,7 @@ class DhController extends SionController
             $data['result'] = $result;
             $results[] = $data;
         }
-        return new \Zend\View\Model\ViewModel([
+        return new \Laminas\View\Model\ViewModel([
             'results' => $results,
         ]);
     }

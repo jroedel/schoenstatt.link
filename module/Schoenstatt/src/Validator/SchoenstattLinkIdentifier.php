@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Validator;
 
-use Zend\Validator\Regex;
+use Laminas\Validator\Regex;
 
 class SchoenstattLinkIdentifier extends Regex
 {

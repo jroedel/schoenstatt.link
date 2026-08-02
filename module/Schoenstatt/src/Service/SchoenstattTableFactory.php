@@ -1,11 +1,11 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use JTranslate\Model\CountriesInfo;
-use Zend\Db\Adapter\Adapter;
+use Laminas\Db\Adapter\Adapter;
 use JTranslate\Model\TranslationsTable;
 
 /**
@@ -26,9 +26,7 @@ class SchoenstattTableFactory implements FactoryInterface
 
         $config = $container->get('Config');
 
-        /** @var  User $userService **/
-        $userService = $container->get('zfcuser_user_service');
-        $user = $userService->getAuthService()->getIdentity();
+        $user = $container->get('JUser\AuthService')->getIdentity();
         $actingUserId = $user ? $user->id : null;
 
         /** @var \JTranslate\Model\CountriesInfo */

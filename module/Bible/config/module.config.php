@@ -1,8 +1,8 @@
 <?php
 namespace Bible;
 
-use Zend\Router\Http\Segment;
-use Zend\Router\Http\Literal;
+use Laminas\Router\Http\Segment;
+use Laminas\Router\Http\Literal;
 use BjyAuthorize\Guard\Route;
 
 return [
@@ -11,18 +11,10 @@ return [
 //             'Bible\Controller\Bible' => 'Bible\Controller\BibleController',
 //         ],
 //     ],
-    'bible' => [
-        'special_countries' => [
-            'CL',
-            'AR',
-            'PY'
-        ],
-    ],
     'service_manager' => [
         'factories' => [
             Model\BibleTable::class        => Service\BibleTableFactory::class,
             Model\DhTable::class        => Service\DhTableFactory::class,
-            Provider\Rule\SpecialCountryRuleProvider::class => Service\SpecialCountryRuleProviderFactory::class,
         ],
     ],
     'view_helpers' => [
@@ -587,9 +579,6 @@ return [
         ],
     ],
     'bjyauthorize' => [
-        'rule_providers' => [
-            Provider\Rule\SpecialCountryRuleProvider::class => [],
-        ],
         'guards' => [
             Route::class => [
                 ['route' => 'bible', 'roles' => ['bib_user']],

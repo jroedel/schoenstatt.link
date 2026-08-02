@@ -1,9 +1,9 @@
 <?php
 namespace Books\View\Helper;
 
-use Zend\View\Helper\AbstractHelper;
+use Laminas\View\Helper\AbstractHelper;
 use Books\Model\LibraryTable;
-use Zend\Router\RouteMatch;
+use Laminas\Router\RouteMatch;
 
 class LibraryInfo extends AbstractHelper
 {

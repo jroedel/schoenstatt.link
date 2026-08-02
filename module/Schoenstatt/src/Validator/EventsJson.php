@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Validator;
 
-use Zend\Validator\AbstractValidator;
-use Zend\Json\Json;
+use Laminas\Validator\AbstractValidator;
+use Laminas\Json\Json;
 
 class EventsJson extends AbstractValidator
 {
@@ -24,7 +24,7 @@ class EventsJson extends AbstractValidator
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Validator\ValidatorInterface::isValid()
+     * @see \Laminas\Validator\ValidatorInterface::isValid()
      */
     public function isValid($value)
     {

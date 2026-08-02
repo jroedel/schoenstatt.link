@@ -1,7 +1,7 @@
 <?php
 namespace Books\Filter;
 
-use Zend\Filter\PregReplace;
+use Laminas\Filter\PregReplace;
 
 class SortText extends PregReplace
 {

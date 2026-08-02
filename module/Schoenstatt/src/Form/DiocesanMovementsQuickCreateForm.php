@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
 
 class DiocesanMovementsQuickCreateForm extends SionForm implements InputFilterProviderInterface
@@ -12,7 +12,7 @@ class DiocesanMovementsQuickCreateForm extends SionForm implements InputFilterPr
         parent::__construct('create_quick_diocesan_movements');
 
         $this->add([
-            'type' => 'Zend\Form\Element\Collection',
+            'type' => 'Laminas\Form\Element\Collection',
             'name' => 'assocations',
             'options' => [
                 'label' => 'Please choose categories for this product',
@@ -63,7 +63,7 @@ class DiocesanMovementsQuickCreateForm extends SionForm implements InputFilterPr
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]],
                 ],
                 'validators' => [
@@ -82,7 +82,7 @@ class DiocesanMovementsQuickCreateForm extends SionForm implements InputFilterPr
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ]
                     ],
                 ],

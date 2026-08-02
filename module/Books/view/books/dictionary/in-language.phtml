@@ -1,7 +1,7 @@
 <?php
 use Cake\Utility\Text;
 use Books\Model\DictionaryTable;
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Laminas\View\Renderer\PhpRenderer $this */
 $titleFormat = DictionaryTable::DICTIONARY_TITLE_FORMAT;
 $headText = sprintf($this->translate($titleFormat), $this->translate($this->inLanguageName));
 $this->headTitle()->setTranslatorEnabled(false);

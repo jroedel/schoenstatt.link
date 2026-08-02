@@ -3,7 +3,7 @@
  * @param \Books\Form\TextForm $form
  * @param string $url
  */
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Laminas\View\Renderer\PhpRenderer $this */
 $form = $this->form;
 if (isset($this->action) && ! is_null($this->action)) {
     $form->setAttribute('action', $this->action);

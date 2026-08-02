@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Zend Framework (http://framework.zend.com/]
  *
@@ -9,39 +10,24 @@
 
 namespace Application;
 
-use Zend\Router\Http\Literal;
-use Zend\Navigation\Service\DefaultNavigationFactory;
-use Zend\I18n\Translator\TranslatorServiceFactory;
-use Zend\Log\LoggerAbstractServiceFactory;
-use Zend\Cache\Service\StorageCacheAbstractServiceFactory;
+use Laminas\Router\Http\Literal;
+use Laminas\Navigation\Service\DefaultNavigationFactory;
+use Laminas\I18n\Translator\TranslatorServiceFactory;
+use Laminas\Log\LoggerAbstractServiceFactory;
+use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
 use BjyAuthorize\Guard\Route;
 use SionModel\Service\ProblemService;
 use JTranslate\Model\TranslationsTable;
-use Zend\ServiceManager\Proxy\LazyServiceFactory;
-use Zend\Cache\Storage\StorageInterface;
+use Laminas\ServiceManager\Proxy\LazyServiceFactory;
+use Laminas\Cache\Storage\StorageInterface;
 use Application\View\GdprStrategy;
-use Application\Service\JsonPostFactory;
-use Zend\Router\Http\Segment;
+use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Zend\Log\LoggerInterface;
+use Laminas\Log\LoggerInterface;
 
 return [
     'router' => [
         'routes' => [
-            'api-v1' => [
-                'child_routes' => [
-                    'login' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/users/login',
-                            'defaults' => [
-                                'action' => 'login',
-                                'controller' => Controller\UsersApiController::class,
-                            ],
-                        ],
-                    ],
-                ],
-            ],
             'welcome' => [
                 'type' => Literal::class,
                 'options' => [
@@ -132,7 +118,6 @@ return [
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
-            Authentication\Adapter\JsonPost::class => JsonPostFactory::class,
         ],
         'aliases' => [
             //this helps clarify throughout the app which kind of Logger we should expect.
@@ -192,7 +177,6 @@ return [
         'guards' => [
             Route::class => [
                 ['route' => 'redirect-pre-april-2020-sl-id', 'roles' => ['guest', 'user']],
-                ['route' => 'api-v1/login', 'roles' => ['guest', 'user']],
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
                 ['route' => 'new-home', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],

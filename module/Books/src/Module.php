@@ -1,8 +1,8 @@
 <?php
 namespace Books;
 
-use Zend\Mvc\MvcEvent;
-use Zend\Mvc\Controller\AbstractActionController;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Mvc\Controller\AbstractActionController;
 use Books\Model\LibraryTable;
 
 class Module

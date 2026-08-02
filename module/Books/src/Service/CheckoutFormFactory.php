@@ -1,7 +1,7 @@
 <?php
 namespace Books\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Form\CheckoutForm;
 use Books\Model\LibraryTable;
@@ -22,7 +22,7 @@ class CheckoutFormFactory implements FactoryInterface
         $table = $container->get(LibraryTable::class);
 
         /**
-         * @var \Zend\Mvc\Application $application
+         * @var \Laminas\Mvc\Application $application
          */
         $application = $container->get('Application');
         $routeMatch = $application->getMvcEvent()->getRouteMatch();

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BjyAuthorize Module (https://github.com/bjyoungblood/BjyAuthorize)
  *
@@ -9,11 +10,10 @@
 namespace Application\Service;
 
 use Interop\Container\ContainerInterface;
-use Zend\ServiceManager\FactoryInterface;
-use Zend\ServiceManager\ServiceLocatorInterface;
-use Application\Authentication\Adapter\JsonPost;
+use Laminas\ServiceManager\FactoryInterface;
+use Laminas\ServiceManager\ServiceLocatorInterface;
 use Application\Controller\IndexController;
-use Zend\Navigation\Navigation;
+use Laminas\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\EventTextTable;
@@ -47,6 +47,6 @@ class IndexControllerFactory implements FactoryInterface
      */
     public function createService(ServiceLocatorInterface $serviceLocator)
     {
-        return $this($serviceLocator, JsonPost::class);
+        return $this($serviceLocator, IndexController::class);
     }
 }

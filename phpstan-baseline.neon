@@ -1,0 +1,211 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Used function False\\\\true not found\\.$#"
+			count: 1
+			path: module/Application/src/Controller/IndexController.php
+
+		-
+			message: "#^Call to an undefined method Bible\\\\Filter\\\\FromBibleworksMorphosyntacticCode\\:\\:getCodes\\(\\)\\.$#"
+			count: 1
+			path: module/Bible/src/Filter/FromBibleworksMorphosyntacticCode.php
+
+		-
+			message: "#^Function Exception not found\\.$#"
+			count: 3
+			path: module/Bible/src/Filter/FromBibleworksMorphosyntacticCode.php
+
+		-
+			message: "#^Access to an undefined property Books\\\\Controller\\\\BooksApiController\\:\\:\\$inputFilter\\.$#"
+			count: 1
+			path: module/Books/src/Controller/BooksApiController.php
+
+		-
+			message: "#^Method Books\\\\Controller\\\\LibraryImportsController\\:\\:redirectAfterEdit\\(\\) should return Zend\\\\Stdlib\\\\ResponseInterface but return statement is missing\\.$#"
+			count: 1
+			path: module/Books/src/Controller/LibraryImportsController.php
+
+		-
+			message: "#^Result of method SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/Books/src/Model/DictionaryTable.php
+
+		-
+			message: "#^Access to an undefined property Books\\\\Model\\\\LibraryOptions\\:\\:\\$isPublicallyListed\\.$#"
+			count: 1
+			path: module/Books/src/Model/LibraryOptions.php
+
+		-
+			message: "#^Method Books\\\\Model\\\\LibraryOptions\\:\\:getArrayCopy\\(\\) should return array but return statement is missing\\.$#"
+			count: 1
+			path: module/Books/src/Model/LibraryOptions.php
+
+		-
+			message: "#^Call to an undefined method Books\\\\Model\\\\MusicTable\\:\\:getAssociationSchemaV1\\(\\)\\.$#"
+			count: 1
+			path: module/Books/src/Model/MusicTable.php
+
+		-
+			message: "#^Function issett not found\\.$#"
+			count: 1
+			path: module/Books/src/Model/PublicationsTable.php
+
+		-
+			message: "#^Access to an undefined property Books\\\\Service\\\\DriveGateway\\:\\:\\$personInputFilter\\.$#"
+			count: 2
+			path: module/Books/src/Service/DriveGateway.php
+
+		-
+			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:complementSchoenstattTablePersonDataKeysWithOptions\\(\\)\\.$#"
+			count: 2
+			path: module/Books/src/Service/DriveGateway.php
+
+		-
+			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:getPersonInSchoenstattTable\\(\\)\\.$#"
+			count: 1
+			path: module/Books/src/Service/DriveGateway.php
+
+		-
+			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:getRemotePerson\\(\\)\\.$#"
+			count: 1
+			path: module/Books/src/Service/DriveGateway.php
+
+		-
+			message: "#^Call to an undefined method Books\\\\Service\\\\DriveGateway\\:\\:getSchoenstattTable\\(\\)\\.$#"
+			count: 4
+			path: module/Books/src/Service/DriveGateway.php
+
+		-
+			message: "#^Cannot unset offset 'personId' on array\\{dataSource\\: 'patres\\-sion', dataSourceId\\: float\\|int\\}\\.$#"
+			count: 1
+			path: module/Books/src/Service/DriveGateway.php
+
+		-
+			message: "#^Array has 2 duplicate keys with value 'numberOfPages' \\('numberOfPages', 'numberOfPages'\\)\\.$#"
+			count: 1
+			path: module/Books/src/View/Helper/Coins.php
+
+		-
+			message: "#^Function Exception not found\\.$#"
+			count: 1
+			path: module/JTranslate/src/Model/CountriesInfo.php
+
+		-
+			message: "#^Function Exception not found\\.$#"
+			count: 1
+			path: module/JTranslate/src/Model/TranslationsTable.php
+
+		-
+			message: "#^Function InvalidArgumentException not found\\.$#"
+			count: 1
+			path: module/JTranslate/src/Model/TranslationsTable.php
+
+		-
+			message: "#^Method JTranslate\\\\Module\\:\\:onBootstrap\\(\\) should return array but return statement is missing\\.$#"
+			count: 1
+			path: module/JTranslate/src/Module.php
+
+		-
+			message: "#^Result of static method JUser\\\\Model\\\\User\\:\\:generateVerificationToken\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/JUser/src/Controller/LoginV1ApiController.php
+
+		-
+			message: "#^Method JUser\\\\Controller\\\\UsersController\\:\\:setUserTable\\(\\) should return JUser\\\\Model\\\\UserTable but return statement is missing\\.$#"
+			count: 1
+			path: module/JUser/src/Controller/UsersController.php
+
+		-
+			message: "#^Result of static method JUser\\\\Model\\\\User\\:\\:generateVerificationToken\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/JUser/src/Controller/UsersController.php
+
+		-
+			message: "#^Result of static method JUser\\\\Model\\\\User\\:\\:generateVerificationToken\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/JUser/src/Model/User.php
+
+		-
+			message: "#^Result of method BjyAuthorize\\\\View\\\\UnauthorizedStrategy\\:\\:onDispatchError\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/JUser/src/View/RedirectionStrategy.php
+
+		-
+			message: "#^Access to an undefined property Schoenstatt\\\\Filter\\\\SchoenstattLinkIdentifier\\:\\:\\$entityType\\.$#"
+			count: 1
+			path: module/Schoenstatt/src/Filter/SchoenstattLinkIdentifier.php
+
+		-
+			message: "#^Function Exception not found\\.$#"
+			count: 1
+			path: module/Schoenstatt/src/Filter/SchoenstattLinkIdentifier.php
+
+		-
+			message: "#^Call to an undefined method Schoenstatt\\\\Model\\\\SchoenstattTable\\:\\:getRoleTitleAliases\\(\\)\\.$#"
+			count: 1
+			path: module/Schoenstatt/src/Model/SchoenstattTable.php
+
+		-
+			message: "#^Method Schoenstatt\\\\Model\\\\SchoenstattTable\\:\\:associationPostprocessor\\(\\) should return float\\|int but return statement is missing\\.$#"
+			count: 1
+			path: module/Schoenstatt/src/Model/SchoenstattTable.php
+
+		-
+			message: "#^Method SionModel\\\\Controller\\\\SionController\\:\\:__construct\\(\\) invoked with 1 parameter, 8 required\\.$#"
+			count: 1
+			path: module/SionModel/src/Controller/FilesController.php
+
+		-
+			message: "#^Result of method SionModel\\\\Controller\\\\SionController\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/SionModel/src/Controller/FilesController.php
+
+		-
+			message: "#^Undefined variable\\: \\$entity$#"
+			count: 1
+			path: module/SionModel/src/Controller/SionController.php
+
+		-
+			message: "#^Access to an undefined property SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:\\$changeTableName\\.$#"
+			count: 5
+			path: module/SionModel/src/Db/Model/SionTable.php
+
+		-
+			message: "#^Access to an undefined property SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:\\$where\\.$#"
+			count: 2
+			path: module/SionModel/src/Db/Model/SionTable.php
+
+		-
+			message: "#^Array has 2 duplicate keys with value 'object' \\('object', 'object'\\)\\.$#"
+			count: 1
+			path: module/SionModel/src/Db/Model/SionTable.php
+
+		-
+			message: "#^Call to an undefined method SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:getEmailAddress\\(\\)\\.$#"
+			count: 1
+			path: module/SionModel/src/Db/Model/SionTable.php
+
+		-
+			message: "#^Call to an undefined method SionModel\\\\Form\\\\SionForm\\:\\:getInputFilterSpecification\\(\\)\\.$#"
+			count: 3
+			path: module/SionModel/src/Form/SionForm.php
+
+		-
+			message: "#^Class SionModel\\\\Mailing\\\\Mailer constructor invoked with 3 parameters, 4 required\\.$#"
+			count: 1
+			path: module/SionModel/src/Service/MailerFactory.php
+
+		-
+			message: "#^Result of method Zend\\\\View\\\\Helper\\\\HeadScript\\:\\:captureEnd\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/SionModel/src/View/Helper/InlineScript.php
+
+		-
+			message: "#^Result of method Zend\\\\View\\\\Helper\\\\HeadScript\\:\\:captureStart\\(\\) \\(void\\) is used\\.$#"
+			count: 1
+			path: module/SionModel/src/View/Helper/InlineScript.php
+
+		-
+			message: "#^Call to an undefined method SionModel\\\\View\\\\Helper\\\\Tooltip\\:\\:escapeHtml\\(\\)\\.$#"
+			count: 1
+			path: module/SionModel/src/View/Helper/Tooltip.php

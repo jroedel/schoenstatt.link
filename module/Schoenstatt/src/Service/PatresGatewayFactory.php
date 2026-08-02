@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\Form\PersonForm;
 use Schoenstatt\Model\SchoenstattTable;

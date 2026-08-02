@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Schoenstatt\View\Helper\FormatEntity;
 use SionModel\Service\EntitiesService;

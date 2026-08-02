@@ -1,9 +1,9 @@
 <?php
 namespace Books;
 
-use Zend\Db\Adapter\Adapter;
-use Zend\Router\Http\Literal;
-use Zend\Router\Http\Segment;
+use Laminas\Db\Adapter\Adapter;
+use Laminas\Router\Http\Literal;
+use Laminas\Router\Http\Segment;
 use Books\Mailing\BooksMailer;
 use Schoenstatt\Model\SchoenstattTable;
 use BjyAuthorize\Guard\Route;
@@ -12,13 +12,13 @@ use Schoenstatt\Service\PatresGateway;
 use JTranslate\Model\TranslationsTable;
 use SionModel\Service\ProblemService;
 use SionModel\Db\Model\FilesTable;
-use Zend\ServiceManager\Proxy\LazyServiceFactory;
+use Laminas\ServiceManager\Proxy\LazyServiceFactory;
 use Books\Service\DriveGateway;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Problem\EntityProblem;
-use Zend\Router\Http\Method;
+use Laminas\Router\Http\Method;
 use Books\Model\DictionaryTable;
-use Zend\Navigation\Navigation;
+use Laminas\Navigation\Navigation;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 $textColumns = [
@@ -443,10 +443,7 @@ return [
                                 'action' => null,
                                 'isAuthorizationRequired' => true,
                                 'controller' => Controller\LibrariesApiController::class,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
-                                ],
+                                'cors' => true,
                             ],
                             'constraints' => [
                                 'library_id' => '[0-9]{1,3}',
@@ -462,10 +459,7 @@ return [
                                         'action' => null,
                                         'isAuthorizationRequired' => true,
                                         'controller' => Controller\BooksApiController::class,
-                                        \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                            'allowed_origins' => ['*'],
-                                            'allowed_methods' => ['GET'],
-                                        ],
+                                        'cors' => true,
                                     ],
                                     'constraints' => [
                                         'book_id' => '[0-9]{1,8}',
@@ -528,10 +522,7 @@ return [
                                 'action' => null,
                                 'controller' => Controller\DictionaryApiController::class,
                                 'isAuthorizationRequired' => true,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
-                                ],
+                                'cors' => true,
                             ],
                         ],
                         'may_terminate' => false,
@@ -593,10 +584,7 @@ return [
                             'defaults' => [
                                 'action' => null,
                                 'controller' => Controller\PublicationsApiController::class,
-                                \ZfrCors\Options\CorsOptions::ROUTE_PARAM => [
-                                    'allowed_origins' => ['*'],
-                                    'allowed_methods' => ['GET'],
-                                ],
+                                'cors' => true,
                             ],
                             'constraints' => [
                                 'publication_id' => '[0-9]{1,8}',

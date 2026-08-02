@@ -1,9 +1,9 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 use SionModel\Form\SionForm;
-use Zend\Json\Json;
+use Laminas\Json\Json;
 
 class AssignmentForm extends SionForm implements InputFilterProviderInterface
 {

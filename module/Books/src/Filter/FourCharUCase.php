@@ -1,7 +1,7 @@
 <?php
 namespace Books\Filter;
 
-use Zend\Filter\AbstractFilter;
+use Laminas\Filter\AbstractFilter;
 use SionModel\Filter\ToAscii;
 
 class FourCharUCase extends AbstractFilter
@@ -13,7 +13,7 @@ class FourCharUCase extends AbstractFilter
      * then we send it to uppercase and select only numbers and capital letters.
      * Spaces are padded on the end if we have less than 4 chars
      * {@inheritDoc}
-     * @see \Zend\Filter\FilterInterface::filter()
+     * @see \Laminas\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {

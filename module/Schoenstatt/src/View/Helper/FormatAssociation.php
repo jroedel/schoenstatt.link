@@ -1,7 +1,7 @@
 <?php
 namespace Schoenstatt\View\Helper;
 
-use Zend\Form\View\Helper\AbstractHelper;
+use Laminas\Form\View\Helper\AbstractHelper;
 
 class FormatAssociation extends AbstractHelper
 {

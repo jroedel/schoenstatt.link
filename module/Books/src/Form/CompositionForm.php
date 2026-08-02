@@ -2,16 +2,16 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Zend\Validator\EmailAddress;
-use Zend\Validator\Regex;
-use Zend\Filter\StringTrim;
-use Zend\Filter\ToNull;
-use Zend\Validator\StringLength;
-use Zend\Filter\StripTags;
-use Zend\Filter\StripNewlines;
-use Zend\Filter\StringToLower;
+use Laminas\Validator\EmailAddress;
+use Laminas\Validator\Regex;
+use Laminas\Filter\StringTrim;
+use Laminas\Filter\ToNull;
+use Laminas\Validator\StringLength;
+use Laminas\Filter\StripTags;
+use Laminas\Filter\StripNewlines;
+use Laminas\Filter\StringToLower;
 use SionModel\Filter\SortArray;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class CompositionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -240,7 +240,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Url',
             'options' => [
                 'label' => 'URL 1',
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -269,7 +269,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Url',
             'options' => [
                 'label' => 'URL 2',
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -298,7 +298,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Url',
             'options' => [
                 'label' => 'URL 3',
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -420,7 +420,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ],
                     ],
                 ],

@@ -1,8 +1,8 @@
 <?php
 namespace Books\Form;
 
-use Zend\Form\Form;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\Form\Form;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class PublicationsSearchForm extends Form implements InputFilterProviderInterface
 {

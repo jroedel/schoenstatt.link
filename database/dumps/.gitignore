@@ -1,0 +1,3 @@
+# Production data must never enter the repo
+*
+!.gitignore

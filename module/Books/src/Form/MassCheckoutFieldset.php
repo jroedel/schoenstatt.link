@@ -1,9 +1,9 @@
 <?php
 namespace Books\Form;
 
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 use Carbon\Carbon;
-use Zend\Form\Fieldset;
+use Laminas\Form\Fieldset;
 
 class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterface
 {
@@ -58,7 +58,7 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
     /**
      * @todo Ideally validation would fail if personId is set but withinLibraryIds isn't or withinLibraryIds is set, but personId not
      * {@inheritDoc}
-     * @see \Zend\InputFilter\InputFilterProviderInterface::getInputFilterSpecification()
+     * @see \Laminas\InputFilter\InputFilterProviderInterface::getInputFilterSpecification()
      */
     public function getInputFilterSpecification()
     {

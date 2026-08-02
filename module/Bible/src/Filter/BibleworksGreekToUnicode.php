@@ -1,7 +1,7 @@
 <?php
 namespace Bible\Filter;
 
-use Zend\Filter\AbstractFilter;
+use Laminas\Filter\AbstractFilter;
 
 class BibleworksGreekToUnicode extends AbstractFilter
 {
@@ -10,7 +10,7 @@ class BibleworksGreekToUnicode extends AbstractFilter
     /**
      *
      * {@inheritDoc}
-     * @see \Zend\Filter\FilterInterface::filter()
+     * @see \Laminas\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {
