@@ -26,6 +26,38 @@ class ApplicationSmokeTest extends SmokeTestCase
         $this->assertStringContainsString('Our mission', $response['body']);
     }
 
+    /**
+     * Regression: unknown web URLs used to match a global '/:*' catch-all
+     * route named '404' (int!), get refused by the default-deny guard, and
+     * fatal under HTTP 200 while assembling the int route name. They must
+     * instead reach Laminas' normal 404 handling.
+     */
+    public function testUnknownWebUrlIsACleanNotFound(): void
+    {
+        $response = $this->get('/en/there-is-no-such-page-xyz');
+
+        $this->assertSame(
+            404,
+            $response['status'],
+            'an unknown URL should 404 (redirect target was: "' . $response['redirect'] . '")'
+        );
+        $this->assertStringNotContainsString('Fatal error', $response['body']);
+        $this->assertStringNotContainsString('Stack trace', $response['body']);
+    }
+
+    /**
+     * Unknown API paths keep their multidots-era JSON 404 (guard-approved).
+     * SlmLocale first 302s /api/* to /<locale>/api/* — the locale segment
+     * becomes the router's base URL — so the 404 is one redirect away.
+     */
+    public function testUnknownApiUrlIsACleanNotFound(): void
+    {
+        $response = $this->get('/api/there-is-no-such-endpoint', true);
+
+        $this->assertSame(404, $response['status'], 'an unknown API path should 404');
+        $this->assertStringNotContainsString('Fatal error', $response['body']);
+    }
+
     public function testDevelopersPageRenders(): void
     {
         $response = $this->assertRendersOk('/en/developers');
