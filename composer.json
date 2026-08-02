@@ -96,6 +96,9 @@
             "ext-xml": "7.4.33",
             "ext-mbstring": "7.4.33"
         },
+        "audit": {
+            "abandoned": "report"
+        },
         "policy": {
             "advisories": {
                 "ignore": {
