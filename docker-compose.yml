@@ -25,6 +25,22 @@ services:
       - ./docker/local.docker.php:/var/www/schoenstatt.link/config/autoload/local.php
     environment:
       APP_ENV: development
+    # Hard ceilings. On 2026-08-02 a wedged app under concurrent smoke-test load
+    # exhausted the host's RAM twice and pinned every core: nothing bounded
+    # Apache's 150 default workers x the app's 512M memory_limit. Measured, this
+    # app really does spend ~500M on a single page render, so those defaults had
+    # a ~75 GB ceiling on a 15.5 GB host.
+    #
+    # Sizing: 6 workers (docker/apache-limits.conf) x 512M = 3G, plus APCu's
+    # 256M shm, opcache and the Apache parent — call it 3.5G. 4g leaves real
+    # headroom so the cgroup backstops a runaway instead of OOM-killing ordinary
+    # requests; a flat 3g was measured OOM-killing a worker at full concurrency.
+    # memswap_limit == mem_limit denies the container swap, so a leak dies fast
+    # instead of thrashing the disk and dragging the desktop down with it.
+    mem_limit: 4g
+    memswap_limit: 4g
+    cpus: 2.0
+    pids_limit: 256
     depends_on:
       - db
       - mailpit
@@ -44,11 +60,21 @@ services:
       - ./database/dumps:/docker-entrypoint-initdb.d:ro
     ports:
       - "33306:3306"
+    # 10.11's default innodb_buffer_pool_size is 128M; 1g leaves ample room for
+    # sort buffers and temp tables on this dataset while capping a runaway join.
+    mem_limit: 1g
+    memswap_limit: 1g
+    cpus: 1.0
+    pids_limit: 128
 
   mailpit:
     image: axllent/mailpit
     ports:
       - "8025:8025"
+    mem_limit: 256m
+    memswap_limit: 256m
+    cpus: 0.5
+    pids_limit: 64
 
 volumes:
   db-data:

@@ -37,4 +37,11 @@ RUN usermod -o -u "${HOST_UID}" www-data && groupmod -o -g "${HOST_GID}" www-dat
 
 COPY apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 
+# Resource ceilings — keep these as the last layers so editing a limit does not
+# invalidate the extension-build cache above. See the files themselves for the
+# reasoning; the matching cgroup limits live in docker-compose.yml.
+COPY apache-limits.conf /etc/apache2/conf-available/zz-limits.conf
+RUN a2enconf zz-limits
+COPY php-limits.ini /usr/local/etc/php/conf.d/zz-limits.ini
+
 WORKDIR /var/www/schoenstatt.link

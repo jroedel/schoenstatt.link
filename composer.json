@@ -125,6 +125,10 @@
     "scripts": {
         "cs-check": "phpcs",
         "cs-fix": "phpcbf",
-        "serve": "php -S 127.0.0.1:8080 -t public"
+        "serve": "php -S 127.0.0.1:8080 -t public",
+        "smoke": "docker compose exec -T app php tools/phpunit.phar"
+    },
+    "scripts-descriptions": {
+        "smoke": "Run the HTTP smoke suite against the running capsule. ONE process at a time \u2014 never fan this out in parallel."
     }
 }
