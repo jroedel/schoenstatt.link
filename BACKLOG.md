@@ -81,20 +81,42 @@ Each rung verified by the Phase 2 suite:
    Temporary pins to revisit at rung 3: laminas-form ~2.14.3,
    laminas-router ~3.3.0.
 3. Replace abandoned packages (SwiftMailer → symfony/mailer, PHPExcel →
-   PhpSpreadsheet, ZfcUser/BjyAuthorize → LM-Commons successors, …) and
-   re-evaluate each pinned personal VCS fork in composer.json. Rung-2
-   additions to this list:
+   PhpSpreadsheet, BjyAuthorize → LM-Commons successor, …) and re-evaluate
+   each pinned personal VCS fork in composer.json (4 left: SlmLocale,
+   BjyAuthorize, ZfSnapGeoip, chordpro-php).
+   - [x] ZfcUser eliminated (2026-08-02, "Rung 3a"): passwordless
+     magic-link auth implemented in JUser itself (not LmcUser — its
+     password-centric surface would have been dead weight). Password auth
+     is gone app-wide; the `user.password` column is now unread — drop it
+     in a later deliberate migration once passwordless has soaked.
    - zf-snap-geoip: its MaxMind GeoLiteCity.dat legacy database was
      discontinued upstream in 2019 and lives inside vendor/ (wiped on fresh
      install; rescue copy in data/geoip/, gitignored). Replace with
-     GeoLite2 + maxmind-db/reader, or drop geoip features.
-   - Lifting the ZfcUser/ZfSnapGeoip hydrator ^2 caps unlocks laminas-form
+     GeoLite2 + maxmind-db/reader, or drop geoip features. It is now the
+     ONLY thing capping laminas-hydrator at ^2, which blocks laminas-form
      2.17.2+ (XSS fix) and laminas-router 3.4+.
-   - The merged runtime config still contains ~84 legacy Zend\* strings
-     from un-migrated vendor modules (bridge handles the known ones);
-     sweep when those modules are replaced.
+   - The merged runtime config still contains legacy Zend\* strings from
+     un-migrated vendor modules (bridge handles the known ones); sweep
+     when those modules are replaced.
+   - API magic-code login does NOT auto-create accounts (web flow does);
+     an allow-list validator for API registration is an open product
+     decision (old @todo in LoginV1ApiController).
 4. PHP 8.0 → 8.1 → … → 8.4, one version at a time. (Also upgrade
    firebase/php-jwt to ^7 at the 8.0 rung — see advisory ignore.)
+5. Passkeys (WebAuthn) after the PHP 8.1 rung: web-auth/webauthn-lib
+   current major, credential table, enrollment inside an authenticated
+   session, magic link remains the fallback. Decided 2026-08-02.
+
+## Fixed: production fatal-under-HTTP-200 wedge (2026-08-02)
+
+Root cause found by the auth smoke tests: SionCacheTrait's failed-write
+handler did `unset($this->memoryCache)`, destroying the declared property;
+every later access fell through to AbstractTableGateway::__get() and
+fataled on every request until APCu was cleared. Fixed in SionModel
+(assign [] instead) + docker APCu raised to 256M (32M default exhaustion
+was the trigger). **Production still runs the broken code until the
+modernization branch deploys** — until then the live-site workaround
+remains clearing APCu.
 
 Advisory debts consciously carried (documented in composer.json
 `config.policy`), to be paid at the rung named:
