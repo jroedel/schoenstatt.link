@@ -42,9 +42,9 @@ that don't exist (no-ops today, confusing tomorrow):
   (~line 1280) declares `DictionaryController` with no `'action'` default, so
   dispatch falls to a nonexistent `indexAction`. One-line config fix; verify
   against production intent first (production may 404 identically).
-- `/en/blog` renders PHP notices into the page body ("Trying to access array
-  offset on value of type null", vendor/erusev/parsedown-extra line 241) —
-  user-visible warning text inside post content.
+- [x] `/en/blog` rendered PHP notices into post bodies — fixed 2026-08-02:
+  parsedown pinned ~1.7.4 + parsedown-extra ^0.8.1 (both halves of a
+  version mismatch); blog smoke test now asserts no leaked notices.
 
 ## Phase 2: safety net
 
