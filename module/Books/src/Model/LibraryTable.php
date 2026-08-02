@@ -2,6 +2,7 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
+use SionModel\Service\ActingUserProviderInterface;
 use JUser\Model\UserTable;
 use Laminas\Db\Adapter\AdapterInterface;
 use Carbon\Carbon;
@@ -101,9 +102,13 @@ class LibraryTable extends SionTable implements
      */
     protected $collectionNames;
 
-    public function __construct(AdapterInterface $dbAdapter, $serviceLocator, $actingUserId, $config)
-    {
-        parent::__construct($dbAdapter, $serviceLocator, $actingUserId);
+    public function __construct(
+        AdapterInterface $dbAdapter,
+        $serviceLocator,
+        ?ActingUserProviderInterface $actingUserProvider,
+        $config
+    ) {
+        parent::__construct($dbAdapter, $serviceLocator, $actingUserProvider);
         $this->config = $config;
     }
 

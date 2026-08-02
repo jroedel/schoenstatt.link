@@ -7,6 +7,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use JTranslate\Model\CountriesInfo;
 use Laminas\Db\Adapter\Adapter;
 use JTranslate\Model\TranslationsTable;
+use SionModel\Service\ActingUserProviderInterface;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
@@ -26,8 +27,7 @@ class SchoenstattTableFactory implements FactoryInterface
 
         $config = $container->get('Config');
 
-        $user = $container->get('JUser\AuthService')->getIdentity();
-        $actingUserId = $user ? $user->id : null;
+        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
         /** @var \JTranslate\Model\CountriesInfo */
         $countriesInfo = $container->get(CountriesInfo::class);
@@ -40,7 +40,7 @@ class SchoenstattTableFactory implements FactoryInterface
         $table = new SchoenstattTable(
             $dbAdapter,
             $container,
-            $actingUserId,
+            $actingUserProvider,
             $config,
             $countriesInfo,
             $translator,

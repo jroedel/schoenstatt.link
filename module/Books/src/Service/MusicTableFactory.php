@@ -4,6 +4,7 @@ namespace Books\Service;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Model\MusicTable;
+use SionModel\Service\ActingUserProviderInterface;
 
 /**
  * Factory responsible of priming the SchoenstattTable service
@@ -22,11 +23,9 @@ class MusicTableFactory implements FactoryInterface
         $config = $container->get('Config');
         $dbAdapter = $container->get($config['books']['books_db_adapter']);
 
-        $authService = $container->get('zfcuser_auth_service');
-        $user = $authService->getIdentity();
-        $actingUserId = $user ? $user->id : null;
+        $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
-        $table = new MusicTable($dbAdapter, $container, $actingUserId);
+        $table = new MusicTable($dbAdapter, $container, $actingUserProvider);
 
         return $table;
     }
