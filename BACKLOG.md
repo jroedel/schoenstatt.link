@@ -54,8 +54,12 @@ that don't exist (no-ops today, confusing tomorrow):
 - [x] PHPUnit 9.6 + PHPStan 1.12 phars pinned via `tools/fetch.sh`.
 - [x] PHPStan level 0 green with `phpstan-baseline.neon` (56 legacy errors).
 - [x] CI v1: PHP 7.4 syntax lint (GitHub Actions).
-- [ ] Expand CI: prove `composer install` works from the 2020 lock in CI (eight
-  VCS forks), then add the PHPStan job.
+- [x] Expand CI (2026-08-02): `composer install --no-dev` from the lock on
+  PHP 7.4 as a continuous deploy rehearsal (validate + install + autoload
+  sanity + `composer audit --locked`); lint job now checks out submodules
+  so SionModel/JUser/JTranslate are actually linted. Still local-only:
+  PHPStan job (needs a strategy for vendor + baseline in CI) and the
+  smoke suite (needs the docker capsule + production dump).
 - [x] Fresh production dump (2026-08-01) imported and smoke suite re-verified
   green. Excluded as junk: `bib_*_temp`, `sch_visits_rollover_*`; schema-only
   (no data): `bib_*`, `b_*`, `csp_reports`, `sch_visits` — see
