@@ -235,7 +235,44 @@ Each rung verified by the Phase 2 suite:
      there (`mb_strrpos($text, $spacepos)` passes a position where a needle
      belongs). Blockers 45 → 43.
 
-   **Staging decided 2026-08-02 — rung 4a to 8.3, rung 4b to 8.4:**
+   **Resolution dry-runs, 2026-08-02** (`config.platform.php` temporarily set
+   to 8.3.32 + `require.php` `~8.3.0`, `composer update --dry-run -W`,
+   composer.json restored afterwards — the lock was never touched). Composer
+   reports root-level problems one at a time, so this was iterated. Only
+   **root** constraints need editing; the other ~40 blockers are transitive
+   and float up on their own. In order, the dry-run demanded:
+   1. `slm/locale` `^0.3` → `^1.2`, and drop the SlmLocale fork from
+      `repositories`
+   2. `laminas/laminas-form` `^2.17.1` → `^3.24`
+   3. `kokspflanze/bjy-authorize` `^1.7` → `^3.0`, and drop the BjyAuthorize
+      fork from `repositories` (leaves `chordpro-php` as the only fork)
+   4. `spatie/schema-org` `^2.2` → `^4.0`
+   5. **`laminas/laminas-mvc-form` must be removed, not bumped** — it is a
+      metapackage whose newest release (1.2.0) pins `laminas-form ^2.17.0`, so
+      it can never coexist with form 3.x. It bundled only laminas-code,
+      laminas-form and laminas-i18n; require those directly.
+   6. **`laminas/laminas-dependency-plugin` must be removed entirely** — a
+      hard dead end, not a version bump. Releases ≤2.5 cap below PHP 8.3, and
+      2.6/2.7 require `composer-plugin-api >=1.1.0 <2.3.0` while our Composer
+      2.10 provides 2.9.0. There is no installable version.
+
+   **That last one forces TwbBundle into rung 4a.** The plugin's job is
+   rewriting `zendframework/*` requires to `laminas/*` at install time, and
+   `neilime/zf2-twb-bundle` 3.3.1 requires **fourteen** `zendframework/*`
+   packages (config, escaper, form, i18n, loader, log, modulemanager, mvc,
+   serializer, servicemanager, stdlib, view, navigation). Without the plugin
+   those resolve to the real abandoned zendframework packages, which cap at
+   PHP 7.x. So TwbBundle is a hard blocker for declaring *any* PHP 8 version,
+   not the runtime-deprecation risk assumed above — it cannot wait for 4b.
+   (The fork of BjyAuthorize pulls in 8 more `zendframework/*` requires;
+   upstream 3.0.0 is Laminas-native, so bumping it clears those.)
+   Options for TwbBundle, to decide next session: find a Laminas-native
+   successor, run laminas-migration over a fork of it, or eliminate it and
+   render Bootstrap markup directly — note it renders forms app-wide, so
+   elimination is the largest of the three.
+
+   **Staging decided 2026-08-02 — rung 4a to 8.3, rung 4b to 8.4** (4a scope
+   grew: TwbBundle moved in, per the dry-run finding above):
    - *4a*: the 45-package stack bump + the cakephp elimination, declaring
      8.3. Keeps `laminas-zendframework-bridge` (1.8.0) and `laminas-mail`
      (2.25.1), both of which support 8.3. Big but self-contained, and it
