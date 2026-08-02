@@ -1,19 +1,19 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Filter\ToNull;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Filter\ToNull;
 use SionModel\Form\SionForm;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Schoenstatt\Validator\TimeZone;
-use Zend\Validator\StringLength;
-use Zend\Filter\StripTags;
-use Zend\Filter\StripNewlines;
-use Zend\Filter\StringTrim;
+use Laminas\Validator\StringLength;
+use Laminas\Filter\StripTags;
+use Laminas\Filter\StripNewlines;
+use Laminas\Filter\StringTrim;
 use SionModel\Filter\ToGeoPoint;
-use Zend\Validator\GpsPoint;
+use Laminas\Validator\GpsPoint;
 use SionModel\Validator\Twitter;
-use Zend\Validator\EmailAddress;
+use Laminas\Validator\EmailAddress;
 use SionModel\Filter\ToDateTime;
 use SionModel\Filter\ToBit;
 use SionModel\Validator\Instagram;
@@ -458,7 +458,7 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Facebook URL',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -472,7 +472,7 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Other URL 1',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -501,7 +501,7 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Other URL 2',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -530,7 +530,7 @@ so users can double-check. Warning: this field is not translated.',
             'options' => [
                 'label' => 'Other URL 3',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [

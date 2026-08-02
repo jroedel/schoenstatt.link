@@ -1,7 +1,7 @@
 <?php
 namespace Bible\Service;
 
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Bible\Model\BibleTable;
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * BjyAuthorize Module (https://github.com/bjyoungblood/BjyAuthorize)
  *
@@ -8,16 +9,15 @@
 
 namespace Application\View;
 
-use Zend\EventManager\EventManagerInterface;
-use Zend\EventManager\ListenerAggregateInterface;
-use Zend\Http\Response as HttpResponse;
-use Zend\Mvc\MvcEvent;
-use Zend\Stdlib\ResponseInterface as Response;
-use ZfSnapGeoip\Service\Geoip;
-use Zend\Session\SessionManager;
-use Zend\View\Model\ViewModel;
+use Laminas\EventManager\EventManagerInterface;
+use Laminas\EventManager\ListenerAggregateInterface;
+use Laminas\Http\Response as HttpResponse;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Stdlib\ResponseInterface as Response;
+use Laminas\Session\SessionManager;
+use Laminas\View\Model\ViewModel;
 use Application\Controller\IndexController;
-use Zend\Router\Http\RouteMatch;
+use Laminas\Router\Http\RouteMatch;
 
 class GdprStrategy implements ListenerAggregateInterface
 {
@@ -89,7 +89,12 @@ class GdprStrategy implements ListenerAggregateInterface
     {
         $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
         $route = $event->getRouteMatch();
-        if (! $hasConsented && 'zfcuser/login' === $route->getMatchedRouteName()) {
+        //all auth entry points need cookies (session + CSRF); without consent,
+        //onFinish() strips Set-Cookie, so sign-in would silently fail. Show the
+        //explainer instead. Magic-link tokens are only consumed on successful
+        //redemption, so the emailed link still works after consenting.
+        $authRoutes = ['zfcuser/login', 'zfcuser/register', 'zfcuser/verify'];
+        if (! $hasConsented && in_array($route->getMatchedRouteName(), $authRoutes, true)) {
             $newMatch = new RouteMatch(['controller' => IndexController::class, 'action' => 'sign-in-no-cookies']);
             $newMatch->setMatchedRouteName('sign-in-no-cookies');
             $event->setRouteMatch($newMatch);
@@ -104,7 +109,7 @@ class GdprStrategy implements ListenerAggregateInterface
         $hasConsented = isset($_COOKIE['EU_COOKIE_LAW_CONSENT']) && 'true' === $_COOKIE['EU_COOKIE_LAW_CONSENT'];
         if (! $hasConsented) {
             header_remove('Set-Cookie');
-            /** @var \Zend\Session\ManagerInterface $sessionManager */
+            /** @var \Laminas\Session\ManagerInterface $sessionManager */
             $sessionManager = $sm->get(SessionManager::class);
             //expire session
             $sessionManager->expireSessionCookie();
@@ -116,43 +121,5 @@ class GdprStrategy implements ListenerAggregateInterface
                 '/'
             );
         }
-    }
-
-    protected static function isGDPRCountry($countryCode)
-    {
-        static $countries;
-        if (! isset($countries)) {
-            $countries = [
-                'BE' => 'Belgium',
-                'BG' => 'Bulgaria',
-                'CZ' => 'Czech Republic',
-                'DK' => 'Denmark',
-                'DE' => 'Germany',
-                'EE' => 'Estonia',
-                'IE' => 'Ireland',
-                'GR' => 'Greece',
-                'ES' => 'Spain',
-                'FR' => 'France',
-                'HR' => 'Croatia',
-                'IT' => 'Italy',
-                'CY' => 'Cyprus',
-                'LV' => 'Latvia',
-                'LT' => 'Lithuania',
-                'LU' => 'Luxembourg',
-                'HU' => 'Hungary',
-                'MT' => 'Malta',
-                'NL' => 'Netherlands',
-                'AT' => 'Austria',
-                'PL' => 'Poland',
-                'PT' => 'Portugal',
-                'RO' => 'Romania',
-                'SI' => 'Slovenia',
-                'SK' => 'Slovakia',
-                'FI' => 'Finland',
-                'SE' => 'Sweden',
-                'GB' => 'United Kingdom'
-            ];
-        }
-        return isset($countries[$countryCode]);
     }
 }

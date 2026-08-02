@@ -5,21 +5,22 @@ use SionModel\Filter\ToAscii;
 use SionModel\Db\Model\SionTable;
 use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
-use Zend\I18n\Translator\TranslatorInterface;
-use Zend\Db\Adapter\AdapterInterface;
-use Zend\Db\TableGateway\TableGatewayInterface;
-use Zend\Db\TableGateway\TableGateway;
+use Laminas\I18n\Translator\TranslatorInterface;
+use Laminas\Db\Adapter\AdapterInterface;
+use Laminas\Db\TableGateway\TableGatewayInterface;
+use Laminas\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
-use Zend\Permissions\Acl\Resource\GenericResource;
-use Zend\Db\Sql\Select;
-use Zend\Db\Sql\Expression;
+use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
+use Laminas\Permissions\Acl\Resource\GenericResource;
+use Laminas\Db\Sql\Select;
+use Laminas\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
 use SionModel\Db\GeoPoint;
-use Zend\Validator\GpsPoint;
+use Laminas\Validator\GpsPoint;
 use JTranslate\Model\CountriesInfo;
 use Spatie\SchemaOrg\Schema;
-use Zend\Db\Sql\Predicate\PredicateSet;
+use Laminas\Db\Sql\Predicate\PredicateSet;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
 use GeoJson\Feature\Feature;
 use GeoJson\Geometry\Point;
@@ -28,10 +29,10 @@ use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Spatie\OpeningHours\OpeningHours;
-use Zend\Json\Json;
-use Zend\Validator\Timezone;
-use Zend\Db\Sql\Predicate\IsNull;
-use Zend\Db\Sql\Predicate\IsNotNull;
+use Laminas\Json\Json;
+use Laminas\Validator\Timezone;
+use Laminas\Db\Sql\Predicate\IsNull;
+use Laminas\Db\Sql\Predicate\IsNotNull;
 use Spatie\SchemaOrg\Place;
 use Spatie\SchemaOrg\PlaceOfWorship;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
@@ -43,7 +44,8 @@ use Cocur\Slugify\Slugify;
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
     PersonValueOptionsProviderInterface,
-    ResourceProviderInterface
+    ResourceProviderInterface,
+    RuleProviderInterface
 {
     const TRANSLATOR_DOMAIN = 'Schoenstatt';
 
@@ -3173,7 +3175,7 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
     }
 
     /**
-     * @return \Zend\Permissions\Acl\Assertion\AssertionAggregate
+     * @return \Laminas\Permissions\Acl\Assertion\AssertionAggregate
      */
     public function getRules()
     {

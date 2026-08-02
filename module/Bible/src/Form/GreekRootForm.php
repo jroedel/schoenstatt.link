@@ -2,13 +2,13 @@
 namespace Bible\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\InputFilter\InputFilterProviderInterface;
 use Bible\Filter\NormalizeUtf8;
-use Zend\Filter\StripTags;
-use Zend\Filter\StripNewlines;
-use Zend\Filter\StringTrim;
-use Zend\Filter\ToNull;
-use Zend\Validator\StringLength;
+use Laminas\Filter\StripTags;
+use Laminas\Filter\StripNewlines;
+use Laminas\Filter\StringTrim;
+use Laminas\Filter\ToNull;
+use Laminas\Validator\StringLength;
 
 class GreekRootForm extends SionForm implements InputFilterProviderInterface
 {

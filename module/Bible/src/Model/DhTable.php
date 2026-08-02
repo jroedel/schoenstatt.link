@@ -2,7 +2,7 @@
 namespace Bible\Model;
 
 use SionModel\Db\Model\SionTable;
-use Zend\Db\Sql\Predicate\Between;
+use Laminas\Db\Sql\Predicate\Between;
 
 class DhTable extends SionTable
 {

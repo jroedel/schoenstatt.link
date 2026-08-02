@@ -1,12 +1,12 @@
 <?php
 namespace Bible\Form;
 
-use Zend\Form\Form;
-use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Filter\ToNull;
-use Zend\Validator\StringLength;
-use Zend\Filter\StringTrim;
-use Zend\Form\Element\Text;
+use Laminas\Form\Form;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Filter\ToNull;
+use Laminas\Validator\StringLength;
+use Laminas\Filter\StringTrim;
+use Laminas\Form\Element\Text;
 
 class BibleSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -77,7 +77,7 @@ class BibleSearchForm extends Form implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],

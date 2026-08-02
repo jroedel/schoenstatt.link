@@ -1,6 +1,7 @@
 <?php
+
 use Application\Service\DbAdapterServiceFactory;
-use Zend\Db\Adapter\Adapter;
+use Laminas\Db\Adapter\Adapter;
 
 /**
  * Global Configuration Override
@@ -116,6 +117,11 @@ return [
     'service_manager' => [
         'factories' => [
             Adapter::class => DbAdapterServiceFactory::class,
+        ],
+        'aliases' => [
+            //legacy service name still consumed by JUser factories and the
+            //bjy-authorize identity provider factory
+            'zfcuser_zend_db_adapter' => Adapter::class,
         ],
     ],
 ];

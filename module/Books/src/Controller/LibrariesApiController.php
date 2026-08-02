@@ -1,10 +1,10 @@
 <?php
 namespace Books\Controller;
 
-use Zend\Mvc\Controller\AbstractRestfulController;
-use Zend\View\Model\JsonModel;
+use Laminas\Mvc\Controller\AbstractRestfulController;
+use Laminas\View\Model\JsonModel;
 use Books\Model\LibraryTable;
-use Zend\Validator\Regex;
+use Laminas\Validator\Regex;
 
 class LibrariesApiController extends AbstractRestfulController
 {

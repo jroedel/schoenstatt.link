@@ -1,8 +1,8 @@
 <?php
 namespace Books\Form;
 
-use Zend\Form\Form;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\Form\Form;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class EventsSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -91,7 +91,7 @@ class EventsSearchForm extends Form implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ]
                     ],
                 ],
@@ -101,7 +101,7 @@ class EventsSearchForm extends Form implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],

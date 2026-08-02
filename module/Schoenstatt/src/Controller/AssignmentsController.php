@@ -9,7 +9,7 @@
 
 namespace Schoenstatt\Controller;
 
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Form\SearchForm;
 use SionModel\Controller\SionController;
@@ -18,7 +18,7 @@ use Schoenstatt\Form\AdvancedSearchForm;
 class AssignmentsController extends SionController
 {
     /**
-     * @return \Zend\View\Model\ViewModel
+     * @return \Laminas\View\Model\ViewModel
      */
     public function searchAction()
     {
@@ -46,7 +46,7 @@ class AssignmentsController extends SionController
     }
 
     /**
-     * @return \Zend\View\Model\ViewModel
+     * @return \Laminas\View\Model\ViewModel
      */
     public function advancedSearchAction()
     {
@@ -77,7 +77,7 @@ class AssignmentsController extends SionController
     public function createAction()
     {
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $form = null;

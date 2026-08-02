@@ -2,10 +2,10 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\View\Model\ViewModel;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\View\Model\ViewModel;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Spatie\SchemaOrg\BaseType;
-use Zend\Json\Json;
+use Laminas\Json\Json;
 
 class DictionaryController extends SionController
 {

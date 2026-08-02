@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Filter\ToNull;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Filter\ToNull;
 use SionModel\Form\SionForm;
 
 class PersonForm extends SionForm implements InputFilterProviderInterface
@@ -190,7 +190,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Facebook URL',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -204,7 +204,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Other URL 1',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -237,7 +237,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Other URL 2',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -270,7 +270,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'Other URL 3',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -996,7 +996,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

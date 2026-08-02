@@ -2,17 +2,17 @@
 namespace Books\Form;
 
 use SionModel\Form\SionForm;
-use Zend\InputFilter\InputFilterProviderInterface;
-use Zend\Filter\ToNull;
-use Zend\Filter\StripTags;
+use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Filter\ToNull;
+use Laminas\Filter\StripTags;
 use SionModel\Filter\ToBit;
-use Zend\Filter\StringToLower;
+use Laminas\Filter\StringToLower;
 use SionModel\Filter\SortArray;
-use Zend\Validator\StringLength;
-use Zend\Filter\StripNewlines;
-use Zend\Filter\StringTrim;
-use Zend\Validator\Regex;
-use Zend\Validator\NotEmpty;
+use Laminas\Validator\StringLength;
+use Laminas\Filter\StripNewlines;
+use Laminas\Filter\StringTrim;
+use Laminas\Validator\Regex;
+use Laminas\Validator\NotEmpty;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -263,7 +263,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'URL 1',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -287,7 +287,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'URL 2',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -311,7 +311,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             'options' => [
                 'label' => 'URL 3',
                 'required' => false,
-                'uriHandler' => 'Zend\Uri\Http',
+                'uriHandler' => 'Laminas\Uri\Http',
                 'allowRelative' => false,
             ],
             'attributes' => [
@@ -509,7 +509,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -556,7 +556,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -584,7 +584,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -603,7 +603,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -613,7 +613,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -626,7 +626,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -656,7 +656,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -678,7 +678,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ],
                     ],
                 ],
@@ -691,7 +691,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -713,7 +713,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -735,7 +735,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -746,7 +746,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_INTEGER,
+                            'type' => \Laminas\Filter\ToNull::TYPE_INTEGER,
                         ]
                     ],
                 ],
@@ -758,7 +758,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -777,7 +777,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -790,7 +790,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -800,7 +800,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -813,7 +813,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -823,7 +823,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -836,7 +836,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -850,7 +850,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StringTrim::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -910,7 +910,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StripTags::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],
@@ -921,7 +921,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StripTags::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -931,7 +931,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ],
                     ],
                 ],
@@ -942,7 +942,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => StripTags::class],
                     ['name' => ToNull::class,
                         'options' => [
-                            'type' => \Zend\Filter\ToNull::TYPE_STRING,
+                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
                     ],
                 ],

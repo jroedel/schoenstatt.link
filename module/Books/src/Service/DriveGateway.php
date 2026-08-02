@@ -1,10 +1,10 @@
 <?php
 namespace Books\Service;
 
-use Zend\InputFilter\InputFilterInterface;
-use Zend\Http\Client;
-use Zend\Json\Json;
-use Zend\Cache\Storage\StorageInterface;
+use Laminas\InputFilter\InputFilterInterface;
+use Laminas\Http\Client;
+use Laminas\Json\Json;
+use Laminas\Cache\Storage\StorageInterface;
 use Books\InputFilter\DriveFileFilter;
 
 class DriveGateway
@@ -153,7 +153,7 @@ class DriveGateway
 
     /**
      * Get a fresh InputFilter to test person data
-     * @return \Zend\InputFilter\InputFilterInterface
+     * @return \Laminas\InputFilter\InputFilterInterface
      */
     public function getPersonInputFilter()
     {

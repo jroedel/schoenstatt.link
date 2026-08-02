@@ -15,7 +15,7 @@ class BooksController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
 
@@ -63,7 +63,7 @@ class BooksController extends SionController
     public function showAction()
     {
         $view = parent::showAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         /** @var \Books\Model\LibraryTable $table */

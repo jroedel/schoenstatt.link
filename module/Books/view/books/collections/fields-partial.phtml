@@ -1,5 +1,5 @@
 <?php
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Laminas\View\Renderer\PhpRenderer $this */
 $this->headLink()->appendStylesheet($this->basePath() . '/css/gen-selectize-markdown.css');
 $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
 $this->headScript()->appendFile($this->basePath() . "/gen-selectize-markdown-$lang.js");

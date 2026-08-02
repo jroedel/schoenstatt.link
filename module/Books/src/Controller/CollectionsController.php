@@ -3,7 +3,7 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use BjyAuthorize\Exception\UnAuthorizedException;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 
 class CollectionsController extends SionController
 {
@@ -26,7 +26,7 @@ class CollectionsController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $view->setVariable('libraryId', $libraryId);

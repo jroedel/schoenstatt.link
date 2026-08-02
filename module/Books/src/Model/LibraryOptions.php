@@ -1,7 +1,7 @@
 <?php
 namespace Books\Model;
 
-use Zend\Stdlib\ArraySerializableInterface;
+use Laminas\Stdlib\ArraySerializableInterface;
 
 class LibraryOptions implements ArraySerializableInterface
 {

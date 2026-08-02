@@ -9,8 +9,8 @@
 
 namespace Schoenstatt\Controller;
 
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Zend\View\Model\ViewModel;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\View\Model\ViewModel;
 use Schoenstatt\Form\PersonForm;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Schoenstatt\Form\SearchForm;
@@ -19,7 +19,7 @@ use SionModel\Controller\SionController;
 class PersonsController extends SionController
 {
     /**
-     * @return \Zend\View\Model\ViewModel
+     * @return \Laminas\View\Model\ViewModel
      */
     public function searchAction()
     {
@@ -91,7 +91,7 @@ class PersonsController extends SionController
      * either the first or last name. If not, send the user the form back.
      * @param mixed[] $data
      * @param PersonForm $form
-     * @return \Zend\View\Model\ViewModel|null
+     * @return \Laminas\View\Model\ViewModel|null
      */
     public function createPerson($data, $form)
     {

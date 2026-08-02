@@ -1,13 +1,13 @@
 <?php
 namespace Schoenstatt\Controller;
 
-use Zend\Mvc\Controller\AbstractRestfulController;
-use Zend\View\Model\JsonModel;
+use Laminas\Mvc\Controller\AbstractRestfulController;
+use Laminas\View\Model\JsonModel;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Zend\Http\Header\Pragma;
-use Zend\Mvc\MvcEvent;
-use Zend\Http\Header\Expires;
+use Laminas\Http\Header\Pragma;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Http\Header\Expires;
 
 class AssociationsApiV1Controller extends AbstractRestfulController
 {
@@ -88,7 +88,7 @@ class AssociationsApiV1Controller extends AbstractRestfulController
 
     public function makeCacheable()
     {
-        /** @var \Zend\Http\PhpEnvironment\Response $response */
+        /** @var \Laminas\Http\PhpEnvironment\Response $response */
         $response = $this->getResponse();
         $headers = $response->getHeaders();
         if (false !== $oldHeaders = $headers->get('Cache-Control')) {

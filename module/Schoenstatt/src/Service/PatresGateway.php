@@ -2,10 +2,10 @@
 namespace Schoenstatt\Service;
 
 use Schoenstatt\Model\SchoenstattTable;
-use Zend\InputFilter\InputFilterInterface;
-use Zend\Http\Client;
-use Zend\Json\Json;
-use Zend\Log\LoggerInterface;
+use Laminas\InputFilter\InputFilterInterface;
+use Laminas\Http\Client;
+use Laminas\Json\Json;
+use Laminas\Log\LoggerInterface;
 
 class PatresGateway
 {
@@ -158,7 +158,7 @@ class PatresGateway
 
     /**
      * Get a fresh InputFilter to test person data
-     * @return \Zend\InputFilter\InputFilterInterface
+     * @return \Laminas\InputFilter\InputFilterInterface
      */
     public function getPersonInputFilter()
     {

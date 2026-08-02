@@ -4,7 +4,7 @@
 namespace Books\View\Helper;
 
 use SionModel\View\Helper\FormatUrlObject;
-use Zend\Uri\Http;
+use Laminas\Uri\Http;
 
 class FormatPublicationUrlObject extends FormatUrlObject
 {

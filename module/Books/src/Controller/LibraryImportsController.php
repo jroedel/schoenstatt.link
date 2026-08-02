@@ -57,7 +57,7 @@ class LibraryImportsController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         $view->setVariable('libraryId', $libraryId);
@@ -109,7 +109,7 @@ class LibraryImportsController extends SionController
         $object = $this->getEntityObject($importId);
         $this->setLibraryId($object['libraryId']);
         $view = parent::editAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         /** @var ImportForm $form */
@@ -183,6 +183,7 @@ class LibraryImportsController extends SionController
     public function redirectAfterEdit($id, $data = [], $form = null, $updatedObject = [])
     {
         //don't redirect after edit
+        return null;
     }
 
     protected function getBookFields()

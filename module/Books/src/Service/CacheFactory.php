@@ -8,8 +8,8 @@
 
 namespace Books\Service;
 
-use Zend\Cache\StorageFactory;
-use Zend\ServiceManager\Factory\FactoryInterface;
+use Laminas\Cache\StorageFactory;
+use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 
 /**

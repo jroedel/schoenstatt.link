@@ -1,7 +1,7 @@
 <?php
 namespace Books\Filter;
 
-use Zend\Filter\AbstractFilter;
+use Laminas\Filter\AbstractFilter;
 
 class KentenichPeriodFromDate extends AbstractFilter
 {
@@ -53,7 +53,7 @@ class KentenichPeriodFromDate extends AbstractFilter
 
     /**
      * {@inheritDoc}
-     * @see \Zend\Filter\FilterInterface::filter()
+     * @see \Laminas\Filter\FilterInterface::filter()
      */
     public function filter($value)
     {

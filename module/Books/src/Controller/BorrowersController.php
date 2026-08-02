@@ -1,13 +1,13 @@
 <?php
 namespace Books\Controller;
 
-use Zend\Mvc\Controller\AbstractActionController;
+use Laminas\Mvc\Controller\AbstractActionController;
 use Books\Model\LibraryTable;
-use Zend\View\Model\ViewModel;
+use Laminas\View\Model\ViewModel;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\PatresGateway;
 use Carbon\Carbon;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class BorrowersController extends AbstractActionController
 {
@@ -30,7 +30,7 @@ class BorrowersController extends AbstractActionController
     /**
      * @todo start using the person table to look up person information. The same person
      *      should be able to be used as an author, movement role, or a borrower
-     * @return \Zend\View\Model\ViewModel
+     * @return \Laminas\View\Model\ViewModel
      */
     public function showAction()
     {
@@ -62,7 +62,7 @@ class BorrowersController extends AbstractActionController
     /**
      * At the beginning of the project, we were using the Patres personId instead of the
      * SchoenstattTable personId, this action fixes those Ids.
-     * @return \Zend\View\Model\ViewModel
+     * @return \Laminas\View\Model\ViewModel
      */
     public function fixPersonIdAction()
     {

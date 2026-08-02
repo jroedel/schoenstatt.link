@@ -2,15 +2,15 @@
 namespace Books\Model;
 
 use SionModel\Db\Model\SionTable;
-use Zend\Db\Adapter\AdapterInterface;
+use Laminas\Db\Adapter\AdapterInterface;
 use Cocur\Slugify\Slugify;
-use Zend\Db\ResultSet\ResultSetInterface;
+use Laminas\Db\ResultSet\ResultSetInterface;
 use Books\Exception\DuplicateKeyException;
-use Zend\View\Helper\ServerUrl;
-use Zend\View\Helper\Url;
-use Zend\Router\RouteStackInterface;
-use Zend\Db\Sql\Select;
-use Zend\Db\Sql\Expression;
+use Laminas\View\Helper\ServerUrl;
+use Laminas\View\Helper\Url;
+use Laminas\Router\RouteStackInterface;
+use Laminas\Db\Sql\Select;
+use Laminas\Db\Sql\Expression;
 
 class DictionaryTable extends SionTable
 {

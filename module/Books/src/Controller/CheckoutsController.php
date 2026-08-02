@@ -2,8 +2,8 @@
 namespace Books\Controller;
 
 use SionModel\Controller\SionController;
-use Zend\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Zend\View\Model\ViewModel;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Books\Form\CheckinForm;
 use Books\Form\MassCheckoutForm;
@@ -21,7 +21,7 @@ class CheckoutsController extends SionController
             throw new UnAuthorizedException();
         }
         $view = parent::createAction();
-        if ($view instanceof \Zend\Stdlib\ResponseInterface) {
+        if ($view instanceof \Laminas\Stdlib\ResponseInterface) {
             return $view;
         }
         if (isset($view)) {

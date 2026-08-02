@@ -1,8 +1,8 @@
 <?php
 namespace Schoenstatt\Form;
 
-use Zend\Form\Fieldset;
-use Zend\InputFilter\InputFilterProviderInterface;
+use Laminas\Form\Fieldset;
+use Laminas\InputFilter\InputFilterProviderInterface;
 
 class SimpleDiocesanMovementFieldset extends Fieldset implements InputFilterProviderInterface
 {

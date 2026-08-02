@@ -1,9 +1,9 @@
 <?php
 namespace Schoenstatt\Service;
 
-use Zend\I18n\Translator\TranslatorInterface;
+use Laminas\I18n\Translator\TranslatorInterface;
 use Schoenstatt\Model\AssociationKind;
-use Zend\Mvc\I18n\Translator;
+use Laminas\Mvc\I18n\Translator;
 use Schoenstatt\Model\SchoenstattTable;
 
 class AssociationKindsService

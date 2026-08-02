@@ -1,6 +1,6 @@
 <p class="pull-right"><a class="btn btn-primary" href="<?= $this->url('music/create-composition')?>"><?= $this->translate('Add new composition')?></a></p>
 <?php
-/** @var \Zend\View\Renderer\PhpRenderer $this */
+/** @var \Laminas\View\Renderer\PhpRenderer $this */
 $currentLanguage = '';
 foreach ($this->objects as $object) :
     if ($currentLanguage !== $object['inLanguage']) :

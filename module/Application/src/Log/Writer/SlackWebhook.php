@@ -1,10 +1,10 @@
 <?php
 namespace Application\Log\Writer;
 
-use Zend\Log\Writer\AbstractWriter;
-use Zend\Log\Logger;
-use Zend\Json\Json;
-use Zend\Log\Formatter\Simple as SimpleFormatter;
+use Laminas\Log\Writer\AbstractWriter;
+use Laminas\Log\Logger;
+use Laminas\Json\Json;
+use Laminas\Log\Formatter\Simple as SimpleFormatter;
 
 class SlackWebhook extends AbstractWriter
 {
