@@ -48,11 +48,28 @@ that don't exist (no-ops today, confusing tomorrow):
 
 ## Phase 2: safety net
 
-- [x] HTTP smoke/characterization suite (38 tests at the time, **52/193
-  assertions today**) green against the time capsule; excluded:
+- [x] HTTP smoke/characterization suite (38 tests at the time, **52 tests /
+  193 assertions today**) green against the time capsule; excluded:
   `/en/associations/do-work` (side effects), `/en/dictionary` (broken, see
   above). Run it with `php composer.phar smoke`, one process at a time — see
   "Local capsule: resource ceilings" below for why that matters.
+- [x] **Unit suite added 2026-08-02** (`test/Unit`, 7 tests / 40 assertions),
+  born with the cakephp elimination in rung 4 below. It needs neither a
+  running app nor `vendor/`: each test requires the class under test directly,
+  so it stays valid while vendor is mid-migration — the same reasoning
+  `test/bootstrap.php` already applies to the smoke suite. Unlike smoke it is
+  safe to run freely (no HTTP, no capsule load). Three scripts now:
+  `php composer.phar smoke` (smoke only), `unit` (unit only), `test` (both,
+  59/233). All three shell into the capsule because the host PHP lacks the
+  dom/mbstring/xmlwriter extensions PHPUnit needs.
+  Debt: tests for shared-library classes currently live in the app repo
+  (`test/Unit/TextTest.php` covers `SionModel\Text\Text`) because the
+  submodules have no test infrastructure of their own. They should migrate
+  into laminas-sion-model/laminas-juser/laminas-jtranslate eventually so
+  patres inherits them.
+- Cosmetic: `phpstan-baseline.neon` still carries a pre-Laminas entry naming
+  `Zend\Stdlib\ResponseInterface` (in the `LibraryImportsController` ignore).
+  Harmless — it still matches — but it will confuse the next reader.
 - [x] PHPUnit 9.6 + PHPStan 1.12 phars pinned via `tools/fetch.sh`.
 - [x] PHPStan level 0 green with `phpstan-baseline.neon` (56 legacy errors).
 - [x] CI v1: PHP 7.4 syntax lint (GitHub Actions).

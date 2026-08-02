@@ -62,16 +62,17 @@ schoenstatt.link — a database application for Schoenstatt-related topics, buil
 ## Local environment (Docker time capsule)
 
 - `docker compose up -d` → app at http://localhost:8080 (redirects to `/en/`), Mailpit UI at http://localhost:8025, MariaDB on host port 33306 (`schoenstatt`/`schoenstatt`, db `ourlink_db1`).
-- Matches production: PHP 7.4.33 + Apache, MariaDB, APCu. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
+- Apache + MariaDB + APCu. **The PHP version is switchable** via `PHP_VERSION`/`APCU_VERSION` in `.env`, then `docker compose build && docker compose up -d`: `7.4`/`5.1.22` matches production, `8.3`/`5.1.24` is the rung-4 target (8.3 needs APCu 5.1.24+). Check which one is live with `docker compose exec -T app php -v` before drawing conclusions from a test run. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
 - Database comes from a 2021-06-24 production dump in `database/dumps/` (gitignored) + `zz-db6.3.sql`. Re-import: `docker compose down -v && docker compose up -d`.
 - `.env` holds HOST_UID/HOST_GID so Apache workers can write to the bind-mounted `data/` dir.
-- **Resource ceilings are deliberate — do not raise them casually.** `docker-compose.yml` caps each service (`mem_limit`/`memswap_limit`/`cpus`/`pids_limit`; app 3g/2 CPUs), and the image caps Apache at 6 prefork workers plus a 60s PHP `max_execution_time` (`docker/apache-limits.conf`, `docker/php-limits.ini`). These exist because on 2026-08-02 a wedged app under concurrent load exhausted 15.5 GB of host RAM twice and pinned every core: nothing bounded Apache's 150 default workers × the 512M `memory_limit` set in `public/index.php`. Changing a limit requires `docker compose build && docker compose up -d`.
+- **Resource ceilings are deliberate — do not raise them casually.** `docker-compose.yml` caps each service (`mem_limit`/`memswap_limit`/`cpus`/`pids_limit`; app 4g/2 CPUs), and the image caps Apache at 6 prefork workers plus a 60s PHP `max_execution_time` (`docker/apache-limits.conf`, `docker/php-limits.ini`). These exist because on 2026-08-02 a wedged app under concurrent load exhausted 15.5 GB of host RAM twice and pinned every core: nothing bounded Apache's 150 default workers × the 512M `memory_limit` set in `public/index.php`. Changing a limit requires `docker compose build && docker compose up -d`.
 - Known latent issue: `SchoenstattTable::getRules()` is unfinished 2020 WIP referencing roles that don't exist in the DB; the bjyauthorize provider registration is disabled in `module/Schoenstatt/config/module.config.php` (see NOTE there). Do not re-enable without finishing the feature.
 
 ## Verifying code
 
 - HTTP characterization tests live in `test/Smoke` (PHPUnit, `phpunit.xml.dist`). They run against a *running* capsule, not in isolation.
   - Run them with `php composer.phar smoke` — **one process at a time.** Never fan the suite out across parallel agents or background shells, and never run a second copy while one is in flight: concurrent runs against a wedged app are what exhausted the host on 2026-08-02.
+- Unit tests live in `test/Unit` (`php composer.phar unit`); `php composer.phar test` runs both suites. Unit tests talk to no HTTP and require the class under test directly — no vendor autoload, no running app — so they are safe to run freely and stay valid while `vendor/` is mid-migration. All three scripts shell into the capsule: the host PHP lacks the dom/mbstring/xmlwriter extensions PHPUnit needs.
   - Before blaming a test, check whether every response is a ~800-byte HTTP 200 — that is the fatal-200 wedge, not a test failure.
 - Beyond smoke, verification is lint + coding standard:
   - Syntax check any file you touch: `php -l path/to/File.php`.
