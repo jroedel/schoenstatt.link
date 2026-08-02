@@ -93,7 +93,10 @@ Each rung verified by the Phase 2 suite:
    each pinned personal VCS fork in composer.json (3 left: SlmLocale,
    BjyAuthorize, chordpro-php).
    - CORRECTION (2026-08-02, verified against packagist): two of these
-     framings are wrong. **BjyAuthorize needs no successor** — upstream
+     framings are wrong, and one is right for the wrong reason —
+     symfony/mailer turns out to be *required* to reach PHP 8.4, because
+     `laminas-mail` caps there and JUser/SionModel run two separate mail
+     stacks. See rung 4 below. **BjyAuthorize needs no successor** — upstream
      `kokspflanze/bjy-authorize` 3.0.0 supports PHP 8.2–8.5, so the item is a
      fork retirement, not an LM-Commons migration. **SwiftMailer is not a
      PHP 8 blocker** — 6.3.0 declares `php >=7.0.0` and installs on 8.3, so
@@ -154,23 +157,88 @@ Each rung verified by the Phase 2 suite:
    by `index.php`'s `~E_DEPRECATED`. So the "one version at a time" plan is
    moot — the remaining work is not runtime, it is composer resolution.
 
-   Moving `config.platform.php` off 7.4.33 makes Composer refuse every
-   package still capped below 8. Upstream has caught up on all of them:
+   **CORRECTION (same day): this is a 45-package job, not the 8-package one
+   first written here.** The first pass scanned for constraints excluding all
+   of 8.x and so missed the dominant pattern — `^7.3 || ~8.0.0` caps at
+   *8.0*, which excludes 8.3 just as firmly. `composer why-not php 8.3`
+   reports **45** blockers, and `why-not php 8.5` also 45. Essentially the
+   entire Laminas MVC stack is pinned at its 7.4-era release.
+
+   Why the app nonetheless runs green on 8.3: `config.platform` pins
+   `php 7.4.33`, so Composer resolves as though PHP were 7.4 while the
+   runtime is actually 8.3. The stack *runs* fine — support is **undeclared,
+   not absent**. Rung 4 is therefore about honest declaration and regaining
+   security updates, not about fixing breakage.
+
+   **The ceiling is PHP 8.4, not 8.5.** `laminas/laminas-mvc`'s newest
+   release (3.8.0) declares `~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0`; no
+   laminas-mvc release supports 8.5. That is upstream and nothing in this
+   repo changes it, so 8.5 is out of reach regardless of Hetzner offering it
+   (noted 2026-08-02 — recheck when laminas-mvc ships 8.5 support).
+
+   Two further packages cap the target at 8.3 unless dealt with:
+   `laminas-zendframework-bridge` (1.8.0 → `~8.1–~8.3`) and `laminas-mail`
+   (2.25.1 → `~8.1–~8.3`). Both are removable rather than upgradable, which
+   is what makes 8.4 reachable — see the staging below.
+
+   Representative targets for the stack bump (all support 8.2–8.5 unless
+   noted); the majors are where the actual work is:
 
    | package | locked | target | note |
    | --- | --- | --- | --- |
-   | `laminas/laminas-cache` | 2.9.0 | 4.3.0 | the only real code work; see below |
+   | `laminas/laminas-mvc` | 3.2.0 | 3.8.0 | **caps at 8.4** — the ceiling |
+   | `laminas/laminas-form` | 2.17.1 | 3.24.2 | major, real API change |
+   | `laminas/laminas-validator` | 2.14.6 | 3.18.0 | major, real API change |
+   | `laminas/laminas-filter` | 2.12.0 | 3.4.0 | major |
+   | `laminas/laminas-servicemanager` | 3.7.0 | 4.5.1 | major; touches every factory |
+   | `laminas/laminas-view` | 2.12.1 | 3.1.0 | major |
+   | `laminas/laminas-code` | 3.5.1 | 4.17.0 | major |
+   | `laminas/laminas-cache` | 2.9.0 | 4.3.0 | major; sized below |
+   | `laminas/laminas-db` | 2.12.0 | 2.22.0 | minor |
+   | `laminas/laminas-i18n` | 2.12.0 | 2.33.0 | minor |
+   | `laminas/laminas-session` | 2.11.0 | 2.27.0 | minor |
+   | `laminas/laminas-http` | 2.14.3 | 2.23.0 | minor |
+   | `laminas/laminas-hydrator` | 4.3.2 | 4.19.0 | minor |
+   | `laminas/laminas-navigation` | 2.15.0 | 2.23.0 | minor |
+   | `laminas/laminas-permissions-acl` | 2.8.1 | 2.18.0 | minor |
    | `kokspflanze/bjy-authorize` | 1.7.1 (fork) | 3.0.0 | retires a fork |
    | `slm/locale` | 0.3.0 (fork) | 1.2.0 | retires a fork |
    | `laminas/laminas-serializer` | 2.9.1 | 3.3.0 | mechanical |
    | `laminas/laminas-log` | 2.12.0 | 2.17.1 | mechanical |
    | `laminas/laminas-developer-tools` | 1.3.2 | 2.10.0 | dev-only |
-   | `spatie/schema-org` | 2.16.0 | 4.0.2 | two majors of API change to review |
+   | `spatie/schema-org` | 2.16.0 | 4.0.2 | two majors to review |
    | `firebase/php-jwt` | 6.10.0 | ^7 | clears the deferred CVE ignore |
 
-   These cannot be bumped one at a time under the 7.4 pin (each target
-   requires ≥8.1, which conflicts with the pin), so the platform pin and the
-   whole set move in a single `composer update` resolution pass.
+   Because every target requires ≥8.1, none can be bumped individually under
+   the 7.4 pin — the platform pin and the whole set move in a single
+   `composer update` resolution pass.
+
+   **`cakephp/core` + `cakephp/utility` 3.10.5 (`>=5.6.0,<8.0.0`) block every
+   PHP 8 target and must be eliminated, not upgraded.** Sole usage is
+   `Cake\Utility\Text` across 11 call sites in view scripts: `truncate` (×6),
+   `highlight` (×2), `excerpt`, `truncateByWidth`, plus a `Text::class`
+   reference in `Bible\Form\BibleSearchForm`. A small view helper replaces
+   them (per "prefer dependency elimination"). Note one is in a SionModel
+   view, so the helper belongs in the shared library.
+
+   **Staging decided 2026-08-02 — rung 4a to 8.3, rung 4b to 8.4:**
+   - *4a*: the 45-package stack bump + the cakephp elimination, declaring
+     8.3. Keeps `laminas-zendframework-bridge` (1.8.0) and `laminas-mail`
+     (2.25.1), both of which support 8.3. Big but self-contained, and it
+     brings the security-relevant stack current.
+   - *4b*: drop the bridge — which requires resolving **TwbBundle**, the only
+     remaining module needing it — and consolidate mail onto
+     **symfony/mailer**, which retires `laminas-mail`. Then 8.4.
+
+   **The mailer migration is load-bearing, not optional polish.** There are
+   currently *two* mail stacks: JUser sends the magic-link mail through
+   **SwiftMailer** (`SwiftMailerFactory`, `Service\Mailer`, `MailerFactory`)
+   while `SionModel\Mailing\Mailer` uses **laminas-mail**
+   (`Laminas\Mail\Message`, `AddressList`). symfony/mailer collapses both and
+   removes the laminas-mail 8.3 cap. Urgency note: SwiftMailer 6.3.0 lints
+   clean under PHP 8.5.8 (whole tree checked 2026-08-02), so unlike PHPExcel
+   it is not an immediate breakage — it is abandoned-since-2021 plus half of
+   a duplicated stack.
 
    **laminas-cache 2.9 → 4.x, sized 2026-08-02.** Smaller than feared. The
    item API (`getItem`/`setItem`/`getItems`/`removeItem`, `$success`,
