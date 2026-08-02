@@ -34,6 +34,10 @@ class BooksSmokeTest extends SmokeTestCase
         $response = $this->assertRendersOk('/en/blog');
 
         $this->assertStringContainsString('Posted', $response['body']);
+        // Regression: parsedown 1.8 + parsedown-extra 0.7/0.8 mismatches used
+        // to leak "Undefined index: text" / null-offset notices into the posts
+        $this->assertStringNotContainsString('Notice</b>:', $response['body']);
+        $this->assertStringNotContainsString('Warning</b>:', $response['body']);
     }
 
     public function testMusicIndexRenders(): void
