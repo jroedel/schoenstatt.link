@@ -53,13 +53,6 @@ return [
         'privKey' => 'local-dev-dummy',
         'pubKey' => 'local-dev-dummy',
     ],
-    'acmailer_options' => [
-        'default' => [
-            'smtp_options' => [
-                'connection_config' => $smtpOptions,
-            ],
-        ],
-    ],
     'smtp_options' => $smtpOptions,
     'session_config' => [
         // Local dev runs over plain http; a secure-only cookie would break login

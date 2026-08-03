@@ -289,8 +289,9 @@ occurrence, and that no submitted value survives redaction.
 ## Limitations worth knowing
 
 **Mail lost to an SMTP outage is not retried.** The notifier marks a fingerprint
-notified *before* it attempts delivery. That ordering is deliberate:
-laminas-mail hard-codes a 30 second connection timeout, so a mail host that has
+notified *before* it attempts delivery. That ordering is deliberate: the SMTP
+transport waits up to 30 seconds for a connection (the socket timeout
+`SionModel\Service\MailTransportFactory` sets), so a mail host that has
 stopped answering would otherwise cost every subsequent visitor 30 seconds on a
 request that has already failed. Marking first means at most one request pays
 that price. The cost is that a genuinely failed send is gone — the `FAILED`
