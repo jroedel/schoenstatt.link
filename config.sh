@@ -4,7 +4,7 @@
 
 # first check that the files don't already exist
 if [ ! -f phploy.ini ]; then
-  cp example.phploy phploy.ini
+  cp phploy.ini.dist phploy.ini
 fi
 #this file is for storing ssh authentication
 if [ ! -f .phploy ]; then
