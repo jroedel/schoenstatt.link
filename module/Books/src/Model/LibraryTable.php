@@ -872,14 +872,30 @@ ORDER BY `publisher`";
             );
         }
         // @todo factor out use of this function
-        $entities = $this->getUnlinkedBooks();
+        /**
+         * Only the three columns this lookup needs, and only for the requested library.
+         * This used to walk the result of getUnlinkedBooks(), which builds (and caches) every
+         * book entity in the database. Ordering matches getLibraryBookLookupWithActive(), which
+         * builds the same map: it makes the result deterministic, where the old row order
+         * (library_id, sort_text) left duplicate withinLibraryIds resolving to whichever row
+         * the query plan happened to return last. lib_books has no duplicates today.
+         */
+        $select = new Select('lib_books');
+        $select->columns(['book_id', 'original_id', 'is_active']);
+        $select->where(['library_id' => $libraryId]);
+        $select->order(['original_id', 'book_id']);
+        $results = $this->getTableGateway('lib_books')->selectWith($select);
+
         $bookLookup = [];
-        foreach ($entities as $bookId => $book) {
-            if ($book['libraryId'] == $libraryId && ($book['isActive'] || $includeInactive) &&
-                isset($book['withinLibraryId'])
-            ) {
-                $bookLookup[$book['withinLibraryId']] = $bookId;
+        foreach ($results as $row) {
+            $withinLibraryId = $this->filterDbId($row['original_id']);
+            if (! isset($withinLibraryId)) {
+                continue;
             }
+            if (! $includeInactive && ! $this->filterDbBool($row['is_active'])) {
+                continue;
+            }
+            $bookLookup[$withinLibraryId] = $this->filterDbId($row['book_id']);
         }
         return $bookLookup;
     }
@@ -974,7 +990,8 @@ ORDER BY `publisher`";
         $tz = new \DateTimeZone('UTC');
         $today = new \DateTime(null, $tz);
 
-        $books = $this->getUnlinkedBooks();
+        //only load the books we've actually been asked to check in
+        $books = empty($bookIds) ? [] : $this->getUnlinkedBooks($bookIds);
         $booksToCheckin = [];
         foreach ($bookIds as $bookId) {
             if (isset($books[$bookId])) {
@@ -1068,8 +1085,14 @@ ORDER BY `publisher`";
             );
         }
         $withinLibraryIdLookup = $this->getLibraryBookLookup($libraryId);
-        //@todo instead just get the book records that are being referred to
-        $books = $this->getUnlinkedBooks();
+        //only get the book records that are being referred to
+        $referencedBookIds = [];
+        foreach ($data['withinLibraryIds'] as $withinLibraryId) {
+            if (isset($withinLibraryIdLookup[$withinLibraryId])) {
+                $referencedBookIds[] = $withinLibraryIdLookup[$withinLibraryId];
+            }
+        }
+        $books = empty($referencedBookIds) ? [] : $this->getUnlinkedBooks($referencedBookIds);
 
         //confirm all bookIds are valid
         $bookIds = [];
@@ -1146,40 +1169,59 @@ ORDER BY `publisher`";
         }
 
         $entities = $this->getObjects('library');
-        $books = $this->getUnlinkedBooks();
 
-        foreach ($books as $book) {
-            if ($book['isActive'] && isset($book['libraryId']) && //don't do anything here with inactive books
-                isset($entities[$book['libraryId']])
+        /**
+         * These statistics only need four columns, so don't build (and cache) a full book entity
+         * for every book in the database to get them. On production that meant a ~46 MiB cache
+         * item under the 'unlinked-books' key, which is larger than the entire 32 MiB APCu
+         * segment: the store failed and, with apc.ttl=0, APCu dropped the whole cache.
+         * The row order matches the 'book' select prototype so the statistics arrays are built
+         * in exactly the order they used to be.
+         *
+         * Note this no longer honours $this->libraryId. getUnlinkedBooks() restricted itself to
+         * the current library when one was set, so a request to /libraries/:id produced
+         * statistics for that library only — and then cached them under the shared 'libraries'
+         * key, leaving every other library showing empty statistics until the cache expired.
+         * Statistics are now always complete, which is what that cache key claims to hold.
+         * Per-library values are unchanged.
+         */
+        $select = new Select('lib_books');
+        $select->columns(['library_id', 'collection_id', 'category', 'is_active']);
+        $select->order(['library_id', 'sort_text']);
+        $rows = $this->getTableGateway('lib_books')->selectWith($select);
+
+        foreach ($rows as $row) {
+            $libraryId = $this->filterDbId($row['library_id']);
+            //don't do anything here with inactive books
+            if (! $this->filterDbBool($row['is_active']) || ! isset($libraryId) ||
+                ! isset($entities[$libraryId])
             ) {
-//                 $entities[$book['libraryId']]['books'][$bookId] = $book;
-
-                $libraryId = $book['libraryId'];
-                //fill in statistics
+                continue;
+            }
+            //fill in statistics
+            $collectionId = $this->filterDbId($row['collection_id']);
+            if (! isset($collectionId)) {
                 $collectionId = 0;
-                if (isset($book['collectionId'])) {
-                    $collectionId = $book['collectionId'];
-                }
+            }
+            $category = $this->filterDbString($row['category']);
+            if (! isset($category)) {
                 $category = '';
-                if (isset($book['category'])) {
-                    $category = $book['category'];
-                }
-                //statistics by category without respect for collections
-                if (! isset($entities[$libraryId]['categoryStatistics'][$category])) {
-                    $entities[$libraryId]['categoryStatistics'][$category] = 1;
-                } else {
-                    $entities[$libraryId]['categoryStatistics'][$category]++;
-                }
+            }
+            //statistics by category without respect for collections
+            if (! isset($entities[$libraryId]['categoryStatistics'][$category])) {
+                $entities[$libraryId]['categoryStatistics'][$category] = 1;
+            } else {
+                $entities[$libraryId]['categoryStatistics'][$category]++;
+            }
 
-                //statistics on 2 levels: collection, category
-                if (! isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId])) {
-                    $entities[$libraryId]['collectionCategoryStatistics'][$collectionId] = [];
-                }
-                if (! isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category])) {
-                    $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category] = 1;
-                } else {
-                    $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category]++;
-                }
+            //statistics on 2 levels: collection, category
+            if (! isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId])) {
+                $entities[$libraryId]['collectionCategoryStatistics'][$collectionId] = [];
+            }
+            if (! isset($entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category])) {
+                $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category] = 1;
+            } else {
+                $entities[$libraryId]['collectionCategoryStatistics'][$collectionId][$category]++;
             }
         }
 
@@ -1425,7 +1467,7 @@ ORDER BY `publisher`";
         if (! isset($libraryId) || ! is_numeric($libraryId)) {
             throw new \InvalidArgumentException('getLibraryBooksStatuses requires an active libraryId');
         }
-        $books = $this->getObjects('book', ['libaryId' => $libraryId]);
+        $books = $this->getObjects('book', ['libraryId' => $libraryId]);
         $this->linkCurrentCheckoutsToBook($books);
 
         $entities = [];
@@ -1838,7 +1880,8 @@ ORDER BY CreatedOn DESC";
             }
         }
 
-        $books = $this->getUnlinkedBooks(array_keys($bookIds));
+        //an empty id list would make getUnlinkedBooks() load and cache every book in the database
+        $books = empty($bookIds) ? [] : $this->getUnlinkedBooks(array_keys($bookIds));
         $libraries = $this->getObjects('library');
 
         foreach ($entities as $entityId => $entity) {
@@ -1963,8 +2006,13 @@ ORDER BY CreatedOn DESC";
                 if (! isset($librariesOptions)) {
                     $librariesOptions = $this->getLibrariesOptions();
                 }
-                if (! isset($books)) {
-                    $books = $this->getUnlinkedBooks();
+                if (! is_array($books)) {
+                    $books = [];
+                }
+                //only load the book being checked out, memoizing across calls within the request
+                if (! array_key_exists($data['bookId'], $books)) {
+                    $fetched = $this->getUnlinkedBooks([$data['bookId']]);
+                    $books[$data['bookId']] = $fetched[$data['bookId']] ?? null;
                 }
                 if (! isset($books[$data['bookId']])) {
                     throw new \InvalidArgumentException('Invalid book attempting to be checked out.');
