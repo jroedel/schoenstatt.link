@@ -3,7 +3,7 @@
 #
 # Why not phploy: its --submodules mode has a fatal directory-purge bug
 # (recursively deletes e.g. module/JUser/src AFTER uploading into it — see
-# BACKLOG.md "Deploy ops").
+# docs/BACKLOG.md "Deploy ops").
 #
 # The managed server's port 22 is a restricted SFTP jail (no exec — rsync
 # dies with "exec request failed on channel 0"); the full shell lives on
