@@ -19,7 +19,7 @@
         "voku/html2text": "^5.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
         "diablomedia/laminas-twb-bundle": "^5.0",
-        "phpoffice/phpexcel": "^1.8",
+        "phpoffice/phpspreadsheet": "^5.9",
         "kokspflanze/bjy-authorize": "^2.4",
         "matriphe/iso-639": "^1.0",
         "spatie/schema-org": "^4.0",
@@ -85,16 +85,21 @@
             "lib-icu": "76.1",
             "ext-apcu": "5.1.24",
             "ext-xml": "8.3.33",
-            "ext-mbstring": "8.3.33"
+            "ext-mbstring": "8.3.33",
+            "ext-ctype": "8.3.33",
+            "ext-fileinfo": "8.3.33",
+            "ext-filter": "8.3.33",
+            "ext-iconv": "8.3.33",
+            "ext-libxml": "8.3.33",
+            "ext-xmlreader": "8.3.33",
+            "ext-zip": "1.22.3",
+            "ext-zlib": "8.3.33"
         },
         "audit": {
             "abandoned": "report"
         },
         "policy": {
             "advisories": {
-                "ignore": {
-                    "phpoffice/phpexcel": "abandoned; migration to phpoffice/phpspreadsheet is planned in the Phase 3 ladder (BACKLOG.md)"
-                },
                 "ignore-id": {
                     "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743."
                 }
@@ -120,6 +125,7 @@
         "serve": "php -S 127.0.0.1:8080 -t public",
         "smoke": "docker compose exec -T app php tools/phpunit.phar --testsuite smoke",
         "unit": "docker compose exec -T app php tools/phpunit.phar --testsuite unit",
+        "integration": "docker compose exec -T app php tools/phpunit.phar --testsuite integration",
         "test": "docker compose exec -T app php tools/phpunit.phar"
     },
     "scripts-descriptions": {
