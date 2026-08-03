@@ -3,6 +3,7 @@ namespace Books\Controller;
 
 use SionModel\Controller\SionController;
 use Books\Model\LibraryTable;
+use Books\Service\SpreadsheetReader;
 use JTranslate\Controller\Plugin\NowMessenger;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Books\Model\PublicationsTable;
@@ -236,17 +237,13 @@ class LibraryImportsController extends SionController
     public function importSpreadsheetFile($fileName, $sheetName, $fieldsMap, &$simulate = true, $deleteMissingRowsFromDatabase = false)
     {
         $bookFields = $this->getBookFields();
-        $objPHPExcel = \PHPExcel_IOFactory::load($fileName);
-        $sheet = $objPHPExcel->getSheetByName($sheetName);
-        $highRow = $sheet->getHighestDataRow();
-        $highColumn = $sheet->getHighestDataColumn();
-        if ($highColumn === 'A' || $highRow == 1) {
-            throw new \Exception('No data contained in the spreadsheet.');
-        }
+        /** @var SpreadsheetReader $spreadsheetReader */
+        $spreadsheetReader = $this->services[SpreadsheetReader::class];
+        $sheetData = $spreadsheetReader->read($fileName, $sheetName);
 
         //first, get the first row which should contain the column headers
         // and make sure we have all the required headers
-        $rowHeaders = $sheet->rangeToArray('A1:' . $highColumn . '1')[0];
+        $rowHeaders = $sheetData['header'];
 
         $fieldIndices = [];
         foreach ($rowHeaders as $key => $value) {
@@ -271,12 +268,8 @@ class LibraryImportsController extends SionController
             throw new \Exception('Missing required fields for the excel file: ' . implode(', ', $missingRequiredFields));
         }
 
-        $rows = $sheet->rangeToArray('A2:' . $highColumn . $highRow);
-
-        //we're done with the PHPExcel object, free up the memory
-        $objPHPExcel->disconnectWorksheets();
-        unset($objPHPExcel);
-        unset($sheet);
+        $rows = $sheetData['rows'];
+        unset($sheetData);
 
         /** @var \Books\Model\LibraryTable $table */
         $table = $this->getSionTable();

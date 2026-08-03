@@ -18,6 +18,7 @@ use SionModel\Problem\EntityProblem;
 use Laminas\Router\Http\Method;
 use Books\Model\DictionaryTable;
 use Laminas\Navigation\Navigation;
+use Laminas\ServiceManager\Factory\InvokableFactory;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 
 $textColumns = [
@@ -273,6 +274,7 @@ return [
             Form\DictionaryEntryForm::class     => Service\DictionaryEntryFormFactory::class,
             Model\MusicTable::class             => Service\MusicTableFactory::class,
             Form\CompositionForm::class         => Service\CompositionFormFactory::class,
+            Service\SpreadsheetReader::class    => InvokableFactory::class,
         ],
     ],
     'view_helpers' => [
@@ -1872,6 +1874,7 @@ return [
                 'sion_controllers'                          => [Controller\LibraryImportsController::class],
                 'controller_services'                       => [
                     Model\PublicationsTable::class,
+                    Service\SpreadsheetReader::class,
                 ],
                 'get_object_function'                       => 'getLibraryImport',
                 'get_objects_function'                      => 'getLibraryImports',
