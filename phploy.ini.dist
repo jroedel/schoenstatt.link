@@ -1,6 +1,6 @@
 ; phploy deploy config — committed template. config.sh copies this to
 ; phploy.ini (gitignored); replace every TODO there, never here. The SFTP
-; password goes in .phploy (copied from hideme.phploy), not in this file.
+; password goes in .phploy (copied from .phploy.dist), not in this file.
 ; NOTE: If non-alphanumeric characters are present, enclose the value in quotes.
 ;
 ; The three keyed hooks all take the same value: any entry from the
@@ -16,17 +16,18 @@
     exclude[] = 'phploy.log'
     purge[] = "data/config/"
 
-    ; --- Retired 2026-08-03: the deploy account is SFTP-only now (its
-    ; port-222 shell was revoked), so hooks that exec on the server can't
-    ; run. Kept commented for illustration — both are manual steps in a
-    ; separate SSH session; see DEPLOY.md "Manual server-side steps".
-    ;post-deploy[] = "bash tools/deploy-submodules.sh"
-    ;post-deploy[] = "ssh -t -p 222 userTODO@your-server.com 'cd public_html/schoenstatt.link && rm -f data/config/module-*-cache.*.php && php composer.phar install --no-dev --no-interaction --optimize-autoloader'"
+    ; sshUserTODO is YOUR shell-capable account (port 222), distinct from
+    ; the restricted SFTP-only deploy user above — a phploy vulnerability
+    ; can move files but never exec.
+    pre-deploy[] = "ssh -p 222 sshUserTODO@your-server.com 'cd public_html/schoenstatt.link && mkdir -p data/htaccess-backups && cp -a public/.htaccess data/htaccess-backups/htaccess-$(date +%Y%m%d-%H%M%S)'"
 
-    ; --- Active hooks (HTTP + local only), order matters:
+    ; order matters:
+    post-deploy[] = "bash tools/deploy-submodules.sh"
+    ; the rm re-clears the config cache: a visitor may have re-cached the
+    ; merged config from the half-deployed tree since phploy's purge[]
+    post-deploy[] = "ssh -t -p 222 sshUserTODO@your-server.com 'cd public_html/schoenstatt.link && rm -f data/config/module-*-cache.*.php && php composer.phar install --no-dev --no-interaction --optimize-autoloader'"
     post-deploy[] = "wget https://schoenstatt.link/sm/clear-persistent-cache?key=xxxxTODOxxxx --spider --quiet"
     post-deploy[] = "wget https://schoenstatt.link/en/associations/do-work?key=xxxxTODOxxxx --spider --quiet"
     post-deploy[] = "git tag -f deploy/$(date +%Y%m%d-%H%M)"
     post-deploy[] = "SMOKE_PROD_CACHE_KEY=xxxxTODOxxxx bash tools/smoke-prod.sh"
-    ;post-deploy-remote[] = "mv schoenstatt.htaccess public/.htaccess"
     logger = on

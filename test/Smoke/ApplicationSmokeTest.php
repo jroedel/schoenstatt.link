@@ -103,6 +103,69 @@ class ApplicationSmokeTest extends SmokeTestCase
         $this->assertStringContainsString('<urlset', $response['body']);
     }
 
+    /**
+     * The security headers set by public/.htaccess (tracked since 2026-08-03,
+     * shared verbatim between the capsule and production).
+     */
+    public function testSecurityHeadersAreSet(): void
+    {
+        $headers = $this->get('/en/')['headers'];
+
+        $this->assertSame('nosniff', $headers['x-content-type-options'] ?? null);
+        $this->assertSame('DENY', $headers['x-frame-options'] ?? null);
+        $this->assertSame('strict-origin-when-cross-origin', $headers['referrer-policy'] ?? null);
+        $this->assertStringContainsString('max-age=', $headers['strict-transport-security'] ?? '');
+        // Removed 2026-08-03: the XSS auditor is gone from every browser and
+        // the header itself enabled side-channel attacks.
+        $this->assertArrayNotHasKey('x-xss-protection', $headers);
+    }
+
+    public function testHtmlResponsesAreCompressed(): void
+    {
+        $headers = $this->get('/en/')['headers'];
+
+        // The test client negotiates compression (CURLOPT_ENCODING '').
+        // gzip locally (mod_deflate); production upgrades to brotli.
+        $this->assertMatchesRegularExpression(
+            '/^(gzip|br)$/',
+            $headers['content-encoding'] ?? '',
+            'HTML should be served compressed'
+        );
+    }
+
+    /**
+     * Static-asset cache policies come straight from public/.htaccess.
+     * Regression guard for the only-if-cached bug (a request-only directive
+     * that sat in these responses for years).
+     */
+    public function testStaticImagesCacheForAYearImmutable(): void
+    {
+        $response = $this->get('/favicon-32.png');
+
+        $this->assertSame(200, $response['status']);
+        $this->assertSame(
+            'max-age=31536000, public, immutable',
+            $response['headers']['cache-control'] ?? null
+        );
+    }
+
+    public function testStylesheetsCacheForAMonth(): void
+    {
+        $response = $this->get('/css/style.css');
+
+        $this->assertSame(200, $response['status']);
+        $this->assertSame('max-age=2628000, public', $response['headers']['cache-control'] ?? null);
+    }
+
+    /** gen-basic.css is regenerated in place, so it gets a 1-day carve-out. */
+    public function testGeneratedCssCachesForADay(): void
+    {
+        $response = $this->get('/css/gen-basic.css');
+
+        $this->assertSame(200, $response['status']);
+        $this->assertSame('public,max-age=86400', $response['headers']['cache-control'] ?? null);
+    }
+
     private function titleOf(string $body): string
     {
         if (preg_match('#<title>(.*?)</title>#is', $body, $matches) !== 1) {
