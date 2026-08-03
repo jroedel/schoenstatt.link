@@ -9,12 +9,14 @@
 
 namespace Application;
 
+use Laminas\Cache\Storage\StorageInterface;
 use Laminas\Mvc\MvcEvent;
 use Application\View\GdprStrategy;
 use Laminas\Navigation\Navigation;
 use Books\Model\DictionaryTable;
 use Books\Model\PublicationsTable;
 use Application\Navigation\FixNavigationPages;
+use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
 use Books\Model\EventTextTable;
@@ -22,13 +24,23 @@ use Books\Model\MusicTable;
 
 class Module
 {
-    const PAGES_CACHE_KEYS = [
+    public const PAGES_CACHE_KEYS = [
         'dictionary-pages',
         'publication-pages',
         'association-pages',
         'library-pages',
         'blog-pages',
         'music-pages',
+    ];
+
+    /**
+     * Cache keys from PAGES_CACHE_KEYS whose *content* differs per locale and therefore may not
+     * share a single cache item. Anything not listed here is cached once for all locales; adding
+     * a key here multiplies its item count by the number of supported locales, which on a 32 MiB
+     * APCu segment is the resource we are trying to conserve. See the audit in onBootstrap().
+     */
+    public const LOCALE_DEPENDENT_PAGES_CACHE_KEYS = [
+        'association-pages',
     ];
 
     /**
@@ -47,7 +59,38 @@ class Module
         if (! array_key_exists($locale, SchoenstattTable::LOCALES_TO_SLUG_COLUMN_NAME)) {
             $locale = 'en_US';
         }
-        $pagesByCacheKey = $cache->getItems(self::PAGES_CACHE_KEYS);
+
+        /*
+         * Locale audit of PAGES_CACHE_KEYS (only locale-dependent content may be salted):
+         *  - dictionary-pages: labels come from DictionaryTable::getAvailableDictionaryLanguages(),
+         *      whose language names come from getLanguageNames() with no $inLanguage argument, i.e.
+         *      always English. Route params are language codes. Locale-independent.
+         *  - publication-pages: labels are untranslated publication titles and the same
+         *      always-English language names; params are identifier/slug, neither localized.
+         *      Locale-independent.
+         *  - association-pages: embeds $object['slugByLocale'][$locale]. LOCALE-DEPENDENT.
+         *  - library-pages: label is the raw LibraryName column, param is libraryId.
+         *      Locale-independent.
+         *  - blog-pages: label is the raw text title, params are identifier and the single Slug
+         *      column. Locale-independent.
+         *  - music-pages: label is the raw composition name, params are identifier and the single
+         *      Slug column. Locale-independent.
+         * Labels are translated at render time by the navigation view helper, so an English label
+         * in the cache is not itself a reason to salt.
+         */
+        $cacheKeys = [];
+        foreach (self::PAGES_CACHE_KEYS as $baseKey) {
+            $cacheKeys[$baseKey] = in_array($baseKey, self::LOCALE_DEPENDENT_PAGES_CACHE_KEYS, true)
+                ? $baseKey . '-' . $locale
+                : $baseKey;
+        }
+        $cachedItems = $cache->getItems(array_values($cacheKeys));
+        $pagesByCacheKey = [];
+        foreach ($cacheKeys as $baseKey => $cacheKey) {
+            if (isset($cachedItems[$cacheKey])) {
+                $pagesByCacheKey[$baseKey] = $cachedItems[$cacheKey];
+            }
+        }
 
 
         if (! isset($pagesByCacheKey['dictionary-pages'])) {
@@ -64,34 +107,34 @@ class Module
                 ];
             }
             $pagesByCacheKey['dictionary-pages'] = $dictionaryPages;
-            $cache->setItem('dictionary-pages', $dictionaryPages);
+            $this->cacheNavigationPages($cache, $sm, $cacheKeys['dictionary-pages'], $dictionaryPages);
         }
 
         if (! isset($pagesByCacheKey['publication-pages'])) {
             $publicationPages = [];
             $pagesByLanguage = [];
             $table = $sm->get(PublicationsTable::class);
-            $publications = $table->getObjects('publication');
+            //a narrow, 4-field projection restricted to publication_public rows; see
+            //PublicationsTable::getPublicationNavigationData() for why we don't hydrate entities here
+            $publications = $table->getPublicationNavigationData();
             foreach ($publications as $publicationId => $object) {
-                if ($object['resourceId'] === 'publication_public') {
-                    $inLanguage = isset($object['inLanguage'])
-                        && is_array($object['inLanguage'])
-                        && isset($object['inLanguage'][0])
-                        ? $object['inLanguage'][0]
-                        : null;
-                    if (! array_key_exists($inLanguage, $pagesByLanguage)) {
-                        $pagesByLanguage[$inLanguage] = [];
-                    }
-                    $pagesByLanguage[$inLanguage][] = [
-                        'label' => $object['title'],
-                        'route' => 'publication',
-                        'params' => [
-                            'sw_id' => $object['identifier'],
-                            'slug' => $object['slug'],
-                        ],
-                        'id'    => 'pub_' . $publicationId,
-                    ];
+                $inLanguage = isset($object['inLanguage'])
+                    && is_array($object['inLanguage'])
+                    && isset($object['inLanguage'][0])
+                    ? $object['inLanguage'][0]
+                    : null;
+                if (! array_key_exists($inLanguage, $pagesByLanguage)) {
+                    $pagesByLanguage[$inLanguage] = [];
                 }
+                $pagesByLanguage[$inLanguage][] = [
+                    'label' => $object['title'],
+                    'route' => 'publication',
+                    'params' => [
+                        'sw_id' => $object['identifier'],
+                        'slug' => $object['slug'],
+                    ],
+                    'id'    => 'pub_' . $publicationId,
+                ];
             }
 
             if (! isset($dictionaryTable)) {
@@ -116,7 +159,7 @@ class Module
             ];
 
             $pagesByCacheKey['publication-pages'] = $publicationPages;
-            $cache->setItem('publication-pages', $publicationPages);
+            $this->cacheNavigationPages($cache, $sm, $cacheKeys['publication-pages'], $publicationPages);
         }
 
         if (! isset($pagesByCacheKey['association-pages'])) {
@@ -174,7 +217,7 @@ class Module
             }
 
             $pagesByCacheKey['association-pages'] = $associationPages;
-            $cache->setItem('association-pages', $associationPages);
+            $this->cacheNavigationPages($cache, $sm, $cacheKeys['association-pages'], $associationPages);
         }
 
         if (! isset($pagesByCacheKey['library-pages'])) {
@@ -195,7 +238,7 @@ class Module
                 ];
             }
             $pagesByCacheKey['library-pages'] = $libraryPages;
-            $cache->setItem('library-pages', $libraryPages);
+            $this->cacheNavigationPages($cache, $sm, $cacheKeys['library-pages'], $libraryPages);
         }
 
         if (! isset($pagesByCacheKey['blog-pages'])) {
@@ -213,7 +256,7 @@ class Module
                 ];
             }
             $pagesByCacheKey['blog-pages'] = $blogPages;
-            $cache->setItem('blog-pages', $blogPages);
+            $this->cacheNavigationPages($cache, $sm, $cacheKeys['blog-pages'], $blogPages);
         }
 
         if (! isset($pagesByCacheKey['music-pages'])) {
@@ -231,7 +274,7 @@ class Module
                 ];
             }
             $pagesByCacheKey['music-pages'] = $musicPages;
-            $cache->setItem('music-pages', $musicPages);
+            $this->cacheNavigationPages($cache, $sm, $cacheKeys['music-pages'], $musicPages);
         }
 
         //build out the navigation a little
@@ -260,6 +303,59 @@ class Module
 
         $corsListener = new Listener\CorsListener();
         $corsListener->attach($app->getEventManager());
+    }
+
+    /**
+     * Persist one navigation branch, tolerating a cache that cannot accept the write.
+     *
+     * Laminas\Cache\Storage\Adapter\Apcu::internalSetItem() throws a RuntimeException when
+     * apcu_store() returns false, which on a full 32 MiB segment is routine. Since this runs in
+     * onBootstrap, an uncaught throw is a 500 on every single request until APCu drains, so a
+     * failed write must degrade to "the navigation is simply not cached this request".
+     *
+     * @param ContainerInterface $sm used only to reach a logger, lazily
+     * @return bool whether the write succeeded
+     */
+    private function cacheNavigationPages(
+        StorageInterface $cache,
+        ContainerInterface $sm,
+        string $cacheKey,
+        array $pages
+    ): bool {
+        try {
+            if (false === $cache->setItem($cacheKey, $pages)) {
+                $this->reportNavigationCacheFailure($sm, $cacheKey, null);
+                return false;
+            }
+        } catch (\Throwable $t) {
+            $this->reportNavigationCacheFailure($sm, $cacheKey, $t);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Log a navigation cache write failure if a logger happens to be reachable.
+     *
+     * @param ContainerInterface $sm
+     * @param string $cacheKey
+     * @param \Throwable|null $t
+     * @return void
+     */
+    private function reportNavigationCacheFailure($sm, $cacheKey, ?\Throwable $t = null)
+    {
+        try {
+            if (! $sm->has('SionModel\Logger')) {
+                return;
+            }
+            $logger = $sm->get('SionModel\Logger');
+            $logger->err('Failed to cache a navigation branch.', [
+                'cacheKey'  => $cacheKey,
+                'exception' => isset($t) ? $t->getMessage() : 'setItem returned false',
+            ]);
+        } catch (\Throwable $ignored) {
+            //we're in onBootstrap; never let logging a cache miss take the site down
+        }
     }
 
     public function getConfig()
