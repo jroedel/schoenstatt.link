@@ -259,42 +259,6 @@ class LibrariesController extends SionController
         return $problemCounts;
     }
 
-    public function searchAction()
-    {
-        $params = $this->params()->fromQuery();
-        $form = $this->services[SearchForm::class];
-        $form->setData($params);
-        $books = null;
-        $borrowers = [];
-
-        if ($form->isValid()) {
-            $data = $form->getData();
-
-            if (! empty($data)) {
-                /** @var LibraryTable $table */
-                $table = $this->getSionTable();
-//                 $data['notAllowed'] = $notAllowed;
-                $data['maxResults'] = 200;
-//                 var_dump($data);
-                $books = $table->searchBooks($data);
-                //@todo the use of 'books' is deprecated, find a different way
-                $libraries = $this->transformBookQueryIntoLibraries($books);
-                $borrowers = $this->services['Books\BorrowersValueOptions'];
-            }
-        }
-
-        if (is_array($books) && empty($books)) {
-            $this->nowMessenger()->addMessage("No results found.", NowMessenger::NAMESPACE_INFO);
-        }
-
-        return new ViewModel([
-            'publications'  => $this->getPublications(),
-            'entities'  => $libraries,
-            'borrowers' => $borrowers,
-            'form'      => $form,
-        ]);
-    }
-
     public function inactivateBooksAction()
     {
         $resourceId = 'library_' . $this->getLibraryId();
@@ -390,18 +354,6 @@ class LibrariesController extends SionController
             'borrowers' => $borrowers,
             'library'   => $library,
         ]);
-    }
-
-    public function transformBookQueryIntoLibraries($books)
-    {
-        $entities = [];
-        foreach ($books as $book) {
-            if (! isset($entities[$book['libraryId']])) {
-                $entities[$book['libraryId']] = $book['library'];
-            }
-            $entities[$book['libraryId']]['books'][] = $book;
-        }
-        return $entities;
     }
 
     protected function getPublications()
