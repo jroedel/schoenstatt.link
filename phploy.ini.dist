@@ -1,6 +1,6 @@
 ; phploy deploy config — committed template. config.sh copies this to
 ; phploy.ini (gitignored); replace every TODO there, never here. The SFTP
-; password goes in .phploy (copied from hideme.phploy), not in this file.
+; password goes in .phploy (copied from .phploy.dist), not in this file.
 ; NOTE: If non-alphanumeric characters are present, enclose the value in quotes.
 ;
 ; The three keyed hooks all take the same value: any entry from the

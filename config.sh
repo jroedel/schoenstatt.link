@@ -8,7 +8,7 @@ if [ ! -f phploy.ini ]; then
 fi
 #this file is for storing ssh authentication
 if [ ! -f .phploy ]; then
-  cp hideme.phploy .phploy
+  cp .phploy.dist .phploy
 fi
 chmod 740 .phploy
 

@@ -71,7 +71,7 @@ superproject-only deploy skips all of this.
 - phploy needs `php8.0` locally (newer CLIs lack mbstring).
 - `phploy.ini` + `.phploy` hold credentials — never committed. `config.sh`
   seeds them from the committed templates (`phploy.ini.dist`,
-  `hideme.phploy`); the hooks above live in `phploy.ini` under
+  `.phploy.dist`); the hooks above live in `phploy.ini` under
   `[production]`.
 - Web PHP is FastCGI with a per-account php.ini at
   `/home/httpd/php83-ini/ourlink/php.ini` (per PHP version: the 7.4-era
