@@ -362,9 +362,11 @@ Each rung verified by the Phase 2 suite:
      without library context), `/blog/create` 500 (template
      `books/blog/create` missing), `SionModel\Controller\FilesController`
      calls `$this->getServiceLocator()` which AbstractController hasn't had
-     since ZF3, `module/Books/src/Filter/BlogPostUserIdFilter.php` declares
+     since ZF3, `module/Books/src/Filter/BlogPostUserIdFilter.php` declared
      `namespace Schoenstatt\Filter` (PSR-4 collision with the real
-     Schoenstatt class), and `SionForm::setData()` calls
+     Schoenstatt namespace — **fixed 2026-08-03**, now `Books\Filter`;
+     composer 2 had been excluding the class from the autoloader
+     entirely), and `SionForm::setData()` calls
      `getInputFilterSpecification()` the base class doesn't define.
    - **Deploy prerequisite**: production must switch to PHP 8.3 in the same
      deploy — `require.php` and the platform pin both say 8.3 now. Sequence
