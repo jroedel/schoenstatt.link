@@ -50,10 +50,15 @@ That single phploy run does, in order:
 
 ## Smoke checks after deploying
 
-- `https://schoenstatt.link/en/` renders; sign-in round trip with a real email.
-- A couple of *cold* pages from the sitemap (the fatal-200 regression).
-- `/en/no-such-page` → the normal 404 page; `/api/no-such-thing` → JSON 404.
-- No `Notice:`/`Fatal error` text anywhere; errors belong in the logs now.
+- `bash tools/smoke-prod.sh` runs everything scriptable: homepage, both 404
+  flavors, the sitemap, and a random sample of *cold* sitemap pages (the
+  fatal-200 regression class — fixed URLs can't catch it). Non-zero exit on
+  any failure, so wire it in as the LAST post-deploy hook in `phploy.ini`
+  (after do-work):
+
+      post-deploy[] = "bash tools/smoke-prod.sh"
+
+- Still manual: a sign-in round trip with a real email.
 
 ## Rollback
 
