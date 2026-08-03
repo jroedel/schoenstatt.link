@@ -1,9 +1,13 @@
 # Deploying schoenstatt.link
 
-Deployment is phploy over **SFTP only**, plus manual server-side steps in
-a separate interactive SSH session. The deploy account's shell access over
-port 222 was intentionally revoked (2026-08-03), so phploy can move files
-but can never *run* anything on the server.
+Deployment is phploy over **SFTP as a restricted deploy account**
+(port-22 jail, no exec — its port-222 shell was intentionally revoked
+2026-08-03, so a phploy vulnerability could move files but never run
+anything). Server-side commands still happen, but as explicit `ssh`
+invocations from `pre-deploy[]`/`post-deploy[]` hooks running under
+*your own* shell account (port 222). Everything is plain `post-deploy[]`
+(never `post-deploy-remote[]`) so the exact execution order is under our
+control — mixing the two makes the order unpredictable.
 
 **Never run `phploy --submodules`/`-m`** — its directory purge recursively
 deletes freshly-uploaded trees (it took out `module/JUser/src` on
@@ -18,56 +22,57 @@ git submodule update --init --recursive
 php8.0 phploy.phar
 ```
 
-The phploy run does, in order:
+The phploy run does, in order (`phploy.ini.dist` is the committed
+template: `config.sh` copies it to the gitignored `phploy.ini`, where the
+TODOs get real values):
 
-1. Diff-uploads the superproject against the server's `.revision` (SFTP).
-2. `purge[] = "data/config/"` — empties the merged-config/module-map cache
+1. `pre-deploy[]`: ssh — back up the server's `public/.htaccess` to
+   `data/htaccess-backups/htaccess-<timestamp>`. The file is tracked and
+   clobbered on every deploy (since 2026-08-03); the backup is the escape
+   hatch, outside the docroot, ~2.6 KB per deploy.
+2. Diff-uploads the superproject against the server's `.revision` (SFTP).
+3. `purge[] = "data/config/"` — empties the merged-config/module-map cache
    (production runs with config caching on; this is why config changes
    take effect).
-3. `post-deploy[]` hooks — all HTTP or local now, no remote exec
-   (`phploy.ini.dist` is the committed template: `config.sh` copies it to
-   the gitignored `phploy.ini`, where the TODOs get real values; the
-   retired remote-exec hooks live there commented, for reference):
-   1. wget `/sm/clear-persistent-cache?key=…` — SionModel's endpoint
+4. `post-deploy[]` hooks:
+   1. `bash tools/deploy-submodules.sh` — rsync `--delete` of the three
+      submodule trees over the shell account (clean-tree guard built in;
+      no-ops fast when the pointers didn't move).
+   2. ssh — `rm -f data/config/module-*-cache.*.php && php composer.phar
+      install --no-dev --no-interaction --optimize-autoloader`. The rm
+      re-clears the config cache: a visitor may have re-cached the merged
+      config from the half-deployed tree since step 3.
+   3. wget `/sm/clear-persistent-cache?key=…` — SionModel's endpoint
       flushes the APCu storage adapter, i.e. `apcu_clear_cache()`: the
       whole web APCu segment. No process kills needed.
-   2. wget `/en/associations/do-work?key=…` — post-deploy data
+   4. wget `/en/associations/do-work?key=…` — post-deploy data
       maintenance. Needs the fully-deployed site.
-   3. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
+   5. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
       exactly what went live (`git tag -l 'deploy/*'` answers "what's
       deployed?"). Never pushed.
-   4. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
+   6. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
       scripted smoke checks (next section). A failure ends the deploy
-      loudly with a non-zero exit.
+      loudly with a non-zero exit. It runs after the server-side steps,
+      so a passing run means the *fully* deployed site is healthy — no
+      expected-failure window.
 
-## Manual server-side steps (separate SSH session)
+## Running the server-side steps by hand
 
-Needed only when the corresponding inputs changed; a routine
-superproject-only deploy skips all of this.
-
-- **Submodules changed** (`module/SionModel`, `module/JUser`,
-  `module/JTranslate` pointers moved): sync their trees yourself. From a
-  machine whose SSH identity still has exec, `tools/deploy-submodules.sh
-  <user@host> <port>` does rsync `--delete` with a clean-tree guard;
-  otherwise upload a tarball over SFTP and extract it in your session.
-- **composer.lock changed**: in the app dir, `php composer.phar install
-  --no-dev --no-interaction --optimize-autoloader`.
-- **After either of the above**: clear the config cache again —
-  `rm -f data/config/module-*-cache.*.php` in the app dir — because a
-  visitor may have re-cached the merged config between phploy's purge and
-  your manual steps.
-- Then re-run what fired too early: the two wget endpoints and
-  `bash tools/smoke-prod.sh` locally. (phploy's hooks run right after the
-  file sync, so on lock- or submodule-changing deploys expect the in-run
-  smoke pass to fail first — that's the half-deployed window, not a
-  regression. It must pass on the re-run.)
+If a hook fails mid-run (or you deploy from a machine without the shell
+key), finish in an interactive SSH session (port 222) in this order:
+sync submodules (`tools/deploy-submodules.sh <user@host> <port>`, or
+tar-over-SFTP + extract), then in the app dir
+`rm -f data/config/module-*-cache.*.php && php composer.phar install
+--no-dev --no-interaction --optimize-autoloader`, then re-run the two
+wget endpoints and `bash tools/smoke-prod.sh` locally.
 
 ## Server facts worth remembering
 
 - SSH port **22 is a restricted SFTP jail** (no exec — rsync/scp fail with
   "exec request failed on channel 0"). The deploy account's full shell on
   port 222 was **revoked 2026-08-03**; phploy connects over 22, SFTP only.
-  Server commands go through your own separate SSH session.
+  Server commands run as `ssh` hooks (and `deploy-submodules.sh`) under
+  your own shell account on port 222 — two different identities by design.
 - phploy needs `php8.0` locally (newer CLIs lack mbstring).
 - `phploy.ini` + `.phploy` hold credentials — never committed. `config.sh`
   seeds them from the committed templates (`phploy.ini.dist`,
@@ -101,8 +106,10 @@ superproject-only deploy skips all of this.
 ## Rollback
 
 `php8.0 phploy.phar --rollback` reverts the superproject files (SFTP, so
-this still works unchanged). Everything else is the manual list above in
-reverse: check out the matching older superproject commit locally so the
-submodule pointers roll back too, re-sync the submodule trees, and run
-`php composer.phar install --no-dev` in your SSH session to reinstate the
-older lock. The DB migrations so far are backward-compatible.
+this still works unchanged) — but the hooks don't re-run, so follow the
+by-hand list above: check out the matching older superproject commit
+locally so the submodule pointers roll back too, re-sync the submodule
+trees, and run `php composer.phar install --no-dev` in your SSH session
+to reinstate the older lock. A clobbered `.htaccess` can be restored from
+`data/htaccess-backups/`. The DB migrations so far are
+backward-compatible.
