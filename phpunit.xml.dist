@@ -18,6 +18,12 @@
     <testsuite name="unit">
       <directory>test/Unit</directory>
     </testsuite>
+    <!-- Integration tests exercise real vendor/ libraries (no running app,
+             no DB). They require vendor/autoload.php themselves, so they only
+             run where composer install has happened — i.e. the capsule. -->
+    <testsuite name="integration">
+      <directory>test/Integration</directory>
+    </testsuite>
   </testsuites>
   <php>
     <!-- Base URL of the running app. Inside the docker app container the
