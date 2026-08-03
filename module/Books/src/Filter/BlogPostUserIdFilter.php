@@ -1,5 +1,5 @@
 <?php
-namespace Schoenstatt\Filter;
+namespace Books\Filter;
 
 use Laminas\Filter\AbstractFilter;
 

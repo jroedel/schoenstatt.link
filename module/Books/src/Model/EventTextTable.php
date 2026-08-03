@@ -7,7 +7,7 @@ use Laminas\Db\Adapter\AdapterInterface;
 use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
 use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
 use Laminas\Permissions\Acl\Resource\GenericResource;
-use Schoenstatt\Filter\BlogPostUserIdFilter;
+use Books\Filter\BlogPostUserIdFilter;
 use voku\Html2Text\Html2Text;
 use Spatie\SchemaOrg\BlogPosting;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
