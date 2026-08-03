@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * Schoenstatt module: the public shrine database plus the members-only
  * movement, association, person and administration areas.
@@ -34,16 +36,14 @@ class SchoenstattSmokeTest extends SmokeTestCase
         $this->assertStringContainsString('Schoenstatt Wayside Shrines', $response['body']);
     }
 
-    /**
-     * @dataProvider protectedPathProvider
-     */
+    #[DataProvider('protectedPathProvider')]
     public function testProtectedPathRequiresLogin(string $path): void
     {
         $this->assertRequiresLogin($path);
     }
 
     /** @return array<string, array{0: string}> */
-    public function protectedPathProvider(): array
+    public static function protectedPathProvider(): array
     {
         return [
             'movement'          => ['/en/movement'],

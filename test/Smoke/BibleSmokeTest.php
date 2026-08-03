@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * Bible module: the members-only scripture and daily-homily tools, plus the
  * public "reading audio" shortcuts that bounce to the USCCB podcast feed.
  */
 class BibleSmokeTest extends SmokeTestCase
 {
-    /**
-     * @dataProvider readingAudioPathProvider
-     */
+    #[DataProvider('readingAudioPathProvider')]
     public function testReadingAudioRedirectsToPodcastFeed(string $path): void
     {
         $response = $this->get($path);
@@ -25,7 +25,7 @@ class BibleSmokeTest extends SmokeTestCase
     }
 
     /** @return array<string, array{0: string}> */
-    public function readingAudioPathProvider(): array
+    public static function readingAudioPathProvider(): array
     {
         return [
             "today's reading"   => ['/en/todays-reading-audio'],
@@ -34,16 +34,14 @@ class BibleSmokeTest extends SmokeTestCase
         ];
     }
 
-    /**
-     * @dataProvider protectedPathProvider
-     */
+    #[DataProvider('protectedPathProvider')]
     public function testProtectedPathRequiresLogin(string $path): void
     {
         $this->assertRequiresLogin($path);
     }
 
     /** @return array<string, array{0: string}> */
-    public function protectedPathProvider(): array
+    public static function protectedPathProvider(): array
     {
         return [
             'bible'         => ['/en/bible'],

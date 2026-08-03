@@ -23,6 +23,9 @@ if [ ! -f config/autoload/cache.local.php ]; then
   cp config/autoload/cache.local.php.dist config/autoload/cache.local.php
 fi
 
+# fetch the pinned dev-tool phars (phpunit, phpstan) — untracked, capsule/CI only
+bash tools/get-phars.sh
+
 #self update composer
 php composer.phar self-update
 
