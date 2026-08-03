@@ -3,6 +3,45 @@
 Working items for the state-of-the-art overhaul (see CLAUDE.md, "Modernization
 mandate"). Ordered roughly by intended sequence, not priority.
 
+## Unauthenticated API routes (found 2026-08-03) — needs a product decision
+
+Two API controllers extend `Laminas\Mvc\Controller\AbstractRestfulController`
+directly instead of `RestApi\Controller\ApiController`:
+`Books\Controller\LibrariesApiController` and `PublicationsApiController`. Only
+`ApiController` attaches `checkAuthorization()` to the dispatch event, so the
+`'isAuthorizationRequired' => true` in those routes' defaults is read by
+**nothing**. BjyAuthorize whitelists the `api-v1/*` routes for `guest`
+deliberately — the JWT layer was meant to be the gate — so no authentication
+remains at all.
+
+Verified against the capsule 2026-08-03 (no `Authorization` header, HTTP 200 with
+full payload):
+
+- `GET /api/v1/libraries` — `getList()`, which unlike `get($id)` does *not* run
+  `prepLibraryObject()`, so it returns every column rather than the
+  `LIBRARY_API_FIELDS` whitelist.
+- `GET /api/v1/libraries/:id` — filtered, but the whitelist itself includes
+  `adminNotes` and `contactEmail`.
+- `GET /api/v1/libraries/:id/pending-labels` — book records.
+- `DELETE /api/v1/libraries/:id/pending-labels?bookIds=1|2|3` —
+  `finishPendingLabelsAction()`, **a write**: it copies `newCallNumber` into
+  `callNumber` and nulls the pending value for arbitrary books in any library.
+  Unauthenticated, and live in production.
+
+The fix is one line per controller (`extends ApiController`), but it is not a
+safe unilateral change: any existing client that never sent a JWT — the
+label-printing workflow being the obvious candidate — would start getting 401s.
+Decide first whether those clients exist and how they authenticate. While
+deciding, note that `PublicationsApiController`'s `/api/v1/literature` route
+declares no flag at all, so it is public *by intent*; it just cannot be gated as
+written either.
+
+Related, found the same day and deliberately not fixed:
+`GET /api/v1/libraries/:id/books` answers 200 with a zero-byte `text/html` body
+instead of JSON (the JWT gate on it works correctly — absent/bad tokens are
+401/400). `BooksApiController::getList()` builds a `JsonModel` that never gets
+rendered; cause not investigated.
+
 ## Finish SchoenstattTable ACL providers (dormant 2020 WIP)
 
 `Schoenstatt\Model\SchoenstattTable` implements the BjyAuthorize resource and
@@ -48,8 +87,8 @@ that don't exist (no-ops today, confusing tomorrow):
 
 ## Phase 2: safety net
 
-- [x] HTTP smoke/characterization suite (38 tests at the time, **52 tests /
-  193 assertions today**) green against the time capsule; excluded:
+- [x] HTTP smoke/characterization suite (38 tests at the time, **67 tests
+  today**; 159 across all three suites) green against the time capsule; excluded:
   `/en/associations/do-work` (side effects), `/en/dictionary` (broken, see
   above). Run it with `php composer.phar smoke`, one process at a time — see
   "Local capsule: resource ceilings" below for why that matters.
@@ -717,8 +756,35 @@ Advisory debts consciously carried (documented in composer.json
   the authenticated `/sm/phpinfo` page — `config.platform` overrides real
   platform detection on the server too, so a wrong pin converts a resolution
   error into a runtime fatal.
-- `firebase/php-jwt` 6.11 — low-severity CVE-2025-45769; the fixed v7
-  requires PHP >= 8.0. Pay at rung 4.
+- [x] `firebase/php-jwt` 6.11 — **PAID 2026-08-03: upgraded to v7.1.0**
+  (CVE-2025-45769; the `config.policy` advisory-ignore block is gone from
+  composer.json, and `composer audit --locked` now reports no advisories at
+  all). `encode()`/`decode()` signatures are unchanged, so the six call sites
+  in `RestApi\Controller\ApiController` needed no rewrite. What did change is
+  **runtime and config-dependent**: v7.0.0 validates key length, so an HMAC
+  `cypherKey` shorter than the digest size — 32 bytes for HS256 — now throws on
+  every sign *and* verify. Consequences worked through:
+  - php-jwt raises `DomainException` for a short key **and** for a caller's
+    malformed token (`'not.a.jwt'` → "Malformed UTF-8 characters"), so the two
+    are indistinguishable at the catch site. `ApiController` therefore checks
+    its own key up front (`assertUsableCypherKey()`, HS\* only, message reports
+    byte counts and never key material) and leaves the library's exceptions
+    classified as before: client faults stay 400, a misconfigured key is a 500
+    plus an exception email.
+  - Coverage came with it — the JWT gate had none. `test/Smoke/ApiAuthSmokeTest`
+    signs tokens by hand (hash_hmac, so the smoke suite stays vendor-free) and
+    pins valid → 200, absent → 401, malformed/wrong-key/expired → 400;
+    `test/Integration/JwtRoundTripTest` pins the library rules including the
+    31-vs-32-byte boundary and asserts the *configured* key satisfies them.
+    Suites now: smoke 67, unit 82, integration 10 (159 total).
+  - Fixed in passing: `?token[]=x` reached `JWT::decode()`'s string parameter as
+    an array and raised an uncaught TypeError — an anonymous 500, and since
+    exception reporting landed, an exception email on demand. `findJwtToken()`
+    now returns `''` for a non-string parameter.
+  - **Deploy prerequisite**: production's `ApiRequest.jwtAuth.cypherKey` lives
+    in untracked server-side config and has never been length-checked. Verify
+    it is ≥ 32 bytes *before* deploying — see docs/DEPLOY.md. A short key does
+    not fail at boot; it breaks every authenticated API request.
 
 Removed dev nicety: bjy-profiler DB query profiling (DbAdapterServiceFactory
 now always returns a plain adapter). If query profiling is missed, pick a

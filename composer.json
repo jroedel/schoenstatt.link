@@ -40,7 +40,7 @@
         "cocur/slugify": "^3.1",
         "erusev/parsedown": "~1.7.4",
         "erusev/parsedown-extra": "^0.8.1",
-        "firebase/php-jwt": "^6.0",
+        "firebase/php-jwt": "^7.0",
         "spatie/opening-hours": "^2.0",
         "jmikola/geojson": "1.0",
         "scottconnerly/timezone": "^0.2.0",
@@ -97,13 +97,6 @@
         },
         "audit": {
             "abandoned": "report"
-        },
-        "policy": {
-            "advisories": {
-                "ignore-id": {
-                    "PKSA-y2cr-5h3j-g3ys": "php-jwt <7 weak-encryption advisory (CVE-2025-45769); v7 requires PHP >=8.0 — upgrade at the PHP 8 rung of the Phase 3 ladder. v6.11 does fix the critical CVE-2021-46743."
-                }
-            }
         },
         "allow-plugins": {}
     },
