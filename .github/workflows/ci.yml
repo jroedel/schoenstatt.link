@@ -3,7 +3,7 @@
 # lint: syntax-lints every application PHP file, submodules included.
 #
 # composer-install: a continuous rehearsal of deploy-day step 4
-# (BACKLOG.md "Production deploy checklist"): from a bare checkout, the
+# (docs/BACKLOG.md "Production deploy checklist"): from a bare checkout, the
 # committed composer.phar must install the locked dependency tree with
 # --no-dev on PHP 8.3, exactly as production will. This proves on every
 # push that the lock stays resolvable from nothing — the VCS forks
@@ -15,7 +15,7 @@
 # vendor autoload, no running app, no DB), so a bare runner suffices.
 #
 # Still local-only: PHPStan and the smoke suite (need the docker time
-# capsule with a production DB dump) — see BACKLOG.md.
+# capsule with a production DB dump) — see docs/BACKLOG.md.
 name: CI
 
 on:

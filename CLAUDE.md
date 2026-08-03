@@ -14,7 +14,7 @@ schoenstatt.link — a database application for Schoenstatt-related topics, buil
 - The `repositories` section pins several personal VCS forks (`jroedel/*`, `boesing/zfr-cors`, etc.). Each fork needs a decision: still necessary, upstreamed since, or replaceable.
 - `composer.json` says PHP `^7.3`; the local CLI is PHP 8.5. The constraint should move to a modern PHP target as the migration proceeds — but don't silently bump it; sequencing (deps first vs. PHP first) is a real decision to make with the user.
 - **Modernize incrementally and keep the app bootable at every step.** This is a live production site with no test suite. Establishing a safety net early (PHPUnit, PHPStan/Psalm, CI) is itself part of the state-of-the-art goal and should come before or alongside risky migrations.
-- Expect stale documentation: `README.md` is still the ZF2 skeleton boilerplate. Don't trust docs over code; update them as part of the work.
+- Don't trust docs over code; update them as part of the work. Prose documentation lives in `docs/` (`DEPLOY.md`, `exception-reporting.md`, `BACKLOG.md`, indexed by `docs/README.md`); `README.md` is the project entry point and `CLAUDE.md` holds the working conventions.
 - The `J*` and `SionModel` modules are the user's shared libraries — note that `SionModel` also exists as a composer package (recent commit "Update SionModel"); clarify with the user which copy is canonical before modernizing it.
 
 ## Identity
