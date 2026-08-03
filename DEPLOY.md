@@ -103,6 +103,86 @@ wget endpoints and `bash tools/smoke-prod.sh` locally.
   2 expunges within hours of the PHP 8.3 flip).
 - Still manual: a sign-in round trip with a real email.
 
+## Reading production exceptions
+
+Every exception that reaches `dispatch.error` or `render.error` is logged to
+`data/logs/exceptions_<YYYY-MM>.log` as it always was, and additionally
+**recorded** under `data/exceptions/<fingerprint>/` — one directory per
+distinct failure, not per occurrence:
+
+| file | what it is |
+| --- | --- |
+| `meta.json` | counters and notification bookkeeping |
+| `first.txt` | the first occurrence, in full — the original context |
+| `last.txt` | the most recent occurrence — is it still happening? |
+| `recent/1..3.txt` | the last three, so you can see whether it is always the same input |
+
+A "distinct failure" is keyed on the exception class chain, the matched
+**route name**, and the enclosing function of the root cause. Deliberately
+not the request URI: URI-keyed fingerprints would make every request to a
+variable URL look like a brand new bug. Not a line number either, so
+editing a file does not re-report bugs you never touched.
+
+**The first occurrence of each distinct failure is emailed** to
+`webmaster@schoenstatt.link`, once. After that it stays quiet until the
+count crosses 10, 100 or 1000 — a rare annoyance turning into an outage is
+worth hearing about. `BjyAuthorize\Exception\UnAuthorizedException` is on
+the never-mail list: an unauthenticated visitor touching a guarded route
+raises it through the very same event, and mailing that would bury every
+real failure. It is still recorded.
+
+```bash
+bash tools/fetch-exceptions.sh              # mirror + summary table
+less data/exceptions-prod/<fp>/first.txt    # the write-up
+
+bash tools/clear-exceptions.sh --yes <fp>   # fixed it? clear it
+bash tools/clear-exceptions.sh --yes        # clear everything
+bash tools/clear-exceptions.sh --yes --older-than 30
+```
+
+Both scripts use the shell account on port 222 (port 22 is the SFTP jail,
+no exec). The fetch is `rsync` **without** `--delete`, so the local mirror
+accumulates history even after the server side is cleared. Clearing a
+fingerprint re-arms its notification, so it doubles as "I fixed this, tell
+me if it comes back."
+
+Two columns in the summary table are worth knowing. `NOTIFIED` shows
+`FAILED` when the mail transport refused the send: the recorder marks a
+fingerprint notified *before* it attempts delivery, because laminas-mail
+hard-codes a 30 second connection timeout and a dead mail host would
+otherwise cost every subsequent visitor 30 seconds on an already-failed
+request. The consequence is that a send lost to an SMTP outage is not
+retried — that column is how you find out. A `.overflow` file appears if
+the 500-fingerprint ceiling ever forced the recorder to drop something.
+
+What is captured is deliberately conservative, because this data gets
+rsynced off the server and mailed: client IP truncated to /24, user **id**
+only (never the address), and request parameter *names* with every value
+replaced by a redaction marker carrying only its length. Enough to tell an
+empty field from a filled one without putting a password in an email. The
+`capture` block in `module/SionModel/config/module.config.php` documents
+the alternatives.
+
+Two caveats:
+
+- **A deploy must clear `data/config/`** for newly registered services to
+  be seen. The existing post-deploy hooks already do this twice; it is
+  called out because the symptom is confusing — `Module.php` picks up
+  changes immediately (it is a class file) while the merged service map
+  stays stale, so you get `Unable to resolve service ...` for a service
+  that is plainly registered in the config you are looking at.
+- **Failures before the container exists** — a broken merged config, a
+  module that will not load — are recorded but *cannot* be emailed: the
+  recipients live in the very configuration that failed to build. They land
+  in the store and in `data/logs/bootstrap-fatal.log`.
+
+PHP fatals are covered too. Memory exhaustion, a hit `max_execution_time`
+or a `TypeError` escaping every catch block never reach the MVC error
+events at all — the visitor gets a blank HTTP 200 and historically nothing
+was logged anywhere. `public/index.php` installs a shutdown handler that
+records and mails those like any other failure, attributed to the file and
+line where PHP actually died.
+
 ## Rollback
 
 `php8.0 phploy.phar --rollback` reverts the superproject files (SFTP, so
