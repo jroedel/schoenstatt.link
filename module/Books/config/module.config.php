@@ -1790,7 +1790,7 @@ return [
                     SchoenstattTable::class,
                     TranslationsTable::class,
                     ProblemService::class,
-                    //BooksMailer::class, @todo return this to the controller
+                    BooksMailer::class,
                     Model\PublicationsTable::class,
                 ],
                 'row_processor_function'                => 'processLibraryRow',

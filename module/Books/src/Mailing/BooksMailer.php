@@ -5,6 +5,8 @@ use SionModel\Filter\ToAscii;
 use SionModel\Mailing\Mailer;
 use Books\Model\LibraryTable;
 use Schoenstatt\Model\SchoenstattTable;
+use Symfony\Component\Mime\Address;
+use voku\Html2Text\Html2Text;
 
 class BooksMailer extends Mailer
 {
@@ -22,9 +24,9 @@ class BooksMailer extends Mailer
     */
     protected $schoenstattTable;
 
-    public function __construct($mailService, $translator, $config, $libraryTable, $schoenstattTable)
+    public function __construct($transport, $renderer, $translator, $config, $libraryTable, $schoenstattTable)
     {
-        parent::__construct($mailService, $translator, $config, $libraryTable);
+        parent::__construct($transport, $renderer, $translator, $config, $libraryTable);
         $this->libraryTable  = $libraryTable;
         $this->schoenstattTable = $schoenstattTable;
     }
@@ -135,15 +137,9 @@ class BooksMailer extends Mailer
             'contentParams' => ['<a href="https://twitter.com/SchoenstattData">@SchoenstattData</a>'],
         ];
 
-        $mailService = $this->getMailService();
         $asciiFilter = new ToAscii();
 
-//         $debugCount = 0;
         foreach ($borrowers as $personId => $object) {
-//             if ($debugCount > 0) {
-//                 break;
-//             }
-//             $debugCount++;
             $locale = isset($object['primaryLocale']) ? $object['primaryLocale'] : \Locale::getDefault();
             $salutation = (isset($object['title']) ?
                 $this->translator->translate($object['title'], 'Schoenstatt', $locale) . ' ' :
@@ -164,42 +160,33 @@ class BooksMailer extends Mailer
             $paragraphs['list']['checkouts'] = $object['checkouts'];
             $paragraphs['button']['urlArgs'][] = ['person_id' => $object['personId']]; //url person_id param
             $paragraphs['button']['urlArgs'][] = ['query' => ['token' => $trackingToken]];
-            $mailService->setTemplate($template, [
+            $html = self::inlineEmailStyles($this->renderTemplate($template, [
                 'locale'        => $locale,
                 'paragraphs'    => $paragraphs,
                 'title'         => $localizedSubject[$locale],
                 'shouldTranslateTitle' => false,
                 'textDomain'    => $textDomain,
                 'footer'        => $footerParagraph,
-            ]);
+            ]));
 
-            $message = $mailService->getMessage();
-            $message->setSubject($localizedSubject[$locale]);
-//             $message->setTo('webmaster@schoenstatt.link', isset($object['fullFriendlyName']) ?
-//                 $asciiFilter->filter($object['fullFriendlyName']) : null);
-            $message->setTo($object['email'], isset($object['fullFriendlyName']) ?
-                $asciiFilter->filter($object['fullFriendlyName']) : null);
+            $message = $this->createEmail()
+                ->subject($localizedSubject[$locale])
+                ->html($html)
+                ->text((new Html2Text($html))->getText());
             if (isset($replyEmail)) {
                 $message->addReplyTo($replyEmail);
             }
-            $body = $this::inlineEmailStyles($message->getBodyText());
-            $message->setBody($body);
-            $result = $mailService->send();
             $exception = null;
-            if (! $result->isValid()) {
-                if ($result->hasException()) {
-                    $exception = $result->getException();
-                } else {
-                    $exception = new \Exception($result->getMessage());
-                }
-                $borrowers[$personId]['mailingStatus'] = self::STATUS_ERROR;
-            } else {
+            try {
+                $message->to(new Address($object['email'], isset($object['fullFriendlyName']) ?
+                    $asciiFilter->filter($object['fullFriendlyName']) : ''));
+                $this->getTransport()->send($message);
                 $borrowers[$personId]['mailingStatus'] = self::STATUS_SUCCESSFULLY_SENT;
+            } catch (\Exception $exception) {
+                //a bad address or a refused delivery is reported and must not
+                //abort the notices still to be sent
+                $borrowers[$personId]['mailingStatus'] = self::STATUS_ERROR;
             }
-//             if (is_object($exception)) {
-//                 var_dump($exception->getMessage());
-//                 var_dump($exception->getTraceAsString());
-//             }
             //report email
             $this->reportMailing($message, 1, 3, $exception, $locale, $template, $trackingToken, $tags);
         }
