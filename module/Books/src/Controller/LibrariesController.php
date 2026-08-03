@@ -89,6 +89,9 @@ class LibrariesController extends SionController
         $params = $this->params()->fromQuery();
         $params['libraryId'] = $libraryId;
         $form = $this->services[SearchForm::class];
+        //the collection options are library-specific, so they can't be set when the
+        //form is built @see \Books\Service\SearchFormFactory
+        $form->get('collectionId')->setValueOptions($table->getCollectionValueOptions($libraryId));
         $form->setData($params);
         $books = null;
         $borrowers = [];
