@@ -19,16 +19,27 @@ CURL_OPTS=(--silent --show-error --compressed --max-time 45
 
 FAILURES=0
 BODY=$(mktemp -t smoke-prod-body-XXXXXX)
-trap 'rm -f "$BODY"' EXIT
+HDRS=$(mktemp -t smoke-prod-hdrs-XXXXXX)
+trap 'rm -f "$BODY" "$HDRS"' EXIT
 
-# fetch <url> [--follow] — body lands in $BODY; sets STATUS, REDIRECT, CTYPE.
+# fetch <url> [--follow] — body lands in $BODY, response headers in $HDRS;
+# sets STATUS, REDIRECT, CTYPE, HTTPVER. Fields are joined with the ASCII
+# unit separator: tab is IFS *whitespace*, so empty fields (e.g. no
+# redirect_url) would collapse and shift everything left.
+US=$'\x1f'
 fetch() {
     local url=$1 follow=() meta
     [ "${2:-}" = "--follow" ] && follow=(--location)
-    meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} -o "$BODY" \
-        -w '%{http_code}\t%{redirect_url}\t%{content_type}' "$url") \
-        || meta=$'000\t\t'
-    IFS=$'\t' read -r STATUS REDIRECT CTYPE <<<"$meta"
+    meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} -o "$BODY" -D "$HDRS" \
+        -w "%{http_code}${US}%{redirect_url}${US}%{content_type}${US}%{http_version}" "$url") \
+        || meta="000${US}${US}${US}"
+    IFS="$US" read -r STATUS REDIRECT CTYPE HTTPVER <<<"$meta"
+}
+
+# header <name> — value of <name> from the LAST response in $HDRS (--follow
+# accumulates one header block per hop), lowercase, CR stripped.
+header() {
+    sed -n "s/^$1: *//Ip" "$HDRS" | tr -d '\r' | tail -1 | tr '[:upper:]' '[:lower:]'
 }
 
 pass() { echo "  ok  $*"; }
@@ -57,6 +68,42 @@ if [ "$STATUS" = "200" ] && no_fatals \
     pass "/en/ renders the homepage"
 else
     fail "/en/ should render the homepage (got $STATUS)"
+fi
+
+# --- Transport/performance checks (same homepage response) ---
+
+# Compression is our .htaccess deflate config (Hetzner upgrades it to
+# brotli server-side), so a missing Content-Encoding is a misdeploy.
+ENCODING=$(header content-encoding)
+if [ "$ENCODING" = "br" ] || [ "$ENCODING" = "gzip" ]; then
+    pass "homepage is compressed ($ENCODING)"
+else
+    fail "homepage should be br/gzip compressed (got '${ENCODING:-none}')"
+fi
+
+# HTTP/2 is hoster-provided, not ours to fix — advisory only.
+if [[ "$BASE" == https://* ]] && [[ "${HTTPVER:-0}" != [23]* ]]; then
+    echo "WARN  homepage served over HTTP/${HTTPVER:-?}, expected HTTP/2 (hoster config?)" >&2
+fi
+
+# Static-asset caching comes straight from public/.htaccess — a regression
+# here means the deployed .htaccess is wrong or missing.
+fetch "$BASE/favicon-32.png"
+CACHE=$(header cache-control)
+if [ "$STATUS" = "200" ] && [[ "$CACHE" == *max-age=31536000* ]] \
+    && [[ "$CACHE" == *immutable* ]] && [[ "$CACHE" != *only-if-cached* ]]; then
+    pass "images cache for 1y immutable"
+else
+    fail "favicon-32.png should be 'max-age=31536000, public, immutable' (got $STATUS, '$CACHE')"
+fi
+
+fetch "$BASE/css/style.css"
+CACHE=$(header cache-control)
+if [ "$STATUS" = "200" ] && [[ "$CACHE" == *max-age=2628000* ]] \
+    && [[ "$CACHE" != *only-if-cached* ]]; then
+    pass "css caches for 1 month"
+else
+    fail "css/style.css should be 'max-age=2628000, public' (got $STATUS, '$CACHE')"
 fi
 
 fetch "$BASE/en/there-is-no-such-page-xyz"

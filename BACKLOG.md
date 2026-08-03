@@ -465,6 +465,19 @@ Current procedure lives in DEPLOY.md. Improvements queued, none urgent:
   Deployer (atomic release dirs + symlink switch would also kill the
   mid-deploy broken window this deploy suffered).
 
+## Content-Security-Policy header (queued 2026-08-03)
+
+The one response header that would meaningfully raise the security posture,
+deliberately left out of the 2026-08-03 `.htaccess` modernization: a CSP
+done casually breaks the site quietly (blocked inline scripts/styles fail
+client-side only). Prerequisite is an audit of every inline `<script>`,
+`<style>`, and `on*=` attribute across the `.phtml` templates — likely
+nonce- or hash-based rather than `'unsafe-inline'`. Roll out via
+`Content-Security-Policy-Report-Only` first and watch the violation
+reports before enforcing. Natural rung: alongside (or after) the asset
+pipeline work, since filename-versioned bundles also end the inline-script
+sprawl that makes CSP hard.
+
 ## Shared-library convergence plan (decided 2026-08-02)
 
 The shared submodule repos (laminas-sion-model, laminas-juser) have a second
