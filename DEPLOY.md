@@ -84,8 +84,11 @@ superproject-only deploy skips all of this.
 - `bash tools/smoke-prod.sh` (the last post-deploy hook, also runnable any
   time) covers everything scriptable: homepage, both 404 flavors, the
   sitemap, and a random sample of *cold* sitemap pages (the fatal-200
-  regression class — fixed URLs can't catch it). Non-zero exit on any
-  failure.
+  regression class — fixed URLs can't catch it). It also guards the
+  transport layer: response compression (br/gzip) and the static-asset
+  Cache-Control policies from the now-tracked `public/.htaccess` fail the
+  deploy on regression; HTTP/2 only WARNs (hoster-provided, not ours to
+  fix). Non-zero exit on any failure.
 - With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value — the
   hook reuses the clear-persistent-cache key), it also polls
   `/en/sm/cache-status` and WARNs — without failing — when the APCu
