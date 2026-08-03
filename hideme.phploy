@@ -1,4 +1,0 @@
-[production]
-    pass="YYYYYYYYYYYYYYYY"
-    post-deploy[] = "wget https://schoenstatt.link/en/sm/clear-persistent-cache?key=XXXXXXXXXXXXXXXXXXXX --spider --quiet"
-    post-deploy[] = "wget https://schoenstatt.link/en/associations/do-work?key=XXXXXXXXXXXXXXXXXXXXX --spider --quiet"
