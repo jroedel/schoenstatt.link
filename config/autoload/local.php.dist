@@ -92,15 +92,6 @@ return [
         'privKey' => 'xxxxxxxxxxxxxx',
         'pubKey' => 'xxxxxxxxxxxxxxx',
     ],
-    'acmailer_options' => [
-        // Default mail service
-        'default' => [
-
-            'smtp_options' => [
-                'connection_config' => $smtpOptions,
-            ],
-        ],
-    ],
     'smtp_options' => $smtpOptions,
     'session_config' => [
         'cookie_secure' => true,
