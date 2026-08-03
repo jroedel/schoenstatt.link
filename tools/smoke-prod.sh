@@ -102,6 +102,26 @@ for url in ${COLD_URLS[@]+"${COLD_URLS[@]}"}; do
     sleep 1
 done
 
+# APCu occupancy — advisory only (warns, never fails: a filling cache is a
+# capacity signal, not a broken deploy). Needs a sion_model api key; the
+# phploy hook passes it via the environment.
+if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
+    fetch "$BASE/en/sm/cache-status?key=$SMOKE_PROD_CACHE_KEY"
+    if [ "$STATUS" = "200" ] && grep -q '"apcuEnabled":true' "$BODY"; then
+        PERCENT=$(grep -o '"percentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
+        EXPUNGES=$(grep -o '"expunges":[0-9]*' "$BODY" | cut -d: -f2)
+        pass "APCu segment ${PERCENT:-?}% used, ${EXPUNGES:-?} expunge(s) since restart"
+        if awk "BEGIN { exit !(${PERCENT:-0} >= 80) }"; then
+            echo "WARN  APCu segment is ${PERCENT}% full — raise apc.shm_size" >&2
+        fi
+        if [ "${EXPUNGES:-0}" -gt 0 ]; then
+            echo "WARN  APCu expunged ${EXPUNGES} time(s) — the segment is too small" >&2
+        fi
+    else
+        echo "note  cache-status unavailable (status $STATUS) — skipping the APCu check"
+    fi
+fi
+
 echo
 if [ "$FAILURES" -gt 0 ]; then
     echo "$FAILURES smoke check(s) FAILED against $BASE" >&2

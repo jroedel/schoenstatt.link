@@ -43,6 +43,7 @@ return [
                 ['route' => 'sion-model/data-problems', 'roles' => ['sch_general_moderator']],
                 ['route' => 'sion-model/view-changes', 'roles' => ['sch_general_moderator', 'view_changes']],
                 ['route' => 'sion-model/clear-persistent-cache', 'roles' => ['user', 'guest', null]],
+                ['route' => 'sion-model/cache-status', 'roles' => ['user', 'guest', null]],
                 ['route' => 'sion-model/phpinfo', 'roles' => ['sch_administrator']],
                 ['route' => 'sion-model/auto-fix-data-problems', 'roles' => ['lib_administrator']],
 
