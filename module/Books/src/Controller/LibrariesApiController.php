@@ -1,12 +1,20 @@
 <?php
 namespace Books\Controller;
 
-use Laminas\Mvc\Controller\AbstractRestfulController;
 use Laminas\View\Model\JsonModel;
 use Books\Model\LibraryTable;
 use Laminas\Validator\Regex;
+use RestApi\Controller\ApiController;
 
-class LibrariesApiController extends AbstractRestfulController
+/**
+ * The routes served here declare 'isAuthorizationRequired' => true, and that
+ * flag is only honoured by RestApi\Controller\ApiController::checkAuthorization(),
+ * a dispatch listener the base class attaches to itself. Extending
+ * AbstractRestfulController directly — as this class did until 2026-08-03 —
+ * therefore served every library record to anonymous callers while the route
+ * config said otherwise. Do not change the parent class back.
+ */
+class LibrariesApiController extends ApiController
 {
     const LIBRARY_API_FIELDS = [
         'libraryId', 'name', 'description', 'requireCallNumbers', 'callNumberHelpText',

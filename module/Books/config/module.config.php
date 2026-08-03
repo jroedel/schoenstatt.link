@@ -448,6 +448,16 @@ return [
                             ],
                         ],
                         'may_terminate' => true,
+                        //NOTE (2026-08-03): 'finish-pending-labels' is UNREACHABLE. Part::match()
+                        //returns the parent match as soon as the path is consumed and the parent
+                        //may terminate (laminas-router Http/Part.php:154), so a Method-type child
+                        //here is never consulted: DELETE on this path runs pendingLabelsAction()
+                        //instead, and finishPendingLabelsAction() is dead code. Verified against
+                        //the capsule — a DELETE with a pending bookId changed no rows. Fixing it
+                        //means may_terminate => false plus a Method child per verb (and new
+                        //bjyauthorize guard entries for the renamed terminal routes); see
+                        //docs/BACKLOG.md before doing that, since the action writes through
+                        //updateEntity() with no acting user.
                         'child_routes' => [
                             'finish-pending-labels' => [
                                 'type'    => Method::class,
@@ -541,6 +551,11 @@ return [
                             'defaults' => [
                                 'action' => null,
                                 'controller' => Controller\PublicationsApiController::class,
+                                //public on purpose: a read-only bibliography for browser clients
+                                //(hence 'cors'). PublicationsApiController::PUBLICAITON_API_FIELDS
+                                //is the privacy boundary — anything not whitelisted there is
+                                //stripped before the response is built.
+                                'isAuthorizationRequired' => false,
                                 'cors' => true,
                             ],
                             'constraints' => [
