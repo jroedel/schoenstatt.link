@@ -7,12 +7,16 @@ info:
 servers:
   - url: 'https://schoenstatt.link/en/api/v1'
 paths:
-  /books:
+  '/libraries/{libraryId}/books':
     get:
       summary: List all books in a library
       operationId: listBooks
+      security:
+        - jwtBearer: []
       tags:
         - books
+      parameters:
+        - $ref: '#/components/parameters/libraryId'
       responses:
         '200':
           description: An array of books
@@ -35,6 +39,8 @@ paths:
     get:
       summary: Info for a specific library
       operationId: showLibraryById
+      security:
+        - jwtBearer: []
       tags:
         - libraries
       parameters:
@@ -102,10 +108,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  '/libraries/{libraryId}/pendingLabels':
+  '/libraries/{libraryId}/pending-labels':
     get:
       summary: Get books which have a newCallNumber value
-      operationId: libraries
+      operationId: listPendingLabels
+      security:
+        - jwtBearer: []
       tags:
         - books
       parameters:
@@ -125,7 +133,15 @@ paths:
                 $ref: '#/components/schemas/Error'
     delete:
       summary: Replace the callNumber with newCallNumber
-      operationId: libraries
+      description: >-
+        NOT CURRENTLY REACHABLE. The route that would dispatch this verb cannot
+        match (see the note in module/Books/config/module.config.php), so a
+        DELETE here runs the GET above and returns the pending-label list
+        without changing anything. Documented because it is the intended
+        contract, not because it works.
+      operationId: finishPendingLabels
+      security:
+        - jwtBearer: []
       tags:
         - books
       parameters:

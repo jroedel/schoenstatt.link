@@ -1,11 +1,18 @@
 <?php
 namespace Books\Controller;
 
-use Laminas\Mvc\Controller\AbstractRestfulController;
 use Laminas\View\Model\JsonModel;
 use Books\Model\PublicationsTable;
+use RestApi\Controller\ApiController;
 
-class PublicationsApiController extends AbstractRestfulController
+/**
+ * Extends ApiController so that 'isAuthorizationRequired' on this controller's
+ * routes means something — see the note on LibrariesApiController. The
+ * /api/v1/literature routes are deliberately public (see the module config), so
+ * this changes nothing about who may read them today; it makes the route config
+ * the authority on that, instead of the class hierarchy.
+ */
+class PublicationsApiController extends ApiController
 {
     const PUBLICAITON_API_FIELDS = [
         'publicationId', 'title', 'subtitle', 'authorsText', 'bookEdition',

@@ -32,6 +32,17 @@ Prints byte count only, never the key. If it is under 32, lengthen it *before*
 deploying — note that replacing the key invalidates every JWT already issued
 (they last six months), so API clients would have to sign in again.
 
+## Before the next deploy: two API endpoints start requiring a token
+
+The authorization-bypass fix (2026-08-03) makes `GET /api/v1/libraries/:id` and
+`GET /api/v1/libraries/:id/pending-labels` enforce the JWT their route config
+always asked for; until now they answered anyone. Any client that has been
+calling them without an `Authorization: Bearer` header will get 401 after this
+deploy — the label-printing workflow is the one to check. Tokens come from
+`POST /api/v1/login`. Nothing else changes: `/api/v1/literature`,
+`/api/v1/associations` and the public dictionary reads stay open, and
+`/api/v1/libraries/:id/books` was already gated.
+
 ## The deploy
 
 ```bash
