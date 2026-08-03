@@ -25,10 +25,13 @@ class BooksMailerFactory implements FactoryInterface
         /** @var SchoenstattTable $schTable */
         $schTable = $container->get(SchoenstattTable::class);
         $translator = $container->get('translator');
-        $mailService = $container->get('acmailer.mailservice.default');
+        //the shared application transport, built from `smtp_options` by
+        //SionModel\Service\MailTransportFactory
+        $transport = $container->get('SionModel\MailTransport');
+        $renderer = $container->get('ViewRenderer');
         $config = $container->get('Config');
 
-        $mailer = new BooksMailer($mailService, $translator, $config, $table, $schTable);
+        $mailer = new BooksMailer($transport, $renderer, $translator, $config, $table, $schTable);
         return $mailer;
     }
 }

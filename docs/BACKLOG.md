@@ -181,6 +181,9 @@ Each rung verified by the Phase 2 suite:
    in composer.json (3 left: SlmLocale, BjyAuthorize, chordpro-php).
    - [x] **PHPExcel → PhpSpreadsheet 5.9 landed 2026-08-03** — see the
      closed-out advisory-debt entry below for the verification story.
+   - [x] **SwiftMailer (and laminas-mail, and the AcMailer ghost) →
+     symfony/mailer landed 2026-08-03** — see "The mailer migration" under
+     rung 4 for the full story.
    - CORRECTION (2026-08-02, verified against packagist): two of these
      framings are wrong, and one is right for the wrong reason —
      symfony/mailer turns out to be *required* to reach PHP 8.4, because
@@ -370,6 +373,9 @@ Each rung verified by the Phase 2 suite:
    - *4b*: drop the bridge — which requires resolving **TwbBundle**, the only
      remaining module needing it — and consolidate mail onto
      **symfony/mailer**, which retires `laminas-mail`. Then 8.4.
+     (Bridge turned out to drop already at 4a; the mailer consolidation
+     landed 2026-08-03 — see below. What remains of 4b is the 8.4 bump
+     itself, gated on TwbBundle's `php ~8.1||~8.2||~8.3` constraint.)
 
    **Rung 4a: DONE 2026-08-03** (feat/php-83). The stack bump landed; the app
    declares `~8.3.0` and `config.platform` pins 8.3.33 / ICU 76.1 / APCu
@@ -402,8 +408,9 @@ Each rung verified by the Phase 2 suite:
      this rung. The Interop→Psr + `: mixed` sweep (~102 factories) stays
      queued as SM4 prep for whenever SM4 becomes reachable.
    - **laminas-zendframework-bridge is GONE already** (was planned for 4b):
-     with TwbBundle swapped, nothing required it. `laminas-mail` 2.25.1 is
-     now the main remaining 8.4 cap among laminas packages.
+     with TwbBundle swapped, nothing required it. `laminas-mail` 2.25.1 was
+     the main remaining 8.4 cap among laminas packages — retired 2026-08-03
+     by the symfony/mailer migration (below).
    - laminas-cache went to **3.14**, not 4.x (bjy 2.4.4 caps it). Instead of
      reshaping configs, `SionModel\Cache\LegacyCacheConfig::translate()`
      (unit-tested) accepts the old StorageFactory shape — production's
@@ -445,15 +452,27 @@ Each rung verified by the Phase 2 suite:
      deploy — `require.php` and the platform pin both say 8.3 now. Sequence
      it explicitly in DEPLOY.md alongside the phploy run.
 
-   **The mailer migration is load-bearing, not optional polish.** There are
-   currently *two* mail stacks: JUser sends the magic-link mail through
-   **SwiftMailer** (`SwiftMailerFactory`, `Service\Mailer`, `MailerFactory`)
-   while `SionModel\Mailing\Mailer` uses **laminas-mail**
-   (`Laminas\Mail\Message`, `AddressList`). symfony/mailer collapses both and
-   removes the laminas-mail 8.3 cap. Urgency note: SwiftMailer 6.3.0 lints
-   clean under PHP 8.5.8 (whole tree checked 2026-08-02), so unlike PHPExcel
-   it is not an immediate breakage — it is abandoned-since-2021 plus half of
-   a duplicated stack.
+   **The mailer migration: DONE 2026-08-03** (feat/symfony-mailer across all
+   three repos). Everything now sends through **symfony/mailer 7.4** via one
+   shared transport, `SionModel\MailTransport`
+   (`SionModel\Service\MailTransportFactory`, built from the top-level
+   `smtp_options` block, 30s socket timeout, Sendmail fallback when no SMTP
+   is configured). What it replaced was *two and a half* stacks: JUser's
+   magic-link mail through **SwiftMailer** (abandoned 2021), the exception
+   notifier through **laminas-mail** (abandoned; was the last 8.4 cap among
+   laminas packages — both packages removed from the lock), and — the half —
+   `SionModel\Mailing\Mailer`/`Books\BooksMailer`, which depended on
+   **AcMailer's `acmailer.mailservice.default`, a service that never existed
+   here** (the package was configured in mail.global.php but not installed;
+   BooksMailer had been commented out of `controller_services` with a
+   @todo). The book-notices path was rebuilt on the transport + the MVC
+   ViewRenderer (`Mailer::renderTemplate()`/`createEmail()`) and returned to
+   the controller; the app's mail identity (from/from_name/bcc) moved to the
+   `sion_model.mail` block in a rewritten mail.global.php; `acmailer_options`
+   purged from local.php.dist and docker/local.docker.php (production's
+   server-side local.php still carries the key — harmless, dead config).
+   'SionModel\ExceptionMailTransport' survives as an alias so a project can
+   still point exception mail elsewhere.
 
    **laminas-cache 2.9 → 4.x, sized 2026-08-02.** Smaller than feared. The
    item API (`getItem`/`setItem`/`getItems`/`removeItem`, `$success`,
