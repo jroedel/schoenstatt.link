@@ -32,7 +32,14 @@ That single phploy run does, in order:
       flushes the APCu storage adapter, i.e. `apcu_clear_cache()`: the
       whole web APCu segment. No process kills needed.
    4. wget `/en/associations/do-work?key=…` — post-deploy data
-      maintenance. Must stay LAST: it needs the fully-deployed site.
+      maintenance. Must stay last of the *mutating* hooks: it needs the
+      fully-deployed site. Only record-keeping and checks come after.
+   5. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
+      exactly what went live (`git tag -l 'deploy/*'` answers "what's
+      deployed?"). Never pushed.
+   6. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
+      scripted smoke checks (next section). A failure ends the deploy
+      loudly with a non-zero exit.
 
 ## Server facts worth remembering
 
@@ -50,10 +57,17 @@ That single phploy run does, in order:
 
 ## Smoke checks after deploying
 
-- `https://schoenstatt.link/en/` renders; sign-in round trip with a real email.
-- A couple of *cold* pages from the sitemap (the fatal-200 regression).
-- `/en/no-such-page` → the normal 404 page; `/api/no-such-thing` → JSON 404.
-- No `Notice:`/`Fatal error` text anywhere; errors belong in the logs now.
+- `bash tools/smoke-prod.sh` (post-deploy hook 6, also runnable any time)
+  covers everything scriptable: homepage, both 404 flavors, the sitemap,
+  and a random sample of *cold* sitemap pages (the fatal-200 regression
+  class — fixed URLs can't catch it). Non-zero exit on any failure.
+- With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value — the
+  hook reuses the clear-persistent-cache key), it also polls
+  `/en/sm/cache-status` and WARNs — without failing — when the APCu
+  segment is ≥80% full or has ever expunged. Until the production
+  `apc.shm_size` raise lands, expect this to be the early-warning signal
+  that the 32M default is saturating.
+- Still manual: a sign-in round trip with a real email.
 
 ## Rollback
 

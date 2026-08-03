@@ -1,15 +1,18 @@
-# CI for the modernization era.
+# CI for the modernization era. PHP 8.3 = production (flipped 2026-08-03).
 #
-# lint-php74: syntax-lints every application PHP file, submodules included.
+# lint: syntax-lints every application PHP file, submodules included.
 #
-# composer-install-php74: a continuous rehearsal of deploy-day step 4
+# composer-install: a continuous rehearsal of deploy-day step 4
 # (BACKLOG.md "Production deploy checklist"): from a bare checkout, the
 # committed composer.phar must install the locked dependency tree with
-# --no-dev on PHP 7.4, exactly as production will. This proves on every
-# push that the lock stays resolvable from nothing — the three VCS forks
+# --no-dev on PHP 8.3, exactly as production will. This proves on every
+# push that the lock stays resolvable from nothing — the VCS forks
 # (git clones, no API auth) still exist, the config.platform pins are
 # consistent, composer.json and the lock haven't drifted apart — and that
 # no non-ignored security advisory has appeared against locked versions.
+#
+# unit: the test/Unit suite. It requires classes under test directly (no
+# vendor autoload, no running app, no DB), so a bare runner suffices.
 #
 # Still local-only: PHPStan and the smoke suite (need the docker time
 # capsule with a production DB dump) — see BACKLOG.md.
@@ -21,17 +24,17 @@ on:
   pull_request:
 
 jobs:
-  lint-php74:
-    name: PHP 7.4 syntax lint
+  lint:
+    name: PHP 8.3 syntax lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Set up PHP 7.4
+      - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "7.4"
+          php-version: "8.3"
           coverage: none
       - name: php -l all application code
         run: |
@@ -44,17 +47,33 @@ jobs:
           done < <(find module config public/index.php test -name '*.php' -print0)
           exit "$FAILED"
 
-  composer-install-php74:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          tools: phpunit:9.6
+      - name: Run the unit suite
+        run: phpunit --testsuite unit
+
+  composer-install:
     name: composer install --no-dev (deploy rehearsal)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - name: Set up PHP 7.4
+      - name: Set up PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "7.4"
+          php-version: "8.3"
           coverage: none
       - name: composer.json and lock agree
         run: php composer.phar validate --no-check-publish
