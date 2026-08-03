@@ -105,10 +105,11 @@ Each rung verified by the Phase 2 suite:
    natural close-out once those three are dealt with at rung 3.
    Temporary pins to revisit at rung 3: laminas-form ~2.14.3,
    laminas-router ~3.3.0 (both lifted at rung 3b, see below).
-3. Replace abandoned packages (SwiftMailer → symfony/mailer, PHPExcel →
-   PhpSpreadsheet, BjyAuthorize → LM-Commons successor, …) and re-evaluate
-   each pinned personal VCS fork in composer.json (3 left: SlmLocale,
-   BjyAuthorize, chordpro-php).
+3. Replace abandoned packages (SwiftMailer → symfony/mailer, BjyAuthorize →
+   LM-Commons successor, …) and re-evaluate each pinned personal VCS fork
+   in composer.json (3 left: SlmLocale, BjyAuthorize, chordpro-php).
+   - [x] **PHPExcel → PhpSpreadsheet 5.9 landed 2026-08-03** — see the
+     closed-out advisory-debt entry below for the verification story.
    - CORRECTION (2026-08-02, verified against packagist): two of these
      framings are wrong, and one is right for the wrong reason —
      symfony/mailer turns out to be *required* to reach PHP 8.4, because
@@ -149,8 +150,9 @@ Each rung verified by the Phase 2 suite:
      (6f6259f) — abandoned since 2016, its 30 lines moved into
      `JUser::onBootstrap`. Removing zfc-datagrid also stranded the two
      "Export" links, which built a `rendererType=PHPExcel` query no PHP has
-     read since 2017; if export is wanted back it lands with the
-     PhpSpreadsheet migration below.
+     read since 2017. The PhpSpreadsheet migration has since landed
+     (2026-08-03) *without* reinstating export — if export is ever wanted
+     back it is a fresh feature on top of `Books\Service\SpreadsheetReader`.
    - [x] **ocramius/proxy-manager eliminated** 2026-08-02 (8f3d49a, with
      SionModel c648cf6/038557a and JUser 092c0a3). It existed only to back
      the ServiceManager's `lazy_services`, used as a construction-cost
@@ -651,9 +653,36 @@ HTTP 200 is a *symptom*, not a diagnosis.)
 Advisory debts consciously carried (documented in composer.json
 `config.policy`), to be paid at the rung named:
 
-- `phpoffice/phpexcel` — multiple XSS + one high XXE advisory. **Reassessed
-  2026-08-02: this is a hard PHP 8 blocker, not just an advisory debt, and
-  the feature is already silently dead on 8.3.** PHPExcel 1.8.2 does not
+- [x] `phpoffice/phpexcel` — **PAID 2026-08-03: migrated to
+  phpoffice/phpspreadsheet 5.9.0** (advisory ignore removed from
+  composer.json). Executed as decided below, with these outcomes:
+  - Reading extracted into `Books\Service\SpreadsheetReader` (injected via
+    the entity's `controller_services`), with the `getSheetByName()` null
+    guard and a hard contract that empty cells surface as `null`, never `''`
+    — protecting the `$foundAValue` empty-row skip.
+  - **Golden-master verified against all 17 historical production imports**
+    (copied off the server into gitignored `data/import/`): each file dumped
+    through PHPExcel 1.8.1 on a one-off PHP 7.4 container, then through the
+    new reader on the 8.3 capsule — 2.59M cells identical, 126k cells in the
+    predicted numeric→formatted-string class (all consumers go through
+    `is_numeric` + `(int)`), **zero real diffs**. One benign structural
+    difference: PhpSpreadsheet's `getHighestDataRow()` excludes
+    formatting-residue rows PHPExcel counted (544 all-null tail rows in the
+    2019-09-26 file) — the old code skipped those rows one by one anyway.
+  - Contract pinned by `test/Integration/SpreadsheetReaderTest.php` in a new
+    capsule-only `integration` phpunit suite (`php composer.phar
+    integration`) — the unit suite stays vendor-free by design.
+  - The ext-pin list below was wrong by one: PhpSpreadsheet also requires
+    **ext-filter**, so eight pins landed, all verified on production 8.3.32
+    phpinfo first (beware: the phpinfo-to-PDF export renders "fi" as the
+    ﬁ ligature, so ASCII greps for fileinfo/filter come up empty).
+  - Still open (deliberately out of scope): the import form takes a
+    hand-typed server path — the 2021 Windows-desktop-path failure. The
+    real fix is accepting an upload; separate follow-up.
+  Original assessment for the record: multiple XSS + one high XXE advisory.
+  **Reassessed 2026-08-02: this is a hard PHP 8 blocker, not just an
+  advisory debt, and the feature is already silently dead on 8.3.**
+  PHPExcel 1.8.2 does not
   merely deprecate under PHP 8 — it fails to *parse*
   (`Array and string offset access syntax with curly braces is no longer
   supported`, Shared/String.php:526, removed in 8.0). The smoke suite is
