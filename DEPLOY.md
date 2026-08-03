@@ -24,7 +24,10 @@ The phploy run does, in order:
 2. `purge[] = "data/config/"` — empties the merged-config/module-map cache
    (production runs with config caching on; this is why config changes
    take effect).
-3. `post-deploy[]` hooks — all HTTP or local now, no remote exec:
+3. `post-deploy[]` hooks — all HTTP or local now, no remote exec
+   (`phploy.ini.dist` is the committed template: `config.sh` copies it to
+   the gitignored `phploy.ini`, where the TODOs get real values; the
+   retired remote-exec hooks live there commented, for reference):
    1. wget `/sm/clear-persistent-cache?key=…` — SionModel's endpoint
       flushes the APCu storage adapter, i.e. `apcu_clear_cache()`: the
       whole web APCu segment. No process kills needed.
@@ -48,10 +51,11 @@ superproject-only deploy skips all of this.
   <user@host> <port>` does rsync `--delete` with a clean-tree guard;
   otherwise upload a tarball over SFTP and extract it in your session.
 - **composer.lock changed**: in the app dir, `php composer.phar install
-  --no-dev`.
-- **After either of the above**: `rm -rf data/config/*` again — a visitor
-  may have re-cached the merged config between phploy's purge and your
-  manual steps.
+  --no-dev --no-interaction --optimize-autoloader`.
+- **After either of the above**: clear the config cache again —
+  `rm -f data/config/module-*-cache.*.php` in the app dir — because a
+  visitor may have re-cached the merged config between phploy's purge and
+  your manual steps.
 - Then re-run what fired too early: the two wget endpoints and
   `bash tools/smoke-prod.sh` locally. (phploy's hooks run right after the
   file sync, so on lock- or submodule-changing deploys expect the in-run
@@ -65,8 +69,10 @@ superproject-only deploy skips all of this.
   port 222 was **revoked 2026-08-03**; phploy connects over 22, SFTP only.
   Server commands go through your own separate SSH session.
 - phploy needs `php8.0` locally (newer CLIs lack mbstring).
-- `phploy.ini` + `.phploy` hold credentials (from `config.sh`) — never
-  committed; the hooks above live in `phploy.ini` under `[production]`.
+- `phploy.ini` + `.phploy` hold credentials — never committed. `config.sh`
+  seeds them from the committed templates (`phploy.ini.dist`,
+  `hideme.phploy`); the hooks above live in `phploy.ini` under
+  `[production]`.
 - Web PHP is FastCGI with a per-account php.ini at
   `/home/httpd/php83-ini/ourlink/php.ini` (per PHP version: the 7.4-era
   file was under `php74-ini/`). php.ini changes are the ONE case that
