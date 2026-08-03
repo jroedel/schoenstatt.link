@@ -42,6 +42,40 @@ schoenstatt.link — a database application for Schoenstatt-related topics, buil
 - Never merge, never push to the main branch, never force-push, and never delete branches or tags. If asked, refuse and give the user the commands to run.
 - Do not add a `Co-Authored-By` trailer to commits.
 
+### Submodule workflow (SionModel, JUser, JTranslate)
+
+Each is its own GitHub repo (`jroedel/laminas-{sion-model,juser,jtranslate}`).
+Their integration branch is **`modernization`** — never their GitHub default
+branch, which is stale (SionModel's is `1.0.x`). Locally the submodules stay
+checked out **on** `modernization` (a real branch, not detached HEAD), which
+is why plain `git submodule update` is wrong here: it detaches. A change that
+spans repos ships as one PR per repo, in this order every time:
+
+1. **Branch**: same feature-branch name in every affected repo — submodules
+   off `modernization`, superproject off `master`.
+2. **Submodules first**: commit, push, and open their PRs with an explicit
+   `gh pr create --base modernization`. Omitting `--base` targets the stale
+   default branch and reports phantom conflicts.
+3. **Superproject PR** (base `master`) carries the code changes *plus* the
+   submodule pointer bumps. At open time the pointers reference the pushed
+   feature-branch heads — fine, but say "merge the submodule PRs first" in
+   the body.
+4. **After the user merges the submodule PRs**: `git fetch` in each
+   submodule, fast-forward its local `modernization`
+   (`git checkout modernization && git merge --ff-only origin/modernization`),
+   and commit the pointer bumps to the superproject feature branch — the
+   final pointers pin the **merge commits on `modernization`**, not the
+   feature-branch heads (precedent: `b0d763b`, `e4318e8`).
+5. **User merges the superproject PR.** Then sync: superproject
+   `git checkout master && git pull --ff-only`; submodules need nothing if
+   step 4 was done (they already sit on the pinned tips).
+
+Only commit a submodule pointer bump whose commit is already pushed to the
+submodule's remote — an unpushed pointer breaks everyone else's
+`composer install`/checkout. CI (`gh run list`, not `gh pr checks` — see
+memory) runs on the superproject only; submodule verification is the capsule
+suites run from the superproject working tree.
+
 ## Production environment (verified 2026-08-01 via SSH)
 
 - Web-served PHP: **7.4.33** (probe fetched over HTTPS; CLI matches). This is the baseline the Docker time capsule must match.
