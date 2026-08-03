@@ -3,7 +3,6 @@ namespace Books\Service;
 
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
-use Books\Model\LibraryTable;
 use Books\Form\SearchForm;
 
 /**
@@ -14,16 +13,16 @@ class SearchFormFactory implements FactoryInterface
     /**
      * Create an object
      *
+     * The 'collectionId' value options are deliberately left empty here. They are
+     * library-specific, and this form is built when the controller is constructed,
+     * before a route match is available. The consuming action is responsible for
+     * populating them once it knows which library is being viewed.
+     * @see \Books\Controller\LibrariesController::showAction()
+     *
      * @inheritdoc
      */
     public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
     {
-        /** @var LibraryTable $table **/
-        $table = $container->get(LibraryTable::class);
-
-        $form = new SearchForm();
-        $collections = $table->getCollectionValueOptions();
-        $form->get('collectionId')->setValueOptions($collections);
-        return $form;
+        return new SearchForm();
     }
 }

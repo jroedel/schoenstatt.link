@@ -7,8 +7,8 @@ namespace SchoenstattTest\Smoke;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Books module: publications, blog, music, timeline and the members-only
- * text, library and borrower areas.
+ * Books module: publications, blog, music, timeline, the library show pages
+ * and the members-only text, library and borrower areas.
  *
  * Not covered (see the smoke suite backlog):
  *  - /en/dictionary returns HTTP 404 on the baseline. Its route declares a
@@ -54,6 +54,58 @@ class BooksSmokeTest extends SmokeTestCase
         $response = $this->assertRendersOk('/en/timeline');
 
         $this->assertStringContainsString('Kentenich Timeline', $response['body']);
+    }
+
+    /**
+     * Regression: every LibrariesController action was a hard 500 because
+     * SearchFormFactory asked LibraryTable for library-specific collection
+     * options while building the controller, before any route match existed.
+     * Broken since 2017 (156c2f4 dropped the route-match priming of
+     * LibraryTable::setLibraryId()); the options now come from the action.
+     */
+    public function testGuestVisibleLibraryRenders(): void
+    {
+        $response = $this->assertRendersOk('/en/libraries/1');
+
+        // The show page lists the library's collections as filter links.
+        $this->assertMatchesRegularExpression('/collectionId=\d+/', $response['body']);
+    }
+
+    /**
+     * The other half of that regression: the collectionId element is a Select,
+     * so its value options are what let the InArray validator accept a real
+     * collection. With the options missing the form silently failed validation
+     * and the filter returned the unfiltered page instead of book results.
+     */
+    public function testLibraryCollectionFilterReturnsBooks(): void
+    {
+        // Take a collection id off the page itself rather than hard-coding one,
+        // so this survives a different dataset.
+        $overview = $this->assertRendersOk('/en/libraries/1');
+        $this->assertSame(
+            1,
+            preg_match('/collectionId=(\d+)/', $overview['body'], $matches),
+            'Expected the library show page to link at least one collection'
+        );
+        $collectionId = $matches[1];
+
+        $this->assertStringNotContainsString('href="/en/books/', $overview['body']);
+
+        $filtered = $this->assertRendersOk('/en/libraries/1?collectionId=' . $collectionId);
+        $this->assertMatchesRegularExpression(
+            '#href="/en/books/\d+#',
+            $filtered['body'],
+            "Filtering library 1 by collection $collectionId should list books"
+        );
+    }
+
+    /** A library whose ViewRole is not 'guest' bounces anonymous visitors to the index. */
+    public function testMemberOnlyLibraryBouncesGuests(): void
+    {
+        $response = $this->get('/en/libraries/5');
+
+        $this->assertSame(302, $response['status']);
+        $this->assertStringContainsString('/en/libraries', $response['redirect']);
     }
 
     #[DataProvider('protectedPathProvider')]
