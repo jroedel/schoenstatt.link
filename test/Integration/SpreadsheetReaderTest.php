@@ -12,7 +12,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
  * Contract test for the PHPExcel -> PhpSpreadsheet migration of the library
- * import (BACKLOG "phpoffice/phpexcel" advisory debt). Pins the two legacy
+ * import (docs/BACKLOG.md "phpoffice/phpexcel" advisory debt). Pins the two legacy
  * semantics importSpreadsheetFile() depends on, verified 2026-08-03 by a
  * golden-master diff of all 17 historical production imports (2.59M cells
  * identical, only numeric-to-string formatting differences):

@@ -1,118 +1,91 @@
-ZendSkeletonApplication
-=======================
+schoenstatt.link
+================
 
-Introduction
-------------
-This is a simple, skeleton application using the ZF2 MVC layer and module
-systems. This application is meant to be used as a starting place for those
-looking to get their feet wet with ZF2.
+A database application for Schoenstatt-related topics — shrines, the movement,
+literature and libraries, music, a Bible/daily-heritage section and a blog —
+served in four locales. Built on the Laminas MVC layer (formerly Zend Framework
+3), running PHP 8.3 against MariaDB 10.11.
 
-Installation using Composer
----------------------------
+Live at <https://schoenstatt.link>.
 
-The easiest way to create a new ZF2 project is to use [Composer](https://getcomposer.org/). If you don't have it already installed, then please install as per the [documentation](https://getcomposer.org/doc/00-intro.md).
+Getting started
+---------------
 
+The whole environment is a Docker "time capsule" that matches production. From a
+fresh clone:
 
-Create your new ZF2 project:
+```bash
+git submodule update --init --recursive   # SionModel, JUser and JTranslate
+./config.sh                               # seeds .dist configs, runs composer install
+bash tools/get-phars.sh                   # pinned phpunit + phpstan
+docker compose up -d
+```
 
-    composer create-project -n -sdev laminas/skeleton-application path/to/install
+Then:
 
+| what | where |
+| --- | --- |
+| The app | <http://localhost:8080> (redirects to `/en/`) |
+| Outgoing mail (Mailpit) | <http://localhost:8025> |
+| MariaDB | host port 33306 — `schoenstatt`/`schoenstatt`, database `ourlink_db1` |
 
+The database is imported on first boot from a production dump in
+`database/dumps/` (gitignored — you need to place one there). To reimport from
+scratch: `docker compose down -v && docker compose up -d`.
 
-### Installation using a tarball with a local Composer
+**The PHP version is switchable.** Set `PHP_VERSION` and `APCU_VERSION` in
+`.env` and rebuild (`docker compose build && docker compose up -d`). Check which
+one is live with `docker compose exec -T app php -v` before drawing conclusions
+from a test run.
 
-If you don't have composer installed globally then another way to create a new ZF2 project is to download the tarball and install it:
+Verifying a change
+------------------
 
-1. Download the [tarball](https://github.com/zendframework/ZendSkeletonApplication/tarball/master), extract it and then install the dependencies with a locally installed Composer:
+```bash
+php composer.phar unit          # no HTTP, no app, no vendor/ — safe to run freely
+php composer.phar smoke         # HTTP characterization tests against the running capsule
+php composer.phar integration   # exercises real vendor/ libraries
+php composer.phar test          # all of the above
 
-        cd my/project/dir
-        curl -#L https://github.com/zendframework/ZendSkeletonApplication/tarball/master | tar xz --strip-components=1
-    
+php composer.phar cs-check      # phpcs, PSR-12 based
+php -l path/to/File.php         # syntax check anything you touched
+```
 
-2. Download composer into your project directory and install the dependencies:
+All of these shell into the capsule: the host PHP typically lacks the extensions
+PHPUnit and phpcs need. Run the **smoke suite one process at a time** — never
+fan it out in parallel.
 
-        curl -s https://getcomposer.org/installer | php
-        php composer.phar install
+Layout
+------
 
-If you don't have access to curl, then install Composer into your project as per the [documentation](https://getcomposer.org/doc/00-intro.md).
+Application modules live in `module/` and are PSR-4 autoloaded, with class
+namespace and file path matching exactly:
 
-Web server setup
-----------------
+| module | what it is |
+| --- | --- |
+| `Application` | site chrome, routing, home page, CORS, GDPR strategy |
+| `Schoenstatt` | shrines, the movement, associations, persons |
+| `Books` | literature, libraries, publications, music, dictionary |
+| `Bible` | Bible and daily-heritage texts |
+| `RestApi` | the JSON API and its JWT auth |
+| `SionModel`, `JUser`, `JTranslate` | shared libraries, **git submodules** — changes here affect other sites, so commit in the submodule first, then move the pointer |
 
-### PHP CLI server
+Each follows the Laminas convention: `config/module.config.php`, `src/`, and
+`view/` for `.phtml` templates. Enabled modules are listed in
+`config/modules.config.php`; environment-specific configuration lives in
+`config/autoload/`, where `*.global.php` is committed and `*.local.php` is
+machine-specific and seeded from the `.dist` files by `config.sh`.
 
-The simplest way to get started if you are using PHP 5.4 or above is to start the internal PHP cli-server in the root
-directory:
+Documentation
+-------------
 
-    php -S 0.0.0.0:8080 -t public/ public/index.php
+- **[docs/DEPLOY.md](docs/DEPLOY.md)** — how a deploy runs, server facts, rollback.
+- **[docs/exception-reporting.md](docs/exception-reporting.md)** — how production
+  failures reach your inbox, and the tooling for reading and clearing them.
+- **[docs/BACKLOG.md](docs/BACKLOG.md)** — the modernization backlog and the
+  reasoning behind its sequencing.
+- **[CLAUDE.md](CLAUDE.md)** — architecture notes, environment details and
+  working conventions, kept deliberately current.
 
-This will start the cli-server on port 8080, and bind it to all network
-interfaces.
-
-**Note:** The built-in CLI server is *for development only*.
-
-### Vagrant server
-
-This project supports a basic [Vagrant](http://docs.vagrantup.com/v2/getting-started/index.html) configuration with an inline shell provisioner to run the Skeleton Application in a [VirtualBox](https://www.virtualbox.org/wiki/Downloads).
-
-1. Run vagrant up command
-
-    vagrant up
-
-2. Visit [http://localhost:8085](http://localhost:8085) in your browser
-
-Look in [Vagrantfile](Vagrantfile) for configuration details.
-
-### Apache setup
-
-To setup apache, setup a virtual host to point to the public/ directory of the
-project and you should be ready to go! It should look something like below:
-
-    <VirtualHost *:80>
-        ServerName zf2-app.localhost
-        DocumentRoot /path/to/zf2-app/public
-        <Directory /path/to/zf2-app/public>
-            DirectoryIndex index.php
-            AllowOverride All
-            Order allow,deny
-            Allow from all
-            <IfModule mod_authz_core.c>
-            Require all granted
-            </IfModule>
-        </Directory>
-    </VirtualHost>
-
-### Nginx setup
-
-To setup nginx, open your `/path/to/nginx/nginx.conf` and add an
-[include directive](http://nginx.org/en/docs/ngx_core_module.html#include) below
-into `http` block if it does not already exist:
-
-    http {
-        # ...
-        include sites-enabled/*.conf;
-    }
-
-
-Create a virtual host configuration file for your project under `/path/to/nginx/sites-enabled/zf2-app.localhost.conf`
-it should look something like below:
-
-    server {
-        listen       80;
-        server_name  zf2-app.localhost;
-        root         /path/to/zf2-app/public;
-
-        location / {
-            index index.php;
-            try_files $uri $uri/ @php;
-        }
-
-        location @php {
-            # Pass the PHP requests to FastCGI server (php-fpm) on 127.0.0.1:9000
-            fastcgi_pass   127.0.0.1:9000;
-            fastcgi_param  SCRIPT_FILENAME /path/to/zf2-app/public/index.php;
-            include fastcgi_params;
-        }
-    }
-
-Restart the nginx, now you should be ready to go!
+Deployment is phploy over SFTP straight to production; read
+[docs/DEPLOY.md](docs/DEPLOY.md) before running it.
