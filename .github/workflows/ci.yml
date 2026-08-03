@@ -59,9 +59,10 @@ jobs:
         with:
           php-version: "8.3"
           coverage: none
-          tools: phpunit:12
+      - name: Fetch the pinned phpunit phar
+        run: bash tools/get-phars.sh phpunit
       - name: Run the unit suite
-        run: phpunit --testsuite unit
+        run: php tools/phpunit.phar --testsuite unit
 
   composer-install:
     name: composer install --no-dev (deploy rehearsal)
