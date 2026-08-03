@@ -3,44 +3,76 @@
 Working items for the state-of-the-art overhaul (see CLAUDE.md, "Modernization
 mandate"). Ordered roughly by intended sequence, not priority.
 
-## Unauthenticated API routes (found 2026-08-03) — needs a product decision
+## Unauthenticated API routes — **FIXED 2026-08-03**, not yet deployed
 
-Two API controllers extend `Laminas\Mvc\Controller\AbstractRestfulController`
-directly instead of `RestApi\Controller\ApiController`:
-`Books\Controller\LibrariesApiController` and `PublicationsApiController`. Only
-`ApiController` attaches `checkAuthorization()` to the dispatch event, so the
-`'isAuthorizationRequired' => true` in those routes' defaults is read by
+`Books\Controller\LibrariesApiController` and `PublicationsApiController`
+extended `Laminas\Mvc\Controller\AbstractRestfulController` directly instead of
+`RestApi\Controller\ApiController`. Only `ApiController` attaches
+`checkAuthorization()` to the dispatch event, so the
+`'isAuthorizationRequired' => true` in those routes' defaults was read by
 **nothing**. BjyAuthorize whitelists the `api-v1/*` routes for `guest`
 deliberately — the JWT layer was meant to be the gate — so no authentication
-remains at all.
+remained at all.
 
-Verified against the capsule 2026-08-03 (no `Authorization` header, HTTP 200 with
-full payload):
+Exposed (verified against the capsule with no `Authorization` header, HTTP 200
+with full payload; both now 401):
 
-- `GET /api/v1/libraries` — `getList()`, which unlike `get($id)` does *not* run
-  `prepLibraryObject()`, so it returns every column rather than the
-  `LIBRARY_API_FIELDS` whitelist.
-- `GET /api/v1/libraries/:id` — filtered, but the whitelist itself includes
-  `adminNotes` and `contactEmail`.
-- `GET /api/v1/libraries/:id/pending-labels` — book records.
-- `DELETE /api/v1/libraries/:id/pending-labels?bookIds=1|2|3` —
-  `finishPendingLabelsAction()`, **a write**: it copies `newCallNumber` into
-  `callNumber` and nulls the pending value for arbitrary books in any library.
-  Unauthenticated, and live in production.
+- `GET /api/v1/libraries/:id` — field-filtered, but `LIBRARY_API_FIELDS` itself
+  includes `adminNotes` and `contactEmail`.
+- `GET /api/v1/libraries/:id/pending-labels` — 84 KB of book records (titles,
+  authors, call numbers) for library 3 alone.
 
-The fix is one line per controller (`extends ApiController`), but it is not a
-safe unilateral change: any existing client that never sent a JWT — the
-label-printing workflow being the obvious candidate — would start getting 401s.
-Decide first whether those clients exist and how they authenticate. While
-deciding, note that `PublicationsApiController`'s `/api/v1/literature` route
-declares no flag at all, so it is public *by intent*; it just cannot be gated as
-written either.
+Both were reads. Two claims in the first write-up of this finding were wrong and
+are corrected here:
 
-Related, found the same day and deliberately not fixed:
-`GET /api/v1/libraries/:id/books` answers 200 with a zero-byte `text/html` body
-instead of JSON (the JWT gate on it works correctly — absent/bad tokens are
-401/400). `BooksApiController::getList()` builds a `JsonModel` that never gets
-rendered; cause not investigated.
+- `GET /api/v1/libraries` (the unfiltered `getList()`) is **404** — the route is
+  `/libraries/:library_id` with the segment required, so `getList()` is
+  unreachable for libraries. Nothing ever served every column.
+- `DELETE /api/v1/libraries/:id/pending-labels` is **not a reachable write** —
+  see the next item. A DELETE with a genuinely pending `bookId` changed no rows.
+
+Fix: both controllers now extend `ApiController`, which makes the route config
+the authority on who needs a token instead of the class hierarchy.
+`/api/v1/literature` stays public and now says so explicitly
+(`'isAuthorizationRequired' => false`), with the field whitelist as its privacy
+boundary. Covered by `test/Smoke/ApiAuthSmokeTest` (401 without a token, 200
+with, literature still open) and by `test/Integration/ApiAuthorizationFlagTest`,
+which walks every module's route tree and fails if any route requiring
+authorization is served by a controller that cannot enforce it.
+
+⚠️ **Deploy note:** any existing client of those two endpoints that never sent a
+JWT will start getting 401s. Tokens come from `POST /api/v1/login`; the
+label-printing workflow is the candidate to check first.
+
+## `finish-pending-labels` is an unreachable route (found 2026-08-03)
+
+`Laminas\Router\Http\Part::match()` returns the parent's match as soon as the
+path is consumed and the parent `may_terminate`s
+(`vendor/laminas/laminas-router/src/Http/Part.php:154`) — child routes are only
+consulted when path remains. `api-v1/pending-labels` may terminate and its only
+child is a `Method` route (verb `delete`) matching the empty remainder, so that
+child is never reached: a DELETE dispatches the parent's
+`'action' => 'pendingLabels'` default instead, returning the read listing, and
+`LibrariesApiController::finishPendingLabelsAction()` is dead code. The label
+workflow's "commit these call numbers" step therefore cannot have worked since it
+was written. The same shape appears at `api-v1/libraries/books/patch-list`, but
+there the parent's `'action'` is `null`, so `AbstractRestfulController` still
+dispatches `patchList()` by HTTP verb and nothing is lost.
+
+Fixing it means `may_terminate => false` on `pending-labels` plus one `Method`
+child per verb, and bjyauthorize guard entries for the renamed terminal routes
+(default-deny turns a missing entry into a 403). Before enabling it, check what
+`SionTable::updateEntity()` records as the acting user: a JWT request has no
+session identity, which is the sort of half-finished 2020 WIP that would write
+change-log rows with a null actor. `public/api/v1.yaml` documents the endpoint
+with a "NOT CURRENTLY REACHABLE" description until then.
+
+## `GET /api/v1/libraries/:id/books` renders an empty body (found 2026-08-03)
+
+Answers 200 with a zero-byte `text/html` body instead of JSON. The JWT gate on
+it works correctly (absent/bad tokens are 401/400), and it is the one gated route
+whose payload no test asserts for that reason. `BooksApiController::getList()`
+builds a `JsonModel` that never gets rendered; cause not investigated.
 
 ## Finish SchoenstattTable ACL providers (dormant 2020 WIP)
 
@@ -87,8 +119,8 @@ that don't exist (no-ops today, confusing tomorrow):
 
 ## Phase 2: safety net
 
-- [x] HTTP smoke/characterization suite (38 tests at the time, **67 tests
-  today**; 159 across all three suites) green against the time capsule; excluded:
+- [x] HTTP smoke/characterization suite (38 tests at the time, **73 tests
+  today**; 167 across all three suites) green against the time capsule; excluded:
   `/en/associations/do-work` (side effects), `/en/dictionary` (broken, see
   above). Run it with `php composer.phar smoke`, one process at a time — see
   "Local capsule: resource ceilings" below for why that matters.
@@ -776,7 +808,8 @@ Advisory debts consciously carried (documented in composer.json
     pins valid → 200, absent → 401, malformed/wrong-key/expired → 400;
     `test/Integration/JwtRoundTripTest` pins the library rules including the
     31-vs-32-byte boundary and asserts the *configured* key satisfies them.
-    Suites now: smoke 67, unit 82, integration 10 (159 total).
+    Suites now: smoke 73, unit 82, integration 12 (167 total, after the
+    authorization-bypass fix above added to both).
   - Fixed in passing: `?token[]=x` reached `JWT::decode()`'s string parameter as
     an array and raised an uncaught TypeError — an anonymous 500, and since
     exception reporting landed, an exception email on demand. `findJwtToken()`
