@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * Books module: publications, blog, music, timeline and the members-only
  * text, library and borrower areas.
@@ -54,16 +56,14 @@ class BooksSmokeTest extends SmokeTestCase
         $this->assertStringContainsString('Kentenich Timeline', $response['body']);
     }
 
-    /**
-     * @dataProvider protectedPathProvider
-     */
+    #[DataProvider('protectedPathProvider')]
     public function testProtectedPathRequiresLogin(string $path): void
     {
         $this->assertRequiresLogin($path);
     }
 
     /** @return array<string, array{0: string}> */
-    public function protectedPathProvider(): array
+    public static function protectedPathProvider(): array
     {
         return [
             'texts'     => ['/en/texts'],
