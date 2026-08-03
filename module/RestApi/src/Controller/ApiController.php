@@ -1,7 +1,7 @@
 <?php
 
 // Absorbed from multidots/zf3-rest-api (MIT license) after the upstream repo
-// was deleted from GitHub; JWT calls updated for firebase/php-jwt 6.x.
+// was deleted from GitHub; JWT calls updated for firebase/php-jwt 7.x.
 
 namespace RestApi\Controller;
 
@@ -105,7 +105,11 @@ class ApiController extends AbstractRestfulController
         if ($request->isPost()) {
             $jwtToken = $request->getPost('token');
         }
-        return $jwtToken;
+        // ?token[]=x arrives as an array and would reach JWT::decode()'s string
+        // parameter, raising an uncaught TypeError: a 500 — and, since exception
+        // reporting landed, an exception email — that any anonymous caller can
+        // trigger at will. Treat it as no token at all.
+        return is_string($jwtToken) ? $jwtToken : '';
     }
 
     /**
@@ -121,8 +125,50 @@ class ApiController extends AbstractRestfulController
         $config = $this->getEvent()->getParam('config', false);
         $cypherKey = $config['ApiRequest']['jwtAuth']['cypherKey'];
         $tokenAlgorithm = $config['ApiRequest']['jwtAuth']['tokenAlgorithm'];
+        $this->assertUsableCypherKey($cypherKey, $tokenAlgorithm);
         $this->token = JWT::encode($this->tokenPayload, $cypherKey, $tokenAlgorithm);
         return $this->token;
+    }
+
+    /**
+     * Fail loudly on an unusable ApiRequest.jwtAuth.cypherKey.
+     *
+     * php-jwt 7 rejects HMAC keys shorter than the digest size (32 bytes for
+     * HS256) on both signing and verification, so a too-short key silently
+     * breaks every authenticated request. That is our misconfiguration, and it
+     * cannot be left to the library to report: php-jwt raises DomainException
+     * for a short key *and* for a caller's malformed token ("Malformed UTF-8
+     * characters"), so the two are indistinguishable at the catch site — and
+     * decodeJwtToken() hands the exception message back to the caller as a 400.
+     * Checking our own key up front keeps client errors 400 and server errors
+     * 500 (with an exception email).
+     *
+     * The message deliberately reports lengths only, never key material.
+     *
+     * @param mixed $cypherKey
+     * @param mixed $tokenAlgorithm
+     * @throws \RuntimeException
+     */
+    private function assertUsableCypherKey($cypherKey, $tokenAlgorithm): void
+    {
+        if (! is_string($cypherKey) || '' === $cypherKey) {
+            throw new \RuntimeException(
+                'ApiRequest.jwtAuth.cypherKey is missing or empty; the API cannot sign or verify tokens.'
+            );
+        }
+        if (! is_string($tokenAlgorithm) || 0 !== strncmp($tokenAlgorithm, 'HS', 2)) {
+            //only the HMAC family keys on a shared secret; RS*/ES* take a PEM
+            return;
+        }
+        $minimumBytes = intdiv((int) substr($tokenAlgorithm, 2), 8);
+        if (strlen($cypherKey) < $minimumBytes) {
+            throw new \RuntimeException(sprintf(
+                'ApiRequest.jwtAuth.cypherKey is %d bytes; %s requires at least %d.',
+                strlen($cypherKey),
+                $tokenAlgorithm,
+                $minimumBytes
+            ));
+        }
     }
 
     /**
@@ -136,6 +182,7 @@ class ApiController extends AbstractRestfulController
         $config = $this->getEvent()->getParam('config', false);
         $cypherKey = $config['ApiRequest']['jwtAuth']['cypherKey'];
         $tokenAlgorithm = $config['ApiRequest']['jwtAuth']['tokenAlgorithm'];
+        $this->assertUsableCypherKey($cypherKey, $tokenAlgorithm);
         try {
             $decodeToken = JWT::decode($this->token, new Key($cypherKey, $tokenAlgorithm));
             $this->tokenPayload = $decodeToken;

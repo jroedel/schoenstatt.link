@@ -13,6 +13,25 @@ control — mixing the two makes the order unpredictable.
 deletes freshly-uploaded trees (it took out `module/JUser/src` on
 2026-08-02; see docs/BACKLOG.md "Deploy ops").
 
+## Before the next deploy: check the API signing key
+
+One-time prerequisite for the firebase/php-jwt 7 upgrade (2026-08-03). v7
+rejects HMAC keys shorter than the digest size, so an
+`ApiRequest.jwtAuth.cypherKey` under **32 bytes** breaks every authenticated API
+request. The key lives in untracked server-side config, so nothing in the repo
+can tell us how long production's is. It does not fail at boot — the site looks
+fine and only the API dies — so check it first, over the port-222 shell account:
+
+```bash
+ssh -p 222 <admin>@dedi2934.your-server.de \
+  'php -r "\$c = include \"public_html/schoenstatt.link/config/autoload/local.php\";
+   printf(\"%d bytes\n\", strlen(\$c[\"ApiRequest\"][\"jwtAuth\"][\"cypherKey\"] ?? \"\"));"'
+```
+
+Prints byte count only, never the key. If it is under 32, lengthen it *before*
+deploying — note that replacing the key invalidates every JWT already issued
+(they last six months), so API clients would have to sign in again.
+
 ## The deploy
 
 ```bash
