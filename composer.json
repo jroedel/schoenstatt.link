@@ -11,25 +11,26 @@
     ],
     "homepage": "http://framework.zend.com/",
     "require": {
-        "php": "^7.3",
+        "php": "~8.3.0",
         "nesbot/carbon": "^2.62",
         "giggsey/libphonenumber-for-php": "^8.11",
         "neitanod/forceutf8": "^2.0",
         "tedivm/jshrink": "^1.1",
         "voku/html2text": "^5.0",
         "tijsverkoyen/css-to-inline-styles": "^2.2",
-        "neilime/zf2-twb-bundle": "3.*@stable",
+        "diablomedia/laminas-twb-bundle": "^5.0",
         "phpoffice/phpexcel": "^1.8",
-        "kokspflanze/bjy-authorize": "^1.7",
+        "kokspflanze/bjy-authorize": "^2.4",
         "matriphe/iso-639": "^1.0",
-        "spatie/schema-org": "^2.2",
-        "slm/locale": "^0.3",
+        "spatie/schema-org": "^4.0",
+        "slm/locale": "^1.2",
         "laminas/laminas-permissions-acl": "^2.7",
         "laminas/laminas-navigation": "^2.9",
         "laminas/laminas-authentication": "^2.6",
         "laminas/laminas-json": "^3.1",
         "laminas/laminas-mail": "^2.10",
-        "laminas/laminas-mvc-form": "^1.0",
+        "laminas/laminas-i18n": "^2.33",
+        "laminas/laminas-mvc": "^3.8",
         "laminas/laminas-mvc-plugin-identity": "^1.1",
         "laminas/laminas-mvc-i18n": "^1.1",
         "laminas/laminas-captcha": "^2.8",
@@ -49,28 +50,22 @@
         "ext-intl": "*",
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
-        "laminas/laminas-dependency-plugin": "^2.1",
-        "laminas/laminas-form": "^2.17.1",
+        "laminas/laminas-form": "^3.24",
+        "laminas/laminas-log": "^2.17",
+        "laminas/laminas-serializer": "^2.17",
+        "laminas/laminas-cache-storage-adapter-apcu": "^2.5",
+        "laminas/laminas-cache-storage-adapter-filesystem": "^2.5",
+        "laminas/laminas-cache-storage-adapter-memory": "^2.3",
         "laminas/laminas-router": "^3.3",
         "laminas/laminas-db": "^2.11",
         "laminas/laminas-mvc-plugin-flashmessenger": "^1.2",
         "laminas/laminas-crypt": "^3.3"
     },
     "require-dev": {
-        "laminas/laminas-developer-tools": "^1.1",
+        "laminas/laminas-developer-tools": "^2.10",
         "squizlabs/php_codesniffer": "^3.3"
     },
     "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/basz/SlmLocale",
-            "no-api": true
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/kokspflanze/BjyAuthorize",
-            "no-api": true
-        },
         {
             "type": "vcs",
             "url": "https://github.com/jroedel/chordpro-php",
@@ -79,17 +74,18 @@
     ],
     "config": {
         "platform": {
-            "php": "7.4.33",
-            "ext-intl": "7.4.33",
-            "ext-pdo": "7.4.33",
-            "ext-pdo_mysql": "7.4.33",
-            "ext-dom": "7.4.33",
-            "ext-simplexml": "7.4.33",
-            "ext-xmlwriter": "7.4.33",
-            "ext-gd": "7.4.33",
-            "lib-icu": "67.1",
-            "ext-xml": "7.4.33",
-            "ext-mbstring": "7.4.33"
+            "php": "8.3.33",
+            "ext-intl": "8.3.33",
+            "ext-pdo": "8.3.33",
+            "ext-pdo_mysql": "8.3.33",
+            "ext-dom": "8.3.33",
+            "ext-simplexml": "8.3.33",
+            "ext-xmlwriter": "8.3.33",
+            "ext-gd": "8.3.33",
+            "lib-icu": "76.1",
+            "ext-apcu": "5.1.24",
+            "ext-xml": "8.3.33",
+            "ext-mbstring": "8.3.33"
         },
         "audit": {
             "abandoned": "report"
@@ -104,9 +100,7 @@
                 }
             }
         },
-        "allow-plugins": {
-            "laminas/laminas-dependency-plugin": true
-        }
+        "allow-plugins": {}
     },
     "autoload": {
         "psr-4": {

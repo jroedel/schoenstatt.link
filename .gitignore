@@ -3,6 +3,7 @@ vendor/
 config/development.config.php
 data/cache/*
 !data/cache/.gitkeep
+data/form-regression/
 phpunit.xml
 ubuntu-xenial-16.04-cloudimg-console.log
 /.buildpath

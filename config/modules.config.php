@@ -17,8 +17,6 @@ if ($inDevelopment) {
     $toolsOrNot[] = 'Laminas\DeveloperTools';
 }
 $modules = [
-    //must be first: rewrites legacy Zend\* config keys/service names at runtime
-    'Laminas\ZendFrameworkBridge',
     'Laminas\Router',
     'Laminas\I18n',
     'Laminas\Form',
@@ -30,6 +28,14 @@ $modules = [
     'Laminas\Validator',
     //provides the session factories JUser\Module::onBootstrap starts
     'Laminas\Session',
+    //cache + its adapters must precede BjyAuthorize, whose Module declares a
+    //dependency on Laminas\Cache
+    'Laminas\Cache',
+    'Laminas\Cache\Storage\Adapter\Apcu',
+    'Laminas\Cache\Storage\Adapter\Filesystem',
+    //BjyAuthorize's default cache_options ask for the memory adapter
+    'Laminas\Cache\Storage\Adapter\Memory',
+    'Laminas\Serializer',
 //     'MaglMarkdown',
     'BjyAuthorize',
     'SlmLocale',

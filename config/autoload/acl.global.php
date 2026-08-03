@@ -2,6 +2,12 @@
 
 return [
     'bjyauthorize' => [
+        // BjyAuthorize 2.x defaults to caching the assembled ACL (into a
+        // per-request memory store, so it caches nothing anyway). Disabled
+        // explicitly to keep the 1.7 behavior: rebuild the ACL each request.
+        // Enabling apcu-backed ACL caching is a deliberate future decision.
+        'cache_enabled' => false,
+
         // resource providers provide a list of resources that will be tracked
         // in the ACL. like roles, they can be hierarchical
         'resource_providers' => [

@@ -31,10 +31,10 @@ class PersonFormFactory implements FactoryInterface
         $personTags = $container->get('Schoenstatt\PersonTagsValueOptions');
 //      $adminTags = $table->getPersonAdminTags();
 
-        /** @var FormElementManagerV2Polyfill $formManager */
+        /** @var \Laminas\Form\FormElementManager $formManager */
         $formManager = $container->get('FormElementManager');
         /** @var \Schoenstatt\Form\PersonForm $form */
-        $form = $formManager->get(PersonForm::class, [], true);
+        $form = $formManager->get(PersonForm::class);
 
         $form->get('spousePersonId')->setValueOptions($persons);
         $form->get('country')->setValueOptions($countryNames);
