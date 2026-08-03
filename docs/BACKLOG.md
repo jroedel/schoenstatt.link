@@ -498,15 +498,53 @@ Leftovers from deploy day, deliberately open:
 - [ ] `apc.shm_size` is still 32M in `/home/httpd/php74-ini/ourlink/php.ini`
   — Fr. Jeff cannot edit that file; needs a Hetzner/konsoleH support
   request ("please set apc.shm_size = 256M for PHP 7.4"), then one
-  `pkill -u ourlink -f php`. Not urgent: the SionCacheTrait fix makes
-  cache-write failures degrade gracefully now; the raise just makes them
-  rarer.
+  `pkill -u ourlink -f php`. **Downgraded from blocking to nice-to-have**
+  by the cache-size work (see docs/caching.md): the two keys that could not
+  fit in 32M are gone, warmed occupancy measured 10.4 MiB, and anything
+  still oversized is refused instead of wiping the segment.
+- [ ] While that ini request is open, ask for `apc.ttl` as well. It is 0,
+  which is precisely why a failed allocation clears the *entire* cache
+  instead of evicting stale entries. Any value above 0 makes the failure
+  mode selective. Defense in depth behind `max_cached_item_size`, not a
+  substitute for it.
 - [ ] `public/.htaccess` is untracked/gitignored (since 2017) and was
   hand-edited on the server (`SetEnv APP_ENV` removed → production mode).
   Consider re-tracking a canonical `.htaccess` (or `.htaccess.dist`) so it
   stops being invisible, machine-specific state.
 - [ ] Announce passwordless sign-in to users if confused-user replies
   start arriving.
+
+## Caching follow-ups (opened 2026-08-03)
+
+Background and measurements in [caching.md](caching.md). The oversized-item
+problem itself is fixed; these are the leftovers found while fixing it.
+
+- [ ] `query-objects-publication` (10,166 rows × 80 fields, **29.2 MiB**) is
+  still *built* by the literature routes — `PublicationsController::…651` and
+  `LibrariesController::…363` both call `getObjects('publication')`. It is now
+  refused rather than destructive, so those routes just run uncached. A narrow
+  projection, as done for the navigation, is the next real win.
+- [ ] `LibraryTable::getLibraryBooksStatuses()` still hydrates every entity for
+  one library (up to 12,394 books for library 3) and then links checkouts. Far
+  better than the 33,690 it loaded before the typo fix, and it writes no cache,
+  but it is the next candidate for a narrow projection.
+- [ ] The navigation cache keys written in `Application\Module::onBootstrap()`
+  are never invalidated when the underlying data changes.
+  `SionTable::removeDependentCacheItems()` only clears keys registered through
+  `SionCacheTrait`, so a new publication or association does not show up in the
+  nav until the 5-day TTL expires or the segment is flushed. Editors will
+  experience this as "my change didn't appear".
+- [ ] Bug, `LibraryTable::checkinBooks()`: in the branch that creates checkouts
+  for books with none, `$booksToCheckin[$checkout['bookId']] = true;` reads
+  `$checkout` leaking from the *previous* `foreach`, so it writes to the wrong
+  key — and to an undefined variable when no checkouts were open. Found while
+  narrowing that method's book query; deliberately left alone because it is a
+  behaviour change, not a caching one.
+- [ ] `SionCacheTrait::getUnlinkedAssignments()` declares its dependencies as
+  `['assignment', 'association']`, but its payload comes from `sch_assignments`
+  joined to `sch_roles` and contains no association data. Harmless
+  (over-invalidation is safe), so it was left as-is rather than tightened on a
+  guess — but it is wrong, and the honest list is `['assignment', 'role']`.
 
 ## Deploy ops (post-first-deploy, 2026-08-02)
 
