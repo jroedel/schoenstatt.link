@@ -1981,7 +1981,7 @@ return [
         // app cannot boot with it active. Production has always run WITHOUT
         // these providers (a duplicate-key bug silently discarded them), so
         // they stay disabled for the production-faithful baseline. Finishing
-        // this feature is tracked in BACKLOG.md.
+        // this feature is tracked in docs/BACKLOG.md.
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['sch_moderator']],
