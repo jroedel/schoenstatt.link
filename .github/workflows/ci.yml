@@ -59,8 +59,9 @@ jobs:
         with:
           php-version: "8.3"
           coverage: none
+          tools: phpunit:9.6
       - name: Run the unit suite
-        run: php tools/phpunit.phar --testsuite unit
+        run: phpunit --testsuite unit
 
   composer-install:
     name: composer install --no-dev (deploy rehearsal)
