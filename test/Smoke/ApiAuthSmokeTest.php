@@ -2,6 +2,8 @@
 
 namespace SchoenstattTest\Smoke;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * The JWT gate on the authenticated API routes, over real HTTP.
  *
@@ -21,12 +23,7 @@ namespace SchoenstattTest\Smoke;
 class ApiAuthSmokeTest extends SmokeTestCase
 {
     /**
-     * A route that is genuinely gated: 'isAuthorizationRequired' => true on a
-     * controller that inherits checkAuthorization() from ApiController.
-     *
-     * Deliberately not one of LibrariesApiController's routes — those declare
-     * the same flag but extend AbstractRestfulController directly, so nothing
-     * reads it (see docs/BACKLOG.md, "Unauthenticated API routes").
+     * The route whose token handling is examined in detail below.
      *
      * Note this endpoint answers 200 with an empty body rather than JSON, a
      * pre-existing quirk of BooksApiController::getList() that has nothing to
@@ -35,20 +32,61 @@ class ApiAuthSmokeTest extends SmokeTestCase
      */
     private const GUARDED_PATH = '/api/v1/libraries/3/books';
 
-    public function testValidJwtIsAccepted(): void
+    /**
+     * Every route that declares 'isAuthorizationRequired' => true and can be
+     * requested without side effects.
+     *
+     * The two LibrariesApiController paths are here because they served
+     * anonymous callers until 2026-08-03: the controller extended
+     * AbstractRestfulController directly, so it never inherited the dispatch
+     * listener that reads the flag, and the route config's stated intent was
+     * enforced by nothing. Authorization that depends on picking the right
+     * parent class is authorization that silently lapses, so this provider
+     * exists to make the lapse visible from outside.
+     *
+     * @return iterable<string, array{string}>
+     */
+    public static function gatedPathProvider(): iterable
     {
-        $response = $this->getWithBearer($this->mintJwt(['sub' => 1, 'exp' => (string) (time() + 3600)]));
+        yield 'books in a library' => ['/api/v1/libraries/3/books'];
+        yield 'library detail' => ['/api/v1/libraries/3'];
+        yield 'pending labels' => ['/api/v1/libraries/3/pending-labels'];
+    }
 
-        $this->assertSame(200, $response['status'], 'a validly signed, unexpired JWT should be accepted');
+    #[DataProvider('gatedPathProvider')]
+    public function testGatedRouteRefusesAnonymousCallers(string $path): void
+    {
+        $response = $this->request('GET', $path, [], true);
+
+        $this->assertSame(401, $response['status'], "GET $path without a token should be 401");
+        $this->assertStringContainsString('Authentication Required', $response['body']);
+    }
+
+    #[DataProvider('gatedPathProvider')]
+    public function testGatedRouteAcceptsAValidToken(string $path): void
+    {
+        $token = $this->mintJwt(['sub' => 1, 'exp' => (string) (time() + 3600)]);
+
+        $response = $this->getWithBearer($token, $path);
+
+        $this->assertSame(200, $response['status'], "GET $path with a valid token should be accepted");
         $this->assertStringNotContainsString('Fatal error', $response['body']);
     }
 
-    public function testMissingTokenIsUnauthorized(): void
+    /**
+     * The literature routes are public by design ('isAuthorizationRequired' =>
+     * false, CORS on) and must stay that way: PublicationsApiController now
+     * extends ApiController too, which would have been an easy place to gate
+     * them by accident.
+     */
+    public function testPublicApiRoutesStayPublic(): void
     {
-        $response = $this->request('GET', self::GUARDED_PATH, [], true);
+        foreach (['/api/v1/literature', '/api/v1/literature/5'] as $path) {
+            $response = $this->request('GET', $path, [], true);
 
-        $this->assertSame(401, $response['status'], 'no credentials should be 401');
-        $this->assertStringContainsString('Authentication Required', $response['body']);
+            $this->assertSame(200, $response['status'], "GET $path should need no token");
+            $this->assertStringContainsString('json', $response['contentType'], "GET $path content type");
+        }
     }
 
     /**
@@ -108,10 +146,10 @@ class ApiAuthSmokeTest extends SmokeTestCase
      * @return array{status: int, redirect: string, body: string, contentType: string,
      *               headers: array<string, string>}
      */
-    private function getWithBearer(string $token): array
+    private function getWithBearer(string $token, string $path = self::GUARDED_PATH): array
     {
         // Follow redirects: SlmLocale bounces /api/* to /<locale>/api/* first.
-        return $this->request('GET', self::GUARDED_PATH, ['Authorization: Bearer ' . $token], true);
+        return $this->request('GET', $path, ['Authorization: Bearer ' . $token], true);
     }
 
     /**
