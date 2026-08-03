@@ -47,6 +47,18 @@ return [
         'password'       => 'xxxxxxxxx',
         'driver_options' => [\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;'],
     ],
+    /**
+     * Keep both of these false on a public server: they render the exception
+     * message, the file path and the full stack trace into the error page for
+     * anyone who can provoke a 500, authenticated or not.
+     *
+     * There must be exactly ONE view_manager key in this file. A second one
+     * further down used to silently replace this whole block — that is how a
+     * production install ended up displaying stack traces while this block said
+     * otherwise, and how display_not_found_reason quietly came back to its
+     * default. PHP keeps the last of two duplicate keys in an array literal and
+     * says nothing.
+     */
     'view_manager' => [
         'display_not_found_reason' => false,
         'display_exceptions'       => false,
@@ -79,9 +91,6 @@ return [
         'name' => 'recaptcha',
         'privKey' => 'xxxxxxxxxxxxxx',
         'pubKey' => 'xxxxxxxxxxxxxxx',
-    ],
-    'view_manager' => [
-        'display_exceptions' => true,
     ],
     'acmailer_options' => [
         // Default mail service

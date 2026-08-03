@@ -30,6 +30,15 @@ if (! class_exists(Application::class)) {
     );
 }
 
+// Catch what the MVC error events cannot see: a PHP fatal (memory exhaustion, a
+// hit max_execution_time, a TypeError escaping every catch) never reaches
+// dispatch.error, so the visitor gets a blank HTTP 200 and nothing is logged.
+// Installed here, before any configuration is loaded, so a failure while merging
+// config or loading modules is still recorded; SionModel\Module::onBootstrap()
+// upgrades it to the fully configured pipeline — including notification — once
+// the service container exists.
+SionModel\Error\FatalErrorHandler::registerEarly(dirname(__DIR__));
+
 // Retrieve configuration
 $appConfig = require __DIR__ . '/../config/application.config.php';
 if (file_exists(__DIR__ . '/../config/development.config.php')) {

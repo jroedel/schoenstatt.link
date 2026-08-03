@@ -61,6 +61,20 @@ return [
 
         'route_permission_checking_enabled' => true,
 
+        /**
+         * Where the first occurrence of each distinct failure gets mailed.
+         * Everything else about exception reporting (fingerprinting, the ignore
+         * list, spike thresholds, capture profile) is documented on the defaults
+         * in module/SionModel/config/module.config.php.
+         *
+         * A role address rather than an individual so reporting survives a
+         * handover; make sure it lands in an inbox somebody reads.
+         */
+        'exception_notifications' => [
+            'to'             => ['webmaster@schoenstatt.link'],
+            'subject_prefix' => '[schoenstatt.link]',
+        ],
+
         'persistent_cache_config' => [
             'adapter' => [
                 'name' => 'apcu',

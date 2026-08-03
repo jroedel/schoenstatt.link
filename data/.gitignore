@@ -9,3 +9,8 @@
 /sitemap/*
 !/sitemap/.gitkeep
 /scans/*
+# Recorded exception write-ups: one directory per distinct failure, created by
+# SionModel's recorder. /exceptions-prod/ is the mirror tools/fetch-exceptions.sh
+# pulls off production. Both hold redacted request state — never commit either.
+/exceptions/
+/exceptions-prod/
