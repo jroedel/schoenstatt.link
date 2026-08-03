@@ -298,6 +298,78 @@ Each rung verified by the Phase 2 suite:
      remaining module needing it — and consolidate mail onto
      **symfony/mailer**, which retires `laminas-mail`. Then 8.4.
 
+   **Rung 4a: DONE 2026-08-03** (feat/php-83). The stack bump landed; the app
+   declares `~8.3.0` and `config.platform` pins 8.3.33 / ICU 76.1 / APCu
+   5.1.24. Verified: unit 12/12, smoke 52/52 (incl. the magic-link
+   round-trip), phpcs adds no new violations, and a new form-markup
+   regression harness (`tools/form-regression.php` — capture/compare/probe
+   over 27 pages with an all-roles account; baseline in gitignored
+   `data/form-regression/`) proves the ONLY rendering change app-wide is
+   laminas-form 3 emitting minimized boolean attributes (`required` vs
+   `required="required"`). What actually resolved, with corrections to the
+   2026-08-02 dry-run:
+   - **TwbBundle**: adopted `diablomedia/laminas-twb-bundle` ^5.0 — community
+     fork (lineage neilime → thomasvargiu → diablomedia) that keeps the
+     `TwbBundle\` namespace and module name, targets laminas-form 3, has
+     CI/PHPStan. Insurance fork under our control:
+     github.com/jroedel/laminas-twb-bundle. Its `php ~8.1||~8.2||~8.3`
+     constraint is a wall for the 8.4 rung — PR upstream first, else flip to
+     the fork via a `repositories` entry.
+   - **CORRECTION: `kokspflanze/bjy-authorize` 3.x is a Mezzio package** (no
+     Module class, requires `mezzio/*`; composer resolves it but the app can
+     never boot it). The MVC line ends at **2.4.4**, which is what installed.
+     Config keys carry over; one rename applied (`Provider\Role\ZendDb` →
+     `LaminasDb` in JUser). BjyAuthorize 2.x can cache the assembled ACL —
+     explicitly disabled in acl.global.php for 1.7 parity; apcu-backed ACL
+     caching is a deliberate future decision.
+   - **SM 4 / view 3 / validator 3 / filter 3 are all unreachable** in this
+     dependency set: mvc 3.8 pins servicemanager ^3.20 + view ^2.18, and bjy
+     2.4.4 + slm/locale 1.2 pin SM ^3. Settled: SM 3.24, view 2.44,
+     validator 2.65, filter 2.42 — so no factory-signature sweep was needed
+     this rung. The Interop→Psr + `: mixed` sweep (~102 factories) stays
+     queued as SM4 prep for whenever SM4 becomes reachable.
+   - **laminas-zendframework-bridge is GONE already** (was planned for 4b):
+     with TwbBundle swapped, nothing required it. `laminas-mail` 2.25.1 is
+     now the main remaining 8.4 cap among laminas packages.
+   - laminas-cache went to **3.14**, not 4.x (bjy 2.4.4 caps it). Instead of
+     reshaping configs, `SionModel\Cache\LegacyCacheConfig::translate()`
+     (unit-tested) accepts the old StorageFactory shape — production's
+     untracked cache.local.php needs NO deploy-time rewrite; the deploy
+     gotcha below is neutralized. Adapters added as packages: apcu,
+     filesystem, memory (bjy's default cache store). `laminas-serializer`
+     and `laminas-log` re-added as root requires (both were transitive
+     before; log is abandoned upstream — PSR-3/monolog migration is a future
+     elimination item, ~15 files).
+   - laminas-db 2.22 rejects `new TableGateway('')` — SionTable's generic
+     gateway removed; the raw-SQL path uses the adapter directly and the
+     never-viable bare-`$where` path now throws with guidance.
+   - laminas-form 3 fixes: `SionModel\Form\Element\Phone` return types,
+     JUser `EditUserForm` checkbox values quoted, Schoenstatt
+     `EditAssignmentForm` `setValidationGroup(array)`, Books
+     `FormSelectWithoutOptions::renderOptions(): string`, three Schoenstatt
+     form factories de-polyfilled. NOTE: `formRow` now genuinely resolves to
+     `SionFormRow` (diablomedia registers it under `aliases`, our
+     `invokables` entry wins; under neilime it was accidentally dead code) —
+     help-block strings no longer pass through JTranslate; zero markup drift
+     observed on the 27 regression pages.
+   - Deferred micro-items: `firebase/php-jwt` ^7 (clears the CVE ignore),
+     the two Application factories on the root-namespace `FactoryInterface`
+     shim, `layout.phtml`'s `getHelperPluginManager()->getServiceLocator()`
+     (fine on view 2.44, dies at view 3).
+   - Pre-existing latent bugs surfaced by the harness/audits (not caused by
+     this rung): `/libraries/create` and `/libraries/:id/edit` 500
+     (`Books\Form\SearchForm` factory throws "only for a specific library"
+     without library context), `/blog/create` 500 (template
+     `books/blog/create` missing), `SionModel\Controller\FilesController`
+     calls `$this->getServiceLocator()` which AbstractController hasn't had
+     since ZF3, `module/Books/src/Filter/BlogPostUserIdFilter.php` declares
+     `namespace Schoenstatt\Filter` (PSR-4 collision with the real
+     Schoenstatt class), and `SionForm::setData()` calls
+     `getInputFilterSpecification()` the base class doesn't define.
+   - **Deploy prerequisite**: production must switch to PHP 8.3 in the same
+     deploy — `require.php` and the platform pin both say 8.3 now. Sequence
+     it explicitly in DEPLOY.md alongside the phploy run.
+
    **The mailer migration is load-bearing, not optional polish.** There are
    currently *two* mail stacks: JUser sends the magic-link mail through
    **SwiftMailer** (`SwiftMailerFactory`, `Service\Mailer`, `MailerFactory`)

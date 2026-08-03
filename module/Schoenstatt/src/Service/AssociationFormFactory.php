@@ -31,10 +31,10 @@ class AssociationFormFactory implements FactoryInterface
 
         $countryNames = $container->get('CountryValueOptions');
 
-        /** @var FormElementManagerV2Polyfill $formManager */
+        /** @var \Laminas\Form\FormElementManager $formManager */
         $formManager = $container->get('FormElementManager');
         /** @var \Schoenstatt\Form\AssociationForm $form */
-        $form = $formManager->get(AssociationForm::class, [], true);
+        $form = $formManager->get(AssociationForm::class);
 
         $form->get('parentId')->setValueOptions($associations);
         $form->get('kind')->setValueOptions($kinds);

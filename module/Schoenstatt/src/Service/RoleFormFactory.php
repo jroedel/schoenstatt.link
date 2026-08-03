@@ -28,10 +28,10 @@ class RoleFormFactory implements FactoryInterface
         $associations = $table->getAssociationValueOptions();
         $roleTitles = $table->getRoleTitleValueOptions($translator);
 
-        /** @var FormElementManagerV2Polyfill $formManager */
+        /** @var \Laminas\Form\FormElementManager $formManager */
         $formManager = $container->get('FormElementManager');
         /** @var RoleForm $form */
-        $form = $formManager->get(RoleForm::class, [], true);
+        $form = $formManager->get(RoleForm::class);
 
         $form->get('associationId')->setValueOptions($associations);
         $form->get('roleTitle')->setValueOptions($roleTitles);

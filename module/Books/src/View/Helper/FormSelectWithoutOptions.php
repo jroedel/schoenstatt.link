@@ -5,7 +5,7 @@ use Laminas\Form\View\Helper\FormSelect;
 
 class FormSelectWithoutOptions extends FormSelect
 {
-    public function renderOptions(array $options, array $selectedOptions = [])
+    public function renderOptions(array $options, array $selectedOptions = []): string
     {
         $newOptions = [];
         foreach ($selectedOptions as $value) {

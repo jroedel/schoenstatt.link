@@ -9,7 +9,7 @@ class EditAssignmentForm extends AssignmentForm
         $this->get('associationId')->setAttribute('disabled', true);
         $this->get('roleId')->setAttribute('disabled', true);
         $this->get('personId')->setAttribute('disabled', true);
-        $this->setValidationGroup('startDate', 'endDate', 'security');
+        $this->setValidationGroup(['startDate', 'endDate', 'security']);
         $this->isPreparedForEdit = true;
     }
 }
