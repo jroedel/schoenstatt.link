@@ -487,6 +487,81 @@ ORDER BY `Publisher`";
         return $entities;
     }
 
+    /**
+     * Fetch the bare minimum needed to build the publications branch of the site navigation.
+     *
+     * The navigation only reads `title`, `slug`, `identifier` and `inLanguage`, keyed on the
+     * publicationId. Going through getObjects('publication') to get that costs a full hydration
+     * of ~10k 80-field entities and, worse, caches them under `query-objects-publication`, a
+     * single APCu item well over 30 MiB against a 32 MiB segment. When that write fails the
+     * adapter throws and (with apc.ttl=0) APCu drops everything, so the next request finds the
+     * navigation cold and repeats the whole thing.
+     *
+     * This method deliberately duplicates the derivations processPublicationRow() applies to the
+     * four fields the navigation uses:
+     *   - `identifier` is derived (ToSchoenstattLinkIdentifier), it is not a column;
+     *   - `slug` falls back to SchoenstattTable::getSlug($title) when the column is null;
+     *   - `inLanguage` is the pipe-delimited `InLanguage` column exploded into an array.
+     * The join and ORDER BY come from getSelectPrototype('publication'), so the row order matches
+     * getObjects('publication') exactly. Only `publication_public` rows are returned, which is the
+     * only resourceId the navigation renders.
+     *
+     * Unlike processPublicationRow(), a derived slug is NOT written back to the database here:
+     * this runs during bootstrap on every cold-cache request and the derivation is deterministic,
+     * so the navigation link is identical either way. The other read paths still persist it.
+     *
+     * @return array[] keyed on publicationId
+     */
+    public function getPublicationNavigationData()
+    {
+        $cacheKey = 'publication-navigation-data';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $select = $this->getSelectPrototype('publication');
+        //narrow the column list to what the navigation reads. CategorySortOrder is a select alias
+        //referenced by the prototype's ORDER BY, so it has to stay in the list.
+        $select->columns([
+            'PublicationId',
+            'Title',
+            'Slug',
+            'InLanguage',
+            'CategorySortOrder' => new Expression('IF(ISNULL(`SortOrder`), 1000, `SortOrder`)'),
+        ]);
+        $select->where(new Operator(
+            'sch_publications.ResourceId',
+            Operator::OPERATOR_EQUAL_TO,
+            'publication_public'
+        ));
+
+        $gateway = $this->getTableGateway('sch_publications');
+        $results = $gateway->selectWith($select);
+
+        $swFilter = new ToSchoenstattLinkIdentifier('publication');
+        $navigationData = [];
+        foreach ($results as $row) {
+            $id = $this->filterDbId($row['PublicationId']);
+            if (! isset($id) || isset($navigationData[$id])) {
+                continue;
+            }
+            $title = $row['Title'];
+            $slug = $row['Slug'];
+            if (! isset($slug)) {
+                $slug = SchoenstattTable::getSlug($title);
+            }
+            $navigationData[$id] = [
+                'title'      => $title,
+                'slug'       => $slug,
+                'identifier' => $swFilter->filter($id),
+                'inLanguage' => $this->filterDbArray($row['InLanguage']),
+            ];
+        }
+
+        $this->cacheEntityObjects($cacheKey, $navigationData, ['publication']);
+        return $navigationData;
+    }
+
     public function getPublications()
     {
         if (null !== ($cache = $this->fetchCachedEntityObjects('publications'))) {

@@ -2343,7 +2343,11 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             }
         }
 
-        $this->cacheEntityObjects('assignments', $entities, ['assignment']);
+        //the key must match the one read above: writing the bare 'assignments' key
+        //made this a permanent cache miss, so the linked set was rebuilt and
+        //rewritten on every request. The entities embed whole person and
+        //association records, so they expire with those too, not just assignments.
+        $this->cacheEntityObjects($cacheKey, $entities, ['assignment', 'role', 'person', 'association']);
         return $entities;
     }
 
