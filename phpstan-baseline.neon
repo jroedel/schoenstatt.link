@@ -11,11 +11,6 @@ parameters:
 			path: module/Bible/src/Filter/FromBibleworksMorphosyntacticCode.php
 
 		-
-			message: "#^Function Exception not found\\.$#"
-			count: 3
-			path: module/Bible/src/Filter/FromBibleworksMorphosyntacticCode.php
-
-		-
 			message: "#^Access to an undefined property Books\\\\Controller\\\\BooksApiController\\:\\:\\$inputFilter\\.$#"
 			count: 1
 			path: module/Books/src/Controller/BooksApiController.php
@@ -81,21 +76,6 @@ parameters:
 			path: module/Books/src/View/Helper/Coins.php
 
 		-
-			message: "#^Function Exception not found\\.$#"
-			count: 1
-			path: module/JTranslate/src/Model/CountriesInfo.php
-
-		-
-			message: "#^Function Exception not found\\.$#"
-			count: 1
-			path: module/JTranslate/src/Model/TranslationsTable.php
-
-		-
-			message: "#^Function InvalidArgumentException not found\\.$#"
-			count: 1
-			path: module/JTranslate/src/Model/TranslationsTable.php
-
-		-
 			message: "#^Method JUser\\\\Controller\\\\UsersController\\:\\:setUserTable\\(\\) should return JUser\\\\Model\\\\UserTable but return statement is missing\\.$#"
 			count: 1
 			path: module/JUser/src/Controller/UsersController.php
@@ -111,16 +91,6 @@ parameters:
 			path: module/JUser/src/View/RedirectionStrategy.php
 
 		-
-			message: "#^Access to an undefined property Schoenstatt\\\\Filter\\\\SchoenstattLinkIdentifier\\:\\:\\$entityType\\.$#"
-			count: 1
-			path: module/Schoenstatt/src/Filter/SchoenstattLinkIdentifier.php
-
-		-
-			message: "#^Function Exception not found\\.$#"
-			count: 1
-			path: module/Schoenstatt/src/Filter/SchoenstattLinkIdentifier.php
-
-		-
 			message: "#^Call to an undefined method Schoenstatt\\\\Model\\\\SchoenstattTable\\:\\:getRoleTitleAliases\\(\\)\\.$#"
 			count: 1
 			path: module/Schoenstatt/src/Model/SchoenstattTable.php
@@ -134,11 +104,6 @@ parameters:
 			message: "#^Undefined variable\\: \\$entity$#"
 			count: 1
 			path: module/SionModel/src/Controller/SionController.php
-
-		-
-			message: "#^Access to an undefined property SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:\\$changeTableName\\.$#"
-			count: 5
-			path: module/SionModel/src/Db/Model/SionTable.php
 
 		-
 			message: "#^Access to an undefined property SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:\\$where\\.$#"
