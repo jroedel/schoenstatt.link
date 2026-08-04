@@ -18,7 +18,7 @@ class PersonFormFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         /** @var \Schoenstatt\Model\SchoenstattTable $table **/
         $table = $container->get(SchoenstattTable::class);

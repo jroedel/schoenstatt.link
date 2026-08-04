@@ -16,7 +16,7 @@ class LibraryInfoFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         /** @var LibraryTable $table **/
         $table = $container->get(LibraryTable::class);

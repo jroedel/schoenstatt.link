@@ -15,7 +15,7 @@ use Application\View\GdprStrategy;
 
 class GdprStrategyServiceFactory implements FactoryInterface
 {
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         return new GdprStrategy($container->get('Config')['schoenstatt']['gdpr_template']);
     }

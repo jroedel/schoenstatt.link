@@ -18,7 +18,7 @@ class VerseFromIdFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $parentLocator = $container->getServiceLocator();
         /** @var BibleTable $table */
