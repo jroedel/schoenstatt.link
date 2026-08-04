@@ -158,16 +158,16 @@ class FromBibleworksMorphosyntacticCode extends AbstractFilter
     private static function codeHelper($key, $text, array $arrays)
     {
         if (is_null($arrays)) {
-            throw \Exception("HELP, my arrays is null");
+            throw new \Exception("HELP, my arrays is null");
         }
         if (empty($arrays)) {
             return [$key => $text];
         }
         if (! is_array($arrays[0])) {
-            throw \Exception("HELP my arrays isn't an array");
+            throw new \Exception("HELP my arrays isn't an array");
         }
         if (empty($arrays[0])) {
-            throw \Exception("HELP");
+            throw new \Exception("HELP");
         }
 
         $return = [];
