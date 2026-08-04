@@ -165,33 +165,34 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Product decisions needed
 
-- [ ] **SchoenstattTable ACL providers** (dormant 2020 WIP): `getRules()`
-  grants roles that don't exist in production (`sch_international_leader`,
-  `sch_institute_member` — invented in code, in no migration under
-  `database/`), so activating it fatals at boot; the registration is disabled
-  in `module/Schoenstatt/config/module.config.php`.
-  - **What it actually is, read 2026-08-04 so nobody has to re-derive it.**
-    `getResources()` (`SchoenstattTable:3168`) emits one `GenericResource` per
-    person and per association — `person_<id>` / `association_<id>`, 823 of
-    them — which is a sound per-entity substrate. `getRules()` (`:3185`) then
-    grants *all* of them the same two hard-coded roles. So it is **not**
-    data-driven authorization; the only dynamic part is the resource list.
-  - **The intended design looks like dynamic, data-derived authority** (e.g.
-    someone holding an office may edit people and associations beneath it), and
-    the schema already supports it end to end: `sch_associations.Parent` is the
-    association tree (397 of 498 have a parent), `sch_roles` is 1468 offices
-    each scoped by `AssociationId`, and `sch_assignments` is person↔office with
-    `StartDate`/`EndDate` (266 rows, 227 current). Three tells that this was the
-    aim: `formatRulesArray()` says `@todo finish development`; `getRules()`'s
-    docblock claims `@return AssertionAggregate` while returning a plain
-    `['allow' => …]` array; and `getRoleTableGateway()` returns a gateway on
-    `sch_roles` and has zero callers.
-  - **Therefore finish it with assertions, not static rules** — a static array
-    cannot relate the acting user to the target resource, which is the whole
-    requirement. That also disposes of the boot-cost problem: both methods
-    currently load every person and association on every ACL build, whereas an
-    assertion needs only the acting user's current offices plus an ancestor
-    walk. Alternatively delete the WIP.
+- [ ] **Data-derived authority for persons and associations** — wanted, not
+  started. The intent: someone holding an office may edit the people and
+  associations beneath it, rather than authority coming from a flat global
+  role. The 2020 WIP that gestured at this (`SchoenstattTable` implementing
+  BjyAuthorize's resource/rule provider interfaces) was **deleted 2026-08-04**;
+  it was never a foundation, and the notes below are what was worth keeping
+  from it.
+  - **The schema already supports the whole model.**
+    `sch_associations.Parent` is the association tree (397 of 498 have a
+    parent); `sch_roles` is 1468 offices, each scoped by `AssociationId`, with
+    `IsMainRole`/`IsSinglePosition`; `sch_assignments` is person↔office with
+    `StartDate`/`EndDate` (266 rows, 227 current). No migration needed to
+    answer "who currently holds which office, and what sits beneath it".
+  - **It must be built with ACL assertions, not static rules.** This is the
+    load-bearing constraint and the reason the old code was a dead end: a
+    static `['allow' => [[roles, resource], …]]` array is evaluated once at
+    ACL-build time and can only say "role R may touch resource X" — never
+    "*this* user may touch *that* person, because of where they both sit in the
+    tree". That relation has to be evaluated per request. (The deleted code's
+    own docblock promised an `AssertionAggregate` while returning a plain
+    array, which is exactly where it stopped.)
+  - **Assertions also dispose of the boot-cost objection** recorded here
+    earlier: the old providers loaded every person and association on every ACL
+    build, whereas an assertion needs only the acting user's current offices
+    plus an ancestor walk.
+  - Note this is **unrelated** to the unguarded-routes item above: the old
+    providers only ever emitted `person_*`/`association_*` resources, never
+    `route/*` ones.
 - [ ] API registration allow-list (old @todo in `LoginV1ApiController`): API
   magic-code login does not auto-create accounts; the web flow does.
 - [ ] Drop the now-unread `user.password` column once passwordless has
@@ -261,9 +262,10 @@ Background and measurements: [caching.md](caching.md).
   app in `AclGuardRouteDriftTest` surfaced three, all pre-existing and all
   invisible to rung 4b's `E_ALL` class-load probe because they only fire when
   code *runs*: dynamic property creation on `SionModel\Db\Model\SionTable:255`
-  (`$changeTableName`) and on `Schoenstatt\Filter\SchoenstattLinkIdentifier`
-  (`$entityType`), plus `strtoupper(null)` in
-  `JTranslate\Model\CountriesInfo:89`. Dynamic properties are deprecated in 8.2
+  (`$changeTableName`) and `strtoupper(null)` in
+  `JTranslate\Model\CountriesInfo:89`. (A third, `$entityType` on
+  `Schoenstatt\Filter\SchoenstattLinkIdentifier`, was fixed 2026-08-04 by
+  declaring the property.) Dynamic properties are deprecated in 8.2
   and **removed in PHP 9**, so these are a real forward gate rather than noise.
   The method that would find the rest is a run-time sweep (exercise the smoke
   suite with deprecations promoted), not another static pass.

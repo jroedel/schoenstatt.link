@@ -7,12 +7,8 @@ use SionModel\Problem\EntityProblem;
 use SionModel\Problem\ProblemProviderInterface;
 use Laminas\I18n\Translator\TranslatorInterface;
 use Laminas\Db\Adapter\AdapterInterface;
-use Laminas\Db\TableGateway\TableGatewayInterface;
 use Laminas\Db\TableGateway\TableGateway;
 use JUser\Model\PersonValueOptionsProviderInterface;
-use BjyAuthorize\Provider\Resource\ProviderInterface as ResourceProviderInterface;
-use BjyAuthorize\Provider\Rule\ProviderInterface as RuleProviderInterface;
-use Laminas\Permissions\Acl\Resource\GenericResource;
 use Laminas\Db\Sql\Select;
 use Laminas\Db\Sql\Expression;
 use Schoenstatt\Service\AssociationKindsService;
@@ -44,9 +40,7 @@ use Cocur\Slugify\Slugify;
 
 class SchoenstattTable extends SionTable implements
     ProblemProviderInterface,
-    PersonValueOptionsProviderInterface,
-    ResourceProviderInterface,
-    RuleProviderInterface
+    PersonValueOptionsProviderInterface
 {
     const TRANSLATOR_DOMAIN = 'Schoenstatt';
 
@@ -3163,68 +3157,6 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
             }
         }
         return $months;
-    }
-
-    public function getResources()
-    {
-        $return = [];
-        $persons = $this->getPersons();
-        $associations = $this->getAssociations();
-        foreach ($persons as $person) {
-            $return[] = new GenericResource($person['resourceId']);
-        }
-        foreach ($associations as $association) {
-            $return[] = new GenericResource($association['resourceId']);
-        }
-        return $return;
-    }
-
-    /**
-     * @return \Laminas\Permissions\Acl\Assertion\AssertionAggregate
-     */
-    public function getRules()
-    {
-        $persons = $this->getPersons();
-        $associations = $this->getAssociations();
-
-
-        //transform to object BjyAuthorize will understand
-        $allow = [];
-        foreach ($persons as $person) {
-            $allow[$person['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
-        }
-
-        foreach ($associations as $association) {
-            $allow[$association['resourceId']] = ['sch_international_leader', 'sch_institute_member'];
-        }
-
-        return $this->formatRulesArray($allow);
-    }
-
-    /**
-     * Takes an array in format [$resourceId => $roles(array)] and transforms
-     * it to [$roles(array), $resourceId].
-     * Everything is wrapped in an array and keyed by 'allow'.
-     *
-     * @todo finish development
-     * @param array $allow
-     */
-    protected function formatRulesArray($allow)
-    {
-        $return = [];
-        foreach ($allow as $resourceId => $roles) {
-            $return[] = [$roles, $resourceId];
-        }
-//         var_dump(['allow' => $return]);
-        return ['allow' => $return];
-    }
-
-    /**
-     * @return TableGatewayInterface
-     */
-    public function getRoleTableGateway()
-    {
-        return new TableGateway('sch_roles', $this->adapter);
     }
 
     /**
