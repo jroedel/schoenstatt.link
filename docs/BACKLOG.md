@@ -6,8 +6,8 @@ reusable there instead of accumulating DONE narratives.
 
 State as of 2026-08-04: production runs **PHP 8.4.24** on a current Laminas
 stack with OPcache enabled; master is fully deployed; `composer audit --locked`
-reports zero advisories; 198 tests across three suites, green on 8.4; one-command
-deploy with hooks.
+reports zero advisories; 348 tests across three suites, green on 8.4; PHPStan
+clean at level 0 and running in CI; one-command deploy with hooks.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -55,21 +55,9 @@ readability — the destination is **Symfony**, reached gradually:
   cache-size work ([caching.md](caching.md)), but two expunges were observed
   within hours on deploy day — still worth the one ticket.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
-- [ ] **First component adoptions, in this order** (decided 2026-08-04,
-  ahead of rung 4b): **symfony/console** (in progress), then **monolog**.
-  Each is a normal PR verified by the existing suites.
-  - *console* is purely additive — nothing laminas is replaced, so there is
-    no regression surface — and it builds the seam the strangler needs
-    anyway: a `bin/console` that boots the ServiceManager headless, outside
-    laminas-mvc's HTTP dispatch. Same seam later serves doctrine/migrations
-    and cron-style commands. Carries the maintenance-key deploy-ops item
-    below.
-  - *monolog* retires abandoned `laminas-log` outright and puts PSR-3
-    `LoggerInterface` typehints in place of a laminas concrete — exactly what
-    Symfony DI autowires later. It also unpins `psr/log`: laminas-log's
-    `^1.1.2` constraint was the only thing holding the project on psr/log 1,
-    so removing it frees the 3.x line that monolog 3 and symfony/mailer both
-    want.
+- [ ] **Next component adoption.** symfony/console and monolog both landed
+  before rung 4b closed; `bin/console` is the strangler seam and `laminas-log`
+  is gone. Pick the next one deliberately rather than by momentum.
   - **Not validator or translation yet**, despite reading as low-coupling:
     `Laminas\Validator` is in 41 files and `Laminas\InputFilter` in 48, and
     laminas-form *requires* laminas-validator regardless — adopting
@@ -112,10 +100,11 @@ readability — the destination is **Symfony**, reached gradually:
 - [ ] **Passkeys (WebAuthn)** — decided 2026-08-02: web-auth/webauthn-lib
   current major, credential table, enrollment inside an authenticated
   session, magic link remains the fallback.
-- [ ] **PHPStan: raise from level 0** (56-error baseline) — the biggest
-  durability lever not yet on the ladder. Burn the baseline down as levels
-  rise; then get PHPStan into CI (needs a vendor + baseline strategy) and
-  the smoke suite into CI (needs a capsule + dump strategy).
+- [ ] **PHPStan: raise from level 0** (49-error / 35-entry baseline) — the
+  biggest durability lever not yet on the ladder, and now unblocked: the
+  analyzer itself was repaired 2026-08-04 and runs in CI, so raising the level
+  is the only remaining half. Burn the baseline down as levels rise. Getting
+  the *smoke* suite into CI is still open (needs a capsule + dump strategy).
 - [ ] **Real database migrations** (Phinx or doctrine/migrations) instead of
   hand-run dumps in `database/`. Constraint: the web app's DB user lacks DDL
   rights, so migrations need separate credentials stored only on the server,
@@ -152,6 +141,20 @@ readability — the destination is **Symfony**, reached gradually:
   `$this->getServiceLocator()`, gone from AbstractController since ZF3.
 - [ ] `SionForm::setData()` calls `getInputFilterSpecification()` which the
   base class doesn't define.
+- [ ] `Books\Filter\SortText` mixes positional and sequential printf
+  specifiers in the sort-text format, so a trailing `%-3s` consumes argument 1
+  instead of the token it was written for — a `{author|%-3s}` token silently
+  renders the first regex capture group. Found 2026-08-04 while characterizing
+  the filter, and pinned as-is in
+  `test/Integration/SortTextFilterContractTest.php` so the base-class swap
+  stayed a refactor. Fixing it changes every affected library's sort order, so
+  it needs a product decision plus a re-sort, not a drive-by.
+- [ ] `SionModel\Service\InlineScriptFactory` calls
+  `$container->getServiceLocator()`, which survives only as a deprecated
+  shim in laminas-servicemanager 3 (it emits a deprecation on every
+  resolution, i.e. on every page that uses `inlineScript`). Same class of
+  problem as the `FilesController` item above; the fix is to pull
+  `CspListener` from the injected container directly.
 - [ ] `LibraryTable::checkinBooks()`: in the branch creating checkouts for
   books with none, `$booksToCheckin[$checkout['bookId']]` reads `$checkout`
   leaking from the previous `foreach` — wrong key, or undefined variable
@@ -191,8 +194,6 @@ readability — the destination is **Symfony**, reached gradually:
   blocked for everyone under default-deny. Dead feature or bug?
 - [ ] Bare `checkouts` route (Books) not whitelisted (only
   `checkouts/library` is).
-- [ ] `phpstan-baseline.neon` still carries a pre-Laminas
-  `Zend\Stdlib\ResponseInterface` entry — harmless, confusing.
 - [ ] Sweep legacy `Zend\*` strings from the merged runtime config as the
   remaining vendor modules are replaced.
 - [ ] Re-track `public/.htaccess` (or a `.htaccess.dist`) — untracked,
@@ -227,12 +228,6 @@ Background and measurements: [caching.md](caching.md).
 
 ## Testing & CI
 
-- [ ] **PHPStan has been red since rung 4a** (found 2026-08-04):
-  `phpstan.neon.dist` still pins `phpVersion: 70400`, which cannot parse the
-  PHP-8-syntax vendor code the stack bump installed — ~497 errors, all
-  "class not found" noise from vendor visibility, none from our modules'
-  logic. Bump `phpVersion` to 80300, re-run, regenerate/trim the baseline;
-  then fold into the "raise from level 0" item above.
 - [ ] Shared-library tests live in the app repo (`test/Unit/TextTest.php`
   covers `SionModel\Text\Text`) because the submodules have no test
   infrastructure. Migrate them into laminas-sion-model/juser/jtranslate so
