@@ -23,6 +23,15 @@ class SchoenstattLinkIdentifier extends AbstractFilter
      */
     protected $lastEntityType;
 
+    /**
+     * The entity type this filter was constructed for, or null for the general
+     * format. Declared rather than assigned dynamically: PHP 8.2 deprecates
+     * dynamic property creation and PHP 9 removes it.
+     *
+     * @var string|null $entityType
+     */
+    protected $entityType;
+
     public function __construct($entityType = null, $usePreApril2020Format = false)
     {
         if (isset($entityType)
