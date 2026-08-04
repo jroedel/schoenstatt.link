@@ -79,84 +79,50 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Next
 
-- [ ] **Rung 4b: PHP 8.4.** Gates re-measured 2026-08-04 by setting
-  `config.platform.php` to 8.4 and running `composer update --dry-run` — do
-  that again rather than trusting this list, since composer reports blockers a
-  few at a time. It was **not** "only twb-bundle": that claim was wrong on two
-  counts.
-  - ~~`laminas/laminas-crypt`~~ — cleared: it was abandoned *and* capped at
-    `~8.3.0`, and its entire use was two calls in `SionTable` that wrap PHP
-    built-ins. Removed rather than replaced.
-  - **`slm/locale` ^1.2** caps at `~8.3.0`. Upstream is
-    github.com/basz/SlmLocale — 1.2.0 (Oct 2024) is the newest release,
-    `master` carries the same constraint, and no 8.4 PR is open. Note
-    `jroedel/locale`, referenced by JUser's `composer.json`, **404s** — that
-    fork is gone, so it is not an escape hatch.
-  - **`diablomedia/laminas-twb-bundle` ^5.0** caps at `~8.1 || ~8.2 || ~8.3`.
-    5.0.0 (May 2024) is the only release. The insurance fork
-    github.com/jroedel/laminas-twb-bundle exists but is **unmodified** — it
-    still carries the `~8.3` cap, so it needs the bump too.
-  - **Compatibility measured 2026-08-04 on a real 8.4 capsule** (`PHP_VERSION=8.4`
-    + `APCU_VERSION=5.1.24` builds and runs; PHP 8.4.24), with the 8.3-resolved
-    `vendor/` mounted so the caps could be bypassed: **the whole suite passed,
-    198 tests / 577 assertions, and the homepage rendered byte-identically
-    (10757 bytes).** So both packages *work* on 8.4 — the constraints are
-    conservative, not protective.
-    What they do emit is 8.4's implicit-nullable-parameter deprecation, counted
-    by loading every class in each package under `E_ALL` (the deprecation fires
-    at compile time, so a plain `include` surfaces it):
-
-    | package | files | deprecations |
-    |---|---|---|
-    | `slm/locale` | 25 | **5** |
-    | `diablomedia/laminas-twb-bundle` | 28 | **18** |
-
-    Every one is the same mechanical edit — `Foo $x = null` → `?Foo $x = null`.
-    The app masks `E_DEPRECATED` in `public/index.php`, so these are invisible
-    to us in practice, but an upstream PR should fix them rather than only widen
-    the constraint, or it hands 8.4 users on `E_ALL` a wall of noise.
-  - **Both fixes are written, verified and upstream (2026-08-04).** The `gh`
-    token can push to our own forks but **cannot create PRs on third-party
-    repos, nor fork them** (`403 Resource not accessible by personal access
-    token`) — widening the token does not help, because creating a PR needs
-    permission on the *target* repo. Same class of limitation as
-    [[gh-ci-status-via-run-list]]; the last step is always a manual click.
-    - **TwbBundle → PR diablomedia/laminas-twb-bundle#27, OPEN.** From
-      `feat/php-8.4` on github.com/jroedel/laminas-twb-bundle (`a547d71`, 14
-      files, 19 lines). Verified on 8.4.24: 115 tests pass, 18 deprecations → 0,
-      php-cs-fixer clean, phpstan unchanged. **Two pre-existing things will keep
-      it red**, both flagged in the PR rather than fixed: phpstan is pinned to
-      1.10.67, which cannot run on 8.4 at all (dies in its own bundled
-      better-reflection on `ReflectionClass::IS_READONLY`); and their branch
-      protection requires `PHP 8.0` / `PHP 8.0 --prefer-lowest` checks that the
-      current workflow cannot emit (its matrix is 8.1/8.2/8.3 ×
-      `["", "--prefer-lowest"]`), so those sit "Expected — waiting" forever.
-    - **SlmLocale → branch pushed, PR needs a click** at
-      `https://github.com/basz/SlmLocale/compare/master...jroedel:feat/php-8.4?expand=1`.
-      Verified on 8.4.24: 98 tests pass, 5 deprecations → 0. The fork
-      `jroedel/SlmLocale` exists but is from 2019 and its `master`
-      **diverges** — it carries `816a68e`, the cookie-flags work still open as
-      upstream PR #102 — so the branch is based on **upstream** `master`
-      (`1e0ac22`), not the fork's, to keep the PR to one commit. Left alone
-      deliberately: `UriPathStrategy.php:202` passes null to `trim()`, an
-      8.1-era deprecation that reproduces on unmodified upstream.
-    - Neither upstream has moved since May/Oct 2024, so expect no quick reply.
-      Fallback stays the forks — but both forks needed the fix themselves
-      (TwbBundle's was an unmodified copy), so a fallback means merging
-      `feat/php-8.4` into the fork's default branch first.
-  - **Our own code emitted 107 of the same deprecations** (measured 2026-08-04 by
-    loading every class in `module/*/src` under `E_ALL` on 8.4.24): Application 5,
-    Bible 4, Books 26, JTranslate 9, JUser 18, Schoenstatt 17, SionModel 28,
-    RestApi 0. Almost all were the factory signature
-    `__invoke($container, $requestedName, array $options = null)`. Now 0 — fixed
-    across four repos. Worth knowing for next time: `grep` is not sufficient here,
-    because the notice fires at *compile* time (so a factory no test touches still
-    emits it) and multi-line signatures with no trailing comma escape a
-    line-oriented sweep — `SionForm::prepareForSuggestion()` was exactly that case
-    and only the runtime probe caught it.
-  - laminas-mvc 3.8 supports 8.4 — which is also its ceiling. Production flips
-    konsoleH PHP in the same deploy; `require.php` and `config.platform` move
-    together.
+- [ ] **Rung 4b: PHP 8.4 — landing via our forks** (decided 2026-08-04: don't wait
+  on upstream). `require.php` is `~8.4.0` and `config.platform` is 8.4.24;
+  `slm/locale` and `diablomedia/laminas-twb-bundle` now resolve from
+  `jroedel/*` forks on branch `feat/php-8.4`, pinned by the lock to exact
+  commits. Upstream PRs stay open (diablomedia#27 and the SlmLocale one) —
+  **when either releases, delete its `repositories` entry and go back to a
+  version constraint**; the entries carry `comment` keys saying so.
+  - Why forks rather than waiting: neither upstream has moved since May/Oct
+    2024, and owning the forks means further 8.4/8.5 fixes don't need a
+    maintainer. Cost is two dev-branch dependencies in production.
+  - Verified: whole suite green on 8.4.24 (198 tests), full `composer update`
+    resolves with **no remaining 8.4 blockers**, and the form-regression
+    harness reports **zero drift** across all 27 pages with the forks versus
+    upstream at the same PHP version — the isolated A/B, so the swap is proven
+    a no-op for rendering rather than assumed.
+  - **Reconcile these against production's actual 8.4 build** once konsoleH is
+    flipped: `config.platform` pins `php 8.4.24`, `lib-icu 76.1` and
+    `ext-apcu 5.1.24`, all copied from the capsule. Read the real values from
+    `/en/sm/cache-status` (`phpVersion`) and `/en/sm/phpinfo`.
+  - **Order is not optional: flip konsoleH to 8.4 BEFORE deploying.** Composer
+    generates `vendor/composer/platform_check.php` from the `>= 8.4.0`
+    requirement and it is evaluated on *every* request, so deploying this onto
+    an 8.3 server hard-fatals the whole site rather than degrading. CI caught
+    exactly this (it was still on 8.3 and died in `platform_check.php`), which
+    is the cheap version of the same lesson. The reverse order is safe: 8.4
+    running the previous release is a state the capsule already verified.
+  - **The per-version php.ini is the flip's other hazard** — see DEPLOY.md.
+    8.4 reads `/home/httpd/php84-ini/ourlink/php.ini`, a different file from
+    the 8.3 one, so panel/ini tuning does not follow automatically.
+  - A full `composer update` would additionally pull symfony/css-selector,
+    event-dispatcher, mime and string from 7.4 to **8.1**. Deliberately not
+    taken here (partial update only) — a symfony major is its own decision,
+    not a side effect of a PHP bump.
+- [ ] **Enable OPcache in konsoleH** (found off 2026-08-04 in the PHP
+  Configuration panel, while APCu/Redis/ImageMagick/OAuth/SSH2 are on).
+  Production has been recompiling every PHP file on every request; this is the
+  largest single performance win available and it costs one checkbox. Do it as
+  its **own** change, not in the 8.4 deploy — one variable at a time, or a
+  regression cannot be attributed. Notes: `opcache.validate_timestamps` defaults
+  to 1 with `revalidate_freq=2`, so deploys self-heal within seconds and no pool
+  restart is needed; if it is ever set to 0, every deploy then requires one.
+  Sanity-check `opcache.memory_consumption` against the account's limits, and
+  re-read `/en/sm/cache-status` afterwards — APCu and OPcache are separate
+  segments and only APCu is reported there today.
 - [ ] **Passkeys (WebAuthn)** — decided 2026-08-02: web-auth/webauthn-lib
   current major, credential table, enrollment inside an authenticated
   session, magic link remains the fallback.

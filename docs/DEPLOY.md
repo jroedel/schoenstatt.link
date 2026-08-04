@@ -43,6 +43,19 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
+## Before deploying a PHP-version rung
+
+**Flip the konsoleH PHP version first, then deploy — never the other way
+round.** Composer writes `vendor/composer/platform_check.php` from the
+`require.php` constraint and PHP evaluates it on *every* request, so a release
+whose lock requires 8.4 will hard-fatal every page on an 8.3 server. There is no
+graceful degradation and no partial outage: it is the whole site. The reverse
+order is safe, because the new PHP running the previous release is a combination
+the capsule verifies before the rung lands.
+
+Also copy the per-version `php.ini` across (see Server facts below) — the new
+version reads a different file.
+
 ## The deploy
 
 ```bash
@@ -134,8 +147,11 @@ history.
   `.phploy.dist`); the hooks above live in `phploy.ini` under
   `[production]`.
 - Web PHP is FastCGI with a per-account php.ini at
-  `/home/httpd/php83-ini/ourlink/php.ini` (per PHP version: the 7.4-era
-  file was under `php74-ini/`). php.ini changes are the ONE case that
+  `/home/httpd/php84-ini/ourlink/php.ini` (**per PHP version**: the 8.3-era
+  file was under `php83-ini/`, the 7.4-era one under `php74-ini/`). This is the
+  trap when flipping the konsoleH PHP version: the new version reads a *different*
+  file, so anything tuned in the old one silently reverts to defaults — copy it
+  across as part of the flip. php.ini changes are the ONE case that
   needs `pkill -u ourlink -f php` (workers re-read ini on respawn);
   deploys never do.
 
