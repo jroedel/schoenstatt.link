@@ -6,7 +6,7 @@ reusable there instead of accumulating DONE narratives.
 
 State as of 2026-08-04: production runs PHP 8.3.33 on a current Laminas stack;
 master is fully deployed (`deploy/20260803-2346` = PR #17); `composer audit
---locked` reports zero advisories; 167 tests across three suites; one-command
+--locked` reports zero advisories; 198 tests across three suites; one-command
 deploy with hooks.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
@@ -53,9 +53,28 @@ readability — the destination is **Symfony**, reached gradually:
   cache-size work ([caching.md](caching.md)), but two expunges were observed
   within hours on deploy day — still worth the one ticket.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
-- [ ] Pick the first Symfony component adoption (validator and translation
-  are the low-coupling candidates); each adoption is a normal PR verified by
-  the existing suites.
+- [ ] **First component adoptions, in this order** (decided 2026-08-04,
+  ahead of rung 4b): **symfony/console** (in progress), then **monolog**.
+  Each is a normal PR verified by the existing suites.
+  - *console* is purely additive — nothing laminas is replaced, so there is
+    no regression surface — and it builds the seam the strangler needs
+    anyway: a `bin/console` that boots the ServiceManager headless, outside
+    laminas-mvc's HTTP dispatch. Same seam later serves doctrine/migrations
+    and cron-style commands. Carries the maintenance-key deploy-ops item
+    below.
+  - *monolog* retires abandoned `laminas-log` (16 files) outright and puts
+    PSR-3 `LoggerInterface` typehints in place of a laminas concrete —
+    exactly what Symfony DI autowires later. Deletes the hand-rolled
+    `Application\Log\Writer\SlackWebhook` for monolog's
+    `SlackWebhookHandler`.
+  - **Not validator or translation yet**, despite reading as low-coupling:
+    `Laminas\Validator` is in 41 files and `Laminas\InputFilter` in 48, and
+    laminas-form *requires* laminas-validator regardless — adopting
+    symfony/validator now adds a second validation system while removing
+    nothing. It belongs to the form-by-form port, where each form brings its
+    constraints along. Translation touches only 12 files but is wired
+    through laminas-mvc-i18n into the router and view helpers, and JTranslate
+    exists to manage those files; it lands naturally with Twig.
 
 ## Next
 
@@ -198,9 +217,28 @@ Background and measurements: [caching.md](caching.md).
 
 ## Deploy ops
 
-- [ ] Replace `/sm/clear-persistent-cache` (long-lived API key in the URL —
-  shell history, access logs) with a CLI command. The strangler brings
-  symfony/console naturally; don't invest in laminas-cli first.
+- [ ] **Drop the `?key=` fallback** now that every endpoint also accepts an
+  `X-Api-Key` header (`SionModel\Controller\MaintenanceKeyTrait`). The query
+  parameter still works only because the deploy config that sends it lives in
+  each machine's gitignored `phploy.ini`, which no commit here can update.
+  Sequence: land the header change, update `phploy.ini` on every deploying
+  machine from the new `phploy.ini.dist`, deploy once, then delete the
+  fallback from the trait. Until then the leak is still reachable — a caller
+  that keeps using `?key=` keeps writing the key to the access log.
+  - Established 2026-08-04, worth not re-deriving: **the flush cannot become
+    a pure CLI command.** The persistent cache is the APCu adapter, and an
+    APCu segment belongs to the SAPI that created it, so a CLI process gets
+    its own (or none, with the default `apc.enable_cli=0`). Measured: a CLI
+    `apcu_clear_cache()` left all 21 web-segment entries untouched. Only an
+    HTTP request into the web SAPI can flush it, which is what
+    `cache:flush-persistent` does.
+- [ ] Port `/en/associations/do-work` to a console command. It is the last
+  deploy hook that is still a `wget` (now header-authenticated, so it is no
+  longer a leak — just the odd one out). Unlike the cache flush this one is
+  genuinely CLI work: `SchoenstattTable::autoFillTimeZones()` and
+  `updateAssociationMd5s()` touch only the database. Needs an acting-user
+  decision first — `ActingUserProviderInterface` has no session identity on
+  CLI.
 - [ ] phploy upstream PRs (banago/PHPloy): the directory-purge bug (deletes
   parent-directory chains recursively, took out module/JUser/src on deploy
   day) and `--list` silently skipping submodules. Alternatively, if phploy

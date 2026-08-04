@@ -58,7 +58,8 @@
         "laminas/laminas-router": "^3.3",
         "laminas/laminas-db": "^2.11",
         "laminas/laminas-mvc-plugin-flashmessenger": "^1.2",
-        "laminas/laminas-crypt": "^3.3"
+        "laminas/laminas-crypt": "^3.3",
+        "symfony/console": "^7.3"
     },
     "require-dev": {
         "laminas/laminas-developer-tools": "^2.10",
