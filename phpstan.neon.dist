@@ -14,6 +14,7 @@ parameters:
     # "class not found" errors. Keep in step with config.platform.php.
     phpVersion: 80400
     paths:
+        - src
         - module/Application/src
         - module/Bible/src
         - module/Books/src
