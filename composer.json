@@ -131,9 +131,11 @@
         "smoke": "docker compose exec -T app php tools/phpunit.phar --testsuite smoke",
         "unit": "docker compose exec -T app php tools/phpunit.phar --testsuite unit",
         "integration": "docker compose exec -T app php tools/phpunit.phar --testsuite integration",
-        "test": "docker compose exec -T app php tools/phpunit.phar"
+        "test": "docker compose exec -T app php tools/phpunit.phar",
+        "stan": "docker compose exec -T app php -d memory_limit=1G tools/phpstan.phar analyse"
     },
     "scripts-descriptions": {
-        "smoke": "Run the HTTP smoke suite against the running capsule. ONE process at a time — never fan this out in parallel."
+        "smoke": "Run the HTTP smoke suite against the running capsule. ONE process at a time — never fan this out in parallel.",
+        "stan": "Run PHPStan against the module sources. Contract is 'no new errors': pre-existing ones live in phpstan-baseline.neon."
     }
 }
