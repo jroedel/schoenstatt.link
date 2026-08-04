@@ -4,6 +4,7 @@ namespace SchoenstattTest\Integration;
 
 use Books\View\Helper\FormSelectWithoutOptions;
 use Laminas\Form\Element\Select;
+use Laminas\I18n\Translator\Loader\PhpMemoryArray;
 use Laminas\View\Renderer\PhpRenderer;
 use PHPUnit\Framework\TestCase;
 
@@ -103,5 +104,45 @@ class FormSelectWithoutOptionsContractTest extends TestCase
         $helper->setTranslatorEnabled(false);
 
         self::assertFalse($helper->isTranslatorEnabled());
+    }
+
+    /**
+     * ...and disabling it has to actually stop option labels being translated.
+     * Rendering is delegated now, so the translator state must travel with the
+     * delegation — otherwise setTranslatorEnabled(false) would silently become
+     * a no-op.
+     */
+    public function testDisablingTheTranslatorSuppressesLabelTranslation(): void
+    {
+        $translator = new \Laminas\I18n\Translator\Translator();
+        $translator->getPluginManager()->setService('PhpMemoryArray', new PhpMemoryArray([
+            'default' => ['en_US' => ['Kentenich' => 'TRANSLATED']],
+        ]));
+        $translator->addRemoteTranslations('PhpMemoryArray', 'default');
+        $translator->setLocale('en_US');
+
+        $enabled = $this->helper();
+        $enabled->setTranslator($translator);
+        self::assertStringContainsString('>TRANSLATED<', ($enabled)($this->multiSelect()));
+
+        $disabled = $this->helper();
+        $disabled->setTranslator($translator);
+        $disabled->setTranslatorEnabled(false);
+        self::assertStringContainsString('>Kentenich<', ($disabled)($this->multiSelect()));
+    }
+
+    /**
+     * An empty option that is not itself selected was dropped by the old
+     * implementation, because FormSelect::render() prepends it only after the
+     * point where renderOptions() filtered.
+     */
+    public function testUnselectedEmptyOptionIsDropped(): void
+    {
+        $select = $this->multiSelect();
+        $select->setEmptyOption('Choose...');
+
+        $html = ($this->helper())($select);
+
+        self::assertStringNotContainsString('Choose...', $html);
     }
 }

@@ -112,13 +112,28 @@ class SortTextFilterContractTest extends TestCase
     }
 
     /**
-     * An invalid regex must still be refused — this is the one behaviour that
-     * came from PregReplace::setPattern() and had to be reimplemented.
+     * The one check that came from PregReplace::setPattern(): the "e" pattern
+     * modifier is refused. Note this is all PregReplace ever validated — it
+     * never checked that the pattern actually compiles — so the reimplemented
+     * setPattern() must not start being stricter.
      */
-    public function testInvalidPatternIsRejected(): void
+    public function testPatternWithEModifierIsRejected(): void
+    {
+        $this->expectException(\Laminas\Filter\Exception\InvalidArgumentException::class);
+        $this->expectExceptionMessage('may not contain the "e" pattern modifier');
+
+        new SortText('/^(\d)$/e', '%1$s');
+    }
+
+    /**
+     * A format demanding more parameters than the pattern's capture groups and
+     * tokens can supply is refused.
+     */
+    public function testFormatDemandingMoreParametersThanAvailableIsRejected(): void
     {
         $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('contains 2 params, but we only have 1 regex params');
 
-        new SortText('not-a-valid-regex', '%1$s');
+        new SortText('/^(\d)$/', '%1$s %2$s');
     }
 }

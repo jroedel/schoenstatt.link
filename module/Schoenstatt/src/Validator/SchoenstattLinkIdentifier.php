@@ -1,9 +1,17 @@
 <?php
+
 namespace Schoenstatt\Validator;
 
-use Laminas\Validator\Regex;
+use SionModel\Validator\AbstractPatternValidator;
 
-class SchoenstattLinkIdentifier extends Regex
+/**
+ * Validates a site-wide Schoenstatt link identifier (e.g. SL300001P).
+ *
+ * Extends AbstractPatternValidator rather than Laminas\Validator\Regex, which
+ * laminas marked `@final`. Beyond validation this class is the canonical home
+ * of the entity-type constants below, which are read across ~15 files.
+ */
+class SchoenstattLinkIdentifier extends AbstractPatternValidator
 {
     const ENTITY_ASSOCIATION = 'association';
     const ENTITY_PERSON  = 'person';
