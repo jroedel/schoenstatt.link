@@ -80,6 +80,47 @@ than assumed.
 Non-obvious: the web SAPI and CLI have **separate** APCu segments, so a CLI
 probe cannot see what the site cached. Use the endpoint, not a shell one-liner.
 
+## The other shared cache: OPcache
+
+The same response carries an `opcache` block (added 2026-08-04, once OPcache was
+enabled in production). It is reported here for the same reason APCu is: an
+OPcache segment also belongs to the SAPI that created it — `opcache.enable_cli`
+is off — so only a request into the web SAPI can say what the site has compiled.
+
+The two caches fail *differently*, and that is what the fields are chosen for.
+APCu degrades to misses as it fills. OPcache does not degrade at all: when it
+runs out of memory or hash slots it **restarts**, discarding every compiled
+script, and the only lasting evidence is a counter. So:
+
+- `oomRestarts` / `hashRestarts` are the OPcache analogue of APCu's `expunges` —
+  non-zero means the cache has already been thrown away at least once.
+- `cacheFull` is OPcache saying outright that it has no room for new scripts.
+- `memoryPercentUsed` counts wasted memory as used, because stale entries occupy
+  the segment and cannot be handed to a new script.
+- `keysPercentUsed` is measured against `maxCachedKeys`, **not** against
+  `opcache.max_accelerated_files`. PHP rounds the script hash table up to the
+  next prime, so a configured 10000 reports a real ceiling of 16229. Measuring
+  against the configured number understates the headroom — the wrong direction
+  to be wrong about a cache that flushes when it fills. Both numbers are
+  reported (`maxCachedKeys`, `maxAcceleratedFilesConfigured`) so the difference
+  is visible rather than surprising.
+- `cachedKeys` exceeds `cachedScripts` because one script can occupy several
+  keys (the include path plus the resolved realpath). Compare keys, not scripts,
+  against the ceiling.
+- `validateTimestamps` is surfaced because it decides whether a deploy needs a
+  pool restart. With it on (the current setting, `revalidate_freq=2`) changed
+  files are noticed within seconds. With it off, a deploy is invisible to
+  OPcache and would serve the previous release until `pkill -u ourlink -f php`.
+
+`tools/smoke-prod.sh` polls all of this and warns — never fails — at 80% memory
+or keys, 90% interned strings, any restart, `cacheFull`, or timestamp validation
+being off. First live reading after enabling OPcache: ~29% memory, ~15% of 16229
+keys, 99.2% hit rate.
+
+The arithmetic lives in `SionModel\Cache\OpcacheStatus`, kept out of the
+controller so it is unit-testable without a container
+(`test/Unit/OpcacheStatusTest.php`).
+
 ## Cautions when adding a cached call
 
 - Cache what the caller needs, not the table. A full-table cache key is almost

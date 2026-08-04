@@ -53,6 +53,57 @@ class SionModelSmokeTest extends SmokeTestCase
     }
 
     /**
+     * OPcache occupancy, reported alongside APCu because neither segment can be
+     * read from anywhere but the web SAPI that owns it.
+     *
+     * Asserted here rather than trusted because `tools/smoke-prod.sh` greps these
+     * exact key names to decide whether to warn — a rename would silence the
+     * production warnings without failing anything.
+     */
+    public function testCacheStatusReportsOpcacheAlongsideApcu(): void
+    {
+        $response = $this->request('GET', '/en/sm/cache-status', ['X-Api-Key: ' . self::DEV_API_KEY]);
+
+        $this->assertSame(200, $response['status']);
+        $status = json_decode($response['body'], true);
+        $this->assertIsArray($status);
+
+        //the APCu keys stay top-level and unprefixed: existing consumers read them
+        $this->assertArrayHasKey('apcuEnabled', $status);
+        $this->assertArrayHasKey('opcache', $status);
+        $this->assertIsArray($status['opcache']);
+
+        $opcache = $status['opcache'];
+        $this->assertTrue($opcache['enabled'], 'the capsule runs OPcache, as production does');
+
+        foreach (
+            [
+                'cacheFull',
+                'memoryPercentUsed',
+                'keysPercentUsed',
+                'cachedScripts',
+                'maxCachedKeys',
+                'hitRatePercent',
+                'oomRestarts',
+                'hashRestarts',
+                'internedPercentUsed',
+                'validateTimestamps',
+            ] as $key
+        ) {
+            $this->assertArrayHasKey($key, $opcache, "smoke-prod.sh greps for \"$key\"");
+        }
+
+        $this->assertGreaterThan(0, $opcache['cachedScripts'], 'the request that answered this was itself compiled');
+        //the real ceiling is the prime-rounded table size, which is larger than
+        //the configured max_accelerated_files — never equal to it
+        $this->assertGreaterThanOrEqual(
+            $opcache['maxAcceleratedFilesConfigured'],
+            $opcache['maxCachedKeys']
+        );
+        $this->assertLessThanOrEqual(100, $opcache['keysPercentUsed']);
+    }
+
+    /**
      * The supported channel for the maintenance key. A query string is written
      * to the web server's access log and kept in shell history, so the deploy
      * sends the key as a header instead — this is the assertion that the server
