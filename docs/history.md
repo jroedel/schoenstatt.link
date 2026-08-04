@@ -438,3 +438,78 @@ Nothing asserted those canonical tags before, which is why the mechanism could
 be swapped unnoticed — `test/Smoke/CanonicalLinkSmokeTest` now pins them, and
 was mutation-checked (host forced to `mutant.example` → 2 failures, clean on
 restore) rather than merely observed to pass.
+
+## PHPStan level ladder, measured (2026-08-05)
+
+The backlog had carried "raise PHPStan from level 0" as the biggest durability
+lever for weeks. Measuring it first changed the answer.
+
+**The numbers.** New errors beyond the existing baseline, per level: 234, 673,
+762, 1094, 1202, 2586, 2745, 2809, 3647 (levels 1–9), across 67→316 files.
+
+**Level 1's 234 errors are not 234 problems, and that is the whole finding.**
+Grouping them by normalized message:
+
+- **115 are false positives** — `flashMessenger()` (53), `nowMessenger()` (35),
+  `isAllowed()` (24), `zfcUserAuthentication()` (2), all resolved at runtime
+  through `AbstractController::__call` against the controller-plugin manager.
+  PHPStan cannot see that indirection without an extension.
+- **82 are `isset()` on a variable that always exists** — dead defensive code,
+  harmless.
+- **~37 are worth reading**, and they were: 3 arity mismatches, 5 calls to
+  methods that do not exist, 14 possibly-undefined variables, plus unused
+  constructor parameters.
+
+So raising to level 1 would have cost ~200 baseline entries to buy ~37
+findings, and diluted the "no new errors" contract that makes the baseline
+useful. **The decision recorded: teach PHPStan the plugin managers first —
+or skip the extension entirely, because the whole false-positive class
+evaporates under Symfony, where plugins become explicit dependencies.**
+
+**Harvesting findings does not require raising the level.** `phpstan analyse
+--level 1` run ad hoc is what produced the fixes below; the committed level
+stays 0. This is the reusable move: treat a higher level as an *audit tool*
+first and a *gate* only once its false-positive rate is known.
+
+### What the audit actually caught
+
+Four of the level-1 findings were the same bug shape as things already on the
+backlog, which is a good sign the tool was pointed somewhere useful:
+
+- **`LibraryTable:1038`'s `$checkout` leak** — already characterized in the
+  backlog from a manual read. Level 1 finds it independently, for free.
+- **`Mailer:209` calls `Rand::getString()` with 3 arguments for 1–2
+  parameters.** That is the magic-link token generator, and the
+  `laminas/laminas-math` retirement item had already flagged the call site as
+  needing care. PHP silently discards surplus arguments to userland functions,
+  so the dropped third argument — almost certainly ZF's old `$strong` flag,
+  gone in laminas-math 3 — has been ignored without a whisper.
+- **`DictionaryTableFactory:29` builds a 3-parameter constructor with 4
+  arguments**, in the same feature as the open `/en/dictionary` 404.
+
+### Fixed in the same pass
+
+**`throw \Exception('...')` with no `new`, 7 sites** across Bible (3),
+JTranslate (3) and Schoenstatt (1). PHP parses that as a *function call*, so
+each raised `Error: Call to undefined function \Exception()` — the wrong type,
+with a message describing nothing. The reachable one was
+`CountriesInfo::getTranslatedCountryNames()`, called from four places with
+`Locale::getPrimaryLanguage(Locale::getDefault())`; any locale outside its
+six-entry `$langMap` takes the throw path.
+
+**The last dynamic property.** `SionTable`'s constructor assigned a *singular*
+`$changeTableName` while the class declared a *plural* `$changesTableName` that
+was never assigned or read. Five readers used the singular name too, so the fix
+was a rename onto the dead declaration rather than a new property — six sites
+moving together, no behaviour change, and one fewer PHP 9 gate.
+
+**`getCountry(?string)`.** Both callers pass a nullable DB column and already
+guard the result with `isset()`, so declaring the nullability was free. It had
+been raising `strtoupper(null)` once per country-less row — eleven times on a
+single association listing.
+
+Baseline: **33 → 26 entries, 49 → 34 errors.** Regenerating it rather than
+hand-editing also cleared a stale `SchoenstattLinkIdentifier::$entityType`
+entry, fixed the day before but still listed — silent only because
+`reportUnmatchedIgnoredErrors` is off. Worth knowing that flag hides its own
+staleness.
