@@ -167,12 +167,31 @@ readability — the destination is **Symfony**, reached gradually:
 
 - [ ] **SchoenstattTable ACL providers** (dormant 2020 WIP): `getRules()`
   grants roles that don't exist in production (`sch_international_leader`,
-  `sch_institute_member`) — activating it fatals at boot; the provider
-  registration is disabled in `module/Schoenstatt/config/module.config.php`.
-  Decide the intended semantics (which real roles on person/association
-  resources), create missing `user_role` rows, re-enable, cover with tests —
-  or delete the WIP. Also weigh boot cost: both methods query all
-  persons/associations on every ACL build.
+  `sch_institute_member` — invented in code, in no migration under
+  `database/`), so activating it fatals at boot; the registration is disabled
+  in `module/Schoenstatt/config/module.config.php`.
+  - **What it actually is, read 2026-08-04 so nobody has to re-derive it.**
+    `getResources()` (`SchoenstattTable:3168`) emits one `GenericResource` per
+    person and per association — `person_<id>` / `association_<id>`, 823 of
+    them — which is a sound per-entity substrate. `getRules()` (`:3185`) then
+    grants *all* of them the same two hard-coded roles. So it is **not**
+    data-driven authorization; the only dynamic part is the resource list.
+  - **The intended design looks like dynamic, data-derived authority** (e.g.
+    someone holding an office may edit people and associations beneath it), and
+    the schema already supports it end to end: `sch_associations.Parent` is the
+    association tree (397 of 498 have a parent), `sch_roles` is 1468 offices
+    each scoped by `AssociationId`, and `sch_assignments` is person↔office with
+    `StartDate`/`EndDate` (266 rows, 227 current). Three tells that this was the
+    aim: `formatRulesArray()` says `@todo finish development`; `getRules()`'s
+    docblock claims `@return AssertionAggregate` while returning a plain
+    `['allow' => …]` array; and `getRoleTableGateway()` returns a gateway on
+    `sch_roles` and has zero callers.
+  - **Therefore finish it with assertions, not static rules** — a static array
+    cannot relate the acting user to the target resource, which is the whole
+    requirement. That also disposes of the boot-cost problem: both methods
+    currently load every person and association on every ACL build, whereas an
+    assertion needs only the acting user's current offices plus an ancestor
+    walk. Alternatively delete the WIP.
 - [ ] API registration allow-list (old @todo in `LoginV1ApiController`): API
   magic-code login does not auto-create accounts; the web flow does.
 - [ ] Drop the now-unread `user.password` column once passwordless has
@@ -190,10 +209,11 @@ readability — the destination is **Symfony**, reached gradually:
   others are whole features: `event`, `event-edit`, `events/create`,
   `collections`, `checkouts`, `assignments`, `library-imports`,
   `admin/moderate`, `admin/data-problems`, `dictionary/entry`,
-  `sign-in-no-cookies`. Strong suspicion these are the fallout of the disabled
-  `SchoenstattTable` ACL provider below — it was meant to supply exactly this
-  kind of rule — so decide that item first and re-measure. Needs a role
-  decision per route, which is why none were added blind.
+  `sign-in-no-cookies`. **Not** related to the disabled `SchoenstattTable`
+  provider below, despite an earlier note here saying so: that provider only
+  ever emits `person_*`/`association_*` resources, never `route/*` ones, so it
+  could not have guarded a route. Needs a role decision per route, which is why
+  none were added blind.
 - [ ] **8 template permission checks name an ACL resource that does not
   exist**, listed in `AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`.
   `BjyAuthorize\View\Helper\IsAllowed` answers *false* for an unknown resource
