@@ -180,6 +180,49 @@ class AclGuardRouteDriftTest extends TestCase
     }
 
     /**
+     * A route named by two guard entries with the *same* roles is pure
+     * redundancy, and worth failing on because the duplication is invisible in
+     * its effect: BjyAuthorize keys rules by resource and assigns rather than
+     * merges (`AbstractGuard::__construct`), so for a repeated route the last
+     * entry in the merged config wins outright and the earlier one is
+     * discarded silently.
+     *
+     * Entries that repeat a route with *different* roles are allowed, because
+     * that is the only way to override a shared module's default — JUser
+     * declares zfcuser/register for ['guest', 'user'] and this application
+     * narrows it to ['guest']. That works because config/autoload/ merges after
+     * module config, so it is load order rather than precedence; the override
+     * carries a comment saying so.
+     */
+    public function testNoRouteIsGuardedTwiceWithIdenticalRoles(): void
+    {
+        $entries = $this->config()['bjyauthorize']['guards']['BjyAuthorize\Guard\Route'] ?? [];
+
+        $byRoute = [];
+        foreach ($entries as $entry) {
+            if (isset($entry['route'])) {
+                $roles = array_map(static fn ($r) => var_export($r, true), (array) ($entry['roles'] ?? []));
+                sort($roles);
+                $byRoute[(string) $entry['route']][] = implode(',', $roles);
+            }
+        }
+
+        $redundant = [];
+        foreach ($byRoute as $route => $roleSets) {
+            if (count($roleSets) !== count(array_unique($roleSets))) {
+                $redundant[] = $route;
+            }
+        }
+
+        self::assertSame(
+            [],
+            $redundant,
+            'these routes are guarded more than once with identical roles. One of each pair is silently '
+            . 'discarded, so the duplication is dead weight — delete the copy that is not the intended owner.'
+        );
+    }
+
+    /**
      * The quiet half of the same problem, and the reason removing a guard entry
      * is not automatically safe.
      *

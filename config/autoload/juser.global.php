@@ -56,11 +56,22 @@ return [
              * access to all routes unless they are specified here.
             */
             'BjyAuthorize\Guard\Route' => [
-                ['route' => 'zfcuser/login', 'roles' => ['guest', 'user']],
+                /* These two deliberately tighten JUser's own defaults, which
+                 * allow ['guest', 'user'] for both. BjyAuthorize keys its rules
+                 * by resource and *assigns* rather than merges
+                 * (AbstractGuard::__construct), so for a route named twice the
+                 * last entry in the merged config wins outright and the earlier
+                 * one is discarded silently. config/autoload/ merges after
+                 * module config, so these win — but the mechanism is load
+                 * order, not precedence, so do not restate a JUser default
+                 * here unless you mean to change it. Entries for
+                 * zfcuser/login and zfcuser/verify used to sit here repeating
+                 * JUser's defaults verbatim; they were removed as pure
+                 * duplication.
+                 */
                 ['route' => 'zfcuser/logout', 'roles' => ['user']],
 //                 ['route' => 'change-email', 'roles' => ['user']],
                 ['route' => 'zfcuser/register', 'roles' => ['guest']],
-                ['route' => 'zfcuser/verify', 'roles' => ['guest', 'user']],
                 ['route' => 'juser/verify-email', 'roles' => ['guest', 'user', null]],
                 ['route' => 'juser/thanks', 'roles' => ['guest', 'user', null]],
                 ['route' => 'juser', 'roles' => ['administrator']],
