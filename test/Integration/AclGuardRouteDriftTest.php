@@ -2,7 +2,8 @@
 
 namespace SchoenstattTest\Integration;
 
-use Laminas\Mvc\Application;
+use Laminas\Mvc\Service\ServiceManagerConfig;
+use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -29,42 +30,81 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * not paths, and nesting makes them `parent/child` — `libraries/checkouts` was
  * carried for years alongside the real `checkouts/library`.
  *
- * Needs vendor/ and a full module bootstrap to read the merged config, so it
- * lives in the integration suite: php composer.phar integration
+ * Needs vendor/ to merge the module configuration, but deliberately stops short
+ * of bootstrapping the application: no database, no running app. Runs anywhere
+ * composer install has happened — php composer.phar integration, and in CI.
  */
 class AclGuardRouteDriftTest extends TestCase
 {
     /** @var array<string, mixed>|null */
     private static ?array $config = null;
 
-    private static ?Application $app = null;
-
-    private function app(): Application
-    {
-        if (null === self::$app) {
-            self::$app = Application::init(require __DIR__ . '/../../config/application.config.php');
-        }
-
-        return self::$app;
-    }
-
     /**
+     * The merged module configuration, obtained the way bin/console does it:
+     * build the ServiceManager and load modules, but never call bootstrap().
+     *
+     * Two things matter here. Bootstrapping would instantiate table services
+     * and need a database, which this suite deliberately does not have; and the
+     * config cache must be off, or the module listener tries to write
+     * data/config/ — which fails outright on a bare CI runner and, worse, could
+     * leave a cache file owned by the wrong user next to a real deployment.
+     *
      * @return array<string, mixed>
      */
     private function config(): array
     {
-        if (null === self::$config) {
-            /** @var array<string, mixed> $config */
-            $config       = $this->app()->getServiceManager()->get('config');
-            self::$config = $config;
+        if (null !== self::$config) {
+            return self::$config;
         }
 
-        return self::$config;
+        $appConfig = require __DIR__ . '/../../config/application.config.php';
+        $appConfig['module_listener_options']['config_cache_enabled']     = false;
+        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
+
+        $serviceManager = new ServiceManager();
+        (new ServiceManagerConfig($appConfig['service_manager'] ?? []))
+            ->configureServiceManager($serviceManager);
+        $serviceManager->setService('ApplicationConfig', $appConfig);
+        $serviceManager->get('ModuleManager')->loadModules();
+
+        /** @var array<string, mixed> $config */
+        $config = $serviceManager->get('config');
+
+        return self::$config = $config;
     }
 
-    private function acl(): \Laminas\Permissions\Acl\AclInterface
+    /**
+     * Every `route/...` ACL resource the configuration declares.
+     *
+     * bjyauthorize builds these from two places, and reading only the guards
+     * reports false positives: the Route guard turns each of its entries into a
+     * resource, and BjyAuthorize\Provider\Resource\Config (acl.global.php)
+     * declares more by hand. Derived from config rather than from a built ACL
+     * because assembling the ACL needs the database.
+     *
+     * @return array<string, true>
+     */
+    private function declaredRouteResources(): array
     {
-        return $this->app()->getServiceManager()->get('BjyAuthorize\Service\Authorize')->getAcl();
+        $resources = [];
+
+        foreach ($this->guardedRouteNames() as $name) {
+            $resources['route/' . $name] = true;
+        }
+
+        $providers = $this->config()['bjyauthorize']['resource_providers'] ?? [];
+        foreach ($providers['BjyAuthorize\Provider\Resource\Config'] ?? [] as $key => $value) {
+            // The provider accepts both a flat list of names and a
+            // name => children map.
+            $resources[is_int($key) ? (string) $value : (string) $key] = true;
+            if (is_array($value)) {
+                foreach ($value as $child) {
+                    $resources[(string) $child] = true;
+                }
+            }
+        }
+
+        return $resources;
     }
 
     /**
@@ -157,11 +197,8 @@ class AclGuardRouteDriftTest extends TestCase
      */
     public function testNoNewSilentlyDeadPermissionChecks(): void
     {
-        // Ask the assembled ACL, not the guard list: resources also arrive via
-        // BjyAuthorize\Provider\Resource\Config in acl.global.php, so deriving
-        // them from guards alone reports false positives.
-        $acl     = $this->acl();
-        $missing = [];
+        $declared = $this->declaredRouteResources();
+        $missing  = [];
 
         foreach ($this->viewFiles() as $file) {
             $source = file_get_contents($file);
@@ -174,7 +211,7 @@ class AclGuardRouteDriftTest extends TestCase
             }
 
             foreach ($matches[1] as $route) {
-                if (! $acl->hasResource('route/' . $route)) {
+                if (! isset($declared['route/' . $route])) {
                     $missing[] = sprintf('%s asks about route/%s', basename($file), $route);
                 }
             }
