@@ -96,12 +96,29 @@ readability — the destination is **Symfony**, reached gradually:
     5.0.0 (May 2024) is the only release. The insurance fork
     github.com/jroedel/laminas-twb-bundle exists but is **unmodified** — it
     still carries the `~8.3` cap, so it needs the bump too.
-  - Both remaining gates need an upstream constraint bump, and a bump is not
-    proof of compatibility: 8.4's headline deprecation is implicit-nullable
-    parameters (`function f(Foo $x = null)`), which is exactly the shape
-    2024-era library code is full of. Plan: flip the capsule to
-    `PHP_VERSION=8.4` first and run both libraries under it, *then* PR the
-    constraint with evidence.
+  - **Compatibility measured 2026-08-04 on a real 8.4 capsule** (`PHP_VERSION=8.4`
+    + `APCU_VERSION=5.1.24` builds and runs; PHP 8.4.24), with the 8.3-resolved
+    `vendor/` mounted so the caps could be bypassed: **the whole suite passed,
+    198 tests / 577 assertions, and the homepage rendered byte-identically
+    (10757 bytes).** So both packages *work* on 8.4 — the constraints are
+    conservative, not protective.
+    What they do emit is 8.4's implicit-nullable-parameter deprecation, counted
+    by loading every class in each package under `E_ALL` (the deprecation fires
+    at compile time, so a plain `include` surfaces it):
+
+    | package | files | deprecations |
+    |---|---|---|
+    | `slm/locale` | 25 | **5** |
+    | `diablomedia/laminas-twb-bundle` | 28 | **18** |
+
+    Every one is the same mechanical edit — `Foo $x = null` → `?Foo $x = null`.
+    The app masks `E_DEPRECATED` in `public/index.php`, so these are invisible
+    to us in practice, but an upstream PR should fix them rather than only widen
+    the constraint, or it hands 8.4 users on `E_ALL` a wall of noise.
+  - So each upstream PR is: add `~8.4.0`, plus 5 (SlmLocale) / 18 (TwbBundle)
+    one-line signature fixes. **Outward-facing to third-party maintainers —
+    ask before opening.** `jroedel/laminas-twb-bundle` can carry the TwbBundle
+    branch; SlmLocale has no fork yet.
   - laminas-mvc 3.8 supports 8.4 — which is also its ceiling. Production flips
     konsoleH PHP in the same deploy; `require.php` and `config.platform` move
     together.
