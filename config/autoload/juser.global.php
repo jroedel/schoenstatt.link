@@ -74,7 +74,7 @@ return [
     ],
     'service_manager' => [
         'aliases' => [
-            'JUser\Logger' => \Laminas\Log\LoggerInterface::class
+            'JUser\Logger' => \Psr\Log\LoggerInterface::class
         ],
     ],
 ];

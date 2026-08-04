@@ -50,7 +50,6 @@
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
         "laminas/laminas-form": "^3.24",
-        "laminas/laminas-log": "^2.17",
         "laminas/laminas-serializer": "^2.17",
         "laminas/laminas-cache-storage-adapter-apcu": "^2.5",
         "laminas/laminas-cache-storage-adapter-filesystem": "^2.5",
@@ -59,7 +58,8 @@
         "laminas/laminas-db": "^2.11",
         "laminas/laminas-mvc-plugin-flashmessenger": "^1.2",
         "laminas/laminas-crypt": "^3.3",
-        "symfony/console": "^7.3"
+        "symfony/console": "^7.3",
+        "monolog/monolog": "^3.10"
     },
     "require-dev": {
         "laminas/laminas-developer-tools": "^2.10",

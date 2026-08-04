@@ -62,11 +62,12 @@ readability — the destination is **Symfony**, reached gradually:
     laminas-mvc's HTTP dispatch. Same seam later serves doctrine/migrations
     and cron-style commands. Carries the maintenance-key deploy-ops item
     below.
-  - *monolog* retires abandoned `laminas-log` (16 files) outright and puts
-    PSR-3 `LoggerInterface` typehints in place of a laminas concrete —
-    exactly what Symfony DI autowires later. Deletes the hand-rolled
-    `Application\Log\Writer\SlackWebhook` for monolog's
-    `SlackWebhookHandler`.
+  - *monolog* retires abandoned `laminas-log` outright and puts PSR-3
+    `LoggerInterface` typehints in place of a laminas concrete — exactly what
+    Symfony DI autowires later. It also unpins `psr/log`: laminas-log's
+    `^1.1.2` constraint was the only thing holding the project on psr/log 1,
+    so removing it frees the 3.x line that monolog 3 and symfony/mailer both
+    want.
   - **Not validator or translation yet**, despite reading as low-coupling:
     `Laminas\Validator` is in 41 files and `Laminas\InputFilter` in 48, and
     laminas-form *requires* laminas-validator regardless — adopting
@@ -252,8 +253,13 @@ Background and measurements: [caching.md](caching.md).
   nonce- or hash-based). Roll out via `Content-Security-Policy-Report-Only`
   first. Natural rung: alongside asset-pipeline work — or fold into the Twig
   migration, which touches every template anyway.
-- [ ] `laminas-log` is abandoned upstream — migrate to PSR-3/monolog
-  (~15 files).
+- [ ] Consider narrowing the application log's level. Both loggers write at
+  `Level::Debug` because that is exactly what laminas-log did (a Logger with a
+  Stream writer and no priority filter wrote every event), so
+  `SionCacheTrait`'s per-cache-write `debug()` calls have always landed in
+  `data/logs/application_*.log` — hence its size. Raising the threshold is a
+  real decision about what the log is for, deliberately not folded into the
+  monolog port.
 
 ## Shared libraries / patres convergence
 

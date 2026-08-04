@@ -204,6 +204,12 @@ class RecordingCache
     }
 }
 
+/**
+ * A duck-typed PSR-3 logger: method names match Psr\Log\LoggerInterface, but the
+ * interface is deliberately not implemented — this suite requires the class under
+ * test directly, with no vendor autoload, so it stays valid while vendor/ is
+ * mid-migration.
+ */
 class RecordingLogger
 {
     /** @var array[] */
@@ -212,18 +218,18 @@ class RecordingLogger
     /** @var array[] */
     private $errors = [];
 
-    public function debug($message, $extra = [])
+    public function debug($message, $context = [])
     {
     }
 
-    public function warn($message, $extra = [])
+    public function warning($message, $context = [])
     {
-        $this->warnings[] = ['message' => $message, 'extra' => $extra];
+        $this->warnings[] = ['message' => $message, 'extra' => $context];
     }
 
-    public function err($message, $extra = [])
+    public function error($message, $context = [])
     {
-        $this->errors[] = ['message' => $message, 'extra' => $extra];
+        $this->errors[] = ['message' => $message, 'extra' => $context];
     }
 
     /** @return array[] */
