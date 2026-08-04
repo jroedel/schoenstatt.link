@@ -98,7 +98,14 @@ readability — the destination is **Symfony**, reached gradually:
     flipped: `config.platform` pins `php 8.4.24`, `lib-icu 76.1` and
     `ext-apcu 5.1.24`, all copied from the capsule. Read the real values from
     `/en/sm/cache-status` (`phpVersion`) and `/en/sm/phpinfo`.
-  - **The per-version php.ini is the flip's real hazard** — see DEPLOY.md.
+  - **Order is not optional: flip konsoleH to 8.4 BEFORE deploying.** Composer
+    generates `vendor/composer/platform_check.php` from the `>= 8.4.0`
+    requirement and it is evaluated on *every* request, so deploying this onto
+    an 8.3 server hard-fatals the whole site rather than degrading. CI caught
+    exactly this (it was still on 8.3 and died in `platform_check.php`), which
+    is the cheap version of the same lesson. The reverse order is safe: 8.4
+    running the previous release is a state the capsule already verified.
+  - **The per-version php.ini is the flip's other hazard** — see DEPLOY.md.
     8.4 reads `/home/httpd/php84-ini/ourlink/php.ini`, a different file from
     the 8.3 one, so panel/ini tuning does not follow automatically.
   - A full `composer update` would additionally pull symfony/css-selector,
