@@ -167,6 +167,10 @@ return [
     'view_helpers' => [
         'aliases' => [
             'formElement' => 'TwbBundle\Form\View\Helper\TwbBundleFormElement',
+            'requestUri'  => View\Helper\RequestUri::class,
+        ],
+        'factories' => [
+            View\Helper\RequestUri::class => Service\RequestUriFactory::class,
         ],
     ],
 ];
