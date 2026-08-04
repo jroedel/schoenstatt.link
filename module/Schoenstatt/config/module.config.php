@@ -1974,14 +1974,20 @@ return [
         ],
     ],
     'bjyauthorize' => [
-        // NOTE (2026-08-01): commit 988c24d registered SchoenstattTable as
-        // resource/rule provider here, but its getRules() is unfinished 2020
-        // code referencing roles (sch_international_leader,
-        // sch_institute_member) that don't exist in the production DB — the
-        // app cannot boot with it active. Production has always run WITHOUT
-        // these providers (a duplicate-key bug silently discarded them), so
-        // they stay disabled for the production-faithful baseline. Finishing
-        // this feature is tracked in docs/BACKLOG.md.
+        // NOTE (2026-08-04): SchoenstattTable used to implement BjyAuthorize's
+        // resource/rule provider interfaces, registered here by commit 988c24d
+        // and disabled again the same day because its getRules() granted two
+        // roles that exist in no migration — the app could not boot with it
+        // active. Production never ran it.
+        //
+        // The dead code is now gone. It was not a foundation worth keeping:
+        // it granted every person and association to the same two hard-coded
+        // roles, so the only data-driven part was the resource list. The
+        // feature it was reaching for — offices conferring authority over the
+        // people and associations beneath them — needs ACL *assertions*, not
+        // the static rule array it built, and the schema to drive them
+        // (sch_roles, sch_assignments, sch_associations.Parent) is intact.
+        // docs/BACKLOG.md carries the design notes.
         'guards' => [
             'BjyAuthorize\Guard\Route' => [
                 ['route' => 'schoenstatt', 'roles' => ['sch_moderator']],
