@@ -383,3 +383,58 @@ Final verification was the form-regression harness run as an isolated A/B —
 same PHP 8.4.24 on both sides, only the code swapped — showing no drift across
 all 27 form-rendering pages. Baseline 42 entries/56 errors -> 35/49, purely by
 dropping stale patterns; suites 198 tests -> 348.
+
+## Retiring `getServiceLocator()` (2026-08-04)
+
+`ServiceManager::getServiceLocator()` has been deprecated since
+laminas-servicemanager 3.0 and raises `E_USER_DEPRECATED` on every call. The
+backlog carried three separate entries for it (`InlineScriptFactory`,
+`FilesController`, `layout.phtml`); a grep found **twenty** call sites across
+seven modules, so it was one piece of work rather than three drive-bys.
+
+**Eighteen of them were a pure no-op, and proving that was the whole job.**
+`ServiceManager::doCreate()` hands a factory `$this->creationContext`, and
+`AbstractPluginManager::__construct()` sets its own `creationContext` to the
+*parent* container. So a factory registered under `service_manager`,
+`controllers` or `view_helpers` alike already receives the application-level
+`ServiceManager` — whose `getServiceLocator()` returns `$this`. A throwaway
+probe registered a factory into all six manager types the app uses and printed
+identity: `identical=YES` six times, six deprecations raised. `$parentLocator`
+was an alias for `$container`, so the alias was deleted rather than reassigned.
+
+**The two real fixes were the ones the mechanical sweep could not reach.**
+`FilesController` could never have run — `parent::__construct('file')` against
+an eight-argument constructor — and nothing referenced it, so it was deleted
+along with the two `phpstan-baseline.neon` entries that existed only to silence
+it. `NowMessenger`'s `get`/`setServiceLocator()` pair had no callers on either
+side; the setter was never invoked by its factory.
+
+**`layout.phtml` needed a judgement call, and `ServerUrl` was the wrong answer.**
+The template reached the request only for its scheme and host, to absolutize the
+`rel=canonical` and `rel=alternate` link tags. `Laminas\View\Helper\ServerUrl`
+looks like the built-in fit, but it re-detects the scheme from `$_SERVER` under
+different rules than `Laminas\Http\PhpEnvironment\Request`: it wants
+`HTTPS === 'on'` exactly, and ignores `X-Forwarded-Proto` unless `useProxy` is
+enabled. Behind a TLS-terminating proxy it can report `http` where the request
+reports `https` — silently downgrading every canonical URL on the site. Since
+production's FastCGI setup could not be checked from here without touching it,
+the request object stayed the source of truth via a small
+`Application\View\Helper\RequestUri`, following the existing `RouteName`
+precedent (injected dependency, tiny factory).
+
+**Two measurement traps, both worth not re-learning:**
+
+- **The capsule runs `opcache.revalidate_freq=2`, same as production.** A
+  `git stash`/capture/`git stash pop` A/B inside that window compared a
+  *reverted* `module.config.php` against a *stale-cached* `layout.phtml` and
+  produced a 0-byte page. Any before/after capture against the capsule has to
+  wait out the revalidation window, or it is measuring OPcache.
+- **`layout.phtml` randomizes its language-switcher flags** (`Rand::getInteger`
+  picks `us`/`gb`, `de`/`ch`, …), so two captures of the same page never match
+  byte for byte. The controlled A/B differed on exactly that one line, which is
+  what confirmed the change was inert.
+
+Nothing asserted those canonical tags before, which is why the mechanism could
+be swapped unnoticed — `test/Smoke/CanonicalLinkSmokeTest` now pins them, and
+was mutation-checked (host forced to `mutant.example` → 2 failures, clean on
+restore) rather than merely observed to pass.

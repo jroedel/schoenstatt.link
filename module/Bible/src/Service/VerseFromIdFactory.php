@@ -20,9 +20,8 @@ class VerseFromIdFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
-        $parentLocator = $container->getServiceLocator();
         /** @var BibleTable $table */
-        $table = $parentLocator->get(BibleTable::class);
+        $table = $container->get(BibleTable::class);
         $books = $table->getObjects('bible-book');
         $viewHelper = new VerseFromId($books);
 

@@ -18,7 +18,7 @@ $routeName = $this->routeName();?>
         /** @var Uri $canonicalUrl */
         $languages = ['en' => 'en_US', 'es' => 'es_ES', 'de' => 'de_DE', 'pt' => 'pt_BR', 'it' => 'it_IT'];
         $currentLanguage = Locale::getPrimaryLanguage(Locale::getDefault());
-        $requestUri = $this->getHelperPluginManager()->getServiceLocator()->get('request')->getUri();
+        $requestUri = $this->requestUri();
         foreach ($languages as $languageId => $localeId) {
             $canonicalUrl = $this->localeUrl($localeId);
             $queryParams = $canonicalUrl->getQueryAsArray();
