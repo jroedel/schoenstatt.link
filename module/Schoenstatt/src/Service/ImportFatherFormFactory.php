@@ -17,7 +17,7 @@ class ImportFatherFormFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $persons = $container->get('Schoenstatt\FathersValueOptions');
         $form = new ImportFatherForm();

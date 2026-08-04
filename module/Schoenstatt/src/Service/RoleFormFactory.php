@@ -18,7 +18,7 @@ class RoleFormFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         /** @var SchoenstattTable $table **/
         $table = $container->get(SchoenstattTable::class);

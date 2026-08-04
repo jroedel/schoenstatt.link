@@ -13,7 +13,7 @@ class BibleTableFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $config = $container->get('Config');
         $dbAdapter = $container->get($config['books']['books_db_adapter']);

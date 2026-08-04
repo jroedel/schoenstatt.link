@@ -137,6 +137,16 @@ readability — the destination is **Symfony**, reached gradually:
       Fallback stays the forks — but note the TwbBundle fork was *unmodified*
       until now, so it is only a usable fallback with `feat/php-8.4` merged
       into its `main`.
+  - **Our own code emitted 107 of the same deprecations** (measured 2026-08-04 by
+    loading every class in `module/*/src` under `E_ALL` on 8.4.24): Application 5,
+    Bible 4, Books 26, JTranslate 9, JUser 18, Schoenstatt 17, SionModel 28,
+    RestApi 0. Almost all were the factory signature
+    `__invoke($container, $requestedName, array $options = null)`. Now 0 — fixed
+    across four repos. Worth knowing for next time: `grep` is not sufficient here,
+    because the notice fires at *compile* time (so a factory no test touches still
+    emits it) and multi-line signatures with no trailing comma escape a
+    line-oriented sweep — `SionForm::prepareForSuggestion()` was exactly that case
+    and only the runtime probe caught it.
   - laminas-mvc 3.8 supports 8.4 — which is also its ceiling. Production flips
     konsoleH PHP in the same deploy; `require.php` and `config.platform` move
     together.
