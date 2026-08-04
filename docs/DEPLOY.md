@@ -167,7 +167,7 @@ history.
   fix). Non-zero exit on any failure.
 - With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value — the
   same one the `do-work` hook sends), it also polls
-  `/en/sm/cache-status`, passing the key as an `X-Api-Key` header rather
+  `/en/sm/cache-status` (both APCu **and** OPcache), passing the key as an `X-Api-Key` header rather
   than in the URL, and WARNs — without failing — when the APCu
   segment is ≥80% full or has ever expunged. Until the production
   `apc.shm_size` raise lands, expect this to be the early-warning signal

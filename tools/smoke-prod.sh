@@ -174,6 +174,49 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
     else
         echo "note  cache-status unavailable (status $STATUS) — skipping the APCu check"
     fi
+
+    # OPcache, from the same response. Also advisory. OPcache does not degrade
+    # gracefully the way APCu does — when it runs out of memory or hash slots it
+    # restarts and discards every compiled script, so the restart counters are
+    # the signal that something already went wrong, and the percentages are the
+    # warning before it does. Keys are compared against max_cached_keys (the real
+    # prime-rounded table size), not the configured max_accelerated_files.
+    if [ "$STATUS" = "200" ] && grep -q '"opcache"' "$BODY"; then
+        if grep -q '"enabled":true' "$BODY"; then
+            OC_MEM=$(grep -o '"memoryPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
+            OC_KEYS=$(grep -o '"keysPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
+            OC_SCRIPTS=$(grep -o '"cachedScripts":[0-9]*' "$BODY" | cut -d: -f2)
+            OC_MAXKEYS=$(grep -o '"maxCachedKeys":[0-9]*' "$BODY" | cut -d: -f2)
+            OC_HIT=$(grep -o '"hitRatePercent":[0-9.]*' "$BODY" | cut -d: -f2)
+            OC_INTERNED=$(grep -o '"internedPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
+            OC_OOM=$(grep -o '"oomRestarts":[0-9]*' "$BODY" | cut -d: -f2)
+            OC_HASH=$(grep -o '"hashRestarts":[0-9]*' "$BODY" | cut -d: -f2)
+            pass "OPcache ${OC_MEM:-?}% memory, ${OC_KEYS:-?}% of ${OC_MAXKEYS:-?} keys (${OC_SCRIPTS:-?} scripts), ${OC_HIT:-?}% hit rate"
+
+            if awk "BEGIN { exit !(${OC_MEM:-0} >= 80) }"; then
+                echo "WARN  OPcache memory is ${OC_MEM}% used — raise opcache.memory_consumption" >&2
+            fi
+            if awk "BEGIN { exit !(${OC_KEYS:-0} >= 80) }"; then
+                echo "WARN  OPcache is using ${OC_KEYS}% of its key table — raise opcache.max_accelerated_files" >&2
+            fi
+            if awk "BEGIN { exit !(${OC_INTERNED:-0} >= 90) }"; then
+                echo "WARN  OPcache interned-strings buffer is ${OC_INTERNED}% used — raise opcache.interned_strings_buffer" >&2
+            fi
+            if [ "${OC_OOM:-0}" -gt 0 ] || [ "${OC_HASH:-0}" -gt 0 ]; then
+                echo "WARN  OPcache restarted (${OC_OOM:-0} out-of-memory, ${OC_HASH:-0} hash) — it has been discarding the whole cache" >&2
+            fi
+            if grep -q '"cacheFull":true' "$BODY"; then
+                echo "WARN  OPcache reports cache_full — new scripts are no longer being cached" >&2
+            fi
+            # With timestamp validation off, a deploy is invisible to OPcache until
+            # the pool is restarted, which would serve the previous release forever.
+            if grep -q '"validateTimestamps":false' "$BODY"; then
+                echo "WARN  opcache.validate_timestamps is off — deploys need 'pkill -u ourlink -f php'" >&2
+            fi
+        else
+            echo "WARN  OPcache is disabled — every request is recompiling PHP" >&2
+        fi
+    fi
 fi
 
 echo
