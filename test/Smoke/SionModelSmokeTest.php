@@ -52,6 +52,36 @@ class SionModelSmokeTest extends SmokeTestCase
         $this->assertSame($status['totalBytes'], $status['usedBytes'] + $status['availBytes']);
     }
 
+    /**
+     * The supported channel for the maintenance key. A query string is written
+     * to the web server's access log and kept in shell history, so the deploy
+     * sends the key as a header instead — this is the assertion that the server
+     * side of that actually works, since the failure mode (falling back to a
+     * sign-in redirect) looks identical to a wrong key.
+     */
+    public function testCacheStatusAcceptsTheApiKeyAsAHeader(): void
+    {
+        $response = $this->request('GET', '/en/sm/cache-status', ['X-Api-Key: ' . self::DEV_API_KEY]);
+
+        $this->assertSame(200, $response['status'], 'the X-Api-Key header should authenticate the request');
+        $this->assertStringContainsString('json', $response['contentType']);
+
+        $status = json_decode($response['body'], true);
+        $this->assertIsArray($status, 'cache-status should return JSON');
+        $this->assertTrue($status['apcuEnabled'], 'the capsule runs APCu');
+    }
+
+    /**
+     * A header carrying the wrong value must be no better than no key at all.
+     */
+    public function testCacheStatusRejectsAWrongHeaderKey(): void
+    {
+        $response = $this->request('GET', '/en/sm/cache-status', ['X-Api-Key: not-the-key']);
+
+        $this->assertSame(302, $response['status'], 'an unknown key should not reach the controller');
+        $this->assertStringContainsString('/user/login', $response['redirect']);
+    }
+
     public function testDataProblemsRequiresLogin(): void
     {
         $this->assertRequiresLogin('/en/sm/data-problems');
