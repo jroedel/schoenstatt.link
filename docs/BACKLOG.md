@@ -162,11 +162,6 @@ readability — the destination is **Symfony**, reached gradually:
   change).
 - [ ] `layout.phtml` uses `getHelperPluginManager()->getServiceLocator()` —
   fine on view 2.44, dies at view 3 (and has no Twig future).
-- [ ] `change-password` guard entry in `config/autoload/juser.global.php`
-  names a nonexistent route (real one is `zfcuser/changepassword`), so the
-  change-password page may be unintentionally blocked under default-deny.
-  Verify intent — likely moot since passwords were removed, in which case
-  delete the route instead.
 
 ## Product decisions needed
 
@@ -188,12 +183,26 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Config rot / small cleanups
 
-- [ ] Dead ACL guard entries naming nonexistent routes: `new-home`
-  (Application), `home` (Books).
-- [ ] `sign-in-no-cookies` route exists but is whitelisted in no guard —
-  blocked for everyone under default-deny. Dead feature or bug?
-- [ ] Bare `checkouts` route (Books) not whitelisted (only
-  `checkouts/library` is).
+- [ ] **30 routes carry no bjyauthorize guard entry at all**, so under
+  default-deny they are unreachable for every role — not restricted,
+  *inaccessible*. Measured 2026-08-04 by
+  `test/Integration/AclGuardRouteDriftTest`'s walk. Some are plainly dead, but
+  others are whole features: `event`, `event-edit`, `events/create`,
+  `collections`, `checkouts`, `assignments`, `library-imports`,
+  `admin/moderate`, `admin/data-problems`, `dictionary/entry`,
+  `sign-in-no-cookies`. Strong suspicion these are the fallout of the disabled
+  `SchoenstattTable` ACL provider below — it was meant to supply exactly this
+  kind of rule — so decide that item first and re-measure. Needs a role
+  decision per route, which is why none were added blind.
+- [ ] **8 template permission checks name an ACL resource that does not
+  exist**, listed in `AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`.
+  `BjyAuthorize\View\Helper\IsAllowed` answers *false* for an unknown resource
+  rather than throwing, so each is a button that never renders for anyone:
+  `route/admin/moderate` (deny-button-partial),
+  `route/persons/person/edit-contact-info` and `…/edit-private-info`,
+  `route/fathers/father/edit-contact-info`,
+  `route/publications/advanced-search`, `route/suggest`. Fixing means naming
+  the right route *and* granting it, so it belongs with the item above.
 - [ ] Sweep legacy `Zend\*` strings from the merged runtime config as the
   remaining vendor modules are replaced.
 - [ ] Re-track `public/.htaccess` (or a `.htaccess.dist`) — untracked,
@@ -228,6 +237,16 @@ Background and measurements: [caching.md](caching.md).
 
 ## Testing & CI
 
+- [ ] **Runtime deprecations our compile-time probe cannot see.** Booting the
+  app in `AclGuardRouteDriftTest` surfaced three, all pre-existing and all
+  invisible to rung 4b's `E_ALL` class-load probe because they only fire when
+  code *runs*: dynamic property creation on `SionModel\Db\Model\SionTable:255`
+  (`$changeTableName`) and on `Schoenstatt\Filter\SchoenstattLinkIdentifier`
+  (`$entityType`), plus `strtoupper(null)` in
+  `JTranslate\Model\CountriesInfo:89`. Dynamic properties are deprecated in 8.2
+  and **removed in PHP 9**, so these are a real forward gate rather than noise.
+  The method that would find the rest is a run-time sweep (exercise the smoke
+  suite with deprecations promoted), not another static pass.
 - [ ] Shared-library tests live in the app repo (`test/Unit/TextTest.php`
   covers `SionModel\Text\Text`) because the submodules have no test
   infrastructure. Migrate them into laminas-sion-model/juser/jtranslate so
