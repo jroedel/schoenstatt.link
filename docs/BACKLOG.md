@@ -79,12 +79,49 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Next
 
-- [ ] **Rung 4b: PHP 8.4.** The only gate left is
-  `diablomedia/laminas-twb-bundle` 5.0.0 capping at `~8.3`. PR upstream to
-  add `~8.4`; fallback is flipping composer to the insurance fork
-  (github.com/jroedel/laminas-twb-bundle). laminas-mvc 3.8 supports 8.4 —
-  which is also its ceiling. Production flips konsoleH PHP in the same
-  deploy; `require.php` and `config.platform` move together.
+- [ ] **Rung 4b: PHP 8.4.** Gates re-measured 2026-08-04 by setting
+  `config.platform.php` to 8.4 and running `composer update --dry-run` — do
+  that again rather than trusting this list, since composer reports blockers a
+  few at a time. It was **not** "only twb-bundle": that claim was wrong on two
+  counts.
+  - ~~`laminas/laminas-crypt`~~ — cleared: it was abandoned *and* capped at
+    `~8.3.0`, and its entire use was two calls in `SionTable` that wrap PHP
+    built-ins. Removed rather than replaced.
+  - **`slm/locale` ^1.2** caps at `~8.3.0`. Upstream is
+    github.com/basz/SlmLocale — 1.2.0 (Oct 2024) is the newest release,
+    `master` carries the same constraint, and no 8.4 PR is open. Note
+    `jroedel/locale`, referenced by JUser's `composer.json`, **404s** — that
+    fork is gone, so it is not an escape hatch.
+  - **`diablomedia/laminas-twb-bundle` ^5.0** caps at `~8.1 || ~8.2 || ~8.3`.
+    5.0.0 (May 2024) is the only release. The insurance fork
+    github.com/jroedel/laminas-twb-bundle exists but is **unmodified** — it
+    still carries the `~8.3` cap, so it needs the bump too.
+  - **Compatibility measured 2026-08-04 on a real 8.4 capsule** (`PHP_VERSION=8.4`
+    + `APCU_VERSION=5.1.24` builds and runs; PHP 8.4.24), with the 8.3-resolved
+    `vendor/` mounted so the caps could be bypassed: **the whole suite passed,
+    198 tests / 577 assertions, and the homepage rendered byte-identically
+    (10757 bytes).** So both packages *work* on 8.4 — the constraints are
+    conservative, not protective.
+    What they do emit is 8.4's implicit-nullable-parameter deprecation, counted
+    by loading every class in each package under `E_ALL` (the deprecation fires
+    at compile time, so a plain `include` surfaces it):
+
+    | package | files | deprecations |
+    |---|---|---|
+    | `slm/locale` | 25 | **5** |
+    | `diablomedia/laminas-twb-bundle` | 28 | **18** |
+
+    Every one is the same mechanical edit — `Foo $x = null` → `?Foo $x = null`.
+    The app masks `E_DEPRECATED` in `public/index.php`, so these are invisible
+    to us in practice, but an upstream PR should fix them rather than only widen
+    the constraint, or it hands 8.4 users on `E_ALL` a wall of noise.
+  - So each upstream PR is: add `~8.4.0`, plus 5 (SlmLocale) / 18 (TwbBundle)
+    one-line signature fixes. **Outward-facing to third-party maintainers —
+    ask before opening.** `jroedel/laminas-twb-bundle` can carry the TwbBundle
+    branch; SlmLocale has no fork yet.
+  - laminas-mvc 3.8 supports 8.4 — which is also its ceiling. Production flips
+    konsoleH PHP in the same deploy; `require.php` and `config.platform` move
+    together.
 - [ ] **Passkeys (WebAuthn)** — decided 2026-08-02: web-auth/webauthn-lib
   current major, credential table, enrollment inside an authenticated
   session, magic link remains the fallback.
@@ -253,6 +290,21 @@ Background and measurements: [caching.md](caching.md).
   nonce- or hash-based). Roll out via `Content-Security-Policy-Report-Only`
   first. Natural rung: alongside asset-pipeline work — or fold into the Twig
   migration, which touches every template anyway.
+- [ ] **Retire `laminas/laminas-math`** (abandoned). It is *not* an 8.4 gate —
+  3.8.1 allows `~8.4.0` — so it is now a direct dependency rather than a
+  blocker, pulled in explicitly when `laminas-crypt` went. But it is 11
+  `Laminas\Math\Rand` call sites across 7 files, and some are
+  security-relevant, so it is its own piece of work and not a drive-by:
+  `Rand::getInteger()` → `random_int()` is trivial (ClipboardButton,
+  `layout.phtml`), while `Rand::getString()` needs its charlist preserved
+  deliberately — `SionModel\Mailing\Mailer` (magic-link token),
+  `JUser\Model\User` (verification token) and `LoginV1ApiController` (JWT id)
+  all generate secrets with it. Check `Rand::getString()`'s default charlist
+  before touching the calls that omit one (`CspListener`, `LoginV1ApiController`).
+- [ ] Drop the stale `laminas/laminas-crypt` require from JUser's
+  `composer.json` — nothing in JUser uses it. Cosmetic for this app (the
+  submodule's composer.json is not read; the root one governs installation),
+  but it misleads anyone installing JUser as a package.
 - [ ] Consider narrowing the application log's level. Both loggers write at
   `Level::Debug` because that is exactly what laminas-log did (a Logger with a
   Stream writer and no priority filter wrote every event), so
