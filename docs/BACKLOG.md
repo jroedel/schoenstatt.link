@@ -158,6 +158,10 @@ readability — the destination is **Symfony**, reached gradually:
   clean both next time a deploy touches server config.
 - [ ] Two Application factories still sit on the root-namespace
   `FactoryInterface` shim (deferred from rung 4a).
+- [ ] The exception notifier double-reports a failure that also kills the
+  error-page render: the nested report loses the RouteMatch and fingerprints
+  as route `(none)` (seen 2026-08-03 — fingerprints 1615c790 + 35c198d9 were
+  one incident). Dedupe, or carry the outer route into the nested report.
 
 ## Performance / caching
 
@@ -179,6 +183,12 @@ Background and measurements: [caching.md](caching.md).
 
 ## Testing & CI
 
+- [ ] **PHPStan has been red since rung 4a** (found 2026-08-04):
+  `phpstan.neon.dist` still pins `phpVersion: 70400`, which cannot parse the
+  PHP-8-syntax vendor code the stack bump installed — ~497 errors, all
+  "class not found" noise from vendor visibility, none from our modules'
+  logic. Bump `phpVersion` to 80300, re-run, regenerate/trim the baseline;
+  then fold into the "raise from level 0" item above.
 - [ ] Shared-library tests live in the app repo (`test/Unit/TextTest.php`
   covers `SionModel\Text\Text`) because the submodules have no test
   infrastructure. Migrate them into laminas-sion-model/juser/jtranslate so
