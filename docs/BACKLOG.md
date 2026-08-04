@@ -115,28 +115,35 @@ readability — the destination is **Symfony**, reached gradually:
     The app masks `E_DEPRECATED` in `public/index.php`, so these are invisible
     to us in practice, but an upstream PR should fix them rather than only widen
     the constraint, or it hands 8.4 users on `E_ALL` a wall of noise.
-  - **Both fixes are written and verified (2026-08-04); the PRs need opening by
-    hand.** The `gh` token cannot create PRs on third-party repos, nor fork
-    them (`403 Resource not accessible by personal access token`) — same class
-    of limitation as [[gh-ci-status-via-run-list]].
-    - **TwbBundle**: branch `feat/php-8.4` is **pushed** to
-      github.com/jroedel/laminas-twb-bundle (commit `a547d71`, 14 files, 19
-      lines). Open at
-      `https://github.com/diablomedia/laminas-twb-bundle/compare/main...jroedel:feat/php-8.4?expand=1`.
-      Verified on 8.4.24: 115 tests pass, 18 deprecations → 0, php-cs-fixer
-      clean. **Their CI's 8.4 leg will still go red**: phpstan is pinned to
+  - **Both fixes are written, verified and upstream (2026-08-04).** The `gh`
+    token can push to our own forks but **cannot create PRs on third-party
+    repos, nor fork them** (`403 Resource not accessible by personal access
+    token`) — widening the token does not help, because creating a PR needs
+    permission on the *target* repo. Same class of limitation as
+    [[gh-ci-status-via-run-list]]; the last step is always a manual click.
+    - **TwbBundle → PR diablomedia/laminas-twb-bundle#27, OPEN.** From
+      `feat/php-8.4` on github.com/jroedel/laminas-twb-bundle (`a547d71`, 14
+      files, 19 lines). Verified on 8.4.24: 115 tests pass, 18 deprecations → 0,
+      php-cs-fixer clean, phpstan unchanged. **Two pre-existing things will keep
+      it red**, both flagged in the PR rather than fixed: phpstan is pinned to
       1.10.67, which cannot run on 8.4 at all (dies in its own bundled
-      better-reflection on `ReflectionClass::IS_READONLY`). Reproduces on
-      unmodified upstream; flagged in the PR body rather than fixed.
-    - **SlmLocale**: no fork exists and the token cannot create one, so the
-      change is a **patch file** — fork by hand, then `git am` it. Verified on
-      8.4.24: 98 tests pass, 5 deprecations → 0. Also noticed but deliberately
-      left alone: `UriPathStrategy.php:202` passes null to `trim()`, an 8.1-era
-      deprecation that reproduces on unmodified master.
+      better-reflection on `ReflectionClass::IS_READONLY`); and their branch
+      protection requires `PHP 8.0` / `PHP 8.0 --prefer-lowest` checks that the
+      current workflow cannot emit (its matrix is 8.1/8.2/8.3 ×
+      `["", "--prefer-lowest"]`), so those sit "Expected — waiting" forever.
+    - **SlmLocale → branch pushed, PR needs a click** at
+      `https://github.com/basz/SlmLocale/compare/master...jroedel:feat/php-8.4?expand=1`.
+      Verified on 8.4.24: 98 tests pass, 5 deprecations → 0. The fork
+      `jroedel/SlmLocale` exists but is from 2019 and its `master`
+      **diverges** — it carries `816a68e`, the cookie-flags work still open as
+      upstream PR #102 — so the branch is based on **upstream** `master`
+      (`1e0ac22`), not the fork's, to keep the PR to one commit. Left alone
+      deliberately: `UriPathStrategy.php:202` passes null to `trim()`, an
+      8.1-era deprecation that reproduces on unmodified upstream.
     - Neither upstream has moved since May/Oct 2024, so expect no quick reply.
-      Fallback stays the forks — but note the TwbBundle fork was *unmodified*
-      until now, so it is only a usable fallback with `feat/php-8.4` merged
-      into its `main`.
+      Fallback stays the forks — but both forks needed the fix themselves
+      (TwbBundle's was an unmodified copy), so a fallback means merging
+      `feat/php-8.4` into the fork's default branch first.
   - **Our own code emitted 107 of the same deprecations** (measured 2026-08-04 by
     loading every class in `module/*/src` under `E_ALL` on 8.4.24): Application 5,
     Bible 4, Books 26, JTranslate 9, JUser 18, Schoenstatt 17, SionModel 28,
