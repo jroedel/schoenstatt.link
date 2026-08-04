@@ -1145,13 +1145,13 @@ ORDER BY `Publisher`";
             $pub = $this->processForschungsPublicationRow($book);
             if (! isset($pub['title'])) {
                 if (isset($this->logger)) {
-                    $this->logger->warn('Forschung importer: Row skipped due to missing title', ['record' => $book]);
+                    $this->logger->warning('Forschung importer: Row skipped due to missing title', ['record' => $book]);
                 }
                 continue;
             }
             if (isset($pub['bookEdition']) && is_string($pub['bookEdition']) && strlen($pub['bookEdition']) > 50) {
                 if (isset($this->logger)) {
-                    $this->logger->warn('Forschung importer: Book edition truncated', ['record' => $book]);
+                    $this->logger->warning('Forschung importer: Book edition truncated', ['record' => $book]);
                 }
                 $pub['bookEdition'] = substr($pub['bookEdition'], 0, 50);
                 continue;
