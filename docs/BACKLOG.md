@@ -6,8 +6,9 @@ reusable there instead of accumulating DONE narratives.
 
 State as of 2026-08-04: production runs **PHP 8.4.24** on a current Laminas
 stack with OPcache enabled; master is fully deployed; `composer audit --locked`
-reports zero advisories; 348 tests across three suites, green on 8.4; PHPStan
-clean at level 0 and running in CI; one-command deploy with hooks.
+reports zero advisories; 356 tests across three suites, green on 8.4; PHPStan
+clean at level 0 and running in CI; one-command deploy with hooks. First-party
+code no longer calls `getServiceLocator()` anywhere.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -137,8 +138,6 @@ readability — the destination is **Symfony**, reached gradually:
   `Books\Form\SearchForm`'s factory throws "only for a specific library"
   without library context (pre-existing, surfaced by the rung-4a audits).
 - [ ] `/blog/create` 500: template `books/blog/create` missing.
-- [ ] `SionModel\Controller\FilesController` calls
-  `$this->getServiceLocator()`, gone from AbstractController since ZF3.
 - [ ] `SionForm::setData()` calls `getInputFilterSpecification()` which the
   base class doesn't define.
 - [ ] `Books\Filter\SortText` mixes positional and sequential printf
@@ -149,19 +148,11 @@ readability — the destination is **Symfony**, reached gradually:
   `test/Integration/SortTextFilterContractTest.php` so the base-class swap
   stayed a refactor. Fixing it changes every affected library's sort order, so
   it needs a product decision plus a re-sort, not a drive-by.
-- [ ] `SionModel\Service\InlineScriptFactory` calls
-  `$container->getServiceLocator()`, which survives only as a deprecated
-  shim in laminas-servicemanager 3 (it emits a deprecation on every
-  resolution, i.e. on every page that uses `inlineScript`). Same class of
-  problem as the `FilesController` item above; the fix is to pull
-  `CspListener` from the injected container directly.
 - [ ] `LibraryTable::checkinBooks()`: in the branch creating checkouts for
   books with none, `$booksToCheckin[$checkout['bookId']]` reads `$checkout`
   leaking from the previous `foreach` — wrong key, or undefined variable
   when no checkouts were open. Deliberately unfixed so far (behavior
   change).
-- [ ] `layout.phtml` uses `getHelperPluginManager()->getServiceLocator()` —
-  fine on view 2.44, dies at view 3 (and has no Twig future).
 
 ## Product decisions needed
 

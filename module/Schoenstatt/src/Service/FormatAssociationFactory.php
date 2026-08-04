@@ -19,9 +19,8 @@ class FormatAssociationFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
-        $parentLocator = $container->getServiceLocator();
         /** @var AssociationKindsService $kindsService */
-        $kindsService = $parentLocator->get(AssociationKindsService::class);
+        $kindsService = $container->get(AssociationKindsService::class);
         $valueOptions = $kindsService->getValueOptions();
 
         $viewHelper = new FormatAssociation($valueOptions);

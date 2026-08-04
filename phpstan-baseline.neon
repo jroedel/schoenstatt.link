@@ -131,16 +131,6 @@ parameters:
 			path: module/Schoenstatt/src/Model/SchoenstattTable.php
 
 		-
-			message: "#^Method SionModel\\\\Controller\\\\SionController\\:\\:__construct\\(\\) invoked with 1 parameter, 8 required\\.$#"
-			count: 1
-			path: module/SionModel/src/Controller/FilesController.php
-
-		-
-			message: "#^Result of method SionModel\\\\Controller\\\\SionController\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
-			count: 1
-			path: module/SionModel/src/Controller/FilesController.php
-
-		-
 			message: "#^Undefined variable\\: \\$entity$#"
 			count: 1
 			path: module/SionModel/src/Controller/SionController.php

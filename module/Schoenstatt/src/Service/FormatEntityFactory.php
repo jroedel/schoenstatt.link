@@ -20,12 +20,11 @@ class FormatEntityFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
-        $parentLocator = $container->getServiceLocator();
         /** @var AssociationKindsService $kindsService */
-        $kindsService = $parentLocator->get(AssociationKindsService::class);
+        $kindsService = $container->get(AssociationKindsService::class);
         $valueOptions = $kindsService->getValueOptions();
 
-        $entityService = $parentLocator->get(EntitiesService::class);
+        $entityService = $container->get(EntitiesService::class);
         $viewHelper = new FormatEntity($entityService, $valueOptions, true);
         return $viewHelper;
     }
