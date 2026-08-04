@@ -113,6 +113,13 @@ suites run from the superproject working tree.
   - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it only covers `config`, `module/{Application,Bible,Books,Schoenstatt}`, and `public/index.php`).
   - Auto-fix: `php composer.phar cs-fix` — ask the user before running it broadly.
 - Local dev server: `php composer.phar run serve` (PHP built-in server on 127.0.0.1:8080 serving `public/`).
+- `bin/console` is the headless entry point (symfony/console): it builds the
+  ServiceManager the way `Laminas\Mvc\Application::init()` does but never calls
+  `bootstrap()`/`run()`, so no MVC listeners, request or route stack exist.
+  Modules contribute commands through the top-level `console.commands` config
+  key (name => service id), resolved lazily. `docker compose exec -T app php
+  bin/console list` to see them. This is the seam the Symfony strangler builds
+  on — put new CLI work here, not in laminas-cli.
 - Fresh-machine setup is `./config.sh` (copies `.dist` configs, runs composer install).
 
 ## Deployment
