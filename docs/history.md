@@ -324,3 +324,62 @@ across. Submodule PRs should each target `modernization` directly; stacking only
 earns its keep in the application repo, where PRs genuinely share
 `composer.lock`. When re-pinning a stack, merge each branch into the next first,
 or the gitlink three-way-merges into a conflict.
+
+## PHPStan repair, and the end of @final inheritance (2026-08-04)
+
+PHPStan had been red since rung 4a and nobody knew, because nothing ran it.
+`phpstan.neon.dist` still pinned `phpVersion: 70400`, so the analyzer parsed
+the PHP-8-syntax vendor tree the stack bump installed as though it were 7.4:
+**499 errors, 437 of them phantom** "class not found" noise from vendor code it
+could no longer read. Setting `phpVersion: 80400` dropped it to 62.
+
+**The lesson is the pin, not the number.** `phpVersion` decides how PHPStan
+parses `vendor/`, so it has to track `config.platform.php`. A stale value does
+not fail loudly — it buries real findings under noise, which is worse than
+being switched off. Both PHPStan and the integration suite now run in CI
+(neither needs a database or a running app), and `composer stan` runs the
+analyzer the way the test suites are already run.
+
+**Underneath the noise, every one of the 13 uncovered errors was real.** Two
+were a reachable fatal: `JTranslate\Model\TranslationsTable` imported
+`laminas-code`, which is not installed, so the language-file admin action died
+with "class not found" whenever it was reached. Eleven were classes inheriting
+from laminas classes the stack bump had marked `@final` — `Validator\Regex`,
+`Filter\PregReplace`, `Form\Element\Tel`, `Form\View\Helper\FormSelect`,
+`View\Helper\InlineScript`, `ValidatorChain`.
+
+**laminas closed the concrete classes but left the abstract bases open**, so
+eight of the eleven were a base-class swap rather than a rewrite: the six
+pattern validators onto `AbstractValidator` (via a shared
+`AbstractPatternValidator` reproducing Regex's `isValid()` and its three error
+keys verbatim), `SortText` onto `AbstractFilter`, `Form\Element\Phone` onto
+`Form\Element`. A ninth, `ValidatorOrChain`, turned out to be referenced
+nowhere and was deleted. Only the two view helpers needed real work:
+`FormSelectWithoutOptions` cannot intercept `renderOptions()` from outside a
+subclass, so it narrows the element's options up front and delegates; and
+`InlineScript`'s chain was closed all the way up through `HeadScript`, so it
+wraps a stock instance and forwards the narrow surface templates actually use.
+
+**Two pre-existing quirks were preserved rather than fixed**, because a
+refactor that quietly improves behaviour is a refactor you cannot verify. The
+old `InlineScript` overrode `__construct()` without calling
+`parent::__construct()`, so `HeadScript`'s `setSeparator(PHP_EOL)` never ran and
+`<script>` tags render with no separator; the wrapper sets the separator to `''`
+explicitly. And `SortText`'s format mixes positional with sequential printf
+specifiers, so a trailing `%-3s` consumes argument 1 rather than its token —
+pinned in a test and moved to the backlog as a product decision.
+
+**Method worth reusing: characterize first, against the code you are about to
+replace.** Twenty-nine tests were written against the pre-change classes and
+had to pass there before anything moved. Two of them caught genuine divergences
+the rewrite would otherwise have shipped — an unselected empty option that the
+old interception discarded but delegation would have kept, and a translator
+whose disabled state would have stopped propagating once rendering was
+delegated. The `laminas-code` replacement got a stronger check still: it
+round-trips all 24 committed `*.lang.php` files byte for byte, since those files
+are literally what the old generator emitted.
+
+Final verification was the form-regression harness run as an isolated A/B —
+same PHP 8.4.24 on both sides, only the code swapped — showing no drift across
+all 27 form-rendering pages. Baseline 42 entries/56 errors -> 35/49, purely by
+dropping stale patterns; suites 198 tests -> 348.
