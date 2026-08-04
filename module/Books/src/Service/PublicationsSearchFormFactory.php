@@ -16,7 +16,7 @@ class PublicationsSearchFormFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $languageInfo = new LanguageSupport();
         $lang = \Locale::getPrimaryLanguage(\Locale::getDefault());
