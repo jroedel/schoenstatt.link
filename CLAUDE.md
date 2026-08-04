@@ -78,7 +78,7 @@ suites run from the superproject working tree.
 
 ## Production environment (verified 2026-08-01 via SSH)
 
-- Web-served PHP: **7.4.33** (probe fetched over HTTPS; CLI matches). This is the baseline the Docker time capsule must match.
+- Web-served PHP: **8.4** as of rung 4b (8.3.33 before that, 7.4.33 originally). This is the baseline the Docker time capsule must match — set `PHP_VERSION` in `.env` to the same major.minor. Confirm the live patch version from `/en/sm/cache-status` (it reports `phpVersion`) rather than guessing.
 - Database server: **MariaDB 10.11** — already modern; no DB migration pressure.
 - Hosting: Hetzner (`dedi2934.your-server.de`), app deployed at `~/public_html/schoenstatt.link/`, docroot `public/`.
 - Notable loaded extensions: `apcu`, `redis`, `intl` (required by composer), `pdo_mysql`, `soap`, `tidy`, `zip`.
@@ -96,7 +96,7 @@ suites run from the superproject working tree.
 ## Local environment (Docker time capsule)
 
 - `docker compose up -d` → app at http://localhost:8080 (redirects to `/en/`), Mailpit UI at http://localhost:8025, MariaDB on host port 33306 (`schoenstatt`/`schoenstatt`, db `ourlink_db1`).
-- Apache + MariaDB + APCu. **The PHP version is switchable** via `PHP_VERSION`/`APCU_VERSION` in `.env`, then `docker compose build && docker compose up -d`: `7.4`/`5.1.22` matches production, `8.3`/`5.1.24` is the rung-4 target (8.3 needs APCu 5.1.24+). Check which one is live with `docker compose exec -T app php -v` before drawing conclusions from a test run. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
+- Apache + MariaDB + APCu. **The PHP version is switchable** via `PHP_VERSION`/`APCU_VERSION` in `.env`, then `docker compose build && docker compose up -d`: `8.4`/`5.1.24` matches production as of rung 4b; `8.3`/`5.1.24` and `7.4`/`5.1.22` are the earlier rungs, kept switchable for bisecting (8.3+ needs APCu 5.1.24+). `.env` is gitignored, so every machine sets this for itself. Check which one is live with `docker compose exec -T app php -v` before drawing conclusions from a test run. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
 - Database comes from a 2021-06-24 production dump in `database/dumps/` (gitignored) + `zz-db6.3.sql`. Re-import: `docker compose down -v && docker compose up -d`.
 - `.env` holds HOST_UID/HOST_GID so Apache workers can write to the bind-mounted `data/` dir.
 - **Resource ceilings are deliberate — do not raise them casually.** `docker-compose.yml` caps each service (`mem_limit`/`memswap_limit`/`cpus`/`pids_limit`; app 4g/2 CPUs), and the image caps Apache at 6 prefork workers plus a 60s PHP `max_execution_time` (`docker/apache-limits.conf`, `docker/php-limits.ini`). These exist because on 2026-08-02 a wedged app under concurrent load exhausted 15.5 GB of host RAM twice and pinned every core: nothing bounded Apache's 150 default workers × the 512M `memory_limit` set in `public/index.php`. Changing a limit requires `docker compose build && docker compose up -d`.

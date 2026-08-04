@@ -134,8 +134,11 @@ history.
   `.phploy.dist`); the hooks above live in `phploy.ini` under
   `[production]`.
 - Web PHP is FastCGI with a per-account php.ini at
-  `/home/httpd/php83-ini/ourlink/php.ini` (per PHP version: the 7.4-era
-  file was under `php74-ini/`). php.ini changes are the ONE case that
+  `/home/httpd/php84-ini/ourlink/php.ini` (**per PHP version**: the 8.3-era
+  file was under `php83-ini/`, the 7.4-era one under `php74-ini/`). This is the
+  trap when flipping the konsoleH PHP version: the new version reads a *different*
+  file, so anything tuned in the old one silently reverts to defaults — copy it
+  across as part of the flip. php.ini changes are the ONE case that
   needs `pkill -u ourlink -f php` (workers re-read ini on respawn);
   deploys never do.
 
