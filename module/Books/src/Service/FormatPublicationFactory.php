@@ -21,11 +21,10 @@ class FormatPublicationFactory implements FactoryInterface
      */
     public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
-        $parentLocator = $container->getServiceLocator();
-        $entityService = $parentLocator->get(EntitiesService::class);
+        $entityService = $container->get(EntitiesService::class);
 
         /** @var PublicationsTable $table */
-        $table = $parentLocator->get(PublicationsTable::class);
+        $table = $container->get(PublicationsTable::class);
         $valueOptions = $table->getAuthorsValueOptions();
 
         $viewHelper = new FormatPublication($entityService, true);
