@@ -19,7 +19,7 @@ class BooksMailerFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $table = $container->get(LibraryTable::class);
         /** @var SchoenstattTable $schTable */

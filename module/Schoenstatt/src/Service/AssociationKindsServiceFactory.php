@@ -16,7 +16,7 @@ class AssociationKindsServiceFactory implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         $config = $container->get('Config');
         if (! isset($config['schoenstatt']['association_kinds'])) {

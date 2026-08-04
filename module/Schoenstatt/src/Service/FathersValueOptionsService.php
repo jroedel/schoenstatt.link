@@ -16,7 +16,7 @@ class FathersValueOptionsService implements FactoryInterface
      *
      * @inheritdoc
      */
-    public function __invoke(ContainerInterface $container, $requestedName, array $options = null)
+    public function __invoke(ContainerInterface $container, $requestedName, ?array $options = null)
     {
         /** @var \Schoenstatt\Service\PatresGateway $gateway */
         $gateway = $container->get(PatresGateway::class);

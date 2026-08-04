@@ -45,7 +45,7 @@ class TimeZone extends AbstractValidator
         return $result;
     }
 
-    public static function getTimeZoneValueOptions(string $country = null)
+    public static function getTimeZoneValueOptions(?string $country = null)
     {
         $tzs = TimeZoneSelect::get_time_zones();
         if (isset($country) && 'GB-SCT' !== $country) {
