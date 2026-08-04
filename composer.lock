@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7ccb60c98d64ab1f0fb9f047ad993297",
+    "content-hash": "c47fd29b5226bc45fbd8a2415dd8695c",
     "packages": [
         {
             "name": "brick/varexporter",
@@ -7367,7 +7367,7 @@
         "ext-simplexml": "8.4.24",
         "ext-xmlwriter": "8.4.24",
         "ext-gd": "8.4.24",
-        "lib-icu": "76.1",
+        "lib-icu": "72.1",
         "ext-apcu": "5.1.24",
         "ext-xml": "8.4.24",
         "ext-mbstring": "8.4.24",
@@ -7377,7 +7377,7 @@
         "ext-iconv": "8.4.24",
         "ext-libxml": "8.4.24",
         "ext-xmlreader": "8.4.24",
-        "ext-zip": "1.22.3",
+        "ext-zip": "1.22.8",
         "ext-zlib": "8.4.24"
     },
     "plugin-api-version": "2.9.0"
