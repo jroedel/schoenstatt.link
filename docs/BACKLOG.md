@@ -87,21 +87,21 @@ readability — the destination is **Symfony**, reached gradually:
   `comment` key stating the exit condition). Upstream PRs: diablomedia#27 and
   the SlmLocale one, both open. When either ships a release including the 8.4
   constraint, delete its entry and restore a version constraint.
-- [ ] **OPcache slot headroom is thin.** `opcache.max_accelerated_files` is
-  10000 and the deployed tree holds ~9700 `.php` files (9332 of them in
-  `vendor/`, measured with dev deps; `--no-dev` is smaller but not by much).
-  When the table fills, OPcache silently stops caching new files and they get
-  recompiled on every request — the exact problem it was enabled to solve,
-  invisibly. Raise it (next prime up, e.g. 16229) or measure first via the item
-  below. `opcache.jit` is `off` with a 64M buffer reserved; leave it off — JIT
-  rarely pays for a request-scoped web app.
-- [ ] **Report OPcache in `/sm/cache-status`.** It currently reports APCu only,
-  so `tools/smoke-prod.sh` cannot warn on OPcache saturation the way it does for
-  the APCu segment. `opcache_get_status(false)` gives
-  `opcache_statistics.num_cached_scripts` / `max_cached_keys` and
-  `memory_usage.free_memory` — enough to warn at ≥80% of either, mirroring the
-  existing APCu check. This is what would make the item above measurable rather
-  than guessed.
+- [ ] **Consider raising `opcache.interned_strings_buffer`** — the one OPcache
+  number actually close to its limit. First live reading after enabling it:
+  **73% of the 8 MB buffer used** (74,545 strings), against ~29% memory and ~15%
+  of the key table. When the interned buffer fills, strings simply stop being
+  interned: no restart, no error, just a quiet loss of the saving the buffer
+  exists to provide. `/sm/cache-status` now reports `internedPercentUsed` and
+  `smoke-prod.sh` warns at 90%, so this can wait for a real warning rather than
+  a guess.
+  - **The slot-count worry recorded here earlier was wrong, and the correction
+    is worth keeping**: `opcache.max_accelerated_files` is 10000, but PHP rounds
+    the script hash table up to the next prime, so the real ceiling is
+    `max_cached_keys` = **16229**. Against ~9700 deployed files (2427 keys in
+    practice, since keys run ~1.9× scripts) that is ~15% used — not the tight fit
+    first reported from the configured number. Measure `maxCachedKeys`, never
+    `max_accelerated_files`.
 - [ ] **Watch for date-format drift from the ICU downgrade.** The 8.4 build
   ships **ICU 72.1**, older than the 8.3 build's 76.1 (Unicode 15.0, TZData
   2022e). 27 `IntlDateFormatter` call sites now format against older locale
