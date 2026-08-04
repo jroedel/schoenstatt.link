@@ -13,14 +13,13 @@ namespace Application;
 use Laminas\Router\Http\Literal;
 use Laminas\Navigation\Service\DefaultNavigationFactory;
 use Laminas\I18n\Translator\TranslatorServiceFactory;
-use Laminas\Log\LoggerAbstractServiceFactory;
 use Laminas\Cache\Service\StorageCacheAbstractServiceFactory;
 use BjyAuthorize\Guard\Route;
 use Laminas\Cache\Storage\StorageInterface;
 use Application\View\GdprStrategy;
 use Laminas\Router\Http\Segment;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Laminas\Log\LoggerInterface;
+use Psr\Log\LoggerInterface;
 
 return [
     'router' => [
@@ -107,7 +106,6 @@ return [
     'service_manager' => [
         'abstract_factories' => [
             StorageCacheAbstractServiceFactory::class,
-            LoggerAbstractServiceFactory::class,
         ],
         'factories' => [
             'translator' => TranslatorServiceFactory::class,

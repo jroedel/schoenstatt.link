@@ -367,7 +367,7 @@ class EventTextTable extends SionTable implements
                         //@todo for search text: replace word chars, strip non word chars
                     } catch (\Exception $e) {
                         if (isset($this->logger)) {
-                            $this->logger->err("Trying to import file `$filename`, but we were unsuccessful");
+                            $this->logger->error("Trying to import file `$filename`, but we were unsuccessful");
                         }
                     }
                 }

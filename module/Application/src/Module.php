@@ -349,7 +349,7 @@ class Module
                 return;
             }
             $logger = $sm->get('SionModel\Logger');
-            $logger->err('Failed to cache a navigation branch.', [
+            $logger->error('Failed to cache a navigation branch.', [
                 'cacheKey'  => $cacheKey,
                 'exception' => isset($t) ? $t->getMessage() : 'setItem returned false',
             ]);
