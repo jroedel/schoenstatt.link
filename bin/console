@@ -1,0 +1,76 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Console entry point: the application container, without laminas-mvc.
+ *
+ * This mirrors Laminas\Mvc\Application::init() up to but not including
+ * bootstrap() — modules load and every service is reachable, while the MVC
+ * listeners, the HTTP request/response and the route stack stay out of it. No
+ * module here defines init(), and onBootstrap() never fires without
+ * bootstrap(), so nothing that assumes a request runs.
+ *
+ * Deliberately never touches Laminas\Mvc\Application. That is the point: this
+ * is the headless seam the Symfony strangler needs, and it already carries the
+ * deploy's cache commands. Commands are contributed by modules through the
+ * top-level 'console' config key.
+ */
+
+use Laminas\Mvc\Service\ServiceManagerConfig;
+use Laminas\ServiceManager\ServiceManager;
+use Laminas\Stdlib\ArrayUtils;
+use Symfony\Component\Console\Application as ConsoleApplication;
+use Symfony\Component\Console\CommandLoader\ContainerCommandLoader;
+
+if ('cli' !== PHP_SAPI) {
+    // bin/ sits outside the docroot, so this should be unreachable over HTTP —
+    // but a console that runs maintenance commands for anonymous visitors is a
+    // bad enough outcome to be worth two lines.
+    http_response_code(403);
+    exit(1);
+}
+
+// Everything downstream (data/config, data/logs, the cache paths in config)
+// is written relative to the application root, exactly as in public/index.php.
+chdir(dirname(__DIR__));
+
+require __DIR__ . '/../vendor/autoload.php';
+
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+// On CLI there is no visitor to leak paths to, and a silent failure in a deploy
+// hook is worse than a stack trace.
+ini_set('display_errors', 'stderr');
+// Matches the ceiling public/index.php sets: merging this application's config
+// is the expensive part of booting either way.
+ini_set('memory_limit', '512M');
+
+$appConfig = require __DIR__ . '/../config/application.config.php';
+if (file_exists(__DIR__ . '/../config/development.config.php')) {
+    $appConfig = ArrayUtils::merge($appConfig, require __DIR__ . '/../config/development.config.php');
+}
+
+// Never let a console run participate in the config cache. Production caches
+// the merged config under data/config/ as the web server's user; a file written
+// there by the deploy account is one the web SAPI can no longer overwrite,
+// which would pin the site to whatever config this process happened to see.
+// Reading it is no better — a stale cache is precisely what cache:clear-config
+// exists to remove, and honouring it here would make the command's own view of
+// the configuration the thing it is trying to delete.
+$appConfig['module_listener_options']['config_cache_enabled'] = false;
+$appConfig['module_listener_options']['module_map_cache_enabled'] = false;
+
+$serviceManager = new ServiceManager();
+(new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($serviceManager);
+$serviceManager->setService('ApplicationConfig', $appConfig);
+$serviceManager->get('ModuleManager')->loadModules();
+
+$config = $serviceManager->get('config');
+$commands = $config['console']['commands'] ?? [];
+
+$console = new ConsoleApplication('schoenstatt.link console');
+// Lazy by design: the loader asks the container for a command only when that
+// command is the one being run, so an unrelated command's dependencies — a DB
+// connection, a mail transport — are never built.
+$console->setCommandLoader(new ContainerCommandLoader($serviceManager, $commands));
+
+exit($console->run());

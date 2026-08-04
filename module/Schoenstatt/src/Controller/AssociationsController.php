@@ -2,17 +2,19 @@
 namespace Schoenstatt\Controller;
 
 use Laminas\View\Model\JsonModel;
+use SionModel\Controller\MaintenanceKeyTrait;
 use SionModel\Controller\SionController;
 use Laminas\View\Model\ViewModel;
 use JTranslate\Model\CountriesInfo;
 use Laminas\Filter\StripTags;
-use BjyAuthorize\Exception\UnAuthorizedException;
 use Schoenstatt\Validator\TimeZone;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class AssociationsController extends SionController
 {
+    use MaintenanceKeyTrait;
+
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('association_id');
@@ -217,15 +219,10 @@ class AssociationsController extends SionController
 
     public function doWorkAction()
     {
-        $key = $this->params()->fromQuery('key', null);
-        if (! isset($key)) {
-            throw new UnAuthorizedException();
-        }
         $config = $this->config['sion_model'];
-        $apiKeys = isset($config['api_keys']) && is_array($config['api_keys']) ? $config['api_keys'] : [];
-        if (! in_array($key, $apiKeys)) {
-            throw new UnAuthorizedException();
-        }
+        $this->assertApiKeyIn(
+            isset($config['api_keys']) && is_array($config['api_keys']) ? $config['api_keys'] : []
+        );
         /**
          * @var \Schoenstatt\Model\SchoenstattTable $table
          */

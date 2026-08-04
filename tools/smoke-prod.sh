@@ -27,10 +27,15 @@ trap 'rm -f "$BODY" "$HDRS"' EXIT
 # unit separator: tab is IFS *whitespace*, so empty fields (e.g. no
 # redirect_url) would collapse and shift everything left.
 US=$'\x1f'
+# Extra curl args (request headers) applied to every fetch; a caller sets it for
+# one request and resets it. Used for the maintenance key, which must not travel
+# in a query string — that lands in the server's access log on every deploy.
+EXTRA_HEADERS=()
 fetch() {
     local url=$1 follow=() meta
     [ "${2:-}" = "--follow" ] && follow=(--location)
-    meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} -o "$BODY" -D "$HDRS" \
+    meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} \
+        ${EXTRA_HEADERS[@]+"${EXTRA_HEADERS[@]}"} -o "$BODY" -D "$HDRS" \
         -w "%{http_code}${US}%{redirect_url}${US}%{content_type}${US}%{http_version}" "$url") \
         || meta="000${US}${US}${US}"
     IFS="$US" read -r STATUS REDIRECT CTYPE HTTPVER <<<"$meta"
@@ -153,7 +158,9 @@ done
 # capacity signal, not a broken deploy). Needs a sion_model api key; the
 # phploy hook passes it via the environment.
 if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
-    fetch "$BASE/en/sm/cache-status?key=$SMOKE_PROD_CACHE_KEY"
+    EXTRA_HEADERS=(-H "X-Api-Key: $SMOKE_PROD_CACHE_KEY")
+    fetch "$BASE/en/sm/cache-status"
+    EXTRA_HEADERS=()
     if [ "$STATUS" = "200" ] && grep -q '"apcuEnabled":true' "$BODY"; then
         PERCENT=$(grep -o '"percentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
         EXPUNGES=$(grep -o '"expunges":[0-9]*' "$BODY" | cut -d: -f2)

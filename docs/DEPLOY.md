@@ -68,19 +68,33 @@ TODOs get real values):
    1. `bash tools/deploy-submodules.sh` — rsync `--delete` of the three
       submodule trees over the shell account (clean-tree guard built in;
       no-ops fast when the pointers didn't move).
-   2. ssh — `rm -f data/config/module-*-cache.*.php && php composer.phar
-      install --no-dev --no-interaction --optimize-autoloader`. The rm
-      re-clears the config cache: a visitor may have re-cached the merged
-      config from the half-deployed tree since step 3.
-   3. wget `/sm/clear-persistent-cache?key=…` — SionModel's endpoint
-      flushes the APCu storage adapter, i.e. `apcu_clear_cache()`: the
-      whole web APCu segment. No process kills needed.
-   4. wget `/en/associations/do-work?key=…` — post-deploy data
-      maintenance. Needs the fully-deployed site.
-   5. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
+   2. ssh — `php composer.phar install --no-dev --no-interaction
+      --optimize-autoloader && php bin/console cache:clear-config && php
+      bin/console cache:flush-persistent`. All three run server-side in one
+      session, in that order because `bin/console` needs symfony/console in
+      `vendor/`.
+      - `cache:clear-config` deletes the merged-config and module-map cache
+        files, re-clearing what a visitor may have re-cached from the
+        half-deployed tree since step 3. It derives the paths from the module
+        listener options, so a changed cache key cannot leave it deleting
+        nothing.
+      - `cache:flush-persistent` requests `/en/sm/clear-persistent-cache`
+        over HTTP, which flushes the APCu storage adapter
+        (`apcu_clear_cache()`) — the whole web APCu segment, no process kills
+        needed. **It has to be an HTTP request:** an APCu segment belongs to
+        the SAPI that created it, so a CLI process sees its own (or, with the
+        default `apc.enable_cli=0`, none) and could never flush the FastCGI
+        pool's. Verified 2026-08-04 — a CLI `apcu_clear_cache()` left all 21
+        web-segment entries in place. Running it on the server means the
+        maintenance key comes from the app's own config and never appears in
+        `phploy.ini`, a shell history or an access log.
+   3. wget `/en/associations/do-work` with an `X-Api-Key` header —
+      post-deploy data maintenance. Needs the fully-deployed site. Still a
+      wget because the work itself has not been ported to a command yet.
+   4. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
       exactly what went live (`git tag -l 'deploy/*'` answers "what's
       deployed?"). Never pushed.
-   6. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
+   5. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
       scripted smoke checks (next section). A failure ends the deploy
       loudly with a non-zero exit. It runs after the server-side steps,
       so a passing run means the *fully* deployed site is healthy — no
@@ -92,9 +106,20 @@ If a hook fails mid-run (or you deploy from a machine without the shell
 key), finish in an interactive SSH session (port 222) in this order:
 sync submodules (`tools/deploy-submodules.sh <user@host> <port>`, or
 tar-over-SFTP + extract), then in the app dir
-`rm -f data/config/module-*-cache.*.php && php composer.phar install
---no-dev --no-interaction --optimize-autoloader`, then re-run the two
-wget endpoints and `bash tools/smoke-prod.sh` locally.
+
+```bash
+php composer.phar install --no-dev --no-interaction --optimize-autoloader
+php bin/console cache:clear-config
+php bin/console cache:flush-persistent
+```
+
+then re-run the `do-work` wget and `bash tools/smoke-prod.sh` locally.
+
+`bin/console list` shows everything available. `cache:flush-persistent`
+takes `--url` when the configured `sion_model.canonical_base_url` is not
+the host you mean, and reads the key from `SCH_MAINTENANCE_KEY` when the
+local config has none — prefer that over `--key`, which lands in shell
+history.
 
 ## Server facts worth remembering
 
@@ -125,8 +150,9 @@ wget endpoints and `bash tools/smoke-prod.sh` locally.
   deploy on regression; HTTP/2 only WARNs (hoster-provided, not ours to
   fix). Non-zero exit on any failure.
 - With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value — the
-  hook reuses the clear-persistent-cache key), it also polls
-  `/en/sm/cache-status` and WARNs — without failing — when the APCu
+  same one the `do-work` hook sends), it also polls
+  `/en/sm/cache-status`, passing the key as an `X-Api-Key` header rather
+  than in the URL, and WARNs — without failing — when the APCu
   segment is ≥80% full or has ever expunged. Until the production
   `apc.shm_size` raise lands, expect this to be the early-warning signal
   that the 32M default is saturating (first live reading 2026-08-03:

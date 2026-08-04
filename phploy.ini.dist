@@ -3,8 +3,11 @@
 ; password goes in .phploy (copied from .phploy.dist), not in this file.
 ; NOTE: If non-alphanumeric characters are present, enclose the value in quotes.
 ;
-; The three keyed hooks all take the same value: any entry from the
-; server's sion_model.api_keys config.
+; The two keyed hooks below both take the same value: any entry from the
+; server's sion_model.api_keys config. The cache hooks need no key at all —
+; they run on the server, where bin/console reads it from the app's own config.
+; Keys travel in an X-Api-Key header, never a query string: a query string is
+; written to the server's access log and kept in shell history.
 [production]
     scheme = sftp
     user = userTODO
@@ -23,11 +26,16 @@
 
     ; order matters:
     post-deploy[] = "bash tools/deploy-submodules.sh"
-    ; the rm re-clears the config cache: a visitor may have re-cached the
-    ; merged config from the half-deployed tree since phploy's purge[]
-    post-deploy[] = "ssh -t -p 222 sshUserTODO@your-server.com 'cd public_html/schoenstatt.link && rm -f data/config/module-*-cache.*.php && php composer.phar install --no-dev --no-interaction --optimize-autoloader'"
-    post-deploy[] = "wget https://schoenstatt.link/sm/clear-persistent-cache?key=xxxxTODOxxxx --spider --quiet"
-    post-deploy[] = "wget https://schoenstatt.link/en/associations/do-work?key=xxxxTODOxxxx --spider --quiet"
+    ; composer install comes first because bin/console needs symfony/console in
+    ; vendor/. cache:clear-config then re-clears the merged config a visitor may
+    ; have re-cached from the half-deployed tree since phploy's purge[], and
+    ; cache:flush-persistent drops the APCu segment. That one has to be an HTTP
+    ; request (which the command makes for us): an APCu segment belongs to the
+    ; SAPI that created it, so no CLI process can flush the web server's cache.
+    ; Running it over ssh keeps the maintenance key on the server, out of this
+    ; file entirely.
+    post-deploy[] = "ssh -t -p 222 sshUserTODO@your-server.com 'cd public_html/schoenstatt.link && php composer.phar install --no-dev --no-interaction --optimize-autoloader && php bin/console cache:clear-config && php bin/console cache:flush-persistent'"
+    post-deploy[] = "wget https://schoenstatt.link/en/associations/do-work --header='X-Api-Key: xxxxTODOxxxx' --spider --quiet"
     post-deploy[] = "git tag -f deploy/$(date +%Y%m%d-%H%M)"
     post-deploy[] = "SMOKE_PROD_CACHE_KEY=xxxxTODOxxxx bash tools/smoke-prod.sh"
     logger = on
