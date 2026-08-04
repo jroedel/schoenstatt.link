@@ -7,8 +7,10 @@ reusable there instead of accumulating DONE narratives.
 State as of 2026-08-04: production runs **PHP 8.4.24** on a current Laminas
 stack with OPcache enabled; master is fully deployed; `composer audit --locked`
 reports zero advisories; 356 tests across three suites, green on 8.4; PHPStan
-clean at level 0 and running in CI; one-command deploy with hooks. First-party
-code no longer calls `getServiceLocator()` anywhere.
+clean at level 0 and running in CI (baseline 26 entries / 34 errors);
+one-command deploy with hooks. First-party code no longer calls
+`getServiceLocator()` anywhere, has no `throw Foo()` missing its `new`, and
+creates no dynamic properties.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -101,11 +103,35 @@ readability — the destination is **Symfony**, reached gradually:
 - [ ] **Passkeys (WebAuthn)** — decided 2026-08-02: web-auth/webauthn-lib
   current major, credential table, enrollment inside an authenticated
   session, magic link remains the fallback.
-- [ ] **PHPStan: raise from level 0** (49-error / 35-entry baseline) — the
-  biggest durability lever not yet on the ladder, and now unblocked: the
-  analyzer itself was repaired 2026-08-04 and runs in CI, so raising the level
-  is the only remaining half. Burn the baseline down as levels rise. Getting
-  the *smoke* suite into CI is still open (needs a capsule + dump strategy).
+- [ ] **PHPStan: raise from level 0** (34-error / 26-entry baseline). Measured
+  2026-08-05 — **do not raise the level before fixing the controller-plugin
+  false positives**, or the baseline balloons for no signal. New errors beyond
+  the current baseline, per level:
+
+  | level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+  |---|---|---|---|---|---|---|---|---|---|
+  | errors | 234 | 673 | 762 | 1094 | 1202 | 2586 | 2745 | 2809 | 3647 |
+  | files | 67 | 138 | 152 | 172 | 185 | 264 | 267 | 268 | 316 |
+
+  **Level 1's 234 errors are not 234 problems.** Breakdown: **115 are false
+  positives** — `flashMessenger()` (53), `nowMessenger()` (35), `isAllowed()`
+  (24), `zfcUserAuthentication()` (2) resolved through
+  `AbstractController::__call` against the controller-plugin manager, which
+  PHPStan cannot see. **82 are `isset()` on a variable that always exists** —
+  harmless dead defensive code. That leaves ~37 worth reading, and the real
+  finds are listed under "Bugs" below.
+  - **So the sequence is: teach PHPStan the plugin managers first.** Either a
+    `DynamicMethodReturnTypeExtension` per plugin, or `@method` annotations on
+    the controller base classes. Until then level 1 costs ~200 baseline
+    entries to buy ~37 findings, and the "no new errors" contract loses its
+    signal. Note this whole class of false positive **disappears under
+    Symfony**, where plugins become explicit dependencies — so weigh a PHPStan
+    extension against just waiting for the strangler.
+  - Harvesting the findings does **not** require raising the level: run
+    `phpstan analyse --level 1` ad hoc and read the output. That is how the
+    2026-08-05 fixes were found.
+  - Getting the *smoke* suite into CI is still open (needs a capsule + dump
+    strategy).
 - [ ] **Real database migrations** (Phinx or doctrine/migrations) instead of
   hand-run dumps in `database/`. Constraint: the web app's DB user lacks DDL
   rights, so migrations need separate credentials stored only on the server,
@@ -134,6 +160,40 @@ readability — the destination is **Symfony**, reached gradually:
 - [ ] `/en/dictionary` → 404: the route (module/Books config, ~line 1280)
   declares `DictionaryController` with no `'action'` default. One-line fix;
   verify production intent first (production may 404 identically).
+  - Adjacent, found 2026-08-05: `DictionaryTableFactory:29` builds
+    `DictionaryTable` with **4 arguments for a 3-parameter constructor**. PHP
+    silently ignores the extra one for userland calls, so this is drift, not a
+    crash — but check which argument the constructor stopped accepting before
+    fixing the route, since they are the same feature.
+- [ ] **Three more arity mismatches, all silently tolerated** (PHPStan level 1,
+  2026-08-05). PHP discards surplus arguments to userland functions, so none of
+  these crash — each is a call that has quietly stopped doing what it reads as:
+  - `SionModel\Mailing\Mailer:209` calls `Rand::getString()` with **3 arguments
+    for 1-2 parameters**. This is the **magic-link token generator**, so read it
+    before touching: the dropped third argument is almost certainly ZF's old
+    `$strong` flag, removed in laminas-math 3. Belongs with the
+    `laminas/laminas-math` retirement item, which already flags this call site.
+  - `Books\Model\LibraryTable:1601` calls `keyCollections()` with **3 arguments
+    for 1 parameter**.
+  - `Books\Model\DictionaryTable` constructor, above.
+- [ ] **Four calls to methods that do not exist** (PHPStan level 1, 2026-08-05).
+  Each is a guaranteed `Error` if reached, i.e. dead-or-broken code, and each
+  needs a judgement about the intended method rather than a rename:
+  `BibleController:221` `getBookAbbrev()`, `:222` `getTranslAbbrev()`,
+  `LibrariesController:192` `getKnownIssues()`, `JTranslateController:137`
+  `redirectAfterDelete()`. (A fifth, `NowMessenger`'s
+  `setPluginFlashMessenger()`, was fixed 2026-08-05 — the setter is
+  `setPluginNowMessenger()`.)
+- [ ] **Fourteen "variable might not be defined"** (PHPStan level 1,
+  2026-08-05) — each is a read that is only reached on some paths, so the
+  failure mode is a null/undefined-warning rather than a crash. One is already
+  characterized separately below (`LibraryTable:1038`'s `$checkout` leak); the
+  rest: `DhController:76` `$headerText`; `BibleTable:166,174,182,190`
+  (`$chapterClause`, `$bookClause`, `$translationClause`, `$verseClause` — one
+  cluster, likely the same missing initialization);
+  `BooksApiController:277` `$bookId`; `LibraryTable:740` `$cacheKey`;
+  `PublicationsTable:1746` `$callNumber`, `:2306` `$isScientific`;
+  `FormatPublication:143,145,148,150` `$mainText`; `Telephone:63` `$tooltip`.
 - [ ] `/libraries/create` and `/libraries/:id/edit` 500:
   `Books\Form\SearchForm`'s factory throws "only for a specific library"
   without library context (pre-existing, surfaced by the rung-4a audits).
@@ -249,17 +309,17 @@ Background and measurements: [caching.md](caching.md).
 
 ## Testing & CI
 
-- [ ] **Runtime deprecations our compile-time probe cannot see.** Booting the
-  app in `AclGuardRouteDriftTest` surfaced three, all pre-existing and all
-  invisible to rung 4b's `E_ALL` class-load probe because they only fire when
-  code *runs*: dynamic property creation on `SionModel\Db\Model\SionTable:255`
-  (`$changeTableName`) and `strtoupper(null)` in
-  `JTranslate\Model\CountriesInfo:89`. (A third, `$entityType` on
-  `Schoenstatt\Filter\SchoenstattLinkIdentifier`, was fixed 2026-08-04 by
-  declaring the property.) Dynamic properties are deprecated in 8.2
-  and **removed in PHP 9**, so these are a real forward gate rather than noise.
-  The method that would find the rest is a run-time sweep (exercise the smoke
-  suite with deprecations promoted), not another static pass.
+- [ ] **Run-time sweep for the deprecations a static pass cannot see.** All
+  three known ones are now fixed — `SionTable:255`'s dynamic
+  `$changeTableName` and `CountriesInfo:89`'s `strtoupper(null)` on 2026-08-05,
+  `SchoenstattLinkIdentifier::$entityType` on 2026-08-04 — so what remains is
+  the *method*, not a list. These fire only when code runs, which is why rung
+  4b's `E_ALL` class-load probe missed all three; booting the app under a
+  handler that promotes `E_DEPRECATED` found them in seconds.
+  - **Cheapest next step, worth doing before PHP 9 is close:** run the smoke
+    suite with deprecations promoted to failures and see what the 77 HTTP
+    paths turn up. Booting alone only reaches constructors and bootstrap
+    listeners; the deprecations that matter hide in request handling.
 - [ ] Shared-library tests live in the app repo (`test/Unit/TextTest.php`
   covers `SionModel\Text\Text`) because the submodules have no test
   infrastructure. Migrate them into laminas-sion-model/juser/jtranslate so

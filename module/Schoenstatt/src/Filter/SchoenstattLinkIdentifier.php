@@ -85,7 +85,7 @@ class SchoenstattLinkIdentifier extends AbstractFilter
                     }
                 } else {
                     $this->lastEntityType = null;
-                    throw \Exception('We should never be here.');
+                    throw new \Exception('We should never be here.');
                 }
             }
             return $number - $baseNumber;
