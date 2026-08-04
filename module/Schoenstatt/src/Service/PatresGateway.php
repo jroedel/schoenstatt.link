@@ -5,7 +5,7 @@ use Schoenstatt\Model\SchoenstattTable;
 use Laminas\InputFilter\InputFilterInterface;
 use Laminas\Http\Client;
 use Laminas\Json\Json;
-use Laminas\Log\LoggerInterface;
+use Psr\Log\LoggerInterface;
 
 class PatresGateway
 {
@@ -102,7 +102,7 @@ class PatresGateway
         } catch (\ErrorException $e) {
             $logger = $this->getLogger();
             if (isset($logger)) {
-                $logger->err("Error requesting the person list from schoenstatt-fathers.link. Reason: "
+                $logger->error("Error requesting the person list from schoenstatt-fathers.link. Reason: "
                     . $e->getMessage());
             }
             throw $e;
