@@ -1,9 +1,19 @@
 <?php
+
 namespace Books\Filter;
 
-use Laminas\Filter\PregReplace;
+use Laminas\Filter\AbstractFilter;
+use Laminas\Filter\Exception\InvalidArgumentException;
 
-class SortText extends PregReplace
+/**
+ * Builds a library book's sort text from its call number plus book metadata.
+ *
+ * Extends Laminas\Filter\AbstractFilter rather than Laminas\Filter\PregReplace,
+ * which laminas marked `@final`. PregReplace only ever supplied
+ * setPattern()/getPattern() here — filter() was overridden wholesale and the
+ * replacement API is refused outright — so those two methods are now local.
+ */
+class SortText extends AbstractFilter
 {
     const PARAMETER_TOKENS = [
         'collectionAbbreviation',
@@ -134,7 +144,8 @@ class SortText extends PregReplace
     public function setPattern($pattern)
     {
         //this will check the validity of the pattern
-        parent::setPattern($pattern);
+        $this->validatePattern($pattern);
+        $this->options['pattern'] = $pattern;
 
         //check how many capturing groups there are in the regex group
         $this->captureGroupCount = $this->countPatternCaptureGroups();
@@ -208,6 +219,38 @@ class SortText extends PregReplace
         $this->parametersToAppendToRegexCaptureGroups = $parametersToAppendToRegexCaptureGroups;
 
         return $this;
+    }
+
+    /**
+     * Get the currently set match pattern
+     *
+     * @return string|null
+     */
+    public function getPattern()
+    {
+        return $this->options['pattern'];
+    }
+
+    /**
+     * Reproduced from Laminas\Filter\PregReplace, which this filter used to
+     * extend. Note it checks only for the "e" modifier — it does not verify
+     * that the pattern compiles — and that leniency is preserved deliberately.
+     *
+     * @param string $pattern
+     * @throws InvalidArgumentException If the pattern carries the "e" modifier.
+     */
+    protected function validatePattern($pattern)
+    {
+        if (! preg_match('/(?<modifier>[imsxeADSUXJu]+)$/', $pattern, $matches)) {
+            return;
+        }
+
+        if (str_contains($matches['modifier'], 'e')) {
+            throw new InvalidArgumentException(sprintf(
+                'Pattern for a PregReplace filter may not contain the "e" pattern modifier; received "%s"',
+                $pattern
+            ));
+        }
     }
 
     /**
