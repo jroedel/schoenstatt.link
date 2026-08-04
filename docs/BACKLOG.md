@@ -115,10 +115,28 @@ readability — the destination is **Symfony**, reached gradually:
     The app masks `E_DEPRECATED` in `public/index.php`, so these are invisible
     to us in practice, but an upstream PR should fix them rather than only widen
     the constraint, or it hands 8.4 users on `E_ALL` a wall of noise.
-  - So each upstream PR is: add `~8.4.0`, plus 5 (SlmLocale) / 18 (TwbBundle)
-    one-line signature fixes. **Outward-facing to third-party maintainers —
-    ask before opening.** `jroedel/laminas-twb-bundle` can carry the TwbBundle
-    branch; SlmLocale has no fork yet.
+  - **Both fixes are written and verified (2026-08-04); the PRs need opening by
+    hand.** The `gh` token cannot create PRs on third-party repos, nor fork
+    them (`403 Resource not accessible by personal access token`) — same class
+    of limitation as [[gh-ci-status-via-run-list]].
+    - **TwbBundle**: branch `feat/php-8.4` is **pushed** to
+      github.com/jroedel/laminas-twb-bundle (commit `a547d71`, 14 files, 19
+      lines). Open at
+      `https://github.com/diablomedia/laminas-twb-bundle/compare/main...jroedel:feat/php-8.4?expand=1`.
+      Verified on 8.4.24: 115 tests pass, 18 deprecations → 0, php-cs-fixer
+      clean. **Their CI's 8.4 leg will still go red**: phpstan is pinned to
+      1.10.67, which cannot run on 8.4 at all (dies in its own bundled
+      better-reflection on `ReflectionClass::IS_READONLY`). Reproduces on
+      unmodified upstream; flagged in the PR body rather than fixed.
+    - **SlmLocale**: no fork exists and the token cannot create one, so the
+      change is a **patch file** — fork by hand, then `git am` it. Verified on
+      8.4.24: 98 tests pass, 5 deprecations → 0. Also noticed but deliberately
+      left alone: `UriPathStrategy.php:202` passes null to `trim()`, an 8.1-era
+      deprecation that reproduces on unmodified master.
+    - Neither upstream has moved since May/Oct 2024, so expect no quick reply.
+      Fallback stays the forks — but note the TwbBundle fork was *unmodified*
+      until now, so it is only a usable fallback with `feat/php-8.4` merged
+      into its `main`.
   - laminas-mvc 3.8 supports 8.4 — which is also its ceiling. Production flips
     konsoleH PHP in the same deploy; `require.php` and `config.platform` move
     together.
