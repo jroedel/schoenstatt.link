@@ -4,9 +4,9 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 (or lives in git); when an item here is done, delete it and record anything
 reusable there instead of accumulating DONE narratives.
 
-State as of 2026-08-04: production runs PHP 8.3.33 on a current Laminas stack;
-master is fully deployed (`deploy/20260803-2346` = PR #17); `composer audit
---locked` reports zero advisories; 198 tests across three suites; one-command
+State as of 2026-08-04: production runs **PHP 8.4.24** on a current Laminas
+stack with OPcache enabled; master is fully deployed; `composer audit --locked`
+reports zero advisories; 198 tests across three suites, green on 8.4; one-command
 deploy with hooks.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
@@ -48,8 +48,10 @@ readability — the destination is **Symfony**, reached gradually:
   `…/pending-labels` that never sent a JWT now get 401s. The label-printing
   workflow is the first candidate; tokens come from `POST /api/v1/login`.
 - [ ] Hetzner/konsoleH support ticket (pending): raise `apc.shm_size` 32M →
-  256M for the PHP 8.3 ini, and set `apc.ttl` > 0 so a failed allocation
-  evicts instead of wiping the segment. Downgraded from blocking by the
+  256M and set `apc.ttl` > 0 so a failed allocation evicts instead of wiping the
+  segment. **The ini to name is now `/home/httpd/php84-ini/ourlink/php.ini`** —
+  verified still 32M / ttl=0 after the 8.4 flip, since the settings were copied
+  across unchanged. Downgraded from blocking by the
   cache-size work ([caching.md](caching.md)), but two expunges were observed
   within hours on deploy day — still worth the one ticket.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
@@ -79,50 +81,34 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Next
 
-- [ ] **Rung 4b: PHP 8.4 — landing via our forks** (decided 2026-08-04: don't wait
-  on upstream). `require.php` is `~8.4.0` and `config.platform` is 8.4.24;
-  `slm/locale` and `diablomedia/laminas-twb-bundle` now resolve from
-  `jroedel/*` forks on branch `feat/php-8.4`, pinned by the lock to exact
-  commits. Upstream PRs stay open (diablomedia#27 and the SlmLocale one) —
-  **when either releases, delete its `repositories` entry and go back to a
-  version constraint**; the entries carry `comment` keys saying so.
-  - Why forks rather than waiting: neither upstream has moved since May/Oct
-    2024, and owning the forks means further 8.4/8.5 fixes don't need a
-    maintainer. Cost is two dev-branch dependencies in production.
-  - Verified: whole suite green on 8.4.24 (198 tests), full `composer update`
-    resolves with **no remaining 8.4 blockers**, and the form-regression
-    harness reports **zero drift** across all 27 pages with the forks versus
-    upstream at the same PHP version — the isolated A/B, so the swap is proven
-    a no-op for rendering rather than assumed.
-  - **Reconcile these against production's actual 8.4 build** once konsoleH is
-    flipped: `config.platform` pins `php 8.4.24`, `lib-icu 76.1` and
-    `ext-apcu 5.1.24`, all copied from the capsule. Read the real values from
-    `/en/sm/cache-status` (`phpVersion`) and `/en/sm/phpinfo`.
-  - **Order is not optional: flip konsoleH to 8.4 BEFORE deploying.** Composer
-    generates `vendor/composer/platform_check.php` from the `>= 8.4.0`
-    requirement and it is evaluated on *every* request, so deploying this onto
-    an 8.3 server hard-fatals the whole site rather than degrading. CI caught
-    exactly this (it was still on 8.3 and died in `platform_check.php`), which
-    is the cheap version of the same lesson. The reverse order is safe: 8.4
-    running the previous release is a state the capsule already verified.
-  - **The per-version php.ini is the flip's other hazard** — see DEPLOY.md.
-    8.4 reads `/home/httpd/php84-ini/ourlink/php.ini`, a different file from
-    the 8.3 one, so panel/ini tuning does not follow automatically.
-  - A full `composer update` would additionally pull symfony/css-selector,
-    event-dispatcher, mime and string from 7.4 to **8.1**. Deliberately not
-    taken here (partial update only) — a symfony major is its own decision,
-    not a side effect of a PHP bump.
-- [ ] **Enable OPcache in konsoleH** (found off 2026-08-04 in the PHP
-  Configuration panel, while APCu/Redis/ImageMagick/OAuth/SSH2 are on).
-  Production has been recompiling every PHP file on every request; this is the
-  largest single performance win available and it costs one checkbox. Do it as
-  its **own** change, not in the 8.4 deploy — one variable at a time, or a
-  regression cannot be attributed. Notes: `opcache.validate_timestamps` defaults
-  to 1 with `revalidate_freq=2`, so deploys self-heal within seconds and no pool
-  restart is needed; if it is ever set to 0, every deploy then requires one.
-  Sanity-check `opcache.memory_consumption` against the account's limits, and
-  re-read `/en/sm/cache-status` afterwards — APCu and OPcache are separate
-  segments and only APCu is reported there today.
+- [ ] **Retire the two dependency forks when upstream releases.** `slm/locale`
+  and `diablomedia/laminas-twb-bundle` resolve from `jroedel/*` branch
+  `feat/php-8.4` via `repositories` entries in `composer.json` (each carries a
+  `comment` key stating the exit condition). Upstream PRs: diablomedia#27 and
+  the SlmLocale one, both open. When either ships a release including the 8.4
+  constraint, delete its entry and restore a version constraint.
+- [ ] **OPcache slot headroom is thin.** `opcache.max_accelerated_files` is
+  10000 and the deployed tree holds ~9700 `.php` files (9332 of them in
+  `vendor/`, measured with dev deps; `--no-dev` is smaller but not by much).
+  When the table fills, OPcache silently stops caching new files and they get
+  recompiled on every request — the exact problem it was enabled to solve,
+  invisibly. Raise it (next prime up, e.g. 16229) or measure first via the item
+  below. `opcache.jit` is `off` with a 64M buffer reserved; leave it off — JIT
+  rarely pays for a request-scoped web app.
+- [ ] **Report OPcache in `/sm/cache-status`.** It currently reports APCu only,
+  so `tools/smoke-prod.sh` cannot warn on OPcache saturation the way it does for
+  the APCu segment. `opcache_get_status(false)` gives
+  `opcache_statistics.num_cached_scripts` / `max_cached_keys` and
+  `memory_usage.free_memory` — enough to warn at ≥80% of either, mirroring the
+  existing APCu check. This is what would make the item above measurable rather
+  than guessed.
+- [ ] **Watch for date-format drift from the ICU downgrade.** The 8.4 build
+  ships **ICU 72.1**, older than the 8.3 build's 76.1 (Unicode 15.0, TZData
+  2022e). 27 `IntlDateFormatter` call sites now format against older locale
+  data. Production smoke passed, so nothing is broken; but if a date or a
+  locale display name looks wrong in a non-English locale, this is the cause and
+  it is not our code. PHP's own timezone database is separate and current
+  (2026.3).
 - [ ] **Passkeys (WebAuthn)** — decided 2026-08-02: web-auth/webauthn-lib
   current major, credential table, enrollment inside an authenticated
   session, magic link remains the fallback.
