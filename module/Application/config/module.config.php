@@ -157,7 +157,6 @@ return [
             Route::class => [
                 ['route' => 'redirect-pre-april-2020-sl-id', 'roles' => ['guest', 'user']],
                 ['route' => 'welcome', 'roles' => ['guest', 'user']],
-                ['route' => 'new-home', 'roles' => ['guest', 'user']],
                 ['route' => 'developers', 'roles' => ['guest', 'user']],
                 ['route' => 'sitemap', 'roles' => ['guest', 'user']],
                 ['route' => 'acknowledgements', 'roles' => ['guest', 'user']],

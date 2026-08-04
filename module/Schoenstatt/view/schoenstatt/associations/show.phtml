@@ -149,11 +149,6 @@ if (! empty($object['photos'])) :
                     echo $this->url('association-edit', ['sw_id' => $entity['identifier']]);?>">
                     <?= $this->translate('Edit association');?></a>
                 </span>
-            <?php elseif ($this->isAllowed('route/association/suggest')) :?>
-                <span class="pull-right"><a class="btn btn-default btn-sm" href="<?php
-                    echo $this->url('association/suggest', ['sw_id' => $entity['identifier']]);?>">
-                    <?= $this->translate('Suggest change');?></a>
-                </span>
             <?php endif;?>
         </div>
         </div>

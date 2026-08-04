@@ -2016,9 +2016,6 @@ return [
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
                 ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/do-work', 'roles' => ['guest', 'user', null]], //uses api key authorization
-                ['route' => 'association/moderate', 'roles' => ['sch_moderator']],
-                ['route' => 'association/suggest', 'roles' => ['sch_user', 'user']],
-                ['route' => 'association/create-dioceses', 'roles' => ['sch_administrator']],
 
                 ['route' => 'roles', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/create', 'roles' => ['sch_moderator']],
