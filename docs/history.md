@@ -6,10 +6,9 @@ the techniques worth reusing. The journal as originally written — every DONE
 narrative in full — is preserved in git: `git log --follow docs/BACKLOG.md`
 (the last full-journal version is the one this restructure replaced).
 
-State reached by 2026-08-04: production runs PHP 8.3.33 on a current Laminas
-stack, master is fully deployed, `composer audit --locked` reports zero
-advisories, and 167 tests run across three suites (smoke 73 / unit 82 /
-integration 12).
+State reached by 2026-08-04: production runs **PHP 8.4.24** on a current
+Laminas stack with OPcache enabled, master is fully deployed, `composer audit
+--locked` reports zero advisories, and 198 tests run across three suites.
 
 ## Phase 1–2: time capsule and safety net (2026-08-01/02)
 
@@ -242,3 +241,86 @@ links. Lessons that shaped DEPLOY.md (the living procedure):
 - The countries dataset is static now
   (`module/JTranslate/data/countries.json`, vendored from mledoze/countries
   1.8); refresh from upstream if country data matters.
+
+## Rung 4b — PHP 8.4 (closed 2026-08-04, deployed same day)
+
+Reached 8.4.24 in production. Three PRs cleared our side of the line, then one
+moved the platform.
+
+**The gate list in the backlog was wrong, and re-measuring is cheap.** It said
+"the only gate left is `diablomedia/laminas-twb-bundle`". Setting
+`config.platform.php` to 8.4 and running `composer update --dry-run` found
+`laminas/laminas-crypt` (abandoned *and* capped at `~8.3.0`) and `slm/locale`
+as well. Composer reports blockers a few at a time, so the dry-run has to be
+re-run after each one is cleared rather than trusted once.
+
+**laminas-crypt went by deletion, not replacement.** Its whole use was two calls
+in `SionTable` wrapping PHP's own hash functions: `Hash::compute($a,$d)` is
+`hash($a,$d,false)` (hex) and `Hash::isSupported($a)` is
+`in_array(strtolower($a), hash_algos(), true)`. Verified byte-identical for
+sha256/sha512/md5 *before* removing the package, because `privacyHash()` output
+is stored. Removing it cascaded to `laminas-math`, which broke the app —
+`CspListener` builds its CSP nonce with `Laminas\Math\Rand`, and six other
+files use it too. laminas-math is now an explicit require; it is abandoned but
+3.8.1 allows `~8.4.0`, so it was never a gate. Retiring its 11 `Rand` call sites
+(several generating security tokens) stayed a separate item rather than a
+drive-by.
+
+**Implicit-nullable parameters: 107 in our own code, and grep cannot find them.**
+PHP 8.4 deprecates `Type $x = null`; PHP 9 makes it fatal. The reliable method is
+to load every class under `E_ALL` on 8.4 — the notice fires at *compile* time, so
+a factory no test exercises still emits it, and a line-oriented sweep misses
+multi-line signatures whose last parameter carries no trailing comma
+(`SionForm::prepareForSuggestion()` was exactly that, caught only by the runtime
+probe). Recipe: `docker run -v "$PWD":/app php:8.4-cli` and `include_once` every
+file under `module/*/src` with an error handler collecting `E_DEPRECATED`. Almost
+all 107 were the factory signature
+`__invoke($container, $requestedName, array $options = null)`. Kept strictly
+separate from the parked Interop→Psr / `: mixed` sweep — different driver, since
+PHP forces this one.
+
+**Upstream would not have unblocked us in time, so we own the forks.** Neither
+`basz/SlmLocale` (1.2.0, Oct 2024) nor `diablomedia/laminas-twb-bundle` (5.0.0,
+May 2024) had moved, and neither had an 8.4 PR. Both were *functionally* fine on
+8.4 — the whole suite passed with their 8.3-resolved code running on 8.4.24 — so
+the caps were conservative, not protective. Each fork branch adds the constraint
+plus explicit nullables (5 and 18). `composer.json` gained `repositories` entries
+whose `comment` keys state the exit condition, and the lock pins exact commits so
+tracking a branch stays reproducible.
+
+**The `gh` token cannot open PRs on third-party repos, or fork them** (403,
+`createPullRequest` / `addComment` / forks). Widening it does not help: those
+operations need permission on the *target* repo. Push to our own fork works, so
+the last step is always a manual click. Worth knowing before promising a PR.
+
+**Two verification techniques that earned their keep.** The form-regression
+harness was run as an isolated A/B — same PHP 8.4.24 on both sides, only the
+dependency swapped — giving zero drift across all 27 pages, which is what turned
+"TwbBundle's view-helper signatures changed" from a worry into a fact. Its first
+run reported 2 drifted pages, both `500 → 200`: the committed baseline predated
+commit `70ab44c` by ~14 hours. A stale baseline reads exactly like a regression,
+so re-capture it whenever a fix lands.
+
+**Deploy order is not optional, and CI taught it cheaply.** Composer writes
+`vendor/composer/platform_check.php` from `require.php` and PHP evaluates it on
+*every* request, so a release requiring 8.4 on an 8.3 server hard-fatals the
+whole site. `config.platform` does not suppress that check — it only affects
+resolution. CI (still on 8.3) failed in exactly that file, which is the five-cent
+version of the same lesson. Flip the runtime first, smoke the old release on it,
+then deploy. Also: each PHP version reads its **own** `php.ini`
+(`php84-ini/ourlink/php.ini`), so ini tuning does not follow a version flip.
+
+**Post-flip reconciliation found the pins half wrong.** Production's 8.4 build
+reports PHP 8.4.24 and APCu 5.1.24 (both matching), but ICU **72.1** where the
+pin said 76.1 — the hoster's newer PHP ships the *older* ICU — and zip 1.22.8
+against a pinned 1.22.3. Read the real values from `/en/sm/phpinfo` after any
+runtime change rather than assuming the capsule's values carried over.
+
+**Stacked PRs across submodules were a mistake.** Basing submodule PR #5 on
+`feat/symfony-console` and #6 on `feat/monolog` made each diff read cleanly, but
+merging them cascaded into those *feature* branches and left `modernization`
+holding only the first change — needing a bookkeeping PR to bring the rest
+across. Submodule PRs should each target `modernization` directly; stacking only
+earns its keep in the application repo, where PRs genuinely share
+`composer.lock`. When re-pinning a stack, merge each branch into the next first,
+or the gitlink three-way-merges into a conflict.
