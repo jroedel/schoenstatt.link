@@ -2930,16 +2930,12 @@ return [
                 ['route' => 'publication-edit', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-delete', 'roles' => ['pub_moderator']],
                 ['route' => 'publication-create-new-edition', 'roles' => ['pub_moderator']],
-                ['route' => 'publication-publication-copy-to-main-corpus', 'roles' => ['pub_moderator']],
 
                 ['route' => 'publication-copy-to-main-corpus', 'roles' => ['pub_moderator']],
-
-                ['route' => 'home', 'roles' => ['guest', 'lib_user']],
 
                 ['route' => 'text', 'roles' => ['texts_user']], //extra checks in controller
                 ['route' => 'texts', 'roles' => ['texts_user']],
                 ['route' => 'text-edit', 'roles' => ['texts_moderator']],
-                ['route' => 'text-create', 'roles' => ['texts_moderator']],
                 ['route' => 'text-delete', 'roles' => ['texts_moderator']],
                 ['route' => 'texts/jk-import', 'roles' => ['administrator']],
                 ['route' => 'texts/create', 'roles' => ['texts_moderator']],
@@ -2963,7 +2959,6 @@ return [
                 ['route' => 'libraries/create', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/edit', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/create', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/book-list', 'roles' => ['guest', 'lib_user']],
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_user']],
@@ -2978,9 +2973,6 @@ return [
                 ['route' => 'libraries/library/sort-debugging', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/refresh-sort', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/collections', 'roles' => ['lib_user']],
-                ['route' => 'libraries/import', 'roles' => ['lib_user']],
-                ['route' => 'libraries/checkouts', 'roles' => ['lib_user']],
-                ['route' => 'libraries/checkouts/library', 'roles' => ['lib_user']],
                 ['route' => 'borrowers', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/fix-person-id', 'roles' => ['lib_administrator']],
