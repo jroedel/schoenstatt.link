@@ -8,7 +8,11 @@ includes:
 #   docker compose exec -T app php -d memory_limit=1G tools/phpstan.phar analyse
 parameters:
     level: 0
-    phpVersion: 70400
+    # Must track the platform, not history: PHPStan parses vendor/ with this
+    # setting, so leaving it on 7.4 after the rung-4b flip made it choke on
+    # PHP-8 syntax throughout the laminas tree and report ~437 phantom
+    # "class not found" errors. Keep in step with config.platform.php.
+    phpVersion: 80400
     paths:
         - module/Application/src
         - module/Bible/src

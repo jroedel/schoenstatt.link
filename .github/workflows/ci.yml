@@ -14,8 +14,17 @@
 # unit: the test/Unit suite. It requires classes under test directly (no
 # vendor autoload, no running app, no DB), so a bare runner suffices.
 #
-# Still local-only: PHPStan and the smoke suite (need the docker time
-# capsule with a production DB dump) — see docs/BACKLOG.md.
+# integration: the test/Integration suite. Needs real vendor/ libraries but
+# no running app and no DB, so it rides on a plain composer install.
+#
+# phpstan: static analysis at level 0, contract "no new errors" against
+# phpstan-baseline.neon. It needs vendor/ (bootstrapFiles + class discovery)
+# but no DB and no running app. This job exists because the analyzer sat
+# broken and unnoticed from rung 4a to 2026-08-04 — phpVersion was still
+# pinned to 7.4 against an 8.4 stack, which nothing was running to catch.
+#
+# Still local-only: the smoke suite (needs the docker time capsule with a
+# production DB dump) — see docs/BACKLOG.md.
 name: CI
 
 on:
@@ -63,6 +72,59 @@ jobs:
         run: bash tools/get-phars.sh phpunit
       - name: Run the unit suite
         run: php tools/phpunit.phar --testsuite unit
+
+  static-analysis:
+    name: PHPStan (level 0, no new errors)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      - name: Install from lock
+        run: php composer.phar install --no-dev --no-interaction --no-progress
+      - name: Fetch the pinned phpstan phar
+        run: bash tools/get-phars.sh phpstan
+      - name: Analyse
+        run: php -d memory_limit=1G tools/phpstan.phar analyse --no-progress
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Set up PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          # intl is a hard composer requirement; the rest are what PHPUnit and
+          # PhpSpreadsheet need and the host PHP does not carry by default.
+          extensions: intl, mbstring, dom, xmlwriter, zip
+          coverage: none
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      - name: Install from lock
+        run: php composer.phar install --no-dev --no-interaction --no-progress
+      - name: Fetch the pinned phpunit phar
+        run: bash tools/get-phars.sh phpunit
+      - name: Run the integration suite
+        run: php tools/phpunit.phar --testsuite integration
 
   composer-install:
     name: composer install --no-dev (deploy rehearsal)
