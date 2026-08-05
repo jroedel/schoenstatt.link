@@ -204,14 +204,6 @@ readability — the destination is **Symfony**, reached gradually:
   `text/html` body: `BooksApiController::getList()` builds a `JsonModel`
   that never renders. The JWT gate on it works; it is the one gated route
   whose payload no test asserts, for this reason. Cause not investigated.
-- [ ] `/en/dictionary` → 404: the route (module/Books config, ~line 1280)
-  declares `DictionaryController` with no `'action'` default. One-line fix;
-  verify production intent first (production may 404 identically).
-  - Adjacent, found 2026-08-05: `DictionaryTableFactory:29` builds
-    `DictionaryTable` with **4 arguments for a 3-parameter constructor**. PHP
-    silently ignores the extra one for userland calls, so this is drift, not a
-    crash — but check which argument the constructor stopped accepting before
-    fixing the route, since they are the same feature.
 - [ ] **Three more arity mismatches, all silently tolerated** (PHPStan level 1,
   2026-08-05). PHP discards surplus arguments to userland functions, so none of
   these crash — each is a call that has quietly stopped doing what it reads as:
@@ -222,7 +214,6 @@ readability — the destination is **Symfony**, reached gradually:
     `laminas/laminas-math` retirement item, which already flags this call site.
   - `Books\Model\LibraryTable:1601` calls `keyCollections()` with **3 arguments
     for 1 parameter**.
-  - `Books\Model\DictionaryTable` constructor, above.
 - [ ] **Four calls to methods that do not exist** (PHPStan level 1, 2026-08-05).
   Each is a guaranteed `Error` if reached, i.e. dead-or-broken code, and each
   needs a judgement about the intended method rather than a rename:

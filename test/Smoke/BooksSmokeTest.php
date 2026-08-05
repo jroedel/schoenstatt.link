@@ -7,13 +7,8 @@ namespace SchoenstattTest\Smoke;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Books module: publications, blog, music, timeline, the library show pages
- * and the members-only text, library and borrower areas.
- *
- * Not covered (see the smoke suite backlog):
- *  - /en/dictionary returns HTTP 404 on the baseline. Its route declares a
- *    controller but no default action, so dispatch falls through to the
- *    not-found handler. Asserting the 404 would enshrine the misconfiguration.
+ * Books module: publications, blog, music, timeline, the dictionary, the
+ * library show pages and the members-only text, library and borrower areas.
  */
 class BooksSmokeTest extends SmokeTestCase
 {
@@ -54,6 +49,31 @@ class BooksSmokeTest extends SmokeTestCase
         $response = $this->assertRendersOk('/en/timeline');
 
         $this->assertStringContainsString('Kentenich Timeline', $response['body']);
+    }
+
+    /**
+     * Regression: /en/dictionary answered 404 for years. The route matched
+     * fine — it declared a controller and no default action, and
+     * AbstractActionController::onDispatch reads that parameter with a default
+     * of 'not-found', so it dispatched notFoundAction(). The action it wanted
+     * is SionController's generic indexAction, and books/dictionary/index.phtml
+     * was present the whole time.
+     */
+    public function testDictionaryIndexRenders(): void
+    {
+        $this->assertRendersOk('/en/dictionary');
+    }
+
+    /**
+     * The locale child route is /:inLanguage constrained to two lowercase
+     * letters, so the URL is /en/dictionary/es rather than anything containing
+     * the route's name. Worth a test precisely because that is easy to get
+     * wrong when reading the config, and because it shares its path segment
+     * with the numeric /:entry_id sibling.
+     */
+    public function testDictionaryInLanguageRenders(): void
+    {
+        $this->assertRendersOk('/en/dictionary/es');
     }
 
     /**

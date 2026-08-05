@@ -23,10 +23,14 @@ class DictionaryTableFactory implements FactoryInterface
     {
         $dbAdapter = $container->get(Adapter::class);
 
-        $config = $container->get('Config');
         $actingUserProvider = $container->get(ActingUserProviderInterface::class);
 
-        $table = new DictionaryTable($dbAdapter, $container, $actingUserProvider, $config);
+        //Three arguments, not four. This passed $config as a fourth for years;
+        //DictionaryTable::__construct takes three, and PHP discards surplus
+        //arguments to userland functions silently, so the call read as though
+        //it configured something and did not. The table reaches config through
+        //the container it is already given.
+        $table = new DictionaryTable($dbAdapter, $container, $actingUserProvider);
         return $table;
     }
 }
