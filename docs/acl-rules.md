@@ -47,12 +47,51 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
+| routes shadowed by symfony | 2 |
 | rules from rule config | 34 |
+| symfony served routes | 5 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
 
 `guarded routes existing` + `unguarded routes` = `total routes` (166 + 25 = 191). Phantom entries are excluded because they are not routes.
+
+## Routes served by the Symfony kernel (nothing in this file applies to them)
+
+These paths are matched by `config/symfony/routes.php` before laminas-mvc is ever started, so
+**none of the authorization below is in force for them**: no bjyauthorize guard runs, no ACL is
+built and there is no identity. Whatever check the ported controller makes for itself is the
+whole gate. They are listed here because the alternative is worse — this tool reads laminas
+config, so a ported route would otherwise simply disappear from the picture rather than show up
+as unguarded.
+
+Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).
+`App\Http\LegacyBridge`, the catch-all that hands everything else to laminas-mvc, is excluded —
+it matches every path by design.
+
+| symfony route | path | controller |
+| --- | --- | --- |
+| `health` | `/_health` | `App\Controller\HealthController` |
+| `sm-cache-status` | `/sm/cache-status` | `App\Controller\CacheStatusController` |
+| `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | `App\Controller\CacheStatusController` |
+| `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | `App\Controller\ClearPersistentCacheController` |
+| `sm-clear-persistent-cache.locale` | `/{_locale}/sm/clear-persistent-cache` | `App\Controller\ClearPersistentCacheController` |
+
+### Laminas routes now shadowed by one of them
+
+A laminas route whose path a Symfony route claims first. Matched with the real `UrlMatcher`, not
+by comparing strings. Laminas paths carry no locale prefix here because there is none in the
+config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the
+Symfony side declares both the bare and the prefixed form.
+
+The guard column is what bjyauthorize *would* have enforced and no longer does. Where it says
+public, porting changed nothing about who gets in; anything else is a real change of
+authorization and is also reported as a warning at the top of this file.
+
+| laminas route | path | shadowed by | its (now inert) guard |
+| --- | --- | --- | --- |
+| `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles), so no change |
+| `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles), so no change |
 
 ## Role hierarchy
 

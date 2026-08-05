@@ -122,6 +122,154 @@ function routeNames(array $config): array
     return $names;
 }
 
+/**
+ * Compose each laminas route name's URL path, so it can be compared with the
+ * Symfony router's.
+ *
+ * Only needed because of the strangler migration, and only approximate on
+ * purpose: `Literal` and `Segment` both carry their piece of the path in
+ * `options.route`, a `Method` child constrains the verb and contributes nothing,
+ * and `Regex` has no literal path at all — those get null. A null simply means
+ * "cannot be compared", which is the safe answer: it can never claim a route is
+ * shadowed when it is not.
+ *
+ * The composed path has no locale prefix, because there is none in the config:
+ * SlmLocale\Strategy\UriPathStrategy strips `/en` before the router ever sees the
+ * request. The Symfony side declares both forms for exactly that reason, so
+ * matching the unprefixed path is the right comparison.
+ *
+ * @param array<string, mixed> $config
+ * @return array<string, string|null> route name => composed path
+ */
+function laminasRoutePaths(array $config): array
+{
+    $paths = [];
+
+    $walk = static function (array $definitions, ?string $prefix, string $parentName) use (&$walk, &$paths): void {
+        foreach ($definitions as $name => $definition) {
+            $full = $parentName === '' ? (string) $name : $parentName . '/' . $name;
+
+            $segment = $definition['options']['route'] ?? null;
+            $type    = isset($definition['type']) ? (string) $definition['type'] : '';
+            if ($prefix === null) {
+                // Once an ancestor could not be composed, nothing below it can be.
+                $path = null;
+            } elseif (is_string($segment)) {
+                $path = $prefix . $segment;
+            } else {
+                // A Method route (verb only) inherits its parent's path; anything
+                // else with no literal `route` option cannot be composed.
+                $path = str_contains($type, 'Method') ? $prefix : null;
+            }
+
+            $paths[$full] = $path;
+
+            if (isset($definition['child_routes']) && is_array($definition['child_routes'])) {
+                $walk($definition['child_routes'], $path, $full);
+            }
+        }
+    };
+
+    $walk($config['router']['routes'] ?? [], '', '');
+
+    return $paths;
+}
+
+/**
+ * The routes the Symfony kernel serves itself, read from config/symfony/routes.php.
+ *
+ * This tool exists to be the authorization oracle, and a ported route would
+ * otherwise make it go blind at the worst possible moment: the route vanishes
+ * from the laminas config, so it stops appearing here at all — not even as
+ * "unguarded". Reading the Symfony collection keeps every path accounted for by
+ * one of the two front controllers.
+ *
+ * The catch-all (App\Http\LegacyBridge) is excluded from the matcher: it claims
+ * every path by design, so leaving it in would report the entire site as ported.
+ *
+ * @return array{
+ *     routes: array<string, array{path: string, controller: string}>,
+ *     matcher: Symfony\Component\Routing\Matcher\UrlMatcher|null,
+ *     available: bool
+ * }
+ */
+function symfonyRoutes(): array
+{
+    static $result = null;
+    if ($result !== null) {
+        return $result;
+    }
+
+    require_once __DIR__ . '/../vendor/autoload.php';
+
+    $file = __DIR__ . '/../config/symfony/routes.php';
+    if (! is_file($file)) {
+        return $result = ['routes' => [], 'matcher' => null, 'available' => false];
+    }
+
+    /** @var Symfony\Component\Routing\RouteCollection $collection */
+    $collection = require $file;
+
+    $ported = new Symfony\Component\Routing\RouteCollection();
+    $routes = [];
+    foreach ($collection->all() as $name => $route) {
+        $controller = (string) $route->getDefault('_controller');
+        if ($controller === 'App\Http\LegacyBridge') {
+            continue;
+        }
+        $routes[(string) $name] = ['path' => $route->getPath(), 'controller' => $controller];
+        $ported->add((string) $name, $route);
+    }
+    ksort($routes);
+
+    return $result = [
+        'routes'    => $routes,
+        'matcher'   => new Symfony\Component\Routing\Matcher\UrlMatcher(
+            $ported,
+            new Symfony\Component\Routing\RequestContext()
+        ),
+        'available' => true,
+    ];
+}
+
+/**
+ * Which laminas routes a Symfony route now answers instead.
+ *
+ * Matched with the real UrlMatcher rather than by comparing strings, so the
+ * answer accounts for defaults, requirements and route order exactly as a request
+ * would.
+ *
+ * @param array<string, string|null> $laminasPaths
+ * @return array<string, array{path: string, symfony_route: string}> laminas name => what shadows it
+ */
+function shadowedBySymfony(array $laminasPaths): array
+{
+    $symfony = symfonyRoutes();
+    $matcher = $symfony['matcher'];
+    if ($matcher === null) {
+        return [];
+    }
+
+    $shadowed = [];
+    foreach ($laminasPaths as $name => $path) {
+        if ($path === null || $path === '') {
+            continue;
+        }
+        try {
+            $match = $matcher->match($path);
+        } catch (Throwable) {
+            continue;
+        }
+        $shadowed[(string) $name] = [
+            'path'          => $path,
+            'symfony_route' => (string) ($match['_route'] ?? '?'),
+        ];
+    }
+    ksort($shadowed);
+
+    return $shadowed;
+}
+
 // ---------------------------------------------------------------------------
 // Role hierarchy (database)
 // ---------------------------------------------------------------------------
@@ -529,6 +677,8 @@ $descendants  = descendantMap($parents);
 $ctrlGuards   = controllerGuards($config);
 $resourceInfo = nonRouteResources($config);
 $ruleInfo     = configRules($config);
+$symfony      = symfonyRoutes();
+$shadowed     = shadowedBySymfony(laminasRoutePaths($config));
 
 sort($allRoles);
 
@@ -626,6 +776,28 @@ if ($hierarchy['available']) {
     }
 }
 
+// A ported route's laminas guard entry stops applying, because a Symfony-served
+// request never boots laminas-mvc and so never runs the guard. For the endpoints
+// ported so far that is deliberate and costs nothing — their real check is in the
+// controller and their guard admits everyone anyway. It is worth *warning* about
+// only when the shadowed guard actually restricted something: then authorization
+// silently stopped applying, and nothing else would fail.
+foreach ($shadowed as $laminasRoute => $info) {
+    $row = $rows[$laminasRoute] ?? null;
+    if ($row === null || $row['public']) {
+        continue;
+    }
+    $warnings[] = sprintf(
+        'Route "%s" is now served by the Symfony route "%s" (%s), so its bjyauthorize guard — which '
+        . 'restricted it to %s — no longer runs: a Symfony-served request never boots laminas-mvc. Move the '
+        . 'check into the ported controller, or unport the route.',
+        $laminasRoute,
+        $info['symfony_route'],
+        $info['path'],
+        implode(', ', $row['effective_roles']) ?: '(nobody)'
+    );
+}
+
 $unknownRoles = array_keys($unknownRole);
 sort($unknownRoles);
 if ($unknownRoles !== []) {
@@ -643,7 +815,9 @@ $counts = [
     'roles'                    => count($allRoles),
     'route_guard_entries'      => array_sum(array_map('count', $guards['declarations'])),
     'routes_declared_twice'    => count($duplicates),
+    'routes_shadowed_by_symfony' => count($shadowed),
     'rules_from_rule_config'   => count($ruleInfo['rules']),
+    'symfony_served_routes'    => count($symfony['routes']),
     'total_routes'             => count($routes),
     'unguarded_routes'         => count($unguarded),
     // The subset that is a real endpoint: reachable by nobody rather than merely
@@ -728,6 +902,21 @@ if ($format === 'json') {
             'rule'     => $ruleInfo['other_providers'],
         ],
         'guarded_routes'    => $jsonRows,
+        'laminas_routes_shadowed_by_symfony' => array_map(
+            static fn (string $name, array $info): array => [
+                'laminas_route' => $name,
+                'path'          => $info['path'],
+                'symfony_route' => $info['symfony_route'],
+                // What the (now inert) laminas guard said, so a reader can see at
+                // a glance whether porting the route changed who gets in. The
+                // roles themselves are one lookup away in guarded_routes; copying
+                // 43 of them per entry here would only bury the diff.
+                'was_guarded'   => isset($rows[$name]),
+                'was_public'    => $rows[$name]['public'] ?? null,
+            ],
+            array_keys($shadowed),
+            array_values($shadowed)
+        ),
         'non_route_resources' => $resourceInfo['resources'],
         'notes'             => [
             'guard_assign_not_merge' => 'BjyAuthorize\Guard\AbstractGuard assigns $rules[$resource], so for a '
@@ -742,12 +931,18 @@ if ($format === 'json') {
             'unguarded_routes'       => 'The Route guard is default-deny: a route with no guard entry is '
                 . 'reachable by nobody. unguarded_routes_matchable is the subset that is a real endpoint; '
                 . 'the rest are Part-route parents with may_terminate false, which can never be matched.',
+            'symfony_routes'         => 'Paths the Symfony kernel serves itself (config/symfony/routes.php, '
+                . 'live only where SYMFONY_KERNEL=1 — the capsule, not production yet). None of this file\'s '
+                . 'authorization applies to them: a Symfony-served request never boots laminas-mvc, so no '
+                . 'bjyauthorize guard, no ACL and no identity exist for it. Whatever check the ported '
+                . 'controller makes itself is the whole gate.',
         ],
         'phantom_guard_entries' => $jsonPhantoms,
         'roles'                 => $roleTree,
         'roles_available'       => $hierarchy['available'],
         'routes_declared_more_than_once' => $jsonDuplicates,
         'rules'                 => $ruleInfo['rules'],
+        'symfony_routes'        => $symfony['routes'],
         'unguarded_routes'      => $unguarded,
         'unguarded_routes_matchable' => $unguardedMatchable,
         'unknown_roles_named_in_config' => $unknownRoles,
@@ -831,6 +1026,62 @@ $o();
 $o('`guarded routes existing` + `unguarded routes` = `total routes` (' .
     $counts['guarded_routes_existing'] . ' + ' . $counts['unguarded_routes'] . ' = ' .
     $counts['total_routes'] . '). Phantom entries are excluded because they are not routes.');
+$o();
+
+// -- Symfony-served routes --------------------------------------------------
+
+$o('## Routes served by the Symfony kernel (nothing in this file applies to them)');
+$o();
+$o('These paths are matched by `config/symfony/routes.php` before laminas-mvc is ever started, so');
+$o('**none of the authorization below is in force for them**: no bjyauthorize guard runs, no ACL is');
+$o('built and there is no identity. Whatever check the ported controller makes for itself is the');
+$o('whole gate. They are listed here because the alternative is worse — this tool reads laminas');
+$o('config, so a ported route would otherwise simply disappear from the picture rather than show up');
+$o('as unguarded.');
+$o();
+$o('Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).');
+$o('`App\Http\LegacyBridge`, the catch-all that hands everything else to laminas-mvc, is excluded —');
+$o('it matches every path by design.');
+$o();
+if ($symfony['routes'] === []) {
+    $o('_None._');
+} else {
+    $o('| symfony route | path | controller |');
+    $o('| --- | --- | --- |');
+    foreach ($symfony['routes'] as $name => $route) {
+        $o('| `' . $name . '` | `' . $route['path'] . '` | `' . $route['controller'] . '` |');
+    }
+}
+$o();
+
+$o('### Laminas routes now shadowed by one of them');
+$o();
+$o('A laminas route whose path a Symfony route claims first. Matched with the real `UrlMatcher`, not');
+$o('by comparing strings. Laminas paths carry no locale prefix here because there is none in the');
+$o('config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the');
+$o('Symfony side declares both the bare and the prefixed form.');
+$o();
+$o('The guard column is what bjyauthorize *would* have enforced and no longer does. Where it says');
+$o('public, porting changed nothing about who gets in; anything else is a real change of');
+$o('authorization and is also reported as a warning at the top of this file.');
+$o();
+if ($shadowed === []) {
+    $o('_None._');
+} else {
+    $o('| laminas route | path | shadowed by | its (now inert) guard |');
+    $o('| --- | --- | --- | --- |');
+    foreach ($shadowed as $laminasRoute => $info) {
+        $row = $rows[$laminasRoute] ?? null;
+        if ($row === null) {
+            $guard = 'no guard entry — was reachable by nobody';
+        } elseif ($row['public']) {
+            $guard = '**public** (`null` in its roles), so no change';
+        } else {
+            $guard = 'restricted to ' . (implode(', ', $row['effective_roles']) ?: '(nobody)');
+        }
+        $o(sprintf('| `%s` | `%s` | `%s` | %s |', $laminasRoute, $info['path'], $info['symfony_route'], $guard));
+    }
+}
 $o();
 
 // -- Role hierarchy ---------------------------------------------------------

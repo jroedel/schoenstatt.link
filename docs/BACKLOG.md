@@ -530,6 +530,11 @@ Background and measurements: [caching.md](caching.md).
   machine from the new `phploy.ini.dist`, deploy once, then delete the
   fallback from the trait. Until then the leak is still reachable — a caller
   that keeps using `?key=` keeps writing the key to the access log.
+  - Since 2026-08-05 there are **two** places to delete it from: the trait, and
+    `App\Http\MaintenanceKey` for the two endpoints ported to the Symfony kernel
+    (docs/strangler.md). Both accept the same two channels on purpose, so that
+    flipping `SYMFONY_KERNEL` cannot break a deploy hook; the sequencing above is
+    unchanged, the final step just touches both files.
   - Established 2026-08-04, worth not re-deriving: **the flush cannot become
     a pure CLI command.** The persistent cache is the APCu adapter, and an
     APCu segment belongs to the SAPI that created it, so a CLI process gets
