@@ -22,17 +22,17 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 169,
-        "guarded_routes_total": 169,
+        "guarded_routes_existing": 166,
+        "guarded_routes_total": 166,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 43,
-        "route_guard_entries": 171,
+        "route_guard_entries": 168,
         "routes_declared_twice": 2,
         "rules_from_rule_config": 34,
-        "total_routes": 198,
-        "unguarded_routes": 29,
-        "unguarded_routes_matchable": 18
+        "total_routes": 191,
+        "unguarded_routes": 25,
+        "unguarded_routes_matchable": 14
     },
     "dynamic_providers": {
         "resource": [
@@ -153,29 +153,6 @@
             "matchable": true,
             "public": false,
             "route": "admin/import-father"
-        },
-        "admin/import-shrines": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "administrator"
-            ],
-            "effective_roles": [
-                "administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/import-shrines"
         },
         "admin/literature-maintenance": {
             "anonymous_allowed": false,
@@ -4611,56 +4588,6 @@
             "public": false,
             "route": "persons/person/edit"
         },
-        "persons/person/moderate": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_moderator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_moderator"
-            ],
-            "effective_roles": [
-                "sch_administrator",
-                "sch_general_moderator",
-                "sch_moderator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "persons/person/moderate"
-        },
-        "persons/person/suggest": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_moderator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_moderator"
-            ],
-            "effective_roles": [
-                "sch_administrator",
-                "sch_general_moderator",
-                "sch_moderator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "persons/person/suggest"
-        },
         "persons/search": {
             "anonymous_allowed": false,
             "assertion": null,
@@ -7498,13 +7425,9 @@
         }
     ],
     "unguarded_routes": [
-        "admin/data-problems",
-        "admin/moderate",
         "api-v1/libraries/books/patch-list",
         "api-v2",
         "assignments",
-        "assignments/assignment/moderate",
-        "assignments/assignment/suggest",
         "books",
         "checkouts",
         "checkouts/checkout",
@@ -7529,11 +7452,7 @@
         "sion-model/delete-entity"
     ],
     "unguarded_routes_matchable": [
-        "admin/data-problems",
-        "admin/moderate",
         "api-v1/libraries/books/patch-list",
-        "assignments/assignment/moderate",
-        "assignments/assignment/suggest",
         "checkouts",
         "checkouts/checkout",
         "checkouts/checkout/edit",

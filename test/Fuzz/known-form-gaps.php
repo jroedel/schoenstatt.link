@@ -134,7 +134,6 @@ return [
         'Schoenstatt\\Form\\PersonForm: \'url2Label\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
         'Schoenstatt\\Form\\PersonForm: \'url3Label\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
         'Schoenstatt\\Form\\RoleForm: \'roleTitle\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'SionModel\\Form\\SuggestForm: \'suggestionByPersonId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
     ],
 
     // filters/validators keys in an element definition, which Laminas\Form\Factory discards without a
@@ -283,11 +282,6 @@ return [
         'SionModel\\Form\\CommentForm: \'comment\' (textarea) has no length bound',
         'SionModel\\Form\\CommentForm: \'redirect\' (hidden) has no length bound',
         'SionModel\\Form\\DeleteEntityForm: \'cancel\' (element) has no length bound',
-        'SionModel\\Form\\ModerateGenericForm: \'suggestionId\' (hidden) has no length bound',
-        'SionModel\\Form\\ModerateGenericForm: \'suggestionResponse\' (textarea) has no length bound',
-        'SionModel\\Form\\SuggestForm: \'entityId\' (hidden) has no length bound',
-        'SionModel\\Form\\SuggestForm: \'suggestionByEmail\' (email) has no length bound',
-        'SionModel\\Form\\SuggestForm: \'suggestionNotes\' (textarea) has no length bound',
         'SionModel\\Form\\TouchForm: \'cancel\' (element) has no length bound',
     ],
 

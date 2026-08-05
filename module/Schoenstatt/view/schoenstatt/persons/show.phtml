@@ -176,12 +176,7 @@ $this->headTitle($pageTitle);
                <span class="pull-right"><a class="btn btn-default btn-sm"
                 href="<?php echo $this->url('persons/person/edit-private-info', ['person_id' => $object['personId']]);?>"><?php
                 echo $this->translate("Edit information");?></a></span>
-                <?php //elseif ($this->isAllowed('route/suggest')) : @todo enable searchForm
-//             echo $this->partial('patres/patres/suggest-button',
-//                 ['entityType' => 'person', 'entityId' => $object['personId'],
-//                     'class' => 'btn btn-default btn-sm pull-right',
-//                     'suggestForm' => $this->suggestForm,]);
-            endif;?>
+            <?php endif;?>
         </div>
         </div>
     </div>
