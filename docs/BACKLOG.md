@@ -301,18 +301,46 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Config rot / small cleanups
 
-- [ ] **30 routes carry no bjyauthorize guard entry at all**, so under
-  default-deny they are unreachable for every role — not restricted,
-  *inaccessible*. Measured 2026-08-04 by
-  `test/Integration/AclGuardRouteDriftTest`'s walk. Some are plainly dead, but
-  others are whole features: `event`, `event-edit`, `events/create`,
-  `collections`, `checkouts`, `assignments`, `library-imports`,
-  `admin/moderate`, `admin/data-problems`, `dictionary/entry`,
-  `sign-in-no-cookies`. **Not** related to the disabled `SchoenstattTable`
-  provider below, despite an earlier note here saying so: that provider only
-  ever emits `person_*`/`association_*` resources, never `route/*` ones, so it
-  could not have guarded a route. Needs a role decision per route, which is why
-  none were added blind.
+- [ ] **Routes with no bjyauthorize guard entry**, so under default-deny they are
+  unreachable for every role — not restricted, *inaccessible*. Re-measured
+  2026-08-05 by `tools/acl-table.php` after the Bible removal: **29 names, of
+  which only 18 are real endpoints.** The other 11 are Part-route parents with
+  `may_terminate` false, which can never be the matched route name, so their
+  missing guard costs nothing — an earlier count of 30 did not separate these
+  and overstated the problem by more than half.
+  - **7 of the 18 are pure dead config**: the route names a controller action
+    that does not exist, so granting a role would only turn "reachable by
+    nobody" into a fatal. Delete route and guard together:
+    `admin/data-problems`, `admin/moderate`,
+    `assignments/assignment/suggest`, `assignments/assignment/moderate`,
+    `jtranslate/clear-cache`, `libraries/library/import`,
+    `sion-model/delete-entity`. The four Schoenstatt ones belong to the
+    abandoned suggest/moderate feature; see the deletion clusters below.
+  - **4 answer themselves from their siblings** and need no product decision —
+    every neighbouring route in the same tree already agrees:
+    `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` → `lib_user`
+    (as `checkouts/library`, `…/current`, `…/overdue` all are);
+    `publication-upload-cover` → `pub_moderator` (as `publications/create`).
+  - **`sign-in-no-cookies` must be public** (`['guest', 'user', null]`). It is
+    the cookieless sign-in fallback, so a guard that excludes anonymous callers
+    defeats the route's only purpose.
+  - **`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
+    `lib_user` its siblings carry: it is the destructive one in that tree and
+    `lib_administrator` already exists for exactly this.
+  - **`api-v1/libraries/books/patch-list` → `guest, user`**, matching
+    `api-v1/libraries` and `api-v1/libraries/books`. The real gate on the write
+    APIs is the JWT check in the controller, not the route guard.
+  - **The events write routes genuinely need a decision**: `event-edit`,
+    `event-delete`, `events/create` (and `event`, the show route). `events`, the
+    list, is `guest, user`. There is no events moderator role in `user_role` —
+    the nearest analogues are `pub_moderator` for publications and
+    `texts_moderator` for texts — so picking one is a product call about who
+    curates the timeline, not something to infer. `event` (show) can safely
+    match `events`.
+  - **Not** related to the disabled `SchoenstattTable` provider below, despite
+    an earlier note here saying so: that provider only ever emitted
+    `person_*`/`association_*` resources, never `route/*` ones, so it could not
+    have guarded a route.
 - [ ] **8 template permission checks name an ACL resource that does not
   exist**, listed in `AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`.
   `BjyAuthorize\View\Helper\IsAllowed` answers *false* for an unknown resource
