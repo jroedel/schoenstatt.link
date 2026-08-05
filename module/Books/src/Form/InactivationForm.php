@@ -36,9 +36,6 @@ class InactivationForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'tabindex' => 3,
             ],
-            'filters' => [
-                ['name' => 'StripTags'],
-            ],
         ]);
         $this->add([
             'name' => 'submit',
@@ -74,6 +71,17 @@ class InactivationForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            //lib_books.inactivation_reason is varchar(255).
+                            //BookForm bounds the same column already.
+                            'max' => 255,
+                        ],
+                    ],
                 ],
             ],
         ];

@@ -52,9 +52,6 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 'rows' => 3,
                 'tabindex' => 3,
             ],
-            'filters' => [
-                ['name' => 'StripTags'],
-            ],
         ]);
         $this->add([
             'name' => 'submit',
@@ -90,6 +87,17 @@ class CheckoutForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'StripTags'],
                     ['name' => 'ToNull'],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            //lib_checkouts.AdminNotes is varchar(300) — note it
+                            //is not the 255 the other notes columns use.
+                            'max' => 300,
+                        ],
+                    ],
                 ],
             ],
         ];
