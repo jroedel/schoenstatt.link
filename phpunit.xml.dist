@@ -24,6 +24,16 @@
     <testsuite name="integration">
       <directory>test/Integration</directory>
     </testsuite>
+    <!-- Form input-validation fuzz harness. Builds every form through the real
+             service container (no MVC bootstrap, no HTTP) and drives a hostile
+             corpus through it, plus static checks over each form's input filter
+             wiring. Needs vendor/ and the capsule's database — read-only; the
+             suite proves that from the adapter's statement log. Findings are
+             baselined in test/Fuzz/known-form-gaps.php, contract "no new gaps":
+             docker compose exec -T app php test/Fuzz/regenerate-baseline.php -->
+    <testsuite name="fuzz">
+      <directory>test/Fuzz</directory>
+    </testsuite>
   </testsuites>
   <php>
     <!-- Base URL of the running app. Inside the docker app container the
