@@ -126,18 +126,15 @@ class ToDateTimeFilterContractTest extends TestCase
     }
 
     /**
-     * Characterization of the values most likely to be *assumed* unparseable.
-     * \DateTime parses all three, two of them by overflowing: '2020-02-30'
-     * becomes 1 March and MySQL's zero date '0000-00-00' becomes 30 November of
-     * year -1. So these never threw and they are not what the validator catches;
-     * they are stored, wrong. Rejecting them means deciding what a plausible date
-     * is for this data, which is a product decision made elsewhere. Pinned so
-     * that decision starts from the real behaviour.
+     * One value that looks like it should fail and does not: 31-12-2020 is an
+     * unambiguous day-first date. The cases that *did* pass here by overflowing —
+     * 30 February, and MySQL's zero date — are now refused, and have their own
+     * tests below.
      *
      * @param string $value
      */
-    #[DataProvider('overflowingValues')]
-    public function testValuesThatLookInvalidAreParsedByOverflow(string $value, string $expected): void
+    #[DataProvider('unambiguousNonIsoValues')]
+    public function testANonIsoButUnambiguousDateIsAccepted(string $value, string $expected): void
     {
         $filtered = $this->filter()->filter($value);
 
@@ -148,11 +145,72 @@ class ToDateTimeFilterContractTest extends TestCase
     /**
      * @return array<string, array{string, string}>
      */
-    public static function overflowingValues(): array
+    public static function unambiguousNonIsoValues(): array
     {
         return [
-            'day first'      => ['31-12-2020', '2020-12-31'],
-            'impossible day' => ['2020-02-30', '2020-03-01'],
+            //Not overflow: 31-12-2020 is an unambiguous day-first date and is
+            //parsed as one. Kept here because it *looks* like it should fail.
+            'day first' => ['31-12-2020', '2020-12-31'],
+        ];
+    }
+
+    /**
+     * A day that does not exist is now refused instead of rolled forward.
+     * \DateTime turns 30 February into 1 March and 29 February 2019 into 1 March
+     * without complaint, so the wrong date was stored and nothing said so;
+     * date_parse() reports it as "The parsed date was invalid", which is what
+     * DateTimeParser now checks.
+     *
+     * This does not disturb the precision convention, whose year-only values are
+     * 1 January and month-only values day 1 — both real dates.
+     *
+     * @param string $value
+     */
+    #[DataProvider('impossibleDays')]
+    public function testAnImpossibleCalendarDayIsRejected(string $value): void
+    {
+        self::assertSame($value, $this->filter()->filter($value));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function impossibleDays(): array
+    {
+        return [
+            'thirty february'      => ['2020-02-30'],
+            'non-leap 29 february' => ['2019-02-29'],
+        ];
+    }
+
+    /**
+     * A value whose meaning depends on when it was submitted is not a date this
+     * application will store, and neither is a bare year — `new \DateTime('1952')`
+     * is *today at 19:52*, because four digits alone are read as a time. That one
+     * matters most now that year precision is offered on these fields, since
+     * entering just a year is exactly what someone would try.
+     *
+     * @param string $value
+     */
+    #[DataProvider('nonAbsoluteValues')]
+    public function testRelativeAndBareValuesAreRejected(string $value): void
+    {
+        self::assertSame($value, $this->filter()->filter($value));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonAbsoluteValues(): array
+    {
+        return [
+            'tomorrow'          => ['tomorrow'],
+            'relative interval' => ['+500 years'],
+            'relative past'     => ['-1 day'],
+            'next weekday'      => ['next monday'],
+            'bare year'         => ['1952'],
+            'bare time'         => ['19:52'],
+            'unix timestamp'    => ['@99999999999'],
         ];
     }
 

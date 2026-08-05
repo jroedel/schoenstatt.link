@@ -174,6 +174,10 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1914-10-18', 'max' => '+10 years'],
+                    ],
                 ],
             ],
             'startDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
@@ -184,18 +188,49 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1914-10-18', 'max' => '+10 years'],
+                    ],
+                    [
+                        'name' => 'SionModel\Validator\DateNotBefore',
+                        'options' => ['field' => 'startDate', 'relatedLabel' => 'start date'],
+                    ],
                 ],
             ],
             'endDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
         ];
     }
 
+    /**
+     * Narrow the role options to the roles of the submitted association, so that
+     * roleId validates against the right list.
+     *
+     * The guard is not defensive padding. Only an int or a string can be an array
+     * key, and key_exists() raises a TypeError on anything else — so a request
+     * sending `associationId[]=x`, which takes one line of HTML to produce, used
+     * to be an uncaught TypeError here. That is worse than the same class of bug
+     * inside a filter, because this runs in setData(), *before* isValid(): no
+     * validator could reject the value first, and no controller could guard it by
+     * checking isValid(). It was a 500 with the whole submission lost.
+     *
+     * A hostile value now simply leaves the role options unnarrowed, and roleId's
+     * own InArray rejects whatever came with it.
+     *
+     * @param  array<string, mixed>|\Traversable $data
+     * @return self
+     */
     public function setData($data)
     {
-        if (key_exists('associationId', $data) &&
-            key_exists($data['associationId'], $this->roleTitlesValueOptions)
+        $associationId = is_array($data) && key_exists('associationId', $data)
+            ? $data['associationId']
+            : null;
+
+        if (
+            (is_int($associationId) || is_string($associationId)) &&
+            key_exists($associationId, $this->roleTitlesValueOptions)
         ) {
-            $this->get('roleId')->setValueOptions($this->roleTitlesValueOptions[$data['associationId']]);
+            $this->get('roleId')->setValueOptions($this->roleTitlesValueOptions[$associationId]);
         }
         return parent::setData($data);
     }

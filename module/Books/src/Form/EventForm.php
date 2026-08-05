@@ -549,6 +549,10 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1800-01-01', 'max' => '+10 years'],
+                    ],
                 ],
             ],
             'startDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
