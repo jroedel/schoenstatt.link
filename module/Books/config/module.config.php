@@ -1243,6 +1243,13 @@ return [
                     'route'    => '/dictionary',
                     'defaults' => [
                         'controller' => Controller\DictionaryController::class,
+                        //Without this the route matches and then 404s:
+                        //AbstractActionController::onDispatch reads the action
+                        //parameter with a default of 'not-found' and dispatches
+                        //notFoundAction(). The action is SionController's
+                        //generic indexAction, and books/dictionary/index.phtml
+                        //has been sitting there unrendered the whole time.
+                        'action' => 'index',
                     ],
                 ],
                 'may_terminate' => true,
