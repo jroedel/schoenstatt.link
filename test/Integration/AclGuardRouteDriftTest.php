@@ -276,7 +276,6 @@ class AclGuardRouteDriftTest extends TestCase
      * appear because the ACL has no such resource. Do not add to this list.
      */
     private const KNOWN_DEAD_PERMISSION_CHECKS = [
-        'review-phone-numbers.phtml asks about route/fathers/father/edit-contact-info',
         'search-bar.phtml asks about route/publications/advanced-search',
         'show.phtml asks about route/persons/person/edit-contact-info',
         'show.phtml asks about route/persons/person/edit-contact-info',

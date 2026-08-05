@@ -153,11 +153,9 @@ return [
         'JTranslate\\Form\\DeletePhraseForm: \'cancel\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'JUser\\Form\\EditUserForm: \'rolesList\' is not named in the input filter spec (element-provided validation only, no filters)',
         'Schoenstatt\\Form\\RoleForm: \'associationId\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'Schoenstatt\\Form\\SimpleDiocesanMovementFieldset: \'name\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'SionModel\\Form\\CommentForm: \'comment\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'SionModel\\Form\\CommentForm: \'redirect\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'SionModel\\Form\\DeleteEntityForm: \'cancel\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
-        'SionModel\\Form\\UploadForm: \'fileUpload\' is not named in the input filter spec (element-provided validation only, no filters)',
     ],
 
     // Columns where database/*.sql claims more room than the live schema has, which makes the
@@ -171,12 +169,6 @@ return [
     'specKeysWithoutElement' => [
         'Books\\Form\\PublicationForm: input filter spec names \'isAccessibleForFree\', which is not an element on this form',
         'Schoenstatt\\Form\\AssociationForm: input filter spec names \'eventsJson\', which is not an element on this form',
-        'Schoenstatt\\Form\\DiocesanMovementsQuickCreateForm: input filter spec names \'isActive\', which is not an element on this form',
-        'Schoenstatt\\Form\\DiocesanMovementsQuickCreateForm: input filter spec names \'isMainRole\', which is not an element on this form',
-        'Schoenstatt\\Form\\DiocesanMovementsQuickCreateForm: input filter spec names \'isSinglePosition\', which is not an element on this form',
-        'Schoenstatt\\Form\\DiocesanMovementsQuickCreateForm: input filter spec names \'roleId\', which is not an element on this form',
-        'Schoenstatt\\Form\\DiocesanMovementsQuickCreateForm: input filter spec names \'roleTitle\', which is not an element on this form',
-        'Schoenstatt\\Form\\DiocesanMovementsQuickCreateForm: input filter spec names \'sort\', which is not an element on this form',
         'Schoenstatt\\Form\\PersonForm: input filter spec names \'cityState\', which is not an element on this form',
         'Schoenstatt\\Form\\PersonForm: input filter spec names \'skypeUser\', which is not an element on this form',
         'Schoenstatt\\Form\\PersonForm: input filter spec names \'slackUser\', which is not an element on this form',
@@ -184,7 +176,6 @@ return [
         'Schoenstatt\\Form\\PersonForm: input filter spec names \'street2\', which is not an element on this form',
         'Schoenstatt\\Form\\PersonForm: input filter spec names \'zip\', which is not an element on this form',
         'SionModel\\Form\\CommentForm: input filter spec names \'text\', which is not an element on this form',
-        'SionModel\\Form\\UploadForm: input filter spec names \'fileupload\', which is not an element on this form',
     ],
 
     // Proved by running it: places where isValid() throws instead of answering. A 500 in a controller
@@ -277,7 +268,6 @@ return [
         'Schoenstatt\\Form\\PersonForm: \'url2\' (url) has no length bound',
         'Schoenstatt\\Form\\PersonForm: \'url3\' (url) has no length bound',
         'Schoenstatt\\Form\\SearchForm: \'search\' (text) has no length bound',
-        'Schoenstatt\\Form\\SimpleDiocesanMovementFieldset: \'name\' (text) has no length bound',
         'SionModel\\Form\\CommentForm: \'comment\' (textarea) has no length bound',
         'SionModel\\Form\\CommentForm: \'redirect\' (hidden) has no length bound',
         'SionModel\\Form\\DeleteEntityForm: \'cancel\' (element) has no length bound',
