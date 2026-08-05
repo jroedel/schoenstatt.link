@@ -254,6 +254,35 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Product decisions needed
 
+- [ ] **Suggest and moderate: users propose corrections, moderators accept or
+  deny them** — wanted, never built. This is the collaborative half of the
+  site's purpose: a reader who knows a date is wrong should be able to say so
+  without holding an editing role, and someone with the role should be able to
+  accept it with one click. The 2020 WIP that sketched it was **deleted
+  2026-08-05** — routes, two forms, two `SionForm` methods, four templates and
+  two view helpers, none of it ever reachable. Two things from the wreckage
+  are worth knowing before building it properly.
+  - **It was never wired at all, not merely half-wired.** All seven routes
+    (`admin/moderate`, `admin/data-problems`, `persons/person/suggest|moderate`,
+    `assignments/assignment/suggest|moderate`) named controller actions that do
+    not exist in `AdminController`, `PersonsController`, `AssignmentsController`
+    or their `SionController` parent, so every one of them was a 404-by-fatal.
+    `SionController::showAction()` never built the suggest form either — the
+    block that would have was commented out with `//@todo enable suggest form`.
+    Nothing about the feature was ever exercised, so there is no behavior to
+    preserve and no data path to reverse-engineer.
+  - **`SionForm::setInputFilterSpecification()` is a silent no-op for all but
+    three of its 21 subclasses**, and this is the trap the old design walked
+    into. Only `SuggestForm` (now deleted), `PersonForm` and `AssociationForm`
+    override `getInputFilterSpecification()` to read back `$this->filterSpec`;
+    for the other eighteen the setter writes a property nobody reads, because
+    the subclass returns a literal array. `prepareForSuggestion()` added
+    `suggestionNotes`, `suggestionByPersonId` and `suggestionByEmail` to the
+    form and then set their filters through that setter — so on any form but
+    those three, the suggestion fields would have accepted arbitrary input
+    with zero filters and zero validators. A real implementation must either
+    fix the base class so the specification is genuinely composable, or keep
+    the suggestion fields in a form of their own.
 - [ ] **Data-derived authority for persons and associations** — wanted, not
   started. The intent: someone holding an office may edit the people and
   associations beneath it, rather than authority coming from a flat global

@@ -97,7 +97,6 @@ return [
             'formatAssociation'     => Service\FormatAssociationFactory::class,
         ],
         'invokables' => [
-            'clipboardButton'       => View\Helper\ClipboardButton::class,
             'formatPerson'          => View\Helper\FormatPerson::class,
             'languageChooser'       => View\Helper\LanguageChooser::class,
         ],
@@ -883,16 +882,6 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
-                    'data-problems' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/data-problems',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'dataProblems',
-                            ],
-                        ],
-                    ],
                     'import-father' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -900,16 +889,6 @@ return [
                             'defaults' => [
                                 'controller' => Controller\AdminController::class,
                                 'action'     => 'importFather',
-                            ],
-                        ],
-                    ],
-                    'import-shrines' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/import-shrines',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'importShrines',
                             ],
                         ],
                     ],
@@ -922,20 +901,6 @@ return [
                                 'action'     => 'maintenance',
                             ],
                         ],
-                    ],
-                    'moderate' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/moderate[/:suggestion_id]',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'moderate',
-                            ],
-                            'constraints' => [
-                                'suggestion_id' => '[0-9]{1,5}',
-                            ],
-                        ],
-                        'may_terminate' => true,
                     ],
                 ],
             ],
@@ -1037,27 +1002,6 @@ return [
                                     ],
                                 ],
                             ],
-                            'suggest' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/suggest',
-                                    'defaults' => [
-                                        'action'     => 'suggest',
-                                    ],
-                                ],
-                            ],
-                            'moderate' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/moderate/:suggestion_id',
-                                    'constraints' => [
-                                        'suggestion_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'moderate',
-                                    ],
-                                ],
-                            ],
                             'delete' => [
                                 'type'    => Literal::class,
                                 'options' => [
@@ -1127,27 +1071,6 @@ return [
                                     'route'    => '/edit',
                                     'defaults' => [
                                         'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                            'suggest' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/suggest',
-                                    'defaults' => [
-                                        'action'     => 'suggest',
-                                    ],
-                                ],
-                            ],
-                            'moderate' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/moderate/:suggestion_id',
-                                    'constraints' => [
-                                        'suggestion_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'moderate',
                                     ],
                                 ],
                             ],
@@ -1995,7 +1918,6 @@ return [
                 ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
                 ['route' => 'wayside-shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
-                ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
                 ['route' => 'admin/maintenance', 'roles' => ['administrator']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment/edit', 'roles' => ['sch_moderator']],
@@ -2009,8 +1931,6 @@ return [
                 ['route' => 'persons/search', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/create', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/edit', 'roles' => ['sch_moderator']],
-                ['route' => 'persons/person/suggest', 'roles' => ['sch_moderator']],
-                ['route' => 'persons/person/moderate', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],
