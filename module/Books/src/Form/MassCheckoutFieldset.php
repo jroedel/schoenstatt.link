@@ -68,6 +68,9 @@ class MassCheckoutFieldset extends Fieldset implements InputFilterProviderInterf
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
+                ],
             ],
             'withinLibraryIds' => [
                 'required' => false,

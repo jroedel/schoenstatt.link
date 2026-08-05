@@ -531,6 +531,9 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
+                ],
             ],
             'durationInDays' => [
                 'required' => true,

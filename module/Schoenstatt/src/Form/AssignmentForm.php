@@ -140,11 +140,17 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
+                ],
             ],
             'endDate' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
+                ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
         ];
