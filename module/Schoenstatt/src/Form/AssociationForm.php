@@ -889,6 +889,10 @@ so users can double-check. Warning: this field is not translated.',
                 ],
                 'validators' => [
                     ['name' => ParseableDate::class],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1914-10-18', 'max' => 'today'],
+                    ],
                 ],
             ],
             'foundationDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
@@ -1167,15 +1171,32 @@ so users can double-check. Warning: this field is not translated.',
     {
         $phoneLabels = self::PHONE_LABEL_VALUE_OPTIONS;
         $hasChanged = false;
-        if (isset($data['phone1Label']) && ! isset($phoneLabels[$data['phone1Label']])) {
+        //A submitted label is used as an array *key* below, and only an int or a
+        //string can be one: `isset($phoneLabels[$data['phone1Label']])` raises
+        //"Cannot access offset of type array" for anything else. This runs in
+        //setData(), before isValid(), so no validator could reject the value
+        //first — `phone1Label[]=x` was a 500 with the whole submission lost.
+        //Non-scalar labels are dropped here and the field's own validators
+        //report whatever came with them.
+        $isUsableLabel = static fn($v) => is_int($v) || is_string($v);
+        if (
+            isset($data['phone1Label']) && $isUsableLabel($data['phone1Label']) &&
+            ! isset($phoneLabels[$data['phone1Label']])
+        ) {
             $phoneLabels[$data['phone1Label']] = $data['phone1Label'];
             $hasChanged = true;
         }
-        if (isset($data['phone2Label']) && ! isset($phoneLabels[$data['phone2Label']])) {
+        if (
+            isset($data['phone2Label']) && $isUsableLabel($data['phone2Label']) &&
+            ! isset($phoneLabels[$data['phone2Label']])
+        ) {
             $phoneLabels[$data['phone2Label']] = $data['phone2Label'];
             $hasChanged = true;
         }
-        if (isset($data['phone3Label']) && ! isset($phoneLabels[$data['phone3Label']])) {
+        if (
+            isset($data['phone3Label']) && $isUsableLabel($data['phone3Label']) &&
+            ! isset($phoneLabels[$data['phone3Label']])
+        ) {
             $phoneLabels[$data['phone3Label']] = $data['phone3Label'];
             $hasChanged = true;
         }

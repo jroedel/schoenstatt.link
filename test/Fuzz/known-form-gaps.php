@@ -181,27 +181,6 @@ return [
     // Proved by running it: places where isValid() throws instead of answering. A 500 in a controller
     // action, not a validation failure.
     'throwingInputs' => [
-        'Books\\Form\\CheckinForm::<combination> throws InvalidArgumentException',
-        'Books\\Form\\CheckinForm::withinLibraryIds throws InvalidArgumentException',
-        'Books\\Form\\CheckoutForm::withinLibraryIds throws InvalidArgumentException',
-        'Books\\Form\\InactivationForm::<combination> throws InvalidArgumentException',
-        'Books\\Form\\InactivationForm::withinLibraryIds throws InvalidArgumentException',
-        'Books\\Form\\MassCheckoutFieldset::<combination> throws InvalidArgumentException',
-        'Books\\Form\\MassCheckoutFieldset::withinLibraryIds throws InvalidArgumentException',
-        'Schoenstatt\\Form\\AssignmentForm::<combination> throws TypeError',
-        'Schoenstatt\\Form\\AssignmentForm::associationId throws TypeError',
-        'Schoenstatt\\Form\\AssociationForm::<combination> throws TypeError',
-        'Schoenstatt\\Form\\AssociationForm::phone1Label throws TypeError',
-        'Schoenstatt\\Form\\AssociationForm::phone2Label throws TypeError',
-        'Schoenstatt\\Form\\AssociationForm::phone3Label throws TypeError',
-        'Schoenstatt\\Form\\EditAssignmentForm::<combination> throws TypeError',
-        'Schoenstatt\\Form\\EditAssignmentForm::associationId throws TypeError',
-        'Schoenstatt\\Form\\PersonForm::<combination> throws Laminas\\Form\\Exception\\InvalidArgumentException',
-        'Schoenstatt\\Form\\PersonForm::<combination> throws TypeError',
-        'Schoenstatt\\Form\\PersonForm::contactNotes throws TypeError',
-        'Schoenstatt\\Form\\PersonForm::nameDay throws Laminas\\Filter\\Exception\\RuntimeException',
-        'Schoenstatt\\Form\\PersonForm::nameDay throws Laminas\\Form\\Exception\\InvalidArgumentException',
-        'Schoenstatt\\Form\\PersonForm::nameDay throws ValueError',
     ],
 
     // add() calls ElementDefinitionScanner cannot read, because the argument is not an array literal.
@@ -259,7 +238,6 @@ return [
         'Schoenstatt\\Form\\AssociationForm: \'url2\' (url) has no length bound',
         'Schoenstatt\\Form\\AssociationForm: \'url3\' (url) has no length bound',
         'Schoenstatt\\Form\\PersonForm: \'adminNotes\' (textarea) has no length bound',
-        'Schoenstatt\\Form\\PersonForm: \'contactNotes\' (textarea) has no length bound',
         'Schoenstatt\\Form\\PersonForm: \'email\' (email) has no length bound',
         'Schoenstatt\\Form\\PersonForm: \'email2\' (email) has no length bound',
         'Schoenstatt\\Form\\PersonForm: \'facebookUrl\' (url) has no length bound',

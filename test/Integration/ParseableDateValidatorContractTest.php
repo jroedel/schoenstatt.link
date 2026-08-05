@@ -95,14 +95,13 @@ class ParseableDateValidatorContractTest extends TestCase
         return [
             'iso date'          => ['2020-03-15'],
             'day first'         => ['31-12-2020'],
-            'relative word'     => ['tomorrow'],
-            'relative interval' => ['+500 years'],
+            'year and month'    => ['1952-06'],
+            //Still accepted, and deliberately: 9999 is storable, and whether it
+            //is *plausible* is a per-field question that
+            //SionModel\Validator\DateWithinRange answers with that field's own
+            //bounds. This validator only decides whether the value is a real,
+            //storable date.
             'far future'        => ['9999-12-31'],
-            // Overflow rather than rejection: becomes 1 March. Contrast
-            // 0000-00-00, which overflows to year -1 and is rejected below
-            // because no DATE column can hold it.
-            'impossible day'    => ['2020-02-30'],
-            'timestamp'         => ['@99999999999'],
         ];
     }
 
@@ -125,6 +124,27 @@ class ParseableDateValidatorContractTest extends TestCase
             'sql tautology'  => ["' OR 1=1"],
             'emoji'          => ['🙂'],
             'bare zero'      => ['0'],
+            //The four below were pinned as *valid* until the plausibility pass,
+            //because \DateTime accepts all of them. Each is now refused, and each
+            //for its own reason.
+            //
+            //A relative expression stores a concrete date whose meaning depended
+            //on when the form happened to be submitted.
+            'relative word'     => ['tomorrow'],
+            'relative interval' => ['+500 years'],
+            'relative past'     => ['-1 day'],
+            //A bare four digits is read as a *time*: new \DateTime('1952') is
+            //today at 19:52. Now that year precision is offered on these fields,
+            //entering just a year is the obvious thing to try, and silently
+            //storing today for it is the worst available outcome.
+            'bare year'         => ['1952'],
+            'bare time'         => ['19:52'],
+            //Silent overflow: 30 February became 1 March, and nothing said so.
+            'impossible day'    => ['2020-02-30'],
+            'impossible leap'   => ['2019-02-29'],
+            //A machine format whose meaning is opaque to whoever has to check the
+            //record later.
+            'timestamp'         => ['@99999999999'],
         ];
     }
 

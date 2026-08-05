@@ -969,12 +969,45 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
             ],
             'contactNotes' => [
                 'required' => false,
+                //HtmlEntities removed. It was the only use of that filter in the
+                //application, and it bought nothing: this field is rendered only
+                //through formRow(), which escapes, and the one raw markdown render
+                //of it is commented out on the associations page as deprecated. So
+                //the value was being encoded at rest for an output path that does
+                //not exist.
+                //
+                //It was also the last input in any form able to take a request
+                //down. Laminas\Filter\HtmlEntities runs iconv() first, which
+                //returns false on an invalid UTF-8 sequence, and then calls
+                //htmlentities(false) — a TypeError inside isValid(), i.e. a 500
+                //with the whole submission lost. That is a bug in the filter, not
+                //in its configuration here, and not using it is a better answer
+                //than working around it.
+                //
+                //SionForm::setData() still decodes entities on the way in, so rows
+                //already storing encoded text decode when edited and save back
+                //plain. The representation converges rather than needing a
+                //migration.
                 'filters' => [
-                    ['name' => 'HtmlEntities'],
+                    ['name' => 'StripTags'],
+                    ['name' => 'StringTrim'],
                     ['name' => 'ToNull',
                         'options' => [
                             'type' => ToNull::TYPE_STRING,
                         ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            //sch_persons.ContactNotes is TEXT. 65535 is the
+                            //column's real ceiling, not a guess at what a note
+                            //should be — a bound tighter than the column would
+                            //start rejecting notes nobody has written yet.
+                            'max' => 65535,
+                        ],
                     ],
                 ],
             ],
@@ -1115,6 +1148,10 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1850-01-01', 'max' => 'today'],
+                    ],
                 ],
             ],
             'birthDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
@@ -1125,6 +1162,14 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1850-01-01', 'max' => '+2 years'],
+                    ],
+                    [
+                        'name' => 'SionModel\Validator\DateNotBefore',
+                        'options' => ['field' => 'birthDate', 'relatedLabel' => 'birth date'],
+                    ],
                 ],
             ],
             'priestDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
@@ -1135,6 +1180,14 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1850-01-01', 'max' => '+2 years'],
+                    ],
+                    [
+                        'name' => 'SionModel\Validator\DateNotBefore',
+                        'options' => ['field' => 'priestDate', 'relatedLabel' => 'date of priestly ordination'],
+                    ],
                 ],
             ],
             'bishopDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
@@ -1151,6 +1204,14 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 ],
                 'validators' => [
                     ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1850-01-01', 'max' => 'today'],
+                    ],
+                    [
+                        'name' => 'SionModel\Validator\DateNotBefore',
+                        'options' => ['field' => 'birthDate', 'relatedLabel' => 'birth date'],
+                    ],
                 ],
             ],
             'deathDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
