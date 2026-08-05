@@ -281,6 +281,22 @@ so users can double-check. Warning: this field is not translated.',
                 'required' => false,
             ],
         ]);
+
+        $this->add([
+            'name' => 'foundationDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the foundation date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
+            ],
+        ]);
         $this->add([
             'name' => 'isActive',
             'type' => 'Checkbox',
@@ -875,6 +891,7 @@ so users can double-check. Warning: this field is not translated.',
                     ['name' => ParseableDate::class],
                 ],
             ],
+            'foundationDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
             'isAuthor' => [
                 'required' => false,
                 'filters' => [
