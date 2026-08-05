@@ -29,7 +29,9 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
+        "routes_shadowed_by_symfony": 2,
         "rules_from_rule_config": 34,
+        "symfony_served_routes": 5,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6474,6 +6476,22 @@
             "route": "zfcuser/verify"
         }
     },
+    "laminas_routes_shadowed_by_symfony": [
+        {
+            "laminas_route": "sion-model/cache-status",
+            "path": "/sm/cache-status",
+            "symfony_route": "sm-cache-status",
+            "was_guarded": true,
+            "was_public": true
+        },
+        {
+            "laminas_route": "sion-model/clear-persistent-cache",
+            "path": "/sm/clear-persistent-cache",
+            "symfony_route": "sm-clear-persistent-cache",
+            "was_guarded": true,
+            "was_public": true
+        }
+    ],
     "non_route_resources": {
         "book": null,
         "book_sch": null,
@@ -6494,7 +6512,8 @@
         "guard_assign_not_merge": "BjyAuthorize\\Guard\\AbstractGuard assigns $rules[$resource], so for a route named by more than one entry the LAST entry in the merged config wins and the others are discarded silently. guarded_routes[].declarations is in config order; the last element is the winner and is what declared_roles/effective_roles reflect.",
         "null_role": "A null in a roles list is not the default role: Acl::setRule maps it to the allRoles pseudo-parent, which isAllowed() consults for every identity. It means public.",
         "effective_roles": "declared roles plus all their descendants in the role tree, because a child role inherits its parent's allows. parent_id in user_role points at the more-privileged ancestor.",
-        "unguarded_routes": "The Route guard is default-deny: a route with no guard entry is reachable by nobody. unguarded_routes_matchable is the subset that is a real endpoint; the rest are Part-route parents with may_terminate false, which can never be matched."
+        "unguarded_routes": "The Route guard is default-deny: a route with no guard entry is reachable by nobody. unguarded_routes_matchable is the subset that is a real endpoint; the rest are Part-route parents with may_terminate false, which can never be matched.",
+        "symfony_routes": "Paths the Symfony kernel serves itself (config/symfony/routes.php, live only where SYMFONY_KERNEL=1 \u2014 the capsule, not production yet). None of this file's authorization applies to them: a Symfony-served request never boots laminas-mvc, so no bjyauthorize guard, no ACL and no identity exist for it. Whatever check the ported controller makes itself is the whole gate."
     },
     "phantom_guard_entries": [],
     "roles": {
@@ -7424,6 +7443,28 @@
             "assertion": null
         }
     ],
+    "symfony_routes": {
+        "health": {
+            "path": "/_health",
+            "controller": "App\\Controller\\HealthController"
+        },
+        "sm-cache-status": {
+            "path": "/sm/cache-status",
+            "controller": "App\\Controller\\CacheStatusController"
+        },
+        "sm-cache-status.locale": {
+            "path": "/{_locale}/sm/cache-status",
+            "controller": "App\\Controller\\CacheStatusController"
+        },
+        "sm-clear-persistent-cache": {
+            "path": "/sm/clear-persistent-cache",
+            "controller": "App\\Controller\\ClearPersistentCacheController"
+        },
+        "sm-clear-persistent-cache.locale": {
+            "path": "/{_locale}/sm/clear-persistent-cache",
+            "controller": "App\\Controller\\ClearPersistentCacheController"
+        }
+    },
     "unguarded_routes": [
         "api-v1/libraries/books/patch-list",
         "api-v2",

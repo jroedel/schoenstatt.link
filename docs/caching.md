@@ -80,6 +80,14 @@ than assumed.
 Non-obvious: the web SAPI and CLI have **separate** APCu segments, so a CLI
 probe cannot see what the site cached. Use the endpoint, not a shell one-liner.
 
+Prefer `-H 'X-Api-Key: …'` over `?key=`; the query form still works, but it is
+written verbatim to the access log and kept in shell history. A request with no
+key, or a wrong one, is answered `302 → /en/user/login` by the laminas front
+controller (production today) and `401` with a JSON body by the Symfony one (the
+capsule) — this is one of the two routes ported to it, see
+[strangler.md](strangler.md). The payload is the same either way, by construction:
+both build it through `SionModel\Cache\CacheStatusPayload`.
+
 ## The other shared cache: OPcache
 
 The same response carries an `opcache` block (added 2026-08-04, once OPcache was
@@ -117,9 +125,14 @@ or keys, 90% interned strings, any restart, `cacheFull`, or timestamp validation
 being off. First live reading after enabling OPcache: ~29% memory, ~15% of 16229
 keys, 99.2% hit rate.
 
-The arithmetic lives in `SionModel\Cache\OpcacheStatus`, kept out of the
-controller so it is unit-testable without a container
-(`test/Unit/OpcacheStatusTest.php`).
+The arithmetic lives in `SionModel\Cache\OpcacheStatus` and, for the APCu half,
+`SionModel\Cache\ApcuStatus` — both kept out of the controller so they are
+unit-testable without a container, a request or even a loaded extension
+(`test/Unit/OpcacheStatusTest.php`, `test/Unit/ApcuStatusTest.php`).
+`SionModel\Cache\CacheStatusPayload` composes the two plus `phpVersion`, and is
+the single thing both front controllers call: the key names are read by name by
+`tools/smoke-prod.sh`, so a key present on one path and absent on the other would
+silence a production warning rather than fail anything.
 
 ## Cautions when adding a cached call
 

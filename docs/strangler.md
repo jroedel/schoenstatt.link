@@ -17,6 +17,10 @@ public/index.php
   │
   └─ SYMFONY_KERNEL = "1" ─────────> App\Kernel
                                        ├─ GET /_health   → App\Controller\HealthController
+                                       ├─ [/{_locale}]/sm/cache-status
+                                       │                 → App\Controller\CacheStatusController
+                                       ├─ [/{_locale}]/sm/clear-persistent-cache
+                                       │                 → App\Controller\ClearPersistentCacheController
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
@@ -139,24 +143,81 @@ and everything behind them carry over unchanged, because `LegacyBridge` and
 `HealthController` are plain callables and `App\Container` is only a PSR-11
 container — which is all `ContainerControllerResolver` ever asks for.
 
+## What a ported route loses
+
+A Symfony-served route never boots laminas-mvc — `LegacyBridge` is what calls
+`Application::init()` — so everything laminas' MVC listeners provide is simply
+absent: **no BjyAuthorize route guard, no ACL, no identity, no SlmLocale, no
+session, no laminas-view layout, and none of the response headers the MVC
+listeners add** (the `Content-Security-Policy` from `SionModel\Mvc\CspListener`,
+the session cookie, the GDPR strategy's cookie stripping). What *is* still there
+comes from Apache: HSTS, `X-Content-Type-Options`, `X-Frame-Options`,
+`Referrer-Policy`.
+
+That is why the first two routes ported were maintenance endpoints whose
+protection already lived in the controller rather than in the guard. Porting a
+route that relies on the guard means moving the check with it — and
+`tools/acl-table.php` says so out loud: it lists Symfony-served routes in their
+own section, reports which laminas routes they shadow, and *warns* when a
+shadowed route's guard restricted anything, because that is authorization
+silently ceasing to apply with nothing else to notice it.
+
+Two consequences worth knowing before porting anything:
+
+- **The locale prefix has to be declared.** Every caller uses `/en/…`, and under
+  laminas `SlmLocale\Strategy\UriPathStrategy` strips that segment before routing.
+  Symfony sees the literal path, so a ported route declares both forms — see the
+  `$ported()` helper in `config/symfony/routes.php`, which adds
+  `/{_locale}<path>` alongside `<path>` with `_locale` constrained to the five
+  configured aliases. Constrained, not open, so that `/anything-else/…` keeps
+  falling through to `legacy`.
+- **Failure modes may improve, and that counts as a behaviour change.** The
+  maintenance endpoints used to answer a bad key with `302 → /en/user/login`
+  (JUser's `RedirectionStrategy` handling `UnAuthorizedException`) — a deploy hook
+  follows it and reads an HTML login page as success. The ported controllers
+  answer `401` with a JSON body instead. Correct callers see no difference; the
+  smoke suite asserts the new contract, and `bin/console cache:flush-persistent`
+  handles both shapes because during the migration it talks to hosts of both
+  kinds.
+
 ## Adding a Symfony route
 
 1. Write the controller under `src/`, namespace `App\`. `declare(strict_types=1)`
    — `src/` is greenfield and holds itself to a higher standard than the legacy
    baseline: it must pass PHPStan **level 8**, not the committed level 0.
-2. Give it a factory in `App\Kernel::container()` if it has dependencies.
+2. Give it a factory in `App\Kernel::container()` if it has dependencies. If it
+   needs laminas services or the merged config, inject `App\Laminas\ServiceBridge`
+   — it builds a ServiceManager and loads the modules the way `bin/console` does,
+   lazily and without `bootstrap()`, so a request that does not ask for it (like
+   `/_health`) still pays nothing.
 3. Declare the route in `config/symfony/routes.php` **above** `legacy`.
-4. Add a smoke test. The suite's other 77 paths all run through the bridge, so
-   they will not notice a Symfony-side mistake.
+4. Add a smoke test. The suite's other paths all run through the bridge, so they
+   will not notice a Symfony-side mistake. Assert something that distinguishes the
+   two front controllers, not just a 200 — for the maintenance endpoints that is
+   the 401, since the successful payload is identical by design.
+5. If a laminas route now answers from two places, make them share the code that
+   builds the response rather than trusting two copies to stay equal.
+   `SionModel\Cache\CacheStatusPayload` exists for exactly that, and
+   `test/Integration/CacheStatusParityTest.php` pins the agreement.
+6. Regenerate `docs/acl-rules.md` and `docs/acl-baseline.json`
+   (`tools/acl-table.php`) and read the diff.
 
 ## Verifying
 
-- `php composer.phar test` — 368 tests. The smoke suite runs against the capsule,
-  i.e. through the Symfony front controller, so it is the bridge's regression
-  test. `test/Smoke/SymfonyKernelSmokeTest.php` covers what the catch-all would
-  hide: that Symfony served anything itself.
+- `php composer.phar test` — 527 tests (measured 2026-08-05; the figure recorded
+  here before that was long stale). The smoke suite runs against the capsule, i.e.
+  through the Symfony front controller, so it is the bridge's regression test.
+  `test/Smoke/SymfonyKernelSmokeTest.php` covers what the catch-all would hide:
+  that Symfony served anything itself.
 - `test/Integration/LaminasResponseConverterTest.php` pins the four conversion
   rules above. None of them are visible to a status-code assertion.
+- `test/Integration/CacheStatusParityTest.php` pins that the ported
+  `/sm/cache-status` and the laminas action it coexists with describe the same JSON
+  document, and that the two JSON encoders involved agree on the bytes. It compares
+  the two *controllers* in one process, not two live front controllers: the capsule
+  serves only the Symfony kernel, so no single URL can exercise both in one run —
+  the test's docblock is explicit about that limit rather than implying a stronger
+  claim.
 - Audit new code at a real level:
   `phpstan analyse src --level 8` (config in `phpstan.neon.dist` stays at 0 for
   the legacy tree — see the level-ladder measurement in BACKLOG.md).

@@ -15,6 +15,8 @@
 
 declare(strict_types=1);
 
+use App\Controller\CacheStatusController;
+use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
 use App\Http\LegacyBridge;
 use Symfony\Component\Routing\Route;
@@ -23,6 +25,36 @@ use Symfony\Component\Routing\RouteCollection;
 $routes = new RouteCollection();
 
 $routes->add('health', new Route('/_health', ['_controller' => HealthController::class]));
+
+/**
+ * Every ported path also has to answer under a locale prefix, because every
+ * caller uses that form: `/en/sm/cache-status` is what tools/smoke-prod.sh, the
+ * smoke suite and the phploy hooks ask for. Under laminas the prefix never
+ * reaches the router — SlmLocale\Strategy\UriPathStrategy strips it first — and
+ * Symfony has no such listener, so the literal path has to be matched here.
+ *
+ * The five values are the aliases configured in config/autoload/juser.global.php
+ * (`slm_locale`), and they are constrained rather than left open so that a path
+ * with some *other* first segment keeps falling through to `legacy` instead of
+ * being swallowed by a two-segment pattern. The value is not passed on and not
+ * used: these endpoints emit no localized text.
+ */
+$locales = 'en|es|de|pt|it';
+$ported  = static function (string $name, string $path, string $controller) use ($routes, $locales): void {
+    $routes->add($name, new Route($path, ['_controller' => $controller]));
+    $routes->add($name . '.locale', new Route(
+        '/{_locale}' . $path,
+        ['_controller' => $controller],
+        ['_locale' => $locales]
+    ));
+};
+
+// SionModel's maintenance endpoints, ported 2026-08-05. Both are machine
+// endpoints gated by a maintenance key the controller checks itself, so they need
+// nothing the laminas MVC listeners provide — no session, no ACL guard, no view
+// layer. See docs/strangler.md.
+$ported('sm-cache-status', '/sm/cache-status', CacheStatusController::class);
+$ported('sm-clear-persistent-cache', '/sm/clear-persistent-cache', ClearPersistentCacheController::class);
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

@@ -19,9 +19,12 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * and must not appear in the command's own output — moving it out of the query
  * string is the entire security point of the change, and a stray echo would
  * hand it straight back to the deploy log. Second, a rejected key has to fail
- * loudly: the endpoint answers an unauthenticated request with a 302 to the
- * sign-in page, so a client that follows redirects sees a cheerful HTTP 200 and
- * reports a flush that never happened.
+ * loudly, in either shape the site can refuse in: the laminas front controller
+ * answers a keyless request with a 302 to the sign-in page — so a client that
+ * follows redirects sees a cheerful HTTP 200 and reports a flush that never
+ * happened — while the Symfony one, which serves this route wherever
+ * SYMFONY_KERNEL=1, answers a JSON 401. Both are tested because during the
+ * migration the same command talks to hosts of both kinds.
  *
  * Needs vendor/ (laminas-http, symfony/console) but no running app: the HTTP
  * exchange is stubbed through laminas-http's Test adapter.
@@ -85,6 +88,20 @@ class FlushPersistentCacheCommandTest extends TestCase
 
         $this->assertSame(Command::FAILURE, $tester->execute([]));
         $this->assertStringContainsString('rejects an unknown key', $this->display($tester));
+    }
+
+    /**
+     * The same rejection from the Symfony front controller: no redirect to
+     * mistake for success, but still a failure the deploy has to notice.
+     */
+    public function testTreatsA401AsARejectedKey(): void
+    {
+        $client = $this->clientReturning("HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\n\r\n"
+            . '{"message":"Unauthorized: this endpoint requires a maintenance key in the X-Api-Key header"}');
+        $tester = new CommandTester($this->command($client));
+
+        $this->assertSame(Command::FAILURE, $tester->execute([]));
+        $this->assertStringContainsString('refused the key', $this->display($tester));
     }
 
     public function testFailsOnAnErrorStatus(): void
