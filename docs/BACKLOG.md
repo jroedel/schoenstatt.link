@@ -296,6 +296,30 @@ readability — the destination is **Symfony**, reached gradually:
     `IsMainRole`/`IsSinglePosition`; `sch_assignments` is person↔office with
     `StartDate`/`EndDate` (266 rows, 227 current). No migration needed to
     answer "who currently holds which office, and what sits beneath it".
+  - **A second, older attempt at the *display* half also exists and is
+    unfinished in three separate places** — characterized 2026-08-05 and left
+    alone deliberately, because completing it means writing a missing view
+    helper rather than repairing a break. Associations already show their
+    office holders; persons never have. The chain, top to bottom:
+    `schoenstatt/persons/show.phtml:218` guards the assignments panel on
+    `! empty($object['assignments'])`, and a person's `assignments` key is never
+    populated because `SchoenstattTable:1799`'s
+    `connectEntityRolesAndAssignments('person', $entities)` is **commented out**
+    (the `association` call on line 464 is live, which is why that side works);
+    the panel would call `$this->formatPersonAssignment(...)`, and
+    `Schoenstatt\View\Helper\FormatPersonAssignment` is **registered under no
+    alias**, so it would be a `ServiceNotFoundException`; and that helper
+    calls `$this->view->formatScope(...)`, for which **no class and no
+    registration exist anywhere in the repo**. So it is three layers deep, and
+    the panel has never rendered for anyone.
+    - Worth stating because it reads like a live bug and is not: with the data
+      link commented out the guard is always false, so nothing ever reaches the
+      unregistered helper. Registering the helper on its own would *create* the
+      500 rather than fix anything, by exposing the missing `formatScope`.
+    - Also note `FormatPersonAssignment` has an `echo ' ';` mid-method where
+      every other branch appends to `$finalMarkup`, so it would emit a stray
+      space ahead of the panel's own output. Small, but a sign of how far from
+      finished it is.
   - **It must be built with ACL assertions, not static rules.** This is the
     load-bearing constraint and the reason the old code was a dead end: a
     static `['allow' => [[roles, resource], …]]` array is evaluated once at
