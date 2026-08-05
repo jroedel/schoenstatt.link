@@ -1,25 +1,48 @@
 # Time capsule. PHP_VERSION selects the target:
 #   7.4 — production as verified 2026-08-01 (the pre-rung-4 baseline)
 #   8.3 — the rung-4 target (production offers 5.3 through 8.5)
+#   8.4 — production as of rung 4b, deployed 2026-08-04
+#   8.5 — the next rung, ahead of production
 # Switch with PHP_VERSION in .env, then `docker compose build && docker compose up -d`.
 # vendor/ is bind-mounted and platform-specific, so re-run composer install after
 # switching — the two versions resolve to different package sets.
+#
+# Note the base image's Debian release moves under us: php:7.4-apache is still
+# bullseye, but 8.4 and 8.5 are both trixie now (8.4 was bookworm when rung 4b
+# was measured). That matters for one thing in particular — trixie carries ICU
+# 76.1 while production's 8.4 build has ICU 72.1 — so a rebuilt capsule formats
+# dates against *newer* locale data than production, the opposite of the drift
+# recorded in docs/BACKLOG.md. composer's lib-icu platform pin still says 72.1
+# because it describes production, not this image.
 ARG PHP_VERSION=7.4
 FROM php:${PHP_VERSION}-apache
 
 # APCu 5.1.22 is the last release that builds on 7.4; 8.x needs 5.1.24+.
 ARG APCU_VERSION=5.1.22
 
+# libfreetype-dev, not libfreetype6-dev: the versioned name is a transitional
+# package that trixie dropped, so it breaks the 8.4 and 8.5 builds. The
+# unversioned name resolves on bullseye too, so one spelling covers every rung.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libicu-dev \
         libzip-dev \
         libpng-dev \
         libjpeg62-turbo-dev \
-        libfreetype6-dev \
+        libfreetype-dev \
         unzip \
         git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip opcache gd \
+    && docker-php-ext-install -j"$(nproc)" intl pdo_mysql zip gd \
+    # OPcache is built into the base image on 8.4 and 8.5 — already loaded and
+    # already enabled — and on 8.5 it is compiled in statically, with no shared
+    # module to build. Asking docker-php-ext-install for it there produces no
+    # .so and dies with `cp: cannot stat 'modules/*'`, which reads like a
+    # missing source file rather than "you already have this". 7.4 does not
+    # ship it, so the install still has to happen on that rung. Hence the test
+    # rather than either hardcoded answer: the base images changed under us once
+    # (8.4 was bookworm when rung 4b was measured, it is trixie now) and can
+    # change again.
+    && { php -m | grep -q 'Zend OPcache' || docker-php-ext-install -j"$(nproc)" opcache; } \
     && pecl install "apcu-${APCU_VERSION}" \
     && docker-php-ext-enable apcu \
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
