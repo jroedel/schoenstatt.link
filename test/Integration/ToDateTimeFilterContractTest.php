@@ -48,17 +48,30 @@ class ToDateTimeFilterContractTest extends TestCase
 
     /**
      * The filter runs on every isValid(), and a form's own repopulation path can
-     * hand it back a value it already converted. Widened from \DateTime to
-     * \DateTimeInterface: a DateTimeImmutable used to reach
-     * `new \DateTime($value)` and raise a TypeError.
+     * hand it back a value it already converted, so an already-converted value
+     * has to survive a second pass. A \DateTime comes back as the same instance.
+     *
+     * A \DateTimeImmutable is *converted* rather than passed through, and that
+     * asymmetry is deliberate. It used to reach `new \DateTime($value)` and raise
+     * a TypeError, so something had to change; returning it unchanged would have
+     * been the smaller edit and the wrong one. Better than twenty places in the
+     * application ask `$value instanceof \DateTime` — LibraryTable's checkedOutOn
+     * handling, FormatPerson, ShortDateRange, the API controllers' serialization
+     * — and \DateTimeImmutable does not satisfy that test. Letting one through
+     * would flip all of them to false and quietly change what gets rendered and
+     * written.
      */
-    public function testDateTimeValuesPassStraightThrough(): void
+    public function testDateTimeValuesSurviveASecondPass(): void
     {
         $mutable   = new \DateTime('2001-09-11', new \DateTimeZone('UTC'));
         $immutable = new \DateTimeImmutable('2001-09-11', new \DateTimeZone('UTC'));
 
         self::assertSame($mutable, $this->filter()->filter($mutable));
-        self::assertSame($immutable, $this->filter()->filter($immutable));
+
+        $converted = $this->filter()->filter($immutable);
+        self::assertInstanceOf(\DateTime::class, $converted);
+        self::assertNotInstanceOf(\DateTimeImmutable::class, $converted);
+        self::assertSame('2001-09-11', $converted->format('Y-m-d'));
     }
 
     /**
@@ -140,8 +153,24 @@ class ToDateTimeFilterContractTest extends TestCase
         return [
             'day first'      => ['31-12-2020', '2020-12-31'],
             'impossible day' => ['2020-02-30', '2020-03-01'],
-            'mysql zero date' => ['0000-00-00', '-0001-11-30'],
         ];
+    }
+
+    /**
+     * MySQL's zero date is the one overflow case that is *not* merely
+     * implausible: '0000-00-00' parses to 30 November of year -1, which no DATE
+     * column can hold — the range is 1000-01-01 to 9999-12-31 — so it cannot
+     * round trip and would either error on write or land as a zero date. That
+     * makes it a storability question rather than a plausibility one, and
+     * DateTimeParser rejects it on the year bound. Its siblings above are left
+     * alone on purpose: overflowing 2020-02-30 to 1 March is \DateTime's
+     * documented behaviour and reversing it is a product decision.
+     */
+    public function testTheMysqlZeroDateIsRejectedRatherThanOverflowed(): void
+    {
+        $filtered = $this->filter()->filter('0000-00-00');
+
+        self::assertSame('0000-00-00', $filtered);
     }
 
     /**
@@ -169,27 +198,33 @@ class ToDateTimeFilterContractTest extends TestCase
     }
 
     /**
-     * Characterization, not endorsement. \DateTime's parser stops at the NUL byte
-     * and returns *now*, so a NUL-bearing value is accepted and silently stored
-     * as today — the same class of problem as 'tomorrow' and '+500 years', which
-     * parse too. Fixing that means bounding what a plausible date is per field,
-     * which is a product decision and deliberately not made here. Pinned so
-     * whoever makes it can see this behaviour change.
+     * A NUL byte must never come back as a date. \DateTime's parser stops at the
+     * NUL and parses the empty remainder, so `new \DateTime("a\0b")` is *now*:
+     * before this was fixed, a NUL byte in a birth-date field silently stored
+     * today, and the stored value then looked deliberate. That is the worst of
+     * the three families of hostile date input, because nothing about the result
+     * says it came from garbage.
+     *
+     * The two cases differ, and both are the intended outcome:
+     *
+     *  - A lone NUL is *emptiness*. trim()'s default character list includes
+     *    "\0", so it trims away to '' and the filter returns null, exactly as it
+     *    would for '' or whitespace. Nothing was entered.
+     *  - A NUL among other characters is *bad input*, and comes back as a string
+     *    so the validator chain can report it. It comes back with the NUL
+     *    removed, which is not cosmetic: Laminas\Validator\Date, which the Date
+     *    form element contributes ahead of anything a form specification adds,
+     *    calls DateTime::createFromFormat() and PHP raises
+     *    `ValueError: must not contain any null bytes`. Passing the raw value on
+     *    merely relocated the 500 one layer down, which the fuzz harness caught.
      */
-    #[DataProvider('nulBearingValues')]
-    public function testNulByteValuesParseRatherThanFailing(string $value): void
+    public function testALoneNulByteIsTreatedAsEmptiness(): void
     {
-        self::assertInstanceOf(\DateTime::class, $this->filter()->filter($value));
+        self::assertNull($this->filter()->filter("\0"));
     }
 
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function nulBearingValues(): array
+    public function testANulAmongOtherCharactersComesBackReportableAndDefused(): void
     {
-        return [
-            'lone NUL'      => ["\0"],
-            'NUL in middle' => ["a\0b"],
-        ];
+        self::assertSame('ab', $this->filter()->filter("a\0b"));
     }
 }

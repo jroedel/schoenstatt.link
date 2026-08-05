@@ -16,6 +16,15 @@ use Laminas\Validator\NotEmpty;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
+    /**
+     * sch_publications.PublicNotes, AdminNotes and EditionNotes are TEXT, so
+     * this bound is not about avoiding a write error the way the varchar(255)
+     * ones in BookForm are — 65535 is the column's real ceiling, and the point
+     * of stating it is to refuse a payload that is absurd on its face before it
+     * is stored and re-rendered on every page showing the publication.
+     */
+    const NOTES_MAX_LENGTH = 65535;
+
     public function __construct()
     {
         parent::__construct('publication');
@@ -438,9 +447,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'data-parser' => 'CommonMark',
                 'rows' => 4,
             ],
-            'filters' => [
-                ['name' => StripTags::class],
-            ],
         ]);
         $this->add([//http://www.codingdrama.com/bootstrap-markdown/
             'name' => 'publicNotes',
@@ -455,9 +461,6 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
                 'rows' => 4,
-            ],
-            'filters' => [
-                ['name' => StripTags::class],
             ],
         ]);
         $this->add([
@@ -914,6 +917,15 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => self::NOTES_MAX_LENGTH,
+                        ],
+                    ],
+                ],
             ],
             'publicNotes' => [
                 'required' => false,
@@ -922,6 +934,15 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                     ['name' => ToNull::class,
                         'options' => [
                             'type' => \Laminas\Filter\ToNull::TYPE_STRING,
+                        ],
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => self::NOTES_MAX_LENGTH,
                         ],
                     ],
                 ],
@@ -944,6 +965,15 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         'options' => [
                             'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => self::NOTES_MAX_LENGTH,
+                        ],
                     ],
                 ],
             ],

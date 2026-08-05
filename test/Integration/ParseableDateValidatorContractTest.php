@@ -16,9 +16,10 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * Pins SionModel\Validator\ParseableDate, the half of the date fix that makes a
  * bad date visible.
  *
- * ToDateTime may not throw, so it hands unparseable input back unchanged. On its
- * own that trades a 500 for silent data loss — the row is written without the
- * date and nobody is told. This validator is what turns it into a field error,
+ * ToDateTime may not throw, so it hands unparseable input back rather than
+ * nulling it (with NUL bytes stripped, which its own test explains). On its own
+ * that trades a 500 for silent data loss — the row is written without the date
+ * and nobody is told. This validator is what turns it into a field error,
  * and the two are useless apart, so the last test here drives the real pair in
  * the order an InputFilter runs them.
  *
@@ -97,9 +98,10 @@ class ParseableDateValidatorContractTest extends TestCase
             'relative word'     => ['tomorrow'],
             'relative interval' => ['+500 years'],
             'far future'        => ['9999-12-31'],
-            // Overflow rather than rejection: 1 March, and 30 November of year -1.
+            // Overflow rather than rejection: becomes 1 March. Contrast
+            // 0000-00-00, which overflows to year -1 and is rejected below
+            // because no DATE column can hold it.
             'impossible day'    => ['2020-02-30'],
-            'mysql zero date'   => ['0000-00-00'],
             'timestamp'         => ['@99999999999'],
         ];
     }
@@ -157,14 +159,35 @@ class ParseableDateValidatorContractTest extends TestCase
     }
 
     /**
-     * Characterization: \DateTime's parser stops at a NUL byte and yields *now*,
-     * so a NUL-bearing value is a valid date as far as this validator is
-     * concerned. See ToDateTimeFilterContractTest for the same note — it is the
-     * plausibility question, not the parseability one.
+     * A NUL-bearing value is not a date. This validator and ToDateTime now share
+     * one decision (SionModel\Filter\DateTimeParser) precisely so that they
+     * cannot disagree about it: when each parsed the value itself they both
+     * accepted this, because \DateTime's parser stops at the NUL and reads the
+     * empty remainder as *now*.
+     *
+     * A lone NUL is a separate case and is *valid*, because trim() removes it and
+     * the value then means "nothing entered" — emptiness is required/NotEmpty's
+     * business, not this validator's. ToDateTimeFilterContractTest covers the
+     * filter side of both.
      */
-    public function testNulByteValuesAreConsideredParseable(): void
+    public function testANulAmongOtherCharactersIsNotADate(): void
     {
-        self::assertTrue($this->validator()->isValid("a\0b"));
+        self::assertFalse($this->validator()->isValid("a\0b"));
+    }
+
+    public function testALoneNulByteIsEmptinessRatherThanAnError(): void
+    {
+        self::assertTrue($this->validator()->isValid("\0"));
+    }
+
+    /**
+     * MySQL's zero date parses — to 30 November of year -1 — but cannot be
+     * stored in a DATE column, whose range starts at 1000-01-01. Rejected on the
+     * year bound rather than by the parse, which is why it needs its own test.
+     */
+    public function testTheMysqlZeroDateIsNotAStorableDate(): void
+    {
+        self::assertFalse($this->validator()->isValid('0000-00-00'));
     }
 
     /**

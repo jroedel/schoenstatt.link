@@ -140,12 +140,7 @@ return [
     // filters/validators keys in an element definition, which Laminas\Form\Factory discards without a
     // word. The field looks protected in the source and is completely unvalidated.
     'deadElementKeys' => [
-        'module/Books/src/Form/BookForm.php:254 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
-        'module/Books/src/Form/CheckoutForm.php:55 element \'adminNotes\' carries a dead \'filters\' key in its element definition',
         'module/Books/src/Form/EventForm.php:267 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
-        'module/Books/src/Form/InactivationForm.php:39 element \'inactivationReason\' carries a dead \'filters\' key in its element definition',
-        'module/Books/src/Form/PublicationForm.php:441 element \'editionNotes\' carries a dead \'filters\' key in its element definition',
-        'module/Books/src/Form/PublicationForm.php:459 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
         'module/Schoenstatt/src/Form/PersonForm.php:471 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
     ],
 
@@ -225,12 +220,9 @@ return [
 
     // Free-text fields with no bound at all on their length.
     'unboundedTextFields' => [
-        'Books\\Form\\BookForm: \'adminNotes\' (textarea) has no length bound',
         'Books\\Form\\BookForm: \'authorsText\' (text) has no length bound',
         'Books\\Form\\BookForm: \'libraryId\' (hidden) has no length bound',
-        'Books\\Form\\BookForm: \'publicNotes\' (textarea) has no length bound',
         'Books\\Form\\CheckinForm: \'withinLibraryIds\' (textarea) has no length bound',
-        'Books\\Form\\CheckoutForm: \'adminNotes\' (textarea) has no length bound',
         'Books\\Form\\CheckoutForm: \'withinLibraryIds\' (textarea) has no length bound',
         'Books\\Form\\CollectionForm: \'adminNotes\' (textarea) has no length bound',
         'Books\\Form\\CollectionForm: \'libraryId\' (hidden) has no length bound',
@@ -247,13 +239,9 @@ return [
         'Books\\Form\\EventsSearchForm: \'category\' (text) has no length bound',
         'Books\\Form\\EventsSearchForm: \'libraryId\' (hidden) has no length bound',
         'Books\\Form\\ImportForm: \'libraryId\' (hidden) has no length bound',
-        'Books\\Form\\InactivationForm: \'inactivationReason\' (text) has no length bound',
         'Books\\Form\\InactivationForm: \'withinLibraryIds\' (textarea) has no length bound',
         'Books\\Form\\LibraryForm: \'adminNotes\' (textarea) has no length bound',
         'Books\\Form\\MassCheckoutFieldset: \'withinLibraryIds\' (text) has no length bound',
-        'Books\\Form\\PublicationForm: \'adminNotes\' (textarea) has no length bound',
-        'Books\\Form\\PublicationForm: \'editionNotes\' (textarea) has no length bound',
-        'Books\\Form\\PublicationForm: \'publicNotes\' (textarea) has no length bound',
         'Books\\Form\\PublicationForm: \'url1\' (url) has no length bound',
         'Books\\Form\\PublicationForm: \'url2\' (url) has no length bound',
         'Books\\Form\\PublicationForm: \'url3\' (url) has no length bound',
