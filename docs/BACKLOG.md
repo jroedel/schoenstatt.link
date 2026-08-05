@@ -34,16 +34,25 @@ readability — the destination is **Symfony**, reached gradually:
   cheap was that the whole Symfony stack here is 7.4 LTS components with no
   FrameworkBundle — and what makes the bundle unreachable is recorded below,
   because it is a gate on several other things too.
-- **FrameworkBundle is blocked by bjy-authorize, not by us.** The chain:
-  `framework-bundle → symfony/cache → psr/cache ^2|^3`, while
-  `laminas-cache 3.14 → psr/cache ^1`. laminas-cache 4.3 lifts that pin, but
-  `kokspflanze/bjy-authorize 2.4.4` — the **final** release of a dead line — caps
-  laminas-cache at `^2.13.2 || ^3.1.0`. So the bundle, and with it Symfony's DI
-  compilation, config conventions, Twig/Security/Form bundles and cache
-  component, all sit behind retiring bjy-authorize or forking its
-  `composer.json`. This reprices the authorization migration: it is no longer
-  just "replace an abandoned ACL layer", it is the gate on the Symfony
-  application proper. Decided against a third personal fork for now.
+- **FrameworkBundle is blocked by laminas-mvc — corrected 2026-08-05.** This
+  item previously named bjy-authorize as the gate. That was wrong, and the
+  correction matters because it changes what the authorization work buys.
+  bjy-authorize does cap `laminas-cache` at `^2.13.2 || ^3.1.0`, but it is one
+  of two caps: `laminas-cache 4.3` lifts the `psr/cache ^1` pin and requires
+  `laminas-servicemanager ^4.5`, while **laminas-mvc requires `^3.20.0` in every
+  version — 3.8.0 stable, 3.9.x-dev and 4.0.x-dev alike.** So retiring
+  bjy-authorize leaves the bundle exactly as uninstallable as before.
+  Consequences: the parked ~102-factory SM4 migration is *unreachable* rather
+  than deferred, and Symfony's DI compilation, config conventions and
+  Twig/Security/Form bundles all wait on removing laminas-mvc, i.e. on finishing
+  the strangler. Retiring bjy-authorize remains worth doing — abandoned package,
+  all authorization runs through it, prerequisite for Security — just not as a
+  gate-opener. Measurements in [php-85.md](php-85.md).
+- **PHP 8.5 has the same gate.** No laminas-mvc version admits 8.5 (4.0.x-dev
+  caps at `~8.3.0`, *lower* than stable). The capsule runs 8.5.9 today only
+  because `config.platform.php` is a resolution fiction pinned to production's
+  version; raising it breaks `composer install` against 14 packages. See
+  [php-85.md](php-85.md) before touching the pin.
 - **No deadline panic.** laminas-mvc security support and PHP 8.4's security
   window both run to December 2028. Rung 4b (8.4) lands regardless.
 - **Decoupling is the first real work**: SionModel/JUser's ServiceManager
