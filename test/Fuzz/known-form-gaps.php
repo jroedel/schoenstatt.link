@@ -157,7 +157,6 @@ return [
         'SionModel\\Form\\CommentForm: \'comment\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'SionModel\\Form\\CommentForm: \'redirect\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'SionModel\\Form\\DeleteEntityForm: \'cancel\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
-        'SionModel\\Form\\TouchForm: \'cancel\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'SionModel\\Form\\UploadForm: \'fileUpload\' is not named in the input filter spec (element-provided validation only, no filters)',
     ],
 
@@ -282,7 +281,6 @@ return [
         'SionModel\\Form\\CommentForm: \'comment\' (textarea) has no length bound',
         'SionModel\\Form\\CommentForm: \'redirect\' (hidden) has no length bound',
         'SionModel\\Form\\DeleteEntityForm: \'cancel\' (element) has no length bound',
-        'SionModel\\Form\\TouchForm: \'cancel\' (element) has no length bound',
     ],
 
     // Forms no test in this suite can examine, because nothing can build them.
