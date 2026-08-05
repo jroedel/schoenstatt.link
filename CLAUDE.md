@@ -100,6 +100,10 @@ suites run from the superproject working tree.
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
   itself to PHPStan **level 8** (not the legacy level 0), and its routes are
   declared in `config/symfony/routes.php`, whose order *is* the migration status.
+  Ported HTML routes render with **Twig** from `templates/` (`layout.html.twig` is
+  the shared chrome); the `.phtml` they replace stays, because production still
+  serves it. Compiled templates go to `data/cache/twig`, which the factory falls
+  back from when it is unwritable.
 - Application modules live in `module/` and are PSR-4 autoloaded via `composer.json`:
   `Application`, `Books`, `JTranslate`, `JUser`, `RestApi`, `Schoenstatt`, `SionModel`.
   (`Bible` was removed 2026-08-05 — the feature moved to another application.)
