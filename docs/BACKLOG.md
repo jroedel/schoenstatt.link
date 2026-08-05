@@ -311,6 +311,21 @@ readability — the destination is **Symfony**, reached gradually:
   - Note this is **unrelated** to the unguarded-routes item above: the old
     providers only ever emitted `person_*`/`association_*` resources, never
     `route/*` ones.
+- [ ] **The four feature ideas that used to live in `upcoming_features`.** That
+  top-level config key (and its empty `known_issues` sibling) fed a
+  website-status page whose route was commented out years ago, so nothing has
+  read either one since; the key was deleted 2026-08-05 and its content is
+  here instead, unjudged, in the author's own framing.
+  - *Automatic repeat-translations* — when a new phrase is inserted for
+    translation, check whether the same phrase already exists in another
+    domain and carry its translations over.
+  - *Automated data issue tracking* — classify missing-information problems on
+    records as high/medium/low importance, to drive data completeness
+    systematically rather than by noticing.
+  - *New email verification system* — of the personal contact fields, email
+    matters most, and the existing verification data is stale.
+  - *Photo upload system* — user-uploaded photos, especially of course life,
+    as the single biggest improvement for an average reader of the site.
 - [ ] API registration allow-list (old @todo in `LoginV1ApiController`): API
   magic-code login does not auto-create accounts; the web flow does.
 - [ ] Drop the now-unread `user.password` column once passwordless has

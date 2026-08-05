@@ -292,25 +292,6 @@ return [
             'markdown'                      => View\Helper\Markdown::class,
         ],
     ],
-    'known_issues' => [ //possible keys: description, completed
-//             'Assignment changes' => [
-//                 'description' => 'Assignment names aren\'t appearing correctly in the "View Changes" page.',
-//             ],
-    ],
-    'upcoming_features' => [ //possible keys: description, completed
-        'Automatic repeat-translations' => [
-            'description' => 'When we insert a new phrase to be translated, we should make sure check for the same phrase in a different domain, and insert the translations as well.',
-        ],
-        'Automated data issue tracking system' => [
-            'description' => 'In order to qualitatively improve data completeness, we would identify high, medium and low importance issues regarding data records to more systematically track down missing information for the database.',
-        ],
-        'New email verification system' => [
-            'description' => 'Of the personal contact information, the most important is the user\'s email address. Verification data is out-of-date, and should be updated.',
-        ],
-        'Photo upload system' => [
-            'description' => 'The usefulness of this site for the average father could be greatly improved by adding user-uploaded photo capabilities. This applies especially for photos of course life.'
-        ],
-    ],
     'router' => [
         'routes' => [
             'admin' => [

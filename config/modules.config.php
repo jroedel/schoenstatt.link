@@ -36,7 +36,6 @@ $modules = [
     //BjyAuthorize's default cache_options ask for the memory adapter
     'Laminas\Cache\Storage\Adapter\Memory',
     'Laminas\Serializer',
-//     'MaglMarkdown',
     'BjyAuthorize',
     'SlmLocale',
     'RestApi',
