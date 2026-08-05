@@ -131,6 +131,16 @@ into its helpers only once a renderer has claimed it, which `PhpRenderer` does i
 its own constructor. Pull `ViewRenderer` out of the container **before** using any
 helper, or `$this->view` is null and even `flag` fatals on `escapeHtmlAttr()`.
 
+**Do not decide availability from a CLI probe.** This is how
+`zfcUserDisplayName` got onto the wrong list. Anything that touches
+laminas-session fails from the command line with `'session.cache_expire' is not a
+valid sessions-related ini setting`, thrown out of `SessionConfig::setOption()`,
+because those ini settings cannot be set once a CLI process has produced output.
+A helper that looks like `ServiceNotCreatedException` in a `php -r` probe may be
+perfectly healthy in a request — and since `isAllowed()` starts a session, that
+covers a good deal of the chrome. Check in a real request, or borrow the fuzz
+harness's workaround (it substitutes a `StandardConfig` for exactly this reason).
+
 ## URL generation is the thing that makes this possible
 
 The laminas **Router assembles URLs with no MvcEvent at all**:
