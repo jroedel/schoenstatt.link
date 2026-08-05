@@ -22,16 +22,16 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 184,
-        "guarded_routes_total": 184,
+        "guarded_routes_existing": 169,
+        "guarded_routes_total": 169,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 43,
-        "route_guard_entries": 186,
+        "route_guard_entries": 171,
         "routes_declared_twice": 2,
         "rules_from_rule_config": 34,
-        "total_routes": 214,
-        "unguarded_routes": 30,
+        "total_routes": 198,
+        "unguarded_routes": 29,
         "unguarded_routes_matchable": 18
     },
     "dynamic_providers": {
@@ -2462,194 +2462,6 @@
             "public": false,
             "route": "associations/old-association"
         },
-        "bible": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_user"
-            ],
-            "effective_roles": [
-                "bib_administrator",
-                "bib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible"
-        },
-        "bible/create-greek-reference": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_administrator"
-            ],
-            "effective_roles": [
-                "bib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/create-greek-reference"
-        },
-        "bible/greek": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_user"
-            ],
-            "effective_roles": [
-                "bib_administrator",
-                "bib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/greek"
-        },
-        "bible/greek/root/edit": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_administrator"
-            ],
-            "effective_roles": [
-                "bib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/greek/root/edit"
-        },
-        "bible/migrate": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_administrator"
-            ],
-            "effective_roles": [
-                "bib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/migrate"
-        },
-        "bible/normalize-greek": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_administrator"
-            ],
-            "effective_roles": [
-                "bib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/normalize-greek"
-        },
-        "bible/search": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_user"
-            ],
-            "effective_roles": [
-                "bib_administrator",
-                "bib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/search"
-        },
-        "bible/text": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_user"
-            ],
-            "effective_roles": [
-                "bib_administrator",
-                "bib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "bible/text"
-        },
         "blog": {
             "anonymous_allowed": true,
             "assertion": null,
@@ -3352,100 +3164,6 @@
             "matchable": true,
             "public": false,
             "route": "developers"
-        },
-        "dh": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_administrator"
-            ],
-            "effective_roles": [
-                "bib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "dh"
-        },
-        "dh/import": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_administrator"
-            ],
-            "effective_roles": [
-                "bib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "dh/import"
-        },
-        "dh/number": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_user"
-            ],
-            "effective_roles": [
-                "bib_administrator",
-                "bib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "dh/number"
-        },
-        "dh/page": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "bib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "bib_user"
-            ],
-            "effective_roles": [
-                "bib_administrator",
-                "bib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "dh/page"
         },
         "dictionary": {
             "anonymous_allowed": true,
@@ -6290,64 +6008,6 @@
             "public": false,
             "route": "sitemap"
         },
-        "sundays-reading-audio": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "guest",
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "sundays-reading-audio"
-        },
         "text": {
             "anonymous_allowed": false,
             "assertion": null,
@@ -6492,122 +6152,6 @@
             "matchable": true,
             "public": false,
             "route": "texts/jk-import"
-        },
-        "todays-reading-audio": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "guest",
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "todays-reading-audio"
-        },
-        "tomorrows-reading-audio": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "guest",
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "tomorrows-reading-audio"
         },
         "wayside-shrines": {
             "anonymous_allowed": true,
@@ -7961,7 +7505,6 @@
         "assignments",
         "assignments/assignment/moderate",
         "assignments/assignment/suggest",
-        "bible/greek/root",
         "books",
         "checkouts",
         "checkouts/checkout",

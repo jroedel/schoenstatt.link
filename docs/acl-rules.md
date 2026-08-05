@@ -40,19 +40,19 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 184 |
-| guarded routes total | 184 |
+| guarded routes existing | 169 |
+| guarded routes total | 169 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 43 |
-| route guard entries | 186 |
+| route guard entries | 171 |
 | routes declared twice | 2 |
 | rules from rule config | 34 |
-| total routes | 214 |
-| unguarded routes | 30 |
+| total routes | 198 |
+| unguarded routes | 29 |
 | unguarded routes matchable | 18 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (184 + 30 = 214). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (169 + 29 = 198). Phantom entries are excluded because they are not routes.
 
 ## Role hierarchy
 
@@ -209,14 +209,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `associations/do-work` | yes | `null`, guest, user | **everyone (public)** — 43 named roles plus anonymous | yes |  |
 | `associations/import` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `associations/old-association` | yes | guest, sch_basic, sch_user, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `bible` | yes | bib_user | bib_administrator, bib_user (2) | no |  |
-| `bible/create-greek-reference` | yes | bib_administrator | bib_administrator (1) | no |  |
-| `bible/greek` | yes | bib_user | bib_administrator, bib_user (2) | no |  |
-| `bible/greek/root/edit` | yes | bib_administrator | bib_administrator (1) | no |  |
-| `bible/migrate` | yes | bib_administrator | bib_administrator (1) | no |  |
-| `bible/normalize-greek` | yes | bib_administrator | bib_administrator (1) | no |  |
-| `bible/search` | yes | bib_user | bib_administrator, bib_user (2) | no |  |
-| `bible/text` | yes | bib_user | bib_administrator, bib_user (2) | no |  |
 | `blog` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `blog/blog-post` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `blog/blog-post/delete` | yes | blog_contributor | blog_administrator, blog_contributor (2) | no |  |
@@ -238,10 +230,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `composition-delete` | yes | sch_general_moderator | sch_administrator, sch_general_moderator (2) | no |  |
 | `composition-edit` | yes | sch_moderator, sch_user | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (6) | no |  |
 | `developers` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `dh` | yes | bib_administrator | bib_administrator (1) | no |  |
-| `dh/import` | yes | bib_administrator | bib_administrator (1) | no |  |
-| `dh/number` | yes | bib_user | bib_administrator, bib_user (2) | no |  |
-| `dh/page` | yes | bib_user | bib_administrator, bib_user (2) | no |  |
 | `dictionary` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `dictionary/create` | yes | dict_administrator | dict_administrator (1) | no |  |
 | `dictionary/entry/edit` | yes | dict_administrator | dict_administrator (1) | no |  |
@@ -325,15 +313,12 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `sion-model/phpinfo` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `sion-model/view-changes` | yes | sch_general_moderator, view_changes | sch_administrator, sch_general_moderator, view_changes (3) | no |  |
 | `sitemap` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `sundays-reading-audio` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `text` | yes | texts_user | texts_administrator, texts_moderator, texts_user (3) | no |  |
 | `text-delete` | yes | texts_moderator | texts_administrator, texts_moderator (2) | no |  |
 | `text-edit` | yes | texts_moderator | texts_administrator, texts_moderator (2) | no |  |
 | `texts` | yes | texts_user | texts_administrator, texts_moderator, texts_user (3) | no |  |
 | `texts/create` | yes | texts_moderator | texts_administrator, texts_moderator (2) | no |  |
 | `texts/jk-import` | yes | administrator | administrator (1) | no |  |
-| `todays-reading-audio` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `tomorrows-reading-audio` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `wayside-shrines` | yes | `null`, guest, user | **everyone (public)** — 43 named roles plus anonymous | yes |  |
 | `welcome` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `zfcuser` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
@@ -355,7 +340,7 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-18 of the 30 are endpoints reachable by nobody.
+18 of the 29 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
@@ -366,7 +351,6 @@ the matched route name, so the missing guard costs nothing. The `yes` rows are t
 | `assignments` | no |
 | `assignments/assignment/moderate` | **yes** |
 | `assignments/assignment/suggest` | **yes** |
-| `bible/greek/root` | no |
 | `books` | no |
 | `checkouts` | **yes** |
 | `checkouts/checkout` | **yes** |
