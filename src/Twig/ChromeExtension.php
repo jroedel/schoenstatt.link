@@ -1,0 +1,159 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Twig;
+
+use App\Http\CspNonce;
+use App\Http\SymfonyRoute;
+use App\Locale\Locales;
+use App\View\SiteChrome;
+use Locale;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Twig\Extension\AbstractExtension;
+use Twig\TwigFunction;
+
+use function json_encode;
+
+use const JSON_HEX_AMP;
+use const JSON_HEX_APOS;
+use const JSON_HEX_QUOT;
+use const JSON_HEX_TAG;
+use const JSON_UNESCAPED_UNICODE;
+
+/**
+ * What templates\layout.html.twig needs to know about the current request.
+ *
+ * Every one of these is a function rather than a Twig global for the same reason:
+ * globals are evaluated when the Environment is built, so a page that renders no
+ * navbar would still pay for the ACL checks, the session read and the module load
+ * behind them. As functions they cost nothing until a template asks.
+ *
+ * `current_route()` is the piece worth knowing about, because it is why no
+ * controller has to pass the layout its route name. A ported Symfony route is named
+ * after the laminas route it shadows (`shrines`), and its locale-prefixed twin adds
+ * `.locale` (`shrines.locale`); App\Http\SymfonyRoute strips the suffix, so the
+ * layout can compare against the names in the `navigation` config directly. Keep
+ * naming ported routes that way and the chrome keeps working for free.
+ */
+final class ChromeExtension extends AbstractExtension
+{
+    public function __construct(
+        private readonly SiteChrome $chrome,
+        private readonly RequestStack $requests,
+        private readonly CspNonce $nonce
+    ) {
+    }
+
+    /** @return list<TwigFunction> */
+    public function getFunctions(): array
+    {
+        return [
+            new TwigFunction('current_route', $this->currentRoute(...)),
+            new TwigFunction('current_locale', $this->currentLocale(...)),
+            new TwigFunction('current_language', $this->currentLanguage(...)),
+            new TwigFunction('server_url', $this->serverUrl(...)),
+            new TwigFunction('csp_nonce', $this->cspNonce(...)),
+            new TwigFunction('navigation_items', $this->navigationItems(...)),
+            new TwigFunction('language_options', $this->languageOptions(...)),
+            new TwigFunction('canonical_links', $this->canonicalLinks(...)),
+            new TwigFunction('search_box', $this->searchBox(...)),
+            new TwigFunction('display_name', $this->displayName(...)),
+            new TwigFunction('json_ld', $this->jsonLd(...), ['is_safe' => ['html']]),
+        ];
+    }
+
+    /**
+     * A JSON-LD payload, encoded so it cannot break out of the <script> element it
+     * is written into — which is why it is a function and not `|json_encode|raw`:
+     * plain json_encode leaves `</script>` intact, and a shrine name is user-edited
+     * data. Used by both the layout's site schema and the pages' own blocks.
+     */
+    public function jsonLd(mixed $data): string
+    {
+        return (string) json_encode(
+            $data,
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+        );
+    }
+
+    public function currentRoute(): string
+    {
+        $request = $this->request();
+
+        return null === $request ? '' : SymfonyRoute::routeName($request);
+    }
+
+    public function currentLocale(): string
+    {
+        return Locale::getDefault();
+    }
+
+    /** The two-letter form, for the <html lang> attribute. */
+    public function currentLanguage(): string
+    {
+        return (string) Locale::getPrimaryLanguage(Locale::getDefault());
+    }
+
+    /** Scheme and host with no trailing slash, the way laminas' `serverUrl` helper gives it. */
+    public function serverUrl(): string
+    {
+        $request = $this->request();
+
+        return null === $request ? '' : $request->getSchemeAndHttpHost();
+    }
+
+    public function cspNonce(): string
+    {
+        return $this->nonce->value();
+    }
+
+    /** @return list<array{label: string, href: string, active: bool}> */
+    public function navigationItems(): array
+    {
+        return $this->chrome->navigationItems($this->currentRoute());
+    }
+
+    /** @return list<array{locale: string, label: string, flag: string, href: string, current: bool}> */
+    public function languageOptions(): array
+    {
+        return $this->chrome->languageOptions($this->path());
+    }
+
+    /** @return array{canonical: string, alternates: array<string, string>} */
+    public function canonicalLinks(): array
+    {
+        return $this->chrome->canonicalLinks($this->serverUrl(), $this->path());
+    }
+
+    /** @return array{action: string, placeholder: string}|null */
+    public function searchBox(): ?array
+    {
+        return $this->chrome->searchBox($this->currentRoute());
+    }
+
+    public function displayName(): string|false
+    {
+        return $this->chrome->displayName();
+    }
+
+    /**
+     * The requested path *with* its query string, which is what the locale links are
+     * rewritten from — SlmLocale's helper keeps the query too, minus `lang`. Falls
+     * back to the current locale's root so a template rendered outside a request — a
+     * test, a future CLI renderer — still produces valid hrefs rather than an empty
+     * one.
+     */
+    private function path(): string
+    {
+        $request = $this->request();
+
+        return null === $request ? '/' . Locales::aliasFor(Locale::getDefault()) : $request->getRequestUri();
+    }
+
+    private function request(): ?Request
+    {
+        return $this->requests->getMainRequest();
+    }
+}

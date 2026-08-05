@@ -35,3 +35,8 @@ php composer.phar install
 # make sure important data directories exist
 mkdir -p data/logs
 mkdir -p data/config
+# Twig's compile cache. App\Twig\TwigFactory falls back to compiling in memory when
+# this is missing or unwritable rather than failing, so this is an optimisation, not
+# a prerequisite — but a deployment that never creates it pays for a recompile on
+# every request.
+mkdir -p data/cache/twig

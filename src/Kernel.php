@@ -7,11 +7,20 @@ namespace App;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
+use App\Controller\ShrinesController;
+use App\Http\CspListener;
+use App\Http\CspNonce;
+use App\Http\GdprCookieListener;
+use App\Http\InventedCacheControlListener;
 use App\Http\LaminasResponseConverter;
 use App\Http\LegacyBridge;
+use App\Http\LocaleListener;
 use App\Http\MaintenanceKey;
 use App\Http\ProtocolVersionListener;
+use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
+use App\Laminas\ViewHelpers;
+use App\Twig\TwigFactory;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,6 +35,7 @@ use Symfony\Component\HttpKernel\TerminableInterface;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
+use Twig\Environment;
 
 use function dirname;
 
@@ -56,6 +66,11 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
 {
     private HttpKernel $httpKernel;
     private ServiceBridge $laminas;
+    private RequestStack $requests;
+    private CspNonce $cspNonce;
+    private Environment $twig;
+    private ViewHelpers $viewHelpers;
+    private RouteUrl $routeUrl;
 
     /**
      * @param array<string, mixed> $appConfig the merged config/application.config.php,
@@ -90,14 +105,23 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             return $this->httpKernel;
         }
 
-        $requestStack = new RequestStack();
+        $requestStack = $this->requests();
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new RouterListener(
             new UrlMatcher($this->routes(), new RequestContext()),
             $requestStack
         ));
+        //default priority, i.e. after RouterListener's 32: the locale it reads is a
+        //route attribute, so there is nothing to read until routing has happened
+        $dispatcher->addListener(KernelEvents::REQUEST, new LocaleListener());
         $dispatcher->addListener(KernelEvents::RESPONSE, new ProtocolVersionListener());
+        //all three only ever act on a Symfony-served route: on a bridged one
+        //laminas-mvc's own listeners and LaminasResponseConverter have already done
+        //the equivalent
+        $dispatcher->addListener(KernelEvents::RESPONSE, new CspListener($this->laminas(), $this->cspNonce()));
+        $dispatcher->addListener(KernelEvents::RESPONSE, new GdprCookieListener());
+        $dispatcher->addListener(KernelEvents::RESPONSE, new InventedCacheControlListener());
 
         return $this->httpKernel = new HttpKernel(
             $dispatcher,
@@ -130,7 +154,62 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     new MaintenanceKey($this->laminas()),
                     $this->laminas()
                 ),
+            // The first ported HTML route, and the only one that needs the Twig
+            // layer so far. twig() is lazy for the same reason laminas() is: a
+            // request that renders no template — /_health, the maintenance
+            // endpoints, anything bridged — never builds any of it.
+            ShrinesController::class => fn (): ShrinesController => new ShrinesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
         ]);
+    }
+
+    /**
+     * The Twig environment every ported HTML route renders through, and the two
+     * extensions that give its templates a way back to laminas. Read
+     * templates/layout.html.twig and App\Twig\LaminasExtension before adding a
+     * third: the interesting constraint is which laminas view helpers can be
+     * reached at all.
+     */
+    private function twig(): Environment
+    {
+        return $this->twig ??= (new TwigFactory())->create(
+            $this->laminas(),
+            $this->viewHelpers(),
+            $this->routeUrl(),
+            $this->requests(),
+            $this->cspNonce()
+        );
+    }
+
+    private function viewHelpers(): ViewHelpers
+    {
+        return $this->viewHelpers ??= new ViewHelpers($this->laminas());
+    }
+
+    /**
+     * The laminas router, base URL already pointed at the request's locale prefix.
+     * Shared, because setting that base URL twice on the same router service would
+     * double the prefix.
+     */
+    private function routeUrl(): RouteUrl
+    {
+        return $this->routeUrl ??= new RouteUrl(
+            $this->laminas(),
+            $this->requests()->getMainRequest()?->getBaseUrl() ?? ''
+        );
+    }
+
+    private function cspNonce(): CspNonce
+    {
+        return $this->cspNonce ??= new CspNonce();
+    }
+
+    private function requests(): RequestStack
+    {
+        return $this->requests ??= new RequestStack();
     }
 
     /**

@@ -47,9 +47,9 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 2 |
+| routes shadowed by symfony | 3 |
 | rules from rule config | 34 |
-| symfony served routes | 5 |
+| symfony served routes | 7 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
@@ -72,6 +72,8 @@ it matches every path by design.
 | symfony route | path | controller |
 | --- | --- | --- |
 | `health` | `/_health` | `App\Controller\HealthController` |
+| `shrines` | `/shrines` | `App\Controller\ShrinesController` |
+| `shrines.locale` | `/{_locale}/shrines` | `App\Controller\ShrinesController` |
 | `sm-cache-status` | `/sm/cache-status` | `App\Controller\CacheStatusController` |
 | `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | `App\Controller\CacheStatusController` |
 | `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | `App\Controller\ClearPersistentCacheController` |
@@ -90,6 +92,7 @@ authorization and is also reported as a warning at the top of this file.
 
 | laminas route | path | shadowed by | its (now inert) guard |
 | --- | --- | --- | --- |
+| `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles), so no change |
 | `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles), so no change |
 | `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles), so no change |
 

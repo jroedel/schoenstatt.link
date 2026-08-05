@@ -7,7 +7,7 @@ reusable there instead of accumulating DONE narratives.
 State as of 2026-08-05, on branch `symfony-upgrade` (not yet merged): the
 **capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
 see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
-**510 tests across four suites** (109 unit, 300 integration, 18 fuzz, 83
+**551 tests across four suites** (119 unit, 315 integration, 18 fuzz, 99
 smoke), green on 8.5; PHPStan clean at level 0
 (baseline 26 entries); one-command deploy with hooks. First-party code no longer
 calls `getServiceLocator()`, has no `throw Foo()` missing its `new`, creates no
@@ -47,6 +47,18 @@ catch-all route delegating every unported path back to it — see
 [strangler.md](strangler.md) for the mechanism, the response-conversion rules and
 how to switch front controllers. Production still runs the laminas front
 controller until `SYMFONY_KERNEL=1` is added to its `.htaccess`.
+
+**The first HTML route has moved and renders with Twig** (`shrines`,
+2026-08-05): `templates/layout.html.twig` reproduces the site chrome —
+navigation, language chooser, search box, flash messages, canonical links,
+schema blocks — and is the layout every later HTML port extends. Both renderings
+of the page were compared row by row and agree exactly, signed in and out. Two
+things learned that change earlier assumptions, both written up in
+[strangler.md](strangler.md): a ported route does **not** lose the identity or
+the session (only the route guard), and `Laminas\Navigation\Navigation` cannot be
+resolved without an MvcEvent at all, so the navbar is built from the raw
+`navigation` config. Only *public* routes can move until an authorization bridge
+replaces the guard — `docs/acl-rules.md` names which those are.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -219,6 +231,25 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **The shrine table's "Opening hours?" column tests a column that does not
+  exist.** `schoenstatt/associations/shrines-table.phtml` and its Twig port both
+  read `openingHoursJson`; the association projection has
+  `openingHoursSpecificationJson`. So the column reflects only
+  `openingHoursHuman` and the structured hours never count. Found porting
+  `shrines` (2026-08-05) and reproduced verbatim in
+  `templates/schoenstatt/_shrines-table.html.twig` rather than fixed, because
+  the port's contract was identical output. Fix is a one-word rename in both
+  templates — but check first whether "has structured hours" is what the
+  progress score is meant to reward, since 71 shrines have the human field and
+  4 have the JSON one.
+- [ ] **`shrinesAction()` divides by zero on an empty shrine list.**
+  The per-region percentage guards its denominator and the total does not
+  (`floor($totalScore / $totalMaxScore * 100)`), so a database with no
+  `sch-shrine` rows is a `DivisionByZeroError` rather than 0%. Present in the
+  laminas action, in `waysideShrinesAction()`, and reproduced in
+  `App\Schoenstatt\ShrineIndex` for parity. Only reachable if every shrine were
+  deleted, which is why it has never fired; fix both copies together, or fix it
+  when the laminas copy is deleted.
 - [ ] `finish-pending-labels` is an unreachable route:
   `Laminas\Router\Http\Part::match()` returns the parent match once the path
   is consumed and the parent `may_terminate`s, so its `Method(delete)` child

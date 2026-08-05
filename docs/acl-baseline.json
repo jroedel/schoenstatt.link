@@ -29,9 +29,9 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 2,
+        "routes_shadowed_by_symfony": 3,
         "rules_from_rule_config": 34,
-        "symfony_served_routes": 5,
+        "symfony_served_routes": 7,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6478,6 +6478,13 @@
     },
     "laminas_routes_shadowed_by_symfony": [
         {
+            "laminas_route": "shrines",
+            "path": "/shrines",
+            "symfony_route": "shrines",
+            "was_guarded": true,
+            "was_public": true
+        },
+        {
             "laminas_route": "sion-model/cache-status",
             "path": "/sm/cache-status",
             "symfony_route": "sm-cache-status",
@@ -7447,6 +7454,14 @@
         "health": {
             "path": "/_health",
             "controller": "App\\Controller\\HealthController"
+        },
+        "shrines": {
+            "path": "/shrines",
+            "controller": "App\\Controller\\ShrinesController"
+        },
+        "shrines.locale": {
+            "path": "/{_locale}/shrines",
+            "controller": "App\\Controller\\ShrinesController"
         },
         "sm-cache-status": {
             "path": "/sm/cache-status",

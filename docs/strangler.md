@@ -21,9 +21,24 @@ public/index.php
                                        │                 → App\Controller\CacheStatusController
                                        ├─ [/{_locale}]/sm/clear-persistent-cache
                                        │                 → App\Controller\ClearPersistentCacheController
+                                       ├─ [/{_locale}]/shrines
+                                       │                 → App\Controller\ShrinesController
+                                       │                       └─ Twig: templates/layout.html.twig
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
+
+Four kernel listeners run on a Symfony-served route and on **no** bridged one,
+because on a bridged one laminas-mvc or `LaminasResponseConverter` has already done
+the equivalent. `App\Http\SymfonyRoute::isPorted()` is how each of them tells,
+by asking whether `_route` is anything other than `legacy`:
+
+| listener | event | what it restores |
+|---|---|---|
+| `LocaleListener` | request | `\Locale::setDefault()` from `_locale`, else negotiated — SlmLocale's job |
+| `CspListener` | response | the `Content-Security-Policy` + nonce `SionModel\Mvc\CspListener` sends |
+| `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
+| `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
 `config/symfony/routes.php` **is** the migration status of the site, read top to
 bottom: `UrlMatcher` takes the first route that matches, so everything declared
@@ -162,6 +177,25 @@ own section, reports which laminas routes they shadow, and *warns* when a
 shadowed route's guard restricted anything, because that is authorization
 silently ceasing to apply with nothing else to notice it.
 
+**"No identity" needs one correction**, learned porting `shrines`. The *guard* is
+gone, but the identity is not. Asking `isAllowed()` makes BjyAuthorize ask JUser
+for the identity, JUser reads it from the session, and reading the session calls
+`session_start()` — measured: `session_status()` goes NONE → ACTIVE across a single
+`isAllowed()` call. So permission-gated *markup* still works on a ported page: a
+signed-in moderator gets the moderator table and the progress bars, an anonymous
+visitor gets the plain one, exactly as under laminas. Two consequences:
+
+- The session cookie `session_start()` writes lands in PHP's SAPI header list before
+  any listener can object, which is why `App\Http\GdprCookieListener` exists. Without
+  it a ported HTML page is the only page on the site that sets a cookie on an
+  unconsented visitor.
+- Only the route *guard* has to be replaced when porting a protected route, not the
+  whole identity story.
+
+So the list of things a ported route loses, restated: the **route guard**, SlmLocale,
+the laminas-view layout, and (until a listener restores them) the response headers
+the MVC listeners add. Not the ACL, not the identity, not the session.
+
 Two consequences worth knowing before porting anything:
 
 - **The locale prefix has to be declared.** Every caller uses `/en/…`, and under
@@ -180,8 +214,70 @@ Two consequences worth knowing before porting anything:
   handles both shapes because during the migration it talks to hosts of both
   kinds.
 
+## The Twig layer
+
+HTML pages on the Symfony side render with Twig, from `templates/`. It exists
+because rendering the existing `.phtml` from a Symfony-served route is not merely
+inadvisable, it is impossible — see the helper limitation below. What is there now,
+and what a later port should reuse rather than reinvent:
+
+| file | what it is |
+|---|---|
+| `templates/layout.html.twig` | the site chrome. `{% extends %}` it, define `page_title`, `breadcrumbs`, `block content`, `block inline_scripts` |
+| `templates/schoenstatt/_entity-format.html.twig` | macros for an association or person link, replacing `formatAssociation`/`formatPerson` |
+| `src/Twig/TwigFactory.php` | builds the Environment. `App\Kernel` and the integration tests both call it, so a test renders the real thing |
+| `src/Twig/LaminasExtension.php` | `laminas_path`, `translate`, `is_allowed`, `flag`, `email_link`, `telephone_link`, `url_object_link`, `edit_pencil`, `flash_messages` |
+| `src/Twig/ChromeExtension.php` | `current_route`, `current_locale`, `navigation_items`, `language_options`, `canonical_links`, `search_box`, `display_name`, `csp_nonce`, `server_url`, `json_ld` |
+| `src/Laminas/RouteUrl.php` | assembles laminas URLs, locale prefix included. **The reason any of this works** |
+| `src/Laminas/ViewHelpers.php` | the only door to a laminas view helper, one typed method per allowed helper |
+| `src/View/SiteChrome.php` | the chrome's decisions: ACL-filtered navigation, language chooser, search box |
+
+Three settings in `TwigFactory` are decisions, each with its reasoning in the
+class docblock: `strict_variables` is **on** (the opposite of `PhpRenderer`),
+`autoescape` is on with markup-returning functions declared `is_safe: html`, and the
+compile cache is used only when its directory is writable, with `auto_reload` on
+because Twig keys a compiled file by the template's *name*, not its contents — with
+`auto_reload` off, an edited or deployed template is never recompiled.
+
+### The MvcEvent helper limitation
+
+`Router` assembles URLs with no MvcEvent, which is the fact the whole layer rests
+on: `$bridge->get('Router')->assemble([], ['name' => 'shrines'])` works. The `url`
+**view helper** does not — it wants a RouteMatch off the MvcEvent, and a
+Symfony-served route has neither. So five helpers, and everything that calls them,
+are simply unavailable:
+
+```
+url  routeName  localeUrl  libraryInfo  zfcUserDisplayName*
+```
+
+`* zfcUserDisplayName` is the exception that proves the rule: it needs only the
+authentication service and does work, so it is on the `ViewHelpers` allowlist. The
+other four do not, and neither does anything that reaches them — `formatEntity`,
+`formatAssociation`, `formatPerson`, `editPencil`, the whole `navigation` family.
+The failure is not a clean exception either: it is `Call to a member function
+getRouteMatch() on null` from deep inside laminas-view, on a page that is otherwise
+rendering fine.
+
+`Laminas\Navigation\Navigation` deserves its own line, because it looks available
+and is not: `AbstractNavigationFactory::preparePages()` asks
+`$application->getMvcEvent()->getRouteMatch()`, so the *service* cannot be built at
+all. `SiteChrome` reads the raw `navigation` config instead, which loses nothing for
+the navbar — it renders `minDepth(0)/maxDepth(0)`, so the branches
+`Application\Module::onBootstrap()` builds from the database and caches in APCu never
+appear there anyway. What it does lose is a top-level item lighting up because a
+database-derived descendant is the current page, and the breadcrumb trail, which a
+ported page passes in explicitly.
+
+Replacing one of these is a small, mechanical job — reproduce the helper's decisions
+against `RouteUrl`, keep its markup byte-identical so a real difference cannot hide
+in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
+
 ## Adding a Symfony route
 
+0. Check the route is portable at all. `docs/acl-rules.md` says whether its guard is
+   public; if it is not, the check has to move with it, and nothing here does that
+   yet.
 1. Write the controller under `src/`, namespace `App\`. `declare(strict_types=1)`
    — `src/` is greenfield and holds itself to a higher standard than the legacy
    baseline: it must pass PHPStan **level 8**, not the committed level 0.
@@ -190,7 +286,16 @@ Two consequences worth knowing before porting anything:
    — it builds a ServiceManager and loads the modules the way `bin/console` does,
    lazily and without `bootstrap()`, so a request that does not ask for it (like
    `/_health`) still pays nothing.
-3. Declare the route in `config/symfony/routes.php` **above** `legacy`.
+3. Declare the route in `config/symfony/routes.php` **above** `legacy`, through the
+   `$ported()` helper, and **name it after the laminas route it shadows**. That name
+   is load-bearing: `App\Http\SymfonyRoute::routeName()` strips the `.locale` suffix
+   off the prefixed twin, and the layout compares the result against the `navigation`
+   config to mark an item active. Get the name wrong and the navbar silently stops
+   highlighting the current page.
+   An HTML route also has to decide what its *unprefixed* form does. SlmLocale
+   redirects `/shrines` to the negotiated language rather than serving the page twice;
+   `ShrinesController` reproduces that, and the absence of the `_locale` attribute is
+   how it knows.
 4. Add a smoke test. The suite's other paths all run through the bridge, so they
    will not notice a Symfony-side mistake. Assert something that distinguishes the
    two front controllers, not just a 200 — for the maintenance endpoints that is
@@ -199,16 +304,32 @@ Two consequences worth knowing before porting anything:
    builds the response rather than trusting two copies to stay equal.
    `SionModel\Cache\CacheStatusPayload` exists for exactly that, and
    `test/Integration/CacheStatusParityTest.php` pins the agreement.
+   Where sharing would mean *editing* the laminas action — and so putting production
+   at risk for the sake of the port — copy it instead and pin the copy with a parity
+   test that drives both. `App\Schoenstatt\ShrineIndex` +
+   `test/Integration/ShrineIndexParityTest.php` is that pattern; the copy is deleted
+   along with the laminas route.
 6. Regenerate `docs/acl-rules.md` and `docs/acl-baseline.json`
    (`tools/acl-table.php`) and read the diff.
 
 ## Verifying
 
-- `php composer.phar test` — 527 tests (measured 2026-08-05; the figure recorded
-  here before that was long stale). The smoke suite runs against the capsule, i.e.
+- `php composer.phar test` — 551 tests (measured 2026-08-05, after the shrines port;
+  527 before it). The smoke suite runs against the capsule, i.e.
   through the Symfony front controller, so it is the bridge's regression test.
   `test/Smoke/SymfonyKernelSmokeTest.php` covers what the catch-all would hide:
   that Symfony served anything itself.
+- `test/Smoke/ShrinesSymfonySmokeTest.php` does the same job for the first HTML
+  route, and its discriminator is worth reusing: laminas sends
+  `Set-Cookie: slm_locale=en_US` on every response and a ported route never does, so
+  its absence proves Symfony served the page rather than bridging it.
+- `test/Integration/ShrineTemplateTest.php` renders the templates against real rows
+  with no HTTP, which is the only way the *moderator* markup is exercised — the smoke
+  suite has no authenticated session.
+- `test/Integration/SymfonyLocaleAliasTest.php` guards `App\Locale\Locales` against
+  drifting from `slm_locale`. The alias table is duplicated on purpose: reading the
+  merged config from `config/symfony/routes.php` would load every laminas module
+  before the first route existed, and `/_health` would start paying for it.
 - `test/Integration/LaminasResponseConverterTest.php` pins the four conversion
   rules above. None of them are visible to a status-code assertion.
 - `test/Integration/CacheStatusParityTest.php` pins that the ported
