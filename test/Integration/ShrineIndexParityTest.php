@@ -7,6 +7,7 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ServiceBridge;
 use App\Schoenstatt\ShrineDatasets;
 use App\Schoenstatt\ShrineIndex;
+use Laminas\Db\Adapter\Adapter;
 use JUser\Model\UserTable;
 use Laminas\View\Model\ViewModel;
 use Locale;
@@ -14,6 +15,9 @@ use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use Schoenstatt\Controller\SchoenstattController;
 use Schoenstatt\Model\SchoenstattTable;
+use Throwable;
+
+use function is_readable;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -48,6 +52,31 @@ class ShrineIndexParityTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         Locale::setDefault('en_US');
+    }
+
+    /**
+     * Everything here reads the shrines table, so a machine without a database
+     * skips rather than fails. The local-config check comes *first* and on purpose:
+     * without config/autoload/local.php, merely asking the container for the
+     * adapter raises "Undefined array key db" — and `failOnWarning` is on, so a
+     * warning is a failure no later catch can undo.
+     */
+    protected function setUp(): void
+    {
+        if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
+            self::markTestSkipped('no config/autoload/local.php, so no database configuration');
+        }
+        try {
+            /** @var Adapter $adapter */
+            $adapter = $this->bridge()->get(Adapter::class);
+            $adapter->getDriver()->getConnection()->connect();
+            $this->bridge()->get(SchoenstattTable::class);
+        } catch (Throwable $e) {
+            self::markTestSkipped(
+                'no reachable database: ' . $e->getMessage()
+                . ' — this test needs the capsule up (docker compose up -d)'
+            );
+        }
     }
 
     /**
