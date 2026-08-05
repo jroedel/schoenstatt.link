@@ -312,9 +312,18 @@ readability — the destination is **Symfony**, reached gradually:
     `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` → `lib_user`
     (as `checkouts/library`, `…/current`, `…/overdue` all are);
     `publication-upload-cover` → `pub_moderator` (as `publications/create`).
-  - **`sign-in-no-cookies` must be public** (`['guest', 'user', null]`). It is
-    the cookieless sign-in fallback, so a guard that excludes anonymous callers
-    defeats the route's only purpose.
+  - **`sign-in-no-cookies` is already reachable, by accident of listener
+    priority** — worth writing down because the obvious reading is wrong. It
+    looks like the cookieless sign-in explainer must be broken under
+    default-deny, and it is not: `GdprStrategy::onRoute()` swaps the RouteMatch
+    for this route at priority **-5000**, while `BjyAuthorize\Guard\Route`
+    checks at **-1000**, and higher priority runs first. So the guard evaluates
+    `zfcuser/login` (which is granted), approves it, and only afterwards does
+    the strategy rewrite the match. The guard never sees this route's name.
+    It should still get a public entry (`['guest', 'user', null]`) so that
+    direct navigation works and so reachability stops depending on two
+    listeners' relative priorities — but it is a robustness fix, not a live
+    bug, and it should not be described as one.
   - **`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
     `lib_user` its siblings carry: it is the destructive one in that tree and
     `lib_administrator` already exists for exactly this.
