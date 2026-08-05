@@ -9,13 +9,17 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
+use Laminas\Db\Adapter\Adapter;
 use Locale;
 use PHPUnit\Framework\TestCase;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\AssociationKindsService;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Throwable;
 use Twig\Environment;
+
+use function is_readable;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -44,6 +48,31 @@ class ShrineTemplateTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         Locale::setDefault('en_US');
+    }
+
+    /**
+     * Everything here reads the shrines table, so a machine without a database
+     * skips rather than fails. The local-config check comes *first* and on purpose:
+     * without config/autoload/local.php, merely asking the container for the
+     * adapter raises "Undefined array key db" — and `failOnWarning` is on, so a
+     * warning is a failure no later catch can undo.
+     */
+    protected function setUp(): void
+    {
+        if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
+            self::markTestSkipped('no config/autoload/local.php, so no database configuration');
+        }
+        try {
+            /** @var Adapter $adapter */
+            $adapter = $this->bridge()->get(Adapter::class);
+            $adapter->getDriver()->getConnection()->connect();
+            $this->bridge()->get(SchoenstattTable::class);
+        } catch (Throwable $e) {
+            self::markTestSkipped(
+                'no reachable database: ' . $e->getMessage()
+                . ' — this test needs the capsule up (docker compose up -d)'
+            );
+        }
     }
 
     /**
