@@ -41,7 +41,6 @@ const ANONYMOUS_URLS = [
 ];
 
 const CANDIDATE_URLS = [
-    '/en/bible/search',
     // Schoenstatt
     '/en/persons/create',
     '/en/persons/1/edit',

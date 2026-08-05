@@ -43,7 +43,6 @@ $modules = [
     'JUser',
     'SionModel',
     'JTranslate',
-    'Bible',
     'Books',
     'Schoenstatt',
     'Application',

@@ -6,11 +6,6 @@ parameters:
 			path: module/Application/src/Controller/IndexController.php
 
 		-
-			message: "#^Call to an undefined method Bible\\\\Filter\\\\FromBibleworksMorphosyntacticCode\\:\\:getCodes\\(\\)\\.$#"
-			count: 1
-			path: module/Bible/src/Filter/FromBibleworksMorphosyntacticCode.php
-
-		-
 			message: "#^Access to an undefined property Books\\\\Controller\\\\BooksApiController\\:\\:\\$inputFilter\\.$#"
 			count: 1
 			path: module/Books/src/Controller/BooksApiController.php

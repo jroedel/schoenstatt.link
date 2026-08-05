@@ -2,9 +2,9 @@ schoenstatt.link
 ================
 
 A database application for Schoenstatt-related topics — shrines, the movement,
-literature and libraries, music, a Bible/daily-heritage section and a blog —
-served in four locales. Built on the Laminas MVC layer (formerly Zend Framework
-3), running PHP 8.3 against MariaDB 10.11.
+literature and libraries, music and a blog — served in four locales. Built on
+the Laminas MVC layer (formerly Zend Framework 3), running PHP 8.3 against
+MariaDB 10.11.
 
 Live at <https://schoenstatt.link>.
 
@@ -66,7 +66,6 @@ namespace and file path matching exactly:
 | `Application` | site chrome, routing, home page, CORS, GDPR strategy |
 | `Schoenstatt` | shrines, the movement, associations, persons |
 | `Books` | literature, libraries, publications, music, dictionary |
-| `Bible` | Bible and daily-heritage texts |
 | `RestApi` | the JSON API and its JWT auth |
 | `SionModel`, `JUser`, `JTranslate` | shared libraries, **git submodules** — changes here affect other sites, so commit in the submodule first, then move the pointer |
 
