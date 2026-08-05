@@ -7,7 +7,8 @@ reusable there instead of accumulating DONE narratives.
 State as of 2026-08-05, on branch `symfony-upgrade` (not yet merged): the
 **capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
 see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
-**432 tests across four suites**, green on 8.5; PHPStan clean at level 0
+**510 tests across four suites** (109 unit, 300 integration, 18 fuzz, 83
+smoke), green on 8.5; PHPStan clean at level 0
 (baseline 26 entries); one-command deploy with hooks. First-party code no longer
 calls `getServiceLocator()`, has no `throw Foo()` missing its `new`, creates no
 dynamic properties, and emits **no deprecation of its own on 8.5** (the four
@@ -18,14 +19,21 @@ closed:
 
 - **A form input-validation fuzz harness exists** (`test/Fuzz`,
   `php composer.phar fuzz`) — the safety net that had to precede any form work.
-  It discovers all 43 forms from the filesystem and drove 5645 `isValid()`
-  calls. Baseline of accepted gaps: **200**, down from 259 at first run.
-  Throwing inputs — each a 500 with the user's whole submission lost —
-  **48 → 19**.
+  It discovers all 43 forms from the filesystem and drives thousands of
+  `isValid()` calls. Baseline of accepted gaps: **180**, down from 259 at first
+  run, every change since a removal. Throwing inputs — each a 500 with the
+  user's whole submission lost, most needing no more than `field[]=x` —
+  **48 → 0**. The invariant the harness exists for now holds for every form and
+  field it drives.
 - **Authorization is diffable**: `tools/acl-table.php` plus committed snapshots
   `docs/acl-rules.md` and `docs/acl-baseline.json`. Regenerate and diff after
   touching any route, guard or role; a rule that stops matching makes a page
   work for *more* people and no test fails.
+- **Dates now record how precisely they are known.** `events.StartDatePrecision`
+  was a working model no other table had; db6.5 gives the other seven dates the
+  same column and `SionModel\I18n\View\Helper\DatePrecisionFormat` renders to
+  it, so "sometime in 1952" no longer displays as 1 January. Every field is also
+  range-bounded, and each bound was verified to reject **zero** existing rows.
 - **The Bible module and the suggest/moderate and touch features are gone**;
   routes 214 → 191, guarded 184 → 166. Every removed ACL row belongs to one of
   those; nothing changed for a route that stayed.
@@ -237,16 +245,15 @@ readability — the destination is **Symfony**, reached gradually:
     before touching: the dropped third argument is almost certainly ZF's old
     `$strong` flag, removed in laminas-math 3. Belongs with the
     `laminas/laminas-math` retirement item, which already flags this call site.
-  - `Books\Model\LibraryTable:1601` calls `keyCollections()` with **3 arguments
-    for 1 parameter**.
 - [ ] **Four calls to methods that do not exist** (PHPStan level 1, 2026-08-05).
   Each is a guaranteed `Error` if reached, i.e. dead-or-broken code, and each
   needs a judgement about the intended method rather than a rename:
-  `BibleController:221` `getBookAbbrev()`, `:222` `getTranslAbbrev()`,
-  `LibrariesController:192` `getKnownIssues()`, `JTranslateController:137`
-  `redirectAfterDelete()`. (A fifth, `NowMessenger`'s
-  `setPluginFlashMessenger()`, was fixed 2026-08-05 — the setter is
-  `setPluginNowMessenger()`.)
+  all four are now resolved: two went with the Bible module,
+  `JTranslateController::redirectAfterDelete()` was replaced with the redirect it
+  meant, and `LibrariesController:192`'s `getKnownIssues()` was in a branch
+  guarded by an `admin_pages` key that is commented out — dead both ways, so the
+  branch is gone. (A fifth, `NowMessenger`'s `setPluginFlashMessenger()`, was
+  fixed 2026-08-05 — the setter is `setPluginNowMessenger()`.)
 - [ ] **Fourteen "variable might not be defined"** (PHPStan level 1,
   2026-08-05) — each is a read that is only reached on some paths, so the
   failure mode is a null/undefined-warning rather than a crash. One is already
@@ -260,7 +267,6 @@ readability — the destination is **Symfony**, reached gradually:
 - [ ] `/libraries/create` and `/libraries/:id/edit` 500:
   `Books\Form\SearchForm`'s factory throws "only for a specific library"
   without library context (pre-existing, surfaced by the rung-4a audits).
-- [ ] `/blog/create` 500: template `books/blog/create` missing.
 - [ ] `SionForm::setData()` calls `getInputFilterSpecification()` which the
   base class doesn't define.
 - [ ] `Books\Filter\SortText` mixes positional and sequential printf
