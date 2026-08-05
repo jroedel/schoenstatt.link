@@ -4,14 +4,35 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 (or lives in git); when an item here is done, delete it and record anything
 reusable there instead of accumulating DONE narratives.
 
-State as of 2026-08-05: production runs **PHP 8.4.24** on a current Laminas
-stack with OPcache enabled; master is deployed through the front-controller
-change but **not** through the flag that activates it; `composer audit --locked`
-reports zero advisories; 368 tests across three suites, green on 8.4; PHPStan
-clean at level 0 and running in CI (baseline 26 entries / 34 errors);
-one-command deploy with hooks. First-party code no longer calls
-`getServiceLocator()` anywhere, has no `throw Foo()` missing its `new`, and
-creates no dynamic properties.
+State as of 2026-08-05, on branch `symfony-upgrade` (not yet merged): the
+**capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
+see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
+**432 tests across four suites**, green on 8.5; PHPStan clean at level 0
+(baseline 26 entries); one-command deploy with hooks. First-party code no longer
+calls `getServiceLocator()`, has no `throw Foo()` missing its `new`, creates no
+dynamic properties, and emits **no deprecation of its own on 8.5** (the four
+that remain are laminas-cache's).
+
+New since the last state line, and the reason several items below moved or
+closed:
+
+- **A form input-validation fuzz harness exists** (`test/Fuzz`,
+  `php composer.phar fuzz`) — the safety net that had to precede any form work.
+  It discovers all 43 forms from the filesystem and drove 5645 `isValid()`
+  calls. Baseline of accepted gaps: **200**, down from 259 at first run.
+  Throwing inputs — each a 500 with the user's whole submission lost —
+  **48 → 19**.
+- **Authorization is diffable**: `tools/acl-table.php` plus committed snapshots
+  `docs/acl-rules.md` and `docs/acl-baseline.json`. Regenerate and diff after
+  touching any route, guard or role; a rule that stops matching makes a page
+  work for *more* people and no test fails.
+- **The Bible module and the suggest/moderate and touch features are gone**;
+  routes 214 → 191, guarded 184 → 166. Every removed ACL row belongs to one of
+  those; nothing changed for a route that stayed.
+- **A live authorization hole was closed in JTranslate** — `updatePhrase()` took
+  the row to write from a hidden form field, so a translator authorized for one
+  phrase could rewrite any other. Pinned by
+  `test/Integration/TranslationUpdateScopeTest`.
 
 **A Symfony kernel now sits in front of laminas-mvc in the capsule**, with a
 catch-all route delegating every unported path back to it — see
@@ -63,9 +84,13 @@ readability — the destination is **Symfony**, reached gradually:
   2026-08-04): symfony/form validates via symfony/validator constraints; the
   part of laminas-form with no direct equivalent is the *filter* chain
   (`StringTrim`/`StripTags` pre-validation normalization), which becomes data
-  transformers or explicit normalization. Port forms one at a time with
-  `tools/form-regression.php` as the safety net; unported laminas forms keep
-  working under the strangler.
+  transformers or explicit normalization. Port forms one at a time, and note that
+  **`test/Fuzz` is the safety net, not `tools/form-regression.php`** — the latter
+  is a GET-only, byte-exact HTML differ that never submits a form, so it asserts
+  nothing whatever about input handling. The fuzz harness drives hostile input
+  through every form's filter and validator chain and is the thing that can say
+  whether a port loosened something. Unported laminas forms keep working under
+  the strangler.
 - **What this decision supersedes**: the ~102-factory Interop→Psr sweep
   ("SM4 prep") is parked — hand-written factories largely evaporate under
   Symfony DI. Long-term answers now on file: TwbBundle → Symfony's built-in
