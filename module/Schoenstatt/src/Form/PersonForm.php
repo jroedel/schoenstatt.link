@@ -1049,17 +1049,26 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
+                ],
             ],
             'priestDate' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
+                ],
             ],
             'bishopDate' => [
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
+                ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
             'nameDay' => [
@@ -1072,6 +1081,9 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
+                ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
 

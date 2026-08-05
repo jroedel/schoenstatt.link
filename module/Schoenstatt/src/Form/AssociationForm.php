@@ -17,6 +17,7 @@ use Laminas\Validator\EmailAddress;
 use SionModel\Filter\ToDateTime;
 use SionModel\Filter\ToBit;
 use SionModel\Validator\Instagram;
+use SionModel\Validator\ParseableDate;
 use Schoenstatt\Validator\EventsJson;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
@@ -869,6 +870,9 @@ so users can double-check. Warning: this field is not translated.',
                 'required' => false,
                 'filters' => [
                     ['name' => ToDateTime::class],
+                ],
+                'validators' => [
+                    ['name' => ParseableDate::class],
                 ],
             ],
             'isAuthor' => [
