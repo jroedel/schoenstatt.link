@@ -101,7 +101,8 @@ JS;
     <hr>
     <h2><?php echo $this->translate('Personal Info');?></h2>
     <?php
-    echo $this->formRow($form->get('birthDate'));?>
+    echo $this->formRow($form->get('birthDate'));
+    echo $this->formRow($form->get('birthDatePrecision'));?>
 <div class="form-group "><div class="row">
 <?php $monthElement = $form->get('nameDay')->getMonthElement();
 $dayElement = $form->get('nameDay')->getDayElement();
@@ -170,6 +171,7 @@ $dayElement->setValueOptions([
 <div class="row"><?php echo $this->formElementErrors($form->get('nameDay'));?></div>
 </div> <!-- form-group -->
     <?php echo $this->formRow($form->get('deathDate'));
+    echo $this->formRow($form->get('deathDatePrecision'));
     echo $this->formRow($form->get('publicNotes'));?>
     <hr>
     <h2><?php echo $this->translate('Private Info');?></h2>

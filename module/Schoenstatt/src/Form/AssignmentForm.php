@@ -76,6 +76,22 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
         ]);
 
         $this->add([
+            'name' => 'startDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the start date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
+            ],
+        ]);
+
+        $this->add([
             'name' => 'endDate',
             'type' => 'Date',
             'options' => [
@@ -86,6 +102,22 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                 'min' => '1900-01-01',
                 'step' => 'any',
                 'required' => false,
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'endDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the end date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
             ],
         ]);
 
@@ -144,6 +176,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
+            'startDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
             'endDate' => [
                 'required' => false,
                 'filters' => [
@@ -153,6 +186,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
+            'endDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
         ];
     }
 

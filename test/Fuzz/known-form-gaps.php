@@ -139,7 +139,7 @@ return [
     // filters/validators keys in an element definition, which Laminas\Form\Factory discards without a
     // word. The field looks protected in the source and is completely unvalidated.
     'deadElementKeys' => [
-        'module/Books/src/Form/EventForm.php:267 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
+        'module/Books/src/Form/EventForm.php:283 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
         'module/Schoenstatt/src/Form/PersonForm.php:471 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
     ],
 
@@ -184,16 +184,18 @@ return [
         'Books\\Form\\CheckinForm::<combination> throws InvalidArgumentException',
         'Books\\Form\\CheckinForm::withinLibraryIds throws InvalidArgumentException',
         'Books\\Form\\CheckoutForm::withinLibraryIds throws InvalidArgumentException',
+        'Books\\Form\\InactivationForm::<combination> throws InvalidArgumentException',
         'Books\\Form\\InactivationForm::withinLibraryIds throws InvalidArgumentException',
         'Books\\Form\\MassCheckoutFieldset::<combination> throws InvalidArgumentException',
         'Books\\Form\\MassCheckoutFieldset::withinLibraryIds throws InvalidArgumentException',
+        'Schoenstatt\\Form\\AssignmentForm::<combination> throws TypeError',
         'Schoenstatt\\Form\\AssignmentForm::associationId throws TypeError',
         'Schoenstatt\\Form\\AssociationForm::<combination> throws TypeError',
         'Schoenstatt\\Form\\AssociationForm::phone1Label throws TypeError',
         'Schoenstatt\\Form\\AssociationForm::phone2Label throws TypeError',
         'Schoenstatt\\Form\\AssociationForm::phone3Label throws TypeError',
+        'Schoenstatt\\Form\\EditAssignmentForm::<combination> throws TypeError',
         'Schoenstatt\\Form\\EditAssignmentForm::associationId throws TypeError',
-        'Schoenstatt\\Form\\PersonForm::<combination> throws Laminas\\Filter\\Exception\\RuntimeException',
         'Schoenstatt\\Form\\PersonForm::<combination> throws Laminas\\Form\\Exception\\InvalidArgumentException',
         'Schoenstatt\\Form\\PersonForm::<combination> throws TypeError',
         'Schoenstatt\\Form\\PersonForm::contactNotes throws TypeError',

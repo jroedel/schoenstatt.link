@@ -486,6 +486,22 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
             ],
         ]);
+
+        $this->add([
+            'name' => 'birthDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the birth date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
+            ],
+        ]);
         $this->add([
             'name' => 'priestDate',
             'type' => 'Date',
@@ -499,6 +515,22 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
             ],
         ]);
+
+        $this->add([
+            'name' => 'priestDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the ordination date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
+            ],
+        ]);
         $this->add([
             'name' => 'bishopDate',
             'type' => 'Date',
@@ -510,6 +542,22 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'min' => '1900-01-01',
                 'step' => 'any',
                 'required' => false,
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'bishopDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the episcopal ordination date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
             ],
         ]);
         $this->add([
@@ -570,6 +618,22 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                 'min' => '1900-01-01',
                 'step' => 'any',
                 'required' => false,
+            ],
+        ]);
+
+        $this->add([
+            'name' => 'deathDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the death date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
             ],
         ]);
 
@@ -1053,6 +1117,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
+            'birthDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
             'priestDate' => [
                 'required' => false,
                 'filters' => [
@@ -1062,6 +1127,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
+            'priestDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
             'bishopDate' => [
                 'required' => false,
                 'filters' => [
@@ -1071,6 +1137,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
+            'bishopDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
             'nameDay' => [
                 'required' => false,
                 'filters' => [
@@ -1086,6 +1153,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'SionModel\Validator\ParseableDate'],
                 ],
             ],
+            'deathDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
 
 /**
  * Private info input filter

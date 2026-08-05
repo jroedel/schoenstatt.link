@@ -44,6 +44,7 @@ echo $this->formRow($form->get('eventsHuman'));
 // echo $this->formRow($form->get('eventsJson'));
 $this->formSelect()->setTranslatorEnabled(true);
 echo $this->formRow($form->get('foundationDate'));
+echo $this->formRow($form->get('foundationDatePrecision'));
 //echo $this->formRow($form->get('suppressionDate'));?>
 <div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> <?php echo $this->translate("Learn Markdown in 60 seconds");?></a></div>
 <?php echo $this->formRow($form->get('publicNotes'));
