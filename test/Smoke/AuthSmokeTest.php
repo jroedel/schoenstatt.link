@@ -316,7 +316,6 @@ class AuthSmokeTest extends SmokeTestCase
         }
         $body = curl_exec($ch);
         $error = curl_error($ch);
-        curl_close($ch);
 
         if (false === $body) {
             $this->fail("Mailpit request to $path failed: $error — is the mailpit container up?");

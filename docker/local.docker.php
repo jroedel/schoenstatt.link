@@ -22,7 +22,15 @@ return [
         'database' => 'ourlink_db1',
         'username' => 'schoenstatt',
         'password' => 'schoenstatt',
-        'driver_options' => [\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;'],
+        //PHP 8.5 deprecates PDO::MYSQL_ATTR_INIT_COMMAND in favour of
+        //Pdo\Mysql::ATTR_INIT_COMMAND, which does not exist before 8.4 — and
+        //this capsule can still be switched down to 7.4 for bisecting. Both
+        //spellings are the same integer, so the check is only about not emitting
+        //a deprecation on the newer rungs.
+        'driver_options' => [
+            (class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND)
+                => 'SET NAMES UTF8;',
+        ],
     ],
     'view_manager' => [
         'display_not_found_reason' => true,

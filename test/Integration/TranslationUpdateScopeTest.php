@@ -207,7 +207,6 @@ class TranslationUpdateScopeTest extends TestCase
     public function testTheRollbackCoversTheWrite(): void
     {
         $property = new \ReflectionProperty(TranslationsTable::class, 'adapter');
-        $property->setAccessible(true);
 
         self::assertSame(
             $this->adapter,

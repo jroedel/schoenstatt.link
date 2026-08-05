@@ -341,7 +341,6 @@ function httpRequest(string $method, string $path, string $jar, ?array $postFiel
         'redirect' => (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL),
         'body' => (string) $body,
     ];
-    curl_close($ch);
     return $result;
 }
 
@@ -350,7 +349,6 @@ function rawHttp(string $url): string
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15]);
     $body = curl_exec($ch);
-    curl_close($ch);
     return is_string($body) ? $body : '';
 }
 
