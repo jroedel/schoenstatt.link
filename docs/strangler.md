@@ -106,20 +106,33 @@ smuggle a `Set-Cookie` past the consent gate.
 
 ## Why there is no FrameworkBundle
 
-`symfony/framework-bundle` cannot be installed here today:
+`symfony/framework-bundle` cannot be installed here today, and the reason is
+laminas-mvc itself — **not** bjy-authorize, which is what this section said
+before 2026-08-05:
 
 ```
-symfony/framework-bundle          → symfony/cache → psr/cache ^2|^3
-laminas/laminas-cache 3.14        → psr/cache ^1          ← the pin
-laminas/laminas-cache 4.3         → psr/cache ^2|^3       ← lifts it
-kokspflanze/bjy-authorize 2.4.4   → laminas-cache ^2.13.2 || ^3.1.0   ← caps it back
+symfony/framework-bundle           → symfony/cache → psr/cache ^2|^3
+laminas/laminas-cache 3.14                         → psr/cache ^1      ← the pin
+laminas/laminas-cache 4.3                          → psr/cache ^2|^3   ← lifts it
+laminas/laminas-cache 4.3          → laminas-servicemanager ^4.5
+laminas/laminas-mvc 3.8            → laminas-servicemanager ^3.20.0    ← the gate
+kokspflanze/bjy-authorize 2.4.4    → laminas-cache ^2.13.2 || ^3.1.0   ← also caps it
 ```
 
-2.4.4 is the final release of that line, so no upstream fix is coming. The bundle
-is gated behind retiring bjy-authorize (the Security-component migration) or
-forking its `composer.json`. `symfony/http-kernel` and `symfony/routing` need no
-`psr/cache` at all, which is why the kernel is hand-wired from components
-instead.
+bjy-authorize really does cap `laminas-cache`, and 2.4.4 really is the last
+release of that line — but it is one of *two* caps. Retiring it leaves laminas-mvc
+forbidding servicemanager 4, so `laminas-cache 4` stays uninstallable, `psr/cache`
+stays at 1, and the bundle stays out. laminas-mvc requires `^3.20.0` in every
+version, including 3.9.x-dev and 4.0.x-dev.
+
+So the bundle is gated on **finishing this migration**, not on a step before it.
+Retiring bjy-authorize is still worth doing on its own merits — it is abandoned
+and all site authorization runs through it — but it should not be sequenced as
+the thing that opens this gate. Full measurement in [php-85.md](php-85.md),
+which records the same conclusion for PHP 8.5.
+
+`symfony/http-kernel` and `symfony/routing` need no `psr/cache` at all, which is
+why the kernel is hand-wired from components instead.
 
 When that gate opens, `App\Kernel` is what FrameworkBundle replaces. The routes
 and everything behind them carry over unchanged, because `LegacyBridge` and
