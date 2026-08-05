@@ -57,7 +57,6 @@ class SymfonyKernelSmokeTest extends SmokeTestCase
             CURLOPT_TIMEOUT => 30,
         ]);
         $raw = (string) curl_exec($curl);
-        curl_close($curl);
 
         $this->assertStringStartsWith('HTTP/1.1', $raw, 'status line: ' . strtok($raw, "\r\n"));
     }

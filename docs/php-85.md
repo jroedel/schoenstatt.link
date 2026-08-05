@@ -8,15 +8,38 @@ Measured 2026-08-05 against the installed tree and Packagist.
 
 ## Where things stand
 
-- **The capsule builds and runs PHP 8.5.9.** `PHP_VERSION=8.5` in `.env`, with
-  `APCU_VERSION=5.1.24`; intl, pdo_mysql, zip, gd, apcu and OPcache all load.
-  See the Dockerfile for the three base-image changes that had to be absorbed
-  first.
+- **The capsule runs PHP 8.5.9, and the whole suite is green on it**: 432 tests
+  across unit (109), integration (222), fuzz (18) and smoke (83), plus PHPStan
+  clean. `PHP_VERSION=8.5` in `.env` with `APCU_VERSION=5.1.24`; intl, pdo_mysql,
+  zip, gd, apcu and OPcache all load. See the Dockerfile for the three
+  base-image changes that had to be absorbed first.
+- **No first-party code emits a deprecation on 8.5.** Three did and were fixed:
+  `curl_close()` (no effect since 8.0) in the smoke helpers and
+  `tools/form-regression.php`; `ReflectionMethod`/`ReflectionProperty::setAccessible()`
+  (no effect since 8.1) in two integration tests; and
+  `PDO::MYSQL_ATTR_INIT_COMMAND`, now written as
+  `class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND`
+  because the replacement class does not exist before 8.4 and the capsule can
+  still be switched down to 7.4. **The live `config/autoload/local.php` on each
+  machine and on the server carries its own copy of that line** — it is
+  gitignored, so only `local.php.dist` and `docker/local.docker.php` could be
+  updated here.
+- **Four deprecations remain and all are vendor**, in
+  `laminas-cache 3.14`'s `AbstractAdapter`: `SplObjectStorage::attach()`,
+  `contains()` and `detach()`, all deprecated in 8.5 in favour of the
+  `offset*()` forms. They are warnings today and breakage on PHP 9. The fix is
+  `laminas-cache 4`, which cannot be installed — see the gate below. This is the
+  most concrete cost of staying on laminas-mvc that we have measured.
 - **`require.php` is `~8.4.0 || ~8.5.0`** — the application's own code targets
-  both.
+  both, and the lockfile records the same. No package versions moved with it.
 - **`config.platform.php` stays at production's version (8.4.24).** This is
   deliberate and is explained below. It is not an oversight, and raising it
   breaks `composer install` outright.
+- **The capsule is therefore ahead of production**, which still serves 8.4.24.
+  That is a deliberate trade: it is what tests 8.5 continuously, and the cost is
+  that the capsule no longer reproduces production exactly. Switching back is
+  `PHP_VERSION=8.4` in `.env` plus a rebuild, and it is the first thing to do
+  before concluding anything from a local reproduction of a live bug.
 
 ## The ceiling
 
