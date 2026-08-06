@@ -176,7 +176,8 @@ function laminasRoutePaths(array $config): array
 }
 
 /**
- * The routes the Symfony kernel serves itself, read from config/symfony/routes.php.
+ * The routes the Symfony kernel serves itself, read from config/symfony/routes.php,
+ * each with the authorization it declares.
  *
  * This tool exists to be the authorization oracle, and a ported route would
  * otherwise make it go blind at the worst possible moment: the route vanishes
@@ -184,11 +185,25 @@ function laminasRoutePaths(array $config): array
  * "unguarded". Reading the Symfony collection keeps every path accounted for by
  * one of the two front controllers.
  *
+ * Since 2026-08-06 a Symfony-served route is not merely *listed* here but
+ * *checked*: App\Authorization\RouteGuard runs on kernel.request and asks the ACL
+ * about a resource the route names in its own defaults, so the same guard entry can
+ * govern both front controllers. Reading that declaration is what turns this section
+ * from an inventory into part of the authorization picture — and it is why a route
+ * that declares nothing has to be reported loudly rather than quietly listed. That
+ * is the silent-bypass shape: the page keeps working and simply admits everyone.
+ *
  * The catch-all (App\Http\LegacyBridge) is excluded from the matcher: it claims
- * every path by design, so leaving it in would report the entire site as ported.
+ * every path by design, so leaving it in would report the entire site as ported. It
+ * also, correctly, declares no RouteAccess — laminas-mvc runs its own guard behind
+ * it — so excluding it here also keeps it out of the undeclared warning.
  *
  * @return array{
- *     routes: array<string, array{path: string, controller: string}>,
+ *     routes: array<string, array{
+ *         path: string,
+ *         controller: string,
+ *         access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
+ *     }>,
  *     matcher: Symfony\Component\Routing\Matcher\UrlMatcher|null,
  *     available: bool
  * }
@@ -217,7 +232,13 @@ function symfonyRoutes(): array
         if ($controller === 'App\Http\LegacyBridge') {
             continue;
         }
-        $routes[(string) $name] = ['path' => $route->getPath(), 'controller' => $controller];
+        $routes[(string) $name] = [
+            'path'       => $route->getPath(),
+            'controller' => $controller,
+            'access'     => describeRouteAccess(
+                $route->getDefault(App\Authorization\RouteAccess::ATTRIBUTE)
+            ),
+        ];
         $ported->add((string) $name, $route);
     }
     ksort($routes);
@@ -233,6 +254,40 @@ function symfonyRoutes(): array
 }
 
 /**
+ * Flatten an App\Authorization\RouteAccess into plain data.
+ *
+ * The three kinds are the three states a reviewer has to be able to tell apart:
+ *
+ *   - `acl`         the route asks the ACL about `resource`, which is the same
+ *                   resource the laminas guard uses. One source of truth.
+ *   - `open`        no check, declared on purpose, with `reason` recorded.
+ *   - `undeclared`  nothing at all. App\Authorization\RouteGuard throws
+ *                   UndeclaredRouteAccess when such a route is reached, so this
+ *                   cannot reach production silently — but it must be visible here
+ *                   too, because "it 500s in development" is a weaker guarantee than
+ *                   "the snapshot diff shows it".
+ *
+ * @return array{kind: string, resource: string|null, reason: string|null, denial_style: string}
+ */
+function describeRouteAccess(mixed $access): array
+{
+    if (! $access instanceof App\Authorization\RouteAccess) {
+        return ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'];
+    }
+
+    return [
+        'kind'         => $access->isOpen() ? 'open' : 'acl',
+        'resource'     => $access->resource,
+        'reason'       => $access->openReason,
+        // Declared per route rather than sniffed from Accept, so it belongs in the
+        // snapshot: a machine endpoint that starts answering 302 instead of 401 is a
+        // caller-visible change. An open route never denies, so reporting a style for
+        // it would put a value in the snapshot that nothing reads.
+        'denial_style' => $access->isOpen() ? 'n/a' : strtolower($access->denialStyle->name),
+    ];
+}
+
+/**
  * Which laminas routes a Symfony route now answers instead.
  *
  * Matched with the real UrlMatcher rather than by comparing strings, so the
@@ -240,7 +295,11 @@ function symfonyRoutes(): array
  * would.
  *
  * @param array<string, string|null> $laminasPaths
- * @return array<string, array{path: string, symfony_route: string}> laminas name => what shadows it
+ * @return array<string, array{
+ *     path: string,
+ *     symfony_route: string,
+ *     access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
+ * }> laminas name => what shadows it, and what that shadow checks instead
  */
 function shadowedBySymfony(array $laminasPaths): array
 {
@@ -260,9 +319,15 @@ function shadowedBySymfony(array $laminasPaths): array
         } catch (Throwable) {
             continue;
         }
+        $symfonyRoute = (string) ($match['_route'] ?? '?');
         $shadowed[(string) $name] = [
             'path'          => $path,
-            'symfony_route' => (string) ($match['_route'] ?? '?'),
+            'symfony_route' => $symfonyRoute,
+            // Carried along so the warning below can ask the question that actually
+            // matters: not "does the laminas guard still run" (it never does) but
+            // "does the ported route check the same resource it used to".
+            'access'        => $symfony['routes'][$symfonyRoute]['access']
+                ?? ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'],
         ];
     }
     ksort($shadowed);
@@ -776,25 +841,88 @@ if ($hierarchy['available']) {
     }
 }
 
-// A ported route's laminas guard entry stops applying, because a Symfony-served
-// request never boots laminas-mvc and so never runs the guard. For the endpoints
-// ported so far that is deliberate and costs nothing — their real check is in the
-// controller and their guard admits everyone anyway. It is worth *warning* about
-// only when the shadowed guard actually restricted something: then authorization
-// silently stopped applying, and nothing else would fail.
+// ---------------------------------------------------------------------------
+// Symfony-served routes: is each one actually checked, and against what?
+// ---------------------------------------------------------------------------
+
+// Every non-legacy route in config/symfony/routes.php must say something. Silence is
+// the silent-bypass bug this whole section exists to catch, so it is reported first
+// and in the strongest terms available here. App\Authorization\RouteGuard also throws
+// on such a route at runtime; this makes it visible in the committed snapshot instead
+// of only in a stack trace someone has to provoke.
+foreach ($symfony['routes'] as $symfonyRoute => $info) {
+    if ($info['access']['kind'] !== 'undeclared') {
+        continue;
+    }
+    $warnings[] = sprintf(
+        'SILENT BYPASS RISK: the Symfony route "%s" (%s) declares NO authorization. A Symfony-served '
+        . 'request never boots laminas-mvc, so no bjyauthorize guard runs for it — a route with no '
+        . 'declaration is one nobody has decided about. Give it '
+        . 'RouteAccess::guardedBy(\'route/<laminas-route-name>\') or, deliberately, '
+        . 'RouteAccess::openToEveryone(\'<why>\') in config/symfony/routes.php.',
+        $symfonyRoute,
+        $info['path']
+    );
+}
+
+// A resource nothing defines is not a harmless typo. Authorize::isAllowed() catches
+// the ACL registry's InvalidArgumentException and answers false, so the route denies
+// *everyone* — including the author, who then goes looking in the wrong file. The
+// direction is safe; the silence is not.
+foreach ($symfony['routes'] as $symfonyRoute => $info) {
+    $resource = $info['access']['resource'];
+    if ($resource === null) {
+        continue;
+    }
+    if (str_starts_with($resource, 'route/') && isset($rows[substr($resource, 6)])) {
+        continue;
+    }
+    if (array_key_exists($resource, $resourceInfo['resources'])) {
+        continue;
+    }
+    $warnings[] = sprintf(
+        'The Symfony route "%s" (%s) is checked against the ACL resource "%s", which no guard entry and no '
+        . 'configured resource defines. Authorize::isAllowed() answers false for an unknown resource, so '
+        . 'this route currently denies everyone. Check the spelling against the guard entries above — or, '
+        . 'if the resource comes from a provider that builds it from the database at runtime '
+        . '(see dynamic_providers), this warning is the price of that provider being invisible here.',
+        $symfonyRoute,
+        $info['path'],
+        $resource
+    );
+}
+
+// The laminas guard on a shadowed route never runs — a Symfony-served request never
+// boots laminas-mvc. Until 2026-08-06 that meant any restricted route was unportable
+// and this loop warned about every one of them. Now the question is narrower and more
+// useful: does the ported route check the *same* resource its laminas guard did? If
+// it does, nothing was lost and there is nothing to say. If it declares openness, or
+// names some other resource, then a page that used to be restricted is no longer
+// restricted in the same way, and that is exactly the change nothing else would fail
+// on.
 foreach ($shadowed as $laminasRoute => $info) {
     $row = $rows[$laminasRoute] ?? null;
     if ($row === null || $row['public']) {
         continue;
     }
+    $expected = 'route/' . $laminasRoute;
+    if ($info['access']['resource'] === $expected) {
+        continue;
+    }
     $warnings[] = sprintf(
-        'Route "%s" is now served by the Symfony route "%s" (%s), so its bjyauthorize guard — which '
-        . 'restricted it to %s — no longer runs: a Symfony-served request never boots laminas-mvc. Move the '
-        . 'check into the ported controller, or unport the route.',
+        'Route "%s" (%s) is now served by the Symfony route "%s", whose bjyauthorize guard restricted it '
+        . 'to %s — and the ported route %s instead of checking "%s". A Symfony-served request never runs '
+        . 'the laminas guard, so that restriction is not being enforced. Declare '
+        . 'RouteAccess::guardedBy(\'%s\'), or unport the route.',
         $laminasRoute,
-        $info['symfony_route'],
         $info['path'],
-        implode(', ', $row['effective_roles']) ?: '(nobody)'
+        $info['symfony_route'],
+        implode(', ', $row['effective_roles']) ?: '(nobody)',
+        $info['access']['kind'] === 'acl'
+            ? sprintf('checks "%s"', (string) $info['access']['resource'])
+            : ($info['access']['kind'] === 'open' ? 'is declared open to everyone' : 'declares nothing'),
+        $expected,
+        $expected
     );
 }
 
@@ -804,6 +932,14 @@ if ($unknownRoles !== []) {
     $warnings[] = 'These roles are named by guard entries or rules but do not exist in the role table: '
         . implode(', ', $unknownRoles)
         . '. Acl::setRule throws for an unknown role, so a live one of these fatals every request.';
+}
+
+// How the ported routes account for themselves. The identity that must hold is
+// checked below: acl + open + undeclared = symfony_served_routes, and undeclared must
+// be zero.
+$symfonyByKind = ['acl' => 0, 'open' => 0, 'undeclared' => 0];
+foreach ($symfony['routes'] as $info) {
+    $symfonyByKind[$info['access']['kind']] = ($symfonyByKind[$info['access']['kind']] ?? 0) + 1;
 }
 
 $counts = [
@@ -818,6 +954,10 @@ $counts = [
     'routes_shadowed_by_symfony' => count($shadowed),
     'rules_from_rule_config'   => count($ruleInfo['rules']),
     'symfony_served_routes'    => count($symfony['routes']),
+    'symfony_routes_acl_checked' => $symfonyByKind['acl'],
+    'symfony_routes_open'        => $symfonyByKind['open'],
+    // Must be 0. Anything else is a route nobody has decided about.
+    'symfony_routes_undeclared'  => $symfonyByKind['undeclared'],
     'total_routes'             => count($routes),
     'unguarded_routes'         => count($unguarded),
     // The subset that is a real endpoint: reachable by nobody rather than merely
@@ -835,6 +975,21 @@ if ($counts['guarded_routes_existing'] + $counts['unguarded_routes'] !== $counts
         $counts['guarded_routes_existing'],
         $counts['unguarded_routes'],
         $counts['total_routes']
+    );
+}
+
+// The same assertion for the other front controller: every Symfony-served route is
+// either ACL-checked or deliberately open, and nothing falls between the two.
+if (
+    $counts['symfony_routes_acl_checked'] + $counts['symfony_routes_open']
+    + $counts['symfony_routes_undeclared'] !== $counts['symfony_served_routes']
+) {
+    $warnings[] = sprintf(
+        'COUNT IDENTITY BROKEN: symfony acl-checked %d + open %d + undeclared %d != symfony served %d.',
+        $counts['symfony_routes_acl_checked'],
+        $counts['symfony_routes_open'],
+        $counts['symfony_routes_undeclared'],
+        $counts['symfony_served_routes']
     );
 }
 
@@ -913,6 +1068,11 @@ if ($format === 'json') {
                 // 43 of them per entry here would only bury the diff.
                 'was_guarded'   => isset($rows[$name]),
                 'was_public'    => $rows[$name]['public'] ?? null,
+                // What the ported route checks in the laminas guard's place. Equal to
+                // 'route/' . laminas_route means the restriction carried over intact;
+                // anything else on a non-public route is warned about above.
+                'now_checks'    => $info['access']['resource'],
+                'access_kind'   => $info['access']['kind'],
             ],
             array_keys($shadowed),
             array_values($shadowed)
@@ -932,10 +1092,16 @@ if ($format === 'json') {
                 . 'reachable by nobody. unguarded_routes_matchable is the subset that is a real endpoint; '
                 . 'the rest are Part-route parents with may_terminate false, which can never be matched.',
             'symfony_routes'         => 'Paths the Symfony kernel serves itself (config/symfony/routes.php, '
-                . 'live only where SYMFONY_KERNEL=1 — the capsule, not production yet). None of this file\'s '
-                . 'authorization applies to them: a Symfony-served request never boots laminas-mvc, so no '
-                . 'bjyauthorize guard, no ACL and no identity exist for it. Whatever check the ported '
-                . 'controller makes itself is the whole gate.',
+                . 'live only where SYMFONY_KERNEL=1 — the capsule, not production yet). BjyAuthorize\'s own '
+                . 'guard cannot run for them, because a Symfony-served request never boots laminas-mvc; '
+                . 'App\Authorization\RouteGuard runs on kernel.request instead and asks the ACL about the '
+                . 'resource each route declares in access.resource. That resource is one of THIS file\'s — '
+                . 'route/<laminas-route-name> — so a single guard entry governs both front controllers. '
+                . 'access.kind is "acl" when the route is checked, "open" when it deliberately is not '
+                . '(access.reason says why), and "undeclared" when nobody decided, which is a bug and is '
+                . 'warned about. access.denial_style is how a refusal is shaped: html means 302 to the '
+                . 'sign-in page for an anonymous visitor and 403 with the error page for a signed-in one, '
+                . 'json means 401/403 with a JSON body and no redirect.',
         ],
         'phantom_guard_entries' => $jsonPhantoms,
         'roles'                 => $roleTree,
@@ -1030,29 +1196,85 @@ $o();
 
 // -- Symfony-served routes --------------------------------------------------
 
-$o('## Routes served by the Symfony kernel (nothing in this file applies to them)');
+$o('## Routes served by the Symfony kernel');
 $o();
 $o('These paths are matched by `config/symfony/routes.php` before laminas-mvc is ever started, so');
-$o('**none of the authorization below is in force for them**: no bjyauthorize guard runs, no ACL is');
-$o('built and there is no identity. Whatever check the ported controller makes for itself is the');
-$o('whole gate. They are listed here because the alternative is worse — this tool reads laminas');
-$o('config, so a ported route would otherwise simply disappear from the picture rather than show up');
-$o('as unguarded.');
+$o('`BjyAuthorize\Guard\Route` — a listener on `MvcEvent::EVENT_ROUTE` — never runs for them.');
+$o('`App\Authorization\RouteGuard` runs on `kernel.request` instead, and asks the ACL about a resource');
+$o('**each route declares for itself**. That resource is one of the ones above: `route/<name>`, the');
+$o('same key the laminas guard uses. So the guard entries in this file govern *both* front');
+$o('controllers, and tightening one tightens both.');
+$o();
+$o('Three states, and the third is a bug:');
+$o();
+$o('- **checked** — `RouteAccess::guardedBy(\'route/…\')`. The resource column says what it asks about');
+$o('  and the grant column what that resource allows, copied from the guard table above.');
+$o('- **open** — `RouteAccess::openToEveryone(\'<why>\')`. No check, stated on purpose, reason shown.');
+$o('- **undeclared** — nothing at all. `RouteGuard` throws `UndeclaredRouteAccess` when such a route');
+$o('  is reached, and it is warned about at the top of this file. This is the silent-bypass shape the');
+$o('  tool exists to catch: a route that lost its guard keeps working and simply admits everyone.');
 $o();
 $o('Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).');
 $o('`App\Http\LegacyBridge`, the catch-all that hands everything else to laminas-mvc, is excluded —');
-$o('it matches every path by design.');
+$o('it matches every path by design, and laminas-mvc runs its own guard behind it.');
 $o();
 if ($symfony['routes'] === []) {
     $o('_None._');
 } else {
-    $o('| symfony route | path | controller |');
-    $o('| --- | --- | --- |');
+    $o('| symfony route | path | checked against | who that allows | denial | controller |');
+    $o('| --- | --- | --- | --- | --- | --- |');
     foreach ($symfony['routes'] as $name => $route) {
-        $o('| `' . $name . '` | `' . $route['path'] . '` | `' . $route['controller'] . '` |');
+        $access   = $route['access'];
+        $resource = $access['resource'];
+        if ($access['kind'] === 'undeclared') {
+            $checked = '**UNDECLARED**';
+            $grant   = '**nobody decided — see Warnings**';
+        } elseif ($resource === null) {
+            $checked = '_open_';
+            $grant   = 'everyone — reason below';
+        } else {
+            $checked = '`' . $resource . '`';
+            $guarded = str_starts_with($resource, 'route/') ? ($rows[substr($resource, 6)] ?? null) : null;
+            if ($guarded === null) {
+                $grant = '**no such resource — denies everyone**';
+            } elseif ($guarded['public']) {
+                $grant = '**public** (`null` in its roles)';
+            } else {
+                $grant = implode(', ', $guarded['effective_roles']) ?: '(nobody)';
+            }
+        }
+        $o(sprintf(
+            '| `%s` | `%s` | %s | %s | %s | `%s` |',
+            $name,
+            $route['path'],
+            $checked,
+            $grant,
+            $access['denial_style'],
+            $route['controller']
+        ));
     }
 }
 $o();
+
+// The reasons, out of the table so it stays readable — but in the snapshot, because a
+// reason that stops being true is how an open route becomes a hole.
+$openReasons = [];
+foreach ($symfony['routes'] as $name => $route) {
+    if ($route['access']['kind'] === 'open') {
+        $openReasons[(string) $name] = (string) $route['access']['reason'];
+    }
+}
+if ($openReasons !== []) {
+    $o('#### Why the open ones are open');
+    $o();
+    $o('Each is the string passed to `RouteAccess::openToEveryone()`. Declaring openness is a statement,');
+    $o('not a default, and this is where the statement is reviewed.');
+    $o();
+    foreach ($openReasons as $name => $reason) {
+        $o('- `' . $name . '` — ' . $reason);
+    }
+    $o();
+}
 
 $o('### Laminas routes now shadowed by one of them');
 $o();
@@ -1061,25 +1283,42 @@ $o('by comparing strings. Laminas paths carry no locale prefix here because ther
 $o('config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the');
 $o('Symfony side declares both the bare and the prefixed form.');
 $o();
-$o('The guard column is what bjyauthorize *would* have enforced and no longer does. Where it says');
-$o('public, porting changed nothing about who gets in; anything else is a real change of');
-$o('authorization and is also reported as a warning at the top of this file.');
+$o('The guard column is what bjyauthorize *would* have enforced here and no longer does; the last');
+$o('column is what the ported route checks in its place. Those two agreeing — `route/<the same');
+$o('route>` — is what "porting changed nothing about who gets in" now means. A restricted route whose');
+$o('shadow checks something else, or nothing, is a real change of authorization and is reported as a');
+$o('warning at the top of this file.');
 $o();
 if ($shadowed === []) {
     $o('_None._');
 } else {
-    $o('| laminas route | path | shadowed by | its (now inert) guard |');
-    $o('| --- | --- | --- | --- |');
+    $o('| laminas route | path | shadowed by | its (now inert) guard | what the shadow checks |');
+    $o('| --- | --- | --- | --- | --- |');
     foreach ($shadowed as $laminasRoute => $info) {
         $row = $rows[$laminasRoute] ?? null;
         if ($row === null) {
             $guard = 'no guard entry — was reachable by nobody';
         } elseif ($row['public']) {
-            $guard = '**public** (`null` in its roles), so no change';
+            $guard = '**public** (`null` in its roles)';
         } else {
             $guard = 'restricted to ' . (implode(', ', $row['effective_roles']) ?: '(nobody)');
         }
-        $o(sprintf('| `%s` | `%s` | `%s` | %s |', $laminasRoute, $info['path'], $info['symfony_route'], $guard));
+        $resource = $info['access']['resource'];
+        if ($resource === null) {
+            $now = $info['access']['kind'] === 'open' ? '_open, deliberately_' : '**UNDECLARED**';
+        } elseif ($resource === 'route/' . $laminasRoute) {
+            $now = '`' . $resource . '` — **the same resource**';
+        } else {
+            $now = '`' . $resource . '` — a *different* resource';
+        }
+        $o(sprintf(
+            '| `%s` | `%s` | `%s` | %s | %s |',
+            $laminasRoute,
+            $info['path'],
+            $info['symfony_route'],
+            $guard,
+            $now
+        ));
     }
 }
 $o();

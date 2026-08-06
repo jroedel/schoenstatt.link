@@ -29,9 +29,12 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 3,
+        "routes_shadowed_by_symfony": 4,
         "rules_from_rule_config": 34,
-        "symfony_served_routes": 7,
+        "symfony_routes_acl_checked": 4,
+        "symfony_routes_open": 5,
+        "symfony_routes_undeclared": 0,
+        "symfony_served_routes": 9,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6478,25 +6481,40 @@
     },
     "laminas_routes_shadowed_by_symfony": [
         {
+            "laminas_route": "admin",
+            "path": "/admin",
+            "symfony_route": "admin",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/admin",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "shrines",
             "path": "/shrines",
             "symfony_route": "shrines",
             "was_guarded": true,
-            "was_public": true
+            "was_public": true,
+            "now_checks": "route/shrines",
+            "access_kind": "acl"
         },
         {
             "laminas_route": "sion-model/cache-status",
             "path": "/sm/cache-status",
             "symfony_route": "sm-cache-status",
             "was_guarded": true,
-            "was_public": true
+            "was_public": true,
+            "now_checks": null,
+            "access_kind": "open"
         },
         {
             "laminas_route": "sion-model/clear-persistent-cache",
             "path": "/sm/clear-persistent-cache",
             "symfony_route": "sm-clear-persistent-cache",
             "was_guarded": true,
-            "was_public": true
+            "was_public": true,
+            "now_checks": null,
+            "access_kind": "open"
         }
     ],
     "non_route_resources": {
@@ -6520,7 +6538,7 @@
         "null_role": "A null in a roles list is not the default role: Acl::setRule maps it to the allRoles pseudo-parent, which isAllowed() consults for every identity. It means public.",
         "effective_roles": "declared roles plus all their descendants in the role tree, because a child role inherits its parent's allows. parent_id in user_role points at the more-privileged ancestor.",
         "unguarded_routes": "The Route guard is default-deny: a route with no guard entry is reachable by nobody. unguarded_routes_matchable is the subset that is a real endpoint; the rest are Part-route parents with may_terminate false, which can never be matched.",
-        "symfony_routes": "Paths the Symfony kernel serves itself (config/symfony/routes.php, live only where SYMFONY_KERNEL=1 \u2014 the capsule, not production yet). None of this file's authorization applies to them: a Symfony-served request never boots laminas-mvc, so no bjyauthorize guard, no ACL and no identity exist for it. Whatever check the ported controller makes itself is the whole gate."
+        "symfony_routes": "Paths the Symfony kernel serves itself (config/symfony/routes.php, live only where SYMFONY_KERNEL=1 \u2014 the capsule, not production yet). BjyAuthorize's own guard cannot run for them, because a Symfony-served request never boots laminas-mvc; App\\Authorization\\RouteGuard runs on kernel.request instead and asks the ACL about the resource each route declares in access.resource. That resource is one of THIS file's \u2014 route/<laminas-route-name> \u2014 so a single guard entry governs both front controllers. access.kind is \"acl\" when the route is checked, \"open\" when it deliberately is not (access.reason says why), and \"undeclared\" when nobody decided, which is a bug and is warned about. access.denial_style is how a refusal is shaped: html means 302 to the sign-in page for an anonymous visitor and 403 with the error page for a signed-in one, json means 401/403 with a JSON body and no redirect."
     },
     "phantom_guard_entries": [],
     "roles": {
@@ -7451,33 +7469,95 @@
         }
     ],
     "symfony_routes": {
+        "admin": {
+            "path": "/admin",
+            "controller": "App\\Controller\\AdminController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/admin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "admin.locale": {
+            "path": "/{_locale}/admin",
+            "controller": "App\\Controller\\AdminController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/admin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "health": {
             "path": "/_health",
-            "controller": "App\\Controller\\HealthController"
+            "controller": "App\\Controller\\HealthController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all",
+                "denial_style": "n/a"
+            }
         },
         "shrines": {
             "path": "/shrines",
-            "controller": "App\\Controller\\ShrinesController"
+            "controller": "App\\Controller\\ShrinesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/shrines",
+                "reason": null,
+                "denial_style": "html"
+            }
         },
         "shrines.locale": {
             "path": "/{_locale}/shrines",
-            "controller": "App\\Controller\\ShrinesController"
+            "controller": "App\\Controller\\ShrinesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/shrines",
+                "reason": null,
+                "denial_style": "html"
+            }
         },
         "sm-cache-status": {
             "path": "/sm/cache-status",
-            "controller": "App\\Controller\\CacheStatusController"
+            "controller": "App\\Controller\\CacheStatusController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\\Http\\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer",
+                "denial_style": "n/a"
+            }
         },
         "sm-cache-status.locale": {
             "path": "/{_locale}/sm/cache-status",
-            "controller": "App\\Controller\\CacheStatusController"
+            "controller": "App\\Controller\\CacheStatusController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\\Http\\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer",
+                "denial_style": "n/a"
+            }
         },
         "sm-clear-persistent-cache": {
             "path": "/sm/clear-persistent-cache",
-            "controller": "App\\Controller\\ClearPersistentCacheController"
+            "controller": "App\\Controller\\ClearPersistentCacheController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\\Http\\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer",
+                "denial_style": "n/a"
+            }
         },
         "sm-clear-persistent-cache.locale": {
             "path": "/{_locale}/sm/clear-persistent-cache",
-            "controller": "App\\Controller\\ClearPersistentCacheController"
+            "controller": "App\\Controller\\ClearPersistentCacheController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\\Http\\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer",
+                "denial_style": "n/a"
+            }
         }
     },
     "unguarded_routes": [

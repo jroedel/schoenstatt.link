@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Authorization\RouteGuard;
+use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
 use App\Controller\ShrinesController;
+use App\Http\AuthorizationListener;
 use App\Http\CspListener;
 use App\Http\CspNonce;
 use App\Http\GdprCookieListener;
@@ -71,6 +74,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private Environment $twig;
     private ViewHelpers $viewHelpers;
     private RouteUrl $routeUrl;
+    private RouteGuard $routeGuard;
 
     /**
      * @param array<string, mixed> $appConfig the merged config/application.config.php,
@@ -115,6 +119,15 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         //default priority, i.e. after RouterListener's 32: the locale it reads is a
         //route attribute, so there is nothing to read until routing has happened
         $dispatcher->addListener(KernelEvents::REQUEST, new LocaleListener());
+        //the route guard BjyAuthorize\Guard\Route cannot be here to run. Below
+        //RouterListener because it reads the matched route's own declaration, and
+        //below LocaleListener because a 403 renders Twig and would otherwise
+        //translate against en_US_POSIX. Lazily resolved: see AuthorizationListener.
+        $dispatcher->addListener(
+            KernelEvents::REQUEST,
+            new AuthorizationListener($this->routeGuard(...)),
+            AuthorizationListener::PRIORITY
+        );
         $dispatcher->addListener(KernelEvents::RESPONSE, new ProtocolVersionListener());
         //all three only ever act on a Symfony-served route: on a bridged one
         //laminas-mvc's own listeners and LaminasResponseConverter have already done
@@ -163,7 +176,36 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl()
             ),
+            // The first restricted page, and the only reason to trust
+            // App\Authorization\RouteGuard: a bridge no guarded route exercises
+            // proves nothing. Same three dependencies as the shrines port — the
+            // authorization is entirely in the route declaration, not here.
+            AdminController::class => fn (): AdminController => new AdminController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
         ]);
+    }
+
+    /**
+     * The authorization check for Symfony-served routes, built at most once per
+     * request and only when a request actually reaches the listener.
+     *
+     * Not built where the listener is registered, which happens before the request
+     * exists: routeUrl() reads the request's base URL and would memoize an empty one
+     * for the whole request, quietly stripping the prefix off every link on every
+     * ported page. Twig is handed over as a closure for a smaller version of the same
+     * argument — only the 403 branch renders anything, and /_health should not pay
+     * TwigFactory's cache-writability probe to be told it is public.
+     */
+    private function routeGuard(): RouteGuard
+    {
+        return $this->routeGuard ??= new RouteGuard(
+            $this->laminas(),
+            $this->routeUrl(),
+            $this->twig(...)
+        );
     }
 
     /**
