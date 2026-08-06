@@ -89,6 +89,17 @@ suites run from the superproject working tree.
 
 ## Architecture
 
+- **Two front controllers.** `public/index.php` branches on the `SYMFONY_KERNEL`
+  environment variable: unset/`0` runs `Laminas\Mvc\Application` as it always
+  has, `1` runs `App\Kernel` (symfony/http-kernel, hand-wired — no
+  FrameworkBundle) with a catch-all route delegating every unported path back to
+  the laminas application. **The capsule sets it to `1`; production does not
+  yet.** Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
+  `public/index.php`, or anything about response headers — it records which of
+  the two is live where, what the bridge preserves and why, and how to add a
+  Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
+  itself to PHPStan **level 8** (not the legacy level 0), and its routes are
+  declared in `config/symfony/routes.php`, whose order *is* the migration status.
 - Application modules live in `module/` and are PSR-4 autoloaded via `composer.json`:
   `Application`, `Bible`, `Books`, `JTranslate`, `JUser`, `Schoenstatt`, `SionModel`.
   `SionModel` and the `J*` modules are shared libraries vendored into this repo — changes there may affect other projects.
@@ -100,6 +111,7 @@ suites run from the superproject working tree.
 ## Local environment (Docker time capsule)
 
 - `docker compose up -d` → app at http://localhost:8080 (redirects to `/en/`), Mailpit UI at http://localhost:8025, MariaDB on host port 33306 (`schoenstatt`/`schoenstatt`, db `ourlink_db1`).
+- The capsule serves through the **Symfony** front controller (`SYMFONY_KERNEL=1` in `docker/apache-vhost.conf`); production still serves through the laminas one. Changing the vhost needs `docker compose build && docker compose up -d` — it is `COPY`d into the image, not mounted. Note also that `public/.htaccess` (untracked) sets `APP_ENV=production` and `AllowOverride All` lets it win, so **the capsule runs in production mode** despite the vhost's `SetEnv APP_ENV "development"`.
 - Apache + MariaDB + APCu. **The PHP version is switchable** via `PHP_VERSION`/`APCU_VERSION` in `.env`, then `docker compose build && docker compose up -d`: `8.4`/`5.1.24` matches production as of rung 4b; `8.3`/`5.1.24` and `7.4`/`5.1.22` are the earlier rungs, kept switchable for bisecting (8.3+ needs APCu 5.1.24+). `.env` is gitignored, so every machine sets this for itself. Check which one is live with `docker compose exec -T app php -v` before drawing conclusions from a test run. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
 - Database comes from a 2021-06-24 production dump in `database/dumps/` (gitignored) + `zz-db6.3.sql`. Re-import: `docker compose down -v && docker compose up -d`.
 - `.env` holds HOST_UID/HOST_GID so Apache workers can write to the bind-mounted `data/` dir.
@@ -114,7 +126,7 @@ suites run from the superproject working tree.
   - Before blaming a test, check whether every response is a ~800-byte HTTP 200 — that is the fatal-200 wedge, not a test failure.
 - Beyond smoke, verification is lint + coding standard:
   - Syntax check any file you touch: `php -l path/to/File.php`.
-  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it only covers `config`, `module/{Application,Bible,Books,Schoenstatt}`, and `public/index.php`).
+  - Coding standard: `php composer.phar cs-check` (phpcs, PSR-12 based; see `phpcs.xml` — it covers `src`, `config`, `module/{Application,Bible,Books,Schoenstatt}`, and `public/index.php`). **It already exits non-zero on master** — four pre-existing cosmetic findings, itemized in `docs/BACKLOG.md`. Until they are cleared, check the findings against your own paths rather than trusting the exit status; the host PHP also lacks the tokenizer/xmlwriter/SimpleXML extensions phpcs needs, so run it in the capsule (`docker compose exec -T app php vendor/bin/phpcs`, optionally with a path argument).
   - Auto-fix: `php composer.phar cs-fix` — ask the user before running it broadly.
 - Local dev server: `php composer.phar run serve` (PHP built-in server on 127.0.0.1:8080 serving `public/`).
 - `bin/console` is the headless entry point (symfony/console): it builds the

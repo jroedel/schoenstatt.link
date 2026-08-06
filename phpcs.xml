@@ -26,6 +26,7 @@
     </rule>
 
     <!-- Paths to check -->
+    <file>src</file>
     <file>config</file>
     <file>module/Application</file>
     <file>module/Bible</file>

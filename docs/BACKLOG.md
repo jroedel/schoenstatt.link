@@ -4,13 +4,20 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 (or lives in git); when an item here is done, delete it and record anything
 reusable there instead of accumulating DONE narratives.
 
-State as of 2026-08-04: production runs **PHP 8.4.24** on a current Laminas
-stack with OPcache enabled; master is fully deployed; `composer audit --locked`
-reports zero advisories; 356 tests across three suites, green on 8.4; PHPStan
+State as of 2026-08-05: production runs **PHP 8.4.24** on a current Laminas
+stack with OPcache enabled; master is deployed through the front-controller
+change but **not** through the flag that activates it; `composer audit --locked`
+reports zero advisories; 368 tests across three suites, green on 8.4; PHPStan
 clean at level 0 and running in CI (baseline 26 entries / 34 errors);
 one-command deploy with hooks. First-party code no longer calls
 `getServiceLocator()` anywhere, has no `throw Foo()` missing its `new`, and
 creates no dynamic properties.
+
+**A Symfony kernel now sits in front of laminas-mvc in the capsule**, with a
+catch-all route delegating every unported path back to it — see
+[strangler.md](strangler.md) for the mechanism, the response-conversion rules and
+how to switch front controllers. Production still runs the laminas front
+controller until `SYMFONY_KERNEL=1` is added to its `.htaccess`.
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -20,10 +27,23 @@ laminas-mvc is security-only until 2028-12-31 and will never support PHP 8.5
 forks). Weighed against the criteria — migration cost, support, speed,
 readability — the destination is **Symfony**, reached gradually:
 
-- **Components first, kernel last.** Adopt Symfony components one PR at a time
-  under laminas-mvc (symfony/mailer 7.4 is already in). When the kernel swaps,
-  Symfony runs in front with a catch-all route delegating unmigrated paths to
-  the laminas application, so routes port incrementally.
+- **Components first, kernel last** — done as of 2026-08-05, and the kernel came
+  earlier than "last" implied because it turned out to be cheap: Symfony runs in
+  front with a catch-all delegating unmigrated paths to the laminas application,
+  so routes port one at a time. See [strangler.md](strangler.md). What made it
+  cheap was that the whole Symfony stack here is 7.4 LTS components with no
+  FrameworkBundle — and what makes the bundle unreachable is recorded below,
+  because it is a gate on several other things too.
+- **FrameworkBundle is blocked by bjy-authorize, not by us.** The chain:
+  `framework-bundle → symfony/cache → psr/cache ^2|^3`, while
+  `laminas-cache 3.14 → psr/cache ^1`. laminas-cache 4.3 lifts that pin, but
+  `kokspflanze/bjy-authorize 2.4.4` — the **final** release of a dead line — caps
+  laminas-cache at `^2.13.2 || ^3.1.0`. So the bundle, and with it Symfony's DI
+  compilation, config conventions, Twig/Security/Form bundles and cache
+  component, all sit behind retiring bjy-authorize or forking its
+  `composer.json`. This reprices the authorization migration: it is no longer
+  just "replace an abandoned ACL layer", it is the gate on the Symfony
+  application proper. Decided against a third personal fork for now.
 - **No deadline panic.** laminas-mvc security support and PHP 8.4's security
   window both run to December 2028. Rung 4b (8.4) lands regardless.
 - **Decoupling is the first real work**: SionModel/JUser's ServiceManager
@@ -58,9 +78,27 @@ readability — the destination is **Symfony**, reached gradually:
   cache-size work ([caching.md](caching.md)), but two expunges were observed
   within hours on deploy day — still worth the one ticket.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
+- [ ] **Flip `SYMFONY_KERNEL=1` in production's `.htaccess`** once the capsule has
+  soaked. The code is deployed either way; the flag is what activates it, and
+  reverting is removing the line plus an Apache reload — no deploy. Watch for:
+  doubled or missing `Set-Cookie` on sign-in, `Cache-Control` on authenticated
+  pages, and the sitemap route's gzip. All three are covered by tests, but the
+  capsule is not behind a TLS-terminating proxy and production is.
+  - While the flag is off, **production and the capsule run different front
+    controllers**. That is deliberate, and it is also the one thing to remember
+    before concluding anything from a local reproduction.
+- [ ] **Two consoles now exist in principle.** `bin/console` builds the *laminas*
+  container and is the deploy's command host; a Symfony console would want the
+  kernel. Nothing needs converging yet — `App\Kernel` contributes no commands —
+  but the moment it does, decide rather than accumulate: most likely `bin/console`
+  registers both, laminas commands from the ServiceManager and Symfony ones from
+  the kernel.
 - [ ] **Next component adoption.** symfony/console and monolog both landed
   before rung 4b closed; `bin/console` is the strangler seam and `laminas-log`
   is gone. Pick the next one deliberately rather than by momentum.
+  - **Now also gated by the FrameworkBundle blocker above** for anything that
+    pulls `symfony/cache` — which is most bundles. Standalone components are
+    still free (that is how http-kernel and routing got in).
   - **Not validator or translation yet**, despite reading as low-coupling:
     `Laminas\Validator` is in 41 files and `Laminas\InputFilter` in 48, and
     laminas-form *requires* laminas-validator regardless — adopting
@@ -278,7 +316,26 @@ readability — the destination is **Symfony**, reached gradually:
 - [ ] Sweep legacy `Zend\*` strings from the merged runtime config as the
   remaining vendor modules are replaced.
 - [ ] Re-track `public/.htaccess` (or a `.htaccess.dist`) — untracked,
-  hand-edited server-side state since 2017.
+  hand-edited server-side state since 2017. Now more than tidiness: it is where
+  `SYMFONY_KERNEL` gets set (see [strangler.md](strangler.md)), so the switch
+  between front controllers lives in a file no commit can describe.
+  - Found 2026-08-05 while wiring that flag: because `AllowOverride All` is on,
+    `.htaccess`'s `SetEnv "APP_ENV" "production"` **wins inside the capsule too**,
+    which makes `docker/apache-vhost.conf`'s `SetEnv APP_ENV "development"` dead
+    config. So the capsule has always run in production mode — `display_errors`
+    off included. Whether to change that is a real decision (the capsule's
+    error-page behaviour would change), which is why it was only measured, not
+    fixed.
+- [ ] **`cs-check` is already red on master**, and was before the strangler work
+  — measured 2026-08-05. Four findings, none of them in code touched recently:
+  `module/Schoenstatt/view/schoenstatt/assignments/edit.phtml` (closing brace
+  indent + a 132-char line), `…/assignments/fields-partial.phtml` (136-char line),
+  `…/roles/fields-partial.phtml` (header blocks), and `public/index.php` (the
+  file-level docblock sits after the `use` statements, which PSR-12 forbids —
+  verified present on master's copy, so not caused by the new front controller).
+  Three are auto-fixable; the docblock one wants a human. Until this is cleared,
+  `cs-check`'s exit status carries no signal, which is worse than the four
+  cosmetic errors.
 - [ ] Production's server-side `local.php`: dead `acmailer_options` key
   (harmless), and it still leaks stack traces via its error-display config —
   clean both next time a deploy touches server config.

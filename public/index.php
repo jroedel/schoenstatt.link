@@ -1,7 +1,9 @@
 <?php
 
+use App\Kernel;
 use Laminas\Mvc\Application;
 use Laminas\Stdlib\ArrayUtils;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * This makes our life easier when dealing with paths. Everything is relative
@@ -56,4 +58,25 @@ if ('production' !== (getenv('APP_ENV') ?: 'production')) {
 ini_set('memory_limit', '512M');
 
 // Run the application!
-Application::init($appConfig)->run();
+//
+// Two front controllers live here while the Symfony strangler is young, chosen
+// by the SYMFONY_KERNEL environment variable (Apache SetEnv; see
+// docs/strangler.md). Unset or "0" is the laminas-mvc entry point that has
+// always been here, unchanged. "1" puts the Symfony kernel in front, with a
+// catch-all route delegating every unported path back to that same laminas
+// application — so the observable behaviour is meant to be identical, and the
+// smoke suite is what says whether it is.
+//
+// The variable, rather than a config key, because this branch has to be taken
+// before any configuration is loaded; and an environment variable makes
+// reverting production an .htaccess edit rather than a deploy, which matters
+// while phploy still has its mid-deploy broken window.
+if ('1' === (string) (getenv('SYMFONY_KERNEL') ?: '0')) {
+    $kernel   = new Kernel($appConfig);
+    $request  = Request::createFromGlobals();
+    $response = $kernel->handle($request);
+    $response->send();
+    $kernel->terminate($request, $response);
+} else {
+    Application::init($appConfig)->run();
+}

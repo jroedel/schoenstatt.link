@@ -59,7 +59,12 @@
         "laminas/laminas-mvc-plugin-flashmessenger": "^1.2",
         "laminas/laminas-math": "^3.8.1",
         "symfony/console": "^7.3",
-        "monolog/monolog": "^3.10"
+        "monolog/monolog": "^3.10",
+        "symfony/http-kernel": "^7.4",
+        "symfony/routing": "^7.4",
+        "symfony/http-foundation": "^7.4",
+        "symfony/error-handler": "^7.4",
+        "symfony/event-dispatcher": "^7.4"
     },
     "require-dev": {
         "laminas/laminas-developer-tools": "^2.10",
@@ -114,6 +119,7 @@
     },
     "autoload": {
         "psr-4": {
+            "App\\": "src/",
             "Application\\": "module/Application/src/",
             "Bible\\": "module/Bible/src/",
             "Books\\": "module/Books/src/",
