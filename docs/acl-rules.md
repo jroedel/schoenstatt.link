@@ -47,37 +47,62 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 3 |
+| routes shadowed by symfony | 4 |
 | rules from rule config | 34 |
-| symfony served routes | 7 |
+| symfony routes acl checked | 4 |
+| symfony routes open | 5 |
+| symfony routes undeclared | 0 |
+| symfony served routes | 9 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
 
 `guarded routes existing` + `unguarded routes` = `total routes` (166 + 25 = 191). Phantom entries are excluded because they are not routes.
 
-## Routes served by the Symfony kernel (nothing in this file applies to them)
+## Routes served by the Symfony kernel
 
 These paths are matched by `config/symfony/routes.php` before laminas-mvc is ever started, so
-**none of the authorization below is in force for them**: no bjyauthorize guard runs, no ACL is
-built and there is no identity. Whatever check the ported controller makes for itself is the
-whole gate. They are listed here because the alternative is worse — this tool reads laminas
-config, so a ported route would otherwise simply disappear from the picture rather than show up
-as unguarded.
+`BjyAuthorize\Guard\Route` — a listener on `MvcEvent::EVENT_ROUTE` — never runs for them.
+`App\Authorization\RouteGuard` runs on `kernel.request` instead, and asks the ACL about a resource
+**each route declares for itself**. That resource is one of the ones above: `route/<name>`, the
+same key the laminas guard uses. So the guard entries in this file govern *both* front
+controllers, and tightening one tightens both.
+
+Three states, and the third is a bug:
+
+- **checked** — `RouteAccess::guardedBy('route/…')`. The resource column says what it asks about
+  and the grant column what that resource allows, copied from the guard table above.
+- **open** — `RouteAccess::openToEveryone('<why>')`. No check, stated on purpose, reason shown.
+- **undeclared** — nothing at all. `RouteGuard` throws `UndeclaredRouteAccess` when such a route
+  is reached, and it is warned about at the top of this file. This is the silent-bypass shape the
+  tool exists to catch: a route that lost its guard keeps working and simply admits everyone.
 
 Live only where `SYMFONY_KERNEL=1`: the capsule today, production not yet (docs/strangler.md).
 `App\Http\LegacyBridge`, the catch-all that hands everything else to laminas-mvc, is excluded —
-it matches every path by design.
+it matches every path by design, and laminas-mvc runs its own guard behind it.
 
-| symfony route | path | controller |
-| --- | --- | --- |
-| `health` | `/_health` | `App\Controller\HealthController` |
-| `shrines` | `/shrines` | `App\Controller\ShrinesController` |
-| `shrines.locale` | `/{_locale}/shrines` | `App\Controller\ShrinesController` |
-| `sm-cache-status` | `/sm/cache-status` | `App\Controller\CacheStatusController` |
-| `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | `App\Controller\CacheStatusController` |
-| `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | `App\Controller\ClearPersistentCacheController` |
-| `sm-clear-persistent-cache.locale` | `/{_locale}/sm/clear-persistent-cache` | `App\Controller\ClearPersistentCacheController` |
+| symfony route | path | checked against | who that allows | denial | controller |
+| --- | --- | --- | --- | --- | --- |
+| `admin` | `/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
+| `admin.locale` | `/{_locale}/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
+| `health` | `/_health` | _open_ | everyone — reason below | n/a | `App\Controller\HealthController` |
+| `shrines` | `/shrines` | `route/shrines` | **public** (`null` in its roles) | html | `App\Controller\ShrinesController` |
+| `shrines.locale` | `/{_locale}/shrines` | `route/shrines` | **public** (`null` in its roles) | html | `App\Controller\ShrinesController` |
+| `sm-cache-status` | `/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
+| `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
+| `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
+| `sm-clear-persistent-cache.locale` | `/{_locale}/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
+
+#### Why the open ones are open
+
+Each is the string passed to `RouteAccess::openToEveryone()`. Declaring openness is a statement,
+not a default, and this is where the statement is reviewed.
+
+- `health` — shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all
+- `sm-cache-status` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
+- `sm-cache-status.locale` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
+- `sm-clear-persistent-cache` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
+- `sm-clear-persistent-cache.locale` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
 
 ### Laminas routes now shadowed by one of them
 
@@ -86,15 +111,18 @@ by comparing strings. Laminas paths carry no locale prefix here because there is
 config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the
 Symfony side declares both the bare and the prefixed form.
 
-The guard column is what bjyauthorize *would* have enforced and no longer does. Where it says
-public, porting changed nothing about who gets in; anything else is a real change of
-authorization and is also reported as a warning at the top of this file.
+The guard column is what bjyauthorize *would* have enforced here and no longer does; the last
+column is what the ported route checks in its place. Those two agreeing — `route/<the same
+route>` — is what "porting changed nothing about who gets in" now means. A restricted route whose
+shadow checks something else, or nothing, is a real change of authorization and is reported as a
+warning at the top of this file.
 
-| laminas route | path | shadowed by | its (now inert) guard |
-| --- | --- | --- | --- |
-| `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles), so no change |
-| `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles), so no change |
-| `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles), so no change |
+| laminas route | path | shadowed by | its (now inert) guard | what the shadow checks |
+| --- | --- | --- | --- | --- |
+| `admin` | `/admin` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
+| `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles) | `route/shrines` — **the same resource** |
+| `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles) | _open, deliberately_ |
+| `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles) | _open, deliberately_ |
 
 ## Role hierarchy
 

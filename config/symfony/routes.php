@@ -8,6 +8,16 @@
  * above the catch-all is Symfony's; everything else still belongs to
  * laminas-mvc. Porting a route means moving one line up past `legacy`.
  *
+ * Every route here also declares **who may reach it**, as an
+ * App\Authorization\RouteAccess in its defaults. That is not decoration: a
+ * Symfony-served route never boots laminas-mvc, so BjyAuthorize\Guard\Route never
+ * runs for it, and before App\Authorization\RouteGuard existed a ported guarded
+ * route admitted everyone while continuing to look perfectly healthy. The
+ * declaration names an ACL resource the laminas guards already define, so one guard
+ * entry governs both front controllers — and a route that declares nothing raises
+ * App\Authorization\UndeclaredRouteAccess rather than being assumed either way.
+ * `tools/acl-table.php` prints the whole picture and warns on a gap.
+ *
  * Deliberately outside config/autoload/, which laminas-mvc glob-loads: this file
  * is not application config, and returning a RouteCollection into that merge
  * would break it.
@@ -15,6 +25,8 @@
 
 declare(strict_types=1);
 
+use App\Authorization\RouteAccess;
+use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
@@ -26,7 +38,16 @@ use Symfony\Component\Routing\RouteCollection;
 
 $routes = new RouteCollection();
 
-$routes->add('health', new Route('/_health', ['_controller' => HealthController::class]));
+// The one route with no laminas twin at all: it predates the strangler and exists to
+// answer a load balancer. There is no `route/…` resource to consult, so openness is
+// stated rather than inferred.
+$routes->add('health', new Route('/_health', [
+    '_controller'          => HealthController::class,
+    RouteAccess::ATTRIBUTE => RouteAccess::openToEveryone(
+        'shadows no laminas route, so there is no guard entry to consult; it reports liveness only, '
+        . 'which is nothing a visitor could not learn from the site answering at all'
+    ),
+]));
 
 /**
  * Every ported path also has to answer under a locale prefix, because every
@@ -51,33 +72,84 @@ $routes->add('health', new Route('/_health', ['_controller' => HealthController:
  * The `.locale` suffix on the second name is load-bearing: App\Http\SymfonyRoute
  * strips it to recover the laminas route name a ported route shadows, which is what
  * the Twig layout compares against to mark a navigation item active.
+ *
+ * $access is a required argument rather than a defaulted one, and both twins get the
+ * same instance: they are one page reached two ways, and a check that applied to only
+ * one of them would be a hole shaped exactly like the locale prefix.
  */
 $locales = Locales::pattern();
-$ported  = static function (string $name, string $path, string $controller) use ($routes, $locales): void {
-    $routes->add($name, new Route($path, ['_controller' => $controller]));
-    $routes->add($name . '.locale', new Route(
-        '/{_locale}' . $path,
-        ['_controller' => $controller],
-        ['_locale' => $locales]
-    ));
+$ported  = static function (
+    string $name,
+    string $path,
+    string $controller,
+    RouteAccess $access
+) use (
+    $routes,
+    $locales
+): void {
+    $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access];
+    $routes->add($name, new Route($path, $defaults));
+    $routes->add($name . '.locale', new Route('/{_locale}' . $path, $defaults, ['_locale' => $locales]));
 };
 
 // SionModel's maintenance endpoints, ported 2026-08-05. Both are machine
 // endpoints gated by a maintenance key the controller checks itself, so they need
 // nothing the laminas MVC listeners provide — no session, no ACL guard, no view
 // layer. See docs/strangler.md.
-$ported('sm-cache-status', '/sm/cache-status', CacheStatusController::class);
-$ported('sm-clear-persistent-cache', '/sm/clear-persistent-cache', ClearPersistentCacheController::class);
+//
+// Declared open, and the reason is worth stating precisely because `guardedBy` would
+// also have "worked": the laminas guards they shadow
+// (`route/sion-model/cache-status`, `route/sion-model/clear-persistent-cache`) carry
+// `null` in their roles, i.e. they admit everyone, so consulting them could only ever
+// answer yes. What it would cost is a session start plus the ACL build — several
+// database queries, some through Books\Model\LibraryTable — on the two endpoints a
+// deploy hook and the production monitor call. tools/acl-table.php cross-checks the
+// claim: should either guard stop being public, it warns that this declaration now
+// diverges from it.
+$maintenance = RouteAccess::openToEveryone(
+    'the laminas guard it shadows is public (a null role admits everyone), and its real gate is the '
+    . 'maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here '
+    . 'would put a session and the role/resource queries behind it on an endpoint the deploy hooks '
+    . 'call, for a foregone answer'
+);
+$ported('sm-cache-status', '/sm/cache-status', CacheStatusController::class, $maintenance);
+$ported(
+    'sm-clear-persistent-cache',
+    '/sm/clear-persistent-cache',
+    ClearPersistentCacheController::class,
+    $maintenance
+);
 
 // The first HTML route, ported 2026-08-05, and the reason templates/ and the Twig
-// layer exist. Portable only because it is public: `shrines` is guarded
-// ['null','guest','user'] and a null role means everyone, so nothing is lost by
-// arriving without the BjyAuthorize route guard. The laminas route it shadows stays
-// exactly as it was — production still serves it, SYMFONY_KERNEL being unset there.
-$ported('shrines', '/shrines', ShrinesController::class);
+// layer exist. Checked against its own laminas resource rather than declared open,
+// even though `route/shrines` is guarded ['null','guest','user'] and a null role
+// means everyone: the page already builds the ACL for its moderator markup, so the
+// check costs nothing extra, and if that guard is ever tightened both front
+// controllers tighten together. The laminas route it shadows stays exactly as it was
+// — production still serves it, SYMFONY_KERNEL being unset there.
+$ported('shrines', '/shrines', ShrinesController::class, RouteAccess::guardedBy('route/shrines'));
+
+// The first *restricted* route, ported 2026-08-06 — the proof that
+// App\Authorization\RouteGuard works, and so the reason the other 148 restricted
+// routes became portable at all. `route/admin` admits sch_moderator and translator
+// (plus their descendants): an anonymous visitor gets 302 to the sign-in page, a
+// signed-in visitor holding neither gets 403. Measured in
+// test/Smoke/AdminAuthorizationSmokeTest.
+//
+// Only `/admin` itself. Its laminas children — /admin/import-father,
+// /admin/maintenance, /admin/literature-maintenance, /admin/translations — are
+// separate routes with their own guards, and a literal path with no trailing-slash
+// variant is what leaves every one of them falling through to `legacy`.
+$ported('admin', '/admin', AdminController::class, RouteAccess::guardedBy('route/admin'));
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.
+//
+// It declares no RouteAccess and must not: this is not a ported route but the door
+// back into laminas-mvc, which runs BjyAuthorize\Guard\Route itself for whatever it
+// matches. App\Authorization\RouteGuard skips it on exactly that ground
+// (App\Http\SymfonyRoute::isPorted), and tools/acl-table.php excludes it from the
+// ported-route table for the same reason.
 $routes->add('legacy', new Route(
     '/{path}',
     ['_controller' => LegacyBridge::class, 'path' => ''],

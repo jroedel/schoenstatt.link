@@ -27,15 +27,18 @@ use PDO;
  */
 class AuthSmokeTest extends SmokeTestCase
 {
+    // The flow itself lives here, because two other tests need it too: the
+    // authorization smoke test needs a signed-in session and tools/form-regression.php
+    // needed one before it. This class characterizes the flow; the trait performs it.
+    use MagicLinkSignIn;
+
     /** Local-part prefix of every address this test invents; also the cleanup key. */
     private const EMAIL_PREFIX = 'smoke-test-';
 
-    /** Domain of every address this test invents. */
-    private const EMAIL_DOMAIN = '@example.com';
-
-    /** How long we give the app to hand the message to Mailpit. */
-    private const MAIL_POLL_ATTEMPTS = 10;
-    private const MAIL_POLL_MICROSECONDS = 500000;
+    protected function emailPrefix(): string
+    {
+        return self::EMAIL_PREFIX;
+    }
 
     public function testMagicLinkSignInRoundTrip(): void
     {
@@ -216,125 +219,9 @@ class AuthSmokeTest extends SmokeTestCase
         $this->assertStringContainsString('<h1>Sign In</h1>', $response['body']);
     }
 
-    // ---------------------------------------------------------------- helpers
-
-    /** Unique enough that parallel or repeated runs never collide. */
-    private function uniqueEmail(): string
-    {
-        return sprintf('%s%d-%d%s', self::EMAIL_PREFIX, time(), random_int(1000, 9999), self::EMAIL_DOMAIN);
-    }
-
     /**
-     * GET the form for its CSRF token, then POST the address. The token is
-     * single-use, so every request needs its own GET first.
-     *
-     * @return array{status: int, redirect: string, body: string, contentType: string,
-     *               headers: array<string, string>}
-     */
-    private function requestSignInLink(string $jar, string $email, string $path = '/en/user/login'): array
-    {
-        $form = $this->get($path, false, $jar);
-        $this->assertSame(200, $form['status'], "GET $path should render the form");
-
-        return $this->request('POST', $path, [], false, $jar, [
-            'email' => $email,
-            'redirect' => '',
-            'security' => $this->extractCsrfToken($form['body']),
-            'submit' => 'Send me a sign-in link',
-        ]);
-    }
-
-    private function extractCsrfToken(string $body): string
-    {
-        $found = preg_match('/name="security"[^>]*value="([^"]+)"/', $body, $matches);
-        $this->assertSame(1, $found, 'the sign-in form should carry a CSRF token');
-
-        return $matches[1];
-    }
-
-    private function extractVerifyUrl(string $mailBody): string
-    {
-        $found = preg_match('#https?://\S+/user/verify\?token=[0-9a-f]+#', $mailBody, $matches);
-        $this->assertSame(1, $found, 'the mail should contain an absolute sign-in link');
-
-        return $matches[0];
-    }
-
-    /**
-     * The mail links to the canonical public host; keep the path and query and
-     * point them back at whatever host the suite is testing.
-     */
-    private function toLocalPath(string $url): string
-    {
-        $path = (string) parse_url($url, PHP_URL_PATH);
-        $query = parse_url($url, PHP_URL_QUERY);
-
-        return null === $query ? $path : $path . '?' . $query;
-    }
-
-    /**
-     * Poll Mailpit until the message shows up; sending is synchronous but the
-     * SMTP hop is not, so a couple of retries beat a fixed sleep.
-     *
-     * @return array<string, mixed> the full message, body included
-     */
-    private function awaitMessageFor(string $email): array
-    {
-        for ($attempt = 0; $attempt < self::MAIL_POLL_ATTEMPTS; $attempt++) {
-            $messages = $this->searchMailFor($email);
-            if ([] !== $messages) {
-                return $this->mailpit('GET', '/api/v1/message/' . rawurlencode((string) $messages[0]['ID']));
-            }
-            usleep(self::MAIL_POLL_MICROSECONDS);
-        }
-        $this->fail("No sign-in mail arrived for $email");
-    }
-
-    /** @return array<int, array<string, mixed>> the search hits, newest first */
-    private function searchMailFor(string $email): array
-    {
-        $result = $this->mailpit('GET', '/api/v1/search?query=' . rawurlencode('to:' . $email));
-
-        return isset($result['messages']) && is_array($result['messages']) ? $result['messages'] : [];
-    }
-
-    /**
-     * @param array<string, mixed>|null $payload
-     * @return array<string, mixed> decoded JSON, or [] for an empty response
-     */
-    private function mailpit(string $method, string $path, ?array $payload = null): array
-    {
-        $ch = curl_init($this->mailpitBaseUrl() . $path);
-        curl_setopt_array($ch, [
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 15,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        ]);
-        if (null !== $payload) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, (string) json_encode($payload));
-        }
-        $body = curl_exec($ch);
-        $error = curl_error($ch);
-
-        if (false === $body) {
-            $this->fail("Mailpit request to $path failed: $error — is the mailpit container up?");
-        }
-        if ('' === trim((string) $body)) {
-            return [];
-        }
-        $decoded = json_decode((string) $body, true);
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    private function mailpitBaseUrl(): string
-    {
-        return rtrim(getenv('SMOKE_MAILPIT_URL') ?: 'http://mailpit:8025', '/');
-    }
-
-    /**
-     * Undo everything the flow created. Runs whatever the assertions did, so a
+     * Undo everything the flow created — purgeMail() and purgeAccounts() come from
+     * MagicLinkSignIn and key on emailPrefix(). Runs whatever the assertions did, so a
      * failing test does not leave accounts or mail behind for the next run.
      */
     protected function tearDown(): void
@@ -345,56 +232,5 @@ class AuthSmokeTest extends SmokeTestCase
         } finally {
             parent::tearDown();
         }
-    }
-
-    private function purgeMail(): void
-    {
-        $hits = $this->mailpit('GET', '/api/v1/search?query=' . rawurlencode('to:' . self::EMAIL_PREFIX));
-        if (! isset($hits['messages']) || ! is_array($hits['messages']) || [] === $hits['messages']) {
-            return;
-        }
-        $ids = [];
-        foreach ($hits['messages'] as $message) {
-            if (isset($message['ID'])) {
-                $ids[] = (string) $message['ID'];
-            }
-        }
-        if ([] !== $ids) {
-            $this->mailpit('DELETE', '/api/v1/messages', ['IDs' => $ids]);
-        }
-    }
-
-    /**
-     * Open registration means every address we posted became an account.
-     * Drop the role links first, then the accounts themselves — user_role_linker
-     * cascades on delete, but being explicit keeps this honest if that changes.
-     */
-    private function pdo(): PDO
-    {
-        return new PDO(
-            sprintf(
-                'mysql:host=%s;dbname=%s;charset=utf8mb4',
-                getenv('SMOKE_DB_HOST') ?: 'db',
-                getenv('SMOKE_DB_NAME') ?: 'ourlink_db1'
-            ),
-            getenv('SMOKE_DB_USER') ?: 'schoenstatt',
-            getenv('SMOKE_DB_PASSWORD') ?: 'schoenstatt',
-            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-        );
-    }
-
-    private function purgeAccounts(): void
-    {
-        $pattern = self::EMAIL_PREFIX . '%' . self::EMAIL_DOMAIN;
-        $pdo = $this->pdo();
-
-        $linker = $pdo->prepare(
-            'DELETE FROM user_role_linker'
-            . ' WHERE user_id IN (SELECT user_id FROM user WHERE email LIKE :pattern)'
-        );
-        $linker->execute(['pattern' => $pattern]);
-
-        $users = $pdo->prepare('DELETE FROM user WHERE email LIKE :pattern');
-        $users->execute(['pattern' => $pattern]);
     }
 }
