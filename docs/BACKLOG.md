@@ -89,6 +89,12 @@ readability — the destination is **Symfony**, reached gradually:
   the strangler. Retiring bjy-authorize remains worth doing — abandoned package,
   all authorization runs through it, prerequisite for Security — just not as a
   gate-opener. Measurements in [php-85.md](php-85.md).
+  - **How authorization now works across the split, and every trap in it, is
+    [authorization-migration.md](authorization-migration.md).** Read it before
+    porting any route that is not public. It also records why the bridge makes the
+    eventual Security migration incremental rather than all-or-nothing: both
+    enforcers consult the same `route/<name>` resources, so they can move to
+    voters a few at a time with the ACL table as the before/after oracle.
 - **PHP 8.5 has the same gate.** No laminas-mvc version admits 8.5 (4.0.x-dev
   caps at `~8.3.0`, *lower* than stable). The capsule runs 8.5.9 today only
   because `config.platform.php` is a resolution fiction pinned to production's
