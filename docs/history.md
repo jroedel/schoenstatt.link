@@ -513,3 +513,84 @@ hand-editing also cleared a stale `SchoenstattLinkIdentifier::$entityType`
 entry, fixed the day before but still listed — silent only because
 `reportUnmatchedIgnoredErrors` is off. Worth knowing that flag hides its own
 staleness.
+
+## Symfony kernel in front (2026-08-05)
+
+The strangler's first rung: `symfony/http-kernel` + `symfony/routing` 7.4 LTS,
+hand-wired into `App\Kernel`, with a catch-all route delegating every unported
+path to `Laminas\Mvc\Application`. Mechanism, switching, and the conversion rules
+live in [strangler.md](strangler.md); what follows is what was learned getting
+there.
+
+**The plan inverted on a dependency check, before any code.** The intended shape
+was `symfony/framework-bundle` — a real Symfony application with DI compilation
+and the standard config layout. It does not resolve here:
+`framework-bundle → symfony/cache → psr/cache ^2|^3`, against
+`laminas-cache 3.14 → psr/cache ^1`. laminas-cache 4.3 lifts the pin, and
+`kokspflanze/bjy-authorize 2.4.4` — the last release of a dead line — caps
+laminas-cache at `^3`. Meanwhile `symfony/http-kernel` and `symfony/routing`
+require no `psr/cache` at all and installed with **5 installs, 0 updates, 0
+removals**. So the bundle is gated behind the authorization migration and the
+kernel was not, which is the opposite of the assumed ordering. Worth repeating
+the move that found it: `composer require --dry-run` on the *destination* package
+before designing anything around it. `composer prohibits` cannot answer this —
+it refuses packages not already in the project.
+
+**Reading the sender beat reasoning about the response.** Three of the four
+conversion rules came from `vendor/laminas/laminas-*` rather than from thinking
+about what a response conversion needs:
+
+- `HttpResponseSender::sendContent()` echoes `getContent()`. `getBody()` — the
+  obvious-looking method — de-chunks and *gunzips* per the response's own
+  `Content-Encoding`, which on the sitemap route would emit plaintext under a
+  `gzip` header.
+- `PhpEnvironment\Response::sendHeaders()` appends only
+  `MultipleHeaderInterface` headers and replaces every other, so a repeated
+  ordinary header keeps its last value. `Headers::toArray()` collapses on exactly
+  that rule; the hand-rolled `foreach` written first emitted duplicates the
+  current sender drops. **The faithful conversion was the library's own method,
+  and the custom loop was the behaviour change.**
+- `GdprStrategy::onFinish()` and `CspListener` both work on PHP's SAPI header
+  list (`header_remove()`, `header()`, `setcookie()`), not on the response
+  object. Symfony's `sendHeaders()` appends to that same list rather than
+  resetting it, so they survive the bridge untouched — and `rg` confirmed nothing
+  sets a cookie on a laminas response object, which is what makes converting the
+  response's headers safe next to a consent gate that strips them.
+
+The seam itself was cleaner than expected: `SendResponseListener extends
+AbstractListenerAggregate`, so detaching it after `Application::init()` stops
+laminas from emitting a byte — no output buffering, no `headers_sent()` fight —
+and `run()` populates the response on every path it can take, `dispatch.error`
+included.
+
+**Two defects in newly written code, both found by PHPStan level 8 on `src/`
+alone.** The committed level is 0 for the legacy tree, but there is no reason new
+code should inherit that: `Request::getProtocolVersion()` is nullable, and under
+`strict_types` a missing `SERVER_PROTOCOL` would have been a TypeError on every
+Symfony route; and the header loop's real type was `array|HeaderInterface`, which
+is what led to reading `toArray()` and finding the collapse rule above. A
+per-directory audit at a high level costs one throwaway neon file and is now the
+documented bar for `src/`.
+
+**Two measurements that corrected assumptions:**
+
+- Symfony's `Response` defaults to **HTTP/1.0** and writes that into the status
+  line. Apache honours it: the first `/_health` came back `HTTP/1.0 200 OK` with
+  `Connection: close`, so Symfony-native routes silently lost keep-alive while
+  bridged ones kept it. Fixed with a five-line `kernel.response` listener rather
+  than `Response::prepare()`, which would also have rewritten `Content-Type` and
+  `Content-Length` on responses laminas had already finished.
+- **`APP_ENV` is `production` inside the capsule.** `public/.htaccess` sets it and
+  `AllowOverride All` lets that win over the vhost's `development`. A version
+  payload on `/_health` had been gated on `APP_ENV !== 'production'` and came back
+  empty, which is how this surfaced. The payload was dropped rather than
+  re-gated — versions on a public URL are reconnaissance, and `composer.lock`
+  pins them better than a smoke assertion — but the finding stands on its own:
+  the vhost's `SetEnv APP_ENV "development"` has always been dead config.
+
+**Verification.** 368 tests green (356 before), PHPStan clean at level 0 and at
+level 8 for `src/`. The two front controllers were A/B'd by flipping the flag in
+the running container: identical status, content type and **byte count** on `/`,
+`/en/`, `/en/sitemap.xml` and a 404 path, with only `/_health` differing. That
+byte-for-byte comparison is the actual evidence the bridge is transparent — the
+test suite asserts on markers, not on lengths.
