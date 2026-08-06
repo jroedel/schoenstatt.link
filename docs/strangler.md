@@ -24,11 +24,14 @@ public/index.php
                                        ├─ [/{_locale}]/shrines
                                        │                 → App\Controller\ShrinesController
                                        │                       └─ Twig: templates/layout.html.twig
+                                       ├─ [/{_locale}]/admin
+                                       │                 → App\Controller\AdminController
+                                       │                       (first *restricted* route)
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
 
-Four kernel listeners run on a Symfony-served route and on **no** bridged one,
+Five kernel listeners run on a Symfony-served route and on **no** bridged one,
 because on a bridged one laminas-mvc or `LaminasResponseConverter` has already done
 the equivalent. `App\Http\SymfonyRoute::isPorted()` is how each of them tells,
 by asking whether `_route` is anything other than `legacy`:
@@ -36,6 +39,7 @@ by asking whether `_route` is anything other than `legacy`:
 | listener | event | what it restores |
 |---|---|---|
 | `LocaleListener` | request | `\Locale::setDefault()` from `_locale`, else negotiated — SlmLocale's job |
+| `AuthorizationListener` | request | the route guard — `BjyAuthorize\Guard\Route`. See "Authorization" below |
 | `CspListener` | response | the `Content-Security-Policy` + nonce `SionModel\Mvc\CspListener` sends |
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
@@ -162,20 +166,23 @@ container — which is all `ContainerControllerResolver` ever asks for.
 
 A Symfony-served route never boots laminas-mvc — `LegacyBridge` is what calls
 `Application::init()` — so everything laminas' MVC listeners provide is simply
-absent: **no BjyAuthorize route guard, no ACL, no identity, no SlmLocale, no
-session, no laminas-view layout, and none of the response headers the MVC
-listeners add** (the `Content-Security-Policy` from `SionModel\Mvc\CspListener`,
-the session cookie, the GDPR strategy's cookie stripping). What *is* still there
-comes from Apache: HSTS, `X-Content-Type-Options`, `X-Frame-Options`,
-`Referrer-Policy`.
+absent: **no BjyAuthorize route guard, no SlmLocale, no laminas-view layout, and
+none of the response headers the MVC listeners add** (the
+`Content-Security-Policy` from `SionModel\Mvc\CspListener`, the session cookie,
+the GDPR strategy's cookie stripping). What *is* still there comes from Apache:
+HSTS, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
 
-That is why the first two routes ported were maintenance endpoints whose
-protection already lived in the controller rather than in the guard. Porting a
-route that relies on the guard means moving the check with it — and
-`tools/acl-table.php` says so out loud: it lists Symfony-served routes in their
-own section, reports which laminas routes they shadow, and *warns* when a
-shadowed route's guard restricted anything, because that is authorization
-silently ceasing to apply with nothing else to notice it.
+**The route guard is the item on that list that has been replaced**, as of
+2026-08-06 — see "Authorization" below. Until then a ported guarded route would
+have admitted everyone, which is why the first three ports were a pair of
+maintenance endpoints whose protection already lived in the controller and one
+page whose guard was public.
+
+`tools/acl-table.php` remains the check, and now checks the stronger thing: it
+lists Symfony-served routes with **which ACL resource each is verified against**,
+reports which laminas routes they shadow, and warns when a route declares nothing
+at all, when it names a resource the ACL does not define, or when a restricted
+laminas guard has been replaced by something other than itself.
 
 **"No identity" needs one correction**, learned porting `shrines`. The *guard* is
 gone, but the identity is not. Asking `isAllowed()` makes BjyAuthorize ask JUser
@@ -192,9 +199,10 @@ visitor gets the plain one, exactly as under laminas. Two consequences:
 - Only the route *guard* has to be replaced when porting a protected route, not the
   whole identity story.
 
-So the list of things a ported route loses, restated: the **route guard**, SlmLocale,
-the laminas-view layout, and (until a listener restores them) the response headers
-the MVC listeners add. Not the ACL, not the identity, not the session.
+So the list of things a ported route loses, restated: SlmLocale, the laminas-view
+layout, and (until a listener restores them) the response headers the MVC listeners
+add. Not the ACL, not the identity, not the session — and, since 2026-08-06, not
+the route guard either.
 
 Two consequences worth knowing before porting anything:
 
@@ -213,6 +221,125 @@ Two consequences worth knowing before porting anything:
   smoke suite asserts the new contract, and `bin/console cache:flush-persistent`
   handles both shapes because during the migration it talks to hosts of both
   kinds.
+
+## Authorization
+
+Built 2026-08-06, and it is the gate the rest of the migration was waiting behind:
+of 191 routes, 149 restrict access, and none of them was portable while a
+Symfony-served route silently admitted everyone.
+
+### Where the check runs, and why it cannot be skipped
+
+`App\Http\AuthorizationListener` on `kernel.request`, priority `-16`. Three
+properties, each deliberate:
+
+- **It listens to the event, not to a route**, so nothing declared in
+  `config/symfony/routes.php` can opt out. A route added next month is checked
+  whether or not its author thought about it.
+- **Below `RouterListener`'s 32**, because it reads the matched route's own
+  declaration and there is nothing to read before routing.
+- **Below `LocaleListener`'s 0**, because the 403 page renders through Twig and the
+  locale trap in [view-scripts.md](view-scripts.md) would otherwise translate the
+  whole layout against `en_US_POSIX`.
+
+`kernel.controller` would also have been un-skippable, and was rejected for one
+reason: it fires *after* `ContainerControllerResolver` has constructed the
+controller, so a refused request would still run its factory. The laminas side has
+already been bitten by exactly that shape — the "eager controller_services trap" —
+and a denial with no side effects is worth more than the later hook.
+
+The listener resolves its guard through a closure rather than holding one, because
+listeners are registered before the request exists and `App\Kernel::routeUrl()` reads
+the request's base URL. Building it eagerly would memoize an empty base URL and strip
+the locale prefix off every link on every ported page.
+
+### Reusing the ACL rather than duplicating it
+
+Each route declares an `App\Authorization\RouteAccess` in its own defaults, and the
+declaration names **a resource the laminas guards already define**:
+
+```php
+$ported('admin', '/admin', AdminController::class, RouteAccess::guardedBy('route/admin'));
+```
+
+`BjyAuthorize\Guard\Route` keys on `route/<laminas-route-name>`, so that string is
+the same guard entry in `config/autoload/acl.global.php` that governs the laminas
+route. One source of truth: tighten the entry and both front controllers tighten, in
+one commit, with the `docs/acl-baseline.json` diff to show it. There is deliberately
+**no** parallel `symfony_acl` config block — two authorization configurations for one
+site is the state where a page is protected on one front controller and open on the
+other and nothing fails.
+
+`RouteAccess::openToEveryone('<why>')` is the other option and requires a reason,
+which `tools/acl-table.php` prints. It is for a route with nothing to consult
+(`/_health` shadows no laminas route) or one whose real gate is in the controller and
+whose shadowed guard is public anyway (the two maintenance endpoints — checking the
+ACL there would put a session and the role/resource queries behind it on the deploy
+path for a foregone answer).
+
+**A route that declares neither raises `UndeclaredRouteAccess`**, naming the route.
+Not a silent 403: a route nobody decided about is a programming mistake, and a
+mistake that presents as "forbidden" sends its author to `acl.global.php` instead of
+to the line they forgot. Two things catch it before a request can:
+`test/Integration/SymfonyRouteAuthorizationTest` walks the whole `RouteCollection`,
+and `tools/acl-table.php` reports it as `SILENT BYPASS RISK`.
+
+### The two denial branches
+
+Reproduced from `JUser\View\RedirectionStrategy::onDispatchError()`, and measured
+against the live laminas rendering of `/en/admin` before the route was ported rather
+than read off the source:
+
+| who | laminas | ported |
+|---|---|---|
+| anonymous | `302 → /en/user/login?redirect=/en/admin` | identical |
+| signed in, not allowed | `403` + `error/403`, inside the layout | `403` + `templates/error/403.html.twig`, inside the Twig layout |
+
+Both live in `App\Authorization\Denial`. Four things worth knowing:
+
+1. **The identity, not the failed check, picks the branch.** Both an anonymous
+   visitor and a signed-in one without the role fail `isAllowed()`; redirecting the
+   second to a sign-in page would loop them, since signing in again changes nothing
+   about their roles. The identity is read from `JUser\AuthService` — the same
+   question `RedirectionStrategy` asks. Not from `Authorize::getIdentity()`, which
+   returns the literal string `bjyauthorize-identity` and is therefore always truthy.
+2. **The return path is the request's path**, not a re-assembly of the matched route.
+   Laminas has to re-assemble and wraps it in try/catch because a numeric route name
+   reaches the router's `explode()` as an int; reading `getBaseUrl() . getPathInfo()`
+   cannot fail that way, so the fallback branch has nothing left to guard and is not
+   reproduced. The value is the same string, locale prefix included.
+3. **`templates/error/403.html.twig` is a reproduction, not a reuse.** `error/403`
+   resolves today to `vendor/kokspflanze/bjy-authorize/view/error/403.phtml` — inside
+   the abandoned package this migration intends to retire. The wording and markup of
+   its `Route::ERROR` branch are copied verbatim; the one difference is the page
+   title, which laminas leaves as "Schoenstatt Link" and this sets to
+   "403 Forbidden".
+4. **JSON routes deny as JSON**, declared per route through `DenialStyle` and never
+   sniffed from `Accept` — the deploy hooks and `tools/smoke-prod.sh` send no
+   `Accept` header at all, and a machine caller that follows a 302 reads an HTML
+   sign-in page as success. No route needs it yet (both maintenance endpoints are
+   open), so `test/Integration/RouteDenialShapeTest` is what keeps the branch honest
+   until the first one does.
+
+### What porting a restricted route now takes
+
+`/admin` is the worked example, and there is nothing to it beyond one line of route
+declaration: `AdminController` contains no authorization code at all. Read
+`App\Controller\AdminController` and the `admin` entry in
+`config/symfony/routes.php` together — the second is the whole of the first's
+security.
+
+One difference from laminas that survives, and is a behaviour change rather than a
+bug: on the **unprefixed** form of a restricted path the two front controllers
+redirect in a different order. Laminas answers `/admin` with SlmLocale's `302 →
+/en/admin` and only then denies, so an anonymous visitor takes two hops and arrives
+at `?redirect=/en/admin`. The Symfony guard runs before the controller that would
+issue the locale redirect, so it answers `/admin` with one hop to
+`?redirect=/admin`. Nobody's access changes and the visitor lands in the same place
+one redirect later; every real caller uses the prefixed form. Fixing it properly
+means moving the unprefixed-to-prefixed redirect out of the controllers and into a
+listener above the guard, which is a separate change and needs a per-route
+declaration of its own (the maintenance endpoints must *not* redirect).
 
 ## The Twig layer
 
@@ -275,9 +402,10 @@ in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
 
 ## Adding a Symfony route
 
-0. Check the route is portable at all. `docs/acl-rules.md` says whether its guard is
-   public; if it is not, the check has to move with it, and nothing here does that
-   yet.
+0. Look up what governs it. `docs/acl-rules.md` gives the guard entry for the laminas
+   route; whatever it says, the Symfony route has to declare it (step 3b). A
+   restricted guard is no longer a reason not to port — that was true until
+   2026-08-06 and is the one line of this file most likely to be remembered wrongly.
 1. Write the controller under `src/`, namespace `App\`. `declare(strict_types=1)`
    — `src/` is greenfield and holds itself to a higher standard than the legacy
    baseline: it must pass PHPStan **level 8**, not the committed level 0.
@@ -296,10 +424,23 @@ in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
    redirects `/shrines` to the negotiated language rather than serving the page twice;
    `ShrinesController` reproduces that, and the absence of the `_locale` attribute is
    how it knows.
+
+   Pass the helper an `App\Authorization\RouteAccess` as well — a required argument,
+   so this cannot be skipped by accident. Normally
+   `RouteAccess::guardedBy('route/<the laminas route this shadows>')`, which makes the
+   *same* guard entry govern both front controllers; `openToEveryone('<why>')` only
+   where there is genuinely nothing to consult, and the reason goes into
+   `docs/acl-rules.md` for review. See "Authorization" above. If the route answers
+   JSON, pass `DenialStyle::Json` too, or a refused machine caller gets an HTML
+   sign-in page and a 302.
 4. Add a smoke test. The suite's other paths all run through the bridge, so they
    will not notice a Symfony-side mistake. Assert something that distinguishes the
    two front controllers, not just a 200 — for the maintenance endpoints that is
    the 401, since the successful payload is identical by design.
+   For a restricted route, assert all three outcomes: anonymous, signed in without
+   the role, signed in with it. `test/Smoke/MagicLinkSignIn` is the trait that gets
+   you a real session; `test/Smoke/AdminAuthorizationSmokeTest` is the worked example.
+   A status-code-only test would pass just as well against a guard that never ran.
 5. If a laminas route now answers from two places, make them share the code that
    builds the response rather than trusting two copies to stay equal.
    `SionModel\Cache\CacheStatusPayload` exists for exactly that, and
@@ -314,11 +455,24 @@ in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
 
 ## Verifying
 
-- `php composer.phar test` — 551 tests (measured 2026-08-05, after the shrines port;
-  527 before it). The smoke suite runs against the capsule, i.e.
+- `php composer.phar test` — 618 tests (measured 2026-08-06, after the authorization
+  bridge; 551 before it, 527 before the shrines port). Per suite: unit 119,
+  integration 370, fuzz 18, smoke 111. The smoke suite runs against the capsule, i.e.
   through the Symfony front controller, so it is the bridge's regression test.
   `test/Smoke/SymfonyKernelSmokeTest.php` covers what the catch-all would hide:
   that Symfony served anything itself.
+- `test/Smoke/AdminAuthorizationSmokeTest.php` is the authorization bridge's proof:
+  the three access outcomes on `/en/admin`, measured against the laminas rendering of
+  the same URL first. It also re-asserts that the four earlier ports still answer as
+  they did, since every one of them now passes through the new check.
+- `test/Integration/SymfonyRouteAuthorizationTest.php` walks
+  `config/symfony/routes.php` and fails on a route that declares no authorization, on
+  a declared resource no guard entry defines, and on a route declared open whose
+  laminas guard restricts access. It is the un-skippable half: the runtime exception
+  only fires when someone requests the route.
+- `test/Integration/RouteDenialShapeTest.php` pins the four refusal shapes without a
+  container — which is the only coverage the JSON pair has until a guarded JSON route
+  exists.
 - `test/Smoke/ShrinesSymfonySmokeTest.php` does the same job for the first HTML
   route, and its discriminator is worth reusing: laminas sends
   `Set-Cookie: slm_locale=en_US` on every response and a ported route never does, so
