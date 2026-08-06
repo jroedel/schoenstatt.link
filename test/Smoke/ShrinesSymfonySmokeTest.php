@@ -207,16 +207,22 @@ class ShrinesSymfonySmokeTest extends SmokeTestCase
     }
 
     /**
-     * Links to pages that have *not* moved are assembled by the laminas router
-     * (App\Laminas\RouteUrl), locale prefix included — that is the mechanism that
-     * keeps a half-migrated site navigable.
+     * Every link on the page is assembled by the laminas router
+     * (App\Laminas\RouteUrl), locale prefix included, whether or not its target has
+     * moved yet — that is the mechanism that keeps a half-migrated site navigable,
+     * and the reason porting a target changes nothing about the pages linking to it.
+     * `/wayside-shrines` moved on 2026-08-07 and this assertion did not have to.
      */
-    public function testLinksToUnportedPagesKeepTheirLocalePrefix(): void
+    public function testLinksToOtherPagesKeepTheirLocalePrefix(): void
     {
         $body = $this->assertRendersOk('/en/shrines')['body'];
 
         $this->assertStringContainsString('href="/en/wayside-shrines"', $body);
-        $this->assertStringContainsString('href="/en/shrines/submitting-photos"', $body);
+        $this->assertStringContainsString(
+            'href="/en/shrines/submitting-photos"',
+            $body,
+            'still a laminas route: a child of `shrines`, not ported with its parent'
+        );
         $this->assertStringContainsString('href="/en/"', $body, 'the navbar brand');
         $this->assertStringContainsString('<link href="', $body);
         $this->assertStringContainsString('/en/shrines" rel="canonical">', $body);

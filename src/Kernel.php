@@ -10,6 +10,7 @@ use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
 use App\Controller\ShrinesController;
+use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
 use App\Http\CspListener;
 use App\Http\CspNonce;
@@ -167,11 +168,19 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     new MaintenanceKey($this->laminas()),
                     $this->laminas()
                 ),
-            // The first ported HTML route, and the only one that needs the Twig
-            // layer so far. twig() is lazy for the same reason laminas() is: a
-            // request that renders no template — /_health, the maintenance
-            // endpoints, anything bridged — never builds any of it.
+            // The first ported HTML route, and the reason the Twig layer exists.
+            // twig() is lazy for the same reason laminas() is: a request that
+            // renders no template — /_health, the maintenance endpoints, anything
+            // bridged — never builds any of it.
             ShrinesController::class => fn (): ShrinesController => new ShrinesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The same page over the wayside-shrine associations. Identical
+            // dependencies because it is the same page: what differs is one table
+            // method and one template header block, not the wiring.
+            WaysideShrinesController::class => fn (): WaysideShrinesController => new WaysideShrinesController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()

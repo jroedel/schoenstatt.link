@@ -4,10 +4,10 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 (or lives in git); when an item here is done, delete it and record anything
 reusable there instead of accumulating DONE narratives.
 
-State as of 2026-08-05, on branch `symfony-upgrade` (not yet merged): the
+State as of 2026-08-07, on branch `symfony-upgrade` (not yet merged): the
 **capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
 see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
-**551 tests across four suites** (119 unit, 315 integration, 18 fuzz, 99
+**631 tests across four suites** (119 unit, 376 integration, 18 fuzz, 118
 smoke), green on 8.5; PHPStan clean at level 0
 (baseline 26 entries); one-command deploy with hooks. First-party code no longer
 calls `getServiceLocator()`, has no `throw Foo()` missing its `new`, creates no
@@ -48,6 +48,17 @@ catch-all route delegating every unported path back to it — see
 how to switch front controllers. Production still runs the laminas front
 controller until `SYMFONY_KERNEL=1` is added to its `.htaccess`.
 
+**Six routes now answer from the Symfony kernel**, three of them HTML: `shrines`,
+`admin`, and as of 2026-08-07 `wayside-shrines`. That last one is the first port
+whose value was not the route itself — the page is `shrines` with a different
+heading over a different association kind, and laminas answers it from a verbatim
+copy of both the action and the template. The Symfony side has one of each
+instead: `App\Schoenstatt\ShrineIndex` already served both, and
+`templates/schoenstatt/_shrine-index.html.twig` now does too, with each page
+supplying only its own `shrine_header` block. `/en/shrines` renders
+byte-identically before and after that refactor, which is the check that made it
+safe to touch a route already in service.
+
 **The first HTML route has moved and renders with Twig** (`shrines`,
 2026-08-05): `templates/layout.html.twig` reproduces the site chrome —
 navigation, language chooser, search box, flash messages, canonical links,
@@ -57,8 +68,10 @@ things learned that change earlier assumptions, both written up in
 [strangler.md](strangler.md): a ported route does **not** lose the identity or
 the session (only the route guard), and `Laminas\Navigation\Navigation` cannot be
 resolved without an MvcEvent at all, so the navbar is built from the raw
-`navigation` config. Only *public* routes can move until an authorization bridge
-replaces the guard — `docs/acl-rules.md` names which those are.
+`navigation` config. (The third thing that paragraph used to say — that only
+*public* routes can move — stopped being true on 2026-08-06, when the
+authorization bridge landed. `docs/acl-rules.md` still names which routes are
+which.)
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -149,7 +162,9 @@ readability — the destination is **Symfony**, reached gradually:
     before concluding anything from a local reproduction.
 - [ ] **Move the unprefixed-to-prefixed locale redirect out of the ported
   controllers and into a `kernel.request` listener above the authorization
-  check.** Since the authorization bridge landed (2026-08-06) the two front
+  check.** **Now due**: the wayside-shrine port (2026-08-07) made it the third
+  copy, which is the threshold this item set for itself. Since the authorization
+  bridge landed (2026-08-06) the two front
   controllers disagree about the *unprefixed* form of a restricted path: laminas
   answers `/admin` with SlmLocale's `302 → /en/admin` and denies on the second
   hop, while the Symfony guard runs before the controller that would issue that
@@ -159,8 +174,7 @@ readability — the destination is **Symfony**, reached gradually:
   a bug. The reason it is not already done: the redirect is a per-route decision
   (`ShrinesController` and `AdminController` do it, the maintenance endpoints must
   **not**, `/_health` has no prefixed form at all), so a listener needs a
-  declaration of its own alongside `RouteAccess`. Worth doing when a third HTML
-  route makes the duplication a third copy.
+  declaration of its own alongside `RouteAccess`.
 - [ ] **Two consoles now exist in principle.** `bin/console` builds the *laminas*
   container and is the deploy's command host; a Symfony console would want the
   kernel. Nothing needs converging yet — `App\Kernel` contributes no commands —
@@ -261,15 +275,18 @@ readability — the destination is **Symfony**, reached gradually:
   the port's contract was identical output. Fix is a one-word rename in both
   templates — but check first whether "has structured hours" is what the
   progress score is meant to reward, since 71 shrines have the human field and
-  4 have the JSON one.
+  4 have the JSON one. Still two templates, not four, after the wayside-shrine
+  port: both index pages render this same partial on each side of the split.
 - [ ] **`shrinesAction()` divides by zero on an empty shrine list.**
   The per-region percentage guards its denominator and the total does not
   (`floor($totalScore / $totalMaxScore * 100)`), so a database with no
   `sch-shrine` rows is a `DivisionByZeroError` rather than 0%. Present in the
   laminas action, in `waysideShrinesAction()`, and reproduced in
-  `App\Schoenstatt\ShrineIndex` for parity. Only reachable if every shrine were
-  deleted, which is why it has never fired; fix both copies together, or fix it
-  when the laminas copy is deleted.
+  `App\Schoenstatt\ShrineIndex` for parity — which now backs both ported pages,
+  so fixing it there fixes both at once. Only reachable if every shrine of a
+  kind were deleted, which is why it has never fired; fix the laminas copies
+  together with it, or fix it when they are deleted. Note the wayside side is
+  the likelier of the two to reach zero rows: 43 associations against 207.
 - [ ] `finish-pending-labels` is an unreachable route:
   `Laminas\Router\Http\Part::match()` returns the parent match once the path
   is consumed and the parent `may_terminate`s, so its `Method(delete)` child

@@ -47,12 +47,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 4 |
+| routes shadowed by symfony | 5 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 4 |
+| symfony routes acl checked | 6 |
 | symfony routes open | 5 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 9 |
+| symfony served routes | 11 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
@@ -92,6 +92,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
 | `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
 | `sm-clear-persistent-cache.locale` | `/{_locale}/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
+| `wayside-shrines` | `/wayside-shrines` | `route/wayside-shrines` | **public** (`null` in its roles) | html | `App\Controller\WaysideShrinesController` |
+| `wayside-shrines.locale` | `/{_locale}/wayside-shrines` | `route/wayside-shrines` | **public** (`null` in its roles) | html | `App\Controller\WaysideShrinesController` |
 
 #### Why the open ones are open
 
@@ -123,6 +125,7 @@ warning at the top of this file.
 | `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles) | `route/shrines` — **the same resource** |
 | `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles) | _open, deliberately_ |
 | `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles) | _open, deliberately_ |
+| `wayside-shrines` | `/wayside-shrines` | `wayside-shrines` | **public** (`null` in its roles) | `route/wayside-shrines` — **the same resource** |
 
 ## Role hierarchy
 

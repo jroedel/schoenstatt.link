@@ -1,0 +1,34 @@
+{#
+  module/Schoenstatt/view/schoenstatt/schoenstatt/wayside-shrines.phtml, ported.
+
+  Two templates now render this page: this one under the Symfony front controller
+  (the capsule) and the .phtml under the laminas one (production). Both are live
+  until SYMFONY_KERNEL is set in production; see docs/strangler.md.
+
+  The .phtml is a copy of shrines.phtml with three things removed — the licence
+  paragraph, the link to the wayside index (this *is* it) — and the API link
+  pointed at the other association kind. Everything it kept is
+  schoenstatt/_shrine-index.html.twig here, so this file is the difference and
+  nothing else.
+
+  Note that the schema.org datasets are the *shrine* ones, not wayside ones:
+  waysideShrinesAction() calls the same getShrineDatasets() as shrinesAction(), so
+  both pages publish the same two Dataset descriptions. Reproduced rather than
+  corrected — see App\Schoenstatt\ShrineDatasets.
+
+  On the sentences being whole strings and on `|e|format(…)|raw`, see the header
+  comment of schoenstatt/shrines.html.twig: the same reasoning applies here.
+#}
+{% extends 'schoenstatt/_shrine-index.html.twig' %}
+
+{% block shrine_header %}
+{% set api_note = "This data may be accessed directly by any apps or websites who which to receive up-to-date information via the %sREST API%s (application programming interface)." %}
+{% set photos_note = "Do you have shrine photos to submit? See our %sphoto submission process%s." %}
+{% set columns_note = "Until 2019-10-18, this page will be oriented towards data-maintainers and therefore show the columns of pertinent information." %}
+{% set photos_url = laminas_path('shrines/submitting-photos') %}
+<h1>{{ translate('Schoenstatt Wayside Shrines') }}</h1>
+
+<p>{{ translate(api_note)|e|format('<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-wayside-shrine" target="_blank">', '</a>')|raw }}</p>
+<p>{{ translate(photos_note)|e|format('<a href="' ~ photos_url|e ~ '">', '</a>')|raw }}
+<p>{{ translate(columns_note) }}</p>
+{% endblock %}

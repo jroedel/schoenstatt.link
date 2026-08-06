@@ -29,12 +29,12 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 4,
+        "routes_shadowed_by_symfony": 5,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 4,
+        "symfony_routes_acl_checked": 6,
         "symfony_routes_open": 5,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 9,
+        "symfony_served_routes": 11,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6515,6 +6515,15 @@
             "was_public": true,
             "now_checks": null,
             "access_kind": "open"
+        },
+        {
+            "laminas_route": "wayside-shrines",
+            "path": "/wayside-shrines",
+            "symfony_route": "wayside-shrines",
+            "was_guarded": true,
+            "was_public": true,
+            "now_checks": "route/wayside-shrines",
+            "access_kind": "acl"
         }
     ],
     "non_route_resources": {
@@ -7557,6 +7566,26 @@
                 "resource": null,
                 "reason": "the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\\Http\\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer",
                 "denial_style": "n/a"
+            }
+        },
+        "wayside-shrines": {
+            "path": "/wayside-shrines",
+            "controller": "App\\Controller\\WaysideShrinesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/wayside-shrines",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "wayside-shrines.locale": {
+            "path": "/{_locale}/wayside-shrines",
+            "controller": "App\\Controller\\WaysideShrinesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/wayside-shrines",
+                "reason": null,
+                "denial_style": "html"
             }
         }
     },

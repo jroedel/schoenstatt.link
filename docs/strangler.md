@@ -27,6 +27,10 @@ public/index.php
                                        ├─ [/{_locale}]/admin
                                        │                 → App\Controller\AdminController
                                        │                       (first *restricted* route)
+                                       ├─ [/{_locale}]/wayside-shrines
+                                       │                 → App\Controller\WaysideShrinesController
+                                       │                       └─ shares _shrine-index.html.twig
+                                       │                          with ShrinesController
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
@@ -339,7 +343,10 @@ issue the locale redirect, so it answers `/admin` with one hop to
 one redirect later; every real caller uses the prefixed form. Fixing it properly
 means moving the unprefixed-to-prefixed redirect out of the controllers and into a
 listener above the guard, which is a separate change and needs a per-route
-declaration of its own (the maintenance endpoints must *not* redirect).
+declaration of its own (the maintenance endpoints must *not* redirect). As of the
+wayside-shrine port there are **three** copies of that redirect —
+`ShrinesController`, `AdminController`, `WaysideShrinesController` — which is the
+threshold BACKLOG.md set for doing it.
 
 ## The Twig layer
 
@@ -351,6 +358,7 @@ and what a later port should reuse rather than reinvent:
 | file | what it is |
 |---|---|
 | `templates/layout.html.twig` | the site chrome. `{% extends %}` it, define `page_title`, `breadcrumbs`, `block content`, `block inline_scripts` |
+| `templates/schoenstatt/_shrine-index.html.twig` | the shrine index body, shared by `shrines` and `wayside-shrines`; each supplies only `block shrine_header` |
 | `templates/schoenstatt/_entity-format.html.twig` | macros for an association or person link, replacing `formatAssociation`/`formatPerson` |
 | `src/Twig/TwigFactory.php` | builds the Environment. `App\Kernel` and the integration tests both call it, so a test renders the real thing |
 | `src/Twig/LaminasExtension.php` | `laminas_path`, `translate`, `is_allowed`, `flag`, `email_link`, `telephone_link`, `url_object_link`, `edit_pencil`, `flash_messages` |
@@ -450,17 +458,28 @@ in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
    test that drives both. `App\Schoenstatt\ShrineIndex` +
    `test/Integration/ShrineIndexParityTest.php` is that pattern; the copy is deleted
    along with the laminas route.
+
+   That licence to copy stops at the laminas boundary. Between two *ported* routes,
+   share — the wayside-shrine port (2026-08-07) is the case that established it. Its
+   laminas action is a verbatim duplicate of `shrinesAction()` and its `.phtml` a
+   verbatim duplicate of `shrines.phtml`, and reproducing that on the Symfony side
+   would have been porting the defect along with the feature. Instead
+   `App\Schoenstatt\ShrineIndex` already served both, and the template became
+   `_shrine-index.html.twig` plus a `shrine_header` block per page. The refactor was
+   verified by diffing the rendered `/en/shrines` before and after: byte-identical.
+   Do that diff — Twig strips the first newline after every tag, which makes
+   whitespace control easy to get wrong in a way no test would notice.
 6. Regenerate `docs/acl-rules.md` and `docs/acl-baseline.json`
    (`tools/acl-table.php`) and read the diff.
 
 ## Verifying
 
-- `php composer.phar test` — 618 tests (measured 2026-08-06, after the authorization
-  bridge; 551 before it, 527 before the shrines port). Per suite: unit 119,
-  integration 370, fuzz 18, smoke 111. The smoke suite runs against the capsule, i.e.
-  through the Symfony front controller, so it is the bridge's regression test.
-  `test/Smoke/SymfonyKernelSmokeTest.php` covers what the catch-all would hide:
-  that Symfony served anything itself.
+- `php composer.phar test` — 631 tests (measured 2026-08-07, after the wayside-shrine
+  port; 618 after the authorization bridge, 551 before it, 527 before the shrines
+  port). Per suite: unit 119, integration 376, fuzz 18, smoke 118. The smoke suite
+  runs against the capsule, i.e. through the Symfony front controller, so it is the
+  bridge's regression test. `test/Smoke/SymfonyKernelSmokeTest.php` covers what the
+  catch-all would hide: that Symfony served anything itself.
 - `test/Smoke/AdminAuthorizationSmokeTest.php` is the authorization bridge's proof:
   the three access outcomes on `/en/admin`, measured against the laminas rendering of
   the same URL first. It also re-asserts that the four earlier ports still answer as
@@ -477,9 +496,16 @@ in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
   route, and its discriminator is worth reusing: laminas sends
   `Set-Cookie: slm_locale=en_US` on every response and a ported route never does, so
   its absence proves Symfony served the page rather than bridging it.
+- `test/Smoke/WaysideShrinesSymfonySmokeTest.php` covers the second HTML route, and
+  most of it is about the *shared* template: that neither page wears the other's
+  introduction and that both still render the body they have in common. The
+  mechanism assertions are not repeated there — they belong to the kernel's
+  listeners, not to a route.
 - `test/Integration/ShrineTemplateTest.php` renders the templates against real rows
   with no HTTP, which is the only way the *moderator* markup is exercised — the smoke
-  suite has no authenticated session.
+  suite has no authenticated session. Both indexes, both tables, since the wayside
+  rows are a different 43 associations through the same projection and
+  `strict_variables` turns an absent column into an exception.
 - `test/Integration/SymfonyLocaleAliasTest.php` guards `App\Locale\Locales` against
   drifting from `slm_locale`. The alias table is duplicated on purpose: reading the
   merged config from `config/symfony/routes.php` would load every laminas module

@@ -31,6 +31,7 @@ use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
 use App\Controller\ShrinesController;
+use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
 use App\Locale\Locales;
 use Symfony\Component\Routing\Route;
@@ -128,6 +129,21 @@ $ported(
 // controllers tighten together. The laminas route it shadows stays exactly as it was
 // — production still serves it, SYMFONY_KERNEL being unset there.
 $ported('shrines', '/shrines', ShrinesController::class, RouteAccess::guardedBy('route/shrines'));
+
+// The same index over the wayside-shrine associations, ported 2026-08-07. Guarded
+// `['user', 'guest', null]` exactly as `shrines` is, and checked against its own
+// resource for the same reason: the page builds the ACL anyway for its moderator
+// markup, and one guard entry then governs both front controllers.
+//
+// Only `/wayside-shrines` itself. It has no laminas child routes — the "submitting
+// photos" page it links to is a child of `shrines` and still falls through to
+// `legacy`.
+$ported(
+    'wayside-shrines',
+    '/wayside-shrines',
+    WaysideShrinesController::class,
+    RouteAccess::guardedBy('route/wayside-shrines')
+);
 
 // The first *restricted* route, ported 2026-08-06 — the proof that
 // App\Authorization\RouteGuard works, and so the reason the other 148 restricted
