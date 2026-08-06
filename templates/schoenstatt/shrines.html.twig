@@ -5,6 +5,11 @@
   (the capsule) and the .phtml under the laminas one (production). Both are live
   until SYMFONY_KERNEL is set in production; see docs/strangler.md.
 
+  Only the heading and the intro paragraphs live here. Everything below them —
+  progress bars, regions, datasets, the sizing script — is
+  schoenstatt/_shrine-index.html.twig, shared with the wayside-shrine index, which
+  is the same page with a different heading and a different association kind.
+
   The sentences are kept as whole strings because they are the translation keys —
   splitting one to avoid a sprintf would silently lose every existing translation of
   it. `|e|format(…)|raw` is the exact composition the .phtml performed by hand:
@@ -12,9 +17,9 @@
   file. The `|raw` is load-bearing and applies only to that composition; nothing
   else in this template is raw.
 #}
-{% extends 'layout.html.twig' %}
+{% extends 'schoenstatt/_shrine-index.html.twig' %}
 
-{% block content %}
+{% block shrine_header %}
 {% set intro = "Welcome to the Schoenstatt Shrine collaborative database! This database is freely available under the %s Licence so that anyone may use it.  For now, anyone who registers for an account may help keep the information current. Please help us complete the information!" %}
 {% set api_note = "This data may be accessed directly by any apps or websites who which to receive up-to-date information via the %sREST API%s (application programming interface)." %}
 {% set photos_note = "Do you have shrine photos to submit? See our %sphoto submission process%s." %}
@@ -27,50 +32,4 @@
 <p>{{ translate(photos_note)|e|format('<a href="' ~ photos_url|e ~ '">', '</a>')|raw }}
 <p>{{ translate(columns_note) }}</p>
 <a href="{{ laminas_path('wayside-shrines') }}"><span class="pull-right btn btn-default">{{ translate('Wayside shrines') }}</span></a>
-{% set is_moderator = is_allowed('route/association-edit') %}
-{% if is_moderator %}
-<p><strong>{{ translate('Total shrine progress') }}:</strong></p>
-<div class="progress">
-  <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="{{ total_percent }}" aria-valuemin="0" aria-valuemax="100">
-    {{ total_percent }}{{ translate('% Complete') }}
-  </div>
-</div>
-{% endif %}
-{% for region, objects in regions %}
-<h3 id="{{ region }}">{{ translate(region) }}</h3>
-    {% if is_moderator %}
-<div class="progress">
-  <div id="{{ region_stats[region].id }}" class="progress-bar" role="progressbar" aria-valuenow="{{ region_stats[region].percent }}" aria-valuemin="0" aria-valuemax="100">
-        {{ region_stats[region].percent }}{{ translate('% Complete') }}
-  </div>
-</div>
-    {% endif %}
-    {% if is_moderator %}
-        {% include 'schoenstatt/_shrines-table.html.twig' with {'objects': objects, 'kind_labels': kind_labels} only %}
-    {% else %}
-        {% include 'schoenstatt/_associations-table.html.twig' with {'objects': objects, 'kind_labels': kind_labels} only %}
-    {% endif %}
-{% endfor %}
-<p>{{ translate('Initial shrine database courtesy of Matías Fortuño, Vínculo Magazine and schoenstatt.org.') }}</p>
-{% if datasets %}
-<script type="application/ld+json">{{ json_ld(datasets) }}</script>
-{% endif %}
-{% endblock %}
-
-{#
-  The progress bars are sized from JavaScript because the CSP forbids inline
-  styles — which is also why the nonce here is not decoration: without it this
-  script is what the policy blocks.
-#}
-{% block inline_scripts %}
-<script nonce="{{ csp_nonce() }}">
-$(function () {
-  $('#total-progress-bar').css("width", "{{ total_percent }}%");
-  var regions = {{ json_ld(region_stats) }};
-  Object.keys(regions).forEach(function(k){
-    percent = regions[k]["percent"]+"%";
-    $('#'+regions[k]["id"]).css("width", percent);
-  });
-});
-</script>
 {% endblock %}

@@ -76,18 +76,30 @@ class ShrineTemplateTest extends TestCase
     }
 
     /**
-     * @return array<string, array{0: string, 1: list<string>}>
+     * Both tables against both indexes. The wayside cases are not padding: the
+     * `sch-wayside-shrine` rows come through the same projection but are a different
+     * 43 rows, and under `strict_variables` a column that is absent on one of them
+     * and present on every shrine would be an exception rather than a blank cell.
+     *
+     * @return array<string, array{0: string, 1: string, 2: list<string>}>
      */
     public static function tableTemplateProvider(): array
     {
+        $public    = ['<th>Association</th>', '<th>Kind</th>', '<th>Primary contact</th>'];
+        $moderator = ['<th>Shrine</th>', '<th>Photo?</th>', '<th>Name translated?</th>'];
+
         return [
-            'public table' => [
+            'public table, shrines'            => ['schoenstatt/_associations-table.html.twig', 'getShrines', $public],
+            'moderator table, shrines'         => ['schoenstatt/_shrines-table.html.twig', 'getShrines', $moderator],
+            'public table, wayside shrines'    => [
                 'schoenstatt/_associations-table.html.twig',
-                ['<th>Association</th>', '<th>Kind</th>', '<th>Primary contact</th>'],
+                'getWaysideShrines',
+                $public,
             ],
-            'moderator table' => [
+            'moderator table, wayside shrines' => [
                 'schoenstatt/_shrines-table.html.twig',
-                ['<th>Shrine</th>', '<th>Photo?</th>', '<th>Name translated?</th>'],
+                'getWaysideShrines',
+                $moderator,
             ],
         ];
     }
@@ -96,9 +108,12 @@ class ShrineTemplateTest extends TestCase
      * @param list<string> $expectedHeaders
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('tableTemplateProvider')]
-    public function testEachShrineTableRendersEveryRow(string $template, array $expectedHeaders): void
-    {
-        $shrines = $this->shrines();
+    public function testEachShrineTableRendersEveryRow(
+        string $template,
+        string $tableMethod,
+        array $expectedHeaders
+    ): void {
+        $shrines = $this->shrines($tableMethod);
 
         $html = $this->twig()->render($template, [
             'objects'     => $shrines,
@@ -160,12 +175,12 @@ class ShrineTemplateTest extends TestCase
     }
 
     /** @return array<int|string, array<string, mixed>> */
-    private function shrines(): array
+    private function shrines(string $tableMethod = 'getShrines'): array
     {
         /** @var SchoenstattTable $table */
         $table = $this->bridge()->get(SchoenstattTable::class);
-        $shrines = $table->getShrines();
-        $this->assertNotEmpty($shrines, 'no shrines in the database — this test would prove nothing');
+        $shrines = $table->$tableMethod();
+        $this->assertNotEmpty($shrines, "no rows from $tableMethod — this test would prove nothing");
 
         return $shrines;
     }

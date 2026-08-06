@@ -11,6 +11,7 @@ use Laminas\Db\Adapter\Adapter;
 use JUser\Model\UserTable;
 use Laminas\View\Model\ViewModel;
 use Locale;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use Schoenstatt\Controller\SchoenstattController;
@@ -22,21 +23,27 @@ use function is_readable;
 require_once __DIR__ . '/../../vendor/autoload.php';
 
 /**
- * /shrines is answered by two front controllers, and this pins that they assemble
- * the same data.
+ * /shrines and /wayside-shrines are each answered by two front controllers, and this
+ * pins that they assemble the same data.
  *
  * docs/strangler.md asks a route answering from two places to share the code that
- * builds the response. Here it deliberately does not: the laminas action was left
- * byte-for-byte untouched so production — which still serves it, SYMFONY_KERNEL
+ * builds the response. Here it deliberately does not: the laminas actions were left
+ * byte-for-byte untouched so production — which still serves them, SYMFONY_KERNEL
  * being unset there — cannot be affected by the port at all. That leaves two copies
  * of the arithmetic, and this test is what makes the duplication safe: it drives
  * Schoenstatt\Controller\SchoenstattController::shrinesAction() and
- * App\Schoenstatt\ShrineIndex over the same rows and compares the results. When the
- * laminas route is finally deleted, the copy in module/ goes and this test goes with
- * it.
+ * waysideShrinesAction() against App\Schoenstatt\ShrineIndex over the same rows and
+ * compares the results. When the laminas routes are finally deleted, the copies in
+ * module/ go and this test goes with them.
  *
- * The laminas action is reachable here because it is unusually self-contained: it
- * touches no controller plugin, no request and no route match, so it can be
+ * Both actions are driven because on the laminas side they are *duplicates* rather
+ * than one shared implementation — the second is a verbatim copy of the first, down
+ * to the commented-out `'form'` key. On the Symfony side there is only ShrineIndex,
+ * so the pair of cases is also what would catch the copies drifting apart before the
+ * port catches up with them.
+ *
+ * The laminas actions are reachable here because they are unusually self-contained:
+ * they touch no controller plugin, no request and no route match, so they can be
  * constructed and called outside an MVC dispatch. getShrineDatasets() is protected
  * and is reached by reflection, which is the price of not editing it.
  *
@@ -80,16 +87,44 @@ class ShrineIndexParityTest extends TestCase
     }
 
     /**
+     * The two pages, each named by the table method that feeds it and the laminas
+     * action that answers it today.
+     *
+     * @return array<string, array{0: string, 1: string}>
+     */
+    public static function shrineIndexProvider(): array
+    {
+        return [
+            'shrines'         => ['getShrines', 'shrinesAction'],
+            'wayside shrines' => ['getWaysideShrines', 'waysideShrinesAction'],
+        ];
+    }
+
+    /**
+     * The same pages, for the assertions that need no laminas action to compare
+     * against. Derived from the one above so the pair cannot drift.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function shrineTableProvider(): array
+    {
+        return array_map(static fn (array $case): array => [$case[0]], self::shrineIndexProvider());
+    }
+
+    /**
      * The whole point: identical regions, identical per-region scores, identical
      * total. A change to either copy that alters any of it fails here.
      */
-    public function testTheTwoImplementationsAssembleTheSameShrineIndex(): void
-    {
-        $shrines = $this->table()->getShrines();
-        $this->assertNotEmpty($shrines, 'no shrines in the database — this test would prove nothing');
+    #[DataProvider('shrineIndexProvider')]
+    public function testTheTwoImplementationsAssembleTheSameShrineIndex(
+        string $tableMethod,
+        string $action
+    ): void {
+        $shrines = $this->table()->$tableMethod();
+        $this->assertNotEmpty($shrines, "no rows from $tableMethod — this test would prove nothing");
 
         $ported = ShrineIndex::build($shrines);
-        $legacy = $this->laminasViewModel()->getVariables();
+        $legacy = $this->laminasViewModel($action)->getVariables();
 
         $this->assertSame(array_keys($legacy['regions']), array_keys($ported['regions']), 'region order');
         $this->assertEquals($legacy['regions'], $ported['regions'], 'shrines grouped by region');
@@ -103,9 +138,10 @@ class ShrineIndexParityTest extends TestCase
      * the invariant the grouping loop is actually for. Asserted independently of the
      * laminas copy, so a shared mistake could not hide behind the parity assertion.
      */
-    public function testEveryShrineIsCountedInExactlyOneRegion(): void
+    #[DataProvider('shrineTableProvider')]
+    public function testEveryShrineIsCountedInExactlyOneRegion(string $tableMethod): void
     {
-        $index = ShrineIndex::build($this->table()->getShrines());
+        $index = ShrineIndex::build($this->table()->$tableMethod());
 
         $grouped = 0;
         $maxScore = 0;
@@ -119,17 +155,27 @@ class ShrineIndexParityTest extends TestCase
         $this->assertSame(count($index['shrines']) * 10, $maxScore);
     }
 
-    /** The schema.org payload is static content copied out of a protected method; pin the copy. */
+    /**
+     * The schema.org payload is static content copied out of a protected method; pin
+     * the copy. One payload, not two: waysideShrinesAction() publishes the *shrine*
+     * datasets, because it calls the same getShrineDatasets(). Reproduced rather than
+     * corrected — the assertion below is what says so.
+     */
     public function testTheDatasetDescriptionsAreIdentical(): void
     {
         $method = new ReflectionMethod(SchoenstattController::class, 'getShrineDatasets');
 
         $this->assertSame($method->invoke($this->laminasController()), ShrineDatasets::build());
+        $this->assertSame(
+            ShrineDatasets::build(),
+            $this->laminasViewModel('waysideShrinesAction')->getVariable('datasets'),
+            'the wayside page publishes the shrine datasets, as its laminas action does'
+        );
     }
 
-    private function laminasViewModel(): ViewModel
+    private function laminasViewModel(string $action): ViewModel
     {
-        $view = $this->laminasController()->shrinesAction();
+        $view = $this->laminasController()->$action();
         $this->assertInstanceOf(ViewModel::class, $view);
 
         return $view;
