@@ -31,7 +31,7 @@ entirely — and with it every `MvcEvent` listener the application relies on:
 
 | Not running | Consequence for a ported page |
 |---|---|
-| `BjyAuthorize\Guard\Route` | **The route guard is gone** — but not the ACL. See below. |
+| `BjyAuthorize\Guard\Route` | **Replaced**, 2026-08-06, by `App\Http\AuthorizationListener` on `kernel.request`. See "What can move today". |
 | `SlmLocale\Strategy\UriPathStrategy` | No locale detection, no `/en` stripping, no redirect. See "The locale trap". |
 | `Laminas\Mvc\Application`'s route/dispatch events | Four view helpers and the whole `Navigation` service stop working. See the inventory. |
 | `Application\Module::onBootstrap()` | The database-derived navigation branches are never primed or cached |
@@ -48,9 +48,10 @@ JUser for the identity, JUser reads it from the session, and reading the session
 calls `session_start()` — measured: `session_status()` goes NONE → ACTIVE across a
 single `isAllowed()` call, with no MVC listener involved. So **permission-gated
 markup still works on a ported page**: a signed-in moderator gets the moderator
-table, an anonymous visitor the public one, exactly as before. What is missing is
+table, an anonymous visitor the public one, exactly as before. What was missing was
 only the *route* guard, i.e. the thing that would have refused the request
-outright.
+outright — and that is what the identity being available made buildable, on
+2026-08-06.
 
 The cost is a `Set-Cookie` that PHP writes into the SAPI header list before any
 listener can object, which on an unconsented visitor is precisely what
@@ -59,23 +60,32 @@ counterpart, and a ported HTML page needs it.
 
 ## What can move today
 
-**Only public routes.** Because the guard does not run, porting a guarded route
-silently removes its protection — the worst possible failure, since the page keeps
-working and simply admits everyone.
+**Any route, restricted or not** — since 2026-08-06. This section said "only public
+routes" for a good reason and no longer does: `App\Authorization\RouteGuard` now runs
+the check `BjyAuthorize\Guard\Route` cannot, against the *same* ACL resource, and
+`/admin` (guarded `['sch_moderator', 'translator']`) is the ported proof. The
+mechanism is documented in [strangler.md](strangler.md) under "Authorization"; what
+matters here is the porting rule that replaced the old one:
 
-`tools/acl-table.php` is the check. It reports Symfony-served routes in their own
-section ("nothing in this file applies to them") and lists laminas routes now
-shadowed by one, with the guard that is no longer enforced. A shadowed route whose
-guard was **public** is a no-change; anything else is a real authorization change
-and the tool warns. Regenerate `docs/acl-rules.md` and `docs/acl-baseline.json`
-after every port and read the diff.
+**A ported route declares what governs it, and declaring nothing is an error.** The
+fourth argument to `$ported()` in `config/symfony/routes.php` is required —
+`RouteAccess::guardedBy('route/<laminas-route-name>')` for anything the laminas guards
+cover, `RouteAccess::openToEveryone('<why>')` where there is nothing to consult. Omit
+it and the route raises `UndeclaredRouteAccess` naming itself. The old failure — a
+guarded page silently open to everyone, still rendering, with nothing to notice — is
+no longer reachable by forgetting.
 
-Of 191 routes, **166 carry a guard entry and 149 of those actually restrict
-access** — the other 17 are guarded but public (a `null` role means everyone), and
-those are the ones that can move. So the ceiling is a hard 149 pages, not a
-formality. Lifting it means building an authorization bridge, which is the gate on
-any port beyond the public pages. Recompute rather than trusting these numbers
-once a few more routes have moved:
+`tools/acl-table.php` is still the check, and now reports **which ACL resource each
+Symfony route is verified against and what that resource grants**. It warns when a
+route declares nothing (`SILENT BYPASS RISK`), when a declared resource matches no
+guard entry (which denies everyone, quietly), and when a restricted laminas guard has
+been replaced by anything other than itself. Regenerate `docs/acl-rules.md` and
+`docs/acl-baseline.json` after every port and read the diff.
+
+For scale: of 191 routes, **166 carry a guard entry and 149 of those actually restrict
+access** — the other 17 are guarded but public (a `null` role means everyone). Those
+149 were the hard ceiling on this migration and are now portable. Recompute rather
+than trusting these numbers once a few more routes have moved:
 
 ```sh
 docker compose exec -T app php tools/acl-table.php --format=json \
@@ -357,3 +367,59 @@ sections above:
   ported code. That is how a copy of the arithmetic stays safe when *editing* the
   laminas action would put production at risk — better than sharing code you had
   to modify.
+
+**2026-08-06 — the authorization bridge, and `/admin` (first restricted port).**
+The gate this whole file was written under is gone: `App\Authorization\RouteGuard`
+runs on `kernel.request` and checks the *same* `route/<name>` ACL resource the
+laminas guard keys on, so the 149 restricted routes are portable. Mechanism in
+[strangler.md](strangler.md); what belongs in a porting log is what was surprising.
+
+- **Measure the denial contract, do not read it.** Both branches were captured off
+  the live capsule on `/en/admin` before the route moved — anonymous, signed-in
+  without the role, signed-in with it — and only then reproduced. Reading
+  `JUser\View\RedirectionStrategy` alone would have missed that the 403 renders
+  *inside the layout*: `UnauthorizedStrategy` adds its ViewModel as a **child** of
+  the layout's, so the refusal keeps the navbar and the language chooser. A bare
+  `<h1>403</h1>` would have looked correct in a diff of the strategy's source.
+- **`route/admin` admits a moderator; the page then admits four of its ten links.**
+  Getting through the guard and seeing the page are different permissions, and this
+  page is where the difference shows: the template filters each link through
+  `isAllowed()` individually. The first draft of the smoke test pinned the ten-link
+  list against a `sch_moderator` session and failed, which is how the distinction
+  got asserted separately instead of assumed. A port that dropped the per-item check
+  would have passed every status-code assertion in the file.
+- **`Authorize::getIdentity()` is not the identity.** It returns the literal string
+  `bjyauthorize-identity`, the meta-role. Branching on its truthiness sends every
+  visitor — anonymous included — to the 403 page instead of to the sign-in one.
+  `JUser\AuthService` is the right question, and is the one `RedirectionStrategy`
+  asks.
+- **Roles are re-read every request, so mid-session elevation works.** This
+  contradicts a comment in `tools/form-regression.php`, which elevates *before*
+  redeeming the magic link because "BjyAuthorize reads the roles when the session
+  identity is established". It does not:
+  `ZfcUserZendDbPlusSelfAsRole::getIdentityRoles()` selects from
+  `user_role_linker` on every request and `bjyauthorize.cache_enabled` is false.
+  Measured — a 403 and a 200 from the same cookie jar with one `INSERT` between
+  them. Nothing about a role is cached anywhere, which is also why the guard cannot
+  be tested by inspecting a session.
+- **The guard's decision is only testable over HTTP.** The ACL and the
+  authentication service both reach laminas-session, which cannot be *built* under
+  the CLI SAPI once PHPUnit has printed its first dot — the
+  `'session.cache_expire' is not a valid sessions-related ini setting` trap this
+  file already warns about for view helpers applies to authorization wholesale. So
+  the decision lives in a smoke test and only the *wiring* (every route declares
+  something, every declared resource exists) and the *response shapes* are
+  integration-testable. Split the tests that way from the start.
+- **`$ported()` gained a required argument.** That is the cheapest possible
+  enforcement: a route cannot be added through the helper without saying who may
+  reach it, and the two routes not added through the helper (`health`, `legacy`) are
+  covered by a runtime exception plus a test that walks the whole `RouteCollection`.
+  Prefer a required parameter to a convention someone has to remember.
+- **One behaviour change, on the unprefixed form only.** Laminas answers `/admin`
+  with SlmLocale's `302 → /en/admin` and denies on the second hop; the guard now
+  runs before the controller that would issue that redirect, so `/admin` denies in
+  one hop and the return path is `?redirect=/admin` rather than `/en/admin`. Same
+  destination, same access, one fewer hop. Moving the locale redirect into a
+  listener above the guard would restore the order and is a separate change — the
+  maintenance endpoints must not redirect, so it needs a per-route declaration of
+  its own.

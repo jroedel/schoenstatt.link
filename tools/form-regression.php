@@ -162,8 +162,13 @@ function signInAsAdministrator(string $jar): void
 
     $verifyPath = awaitVerifyPath($email);
 
-    // Elevate BEFORE redeeming the link: BjyAuthorize reads the roles when the
-    // session identity is established, so the role has to exist first.
+    // Elevate before redeeming the link. Convenience, not a requirement — this used
+    // to claim "BjyAuthorize reads the roles when the session identity is
+    // established, so the role has to exist first", which is wrong:
+    // JUser\Provider\Identity\ZfcUserZendDbPlusSelfAsRole::getIdentityRoles() selects
+    // from user_role_linker on every request and bjyauthorize.cache_enabled is false,
+    // so a role granted mid-session is in force on the next request. Measured
+    // 2026-08-06; the assertion is in test/Smoke/AdminAuthorizationSmokeTest.
     elevateToAdministrator($email);
 
     $verify = httpGet($verifyPath, $jar);

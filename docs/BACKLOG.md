@@ -141,6 +141,20 @@ readability — the destination is **Symfony**, reached gradually:
   - While the flag is off, **production and the capsule run different front
     controllers**. That is deliberate, and it is also the one thing to remember
     before concluding anything from a local reproduction.
+- [ ] **Move the unprefixed-to-prefixed locale redirect out of the ported
+  controllers and into a `kernel.request` listener above the authorization
+  check.** Since the authorization bridge landed (2026-08-06) the two front
+  controllers disagree about the *unprefixed* form of a restricted path: laminas
+  answers `/admin` with SlmLocale's `302 → /en/admin` and denies on the second
+  hop, while the Symfony guard runs before the controller that would issue that
+  redirect and so denies at once, with `?redirect=/admin` rather than
+  `?redirect=/en/admin`. Nobody's access changes, the visitor arrives in the same
+  place, and every real caller uses the prefixed form — so this is tidiness, not
+  a bug. The reason it is not already done: the redirect is a per-route decision
+  (`ShrinesController` and `AdminController` do it, the maintenance endpoints must
+  **not**, `/_health` has no prefixed form at all), so a listener needs a
+  declaration of its own alongside `RouteAccess`. Worth doing when a third HTML
+  route makes the duplication a third copy.
 - [ ] **Two consoles now exist in principle.** `bin/console` builds the *laminas*
   container and is the deploy's command host; a Symfony console would want the
   kernel. Nothing needs converging yet — `App\Kernel` contributes no commands —
