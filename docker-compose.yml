@@ -55,8 +55,11 @@ services:
       MARIADB_PASSWORD: schoenstatt
     volumes:
       - db-data:/var/lib/mysql
-      # Contains the production dump plus zz-db6.3.sql (the only migration newer
-      # than the dump) — initdb runs files alphabetically.
+      # Contains the production dump plus the zz-db*.sql migrations newer than
+      # it — initdb runs files alphabetically, which is what the zz- prefix is
+      # for. This directory is gitignored, so after adding a migration under
+      # database/ you have to copy it here as zz-<name>.sql on each machine or a
+      # `docker compose down -v` re-import silently loses it.
       - ./database/dumps:/docker-entrypoint-initdb.d:ro
     ports:
       - "33306:3306"

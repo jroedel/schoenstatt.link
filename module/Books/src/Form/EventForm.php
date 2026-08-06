@@ -154,6 +154,22 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'required' => true,
             ],
         ]);
+
+        $this->add([
+            'name' => 'startDatePrecision',
+            'type' => 'Select',
+            'options' => [
+                'label' => 'How precisely the date is known',
+                'value_options' => \SionModel\Form\DatePrecision::valueOptions(),
+                //filterSpec() owns the domain check, so the Select's automatic
+                //InArray is off to leave exactly one — see DatePrecision.
+                'disable_inarray_validator' => true,
+            ],
+            'attributes' => [
+                'required' => false,
+                'value' => \SionModel\Form\DatePrecision::DEFAULT_PRECISION,
+            ],
+        ]);
         $this->add([
             'name' => 'durationInDays',
             'type' => 'Number',
@@ -531,7 +547,15 @@ class EventForm extends SionForm implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'SionModel\Filter\ToDateTime'],
                 ],
+                'validators' => [
+                    ['name' => 'SionModel\Validator\ParseableDate'],
+                    [
+                        'name' => 'SionModel\Validator\DateWithinRange',
+                        'options' => ['min' => '1800-01-01', 'max' => '+10 years'],
+                    ],
+                ],
             ],
+            'startDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
             'durationInDays' => [
                 'required' => true,
                 'filters' => [

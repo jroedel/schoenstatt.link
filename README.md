@@ -2,9 +2,10 @@ schoenstatt.link
 ================
 
 A database application for Schoenstatt-related topics — shrines, the movement,
-literature and libraries, music, a Bible/daily-heritage section and a blog —
-served in four locales. Built on the Laminas MVC layer (formerly Zend Framework
-3), running PHP 8.3 against MariaDB 10.11.
+literature and libraries, music and a blog — served in four locales. Built on
+the Laminas MVC layer (formerly Zend Framework 3) with a Symfony kernel in front
+of it, running PHP 8.4 in production and 8.5 in development, against MariaDB
+10.11.
 
 Live at <https://schoenstatt.link>.
 
@@ -43,10 +44,12 @@ Verifying a change
 
 ```bash
 php composer.phar unit          # no HTTP, no app, no vendor/ — safe to run freely
-php composer.phar smoke         # HTTP characterization tests against the running capsule
 php composer.phar integration   # exercises real vendor/ libraries
+php composer.phar fuzz          # form input validation: hostile input through every form
+php composer.phar smoke         # HTTP characterization tests against the running capsule
 php composer.phar test          # all of the above
 
+php composer.phar stan          # PHPStan, contract is "no new errors"
 php composer.phar cs-check      # phpcs, PSR-12 based
 php -l path/to/File.php         # syntax check anything you touched
 ```
@@ -54,6 +57,24 @@ php -l path/to/File.php         # syntax check anything you touched
 All of these shell into the capsule: the host PHP typically lacks the extensions
 PHPUnit and phpcs need. Run the **smoke suite one process at a time** — never
 fan it out in parallel.
+
+Two checks are baseline-driven, and in both cases the baseline is the point:
+`fuzz` accepts the validation gaps listed in `test/Fuzz/known-form-gaps.php` and
+fails on any new one (`php composer.phar fuzz-baseline` regenerates it — every
+line the diff *adds* is a gap being accepted), and `stan` accepts the errors in
+`phpstan-baseline.neon`.
+
+Authorization is not covered by any of them, because a permission that quietly
+stops matching makes a page work for *more* people and nothing fails. Diff it
+instead:
+
+```bash
+docker compose exec -T app php tools/acl-table.php                  # reviewable
+docker compose exec -T app php tools/acl-table.php --format=json    # diffable
+```
+
+`docs/acl-rules.md` and `docs/acl-baseline.json` are the committed snapshots;
+regenerate and diff them after touching a route, a guard entry or a role.
 
 Layout
 ------
@@ -66,7 +87,6 @@ namespace and file path matching exactly:
 | `Application` | site chrome, routing, home page, CORS, GDPR strategy |
 | `Schoenstatt` | shrines, the movement, associations, persons |
 | `Books` | literature, libraries, publications, music, dictionary |
-| `Bible` | Bible and daily-heritage texts |
 | `RestApi` | the JSON API and its JWT auth |
 | `SionModel`, `JUser`, `JTranslate` | shared libraries, **git submodules** — changes here affect other sites, so commit in the submodule first, then move the pointer |
 

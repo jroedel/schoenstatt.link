@@ -1,0 +1,29 @@
+{#
+  The 403 page for a Symfony-served route, rendered by App\Authorization\RouteGuard
+  when a signed-in visitor is not allowed to reach a page.
+
+  It replaces vendor/kokspflanze/bjy-authorize/view/error/403.phtml, which is what
+  `error/403` still resolves to on the laminas side. Reproducing rather than reusing
+  it is the point: bjy-authorize is abandoned and slated for retirement, and a
+  ported page whose refusal comes out of that package would go blank the day it is
+  removed. The wording and markup of the Route::ERROR branch are kept verbatim so
+  the two front controllers say the same thing about the same page — everything else
+  in that template (the Controller guard branch, the generic
+  `error-unauthorized` branch) has no counterpart here: this guard raises exactly
+  one kind of refusal.
+
+  Rendered inside the shared layout, which is also where laminas puts it:
+  BjyAuthorize\View\UnauthorizedStrategy adds the 403 ViewModel as a *child* of the
+  layout's, so the page keeps its navbar, language chooser and footer.
+
+  One deliberate difference: laminas leaves headTitle() untouched here, so the page
+  is titled "Schoenstatt Link". This one says so.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>403 Forbidden</h1>
+<p>
+    You are not authorized to access {{ subject }}.
+</p>
+{% endblock %}

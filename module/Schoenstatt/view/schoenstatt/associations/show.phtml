@@ -157,7 +157,7 @@ if (! empty($object['photos'])) :
     <div class="col-md-6">
         <p><strong><?= $this->translate('Foundation date');?>:</strong>
         <?php if (isset($object['foundationDate'])) {
-            echo $this->dateFormat($object['foundationDate'], IntlDateFormatter::LONG, IntlDateFormatter::NONE);
+            echo $this->datePrecisionFormat($object['foundationDate'], $object['foundationDatePrecision'], IntlDateFormatter::LONG);
         }?></p>
         <?php if (isset($object['suppressionDate'])) :?>
             <p><strong><?= $this->translate('Suppression date');?>:</strong> <?php

@@ -11,7 +11,7 @@
     ],
     "homepage": "http://framework.zend.com/",
     "require": {
-        "php": "~8.4.0",
+        "php": "~8.4.0 || ~8.5.0",
         "nesbot/carbon": "^2.62",
         "giggsey/libphonenumber-for-php": "^8.11",
         "neitanod/forceutf8": "^2.0",
@@ -64,7 +64,8 @@
         "symfony/routing": "^7.4",
         "symfony/http-foundation": "^7.4",
         "symfony/error-handler": "^7.4",
-        "symfony/event-dispatcher": "^7.4"
+        "symfony/event-dispatcher": "^7.4",
+        "twig/twig": "^3.0"
     },
     "require-dev": {
         "laminas/laminas-developer-tools": "^2.10",
@@ -121,7 +122,6 @@
         "psr-4": {
             "App\\": "src/",
             "Application\\": "module/Application/src/",
-            "Bible\\": "module/Bible/src/",
             "Books\\": "module/Books/src/",
             "JTranslate\\": "module/JTranslate/src/",
             "JUser\\": "module/JUser/src/",
@@ -137,11 +137,15 @@
         "smoke": "docker compose exec -T app php tools/phpunit.phar --testsuite smoke",
         "unit": "docker compose exec -T app php tools/phpunit.phar --testsuite unit",
         "integration": "docker compose exec -T app php tools/phpunit.phar --testsuite integration",
+        "fuzz": "docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite fuzz",
+        "fuzz-baseline": "docker compose exec -T app php -d memory_limit=1G test/Fuzz/regenerate-baseline.php",
         "test": "docker compose exec -T app php tools/phpunit.phar",
         "stan": "docker compose exec -T app php -d memory_limit=1G tools/phpstan.phar analyse"
     },
     "scripts-descriptions": {
         "smoke": "Run the HTTP smoke suite against the running capsule. ONE process at a time — never fan this out in parallel.",
-        "stan": "Run PHPStan against the module sources. Contract is 'no new errors': pre-existing ones live in phpstan-baseline.neon."
+        "stan": "Run PHPStan against the module sources. Contract is 'no new errors': pre-existing ones live in phpstan-baseline.neon.",
+        "fuzz": "Run the form input-validation fuzz harness. No HTTP, read-only DB. Contract is 'no new gaps': pre-existing ones live in test/Fuzz/known-form-gaps.php.",
+        "fuzz-baseline": "Regenerate test/Fuzz/known-form-gaps.php. Review the diff: every added line is a validation gap being accepted."
     }
 }

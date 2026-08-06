@@ -16,7 +16,6 @@ parameters:
     paths:
         - src
         - module/Application/src
-        - module/Bible/src
         - module/Books/src
         - module/JTranslate/src
         - module/JUser/src

@@ -1,0 +1,209 @@
+{#
+  The site layout for Symfony-served routes — the Twig counterpart of
+  module/Application/view/layout/layout.phtml, which still renders every route
+  that has not moved yet. Both are live; see docs/strangler.md.
+
+  What a page is expected to define:
+    page_title    string   goes in <title> before the site name, and into the
+                           WebPage schema. Required.
+    breadcrumbs   list     [{label, href}], outermost first, or omitted for none.
+    block content          the page body.
+    block inline_scripts   scripts at the end of <body>. Anything inline MUST
+                           carry nonce="{{ csp_nonce() }}" or the CSP blocks it.
+
+  Everything else — navigation, the language chooser, the search box, flash
+  messages, the schema blocks — comes from Twig functions and needs nothing from
+  the controller. That is deliberate: the laminas layout asked its renderer for
+  those, and a per-controller obligation to supply them is one a later port would
+  forget.
+
+  Two things this layout cannot reproduce and does not pretend to: the breadcrumb
+  trail is passed in rather than derived from the Navigation service (whose factory
+  needs an MvcEvent), and `nowMessenger` is omitted because nothing on a ported
+  route can populate it — it is a within-request messenger, not a session one.
+#}
+<!DOCTYPE html>
+<html lang="{{ current_language() }}">
+    <head>
+        <meta charset="utf-8">
+        <title>{{ page_title }} - {{ translate('Schoenstatt Link', 'Application') }}</title>
+
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+        {# the canonical page is always the English one; every other language is an alternate #}
+        {% set locale_links = canonical_links() %}
+        <link href="{{ locale_links.canonical }}" rel="canonical">
+        {% for language, href in locale_links.alternates %}
+        <link href="{{ href }}" hreflang="{{ language }}" rel="alternate">
+        {% endfor %}
+
+        <link href="/css/gen-basic.css" media="screen" rel="stylesheet" type="text/css">
+
+        <!-- ****** faviconit.com favicons ****** -->
+        <link rel="shortcut icon" href="/favicon.ico">
+        <link rel="icon" sizes="16x16 32x32 64x64" href="/favicon.ico">
+        <link rel="icon" type="image/png" sizes="196x196" href="/favicon-192.png">
+        <link rel="icon" type="image/png" sizes="160x160" href="/favicon-160.png">
+        <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+        <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+        <link rel="apple-touch-icon" href="/favicon-57.png">
+        <link rel="apple-touch-icon" sizes="114x114" href="/favicon-114.png">
+        <link rel="apple-touch-icon" sizes="72x72" href="/favicon-72.png">
+        <link rel="apple-touch-icon" sizes="144x144" href="/favicon-144.png">
+        <link rel="apple-touch-icon" sizes="60x60" href="/favicon-60.png">
+        <link rel="apple-touch-icon" sizes="120x120" href="/favicon-120.png">
+        <link rel="apple-touch-icon" sizes="76x76" href="/favicon-76.png">
+        <link rel="apple-touch-icon" sizes="152x152" href="/favicon-152.png">
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png">
+        <meta name="msapplication-TileColor" content="#FFFFFF">
+        <meta name="msapplication-TileImage" content="/favicon-144.png">
+        <meta name="msapplication-config" content="/browserconfig.xml">
+        <!-- ****** faviconit.com favicons ****** -->
+
+        <!-- Scripts -->
+        <script src="/js/gen-basic.js"></script>
+        <!--[if lt IE 9]><script src="/js/html5shiv.min.js"></script><![endif]-->
+        <!--[if lt IE 9]><script src="/js/respond.min.js"></script><![endif]-->
+    </head>
+
+    <body{% if current_route() == 'publications/index' %} data-spy="scroll" data-target="#sidebar-nav" data-offset="35"{% endif %}>
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse"
+                        aria-expanded="false" aria-controls=".navbar">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="{{ laminas_path('welcome') }}"><span><img alt="SL" src="/img/logo.png"></span> Schoenstatt Link</a>
+                </div>
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    {% if not display_name() %}
+                    <ul class="nav navbar-nav pull-right">
+                        {% if current_route() != 'zfcuser/login' %}
+                        <li><a class="btn" href="{{ laminas_path('zfcuser/login') }}">{{ translate('Sign in', 'Application') }}</a></li>
+                        {% endif %}
+                        {% if current_route() != 'zfcuser/register' %}
+                        <li><a class="btn" href="{{ laminas_path('zfcuser/register') }}"><strong>{{ translate('Register', 'Application') }}</strong></a></li>
+                        {% endif %}
+                    </ul>
+                    {% else %}
+                    <ul class="nav navbar-nav pull-right">
+                        {% set search = search_box() %}
+                        {% if search %}
+                        <li class="">
+                            <form class="navbar-form" action="{{ search.action }}" method="get" role="search">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="search" placeholder="{{ search.placeholder }}">
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-info" type="submit">
+                                            <i class="glyphicon glyphicon-search"></i>
+                                        </button>
+                                    </span>
+                                </div>
+                            </form>
+                        </li>
+                        {% endif %}
+                        <li><a href="{{ laminas_path('zfcuser/logout') }}">{{ translate('Logout', 'Application') }}</a></li>
+                    </ul>
+                    {% endif %}
+                    <ul class="nav navbar-nav pull-right">
+                        {% for item in navigation_items() %}
+                        <li{% if item.active %} class="active"{% endif %}>
+                            <a href="{{ item.href }}"{% if item.active %} aria-current="page"{% endif %}>{{ translate(item.label) }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                 </div><!--/.nav-collapse -->
+            </div>
+        </nav>
+        <div class="container" role="main">
+            <div class="row">
+            {% set languages = language_options() %}
+            {% set current_language_option = languages|filter(option => option.current)|first %}
+            <div class="btn-group pull-right">
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {% if current_language_option %}<span class="flag-icon flag-icon-{{ current_language_option.flag }}"></span> {{ current_language_option.label }} {% endif %}<span class="caret"></span>
+              </button>
+              <ul class="dropdown-menu">
+                {% for language in languages %}
+                <li><a href="{{ language.href }}"><span class="flag-icon flag-icon-{{ language.flag }}"></span> {{ language.label }}</a></li>
+                {% endfor %}
+              </ul>
+            </div>
+            {% if breadcrumbs is defined and breadcrumbs %}
+            {#- every ancestor of the current page is active, which is what
+                Laminas\Navigation\Page\Mvc::isActive() answers for each of them -#}
+            <ol class="breadcrumb">
+                {% for crumb in breadcrumbs %}
+                <li class="active">
+                    {% if not loop.last %}<a href="{{ crumb.href }}">{{ crumb.label }}</a>{% else %}{{ crumb.label }}{% endif %}
+                </li>
+                {% endfor %}
+            </ol>
+            {% set crumb_items = [] %}
+            {% for crumb in breadcrumbs %}
+                {% set crumb_items = crumb_items|merge([{
+                    '@type': 'ListItem',
+                    'position': loop.index,
+                    'item': {'@id': server_url() ~ crumb.href, 'name': crumb.label},
+                }]) %}
+            {% endfor %}
+            <script type="application/ld+json">{{ json_ld({
+                '@context': 'https://schema.org',
+                '@type': 'BreadcrumbList',
+                'itemListElement': crumb_items,
+            }) }}</script>
+            {% endif %}
+            </div>
+            {{ flash_messages() }}
+            {% block content %}{% endblock %}
+<script type="application/ld+json">{{ json_ld([
+    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': page_title, 'publisher': {'@id': '#identity'}},
+    {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/en/', 'inLanguage': 'en'},
+    {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/es/', 'inLanguage': 'es'},
+    {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/de/', 'inLanguage': 'de'},
+    {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/pt/', 'inLanguage': 'pt'},
+    {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/it/', 'inLanguage': 'it'},
+    {
+        '@context': 'http://www.schema.org',
+        '@type': 'Organization',
+        '@id': '#identity',
+        'name': 'Schoenstatt Link',
+        'url': 'https://schoenstatt.link/en/',
+        'logo': {'@type': 'ImageObject', 'url': 'https://schoenstatt.link/favicon-310.png'},
+        'sameAs': ['https://www.facebook.com/SchoenstattLink/', 'https://twitter.com/SchoenstattLink'],
+        'location': {
+            '@type': 'Place',
+            'address': {
+                '@type': 'PostalAddress',
+                'streetAddress': 'Las Nalcas Norte 7678',
+                'addressLocality': 'La Florida',
+                'addressRegion': 'Santiago',
+                'addressCountry': 'Chile',
+            },
+            'geo': {'@type': 'GeoCoordinates', 'latitude': '-33.52568', 'longitude': '-70.54934'},
+        },
+        'contactPoint': {
+            '@type': 'ContactPoint',
+            'telephone': '+1-414-215-0318',
+            'email': 'webmaster@schoenstatt.link',
+            'contactType': 'tech support',
+            'availableLanguage': ['en', 'es', 'de', 'pt'],
+        },
+    },
+]) }}</script>
+            <div class="footer">
+                <hr>
+                <p class="text-center"><a href="https://creativecommons.org/licenses/by-sa/3.0/">
+                <img src="/img/CC-BY-SA_icon-88.png" alt="Cc-by-sa"/></a></p>
+            </div>
+        </div> <!-- /container -->
+        <div class="eupopup eupopup-bottomright"></div>
+{% block inline_scripts %}{% endblock %}
+    </body>
+</html>

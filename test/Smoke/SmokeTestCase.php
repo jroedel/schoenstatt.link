@@ -94,7 +94,6 @@ abstract class SmokeTestCase extends TestCase
             'contentType' => (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE),
             'headers' => $responseHeaders,
         ];
-        curl_close($ch);
         return $result;
     }
 
