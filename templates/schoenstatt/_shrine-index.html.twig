@@ -1,0 +1,75 @@
+{#
+  Everything the shrine index and the wayside-shrine index have in common: the
+  moderator progress bars, the regions loop, the courtesy line, the schema.org
+  datasets and the script that sizes the bars.
+
+  Two pages extend this — schoenstatt/shrines.html.twig and
+  schoenstatt/wayside-shrines.html.twig — and each supplies only `shrine_header`,
+  which is the whole of their difference: a heading, some intro paragraphs and a
+  link to the REST API for their own association kind. Their .phtml originals
+  (module/Schoenstatt/view/schoenstatt/schoenstatt/{shrines,wayside-shrines}.phtml)
+  are two full copies of this body instead, which is why the second one still
+  carries the first one's markup verbatim, comments included. Both .phtml stay
+  live until SYMFONY_KERNEL is set in production; see docs/strangler.md.
+
+  What a page extending this must pass in from its controller:
+    shrines, regions, region_stats, total_percent   App\Schoenstatt\ShrineIndex
+    kind_labels                                     AssociationKindsService
+    datasets                                        App\Schoenstatt\ShrineDatasets
+    page_title, breadcrumbs                         layout.html.twig
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% block shrine_header %}{% endblock %}
+{% set is_moderator = is_allowed('route/association-edit') %}
+{% if is_moderator %}
+<p><strong>{{ translate('Total shrine progress') }}:</strong></p>
+<div class="progress">
+  <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="{{ total_percent }}" aria-valuemin="0" aria-valuemax="100">
+    {{ total_percent }}{{ translate('% Complete') }}
+  </div>
+</div>
+{% endif %}
+{% for region, objects in regions %}
+<h3 id="{{ region }}">{{ translate(region) }}</h3>
+    {% if is_moderator %}
+<div class="progress">
+  <div id="{{ region_stats[region].id }}" class="progress-bar" role="progressbar" aria-valuenow="{{ region_stats[region].percent }}" aria-valuemin="0" aria-valuemax="100">
+        {{ region_stats[region].percent }}{{ translate('% Complete') }}
+  </div>
+</div>
+    {% endif %}
+    {% if is_moderator %}
+        {% include 'schoenstatt/_shrines-table.html.twig' with {'objects': objects, 'kind_labels': kind_labels} only %}
+    {% else %}
+        {% include 'schoenstatt/_associations-table.html.twig' with {'objects': objects, 'kind_labels': kind_labels} only %}
+    {% endif %}
+{% endfor %}
+<p>{{ translate('Initial shrine database courtesy of Matías Fortuño, Vínculo Magazine and schoenstatt.org.') }}</p>
+{% if datasets %}
+<script type="application/ld+json">{{ json_ld(datasets) }}</script>
+{% endif %}
+{% endblock %}
+
+{#
+  The progress bars are sized from JavaScript because the CSP forbids inline
+  styles — which is also why the nonce here is not decoration: without it this
+  script is what the policy blocks.
+
+  `total_percent` is written even for a visitor who sees no total bar, which
+  reproduces the .phtml: it reads the variable outside the `$isModerator` branch
+  that renders the bar.
+#}
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+  $('#total-progress-bar').css("width", "{{ total_percent }}%");
+  var regions = {{ json_ld(region_stats) }};
+  Object.keys(regions).forEach(function(k){
+    percent = regions[k]["percent"]+"%";
+    $('#'+regions[k]["id"]).css("width", percent);
+  });
+});
+</script>
+{% endblock %}

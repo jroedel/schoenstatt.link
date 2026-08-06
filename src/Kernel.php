@@ -4,10 +4,27 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Authorization\RouteGuard;
+use App\Controller\AdminController;
+use App\Controller\CacheStatusController;
+use App\Controller\ClearPersistentCacheController;
 use App\Controller\HealthController;
+use App\Controller\ShrinesController;
+use App\Controller\WaysideShrinesController;
+use App\Http\AuthorizationListener;
+use App\Http\CspListener;
+use App\Http\CspNonce;
+use App\Http\GdprCookieListener;
+use App\Http\InventedCacheControlListener;
 use App\Http\LaminasResponseConverter;
 use App\Http\LegacyBridge;
+use App\Http\LocaleListener;
+use App\Http\MaintenanceKey;
 use App\Http\ProtocolVersionListener;
+use App\Laminas\RouteUrl;
+use App\Laminas\ServiceBridge;
+use App\Laminas\ViewHelpers;
+use App\Twig\TwigFactory;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +39,7 @@ use Symfony\Component\HttpKernel\TerminableInterface;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
+use Twig\Environment;
 
 use function dirname;
 
@@ -30,12 +48,17 @@ use function dirname;
  *
  * There is no FrameworkBundle here and that is not an oversight: it requires
  * symfony/cache, which requires psr/cache ^2|^3, which laminas-cache 3.14 pins
- * to ^1. laminas-cache 4 lifts the pin but kokspflanze/bjy-authorize 2.4.4 — the
- * final release of a dead line — caps laminas-cache at ^3. So the bundle is
- * gated behind retiring bjy-authorize, and the kernel is not: everything below
- * comes from symfony/http-kernel and symfony/routing, which need no psr/cache at
- * all. When that gate opens, this class is what FrameworkBundle replaces; the
- * routes and the LegacyBridge behind it carry over unchanged.
+ * to ^1. laminas-cache 4 lifts that pin, but it needs laminas-servicemanager ^4.5
+ * and laminas-mvc requires ^3.20.0 in *every* version it has, 4.0.x-dev included.
+ * So the gate is laminas-mvc itself — i.e. finishing this migration — and not, as
+ * this said until 2026-08-05, retiring kokspflanze/bjy-authorize: that also caps
+ * laminas-cache at ^3 and is also worth retiring, but removing it leaves the pin
+ * exactly where it is. The measurement is in docs/php-85.md.
+ *
+ * The kernel is not gated on any of that: everything below comes from
+ * symfony/http-kernel and symfony/routing, which need no psr/cache at all. When
+ * the gate does open, this class is what FrameworkBundle replaces; the routes and
+ * the LegacyBridge behind it carry over unchanged.
  *
  * Exceptions are left to propagate. HttpKernel catches them and dispatches
  * kernel.exception, but nothing listens, so handleThrowable() rethrows and the
@@ -46,6 +69,13 @@ use function dirname;
 final class Kernel implements HttpKernelInterface, TerminableInterface
 {
     private HttpKernel $httpKernel;
+    private ServiceBridge $laminas;
+    private RequestStack $requests;
+    private CspNonce $cspNonce;
+    private Environment $twig;
+    private ViewHelpers $viewHelpers;
+    private RouteUrl $routeUrl;
+    private RouteGuard $routeGuard;
 
     /**
      * @param array<string, mixed> $appConfig the merged config/application.config.php,
@@ -80,14 +110,32 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             return $this->httpKernel;
         }
 
-        $requestStack = new RequestStack();
+        $requestStack = $this->requests();
 
         $dispatcher = new EventDispatcher();
         $dispatcher->addSubscriber(new RouterListener(
             new UrlMatcher($this->routes(), new RequestContext()),
             $requestStack
         ));
+        //default priority, i.e. after RouterListener's 32: the locale it reads is a
+        //route attribute, so there is nothing to read until routing has happened
+        $dispatcher->addListener(KernelEvents::REQUEST, new LocaleListener());
+        //the route guard BjyAuthorize\Guard\Route cannot be here to run. Below
+        //RouterListener because it reads the matched route's own declaration, and
+        //below LocaleListener because a 403 renders Twig and would otherwise
+        //translate against en_US_POSIX. Lazily resolved: see AuthorizationListener.
+        $dispatcher->addListener(
+            KernelEvents::REQUEST,
+            new AuthorizationListener($this->routeGuard(...)),
+            AuthorizationListener::PRIORITY
+        );
         $dispatcher->addListener(KernelEvents::RESPONSE, new ProtocolVersionListener());
+        //all three only ever act on a Symfony-served route: on a bridged one
+        //laminas-mvc's own listeners and LaminasResponseConverter have already done
+        //the equivalent
+        $dispatcher->addListener(KernelEvents::RESPONSE, new CspListener($this->laminas(), $this->cspNonce()));
+        $dispatcher->addListener(KernelEvents::RESPONSE, new GdprCookieListener());
+        $dispatcher->addListener(KernelEvents::RESPONSE, new InventedCacheControlListener());
 
         return $this->httpKernel = new HttpKernel(
             $dispatcher,
@@ -108,7 +156,122 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 new LaminasResponseConverter()
             ),
             HealthController::class => static fn (): HealthController => new HealthController(),
+            // The ported maintenance endpoints. They share one ServiceBridge, so
+            // a request that reaches either loads the laminas modules once — and
+            // a request that reaches neither loads them not at all, because
+            // laminas() is only called when a factory actually runs.
+            CacheStatusController::class => fn (): CacheStatusController => new CacheStatusController(
+                new MaintenanceKey($this->laminas())
+            ),
+            ClearPersistentCacheController::class
+                => fn (): ClearPersistentCacheController => new ClearPersistentCacheController(
+                    new MaintenanceKey($this->laminas()),
+                    $this->laminas()
+                ),
+            // The first ported HTML route, and the reason the Twig layer exists.
+            // twig() is lazy for the same reason laminas() is: a request that
+            // renders no template — /_health, the maintenance endpoints, anything
+            // bridged — never builds any of it.
+            ShrinesController::class => fn (): ShrinesController => new ShrinesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The same page over the wayside-shrine associations. Identical
+            // dependencies because it is the same page: what differs is one table
+            // method and one template header block, not the wiring.
+            WaysideShrinesController::class => fn (): WaysideShrinesController => new WaysideShrinesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The first restricted page, and the only reason to trust
+            // App\Authorization\RouteGuard: a bridge no guarded route exercises
+            // proves nothing. Same three dependencies as the shrines port — the
+            // authorization is entirely in the route declaration, not here.
+            AdminController::class => fn (): AdminController => new AdminController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
         ]);
+    }
+
+    /**
+     * The authorization check for Symfony-served routes, built at most once per
+     * request and only when a request actually reaches the listener.
+     *
+     * Not built where the listener is registered, which happens before the request
+     * exists: routeUrl() reads the request's base URL and would memoize an empty one
+     * for the whole request, quietly stripping the prefix off every link on every
+     * ported page. Twig is handed over as a closure for a smaller version of the same
+     * argument — only the 403 branch renders anything, and /_health should not pay
+     * TwigFactory's cache-writability probe to be told it is public.
+     */
+    private function routeGuard(): RouteGuard
+    {
+        return $this->routeGuard ??= new RouteGuard(
+            $this->laminas(),
+            $this->routeUrl(),
+            $this->twig(...)
+        );
+    }
+
+    /**
+     * The Twig environment every ported HTML route renders through, and the two
+     * extensions that give its templates a way back to laminas. Read
+     * templates/layout.html.twig and App\Twig\LaminasExtension before adding a
+     * third: the interesting constraint is which laminas view helpers can be
+     * reached at all.
+     */
+    private function twig(): Environment
+    {
+        return $this->twig ??= (new TwigFactory())->create(
+            $this->laminas(),
+            $this->viewHelpers(),
+            $this->routeUrl(),
+            $this->requests(),
+            $this->cspNonce()
+        );
+    }
+
+    private function viewHelpers(): ViewHelpers
+    {
+        return $this->viewHelpers ??= new ViewHelpers($this->laminas());
+    }
+
+    /**
+     * The laminas router, base URL already pointed at the request's locale prefix.
+     * Shared, because setting that base URL twice on the same router service would
+     * double the prefix.
+     */
+    private function routeUrl(): RouteUrl
+    {
+        return $this->routeUrl ??= new RouteUrl(
+            $this->laminas(),
+            $this->requests()->getMainRequest()?->getBaseUrl() ?? ''
+        );
+    }
+
+    private function cspNonce(): CspNonce
+    {
+        return $this->cspNonce ??= new CspNonce();
+    }
+
+    private function requests(): RequestStack
+    {
+        return $this->requests ??= new RequestStack();
+    }
+
+    /**
+     * Read access to the laminas services for a ported controller, built at most
+     * once per request. Kept off App\Container on purpose: the container's own
+     * docblock explains why it must be able to resolve LegacyBridge — the thing
+     * that *builds* the laminas application — without any laminas involvement.
+     */
+    private function laminas(): ServiceBridge
+    {
+        return $this->laminas ??= new ServiceBridge($this->appConfig);
     }
 
     private function routes(): RouteCollection

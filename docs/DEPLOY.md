@@ -101,6 +101,14 @@ TODOs get real values):
         web-segment entries in place. Running it on the server means the
         maintenance key comes from the app's own config and never appears in
         `phploy.ini`, a shell history or an access log.
+      - That URL, and `/en/sm/cache-status`, are the two routes ported to the
+        Symfony kernel (see [strangler.md](strangler.md)). Production still
+        serves them from laminas-mvc, because `SYMFONY_KERNEL` is unset there;
+        both implementations coexist and answer the same URL with the same
+        payload. What differs is the refusal: laminas answers `302` to the
+        sign-in page, the Symfony controller answers `401` with a JSON body.
+        `cache:flush-persistent` reports either as a rejected key, so flipping
+        the flag needs no change to the hook.
    3. wget `/en/associations/do-work` with an `X-Api-Key` header —
       post-deploy data maintenance. Needs the fully-deployed site. Still a
       wget because the work itself has not been ported to a command yet.

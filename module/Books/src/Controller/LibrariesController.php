@@ -179,17 +179,8 @@ class LibrariesController extends SionController
         /** @var TranslationsTable $translations */
         $translations = $this->services[TranslationsTable::class];
 
-        if (isset($pages['admin/moderate'])) {
-//             $suggestionCount = $table->getSuggestionCount();
-//             $pages['admin/moderate']['badges'] = [$suggestionCount ? ' '.$suggestionCount : " 0"];
-        }
-
         if (isset($pages['jtranslate'])) {
             $pages['jtranslate']['badges'] = [(string) $translations->getOutstandingTranslationCount()];
-        }
-
-        if (isset($pages['admin/website-status'])) {
-            $pages['admin/website-status']['badges'] = [count($this->getKnownIssues())];
         }
 
         if (isset($pages['libraries/library/data-problems'])) {

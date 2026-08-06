@@ -45,7 +45,16 @@ return [
         'database'      => 'xxxxxxxxxx',
         'username'       => 'root',
         'password'       => 'xxxxxxxxx',
-        'driver_options' => [\PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES UTF8;'],
+        //PHP 8.5 deprecates PDO::MYSQL_ATTR_INIT_COMMAND in favour of
+        //Pdo\Mysql::ATTR_INIT_COMMAND, which does not exist before 8.4. Both
+        //spellings are the same integer; the check only avoids emitting a
+        //deprecation. Note the *live* local.php on each machine and on the
+        //server carries its own copy of this line and has to be updated
+        //separately — see docs/BACKLOG.md.
+        'driver_options' => [
+            (class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND)
+                => 'SET NAMES UTF8;',
+        ],
     ],
     /**
      * Keep both of these false on a public server: they render the exception

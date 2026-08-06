@@ -97,7 +97,6 @@ return [
             'formatAssociation'     => Service\FormatAssociationFactory::class,
         ],
         'invokables' => [
-            'clipboardButton'       => View\Helper\ClipboardButton::class,
             'formatPerson'          => View\Helper\FormatPerson::class,
             'languageChooser'       => View\Helper\LanguageChooser::class,
         ],
@@ -883,16 +882,6 @@ return [
                 ],
                 'may_terminate' => true,
                 'child_routes' => [
-                    'data-problems' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/data-problems',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'dataProblems',
-                            ],
-                        ],
-                    ],
                     'import-father' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -900,16 +889,6 @@ return [
                             'defaults' => [
                                 'controller' => Controller\AdminController::class,
                                 'action'     => 'importFather',
-                            ],
-                        ],
-                    ],
-                    'import-shrines' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/import-shrines',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'importShrines',
                             ],
                         ],
                     ],
@@ -922,20 +901,6 @@ return [
                                 'action'     => 'maintenance',
                             ],
                         ],
-                    ],
-                    'moderate' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/moderate[/:suggestion_id]',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'moderate',
-                            ],
-                            'constraints' => [
-                                'suggestion_id' => '[0-9]{1,5}',
-                            ],
-                        ],
-                        'may_terminate' => true,
                     ],
                 ],
             ],
@@ -1037,27 +1002,6 @@ return [
                                     ],
                                 ],
                             ],
-                            'suggest' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/suggest',
-                                    'defaults' => [
-                                        'action'     => 'suggest',
-                                    ],
-                                ],
-                            ],
-                            'moderate' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/moderate/:suggestion_id',
-                                    'constraints' => [
-                                        'suggestion_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'moderate',
-                                    ],
-                                ],
-                            ],
                             'delete' => [
                                 'type'    => Literal::class,
                                 'options' => [
@@ -1127,27 +1071,6 @@ return [
                                     'route'    => '/edit',
                                     'defaults' => [
                                         'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                            'suggest' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/suggest',
-                                    'defaults' => [
-                                        'action'     => 'suggest',
-                                    ],
-                                ],
-                            ],
-                            'moderate' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/moderate/:suggestion_id',
-                                    'constraints' => [
-                                        'suggestion_id' => '[0-9]{1,5}',
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'moderate',
                                     ],
                                 ],
                             ],
@@ -1567,10 +1490,6 @@ return [
                 'create_action_redirect_route_key'      => 'person_id',
                 'create_action_redirect_route_key_field' => 'personId',
 //                 'create_action_template'                 => 'project/events/create',
-//                 'touch_default_field'                => 'eventId',
-//                 'touch_field_route_key'                  => 'event_id',
-//                 'touch_json_route'                       => 'events/event/touch',
-//                 'touch_json_route_key'                   => 'event_id',
                 'database_bound_data_preprocessor'      => 'preprocessPerson',
                 'database_bound_data_postprocessor'     => 'postprocessPerson',
 //                 'moderate_route'                         => 'persons/person/moderate',
@@ -1592,10 +1511,14 @@ return [
                     'spousePersonId'            => 'SpousePersonId',
                     'country'                   => 'Country',
                     'birthDate'                 => 'BirthDate',
+                    'birthDatePrecision'        => 'BirthDatePrecision',
                     'priestDate'                => 'PriestDate',
+                    'priestDatePrecision'       => 'PriestDatePrecision',
                     'bishopDate'                => 'BishopDate',
+                    'bishopDatePrecision'       => 'BishopDatePrecision',
                     'nameDay'                   => 'NameDay',
                     'deathDate'                 => 'DeathDate',
+                    'deathDatePrecision'        => 'DeathDatePrecision',
                     'publicNotes'               => 'PublicNotes',
                     'publicNotesUpdatedOn'      => 'PublicNotesUpdatedOn',
                     'publicNotesUpdatedBy'      => 'PublicNotesUpdatedBy',
@@ -1697,10 +1620,6 @@ return [
 //                 'delete_action_acl_resource'             => 'event_:id',
 //                 'delete_action_acl_permission'             => 'delete_event',
                 'delete_action_redirect_route'          => 'associations',
-//                 'touch_default_field'                   => 'eventId',
-//                 'touch_field_route_key'                   => 'event_id',
-//                 'touch_json_route'                       => 'events/event/touch',
-//                 'touch_json_route_key'                    => 'event_id',
                 'database_bound_data_preprocessor'      => 'associationPreprocessor',
                 'database_bound_data_postprocessor'     => 'associationPostprocessor',
 //                 'moderate_route'                         => 'events/event/moderate',
@@ -1760,6 +1679,7 @@ return [
                     'eventsJsonUpdatedOn'       => 'EventsJsonUpdatedOn',
                     'eventsJsonUpdatedBy'       => 'EventsJsonUpdatedBy',
                     'foundationDate'            => 'FoundationDate',
+                    'foundationDatePrecision'   => 'FoundationDatePrecision',
                     'suppressionDate'           => 'SuppressionDate',
                     'isLifeCommunity'           => 'IsLifeCommunity',
                     'isAuthor'                  => 'IsAuthor',
@@ -1874,10 +1794,6 @@ return [
                 'create_action_redirect_route_key'      => 'association_id',
                 'create_action_redirect_route_key_field' => 'associationId',
 //                 'create_action_template'                 => 'project/events/create',
-//                 'touch_default_field'                => 'eventId',
-//                 'touch_field_route_key'                  => 'event_id',
-//                 'touch_json_route'                       => 'events/event/touch',
-//                 'touch_json_route_key'                   => 'event_id',
 //                 'database_bound_data_preprocessor'       => 'preprocessEvent',
 //                 'database_bound_data_postprocessor'  => 'postprocessEvent',
 //                 'moderate_route'                         => 'events/event/moderate',
@@ -1945,10 +1861,6 @@ return [
                 'create_action_redirect_route_key'      => 'sw_id',
                 'create_action_redirect_route_key_field' => 'associationIdentifier',
 //                 'create_action_template'                 => 'project/events/create',
-//                 'touch_default_field'                => 'eventId',
-//                 'touch_field_route_key'                  => 'event_id',
-//                 'touch_json_route'                       => 'events/event/touch',
-//                 'touch_json_route_key'                   => 'event_id',
 //                 'database_bound_data_preprocessor'       => 'preprocessEvent',
 //                 'database_bound_data_postprocessor'  => 'postprocessEvent',
 //                 'moderate_route'                         => 'events/event/moderate',
@@ -1963,7 +1875,9 @@ return [
                     'roleId'                    => 'RoleId',
                     'personId'                  => 'PersonId',
                     'startDate'                 => 'StartDate',
+                    'startDatePrecision'        => 'StartDatePrecision',
                     'endDate'                   => 'EndDate',
+                    'endDatePrecision'          => 'EndDatePrecision',
                     'isActive'                  => 'IsActive',
                     'updatedOn'                 => 'UpdatedOn',
                     'updatedBy'                 => 'UpdatedBy',
@@ -1995,7 +1909,6 @@ return [
                 ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
                 ['route' => 'wayside-shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
-                ['route' => 'admin/import-shrines', 'roles' => ['administrator']],
                 ['route' => 'admin/maintenance', 'roles' => ['administrator']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment/edit', 'roles' => ['sch_moderator']],
@@ -2009,8 +1922,6 @@ return [
                 ['route' => 'persons/search', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/create', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/edit', 'roles' => ['sch_moderator']],
-                ['route' => 'persons/person/suggest', 'roles' => ['sch_moderator']],
-                ['route' => 'persons/person/moderate', 'roles' => ['sch_moderator']],
                 ['route' => 'persons/person/delete', 'roles' => ['sch_general_moderator']],
 
                 ['route' => 'associations', 'roles' => ['sch_user', 'sch_basic']],

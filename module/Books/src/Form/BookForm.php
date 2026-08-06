@@ -10,6 +10,16 @@ use Laminas\Filter\ToInt;
 class BookForm extends SionForm implements InputFilterProviderInterface
 {
     /**
+     * Matches lib_books.public_notes, admin_notes and inactivation_reason, all
+     * varchar(255). Without a bound these fields accepted any length and the
+     * insert failed instead — MariaDB runs with STRICT_TRANS_TABLES, so an
+     * over-length value is SQLSTATE 22001 and a 500, not a silent truncation.
+     * A form error is the same protection delivered where the author can act
+     * on it.
+     */
+    const NOTES_MAX_LENGTH = 255;
+
+    /**
      * @var LibraryOptions $libraryOptions
      */
     protected $libraryOptions;
@@ -250,9 +260,6 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                 'data-provide' => 'markdown',
                 'data-parser' => 'CommonMark',
                 'rows' => 8,
-            ],
-            'filters' => [
-                ['name' => 'StripTags'],
             ],
         ]);
 
@@ -663,6 +670,15 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => self::NOTES_MAX_LENGTH,
+                        ],
+                    ],
+                ],
             ],
             'adminNotes' => [
                 'required' => false,
@@ -672,6 +688,15 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                         'options' => [
                             'type' => \Laminas\Filter\ToNull::TYPE_STRING,
                         ]
+                    ],
+                ],
+                'validators' => [
+                    [
+                        'name' => 'StringLength',
+                        'options' => [
+                            'encoding' => 'UTF-8',
+                            'max' => self::NOTES_MAX_LENGTH,
+                        ],
                     ],
                 ],
             ],

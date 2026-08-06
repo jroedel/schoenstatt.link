@@ -868,6 +868,7 @@ class SchoenstattTable extends SionTable implements
             'eventsJsonUpdatedOn'   => $this->filterDbDate($row['EventsJsonUpdatedOn']),
             'eventsJsonUpdatedBy'   => $row['EventsJsonUpdatedBy'],
             'foundationDate'        => $this->filterDbDate($row['FoundationDate']),
+            'foundationDatePrecision' => $row['FoundationDatePrecision'],
             'suppressionDate'       => $this->filterDbDate($row['SuppressionDate']),
             'isLifeCommunity'       => $this->filterDbBool($row['IsLifeCommunity']),
             'isNameTranslateable'   => $isNameTranslateable,
@@ -1817,7 +1818,8 @@ class SchoenstattTable extends SionTable implements
         }
         $sqlPers = "SELECT `PersonId`, `LastName`, `FirstName`, `LastNameWithoutAccents`,
 `FirstNameWithoutAccents`, `PersonTags`, `LifeCommunity`, `Title`, `TitleAutomatic`, `Country`,
-`BirthDate`, `NameDay`, `DeathDate`, `PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
+`BirthDate`, `BirthDatePrecision`, `NameDay`, `DeathDate`, `DeathDatePrecision`,
+`PublicNotes`, `PublicNotesUpdatedOn`, `PublicNotesUpdatedBy`,
 `PersonalInfoUpdatedOn`, `PersonalInfoUpdatedBy`, `AdminTags`, `AdminNotes`, `AdminNotesUpdatedOn`,
 `AdminNotesUpdatedBy`, `Email`, `Email2`, `EmailsUpdatedOn`, `EmailsUpdatedBy`, `CellPhone`,
 `CellPhoneHasWhatsApp`, `Phone1`, `Phone1Label`, `Phone2`, `Phone2Label`, `Phone3`, `Phone3Label`,
@@ -1825,7 +1827,8 @@ class SchoenstattTable extends SionTable implements
 `FacebookUrl`, `SkypeUser`, `TwitterUser`, `InstagramUser`, `SlackUser`, `PostStreet1`, `PostStreet2`,
 `PostCityState`, `PostZip`, `PostCountry`, `ContactNotes`, `ContactInfoUpdatedOn`,
 `ContactInfoUpdatedBy`, `DataSource`, `DataSourceId`, `DataSourceUpdatedOn`, `UpdatedOn`,
-`UpdatedBy`, `CreatedOn`, `CreatedBy`, `SpousePersonId`, `PriestDate`, `BishopDate`, `PrimaryLocale`,
+`UpdatedBy`, `CreatedOn`, `CreatedBy`, `SpousePersonId`, `PriestDate`, `PriestDatePrecision`,
+`BishopDate`, `BishopDatePrecision`, `PrimaryLocale`,
 `IsAuthor`, `IsBorrower` FROM `sch_persons` WHERE 1
 ORDER BY `LastName`, `FirstName`";
         $results = $this->fetchSome(null, $sqlPers, null);
@@ -2019,9 +2022,13 @@ ORDER BY `LastName`, `FirstName`";
                 'manualTitle'               => $manualTitle,
                 'primaryLocale'             => $primaryLocale,
                 'priestDate'                => $this->filterDbDate($row['PriestDate']),
+                'priestDatePrecision'       => $row['PriestDatePrecision'],
                 'bishopDate'                => $this->filterDbDate($row['BishopDate']),
+                'bishopDatePrecision'       => $row['BishopDatePrecision'],
                 'deathDate'                 => $deathDate,
+                'deathDatePrecision'        => $row['DeathDatePrecision'],
                 'birthDate'                 => $birthDate,
+                'birthDatePrecision'        => $row['BirthDatePrecision'],
                 'age'                       => $age,
                 'nameDay'                   => $nameDay,
 
@@ -2284,7 +2291,14 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
                 'roleTitle'             => null,
                 'associationId'         => null,
                 'startDate'             => null,
+                //'day' rather than null, matching the column default: an
+                //assignment assembled from this prototype has no date at all, and
+                //a consumer asking how precisely that absent date is known should
+                //get the same answer the database would give, not a null it has
+                //to special-case.
+                'startDatePrecision'    => 'day',
                 'endDate'               => null,
+                'endDatePrecision'      => 'day',
                 'isMainRole'            => false,
                 'isMainContact'         => false,
                 'isSinglePosition'      => false,
@@ -2355,7 +2369,8 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             return $cache;
         }
         $sql = "SELECT a.`AssignmentId`, a.`RoleId`, a.`PersonId`,
-a.`StartDate`, a.`EndDate`, a.`CreatedOn`, a.`CreatedBy`, a.`UpdatedOn`, a.`UpdatedBy`,
+a.`StartDate`, a.`StartDatePrecision`, a.`EndDate`, a.`EndDatePrecision`,
+a.`CreatedOn`, a.`CreatedBy`, a.`UpdatedOn`, a.`UpdatedBy`,
 r.`RoleTitle`, r.`AssociationId`, r.`IsMainRole`, r.`IsSinglePosition`, r.`Sort`, r.`IsActive`,
 r.`ShouldAlwaysBeFilled`, r.`IsMainContact`
 FROM `sch_assignments` a
@@ -2401,7 +2416,9 @@ ORDER BY `AssociationId`, `IsActive` DESC, `IsMainRole` DESC, `Sort`";
             'roleTitle'             => $roleTitle,
             'associationId'         => $associationId,
             'startDate'             => $startDate,
+            'startDatePrecision'    => $row['StartDatePrecision'],
             'endDate'               => $endDate,
+            'endDatePrecision'      => $row['EndDatePrecision'],
             'isMainRole'            => $this->filterDbBool($row['IsMainRole']),
             'isMainContact'         => $this->filterDbBool($row['IsMainContact']),
             'isSinglePosition'      => $this->filterDbBool($row['IsSinglePosition']),

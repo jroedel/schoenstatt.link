@@ -138,7 +138,7 @@ $this->headTitle($pageTitle);
 <div class="col-md-6"> <!-- dates column -->
     <?php if (is_object($object['deathDate'])) : ?>
         <p><strong><?php echo $this->translate('Passed away on'); ?>:</strong> <?php
-        echo $this->dateFormat($object['deathDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+        echo $this->datePrecisionFormat($object['deathDate'], $object['deathDatePrecision'], IntlDateFormatter::MEDIUM);?></p>
     <?php endif;
     if ($object['nameDay']) : ?>
     <p><strong><?php echo $this->translate('Nameday'); ?>: </strong>
@@ -147,11 +147,11 @@ $this->headTitle($pageTitle);
     <?php endif;
     if (is_object($object['priestDate'])) : ?>
         <p><strong><?php echo $this->translate('Priestly ordination'); ?>:</strong> <?php
-        echo $this->dateFormat($object['priestDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+        echo $this->datePrecisionFormat($object['priestDate'], $object['priestDatePrecision'], IntlDateFormatter::MEDIUM);?></p>
     <?php endif;
     if (is_object($object['bishopDate'])) : ?>
         <p><strong><?php echo $this->translate('Bishop ordination'); ?>:</strong> <?php
-        echo $this->dateFormat($object['bishopDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);?></p>
+        echo $this->datePrecisionFormat($object['bishopDate'], $object['bishopDatePrecision'], IntlDateFormatter::MEDIUM);?></p>
     <?php endif;?>
 </div> <!-- dates column -->
 </div> <!-- personal info panel row -->
@@ -176,12 +176,7 @@ $this->headTitle($pageTitle);
                <span class="pull-right"><a class="btn btn-default btn-sm"
                 href="<?php echo $this->url('persons/person/edit-private-info', ['person_id' => $object['personId']]);?>"><?php
                 echo $this->translate("Edit information");?></a></span>
-                <?php //elseif ($this->isAllowed('route/suggest')) : @todo enable searchForm
-//             echo $this->partial('patres/patres/suggest-button',
-//                 ['entityType' => 'person', 'entityId' => $object['personId'],
-//                     'class' => 'btn btn-default btn-sm pull-right',
-//                     'suggestForm' => $this->suggestForm,]);
-            endif;?>
+            <?php endif;?>
         </div>
         </div>
     </div>
@@ -191,7 +186,7 @@ $this->headTitle($pageTitle);
 <div class="col-md-6"> <!-- private facts column -->
     <p><strong><?php echo $this->translate('Birthday'); ?>: </strong> <?php
     if (is_object($object['birthDate'])) {
-        echo $this->dateFormat($object['birthDate'], IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE);
+        echo $this->datePrecisionFormat($object['birthDate'], $object['birthDatePrecision'], IntlDateFormatter::MEDIUM);
     }?></p>
     <?php if (! empty($object['adminTags'])) :?>
 <p><strong><?php echo $this->translate('Admin tags'); ?>:</strong> <?php

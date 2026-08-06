@@ -55,7 +55,6 @@ class TranslationArrayExportTest extends TestCase
         // pure function of its argument, so build the object without running it.
         $table  = (new ReflectionClass(TranslationsTable::class))->newInstanceWithoutConstructor();
         $method = new \ReflectionMethod(TranslationsTable::class, 'exportArray');
-        $method->setAccessible(true);
 
         return static fn (array $translations): string => $method->invoke($table, $translations, 1);
     }

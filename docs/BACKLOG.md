@@ -4,20 +4,74 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 (or lives in git); when an item here is done, delete it and record anything
 reusable there instead of accumulating DONE narratives.
 
-State as of 2026-08-05: production runs **PHP 8.4.24** on a current Laminas
-stack with OPcache enabled; master is deployed through the front-controller
-change but **not** through the flag that activates it; `composer audit --locked`
-reports zero advisories; 368 tests across three suites, green on 8.4; PHPStan
-clean at level 0 and running in CI (baseline 26 entries / 34 errors);
-one-command deploy with hooks. First-party code no longer calls
-`getServiceLocator()` anywhere, has no `throw Foo()` missing its `new`, and
-creates no dynamic properties.
+State as of 2026-08-07, on branch `symfony-upgrade` (not yet merged): the
+**capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
+see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
+**631 tests across four suites** (119 unit, 376 integration, 18 fuzz, 118
+smoke), green on 8.5; PHPStan clean at level 0
+(baseline 26 entries); one-command deploy with hooks. First-party code no longer
+calls `getServiceLocator()`, has no `throw Foo()` missing its `new`, creates no
+dynamic properties, and emits **no deprecation of its own on 8.5** (the four
+that remain are laminas-cache's).
+
+New since the last state line, and the reason several items below moved or
+closed:
+
+- **A form input-validation fuzz harness exists** (`test/Fuzz`,
+  `php composer.phar fuzz`) — the safety net that had to precede any form work.
+  It discovers all 43 forms from the filesystem and drives thousands of
+  `isValid()` calls. Baseline of accepted gaps: **180**, down from 259 at first
+  run, every change since a removal. Throwing inputs — each a 500 with the
+  user's whole submission lost, most needing no more than `field[]=x` —
+  **48 → 0**. The invariant the harness exists for now holds for every form and
+  field it drives.
+- **Authorization is diffable**: `tools/acl-table.php` plus committed snapshots
+  `docs/acl-rules.md` and `docs/acl-baseline.json`. Regenerate and diff after
+  touching any route, guard or role; a rule that stops matching makes a page
+  work for *more* people and no test fails.
+- **Dates now record how precisely they are known.** `events.StartDatePrecision`
+  was a working model no other table had; db6.5 gives the other seven dates the
+  same column and `SionModel\I18n\View\Helper\DatePrecisionFormat` renders to
+  it, so "sometime in 1952" no longer displays as 1 January. Every field is also
+  range-bounded, and each bound was verified to reject **zero** existing rows.
+- **The Bible module and the suggest/moderate and touch features are gone**;
+  routes 214 → 191, guarded 184 → 166. Every removed ACL row belongs to one of
+  those; nothing changed for a route that stayed.
+- **A live authorization hole was closed in JTranslate** — `updatePhrase()` took
+  the row to write from a hidden form field, so a translator authorized for one
+  phrase could rewrite any other. Pinned by
+  `test/Integration/TranslationUpdateScopeTest`.
 
 **A Symfony kernel now sits in front of laminas-mvc in the capsule**, with a
 catch-all route delegating every unported path back to it — see
 [strangler.md](strangler.md) for the mechanism, the response-conversion rules and
 how to switch front controllers. Production still runs the laminas front
 controller until `SYMFONY_KERNEL=1` is added to its `.htaccess`.
+
+**Six routes now answer from the Symfony kernel**, three of them HTML: `shrines`,
+`admin`, and as of 2026-08-07 `wayside-shrines`. That last one is the first port
+whose value was not the route itself — the page is `shrines` with a different
+heading over a different association kind, and laminas answers it from a verbatim
+copy of both the action and the template. The Symfony side has one of each
+instead: `App\Schoenstatt\ShrineIndex` already served both, and
+`templates/schoenstatt/_shrine-index.html.twig` now does too, with each page
+supplying only its own `shrine_header` block. `/en/shrines` renders
+byte-identically before and after that refactor, which is the check that made it
+safe to touch a route already in service.
+
+**The first HTML route has moved and renders with Twig** (`shrines`,
+2026-08-05): `templates/layout.html.twig` reproduces the site chrome —
+navigation, language chooser, search box, flash messages, canonical links,
+schema blocks — and is the layout every later HTML port extends. Both renderings
+of the page were compared row by row and agree exactly, signed in and out. Two
+things learned that change earlier assumptions, both written up in
+[strangler.md](strangler.md): a ported route does **not** lose the identity or
+the session (only the route guard), and `Laminas\Navigation\Navigation` cannot be
+resolved without an MvcEvent at all, so the navbar is built from the raw
+`navigation` config. (The third thing that paragraph used to say — that only
+*public* routes can move — stopped being true on 2026-08-06, when the
+authorization bridge landed. `docs/acl-rules.md` still names which routes are
+which.)
 
 ## Strategic direction: Symfony, via strangler (decided 2026-08-04)
 
@@ -34,16 +88,31 @@ readability — the destination is **Symfony**, reached gradually:
   cheap was that the whole Symfony stack here is 7.4 LTS components with no
   FrameworkBundle — and what makes the bundle unreachable is recorded below,
   because it is a gate on several other things too.
-- **FrameworkBundle is blocked by bjy-authorize, not by us.** The chain:
-  `framework-bundle → symfony/cache → psr/cache ^2|^3`, while
-  `laminas-cache 3.14 → psr/cache ^1`. laminas-cache 4.3 lifts that pin, but
-  `kokspflanze/bjy-authorize 2.4.4` — the **final** release of a dead line — caps
-  laminas-cache at `^2.13.2 || ^3.1.0`. So the bundle, and with it Symfony's DI
-  compilation, config conventions, Twig/Security/Form bundles and cache
-  component, all sit behind retiring bjy-authorize or forking its
-  `composer.json`. This reprices the authorization migration: it is no longer
-  just "replace an abandoned ACL layer", it is the gate on the Symfony
-  application proper. Decided against a third personal fork for now.
+- **FrameworkBundle is blocked by laminas-mvc — corrected 2026-08-05.** This
+  item previously named bjy-authorize as the gate. That was wrong, and the
+  correction matters because it changes what the authorization work buys.
+  bjy-authorize does cap `laminas-cache` at `^2.13.2 || ^3.1.0`, but it is one
+  of two caps: `laminas-cache 4.3` lifts the `psr/cache ^1` pin and requires
+  `laminas-servicemanager ^4.5`, while **laminas-mvc requires `^3.20.0` in every
+  version — 3.8.0 stable, 3.9.x-dev and 4.0.x-dev alike.** So retiring
+  bjy-authorize leaves the bundle exactly as uninstallable as before.
+  Consequences: the parked ~102-factory SM4 migration is *unreachable* rather
+  than deferred, and Symfony's DI compilation, config conventions and
+  Twig/Security/Form bundles all wait on removing laminas-mvc, i.e. on finishing
+  the strangler. Retiring bjy-authorize remains worth doing — abandoned package,
+  all authorization runs through it, prerequisite for Security — just not as a
+  gate-opener. Measurements in [php-85.md](php-85.md).
+  - **How authorization now works across the split, and every trap in it, is
+    [authorization-migration.md](authorization-migration.md).** Read it before
+    porting any route that is not public. It also records why the bridge makes the
+    eventual Security migration incremental rather than all-or-nothing: both
+    enforcers consult the same `route/<name>` resources, so they can move to
+    voters a few at a time with the ACL table as the before/after oracle.
+- **PHP 8.5 has the same gate.** No laminas-mvc version admits 8.5 (4.0.x-dev
+  caps at `~8.3.0`, *lower* than stable). The capsule runs 8.5.9 today only
+  because `config.platform.php` is a resolution fiction pinned to production's
+  version; raising it breaks `composer install` against 14 packages. See
+  [php-85.md](php-85.md) before touching the pin.
 - **No deadline panic.** laminas-mvc security support and PHP 8.4's security
   window both run to December 2028. Rung 4b (8.4) lands regardless.
 - **Decoupling is the first real work**: SionModel/JUser's ServiceManager
@@ -54,9 +123,13 @@ readability — the destination is **Symfony**, reached gradually:
   2026-08-04): symfony/form validates via symfony/validator constraints; the
   part of laminas-form with no direct equivalent is the *filter* chain
   (`StringTrim`/`StripTags` pre-validation normalization), which becomes data
-  transformers or explicit normalization. Port forms one at a time with
-  `tools/form-regression.php` as the safety net; unported laminas forms keep
-  working under the strangler.
+  transformers or explicit normalization. Port forms one at a time, and note that
+  **`test/Fuzz` is the safety net, not `tools/form-regression.php`** — the latter
+  is a GET-only, byte-exact HTML differ that never submits a form, so it asserts
+  nothing whatever about input handling. The fuzz harness drives hostile input
+  through every form's filter and validator chain and is the thing that can say
+  whether a port loosened something. Unported laminas forms keep working under
+  the strangler.
 - **What this decision supersedes**: the ~102-factory Interop→Psr sweep
   ("SM4 prep") is parked — hand-written factories largely evaporate under
   Symfony DI. Long-term answers now on file: TwbBundle → Symfony's built-in
@@ -87,6 +160,21 @@ readability — the destination is **Symfony**, reached gradually:
   - While the flag is off, **production and the capsule run different front
     controllers**. That is deliberate, and it is also the one thing to remember
     before concluding anything from a local reproduction.
+- [ ] **Move the unprefixed-to-prefixed locale redirect out of the ported
+  controllers and into a `kernel.request` listener above the authorization
+  check.** **Now due**: the wayside-shrine port (2026-08-07) made it the third
+  copy, which is the threshold this item set for itself. Since the authorization
+  bridge landed (2026-08-06) the two front
+  controllers disagree about the *unprefixed* form of a restricted path: laminas
+  answers `/admin` with SlmLocale's `302 → /en/admin` and denies on the second
+  hop, while the Symfony guard runs before the controller that would issue that
+  redirect and so denies at once, with `?redirect=/admin` rather than
+  `?redirect=/en/admin`. Nobody's access changes, the visitor arrives in the same
+  place, and every real caller uses the prefixed form — so this is tidiness, not
+  a bug. The reason it is not already done: the redirect is a per-route decision
+  (`ShrinesController` and `AdminController` do it, the maintenance endpoints must
+  **not**, `/_health` has no prefixed form at all), so a listener needs a
+  declaration of its own alongside `RouteAccess`.
 - [ ] **Two consoles now exist in principle.** `bin/console` builds the *laminas*
   container and is the deploy's command host; a Symfony console would want the
   kernel. Nothing needs converging yet — `App\Kernel` contributes no commands —
@@ -177,6 +265,28 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **The shrine table's "Opening hours?" column tests a column that does not
+  exist.** `schoenstatt/associations/shrines-table.phtml` and its Twig port both
+  read `openingHoursJson`; the association projection has
+  `openingHoursSpecificationJson`. So the column reflects only
+  `openingHoursHuman` and the structured hours never count. Found porting
+  `shrines` (2026-08-05) and reproduced verbatim in
+  `templates/schoenstatt/_shrines-table.html.twig` rather than fixed, because
+  the port's contract was identical output. Fix is a one-word rename in both
+  templates — but check first whether "has structured hours" is what the
+  progress score is meant to reward, since 71 shrines have the human field and
+  4 have the JSON one. Still two templates, not four, after the wayside-shrine
+  port: both index pages render this same partial on each side of the split.
+- [ ] **`shrinesAction()` divides by zero on an empty shrine list.**
+  The per-region percentage guards its denominator and the total does not
+  (`floor($totalScore / $totalMaxScore * 100)`), so a database with no
+  `sch-shrine` rows is a `DivisionByZeroError` rather than 0%. Present in the
+  laminas action, in `waysideShrinesAction()`, and reproduced in
+  `App\Schoenstatt\ShrineIndex` for parity — which now backs both ported pages,
+  so fixing it there fixes both at once. Only reachable if every shrine of a
+  kind were deleted, which is why it has never fired; fix the laminas copies
+  together with it, or fix it when they are deleted. Note the wayside side is
+  the likelier of the two to reach zero rows: 43 associations against 207.
 - [ ] `finish-pending-labels` is an unreachable route:
   `Laminas\Router\Http\Part::match()` returns the parent match once the path
   is consumed and the parent `may_terminate`s, so its `Method(delete)` child
@@ -195,14 +305,6 @@ readability — the destination is **Symfony**, reached gradually:
   `text/html` body: `BooksApiController::getList()` builds a `JsonModel`
   that never renders. The JWT gate on it works; it is the one gated route
   whose payload no test asserts, for this reason. Cause not investigated.
-- [ ] `/en/dictionary` → 404: the route (module/Books config, ~line 1280)
-  declares `DictionaryController` with no `'action'` default. One-line fix;
-  verify production intent first (production may 404 identically).
-  - Adjacent, found 2026-08-05: `DictionaryTableFactory:29` builds
-    `DictionaryTable` with **4 arguments for a 3-parameter constructor**. PHP
-    silently ignores the extra one for userland calls, so this is drift, not a
-    crash — but check which argument the constructor stopped accepting before
-    fixing the route, since they are the same feature.
 - [ ] **Three more arity mismatches, all silently tolerated** (PHPStan level 1,
   2026-08-05). PHP discards surplus arguments to userland functions, so none of
   these crash — each is a call that has quietly stopped doing what it reads as:
@@ -211,17 +313,15 @@ readability — the destination is **Symfony**, reached gradually:
     before touching: the dropped third argument is almost certainly ZF's old
     `$strong` flag, removed in laminas-math 3. Belongs with the
     `laminas/laminas-math` retirement item, which already flags this call site.
-  - `Books\Model\LibraryTable:1601` calls `keyCollections()` with **3 arguments
-    for 1 parameter**.
-  - `Books\Model\DictionaryTable` constructor, above.
 - [ ] **Four calls to methods that do not exist** (PHPStan level 1, 2026-08-05).
   Each is a guaranteed `Error` if reached, i.e. dead-or-broken code, and each
   needs a judgement about the intended method rather than a rename:
-  `BibleController:221` `getBookAbbrev()`, `:222` `getTranslAbbrev()`,
-  `LibrariesController:192` `getKnownIssues()`, `JTranslateController:137`
-  `redirectAfterDelete()`. (A fifth, `NowMessenger`'s
-  `setPluginFlashMessenger()`, was fixed 2026-08-05 — the setter is
-  `setPluginNowMessenger()`.)
+  all four are now resolved: two went with the Bible module,
+  `JTranslateController::redirectAfterDelete()` was replaced with the redirect it
+  meant, and `LibrariesController:192`'s `getKnownIssues()` was in a branch
+  guarded by an `admin_pages` key that is commented out — dead both ways, so the
+  branch is gone. (A fifth, `NowMessenger`'s `setPluginFlashMessenger()`, was
+  fixed 2026-08-05 — the setter is `setPluginNowMessenger()`.)
 - [ ] **Fourteen "variable might not be defined"** (PHPStan level 1,
   2026-08-05) — each is a read that is only reached on some paths, so the
   failure mode is a null/undefined-warning rather than a crash. One is already
@@ -235,7 +335,6 @@ readability — the destination is **Symfony**, reached gradually:
 - [ ] `/libraries/create` and `/libraries/:id/edit` 500:
   `Books\Form\SearchForm`'s factory throws "only for a specific library"
   without library context (pre-existing, surfaced by the rung-4a audits).
-- [ ] `/blog/create` 500: template `books/blog/create` missing.
 - [ ] `SionForm::setData()` calls `getInputFilterSpecification()` which the
   base class doesn't define.
 - [ ] `Books\Filter\SortText` mixes positional and sequential printf
@@ -254,6 +353,35 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Product decisions needed
 
+- [ ] **Suggest and moderate: users propose corrections, moderators accept or
+  deny them** — wanted, never built. This is the collaborative half of the
+  site's purpose: a reader who knows a date is wrong should be able to say so
+  without holding an editing role, and someone with the role should be able to
+  accept it with one click. The 2020 WIP that sketched it was **deleted
+  2026-08-05** — routes, two forms, two `SionForm` methods, four templates and
+  two view helpers, none of it ever reachable. Two things from the wreckage
+  are worth knowing before building it properly.
+  - **It was never wired at all, not merely half-wired.** All seven routes
+    (`admin/moderate`, `admin/data-problems`, `persons/person/suggest|moderate`,
+    `assignments/assignment/suggest|moderate`) named controller actions that do
+    not exist in `AdminController`, `PersonsController`, `AssignmentsController`
+    or their `SionController` parent, so every one of them was a 404-by-fatal.
+    `SionController::showAction()` never built the suggest form either — the
+    block that would have was commented out with `//@todo enable suggest form`.
+    Nothing about the feature was ever exercised, so there is no behavior to
+    preserve and no data path to reverse-engineer.
+  - **`SionForm::setInputFilterSpecification()` is a silent no-op for all but
+    three of its 21 subclasses**, and this is the trap the old design walked
+    into. Only `SuggestForm` (now deleted), `PersonForm` and `AssociationForm`
+    override `getInputFilterSpecification()` to read back `$this->filterSpec`;
+    for the other eighteen the setter writes a property nobody reads, because
+    the subclass returns a literal array. `prepareForSuggestion()` added
+    `suggestionNotes`, `suggestionByPersonId` and `suggestionByEmail` to the
+    form and then set their filters through that setter — so on any form but
+    those three, the suggestion fields would have accepted arbitrary input
+    with zero filters and zero validators. A real implementation must either
+    fix the base class so the specification is genuinely composable, or keep
+    the suggestion fields in a form of their own.
 - [ ] **Data-derived authority for persons and associations** — wanted, not
   started. The intent: someone holding an office may edit the people and
   associations beneath it, rather than authority coming from a flat global
@@ -267,6 +395,30 @@ readability — the destination is **Symfony**, reached gradually:
     `IsMainRole`/`IsSinglePosition`; `sch_assignments` is person↔office with
     `StartDate`/`EndDate` (266 rows, 227 current). No migration needed to
     answer "who currently holds which office, and what sits beneath it".
+  - **A second, older attempt at the *display* half also exists and is
+    unfinished in three separate places** — characterized 2026-08-05 and left
+    alone deliberately, because completing it means writing a missing view
+    helper rather than repairing a break. Associations already show their
+    office holders; persons never have. The chain, top to bottom:
+    `schoenstatt/persons/show.phtml:218` guards the assignments panel on
+    `! empty($object['assignments'])`, and a person's `assignments` key is never
+    populated because `SchoenstattTable:1799`'s
+    `connectEntityRolesAndAssignments('person', $entities)` is **commented out**
+    (the `association` call on line 464 is live, which is why that side works);
+    the panel would call `$this->formatPersonAssignment(...)`, and
+    `Schoenstatt\View\Helper\FormatPersonAssignment` is **registered under no
+    alias**, so it would be a `ServiceNotFoundException`; and that helper
+    calls `$this->view->formatScope(...)`, for which **no class and no
+    registration exist anywhere in the repo**. So it is three layers deep, and
+    the panel has never rendered for anyone.
+    - Worth stating because it reads like a live bug and is not: with the data
+      link commented out the guard is always false, so nothing ever reaches the
+      unregistered helper. Registering the helper on its own would *create* the
+      500 rather than fix anything, by exposing the missing `formatScope`.
+    - Also note `FormatPersonAssignment` has an `echo ' ';` mid-method where
+      every other branch appends to `$finalMarkup`, so it would emit a stray
+      space ahead of the panel's own output. Small, but a sign of how far from
+      finished it is.
   - **It must be built with ACL assertions, not static rules.** This is the
     load-bearing constraint and the reason the old code was a dead end: a
     static `['allow' => [[roles, resource], …]]` array is evaluated once at
@@ -282,6 +434,21 @@ readability — the destination is **Symfony**, reached gradually:
   - Note this is **unrelated** to the unguarded-routes item above: the old
     providers only ever emitted `person_*`/`association_*` resources, never
     `route/*` ones.
+- [ ] **The four feature ideas that used to live in `upcoming_features`.** That
+  top-level config key (and its empty `known_issues` sibling) fed a
+  website-status page whose route was commented out years ago, so nothing has
+  read either one since; the key was deleted 2026-08-05 and its content is
+  here instead, unjudged, in the author's own framing.
+  - *Automatic repeat-translations* — when a new phrase is inserted for
+    translation, check whether the same phrase already exists in another
+    domain and carry its translations over.
+  - *Automated data issue tracking* — classify missing-information problems on
+    records as high/medium/low importance, to drive data completeness
+    systematically rather than by noticing.
+  - *New email verification system* — of the personal contact fields, email
+    matters most, and the existing verification data is stale.
+  - *Photo upload system* — user-uploaded photos, especially of course life,
+    as the single biggest improvement for an average reader of the site.
 - [ ] API registration allow-list (old @todo in `LoginV1ApiController`): API
   magic-code login does not auto-create accounts; the web flow does.
 - [ ] Drop the now-unread `user.password` column once passwordless has
@@ -292,18 +459,55 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Config rot / small cleanups
 
-- [ ] **30 routes carry no bjyauthorize guard entry at all**, so under
-  default-deny they are unreachable for every role — not restricted,
-  *inaccessible*. Measured 2026-08-04 by
-  `test/Integration/AclGuardRouteDriftTest`'s walk. Some are plainly dead, but
-  others are whole features: `event`, `event-edit`, `events/create`,
-  `collections`, `checkouts`, `assignments`, `library-imports`,
-  `admin/moderate`, `admin/data-problems`, `dictionary/entry`,
-  `sign-in-no-cookies`. **Not** related to the disabled `SchoenstattTable`
-  provider below, despite an earlier note here saying so: that provider only
-  ever emits `person_*`/`association_*` resources, never `route/*` ones, so it
-  could not have guarded a route. Needs a role decision per route, which is why
-  none were added blind.
+- [ ] **Routes with no bjyauthorize guard entry**, so under default-deny they are
+  unreachable for every role — not restricted, *inaccessible*. Re-measured
+  2026-08-05 by `tools/acl-table.php` after the Bible removal: **29 names, of
+  which only 18 are real endpoints.** The other 11 are Part-route parents with
+  `may_terminate` false, which can never be the matched route name, so their
+  missing guard costs nothing — an earlier count of 30 did not separate these
+  and overstated the problem by more than half.
+  - **7 of the 18 are pure dead config**: the route names a controller action
+    that does not exist, so granting a role would only turn "reachable by
+    nobody" into a fatal. Delete route and guard together:
+    `admin/data-problems`, `admin/moderate`,
+    `assignments/assignment/suggest`, `assignments/assignment/moderate`,
+    `jtranslate/clear-cache`, `libraries/library/import`,
+    `sion-model/delete-entity`. The four Schoenstatt ones belong to the
+    abandoned suggest/moderate feature; see the deletion clusters below.
+  - **4 answer themselves from their siblings** and need no product decision —
+    every neighbouring route in the same tree already agrees:
+    `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` → `lib_user`
+    (as `checkouts/library`, `…/current`, `…/overdue` all are);
+    `publication-upload-cover` → `pub_moderator` (as `publications/create`).
+  - **`sign-in-no-cookies` is already reachable, by accident of listener
+    priority** — worth writing down because the obvious reading is wrong. It
+    looks like the cookieless sign-in explainer must be broken under
+    default-deny, and it is not: `GdprStrategy::onRoute()` swaps the RouteMatch
+    for this route at priority **-5000**, while `BjyAuthorize\Guard\Route`
+    checks at **-1000**, and higher priority runs first. So the guard evaluates
+    `zfcuser/login` (which is granted), approves it, and only afterwards does
+    the strategy rewrite the match. The guard never sees this route's name.
+    It should still get a public entry (`['guest', 'user', null]`) so that
+    direct navigation works and so reachability stops depending on two
+    listeners' relative priorities — but it is a robustness fix, not a live
+    bug, and it should not be described as one.
+  - **`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
+    `lib_user` its siblings carry: it is the destructive one in that tree and
+    `lib_administrator` already exists for exactly this.
+  - **`api-v1/libraries/books/patch-list` → `guest, user`**, matching
+    `api-v1/libraries` and `api-v1/libraries/books`. The real gate on the write
+    APIs is the JWT check in the controller, not the route guard.
+  - **The events write routes genuinely need a decision**: `event-edit`,
+    `event-delete`, `events/create` (and `event`, the show route). `events`, the
+    list, is `guest, user`. There is no events moderator role in `user_role` —
+    the nearest analogues are `pub_moderator` for publications and
+    `texts_moderator` for texts — so picking one is a product call about who
+    curates the timeline, not something to infer. `event` (show) can safely
+    match `events`.
+  - **Not** related to the disabled `SchoenstattTable` provider below, despite
+    an earlier note here saying so: that provider only ever emitted
+    `person_*`/`association_*` resources, never `route/*` ones, so it could not
+    have guarded a route.
 - [ ] **8 template permission checks name an ACL resource that does not
   exist**, listed in `AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`.
   `BjyAuthorize\View\Helper\IsAllowed` answers *false* for an unknown resource
@@ -394,6 +598,11 @@ Background and measurements: [caching.md](caching.md).
   machine from the new `phploy.ini.dist`, deploy once, then delete the
   fallback from the trait. Until then the leak is still reachable — a caller
   that keeps using `?key=` keeps writing the key to the access log.
+  - Since 2026-08-05 there are **two** places to delete it from: the trait, and
+    `App\Http\MaintenanceKey` for the two endpoints ported to the Symfony kernel
+    (docs/strangler.md). Both accept the same two channels on purpose, so that
+    flipping `SYMFONY_KERNEL` cannot break a deploy hook; the sequencing above is
+    unchanged, the final step just touches both files.
   - Established 2026-08-04, worth not re-deriving: **the flush cannot become
     a pure CLI command.** The persistent cache is the APCu adapter, and an
     APCu segment belongs to the SAPI that created it, so a CLI process gets

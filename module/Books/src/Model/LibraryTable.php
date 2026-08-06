@@ -1598,7 +1598,13 @@ ORDER BY `publisher`";
             if (count($collectionArrays) > 1) {
                 $collections = call_user_func_array('array_merge', $collectionArrays);
             }
-            $collections = $this->keyCollections($collections, 'collectionId', true);
+            //One argument, not three. keyCollections() takes only $collections and
+            //already keys on $object->collectionId, so the 'collectionId' and true
+            //passed here went nowhere — PHP discards surplus arguments to userland
+            //functions silently, which is why a call describing behaviour the
+            //method no longer takes options for read as though it configured
+            //something.
+            $collections = $this->keyCollections($collections);
         }
 
         if (isset($collectionId) && isset($collections[$collectionId])) {

@@ -1,0 +1,28 @@
+{#
+  module/Schoenstatt/view/schoenstatt/associations/associations-table.phtml — the
+  table anyone without edit rights sees. Expects `objects` and `kind_labels`.
+#}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+<!-- Table -->
+<div class="table-responsive">
+<table class="table">
+<tr>
+    <th>{{ translate('Association') }}</th>
+    <th>{{ translate('Kind') }}</th>
+    <th>{{ translate('Website') }}</th>
+    <th>{{ translate('Email') }}</th>
+    <th>{{ translate('Phone') }}</th>
+    <th>{{ translate('Primary contact') }}</th>
+</tr>
+{% for entity in objects %}
+<tr>
+    <td>{{ format.association(entity) }}</td>
+    <td>{{ format.association_kind(entity, kind_labels) }}</td>
+    <td>{% if entity.urls %}{{ url_object_link(entity.urls|first) }}{% endif %}</td>
+    <td>{{ email_link(entity.email) }}</td>
+    <td>{{ telephone_link(entity.phone1) }}</td>
+    <td>{% if entity.mainPerson is not null %}{{ format.person(entity.mainPerson) }}{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
