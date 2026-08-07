@@ -126,6 +126,77 @@ else
     fail "unknown API path should 404 cleanly (got $STATUS)"
 fi
 
+# --- Public JSON API, both versions ---------------------------------------
+#
+# The mobile apps read these, and until now the deploy checked no API endpoint
+# that actually returns data — only that an unknown one 404s. A JSON endpoint
+# fails differently from a page: the fatal-200 class shows up as valid HTTP 200
+# with an HTML fatal where JSON should be, which every check above would miss
+# because they look at pages.
+#
+# Both versions are exercised on purpose. v1 and v2 are separate controllers
+# with separate schema builders (getAssociationListSchemaV1/V2), so a deploy can
+# break one and leave the other working, and v1 is the one older app installs
+# are pinned to.
+#
+# Unauthenticated on purpose too: these guards carry a null role, i.e. public.
+# If one of them starts redirecting to the sign-in page, that is a guard
+# regression this will catch.
+#
+# The locale-prefixed form is requested directly rather than relying on
+# --follow: SlmLocale's 302 does not carry the query string, so
+# `?kind=sch-shrine` would be lost on the way to /en/. The prefixed form is also
+# what stays stable if SYMFONY_KERNEL is ever set here.
+
+# json_ok <what> <expect-substring> — asserts the LAST fetch returned parseable
+# JSON of the expected shape. No jq: this script is curl + coreutils only.
+json_ok() {
+    local what=$1 expect=$2
+    if [ "$STATUS" != "200" ]; then
+        fail "$what should be 200 (got $STATUS, redirect '$REDIRECT')"
+        return
+    fi
+    if ! no_fatals; then
+        fail "$what returned a PHP fatal in its body"
+        return
+    fi
+    case "$CTYPE" in
+        application/json*) ;;
+        *) fail "$what should be application/json (got '${CTYPE:-none}')"; return ;;
+    esac
+    if ! grep -q "$expect" "$BODY"; then
+        fail "$what is missing '$expect'"
+        return
+    fi
+    pass "$what returns JSON ($(wc -c <"$BODY") bytes)"
+}
+
+for V in v1 v2; do
+    # findByKind is the endpoint the shrine index itself advertises to API
+    # consumers, and it takes a query parameter — so this also proves query
+    # handling survived the deploy, which a bare collection GET would not.
+    fetch "$BASE/en/api/$V/associations/findByKind?kind=sch-shrine"
+    json_ok "api/$V findByKind?kind=sch-shrine" '"items"'
+    # md5 is what a client polls to decide whether to re-download; it returns
+    # the same envelope with items nulled, so an empty "items" here is correct.
+    fetch "$BASE/en/api/$V/associations/findByKindMd5?kind=sch-shrine"
+    json_ok "api/$V findByKindMd5" '"md5"'
+done
+
+# The GeoJSON feed is DEPRECATED (2026-08-07, docs/BACKLOG.md) but still served,
+# so the deploy still has to keep it working — and has to keep announcing it.
+# Checked on both versions because both are still live and byte-identical.
+for V in v1 v2; do
+    fetch "$BASE/en/api/$V/associations/shrines.json"
+    json_ok "api/$V shrines.json (deprecated)" '"FeatureCollection"'
+    DEPRECATION=$(header deprecation)
+    if [ "$DEPRECATION" = "true" ]; then
+        pass "api/$V shrines.json announces Deprecation: true"
+    else
+        fail "api/$V shrines.json should send 'Deprecation: true' (got '${DEPRECATION:-none}')"
+    fi
+done
+
 fetch "$BASE/en/sitemap.xml"
 if [ "$STATUS" = "200" ] && grep -q '<urlset' "$BODY"; then
     pass "sitemap renders"
