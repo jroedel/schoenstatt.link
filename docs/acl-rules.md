@@ -47,12 +47,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 12 |
+| routes shadowed by symfony | 14 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 16 |
+| symfony routes acl checked | 20 |
 | symfony routes open | 9 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 25 |
+| symfony served routes | 29 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
@@ -100,6 +100,10 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `shrines.locale` | `/{_locale}/shrines` | `route/shrines` | **public** (`null` in its roles) | html | `App\Controller\ShrinesController` |
 | `shrines/submitting-photos` | `/shrines/submitting-photos` | `route/shrines/submitting-photos` | **public** (`null` in its roles) | html | `App\Controller\ContentPageController` |
 | `shrines/submitting-photos.locale` | `/{_locale}/shrines/submitting-photos` | `route/shrines/submitting-photos` | **public** (`null` in its roles) | html | `App\Controller\ContentPageController` |
+| `sion-model/data-problems` | `/sm/data-problems` | `route/sion-model/data-problems` | sch_administrator, sch_general_moderator | html | `App\Controller\DataProblemsController` |
+| `sion-model/data-problems.locale` | `/{_locale}/sm/data-problems` | `route/sion-model/data-problems` | sch_administrator, sch_general_moderator | html | `App\Controller\DataProblemsController` |
+| `sion-model/phpinfo` | `/sm/phpinfo` | `route/sion-model/phpinfo` | sch_administrator | html | `App\Controller\PhpInfoController` |
+| `sion-model/phpinfo.locale` | `/{_locale}/sm/phpinfo` | `route/sion-model/phpinfo` | sch_administrator | html | `App\Controller\PhpInfoController` |
 | `sm-cache-status` | `/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
 | `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
 | `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
@@ -149,6 +153,8 @@ warning at the top of this file.
 | `shrines/submitting-photos` | `/shrines/submitting-photos` | `shrines/submitting-photos` | **public** (`null` in its roles) | `route/shrines/submitting-photos` — **the same resource** |
 | `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles) | _open, deliberately_ |
 | `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles) | _open, deliberately_ |
+| `sion-model/data-problems` | `/sm/data-problems` | `sion-model/data-problems` | restricted to sch_administrator, sch_general_moderator | `route/sion-model/data-problems` — **the same resource** |
+| `sion-model/phpinfo` | `/sm/phpinfo` | `sion-model/phpinfo` | restricted to sch_administrator | `route/sion-model/phpinfo` — **the same resource** |
 | `wayside-shrines` | `/wayside-shrines` | `wayside-shrines` | **public** (`null` in its roles) | `route/wayside-shrines` — **the same resource** |
 | `welcome` | `/` | `welcome` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/welcome` — **the same resource** |
 

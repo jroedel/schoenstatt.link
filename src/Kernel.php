@@ -9,7 +9,9 @@ use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
+use App\Controller\DataProblemsController;
 use App\Controller\HealthController;
+use App\Controller\PhpInfoController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\WaysideShrinesController;
@@ -213,6 +215,21 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // ported HTML-era route that builds no template environment.
             ShrinesGeoJsonController::class => fn (): ShrinesGeoJsonController => new ShrinesGeoJsonController(
                 $this->laminas(),
+                $this->routeUrl()
+            ),
+            // The most tightly guarded page ported so far: sch_administrator only, a
+            // role with no descendants. No ServiceBridge of its own — phpinfo() needs
+            // nothing from laminas, and RouteUrl reaches it lazily for links.
+            PhpInfoController::class => fn (): PhpInfoController => new PhpInfoController(
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The data-problems list. Needs the laminas container for ProblemService
+            // *and* Twig, and its template reaches back for formatEntity through
+            // App\Laminas\EntityFormatter.
+            DataProblemsController::class => fn (): DataProblemsController => new DataProblemsController(
+                $this->laminas(),
+                $this->twig(),
                 $this->routeUrl()
             ),
             // The first restricted page, and the only reason to trust

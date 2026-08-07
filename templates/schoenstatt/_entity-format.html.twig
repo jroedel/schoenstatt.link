@@ -50,3 +50,37 @@
         {{- edit_pencil('person', person.personId) -}}
     {%- endif -%}
 {%- endmacro -%}
+
+{#
+  The dispatcher: what `$this->formatEntity($type, $data, $options)` resolves to.
+
+  `formatEntity` is Schoenstatt\View\Helper\FormatEntity, which switches on the entity
+  type before deferring to SionModel's general implementation:
+
+      person       -> formatPerson       -> the person() macro above
+      association  -> formatAssociation  -> the association() macro above
+      role         -> its own inline markup, not reproduced
+      publication  -> formatPublication, not reproduced (via SionModel's own deferral)
+      everything else -> format_entity(), i.e. App\Laminas\EntityFormatter
+
+  The switch lives here rather than in PHP for one reason: two of its branches are the
+  macros in this file, and a Twig function cannot call a macro. `formats_entity_generally()`
+  is what keeps the two lists from drifting — it asks EntityFormatter whether it will
+  accept the type, so a type added to its SPECIALIZED list without a branch here raises
+  instead of being formatted by the wrong rules.
+#}
+{%- macro entity(entity_type, data, options = {}) -%}
+    {%- if entity_type == 'association' -%}
+        {{- _self.association(data) -}}
+    {%- elseif entity_type == 'person' -%}
+        {{- _self.person(data) -}}
+    {%- elseif formats_entity_generally(entity_type) -%}
+        {{- format_entity(entity_type, data, options) -}}
+    {%- else -%}
+        {#- role and publication: laminas formats these with a helper nobody has
+            reproduced yet. format_entity() raises a LogicException naming the type,
+            which is what should happen — plausible-but-wrong markup on an admin page is
+            worse than a loud failure. -#}
+        {{- format_entity(entity_type, data, options) -}}
+    {%- endif -%}
+{%- endmacro -%}
