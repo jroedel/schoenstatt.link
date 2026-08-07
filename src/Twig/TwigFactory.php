@@ -10,6 +10,7 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\View\SiteChrome;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Twig\Cache\FilesystemCache;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 
@@ -46,6 +47,13 @@ use function mkdir;
  * page, not a 500 on the first HTML route ported. `data/cache/*` is already
  * gitignored, so the cache needs no new ignore rule.
  *
+ * That probe alone did not keep the promise, and App\Twig\ForgivingCache is why it
+ * now does: Twig writes into a per-template subdirectory it creates *itself*, not
+ * into the directory probed here, so one render performed by a different user leaves
+ * a subdirectory this check cannot see and the write throws mid-render. Read that
+ * class before touching the cache wiring — it cost every ported HTML route an empty
+ * 200 on 2026-08-07.
+ *
  * **auto_reload: true**, and not as a leftover from development. Twig keys a
  * compiled file by a hash of the template's *name*, not of its contents, so with
  * auto_reload off an edited template is simply never recompiled — measured the hard
@@ -74,10 +82,20 @@ final class TwigFactory
     ): Environment {
         $root = dirname(__DIR__, 2);
 
+        $cacheDir = $this->cacheDir($root . '/' . self::CACHE_DIR);
+
         $twig = new Environment(new FilesystemLoader($root . '/' . self::TEMPLATE_DIR, $root), [
             'autoescape'       => 'html',
             'strict_variables' => true,
-            'cache'            => $this->cacheDir($root . '/' . self::CACHE_DIR) ?? false,
+            //FORCE_BYTECODE_INVALIDATION is not decoration: it is what Environment
+            //passes when it builds the FilesystemCache itself from a string and
+            //auto_reload is on, and building the cache by hand silently drops it.
+            //Without it a rewritten compiled template stays in OPcache — and with
+            //`revalidate_freq=2` in both the capsule and production, "my template
+            //edit did nothing" would be back, one layer deeper than last time.
+            'cache'            => null === $cacheDir
+                ? false
+                : new ForgivingCache(new FilesystemCache($cacheDir, FilesystemCache::FORCE_BYTECODE_INVALIDATION)),
             'auto_reload'      => true,
         ]);
         $twig->addExtension(new LaminasExtension($laminas, $helpers, $urls));
