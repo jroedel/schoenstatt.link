@@ -29,12 +29,12 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 10,
+        "routes_shadowed_by_symfony": 12,
         "rules_from_rule_config": 34,
         "symfony_routes_acl_checked": 16,
-        "symfony_routes_open": 5,
+        "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 21,
+        "symfony_served_routes": 25,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6499,6 +6499,24 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "api-v1/shrines-json",
+            "path": "/api/v1/associations/shrines.json",
+            "symfony_route": "api-v1/shrines-json",
+            "was_guarded": true,
+            "was_public": true,
+            "now_checks": null,
+            "access_kind": "open"
+        },
+        {
+            "laminas_route": "api-v2/shrines-json",
+            "path": "/api/v2/associations/shrines.json",
+            "symfony_route": "api-v2/shrines-json",
+            "was_guarded": true,
+            "was_public": true,
+            "now_checks": null,
+            "access_kind": "open"
+        },
+        {
             "laminas_route": "developers",
             "path": "/developers",
             "symfony_route": "developers",
@@ -7561,6 +7579,46 @@
                 "resource": "route/admin",
                 "reason": null,
                 "denial_style": "html"
+            }
+        },
+        "api-v1/shrines-json": {
+            "path": "/api/v1/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v1/shrines-json.locale": {
+            "path": "/{_locale}/api/v1/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v2/shrines-json": {
+            "path": "/api/v2/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v2/shrines-json.locale": {
+            "path": "/{_locale}/api/v2/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
             }
         },
         "developers": {

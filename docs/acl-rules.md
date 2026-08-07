@@ -47,12 +47,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 10 |
+| routes shadowed by symfony | 12 |
 | rules from rule config | 34 |
 | symfony routes acl checked | 16 |
-| symfony routes open | 5 |
+| symfony routes open | 9 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 21 |
+| symfony served routes | 25 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
@@ -87,6 +87,10 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `acknowledgements.locale` | `/{_locale}/acknowledgements` | `route/acknowledgements` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `admin` | `/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
 | `admin.locale` | `/{_locale}/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
+| `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
+| `api-v1/shrines-json.locale` | `/{_locale}/api/v1/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
+| `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
+| `api-v2/shrines-json.locale` | `/{_locale}/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
 | `developers` | `/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `developers.locale` | `/{_locale}/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `health` | `/_health` | _open_ | everyone — reason below | n/a | `App\Controller\HealthController` |
@@ -110,6 +114,10 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 Each is the string passed to `RouteAccess::openToEveryone()`. Declaring openness is a statement,
 not a default, and this is where the statement is reviewed.
 
+- `api-v1/shrines-json` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
+- `api-v1/shrines-json.locale` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
+- `api-v2/shrines-json` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
+- `api-v2/shrines-json.locale` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
 - `health` — shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all
 - `sm-cache-status` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
 - `sm-cache-status.locale` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
@@ -133,6 +141,8 @@ warning at the top of this file.
 | --- | --- | --- | --- | --- |
 | `acknowledgements` | `/acknowledgements` | `acknowledgements` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/acknowledgements` — **the same resource** |
 | `admin` | `/admin` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
+| `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | `api-v1/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
+| `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | `api-v2/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
 | `developers` | `/developers` | `developers` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/developers` — **the same resource** |
 | `privacy` | `/privacy` | `privacy` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/privacy` — **the same resource** |
 | `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles) | `route/shrines` — **the same resource** |
