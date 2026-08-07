@@ -5,7 +5,11 @@
 
   What a page is expected to define:
     page_title    string   goes in <title> before the site name, and into the
-                           WebPage schema. Required.
+                           WebPage schema. Required, but '' is a legitimate value
+                           and means "no prefix": both the title and the schema
+                           then carry the site name alone, with no separator, which
+                           is what headTitle() gives a page that never called it.
+                           / and /privacy are the two that never do.
     breadcrumbs   list     [{label, href}], outermost first, or omitted for none.
     block content          the page body.
     block inline_scripts   scripts at the end of <body>. Anything inline MUST
@@ -26,7 +30,7 @@
 <html lang="{{ current_language() }}">
     <head>
         <meta charset="utf-8">
-        <title>{{ page_title }} - {{ translate('Schoenstatt Link', 'Application') }}</title>
+        <title>{% if page_title %}{{ page_title }} - {% endif %}{{ translate('Schoenstatt Link', 'Application') }}</title>
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -136,11 +140,16 @@
               </ul>
             </div>
             {% if breadcrumbs is defined and breadcrumbs %}
-            {#- every ancestor of the current page is active, which is what
-                Laminas\Navigation\Page\Mvc::isActive() answers for each of them -#}
+            {#- a crumb is active when it *is* the current page, not when it is an
+                ancestor of it: partial/breadcrumbs.phtml asks
+                Laminas\Navigation\Page\Mvc::isActive() non-recursively, so on
+                /en/developers the "Home" crumb carries no class. Comparing hrefs
+                rather than using loop.last is what also gets the shrine index right,
+                where two crumbs share the current route and laminas marks both. -#}
+            {%- set here = current_path() -%}
             <ol class="breadcrumb">
                 {% for crumb in breadcrumbs %}
-                <li class="active">
+                <li{% if crumb.href == here %} class="active"{% endif %}>
                     {% if not loop.last %}<a href="{{ crumb.href }}">{{ crumb.label }}</a>{% else %}{{ crumb.label }}{% endif %}
                 </li>
                 {% endfor %}
@@ -162,8 +171,13 @@
             </div>
             {{ flash_messages() }}
             {% block content %}{% endblock %}
+{#- the WebPage name below is headTitle()[0] in the laminas layout, which for a page
+    that never called headTitle() is the site name the layout appends itself —
+    measured: /en/ and /en/privacy both say "Schoenstatt Link". Same fallback as
+    <title> above. A Twig comment cannot live inside the json_ld() call: it is an
+    expression, and one placed there is an "Unclosed {" syntax error. -#}
 <script type="application/ld+json">{{ json_ld([
-    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': page_title, 'publisher': {'@id': '#identity'}},
+    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': page_title ?: translate('Schoenstatt Link', 'Application'), 'publisher': {'@id': '#identity'}},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/en/', 'inLanguage': 'en'},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/es/', 'inLanguage': 'es'},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/de/', 'inLanguage': 'de'},

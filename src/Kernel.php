@@ -8,6 +8,7 @@ use App\Authorization\RouteGuard;
 use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
+use App\Controller\ContentPageController;
 use App\Controller\HealthController;
 use App\Controller\ShrinesController;
 use App\Controller\WaysideShrinesController;
@@ -21,6 +22,7 @@ use App\Http\LegacyBridge;
 use App\Http\LocaleListener;
 use App\Http\MaintenanceKey;
 use App\Http\ProtocolVersionListener;
+use App\Http\SessionListener;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
@@ -120,6 +122,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         //default priority, i.e. after RouterListener's 32: the locale it reads is a
         //route attribute, so there is nothing to read until routing has happened
         $dispatcher->addListener(KernelEvents::REQUEST, new LocaleListener());
+        //what JUser\Module::onBootstrap() does for every bridged request and nothing
+        //did for a ported one: start the session through the laminas manager, so its
+        //validators apply, and prune values whose class no longer exists. Without it a
+        //visitor holding a pre-Laminas session got an empty 200 from every ported HTML
+        //page — the layout's flash_messages() throws on such a value. Above the guard,
+        //which reads the identity out of that same session.
+        $dispatcher->addListener(
+            KernelEvents::REQUEST,
+            new SessionListener($this->laminas(...)),
+            SessionListener::PRIORITY
+        );
         //the route guard BjyAuthorize\Guard\Route cannot be here to run. Below
         //RouterListener because it reads the matched route's own declaration, and
         //below LocaleListener because a 403 renders Twig and would otherwise
@@ -182,6 +195,15 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // method and one template header block, not the wiring.
             WaysideShrinesController::class => fn (): WaysideShrinesController => new WaysideShrinesController(
                 $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The five static content pages, behind one controller. It is the first
+            // ported controller that needs *neither* laminas services nor the merged
+            // config: a template, and RouteUrl for its breadcrumb and locale-redirect
+            // links. RouteUrl does reach laminas for the router, but only when a link
+            // is actually assembled.
+            ContentPageController::class => fn (): ContentPageController => new ContentPageController(
                 $this->twig(),
                 $this->routeUrl()
             ),

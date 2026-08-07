@@ -29,6 +29,7 @@ use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
+use App\Controller\ContentPageController;
 use App\Controller\HealthController;
 use App\Controller\ShrinesController;
 use App\Controller\WaysideShrinesController;
@@ -77,18 +78,25 @@ $routes->add('health', new Route('/_health', [
  * $access is a required argument rather than a defaulted one, and both twins get the
  * same instance: they are one page reached two ways, and a check that applied to only
  * one of them would be a hole shaped exactly like the locale prefix.
+ *
+ * $extra is for a controller that serves more than one route and needs to know which
+ * — App\Controller\ContentPageController is the case, five static pages behind one
+ * class. It merges *under* the two keys above, so a page cannot redeclare its own
+ * authorization by accident.
  */
 $locales = Locales::pattern();
-$ported  = static function (
+/** @param array<string, mixed> $extra */
+$ported = static function (
     string $name,
     string $path,
     string $controller,
-    RouteAccess $access
+    RouteAccess $access,
+    array $extra = []
 ) use (
     $routes,
     $locales
 ): void {
-    $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access];
+    $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access] + $extra;
     $routes->add($name, new Route($path, $defaults));
     $routes->add($name . '.locale', new Route('/{_locale}' . $path, $defaults, ['_locale' => $locales]));
 };
@@ -157,6 +165,88 @@ $ported(
 // separate routes with their own guards, and a literal path with no trailing-slash
 // variant is what leaves every one of them falling through to `legacy`.
 $ported('admin', '/admin', AdminController::class, RouteAccess::guardedBy('route/admin'));
+
+// The static content pages, ported 2026-08-07. Five routes, one controller and one
+// template each: on the laminas side these are five actions whose entire body is
+// `return new ViewModel()` over a Markdown heredoc in the .phtml, so five Symfony
+// controllers would have ported the duplication too. What differs per page is
+// declared here instead — see App\Controller\ContentPageController.
+//
+// A breadcrumb names the laminas route it points at rather than a URL, so the
+// prefix comes from App\Laminas\RouteUrl and the link keeps working while its
+// target is still on the laminas side. The trails are copied from what the
+// `navigation` config produces today, measured page by page: /privacy is not in the
+// navigation at all and so has none, and `welcome` has exactly one crumb.
+/**
+ * @param list<array{label: string, route: string}> $breadcrumbs
+ * @return array<string, mixed>
+ */
+$content = static fn (string $template, string $title, array $breadcrumbs = []): array => [
+    ContentPageController::TEMPLATE    => $template,
+    ContentPageController::PAGE_TITLE  => $title,
+    ContentPageController::BREADCRUMBS => $breadcrumbs,
+];
+$home = ['label' => 'Home', 'route' => 'welcome'];
+
+// The site's front page. Its laminas action reads five blog posts that index.phtml
+// never renders; the port drops the query, and ContentPageParityTest is what shows
+// that costs the response nothing. Empty page title on purpose — indexAction sets no
+// headTitle, so laminas renders `<title>Schoenstatt Link</title>` and the layout
+// reproduces that by omitting the separator.
+$ported(
+    'welcome',
+    '/',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/welcome'),
+    $content('content/welcome.html.twig', '', [$home])
+);
+
+$ported(
+    'developers',
+    '/developers',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/developers'),
+    $content('content/developers.html.twig', 'Developers Center', [
+        $home,
+        ['label' => 'Developers Center', 'route' => 'developers'],
+    ])
+);
+
+$ported(
+    'acknowledgements',
+    '/acknowledgements',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/acknowledgements'),
+    $content('content/acknowledgements.html.twig', 'Security research acknowledgements', [
+        $home,
+        ['label' => 'Security research acknowledgements', 'route' => 'acknowledgements'],
+    ])
+);
+
+// No breadcrumbs and no page title: privacy.phtml calls neither headTitle() nor
+// appears in the `navigation` config, and /en/privacy renders neither today.
+$ported(
+    'privacy',
+    '/privacy',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/privacy'),
+    $content('content/privacy.html.twig', '')
+);
+
+// The one content page whose body is chosen by locale, and so the first ported route
+// that would visibly break if App\Http\LocaleListener stopped working. A child of
+// `shrines` in the router, which is why its breadcrumb trail starts there rather
+// than at Home.
+$ported(
+    'shrines/submitting-photos',
+    '/shrines/submitting-photos',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/shrines/submitting-photos'),
+    $content('content/submitting-photos.html.twig', 'Submitting photos', [
+        ['label' => 'Shrines', 'route' => 'shrines'],
+        ['label' => 'Submitting photos', 'route' => 'shrines/submitting-photos'],
+    ])
+);
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.
