@@ -47,12 +47,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 43 |
 | route guard entries | 168 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 5 |
+| routes shadowed by symfony | 10 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 6 |
+| symfony routes acl checked | 16 |
 | symfony routes open | 5 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 11 |
+| symfony served routes | 21 |
 | total routes | 191 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
@@ -83,17 +83,27 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 
 | symfony route | path | checked against | who that allows | denial | controller |
 | --- | --- | --- | --- | --- | --- |
+| `acknowledgements` | `/acknowledgements` | `route/acknowledgements` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
+| `acknowledgements.locale` | `/{_locale}/acknowledgements` | `route/acknowledgements` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `admin` | `/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
 | `admin.locale` | `/{_locale}/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
+| `developers` | `/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
+| `developers.locale` | `/{_locale}/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `health` | `/_health` | _open_ | everyone — reason below | n/a | `App\Controller\HealthController` |
+| `privacy` | `/privacy` | `route/privacy` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
+| `privacy.locale` | `/{_locale}/privacy` | `route/privacy` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `shrines` | `/shrines` | `route/shrines` | **public** (`null` in its roles) | html | `App\Controller\ShrinesController` |
 | `shrines.locale` | `/{_locale}/shrines` | `route/shrines` | **public** (`null` in its roles) | html | `App\Controller\ShrinesController` |
+| `shrines/submitting-photos` | `/shrines/submitting-photos` | `route/shrines/submitting-photos` | **public** (`null` in its roles) | html | `App\Controller\ContentPageController` |
+| `shrines/submitting-photos.locale` | `/{_locale}/shrines/submitting-photos` | `route/shrines/submitting-photos` | **public** (`null` in its roles) | html | `App\Controller\ContentPageController` |
 | `sm-cache-status` | `/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
 | `sm-cache-status.locale` | `/{_locale}/sm/cache-status` | _open_ | everyone — reason below | n/a | `App\Controller\CacheStatusController` |
 | `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
 | `sm-clear-persistent-cache.locale` | `/{_locale}/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
 | `wayside-shrines` | `/wayside-shrines` | `route/wayside-shrines` | **public** (`null` in its roles) | html | `App\Controller\WaysideShrinesController` |
 | `wayside-shrines.locale` | `/{_locale}/wayside-shrines` | `route/wayside-shrines` | **public** (`null` in its roles) | html | `App\Controller\WaysideShrinesController` |
+| `welcome` | `/` | `route/welcome` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
+| `welcome.locale` | `/{_locale}/` | `route/welcome` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 
 #### Why the open ones are open
 
@@ -121,11 +131,16 @@ warning at the top of this file.
 
 | laminas route | path | shadowed by | its (now inert) guard | what the shadow checks |
 | --- | --- | --- | --- | --- |
+| `acknowledgements` | `/acknowledgements` | `acknowledgements` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/acknowledgements` — **the same resource** |
 | `admin` | `/admin` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
+| `developers` | `/developers` | `developers` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/developers` — **the same resource** |
+| `privacy` | `/privacy` | `privacy` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/privacy` — **the same resource** |
 | `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles) | `route/shrines` — **the same resource** |
+| `shrines/submitting-photos` | `/shrines/submitting-photos` | `shrines/submitting-photos` | **public** (`null` in its roles) | `route/shrines/submitting-photos` — **the same resource** |
 | `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles) | _open, deliberately_ |
 | `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles) | _open, deliberately_ |
 | `wayside-shrines` | `/wayside-shrines` | `wayside-shrines` | **public** (`null` in its roles) | `route/wayside-shrines` — **the same resource** |
+| `welcome` | `/` | `welcome` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/welcome` — **the same resource** |
 
 ## Role hierarchy
 

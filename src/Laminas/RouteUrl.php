@@ -17,6 +17,7 @@ use function implode;
 use function ltrim;
 use function parse_str;
 use function rtrim;
+use function str_ends_with;
 use function strlen;
 use function substr;
 
@@ -77,8 +78,16 @@ final class RouteUrl
         $parts = explode('?', $path, 2);
         $query = $parts[1] ?? '';
 
+        //the trailing slash is carried across explicitly, because the home page is the
+        //one path where it is the only thing left after the locale segment is removed:
+        //`/en/` would otherwise come back as `/en`, and every hreflang and canonical
+        //link on the site's front page would point one redirect away from the page
+        //that declared them. Latent until `welcome` was ported — measured against the
+        //laminas rendering, which says `http://localhost/en/`.
+        $trailingSlash = str_ends_with($parts[0], '/') ? '/' : '';
+
         $base     = rtrim($this->baseUrl, '/');
-        $relative = ltrim(substr($parts[0], strlen($base)), '/');
+        $relative = ltrim(substr(rtrim($parts[0], '/'), strlen($base)), '/');
         $segments = '' === $relative ? [] : explode('/', $relative);
         if ([] !== $segments && Locales::isAlias($segments[0])) {
             array_shift($segments);
@@ -89,6 +98,7 @@ final class RouteUrl
         if ('' !== $rest) {
             $result .= '/' . $rest;
         }
+        $result .= $trailingSlash;
 
         if ('' !== $query) {
             /** @var array<string, mixed> $params */

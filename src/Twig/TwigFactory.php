@@ -100,6 +100,7 @@ final class TwigFactory
         ]);
         $twig->addExtension(new LaminasExtension($laminas, $helpers, $urls));
         $twig->addExtension(new ChromeExtension(new SiteChrome($laminas, $helpers, $urls), $requests, $nonce));
+        $twig->addExtension(new MarkdownExtension());
 
         return $twig;
     }
