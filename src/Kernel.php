@@ -11,6 +11,7 @@ use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
 use App\Controller\HealthController;
 use App\Controller\ShrinesController;
+use App\Controller\ShrinesGeoJsonController;
 use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
 use App\Http\CspListener;
@@ -205,6 +206,13 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // is actually assembled.
             ContentPageController::class => fn (): ContentPageController => new ContentPageController(
                 $this->twig(),
+                $this->routeUrl()
+            ),
+            // Both shrine GeoJSON versions, one controller: the two laminas actions
+            // are byte-identical. No Twig — it answers JSON — so this is the only
+            // ported HTML-era route that builds no template environment.
+            ShrinesGeoJsonController::class => fn (): ShrinesGeoJsonController => new ShrinesGeoJsonController(
+                $this->laminas(),
                 $this->routeUrl()
             ),
             // The first restricted page, and the only reason to trust
