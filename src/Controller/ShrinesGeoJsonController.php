@@ -64,6 +64,23 @@ final class ShrinesGeoJsonController
     /** What makeCacheable() asks for: half an hour, publicly cacheable. */
     private const MAX_AGE = 1800;
 
+    /**
+     * Announces that this endpoint is on its way out, per the IETF `Deprecation` header
+     * draft: a bare `true` means "deprecated, no retirement date announced", which is
+     * exactly the state of it — see docs/BACKLOG.md.
+     *
+     * **No `Sunset` header on purpose.** RFC 8594 requires a date, and naming one would
+     * commit the project to a removal it has not decided on. `Deprecation` says stop
+     * building on this; `Sunset` would say when it breaks, and nobody knows that yet.
+     *
+     * The same header is sent by the laminas actions this shadows
+     * (Schoenstatt\Controller\AssociationsApiV{1,2}Controller::shrinesJsonAction), because
+     * production still serves those — a deprecation only the capsule announced would be
+     * a deprecation no caller ever sees.
+     */
+    public const DEPRECATION_HEADER = 'Deprecation';
+    public const DEPRECATION_VALUE  = 'true';
+
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly RouteUrl $urls
@@ -100,6 +117,8 @@ final class ShrinesGeoJsonController
         //laminas' JSON renderer sends `application/json; charset=utf-8`; JsonResponse
         //sets the bare type, so the charset is put back rather than dropped
         $response->headers->set('Content-Type', 'application/json; charset=utf-8');
+        //still served, still correct, but announced as deprecated — see the constant
+        $response->headers->set(self::DEPRECATION_HEADER, self::DEPRECATION_VALUE);
 
         //`max-age=1800, public` — ResponseHeaderBag sorts the directives, and so does
         //laminas' addHeaderLine order here, so the two agree without coaxing

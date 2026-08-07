@@ -32,6 +32,11 @@ use function trim;
  * cache headers. So those are what this measures, and the discriminator that every
  * ported route needs: that Symfony served it at all.
  *
+ * **The endpoint is deprecated** as of 2026-08-07 — still served, still correct, but
+ * announced with `Deprecation: true` so callers find out without reading the source. The
+ * same header is set by the laminas actions this shadows, because production serves those;
+ * tools/smoke-prod.sh is what checks that half. See docs/BACKLOG.md for the open decision.
+ *
  * The interesting assertion is `testTheCacheHeadersAreSentExactlyOnce`. The laminas
  * response sends **contradictory pairs** — `no-store, no-cache, must-revalidate` from
  * PHP's session cache limiter *and* `max-age=1800, public` from the controller's
@@ -91,6 +96,37 @@ class ShrinesGeoJsonSmokeTest extends SmokeTestCase
         self::assertSame('Point', $first['geometry']['type'] ?? null);
         self::assertCount(2, $first['geometry']['coordinates'] ?? [], 'a Point is [longitude, latitude]');
         self::assertArrayHasKey('name', is_array($first['properties'] ?? null) ? $first['properties'] : []);
+    }
+
+    /**
+     * Deprecated, and saying so. A deprecation nobody can observe is not a deprecation —
+     * and this is the assertion that would catch the header being dropped by a later
+     * refactor of the response building.
+     */
+    #[DataProvider('versions')]
+    public function testTheEndpointAnnouncesItsDeprecation(string $path): void
+    {
+        $response = $this->request('GET', $path);
+
+        self::assertSame(
+            'true',
+            $response['headers']['deprecation'] ?? null,
+            'the shrine GeoJSON feed is deprecated and must say so — see docs/BACKLOG.md'
+        );
+        //deprecated is not gone: the payload is still whole
+        self::assertSame(200, $response['status']);
+        self::assertStringContainsString('FeatureCollection', $response['body']);
+    }
+
+    /**
+     * And the deprecation is scoped to this feed. A header applied response-wide — by a
+     * kernel listener, say — would mark every endpoint on the site deprecated.
+     */
+    public function testANeighbouringApiEndpointIsNotMarkedDeprecated(): void
+    {
+        $response = $this->request('GET', '/en/api/v2/associations/findByKind?kind=sch-shrine');
+
+        self::assertArrayNotHasKey('deprecation', $response['headers']);
     }
 
     /**

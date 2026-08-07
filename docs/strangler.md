@@ -543,40 +543,59 @@ after the route moves, the baseline is unobtainable.
 A route can be blocked by something that has nothing to do with the strangler. Recording
 those here saves the next porter the rediscovery.
 
-### `sion-model/view-changes` (`/sm/view-changes`) — fatals before it renders
+### `sion-model/view-changes` (`/sm/view-changes`) — fixed, still not ported
 
-**Not blocked by the migration: broken on laminas today.** Measured 2026-08-07 with a
-signed-in all-roles session against the capsule, i.e. through the existing laminas
-route:
+**The page was dead** until 2026-08-07 and nobody noticed, because it sits behind
+`sch_general_moderator`:
 
 ```
 Fatal error: Allowed memory size of 536870912 bytes exhausted
   in vendor/laminas/laminas-db/src/Adapter/Driver/Pdo/Result.php on line 175
 ```
 
-`SionModel\Service\ChangesCollector::getAllChanges()` calls `getChanges()` on every
-registered SionTable with no `LIMIT`, so it loads the whole `sch_changes` table —
-**137,321 rows** in the 2021 capsule dump, and production's is five years larger. The
-view then truncates to `changes_max_rows` (500) *after* the fact. So the page has been
-dead for some time and nobody noticed, because it is behind `sch_general_moderator`.
+Two bugs in `SionModel`, both now fixed:
 
-Why that blocks the port rather than merely accompanying it: a port is verified by
-comparing the ported rendering against the laminas one, and there is no laminas
-rendering to compare against. Characterizing the page is impossible before the bug is
-fixed.
+1. **`SionTable::getChanges()` filtered by the wrong name.** It asked for the changed
+   entities by their database column (`TextId`) where `queryObjects()` matches entity
+   *field* names (`textId`) — a mismatch it answers by `continue`-ing past the
+   predicate, so the query came back **unfiltered**. It loaded all 2,757 rows of a
+   table averaging 85 KB a row instead of the 250 that had changed. That single hop
+   was 520 MB; it is 66 MB now. `SionTable::entityFieldForTableKey()` is the fix.
+2. **`ChangesCollector::getAllChanges()` took no limit at all**, so `changes_max_rows`
+   bounded only the display, and `viewChangesAction()`'s single-table branch passed the
+   `changes_show_all` *flag* where an int row count belonged — `limit(false)`. One
+   number governs fetch and display now, set explicitly as
+   `sion_model.changes_max_rows` (500).
 
-The fix is to push the row limit into the query, which lives in `SionModel` (a
-submodule) and changes what the laminas page does as well — a behaviour change to a
-shared library, not a migration step. Do that first, characterize the page, then port
-it. Its sibling `sion-model/auto-fix-data-problems` is a separate matter: it is
+Measured after the fix: 200, 211 KB, 500 rows, 1.96 s, and a 214 MB peak for the
+collector at 500 rows per table — against a 512 MB limit. 1000 per table would be
+352 MB, so 500 is the number with headroom rather than an arbitrary one.
+`test/Smoke/ViewChangesSmokeTest` guards all of it.
+
+**It is still not ported, and the remaining blocker is a different one.** The page
+formats each change's entity through `formatEntity`, and the entity type comes from the
+data — `sch_changes` holds 18,243 `publication` rows and 1,317 `role` rows, which are
+exactly the two types `App\Laminas\EntityFormatter` refuses (see above). Porting it
+means reproducing `Books\View\Helper\FormatPublication` and the `role` branch of
+`Schoenstatt\View\Helper\FormatEntity` first. That is a bounded, mechanical job, and it
+is the next thing to do if this page is wanted on the Symfony side.
+
+Its sibling `sion-model/auto-fix-data-problems` is a separate matter again: it is
 POST-and-CSRF, and there is no form layer on the Symfony side yet.
+
+**A note on the fetch/display ratio, for whoever tunes this next.** With
+`changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows
+hydrated so the view can show the newest 500. That is correct rather than wasteful in
+the strict sense (which table's rows win is unknown until they are merged), but a
+two-pass collector — merge the change rows first, hydrate only the survivors — would cut
+it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable`.
 
 ## Verifying
 
-- `php composer.phar test` — 718 tests (measured 2026-08-07, after this batch of ten
-  routes; 631 after the wayside-shrine port, 618 after the authorization bridge, 551
-  before it, 527 before the shrines port). Per suite: unit 119, integration 415, fuzz
-  18, smoke 166.
+- `php composer.phar test` — 729 tests (measured 2026-08-07, after this batch of nine
+  ported routes plus the view-changes repair; 631 after the wayside-shrine port, 618
+  after the authorization bridge, 551 before it, 527 before the shrines port). Per
+  suite: unit 119, integration 426, fuzz 18, smoke 166.
 
   That script now passes `-d memory_limit=1G`, as `composer fuzz` always has. Without
   it the *combined* run exhausts 512M in `Books\Form\Publication`'s factory, which
