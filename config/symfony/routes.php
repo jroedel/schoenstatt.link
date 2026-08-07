@@ -30,7 +30,9 @@ use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
+use App\Controller\DataProblemsController;
 use App\Controller\HealthController;
+use App\Controller\PhpInfoController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\WaysideShrinesController;
@@ -284,6 +286,34 @@ $ported(
     '/api/v2/associations/shrines.json',
     ShrinesGeoJsonController::class,
     $shrineGeoJson
+);
+
+// SionModel's phpinfo page, ported 2026-08-07. Checked against its own resource, and
+// that resource is the sharpest one on the site: `route/sion-model/phpinfo` admits
+// `sch_administrator` alone, a role with no descendants, so exactly 1 of 43 roles gets
+// in. /admin proved the guard admits the right people; this is the tightest available
+// proof that it refuses everyone else.
+$ported(
+    'sion-model/phpinfo',
+    '/sm/phpinfo',
+    PhpInfoController::class,
+    RouteAccess::guardedBy('route/sion-model/phpinfo')
+);
+
+// SionModel's data-problems list, ported 2026-08-07. Guarded `sch_general_moderator`
+// (2 effective roles of 43). The *read-only* route only: its sibling
+// `sion-model/auto-fix-data-problems` renders the same .phtml with a CSRF confirm form
+// and stays on laminas, so that template keeps serving it. No method constraint, as the
+// laminas route has none.
+//
+// This is the port that needed App\Laminas\EntityFormatter — `formatEntity` is the
+// most-reused of the helpers a Symfony route cannot call, and reproducing it is what
+// unblocks the rest of the admin pages.
+$ported(
+    'sion-model/data-problems',
+    '/sm/data-problems',
+    DataProblemsController::class,
+    RouteAccess::guardedBy('route/sion-model/data-problems')
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"

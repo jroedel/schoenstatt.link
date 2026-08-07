@@ -1,0 +1,43 @@
+{#
+  module/SionModel/view/sion-model/sion-model/data-problems.phtml, ported.
+
+  Only the **read-only** route moves. That .phtml serves two laminas routes:
+  `sion-model/data-problems` (a plain list) and `sion-model/auto-fix-data-problems`,
+  which sets `isSimulation` and renders a CSRF-protected confirm form. The auto-fix
+  route stays on laminas — there is no form layer on the Symfony side — so the
+  simulation branch is deliberately absent here rather than half-reproduced. Under
+  PhpRenderer the unset `$this->form` was silently null; under Twig's strict_variables
+  it would be an exception, which is a good reason for the branch to be gone rather than
+  guarded.
+
+  The entity cell goes through the dispatcher macro rather than format_entity()
+  directly: `problem_specifications` names association and person as well as book,
+  collection and library, and laminas formats those two with helpers reproduced as
+  macros. See templates/schoenstatt/_entity-format.html.twig.
+
+  `displayEditPencil: true` is what the .phtml passes, and it is the default anyway;
+  passed explicitly so the two files read the same.
+#}
+{% extends 'layout.html.twig' %}
+
+{% import 'schoenstatt/_entity-format.html.twig' as fmt %}
+
+{% block content %}
+<p><strong>{{ translate('Total problems') }}:</strong>&nbsp;{{ problems|length }}</p>
+<table class="table">
+	<thead>
+	<tr>
+	<th>{{ translate('Entity') }}</th>
+	<th>{{ translate('Problem') }}</th>
+	</tr>
+	</thead>
+	<tbody>
+{% for problem in problems %}
+<tr>
+	<td>{{ fmt.entity(problem.entity, problem.data, {'displayEditPencil': true}) }}</td>
+	<td class="{{ problem.problemTextClass }}">{{ translate(problem.problemText, problem.translatorTextDomain) }}</td>
+</tr>
+{% endfor %}
+	</tbody>
+</table>
+{% endblock %}

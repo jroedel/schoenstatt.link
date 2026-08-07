@@ -29,12 +29,12 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 12,
+        "routes_shadowed_by_symfony": 14,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 16,
+        "symfony_routes_acl_checked": 20,
         "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 25,
+        "symfony_served_routes": 29,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6571,6 +6571,24 @@
             "access_kind": "open"
         },
         {
+            "laminas_route": "sion-model/data-problems",
+            "path": "/sm/data-problems",
+            "symfony_route": "sion-model/data-problems",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sion-model/data-problems",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "sion-model/phpinfo",
+            "path": "/sm/phpinfo",
+            "symfony_route": "sion-model/phpinfo",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sion-model/phpinfo",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "wayside-shrines",
             "path": "/wayside-shrines",
             "symfony_route": "wayside-shrines",
@@ -7707,6 +7725,46 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/shrines/submitting-photos",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/data-problems": {
+            "path": "/sm/data-problems",
+            "controller": "App\\Controller\\DataProblemsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/data-problems",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/data-problems.locale": {
+            "path": "/{_locale}/sm/data-problems",
+            "controller": "App\\Controller\\DataProblemsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/data-problems",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/phpinfo": {
+            "path": "/sm/phpinfo",
+            "controller": "App\\Controller\\PhpInfoController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/phpinfo",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/phpinfo.locale": {
+            "path": "/{_locale}/sm/phpinfo",
+            "controller": "App\\Controller\\PhpInfoController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/phpinfo",
                 "reason": null,
                 "denial_style": "html"
             }
