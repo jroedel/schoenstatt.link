@@ -10,6 +10,7 @@ use JUser\View\Helper\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
 use Laminas\View\HelperPluginManager;
+use SionModel\View\Helper\DiffForHumans;
 use SionModel\View\Helper\Email;
 use SionModel\View\Helper\FormatUrlObject;
 use SionModel\View\Helper\Telephone;
@@ -125,6 +126,24 @@ final class ViewHelpers
     {
         /** @var TwbBundleLabel $helper */
         $helper = $this->helpers()->get('label');
+
+        return $helper;
+    }
+
+    /**
+     * SionModel\View\Helper\DiffForHumans — "7 years ago" inside an `<abbr>` whose
+     * title is the absolute date.
+     *
+     * On the allowlist rather than reproduced because it is Carbon's localized
+     * humanizer plus laminas' Intl formatter, and rewriting either against
+     * \Locale::getDefault() by hand would be re-deriving a locale database. It reaches
+     * `$this->view->dateFormat()`, which is exactly why helpers() primes the renderer
+     * first; measured to run with no MvcEvent.
+     */
+    public function diffForHumans(): DiffForHumans
+    {
+        /** @var DiffForHumans $helper */
+        $helper = $this->helpers()->get('diffForHumans');
 
         return $helper;
     }

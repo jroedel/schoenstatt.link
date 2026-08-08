@@ -1,0 +1,27 @@
+{#
+  module/Books/view/books/compositions/index.phtml.
+
+  The "Add new composition" button is unconditional in the original — no
+  isAllowed() around it — so every visitor sees a link to a page most of them
+  cannot open. Reproduced, because this is a port; it is the kind of thing to raise
+  separately rather than fix inside one.
+
+  `language_names[…]` is guarded with `is defined` where the original is not.
+  laminas' `$this->languageNames[$object['inLanguage']]` on a missing key emits a
+  warning and prints nothing; Twig with strict_variables on would raise instead and
+  take the whole page down. Same output, no new failure mode.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% block content %}
+<p class="pull-right"><a class="btn btn-primary" href="{{ laminas_path('music/create-composition') }}">{{ translate('Add new composition') }}</a></p>
+{% set current_language = '' %}
+{% for object in objects %}
+{% if current_language != object.inLanguage %}
+{% set current_language = object.inLanguage %}
+<h2>{{ language_names[object.inLanguage] is defined ? language_names[object.inLanguage] : '' }}</h2>
+    {% endif %}
+<p>{{ format.entity('composition', object) }}</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{#
+  module/Schoenstatt/view/schoenstatt/associations/index.phtml — a create link and the
+  shared association table.
+
+  The table is `_associations-table.html.twig`, which already existed for the two shrine
+  indexes. Same six columns, same row shape, same macros; the only reason it was not
+  already used from here is that this route had not been ported.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{# the original never closes this <p>; the table that follows is inside it. Reproduced. #}
+<p>{% if is_allowed('route/associations/create') %}
+<a href="{{ laminas_path('associations/create') }}">{{ translate('Create new association') }}</a>{% endif %}
+{% include 'schoenstatt/_associations-table.html.twig' %}
+{% endblock %}

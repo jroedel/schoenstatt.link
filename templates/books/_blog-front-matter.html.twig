@@ -1,0 +1,17 @@
+{#
+  module/Books/view/books/blog/_front-matter.phtml — the author/date/tags line, shared
+  by the index and the post page exactly as the partial is.
+
+  The tag links have an empty href in the original (`<a href="">`), because tag pages
+  do not exist yet. Reproduced: a port is not the place to invent a destination, and
+  removing the anchor would change the markup a reader sees.
+
+  The trailing space after each badge is the original's too — it is what separates two
+  tags visually, since the anchors are otherwise adjacent.
+#}
+{%- macro front_matter(entity) -%}
+<p><i class="fa fa-user"></i> {{ translate('by %s')|format(entity.createdByUsername) }}  <i class="fa fa-calendar"></i> {{ translate('Posted') }} {{ diff_for_humans(entity.createdOn) }}</p>
+<p><i class="fa fa-tags"></i> {{ translate('Tags') }}: {% for tag in entity.tags %}
+<a href=""><span class="badge badge-info">{{ tag }}</span></a>
+{% endfor %}</p>
+{%- endmacro -%}

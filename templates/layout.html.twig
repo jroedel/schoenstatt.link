@@ -10,7 +10,25 @@
                            then carry the site name alone, with no separator, which
                            is what headTitle() gives a page that never called it.
                            / and /privacy are the two that never do.
+                           **It is translated here**, because Laminas' headTitle()
+                           helper translates by default and every ported page hands
+                           it a raw English string — `$headText = 'Schoenstatt
+                           Library System'; $this->headTitle($headText);` is the
+                           shape of all of them. Until 2026-08-08 this layout printed
+                           it verbatim, so every ported page's <title> was English in
+                           all five locales while its <h1> was not: /es/developers
+                           said "Developers Center" where laminas says "Centro de
+                           desarrolladores". Measured with tools/port-baseline.php.
+    page_title_translate     optional, default true. Set false by a page that has
+                           *already* translated its title, which is the laminas
+                           `headTitle()->setTranslatorEnabled(false)` case — only
+                           the dictionary page does it.
     breadcrumbs   list     [{label, href}], outermost first, or omitted for none.
+                           Labels are printed **verbatim, never translated** —
+                           partial/breadcrumbs.phtml does not translate them, so
+                           /es/dictionary/es says "Literature" in its trail while the
+                           navbar beside it says "Literatura". Measured; do not
+                           "fix" it in a page template.
     block content          the page body.
     block inline_scripts   scripts at the end of <body>. Anything inline MUST
                            carry nonce="{{ csp_nonce() }}" or the CSP blocks it.
@@ -30,7 +48,8 @@
 <html lang="{{ current_language() }}">
     <head>
         <meta charset="utf-8">
-        <title>{% if page_title %}{{ page_title }} - {% endif %}{{ translate('Schoenstatt Link', 'Application') }}</title>
+        {%- set title_text = page_title and (page_title_translate is not defined or page_title_translate) ? translate(page_title) : page_title -%}
+        <title>{% if title_text %}{{ title_text }} - {% endif %}{{ translate('Schoenstatt Link', 'Application') }}</title>
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -116,9 +135,21 @@
                     </ul>
                     {% endif %}
                     <ul class="nav navbar-nav pull-right">
+                        {#- a navigation label is translated in the **`default`** domain
+                            alone, not in the page's. Both halves of that are measured, and
+                            each rules out one of the alternatives:
+
+                              Literature -> "Literatura" in es, so labels *are* translated
+                              Admin      -> "Admin" in es, though `Schoenstatt` has
+                                            "Administración" — so it is not the page's domain
+
+                            The two-domain lookup translate() does by default finds the
+                            second and prints "Administración" where laminas prints "Admin".
+                            Only visible signed in: the Admin item is ACL-gated, so no
+                            anonymous comparison could ever have shown it. -#}
                         {% for item in navigation_items() %}
                         <li{% if item.active %} class="active"{% endif %}>
-                            <a href="{{ item.href }}"{% if item.active %} aria-current="page"{% endif %}>{{ translate(item.label) }}</a>
+                            <a href="{{ item.href }}"{% if item.active %} aria-current="page"{% endif %}>{{ translate(item.label, 'default') }}</a>
                         </li>
                         {% endfor %}
                     </ul>
@@ -177,7 +208,7 @@
     <title> above. A Twig comment cannot live inside the json_ld() call: it is an
     expression, and one placed there is an "Unclosed {" syntax error. -#}
 <script type="application/ld+json">{{ json_ld([
-    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': page_title ?: translate('Schoenstatt Link', 'Application'), 'publisher': {'@id': '#identity'}},
+    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': title_text ?: translate('Schoenstatt Link', 'Application'), 'publisher': {'@id': '#identity'}},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/en/', 'inLanguage': 'en'},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/es/', 'inLanguage': 'es'},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/de/', 'inLanguage': 'de'},

@@ -1,0 +1,36 @@
+{#
+  module/Books/view/books/libraries/library-list.phtml — the list of libraries as
+  Bootstrap list-group items, each with its book count as a badge.
+
+  Rendered from /libraries today and from the literature home page once that is ported,
+  which is why it is a partial rather than part of either.
+
+  Two things it must keep doing:
+
+  - **the per-row permission check.** `library` is the entity whose spec sets
+    `aclResourceIdField`, and this is where that is spent: a library the viewer may not
+    `show` is skipped entirely.
+  - **`displayEditPencil: false, displayAsLink: false`.** The heading is inside the
+    surrounding `<a>`, so a link or a pencil there would nest an anchor inside an anchor.
+#}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+{% if is_allowed('route/libraries/create') %}
+    <p><a href="{{ laminas_path('libraries/create') }}" class="btn btn-primary pull-right">
+            {{ translate('Create new library') }}</a></p>
+{% endif %}
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+<div class="list-group">
+{% for library_id, library in objects %}
+{% if is_allowed(library.resourceId, 'show') %}
+    <a href="{{ laminas_path('libraries/library', {'library_id': library_id}) }}" class="list-group-item">
+        <span class="badge alert-info">{{ library.bookCount }}</span>
+    <h4 class="list-group-item-heading">{{ format.entity('library', library, {'displayEditPencil': false, 'displayAsLink': false}) }}</h4>
+    {% if library.description is not null %}
+    <p class="list-group-item-text">{{ translate(library.description) }}</p>
+    {% endif %}</a>
+{% endif %}
+{% endfor %}
+</div>
+</div>
+</div>

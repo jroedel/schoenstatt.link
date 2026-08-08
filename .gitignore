@@ -4,6 +4,7 @@ config/development.config.php
 data/cache/*
 !data/cache/.gitkeep
 data/form-regression/
+data/port-baseline/
 data/import/
 data/golden/
 phpunit.xml

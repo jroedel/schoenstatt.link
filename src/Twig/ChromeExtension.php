@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
+use function is_string;
 use function json_encode;
 
 use const JSON_HEX_AMP;
@@ -135,7 +136,28 @@ final class ChromeExtension extends AbstractExtension
     /** @return list<array{label: string, href: string, active: bool}> */
     public function navigationItems(): array
     {
-        return $this->chrome->navigationItems($this->currentRoute());
+        return $this->chrome->navigationItems($this->navigationRoute());
+    }
+
+    /**
+     * The route the navbar should match against, which is the page's own route unless
+     * it declares otherwise.
+     *
+     * A page that laminas reaches through a database-derived navigation branch — a blog
+     * post under Blog, a dictionary under Literature — has to name the ancestor it wants
+     * lit, because App\View\SiteChrome can only see the static config. Only the
+     * *navbar* uses this: the search box and the breadcrumbs keep asking about the real
+     * route, which is what they compare in laminas too.
+     */
+    private function navigationRoute(): string
+    {
+        $request = $this->request();
+        if (null === $request) {
+            return '';
+        }
+        $declared = $request->attributes->get(SiteChrome::NAV_ROUTE);
+
+        return is_string($declared) && '' !== $declared ? $declared : $this->currentRoute();
     }
 
     /** @return list<array{locale: string, label: string, flag: string, href: string, current: bool}> */

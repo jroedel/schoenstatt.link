@@ -1,0 +1,48 @@
+{#
+  module/Schoenstatt/view/schoenstatt/roles/index.phtml.
+
+  Two details of the original that a tidier rewrite would lose, both reproduced:
+
+  - the `</tr>` is **outside** the loop and the `<tr>` inside it, so the markup nests
+    wrongly for every row but the last. Browsers repair it and the page has looked
+    right for years; changing it here would make the two renderings differ for a
+    reason that has nothing to do with the port.
+  - the "Inactive" label is emitted by the *template* as well as by the role formatter,
+    so an inactive role gets two of them — the formatter's `label-warning` and this
+    one's `label-info`. Also reproduced.
+
+  `format.entity('role', …)` reaches App\Laminas\EntityFormatter's role branch, which
+  reads `editPencil` and `showLabel` rather than `displayEditPencil`; see that class.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% block content %}
+<p>{% if is_allowed('route/roles/create') %}
+<a href="{{ laminas_path('roles/create') }}">{{ translate('Create new role') }}</a>{% endif %}</p>
+<div class="table-responsive">
+    <table class="table">
+        <tr>
+            <th>{{ translate("Association") }}</th>
+            <th>{{ translate("Role") }}</th>
+            <th>{{ translate("Main role") }}</th>
+            <th>{{ translate("Main contact") }}</th>
+            <th>{{ translate("Single position") }}</th>
+            <th>{{ translate("Sort") }}</th>
+        </tr>
+        {% for entity in objects %}
+        <tr>
+            <td>{{ format.entity('association', entity.association) }}
+            </td>
+            <td>{{ format.entity('role', entity) }}{% if not entity.isActive %}&nbsp;{{ label('Inactive', 'label-info') }}{% endif %}
+            </td>
+            <td>{{ entity.isMainRole ? translate('yes') : 'no' }}</td>
+            <td>{{ entity.isMainContact ? translate('yes') : 'no' }}</td>
+            <td>{{ entity.isSinglePosition ? translate('yes') : 'no' }}</td>
+            <td>{{ entity.sort }}
+            </td>
+        {% endfor %}
+        </tr>
+    </table>
+</div>
+{% endblock %}
