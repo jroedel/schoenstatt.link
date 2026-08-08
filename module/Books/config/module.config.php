@@ -1433,77 +1433,6 @@ return [
                     ],
                 ],
             ],
-            'blog' => [
-                'type' => Literal::class,
-                'options' => [
-                    'route'    => '/blog',
-                    'defaults' => [
-                        'controller' => Controller\BlogController::class,
-                        'action' => 'index',
-                    ],
-                ],
-                'may_terminate' => true,
-                'child_routes' => [
-                    'blog-post' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/posts/:sw_id[/:slug]',
-                            'constraints' => [
-                                'sw_id' => trim(
-                                    SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
-                                    '/^$'
-                                ),
-                                'slug' => '[a-z0-9-]{1,200}',
-                            ],
-                            'defaults' => [
-                                'action' => 'show',
-                            ],
-                        ],
-                        'may_terminate' => true,
-                        'child_routes' => [
-                            'delete' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/posts/:sw_id/delete',
-                                    'constraints' => [
-                                        'sw_id' => trim(
-                                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
-                                            '/^$'
-                                        ),
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'delete',
-                                    ],
-                                ],
-                            ],
-                            'edit' => [
-                                'type'    => Segment::class,
-                                'options' => [
-                                    'route'    => '/posts/:sw_id/edit',
-                                    'constraints' => [
-                                        'sw_id' => trim(
-                                            SchoenstattLinkIdentifier::ENTITY_REGEXS[SchoenstattLinkIdentifier::ENTITY_TEXT],
-                                            '/^$'
-                                        ),
-                                    ],
-                                    'defaults' => [
-                                        'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
-                    'create' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/create',
-                            'defaults' => [
-                                'action'     => 'create',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
             'composition' => [
                 'type'    => Segment::class,
                 'options' => [
@@ -2440,65 +2369,6 @@ return [
                 'update_columns'                            => [
                 ],
             ],
-            'blog-post' => [
-                'name'                                      => 'blog-post',
-                'table_name'                                => 'texts',
-                'table_key'                                 => 'TextId',
-                'entity_key_field'                          => 'textId',
-                'sion_model_class'                          => Model\EventTextTable::class,
-                'sion_controllers'                          => [Controller\BlogController::class],
-                'controller_services'                       => [],
-                'row_processor_function'                    => 'processTextRow',
-//                 'get_object_function'                       => 'getText',
-//                 'get_objects_function'                      => 'getUnlinkedTexts',
-//                 'format_view_helper'                        => 'formatEvent',
-                'required_columns_for_creation'             => [
-                    'title',
-                    'kind',
-                    'inLanguage',
-                ],
-                'name_field'                                => 'title',
-                'name_field_is_translateable'               => true,
-//                 'country_field'                             => 'country',
-                'text_columns'                              => ['markdownText', 'htmlText', 'plainText'],
-//                 'many_to_one_update_columns'                => [
-//                     'email'    => 'contactInfo',
-//                     'cell'    => 'contactInfo',
-//                 ],
-                'report_changes'                            => true,
-//                 'index_route'                               => 'events',
-//                 'index_template'                            => 'project/events/index',
-//                 'default_route_key'                         => 'text_id',
-                'default_route_params'                     => [
-                    'sw_id' => 'identifier',
-                    'slug' => 'slug',
-                ],
-//                 'show_act    ion_template'                      => 'project/events/show',
-                'show_route'                                => 'blog/blog-post',
-//                 'show_route_key'                            => 'text_id',
-//                 'show_route_key_field'                      => 'textId',
-                'edit_action_form'                          => Form\TextForm::class,
-//                 'edit_action_template'                      => 'project/events/edit',
-                'edit_route'                                => 'text-edit',
-//                 'edit_route_key'                            => 'text_id',
-//                 'edit_route_key_field'                      => 'textId',
-                'create_action_form'                        => Form\TextForm::class,
-//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
-//                 'create_action_redirect_route'              => 'blog/blog-post',
-//                 'create_action_redirect_route_key'          => 'text_id',
-//                 'create_action_redirect_route_key_field'    => 'textId',
-//                 'create_action_template'                    => 'project/events/create',
-                'database_bound_data_preprocessor'          => 'preprocessText',
-//                 'database_bound_data_postprocessor'         => 'postprocessEvent',
-//                 'moderate_route'                            => 'events/event/moderate',
-//                 'moderate_route_entity_key'                 => 'event_id',
-//                 'suggest_form'                              => 'Project\Form\SuggestEventForm',
-                'enable_delete_action'                      => true,
-//                 'delete_action_acl_resource'                => 'event_:id',
-//                 'delete_action_acl_permission'              => 'delete',
-                'delete_action_redirect_route'              => 'text-delete',
-                'update_columns'                            => $textColumns,
-            ],
             'text' => [
                 'name'                                      => 'text',
                 'table_name'                                => 'texts',
@@ -2544,8 +2414,6 @@ return [
 //                 'edit_route_key'                            => 'text_id',
 //                 'edit_route_key_field'                      => 'textId',
                 'create_action_form'                        => Form\TextForm::class,
-//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
-//                 'create_action_redirect_route'              => 'blog/blog-post',
 //                 'create_action_redirect_route_key'          => 'text_id',
 //                 'create_action_redirect_route_key_field'    => 'textId',
 //                 'create_action_template'                    => 'project/events/create',
@@ -2601,7 +2469,6 @@ return [
                 'edit_route_key'                            => 'entry_id',
                 'edit_route_key_field'                      => 'entryId',
                  'create_action_form'                        => Form\DictionaryEntryForm::class,
-//                 'create_action_valid_data_handler'          => 'blog/blog-post/edit',
                 'create_action_redirect_route'              => 'dictionary/entry',
                 'create_action_redirect_route_key'          => 'entry_id',
                 'create_action_redirect_route_key_field'    => 'entryId',
@@ -2614,7 +2481,6 @@ return [
                 'enable_delete_action'                      => true,
 //                 'delete_action_acl_resource'                => 'event_:id',
 //                 'delete_action_acl_permission'              => 'delete',
-//                 'delete_action_redirect_route'              => 'blog',
                 'update_columns'                            => [
                     'entryId' => 'EntryId',
                     'key' => 'KeyDe',
@@ -2741,7 +2607,6 @@ return [
                 'publication_user',
                 'publication_public',
                 'view_checkout_person', //see who has a library book
-                // 'blog_post', this is added in the EventTextTable class
             ],
             Model\LibraryTable::class => Model\LibraryTable::class,
             Model\EventTextTable::class => Model\EventTextTable::class,
@@ -2802,7 +2667,10 @@ return [
                 ],
             ],
             Model\LibraryTable::class => Model\LibraryTable::class,
-            Model\EventTextTable::class => Model\EventTextTable::class,
+            //Model\EventTextTable is deliberately absent here while remaining a
+            //*resource* provider: every rule it ever returned was a blog grant
+            //(blog_administrator on blog_post, plus a per-author show), so with the blog
+            //gone getRules() would have answered ['allow' => []] on every request.
         ],
         'guards' => [
             Route::class => [
@@ -2872,11 +2740,6 @@ return [
                 ['route' => 'texts/jk-import', 'roles' => ['administrator']],
                 ['route' => 'texts/create', 'roles' => ['texts_moderator']],
 
-                ['route' => 'blog', 'roles' => ['guest', 'user']],
-                ['route' => 'blog/create', 'roles' => ['blog_contributor']],
-                ['route' => 'blog/blog-post', 'roles' => ['guest', 'user']],
-                ['route' => 'blog/blog-post/edit', 'roles' => ['blog_contributor']],
-                ['route' => 'blog/blog-post/delete', 'roles' => ['blog_contributor']],
 
                 ['route' => 'dictionary', 'roles' => ['guest', 'user']],
                 ['route' => 'dictionary/inLanguage', 'roles' => ['guest', 'user']],

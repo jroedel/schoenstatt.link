@@ -28,7 +28,6 @@ declare(strict_types=1);
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
 use App\Controller\AssociationsController;
-use App\Controller\BlogController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
@@ -244,9 +243,7 @@ $content = static fn (
 ];
 $home = ['label' => 'Home', 'route' => 'welcome'];
 
-// The site's front page. Its laminas action reads five blog posts that index.phtml
-// never renders; the port drops the query, and ContentPageParityTest is what shows
-// that costs the response nothing. Empty page title on purpose — indexAction sets no
+// The site's front page. Empty page title on purpose — indexAction sets no
 // headTitle, so laminas renders `<title>Schoenstatt Link</title>` and the layout
 // reproduces that by omitting the separator.
 $ported(
@@ -405,28 +402,6 @@ $ported(
     TimelineController::class,
     RouteAccess::guardedBy('route/events'),
     $textDomain('Books')
-);
-
-// The blog: its index, and one post. Two routes, one controller — see
-// App\Controller\BlogController.
-//
-// `slug` carries a default so that the trailing segment is optional, which is how the
-// laminas route's `[/:slug]` behaves. A post reached without it is canonicalised to the
-// slugged URL rather than served from two addresses.
-$ported('blog', '/blog', [BlogController::class, 'index'], RouteAccess::guardedBy('route/blog'), $textDomain('Books'));
-$ported(
-    'blog/blog-post',
-    '/blog/posts/{sw_id}/{slug}',
-    [BlogController::class, 'show'],
-    RouteAccess::guardedBy('route/blog/blog-post'),
-    //`_nav_route` lights the Blog item in the navbar. laminas gets that from the blog
-    //branch Application\Module::onBootstrap() hangs under it; App\View\SiteChrome
-    //cannot see those branches and so is told. Measured against the laminas rendering.
-    $textDomain('Books') + ['slug' => null, SiteChrome::NAV_ROUTE => 'blog'],
-    //the same constraints the laminas route carries: a site-wide text id, and a slug of
-    //lowercase/dash. Without them /blog/posts/anything would be swallowed here instead of
-    //falling through to `legacy`.
-    ['sw_id' => 'SL[0-9]{6}T', 'slug' => '[a-z0-9-]{1,200}']
 );
 
 // Every composition, grouped by language.

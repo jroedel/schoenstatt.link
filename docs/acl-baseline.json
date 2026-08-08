@@ -14,28 +14,27 @@
         ],
         "rule_providers": [
             "BjyAuthorize\\Provider\\Rule\\Config",
-            "Books\\Model\\LibraryTable",
-            "Books\\Model\\EventTextTable"
+            "Books\\Model\\LibraryTable"
         ],
         "unauthorized_strategy": "JUser\\View\\RedirectionStrategy"
     },
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 167,
-        "guarded_routes_total": 167,
+        "guarded_routes_existing": 162,
+        "guarded_routes_total": 162,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 43,
-        "route_guard_entries": 169,
+        "route_guard_entries": 164,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 23,
+        "routes_shadowed_by_symfony": 22,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 42,
+        "symfony_routes_acl_checked": 38,
         "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 51,
-        "total_routes": 192,
+        "symfony_served_routes": 47,
+        "total_routes": 187,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
     },
@@ -45,7 +44,6 @@
             "Books\\Model\\LibraryTable"
         ],
         "rule": [
-            "Books\\Model\\EventTextTable",
             "Books\\Model\\LibraryTable"
         ]
     },
@@ -2443,194 +2441,6 @@
             "matchable": true,
             "public": false,
             "route": "associations/old-association"
-        },
-        "blog": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "guest",
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "blog"
-        },
-        "blog/blog-post": {
-            "anonymous_allowed": true,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "guest",
-                        "user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "guest",
-                "user"
-            ],
-            "effective_roles": [
-                "administrator",
-                "guest",
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user",
-                "pub_administrator",
-                "pub_all",
-                "pub_brothers",
-                "pub_brothers_moderator",
-                "pub_families",
-                "pub_families_moderator",
-                "pub_general_moderator",
-                "pub_institute",
-                "pub_institute_moderator",
-                "pub_ladies",
-                "pub_ladies_moderator",
-                "pub_moderator",
-                "pub_patres",
-                "pub_patres_moderator",
-                "pub_sisters",
-                "pub_sisters_moderator",
-                "pub_user",
-                "sch_administrator",
-                "sch_basic",
-                "sch_general_moderator",
-                "sch_institute",
-                "sch_moderator",
-                "sch_patres",
-                "sch_user",
-                "texts_administrator",
-                "texts_moderator",
-                "texts_user",
-                "user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "blog/blog-post"
-        },
-        "blog/blog-post/delete": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "blog_contributor"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "blog_contributor"
-            ],
-            "effective_roles": [
-                "blog_administrator",
-                "blog_contributor"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "blog/blog-post/delete"
-        },
-        "blog/blog-post/edit": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "blog_contributor"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "blog_contributor"
-            ],
-            "effective_roles": [
-                "blog_administrator",
-                "blog_contributor"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "blog/blog-post/edit"
-        },
-        "blog/create": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "blog_contributor"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "blog_contributor"
-            ],
-            "effective_roles": [
-                "blog_administrator",
-                "blog_contributor"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "blog/create"
         },
         "books/book": {
             "anonymous_allowed": true,
@@ -6549,15 +6359,6 @@
             "access_kind": "acl"
         },
         {
-            "laminas_route": "blog",
-            "path": "/blog",
-            "symfony_route": "blog",
-            "was_guarded": true,
-            "was_public": false,
-            "now_checks": "route/blog",
-            "access_kind": "acl"
-        },
-        {
             "laminas_route": "developers",
             "path": "/developers",
             "symfony_route": "developers",
@@ -7759,46 +7560,6 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/associations",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "blog": {
-            "path": "/blog",
-            "controller": "App\\Controller\\BlogController::index",
-            "access": {
-                "kind": "acl",
-                "resource": "route/blog",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "blog.locale": {
-            "path": "/{_locale}/blog",
-            "controller": "App\\Controller\\BlogController::index",
-            "access": {
-                "kind": "acl",
-                "resource": "route/blog",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "blog/blog-post": {
-            "path": "/blog/posts/{sw_id}/{slug}",
-            "controller": "App\\Controller\\BlogController::show",
-            "access": {
-                "kind": "acl",
-                "resource": "route/blog/blog-post",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "blog/blog-post.locale": {
-            "path": "/{_locale}/blog/posts/{sw_id}/{slug}",
-            "controller": "App\\Controller\\BlogController::show",
-            "access": {
-                "kind": "acl",
-                "resource": "route/blog/blog-post",
                 "reason": null,
                 "denial_style": "html"
             }

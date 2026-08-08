@@ -143,8 +143,8 @@ final class ChromeExtension extends AbstractExtension
      * The route the navbar should match against, which is the page's own route unless
      * it declares otherwise.
      *
-     * A page that laminas reaches through a database-derived navigation branch — a blog
-     * post under Blog, a dictionary under Literature — has to name the ancestor it wants
+     * A page that laminas reaches through a database-derived navigation branch — a
+     * dictionary under Literature, say — has to name the ancestor it wants
      * lit, because App\View\SiteChrome can only see the static config. Only the
      * *navbar* uses this: the search box and the breadcrumbs keep asking about the real
      * route, which is what they compare in laminas too.

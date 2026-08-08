@@ -37,9 +37,8 @@ use function is_string;
  * fetch the active entries; build the schema.org payload; and register a visit.
  *
  * The **visit registration is a write on a GET**, and it is what the "Total views"
- * line at the foot of the page counts. Kept, for the reason it is kept on the blog:
- * a ported route that stopped writing it would silently stop counting, and nothing
- * would fail.
+ * line at the foot of the page counts. Kept: a ported route that stopped writing it
+ * would silently stop counting, and nothing would fail.
  *
  * The unknown-language branch differs from laminas in one visible way, and it is the
  * flash message: laminas sets "Language not found" in the error namespace and this
@@ -103,8 +102,9 @@ final class DictionaryController
             return new RedirectResponse($this->urls->path('dictionary'), Response::HTTP_FOUND);
         }
 
-        //the same wrong $query docblock as in App\Controller\BlogController;
-        //inLanguageAction() passes this exact array
+        //SionTable::queryObjects() documents $query as PredicateInterface[] while its
+        //body handles a plain field => value array; inLanguageAction() passes this exact
+        //array. The docblock is wrong, not the call.
         //@phpstan-ignore argument.type
         $objects = $table->queryObjects('dictionary-entry', [
             'locale'   => $dictionary['locale'] ?? '',

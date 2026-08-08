@@ -7,7 +7,6 @@ namespace App;
 use App\Authorization\RouteGuard;
 use App\Controller\AdminController;
 use App\Controller\AssociationsController;
-use App\Controller\BlogController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
@@ -253,11 +252,6 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // its links — because that is what a read-only index page needs and
             // nothing more. Where a controller needs none of the three it says so.
             TimelineController::class => fn (): TimelineController => new TimelineController(
-                $this->laminas(),
-                $this->twig(),
-                $this->routeUrl()
-            ),
-            BlogController::class => fn (): BlogController => new BlogController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()

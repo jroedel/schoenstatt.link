@@ -19,7 +19,6 @@ use Application\Navigation\FixNavigationPages;
 use Psr\Container\ContainerInterface;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\LibraryTable;
-use Books\Model\EventTextTable;
 use Books\Model\MusicTable;
 
 class Module
@@ -29,7 +28,6 @@ class Module
         'publication-pages',
         'association-pages',
         'library-pages',
-        'blog-pages',
         'music-pages',
     ];
 
@@ -71,8 +69,6 @@ class Module
          *  - association-pages: embeds $object['slugByLocale'][$locale]. LOCALE-DEPENDENT.
          *  - library-pages: label is the raw LibraryName column, param is libraryId.
          *      Locale-independent.
-         *  - blog-pages: label is the raw text title, params are identifier and the single Slug
-         *      column. Locale-independent.
          *  - music-pages: label is the raw composition name, params are identifier and the single
          *      Slug column. Locale-independent.
          * Labels are translated at render time by the navigation view helper, so an English label
@@ -241,24 +237,6 @@ class Module
             $this->cacheNavigationPages($cache, $sm, $cacheKeys['library-pages'], $libraryPages);
         }
 
-        if (! isset($pagesByCacheKey['blog-pages'])) {
-            $blogPages = [];
-            /** @var EventTextTable $eventTextTable */
-            $eventTextTable = $sm->get(EventTextTable::class);
-            $texts = $eventTextTable->getObjects('text', ['kind' => EventTextTable::TEXT_KIND_BLOG]);
-            foreach ($texts as $object) {
-                $blogPages[] = [
-                    'label' => $object['title'],
-                    'route' => 'blog/blog-post',
-                    'params' => ['sw_id' => $object['identifier'], 'slug' => $object['slug']],
-                    //                 'resource' => $object['viewRole'],
-                    'id'    => 'blog_' . $object['textId'],
-                ];
-            }
-            $pagesByCacheKey['blog-pages'] = $blogPages;
-            $this->cacheNavigationPages($cache, $sm, $cacheKeys['blog-pages'], $blogPages);
-        }
-
         if (! isset($pagesByCacheKey['music-pages'])) {
             $musicPages = [];
             /** @var MusicTable $musicTable */
@@ -286,7 +264,6 @@ class Module
         $shrines = $navigation->findOneBy('label', 'Shrines');
         $world = $navigation->findOneBy('label', 'World');
         $libPage = $navigation->findOneBy('route', 'libraries');
-        $blogPage = $navigation->findOneBy('route', 'blog');
         $musicPage = $navigation->findOneBy('route', 'music');
 
         $dictionaryPage->addPages($pagesByCacheKey['dictionary-pages']);
@@ -295,7 +272,6 @@ class Module
         $shrines->addPages($pagesByCacheKey['association-pages']['shrinesByRegion']);
         $world->addPages($pagesByCacheKey['association-pages']['shrinesWorld']);
         $libPage->addPages($pagesByCacheKey['library-pages']);
-        $blogPage->addPages($pagesByCacheKey['blog-pages']);
         $musicPage->addPages($pagesByCacheKey['music-pages']);
 
         $navFixer = new FixNavigationPages();
