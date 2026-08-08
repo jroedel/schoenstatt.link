@@ -10,6 +10,80 @@ State reached by 2026-08-04: production runs **PHP 8.4.24** on a current
 Laminas stack with OPcache enabled, master is fully deployed, `composer audit
 --locked` reports zero advisories, and 198 tests run across three suites.
 
+State reached by 2026-08-08: **ten routes ported to the Symfony kernel and
+deployed, dormant** — `SYMFONY_KERNEL` is still unset in production, so every one
+of them continues to render through laminas and turning them on is a `SetEnv` in
+`public/.htaccess`, not a deploy. 737 tests across four suites. See
+[strangler.md](strangler.md) for the mechanism and the route table.
+
+## Symfony strangler, batch 3: ten routes (2026-08-07/08, DEPLOYED dormant)
+
+`/`, /developers, /acknowledgements, /privacy, /shrines/submitting-photos, both
+`api/v{1,2}/associations/shrines.json`, /sm/phpinfo, /sm/data-problems and
+/sm/view-changes. Deployed 2026-08-08; production still serves them through
+laminas.
+
+Every port was verified the same way — capture the laminas rendering *before* the
+route moves, then compare byte for byte — and the technique is the reusable part:
+
+- the five content pages' generated HTML, Spanish variant and Portuguese fallback
+  included;
+- both GeoJSON payloads (25,585 bytes);
+- /sm/data-problems over 30 real problem rows (9,206 bytes of table body);
+- /sm/view-changes in **three** configurations, because the newest 500 changes in
+  the capsule dump are all `book` rows and would have proved nothing about the new
+  `publication` and `role` branches. Pointing `changes_model` at PublicationsTable
+  and then SchoenstattTable forces those types onto the page.
+
+**Four pre-existing bugs surfaced, none introduced by the ports.**
+
+- *Every ported HTML route answered 200 with an empty body.* Two
+  `data/cache/twig` subdirectories were root-owned; Twig's write threw mid-render
+  and the fatal handler emitted nothing. `TwigFactory` promised to degrade
+  gracefully but probed only the *parent* directory — Twig creates per-template
+  subdirectories itself, so one render as root poisons one permanently.
+  `ForgivingCache` makes the promise true, and Twig supports it directly:
+  `loadTemplate()` falls back to `eval()` and names a no-op cache as a case it
+  covers.
+- *A pre-Laminas session emptied every ported page.* `flash_messages()` throws on
+  a `__PHP_Incomplete_Class`, and only `JUser\Module::onBootstrap()` ever pruned
+  it — which a Symfony route never runs. `/en/shrines` and `/en/wayside-shrines`
+  had been broken for such a visitor since the day they were ported;
+  StaleSessionSmokeTest missed it because the one path it asked for was still
+  laminas-served. `App\Http\SessionListener` fixes it, gated on the request
+  actually carrying a session cookie so the machine endpoints still start none.
+- *`RouteUrl::localized()` dropped a trailing slash*, so the front page's canonical
+  and every hreflang pointed at `/en` instead of `/en/`. Latent until a ported path
+  was nothing but the locale prefix.
+- *`composer test` exhausted 512 MB* in the combined single-process run — on master
+  too. Now passes `-d memory_limit=1G`, as `composer fuzz` always had.
+
+**/sm/view-changes was dead and nobody knew**, because it sits behind
+`sch_general_moderator`. Two bugs in SionModel: `getChanges()` filtered the entity
+rows by their *database column* where `queryObjects()` matches entity *field*
+names — a mismatch it answers by silently dropping the predicate, so the query
+came back unfiltered and loaded 2,757 rows of an 85 KB-per-row table instead of
+250 (520 MB → 66 MB); and `getAllChanges()` took no limit at all, so
+`changes_max_rows` bounded only the display. Fixed first, *then* ported: a port is
+verified against a laminas rendering, and there was none while the page fataled.
+
+**formatEntity is fully reproduced** — the largest of the five view helpers a
+Symfony-served route cannot call, and the one gating most remaining admin pages.
+Two subtleties worth keeping:
+
+- The name resolves to `Schoenstatt\View\Helper\FormatEntity`, not SionModel's,
+  and that subclass switches on entity type *above* any `isDeleted` test while
+  SionModel's `formatViewHelper` deferral sits *below* one. So a deleted role keeps
+  its branch and its pencil; a deleted publication does not. Getting it backwards
+  left exactly one row of 500 different from laminas.
+- Its `role` branch reads `editPencil`/`showLabel`, not `displayEditPencil` — so
+  `changes-table.phtml` does not turn a role's pencil off. Looks like a typo.
+
+**The shrine GeoJSON feed is deprecated** (`Deprecation: true`, no `Sunset` —
+no removal date is decided). Set in three places, because production serves the
+two laminas actions and the capsule the ported controller; the retirement question
+is open in BACKLOG.md and needs usage data nobody currently collects.
+
 ## Phase 1–2: time capsule and safety net (2026-08-01/02)
 
 - Docker "time capsule" reproduces production: Apache + PHP (switchable
