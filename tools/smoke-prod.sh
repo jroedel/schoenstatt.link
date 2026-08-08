@@ -290,6 +290,103 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
     fi
 fi
 
+# --- Symfony-kernel canary ------------------------------------------------
+#
+# Production runs the laminas front controller; `SetEnvIf Cookie` in
+# public/.htaccess puts App\Kernel in front for requests carrying one cookie, so
+# the ported routes can be exercised against production's real data, real ICU
+# (72.1 here vs 76.1 in the capsule) and real session store **without** a window
+# where all traffic is on them.
+#
+# This is the only place the ported code is checked outside the capsule, so the
+# assertions have to *discriminate*. Every check above passes under either front
+# controller by design — flipping a kernel and re-running them would prove
+# nothing. Two markers separate them:
+#
+#   /_health          exists only in the Symfony route table
+#   slm_locale=en_US  is set by SlmLocale, which only laminas runs
+#
+# Both directions are asserted. A canary that never engages and a canary that
+# leaks to everyone are both failures, and only the negative checks can tell them
+# apart from success.
+#
+# Skipped unless SMOKE_PROD_CANARY_COOKIE is set; the phploy hook passes it.
+if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
+    echo
+    echo "Symfony-kernel canary (cookie-gated; ordinary traffic is unaffected)"
+
+    # 1. The canary must not be leaking. Without the cookie, production is laminas.
+    fetch "$BASE/_health"
+    if [ "$STATUS" != "200" ]; then
+        pass "/_health is not served without the cookie (laminas, status $STATUS)"
+    else
+        fail "/_health answered 200 WITHOUT the canary cookie — the Symfony kernel is serving everyone"
+    fi
+
+    fetch "$BASE/en/shrines"
+    if grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
+        pass "ordinary traffic still gets laminas (SlmLocale set its cookie)"
+    else
+        fail "no slm_locale cookie without the canary — is SYMFONY_KERNEL set for everyone?"
+    fi
+
+    # 2. With the cookie, the Symfony kernel answers.
+    EXTRA_HEADERS=(-H "Cookie: $SMOKE_PROD_CANARY_COOKIE")
+
+    fetch "$BASE/_health"
+    if [ "$STATUS" = "200" ] && grep -q '"status"' "$BODY"; then
+        pass "canary reaches the Symfony kernel (/_health answers)"
+    else
+        fail "/_health should answer 200 WITH the canary cookie (got $STATUS) — is the SetEnvIf line deployed?"
+    fi
+
+    # 3. Each ported HTML route, rendered by Symfony. The absence of the SlmLocale
+    #    cookie is what proves it was not quietly bridged back to laminas.
+    for path in / /developers /acknowledgements /privacy /shrines/submitting-photos /shrines /wayside-shrines; do
+        url="$BASE/en${path%/}"
+        [ "$path" = "/" ] && url="$BASE/en/"
+        fetch "$url"
+        if [ "$STATUS" != "200" ] || ! no_fatals; then
+            fail "canary: /en${path} should render (got $STATUS)"
+        elif grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
+            fail "canary: /en${path} was served by laminas — is the route still above the catch-all?"
+        elif [ "$(wc -c <"$BODY")" -lt 2000 ]; then
+            # the empty-200 class: a Twig failure records an exception and emits
+            # nothing, so a size floor is what catches it
+            fail "canary: /en${path} rendered only $(wc -c <"$BODY") bytes — Twig cache writable?"
+        else
+            pass "canary: /en${path} rendered by Symfony ($(wc -c <"$BODY") bytes)"
+        fi
+    done
+
+    # 4. The ported JSON routes, including the deprecation header.
+    for V in v1 v2; do
+        fetch "$BASE/en/api/$V/associations/shrines.json"
+        json_ok "canary: api/$V shrines.json" '"FeatureCollection"'
+        if [ "$(header deprecation)" = "true" ]; then
+            pass "canary: api/$V shrines.json still announces its deprecation"
+        else
+            fail "canary: api/$V shrines.json lost Deprecation: true under the Symfony kernel"
+        fi
+    done
+
+    # 5. The guarded routes. No sign-in here, so what is checked is the *refusal* —
+    #    which is exactly the half that only exists on the Symfony side:
+    #    App\Authorization\RouteGuard, reproducing JUser\View\RedirectionStrategy.
+    #    A ported guarded route that admitted everyone would look perfectly healthy,
+    #    and this is the check that would see it.
+    for path in /admin /sm/phpinfo /sm/data-problems /sm/view-changes; do
+        fetch "$BASE/en$path"
+        if [ "$STATUS" = "302" ] && [[ "$REDIRECT" == *"/en/user/login?redirect=/en$path" ]]; then
+            pass "canary: /en$path refuses anonymous access (302 to sign-in)"
+        else
+            fail "canary: /en$path should 302 anonymous to sign-in (got $STATUS -> '$REDIRECT')"
+        fi
+    done
+
+    EXTRA_HEADERS=()
+fi
+
 echo
 if [ "$FAILURES" -gt 0 ]; then
     echo "$FAILURES smoke check(s) FAILED against $BASE" >&2
