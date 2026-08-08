@@ -10,6 +10,7 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use Laminas\I18n\Translator\TranslatorInterface;
 use IntlDateFormatter;
+use Symfony\Component\HttpFoundation\RequestStack;
 use SionModel\Entity\Entity;
 use SionModel\Text\Text;
 use SionModel\Service\EntitiesService;
@@ -50,6 +51,12 @@ use function sprintf;
  */
 final class LaminasExtension extends AbstractExtension
 {
+    /** Route default naming the module text domain a ported page's strings live in. */
+    public const TEXT_DOMAIN_ATTRIBUTE = '_text_domain';
+
+    /** laminas' own default, and the domain consulted after the page's own. */
+    public const DEFAULT_TEXT_DOMAIN = 'default';
+
     /** @var array<string, Entity>|null */
     private ?array $entities = null;
     private ?EntityFormatter $entityFormatter = null;
@@ -57,7 +64,8 @@ final class LaminasExtension extends AbstractExtension
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly ViewHelpers $helpers,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly RequestStack $requests
     ) {
     }
 
@@ -92,12 +100,73 @@ final class LaminasExtension extends AbstractExtension
         return $this->urls->path($routeName, $params, $options);
     }
 
-    public function translate(string $message, string $domain = 'default'): string
+    /**
+     * A translated phrase, in the page's text domain and then in `default`.
+     *
+     * **Why two domains.** laminas has no cross-domain fallback —
+     * `Translator::translate()` falls back by *locale* only — but it does assign a
+     * domain per rendering context: JTranslate's dispatch listener sets the `translate`
+     * helper's domain to the controller's module namespace, and the navigation helper's
+     * to `Application`. So on one laminas page different strings are looked up in
+     * different domains, and the phrases really are scattered that way. Measured in
+     * es_ES:
+     *
+     *     'Shrines'          only in `default`      ("Santuarios")
+     *     'Wayside shrines'  only in `Schoenstatt`  ("Hermitas")
+     *     'Fr.'              only in the module domains ("P.")
+     *
+     * A single default domain therefore cannot reproduce the page: whichever one is
+     * chosen, half the strings come out in English. Trying the page's domain and then
+     * `default` yields the union, which is identical to laminas' output whenever a
+     * phrase lives in one domain or agrees across several — the case for every phrase
+     * on every ported page, asserted across all five locales by
+     * test/Integration/PortedRouteTranslationTest and by the both-front-controllers
+     * diff in docs/strangler.md.
+     *
+     * This is a *superset* of what laminas does internally rather than a mirror of it,
+     * and that is the one deliberate divergence in the Twig layer. It cannot lose a
+     * translation laminas finds; it could in principle find one laminas misses, which
+     * would show up as the ported page being *more* translated than the original.
+     *
+     * An explicit `$domain` skips all of this and is what the layout passes for the
+     * strings it knows the domain of.
+     */
+    public function translate(string $message, ?string $domain = null): string
     {
         /** @var TranslatorInterface $translator */
         $translator = $this->laminas->get('MvcTranslator');
 
-        return $translator->translate($message, $domain);
+        if (null !== $domain) {
+            return $translator->translate($message, $domain);
+        }
+
+        $pageDomain = $this->textDomain();
+        if (null !== $pageDomain) {
+            $translated = $translator->translate($message, $pageDomain);
+            if ($translated !== $message) {
+                return $translated;
+            }
+        }
+
+        return $translator->translate($message, self::DEFAULT_TEXT_DOMAIN);
+    }
+
+    /**
+     * The text domain of the page being rendered, declared by its route.
+     *
+     * Named after the module whose laminas controller the route shadows, because that
+     * is the domain JTranslate's dispatch listener would have set — for
+     * Schoenstatt\Controller\SchoenstattController it is `Schoenstatt`.
+     */
+    private function textDomain(): ?string
+    {
+        $request = $this->requests->getMainRequest();
+        if (null === $request) {
+            return null;
+        }
+        $domain = $request->attributes->get(self::TEXT_DOMAIN_ATTRIBUTE);
+
+        return is_string($domain) && '' !== $domain ? $domain : null;
     }
 
     public function isAllowed(string $resource, ?string $privilege = null): bool
