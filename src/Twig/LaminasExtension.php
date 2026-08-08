@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use App\Laminas\EntityFormatter;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use Laminas\I18n\Translator\TranslatorInterface;
+use IntlDateFormatter;
 use SionModel\Entity\Entity;
+use SionModel\Text\Text;
 use SionModel\Service\EntitiesService;
 use Throwable;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
+use function is_scalar;
 use function is_string;
 use function sprintf;
 
@@ -48,6 +52,7 @@ final class LaminasExtension extends AbstractExtension
 {
     /** @var array<string, Entity>|null */
     private ?array $entities = null;
+    private ?EntityFormatter $entityFormatter = null;
 
     public function __construct(
         private readonly ServiceBridge $laminas,
@@ -70,6 +75,10 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('telephone_link', $this->telephoneLink(...), $html),
             new TwigFunction('url_object_link', $this->urlObjectLink(...), $html),
             new TwigFunction('edit_pencil', $this->editPencil(...), $html),
+            new TwigFunction('format_entity', $this->formatEntity(...), $html),
+            new TwigFunction('short_date', $this->shortDate(...)),
+            new TwigFunction('truncate', $this->truncate(...)),
+            new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
         ];
     }
@@ -145,12 +154,123 @@ final class LaminasExtension extends AbstractExtension
             return '';
         }
 
-        //the stray space before `>` is the original's empty $otherAttributes slot
-        //(it only ever holds target="_blank"); reproduced so the two renderings of a
-        //page are byte-identical here and a real difference cannot hide in the noise
+        return $this->pencilMarkup($route, [$key => $id]);
+    }
+
+    /**
+     * SionModel\View\Helper\EditPencilNew, reimplemented — the `editRoute` + params
+     * form of the same pencil, which is what an entity spec using `defaultRouteParams`
+     * reaches instead of the `editRouteKeyField` branch above (blog-post, text).
+     *
+     * Its guard is its own: no params or no route renders nothing, and the route
+     * permission failure is swallowed the same way, with the same "assume no route
+     * permissions are configured" comment behind it.
+     *
+     * @param array<string, mixed> $params
+     */
+    public function editPencilForRoute(string $route, array $params): string
+    {
+        if ('' === $route || [] === $params) {
+            return '';
+        }
+
+        try {
+            $allowed = $this->isAllowed('route/' . $route);
+        } catch (Throwable) {
+            $allowed = true;
+        }
+
+        return $allowed ? $this->pencilMarkup($route, $params) : '';
+    }
+
+    /**
+     * The pencil markup, in one place because two helpers emit it.
+     *
+     * The stray space before `>` is the originals' empty $otherAttributes slot — it only
+     * ever holds target="_blank" — reproduced so a page rendered both ways is
+     * byte-identical and a real difference cannot hide in the whitespace.
+     *
+     * @param array<string, mixed> $params
+     */
+    private function pencilMarkup(string $route, array $params): string
+    {
         return sprintf(
             ' <a href="%s" ><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a>',
-            $this->urls->path($route, [$key => $id])
+            $this->urls->path($route, $params)
+        );
+    }
+
+    /**
+     * SionModel's `formatEntity`, general path. Declared `is_safe: html` because it
+     * returns markup and escapes its own inputs, exactly as the helper it replaces does
+     * — see App\Laminas\EntityFormatter, which is where the reasoning lives.
+     *
+     * The *dispatch* around it is not here but in
+     * templates/schoenstatt/_entity-format.html.twig, because two of the four types
+     * laminas special-cases are already reproduced as macros in that file and a Twig
+     * function cannot call a macro.
+     *
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $options
+     */
+    public function formatEntity(string $entityType, array $data, array $options = []): string
+    {
+        return $this->entityFormatter()->format($entityType, $data, $options);
+    }
+
+    /**
+     * A date with no time, in the current locale's short form — `dateFormat($d,
+     * IntlDateFormatter::SHORT, IntlDateFormatter::NONE)`, which is the only way the
+     * changes table formats one. Plain text, so Twig escapes it.
+     */
+    public function shortDate(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::SHORT,
+            IntlDateFormatter::NONE
+        );
+    }
+
+    /**
+     * SionModel\Text\Text::truncate, reused rather than reimplemented: it is static,
+     * needs no view, and test/Unit/TextTest already covers its edge cases. The changes
+     * table truncates old and new values to 150 characters.
+     */
+    public function truncate(mixed $text, int $length = 100): string
+    {
+        if (! is_string($text)) {
+            return null === $text ? '' : (string) (is_scalar($text) ? $text : '');
+        }
+
+        return (string) Text::truncate($text, $length);
+    }
+
+    /**
+     * Whether the general path may format this type at all — what the dispatcher macro
+     * asks before falling through to `format_entity`. Not `is_safe`: it answers a
+     * boolean.
+     */
+    public function formatsEntityGenerally(string $entityType): bool
+    {
+        return $this->entityFormatter()->handles($entityType);
+    }
+
+    private function entityFormatter(): EntityFormatter
+    {
+        return $this->entityFormatter ??= new EntityFormatter(
+            $this->laminas,
+            $this->helpers,
+            $this->urls,
+            //the pencil and the translator come from here so the markup and the
+            //translator lookup exist once; see EntityFormatter's constructor docblock
+            $this->editPencil(...),
+            $this->editPencilForRoute(...),
+            $this->translate(...)
         );
     }
 

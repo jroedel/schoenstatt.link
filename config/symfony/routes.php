@@ -29,8 +29,13 @@ use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
+use App\Controller\ContentPageController;
+use App\Controller\DataProblemsController;
 use App\Controller\HealthController;
+use App\Controller\PhpInfoController;
 use App\Controller\ShrinesController;
+use App\Controller\ShrinesGeoJsonController;
+use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
 use App\Locale\Locales;
@@ -77,18 +82,25 @@ $routes->add('health', new Route('/_health', [
  * $access is a required argument rather than a defaulted one, and both twins get the
  * same instance: they are one page reached two ways, and a check that applied to only
  * one of them would be a hole shaped exactly like the locale prefix.
+ *
+ * $extra is for a controller that serves more than one route and needs to know which
+ * — App\Controller\ContentPageController is the case, five static pages behind one
+ * class. It merges *under* the two keys above, so a page cannot redeclare its own
+ * authorization by accident.
  */
 $locales = Locales::pattern();
-$ported  = static function (
+/** @param array<string, mixed> $extra */
+$ported = static function (
     string $name,
     string $path,
     string $controller,
-    RouteAccess $access
+    RouteAccess $access,
+    array $extra = []
 ) use (
     $routes,
     $locales
 ): void {
-    $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access];
+    $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access] + $extra;
     $routes->add($name, new Route($path, $defaults));
     $routes->add($name . '.locale', new Route('/{_locale}' . $path, $defaults, ['_locale' => $locales]));
 };
@@ -157,6 +169,169 @@ $ported(
 // separate routes with their own guards, and a literal path with no trailing-slash
 // variant is what leaves every one of them falling through to `legacy`.
 $ported('admin', '/admin', AdminController::class, RouteAccess::guardedBy('route/admin'));
+
+// The static content pages, ported 2026-08-07. Five routes, one controller and one
+// template each: on the laminas side these are five actions whose entire body is
+// `return new ViewModel()` over a Markdown heredoc in the .phtml, so five Symfony
+// controllers would have ported the duplication too. What differs per page is
+// declared here instead — see App\Controller\ContentPageController.
+//
+// A breadcrumb names the laminas route it points at rather than a URL, so the
+// prefix comes from App\Laminas\RouteUrl and the link keeps working while its
+// target is still on the laminas side. The trails are copied from what the
+// `navigation` config produces today, measured page by page: /privacy is not in the
+// navigation at all and so has none, and `welcome` has exactly one crumb.
+/**
+ * @param list<array{label: string, route: string}> $breadcrumbs
+ * @return array<string, mixed>
+ */
+$content = static fn (string $template, string $title, array $breadcrumbs = []): array => [
+    ContentPageController::TEMPLATE    => $template,
+    ContentPageController::PAGE_TITLE  => $title,
+    ContentPageController::BREADCRUMBS => $breadcrumbs,
+];
+$home = ['label' => 'Home', 'route' => 'welcome'];
+
+// The site's front page. Its laminas action reads five blog posts that index.phtml
+// never renders; the port drops the query, and ContentPageParityTest is what shows
+// that costs the response nothing. Empty page title on purpose — indexAction sets no
+// headTitle, so laminas renders `<title>Schoenstatt Link</title>` and the layout
+// reproduces that by omitting the separator.
+$ported(
+    'welcome',
+    '/',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/welcome'),
+    $content('content/welcome.html.twig', '', [$home])
+);
+
+$ported(
+    'developers',
+    '/developers',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/developers'),
+    $content('content/developers.html.twig', 'Developers Center', [
+        $home,
+        ['label' => 'Developers Center', 'route' => 'developers'],
+    ])
+);
+
+$ported(
+    'acknowledgements',
+    '/acknowledgements',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/acknowledgements'),
+    $content('content/acknowledgements.html.twig', 'Security research acknowledgements', [
+        $home,
+        ['label' => 'Security research acknowledgements', 'route' => 'acknowledgements'],
+    ])
+);
+
+// No breadcrumbs and no page title: privacy.phtml calls neither headTitle() nor
+// appears in the `navigation` config, and /en/privacy renders neither today.
+$ported(
+    'privacy',
+    '/privacy',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/privacy'),
+    $content('content/privacy.html.twig', '')
+);
+
+// The one content page whose body is chosen by locale, and so the first ported route
+// that would visibly break if App\Http\LocaleListener stopped working. A child of
+// `shrines` in the router, which is why its breadcrumb trail starts there rather
+// than at Home.
+$ported(
+    'shrines/submitting-photos',
+    '/shrines/submitting-photos',
+    ContentPageController::class,
+    RouteAccess::guardedBy('route/shrines/submitting-photos'),
+    $content('content/submitting-photos.html.twig', 'Submitting photos', [
+        ['label' => 'Shrines', 'route' => 'shrines'],
+        ['label' => 'Submitting photos', 'route' => 'shrines/submitting-photos'],
+    ])
+);
+
+// The shrine GeoJSON endpoints, ported 2026-08-07 — the first ported routes that
+// answer JSON to a machine caller rather than HTML to a browser. Both versions are
+// served by one controller because the two laminas actions are byte-identical and the
+// two live responses were measured equal to the byte.
+//
+// Declared open rather than checked, and this is the maintenance-endpoint argument
+// rather than the `shrines` one. The guards they shadow
+// (`route/api-v1/shrines-json`, `route/api-v2/shrines-json`) both carry `null` in
+// their roles, so consulting them could only answer yes — and unlike the shrine
+// *index*, these endpoints render no permission-gated markup, so nothing else on the
+// page has already paid for the ACL. Checking anyway would put a session start and
+// the role/resource queries behind it on an endpoint the mobile apps poll.
+// tools/acl-table.php cross-checks the claim and warns if either guard stops being
+// public.
+//
+// Declaring them open is also what removes the contradictory cache headers the
+// laminas response sends — no session means no session cache limiter. See the
+// controller's docblock; ShrinesGeoJsonSmokeTest asserts it.
+$shrineGeoJson = RouteAccess::openToEveryone(
+    'the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index '
+    . 'this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking '
+    . 'would start a session and run the role/resource queries — some through Books\Model\LibraryTable — '
+    . 'on an endpoint the mobile apps poll, for a foregone answer'
+);
+$ported(
+    'api-v1/shrines-json',
+    '/api/v1/associations/shrines.json',
+    ShrinesGeoJsonController::class,
+    $shrineGeoJson
+);
+$ported(
+    'api-v2/shrines-json',
+    '/api/v2/associations/shrines.json',
+    ShrinesGeoJsonController::class,
+    $shrineGeoJson
+);
+
+// SionModel's phpinfo page, ported 2026-08-07. Checked against its own resource, and
+// that resource is the sharpest one on the site: `route/sion-model/phpinfo` admits
+// `sch_administrator` alone, a role with no descendants, so exactly 1 of 43 roles gets
+// in. /admin proved the guard admits the right people; this is the tightest available
+// proof that it refuses everyone else.
+$ported(
+    'sion-model/phpinfo',
+    '/sm/phpinfo',
+    PhpInfoController::class,
+    RouteAccess::guardedBy('route/sion-model/phpinfo')
+);
+
+// SionModel's data-problems list, ported 2026-08-07. Guarded `sch_general_moderator`
+// (2 effective roles of 43). The *read-only* route only: its sibling
+// `sion-model/auto-fix-data-problems` renders the same .phtml with a CSRF confirm form
+// and stays on laminas, so that template keeps serving it. No method constraint, as the
+// laminas route has none.
+//
+// This is the port that needed App\Laminas\EntityFormatter — `formatEntity` is the
+// most-reused of the helpers a Symfony route cannot call, and reproducing it is what
+// unblocks the rest of the admin pages.
+$ported(
+    'sion-model/data-problems',
+    '/sm/data-problems',
+    DataProblemsController::class,
+    RouteAccess::guardedBy('route/sion-model/data-problems')
+);
+
+// SionModel's changes log, ported 2026-08-08 — the last of the ten in this batch, and
+// the one that needed two other things fixed first. It exhausted a 512 MB limit before it
+// could be characterized (fixed in SionModel), and its entity column formats whatever
+// type each change row names, which meant App\Laminas\EntityFormatter had to stop
+// refusing `publication` and `role` — sch_changes holds 18,243 and 1,317 of them.
+//
+// Guarded `sch_general_moderator, view_changes`. Only the page itself: the entity-level
+// change panel that renders the same partial lives inside laminas' SionController and is
+// not a route.
+$ported(
+    'sion-model/view-changes',
+    '/sm/view-changes',
+    ViewChangesController::class,
+    RouteAccess::guardedBy('route/sion-model/view-changes')
+);
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

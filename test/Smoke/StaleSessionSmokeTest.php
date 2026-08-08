@@ -2,6 +2,8 @@
 
 namespace SchoenstattTest\Smoke;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * Regression for the 2026-08-03 production incident (exception fingerprints
  * 1615c790/35c198d9): a session written before the Zend → Laminas migration
@@ -18,10 +20,38 @@ namespace SchoenstattTest\Smoke;
  * The test plants a poisoned session file directly in the server's session
  * save path — possible only because the suite runs inside the container that
  * serves the app, hence the guards.
+ *
+ * **Both front controllers have to be driven, and until 2026-08-07 only one
+ * was.** `onBootstrap` never runs for a Symfony-served route, so every ported
+ * HTML page reproduced the original incident exactly: /en/shrines and
+ * /en/wayside-shrines returned an empty 200 to a poisoned session for as long
+ * as they had been ported. This test did not notice because the only path it
+ * asked for, `/en/`, was laminas-served at the time — and then `welcome` was
+ * ported and it started failing, which is how the gap was found.
+ * App\Http\SessionListener is the fix; the paths below are what keep it honest,
+ * one served by each front controller.
  */
 class StaleSessionSmokeTest extends SmokeTestCase
 {
-    public function testPreMigrationSessionStillGetsAPage(): void
+    /**
+     * A path from each front controller. `/en/` and `/en/shrines` are ported;
+     * `/en/timeline` is not, so it still goes through App\Http\LegacyBridge and
+     * JUser\Module::onBootstrap. The property is the same for all three, and it is
+     * the *pair* that matters: a fix applied to only one side would pass one case.
+     *
+     * @return array<string, array{0: string}>
+     */
+    public static function paths(): array
+    {
+        return [
+            'symfony: the front page'   => ['/en/'],
+            'symfony: the shrine index' => ['/en/shrines'],
+            'laminas: the timeline'     => ['/en/timeline'],
+        ];
+    }
+
+    #[DataProvider('paths')]
+    public function testPreMigrationSessionStillGetsAPage(string $path): void
     {
         $host = (string) parse_url($this->baseUrl(), PHP_URL_HOST);
         if (! in_array($host, ['localhost', '127.0.0.1'], true)) {
@@ -43,13 +73,14 @@ class StaleSessionSmokeTest extends SmokeTestCase
         chmod($file, 0666);
 
         try {
-            $response = $this->request('GET', '/en/', ['Cookie: PHPSESSID=' . $sid]);
+            $response = $this->request('GET', $path, ['Cookie: PHPSESSID=' . $sid]);
 
             self::assertSame(200, $response['status']);
             self::assertStringContainsString(
                 '<title>',
                 $response['body'],
-                'blank body: the stale-session wedge is back — see JUser\Session\SessionPruner'
+                "blank body on $path: the stale-session wedge is back — see "
+                . 'JUser\Session\SessionPruner, and App\Http\SessionListener for the ported half'
             );
             $rewritten = (string) file_get_contents($file);
             self::assertStringNotContainsString(

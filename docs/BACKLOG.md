@@ -353,6 +353,29 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Product decisions needed
 
+- [ ] **Retire the shrine GeoJSON feed, or commit to it** — deprecated
+  2026-08-07 at the user's direction ("I'm not sure we'll use it going
+  forward"). `/api/v1/associations/shrines.json` and its v2 twin are byte-identical
+  and both now answer with `Deprecation: true` (IETF draft header). They are
+  **still served and still correct**: deprecation announces intent, it does not
+  break callers.
+  - **No `Sunset` header, deliberately.** RFC 8594 wants a date, and naming one
+    would commit to a removal nobody has decided on. The moment a date exists,
+    add it in both places — `App\Controller\ShrinesGeoJsonController` and
+    `Schoenstatt\Controller\AssociationsApiV{1,2}Controller::shrinesJsonAction()`.
+    The header is set in both because production still serves the laminas one.
+  - **The decision needs usage data, and there is currently none.** Nothing logs
+    calls to these endpoints, so "is anyone still using it?" can only be answered
+    from the hoster's access log. The feed exists because of Alberto León's
+    "Schoenstatt Shrines" app (see the submitting-photos page), so the honest
+    first step is asking whether that app still reads it.
+  - Retiring it is cheap when the answer arrives: two route declarations, one
+    Symfony controller, two laminas actions, `SchoenstattTable::getShrineGeoJson()`,
+    and `test/Integration/ShrineGeoJsonParityTest` +
+    `test/Smoke/ShrinesGeoJsonSmokeTest`. `getShrines()` stays — the shrine index
+    needs it.
+
+
 - [ ] **Suggest and moderate: users propose corrections, moderators accept or
   deny them** — wanted, never built. This is the collaborative half of the
   site's purpose: a reader who knows a date is wrong should be able to say so

@@ -1,0 +1,228 @@
+{#
+  module/Application/view/application/index/privacy.phtml, ported.
+
+  Two templates now render this page: this one under the Symfony front controller
+  and the .phtml under the laminas one, which production still serves. See
+  docs/strangler.md.
+
+  The Markdown is a copy of the heredoc in that .phtml, byte for byte — it is the
+  page's content, not code, and test/Integration/ContentPageParityTest pins the two
+  against each other so a later edit to one shows up as a failure rather than as a
+  page that quietly says something different in production.
+
+  The verbatim wrapper is defensive rather than required: no Twig delimiter appears
+  in this prose today, but prose is exactly the kind of text that grows a brace, and
+  with strict_variables on that would be an exception on a live page rather than a
+  typo.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+{% apply markdown %}{% verbatim %}
+Schoenstatt Link Privacy Policy
+===============================
+
+Date published: 2016-03-15
+
+What personal data do we potentially collect?
+-------------------------------------------------
+
+-   IP addresses and User-Agent strings for management of the website
+    and prevention and detection of malicious activity (only
+    accessible to Page administrators)
+
+-   Names, emails, phone numbers for the purpose of facilitating contact
+    within the Schoenstatt Movement (no home addresses)
+
+-   Social media contacts
+
+-   Country of identification (not explicitly nationality or
+    citizenship)
+
+-   Languages spoken/understood
+
+-   Birthdays (never birth years) for facilitating family-style
+    congratulations
+
+How do we categorize users according to their access to personal data?
+--------------------------------------------------------------------------
+
+-   **Page administrators**‒up to 5 close collaborators‒ have complete
+    access to data
+
+-   **Movement leaders**
+
+    -   **Institutes and federation members** have access to all
+        personal data of the members of their same community
+        worldwide, unless otherwise agreed upon by the superiors of
+        that institute.
+
+    -   **Members of the General Presidium** have access to the personal
+        data of persons in active assignments.
+
+    -   **National and regional leaders**‒movement director, central
+        committee members, presidium members and national
+        secretary‒have access to the personal data of persons who
+        hold/have held assignments within their national boundaries,
+        and of the other national/regional movement directors and the
+        general presidium with exception of Institute members who no
+        longer hold active assignments.
+
+    -   **Diocesan movement moderators** have access to the personal
+        data of persons who hold/have held assignments in their same
+        diocese with exception of Institute members who no longer hold
+        active assignments.
+
+-   **All users with active assignments** have access to the full first
+    and last name of all persons.
+
+-   **All other users** have access to the first name and the initials
+    of last names of all persons with active assignments. May also
+    contact these persons via an online form (without revealing the
+    email address of the person to be contacted).
+
+For more information on Schoenstatt Movement organization please refer
+the general statutes.
+
+What is this about "assignments" and who can grant them?
+--------------------------------------------------------
+
+The subsystem which determines a user's access to personal data involves
+four main concepts: Associations, Roles, Assignments and Persons. An
+Association can be a Schoenstatt Institute, a Shrine or a book
+publisher. Associations can have roles that can be filled by persons.
+For example, a Shrine might have a Pastoral Coordinator role. When a
+person is connected to an association's role, he is said to hold a
+temporal assignment to said role.
+
+As alluded to previously, there is a main hierarchy of associations
+which determines who can grant assignments on lower levels. This
+hierarchy is composed of 3 levels:
+
+1.  **International level**: General presidium (roles include general
+    presidium members, and international coordination; page
+    administrators also have permanent authority at this level)
+
+2.  **National level**: National movement associations (roles include
+    regional/national movement directors, central committee members,
+    and national presidium members)
+
+3.  **Diocesan level**: Diocesan movement associations (roles include the
+    diocesan moderators and secretaries)
+
+Users that hold active assignments to the authoritative roles of these
+associations have power to modify assignments lower in the hierarchy.
+
+Institute and federation associations have their own internal
+hierarchies and do not apply to the abovementioned structure.
+
+Associations that don't fit into this model (for example, book
+publishers) can be modified by the national level leaders of that
+country, or in the case of an international association, by the
+international level.
+
+How long is personal data stored
+--------------------------------
+
+All persons have the right to be forgotten and may request this at any
+time. Otherwise, all personal data will be kept indefinitely until the
+particular person has ceased to hold any active assignment for more than
+5 years. After 5 years without any active assignments, all email
+addresses, phone numbers, social media contacts, IP addresses and User
+Agent strings will be deleted or anonymized.
+
+Access to one's own personal data
+--------------------------------------
+
+Any user can request an export of their own personal data in the
+standard [JSON
+format](https://en.wikipedia.org/wiki/JSON). This data
+includes the organizational assignments held according to the database.
+
+Right to be forgotten
+-------------------------
+
+Anyone may request to have their personal data, in part or in whole,
+removed from Schoenstatt Link. In order to prevent personal data from
+being re-added, it is suggested that the person allow us to store a
+[cryptographic
+hash](https://en.wikipedia.org/wiki/Cryptographic_hash_function)
+(SHA256) of their name, and email address. Cryptographic hashes are
+irreversible and a posterior viewer of the data has no way of linking
+the hash to the original data (although it could be used to verify that
+a particular person had asked themselves to be forgotten). Unless
+specified, no cryptographic hashes will be stored, and Schoenstatt Link
+would have no mechanism for preventing the readdition of said person's
+personal data.
+
+Telephone number policy
+---------------------------
+
+The personal telephone contact number is an especially sensitive piece
+of information and deserves special treatment. The following are the
+options for publishing the phone number:
+
+-   Allow Schoenstatt Link to store ones phone number if provided by
+    another user (default: YES)
+
+-   Show phone number to Schoenstatt movement superiors (specifically in
+    the line Diocesan moderator-national movement director-general
+    presidium, default: YES)
+
+-   Show phone number to Schoenstatt movement subjects with active
+    assignments (also in the line Diocesan moderator-national movement
+    director-general presidium, default: YES)
+
+-   Show phone number publically to authenticated users (default: NO)
+
+-   Phone numbers are never shown to unauthenticated users to avoid web
+    scraping and being added to spam call lists)
+
+Email contact policy
+------------------------
+
+Each user can regulate the following options as to whether to wish to be
+contacted via email:
+
+-   I wish Schoenstatt Link to contact me with information regarding
+    changes to my personal information (default: YES)
+
+-   I wish to allow any user to send messages via the online form,
+    without the email address being divulged (default: YES)
+
+-   I wish to receive notifications about new blog postings on
+    Schoenstatt Link (maximum 1 per month, default: NO)
+
+Overseas data exportation
+-----------------------------
+
+We may occasionally move data outside of the EEA, but only for backup
+and development purposes, never to sell, never to any person outside of
+the group of Page administrators.
+
+Ownership and licensing of personal data
+----------------------------------------
+
+Schoenstatt Link and its creator own the personal data and reserve all
+rights to it. As opposed to the rest of the data which appears on
+Schoenstatt Link, personal data should NOT be considered shared under
+Creative Commons licensing. (This clause is important for protecting
+personal data from lawful distribution outside of the context of
+Schoenstatt Link)
+
+Changes to the privacy policy
+----------------------------------------
+
+Schoenstatt Link may update its privacy policy from time to time. We encourage users to check back frequently to see changes to the privacy policy. We will mention changes below in the change log so you can look more closely at what has changed. For more important changes we may let you know through other means, for example through a blog post.
+
+
+Change log
+----------------------------------------
+
+-   March 15th, 2016 - First version
+
+{% endverbatim %}{% endapply %}
+</div></div>
+{% endblock %}

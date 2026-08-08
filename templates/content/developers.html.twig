@@ -1,0 +1,56 @@
+{#
+  module/Application/view/application/index/developers.phtml, ported.
+
+  Two templates now render this page: this one under the Symfony front controller
+  and the .phtml under the laminas one, which production still serves. See
+  docs/strangler.md.
+
+  The Markdown is a copy of the heredoc in that .phtml, byte for byte — it is the
+  page's content, not code, and test/Integration/ContentPageParityTest pins the two
+  against each other so a later edit to one shows up as a failure rather than as a
+  page that quietly says something different in production.
+
+  The verbatim wrapper is defensive rather than required: no Twig delimiter appears
+  in this prose today, but prose is exactly the kind of text that grows a brace, and
+  with strict_variables on that would be an exception on a live page rather than a
+  typo.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% apply markdown %}{% verbatim %}
+# Developers Center
+
+The observation of Schoenstatt Link is that there have been huge investments of time and energy in great projects to study our Father and Founder, and deepen our charism, but little work to make these resources available to the Schoenstatt faithful around the world.
+
+Schoenstatt Link hopes to provide APIs for consumption by anyone willing to maintain mobile apps or more developed websites.
+
+This project is just getting started, but won't get very far without establishing a support community of developers. Schoenstatt Link is built in PHP using Zend Framework 3 (now [Laminas](https://getlaminas.org/)). The codebase is currently hosted bitbucket, but I would be happy to migrate it to github if a couple are willing to come on board.
+
+Here are a few things on the todo list:
+
+- ✔ Privacy policy
+- ✔ Upgrade to ZF3
+- ✔ JSON ld renderer
+- ✔ Automatic registration and email verification system
+- ✔ Comment system
+- Integration with other data APIs (wikidata, library thing, etc)
+- Online email forwarding system (to allow contacting movement persons without giving away email addresses)
+- Full text indexing and search system (integrate the [tntsearch](https://github.com/teamtnt/tntsearch) library)
+- Make REST APIs available for all resources
+- Create a data merging system for the different sources of bibliography information
+- Allow posting events being hosted by shrines, including mass, adoration and confession times.
+- ✔ Automated HTML-[Markdown](http://daringfireball.net/projects/markdown) conversion process for Fr. Kentenich texts
+
+Lot's of work to do! [Contact us now](mailto:webmaster@schoenstatt.link)
+
+## Main sub-projects
+
+- Books (list of Schoenstatt publications)
+- Libraries (indexing of Schoenstatt libraries)
+- Fr. Kentenich timeline
+- Full-text kentenich library
+- Shrine database
+- Fr. Kentenich dictionary
+{% endverbatim %}{% endapply %}
+{% endblock %}
