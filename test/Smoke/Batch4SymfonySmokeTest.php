@@ -7,7 +7,7 @@ namespace SchoenstattTest\Smoke;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * The nine public routes ported to the Symfony kernel on 2026-08-08.
+ * The seven public routes ported to the Symfony kernel on 2026-08-08.
  *
  * BooksSmokeTest and friends already ask these paths for a 200, and they passed
  * before this port as well: the catch-all would have satisfied them either way, which
@@ -41,11 +41,6 @@ class Batch4SymfonySmokeTest extends SmokeTestCase
     {
         yield 'timeline'      => ['/en/timeline', '<h1>Fr. Kentenich Timeline</h1>'];
         yield 'music'         => ['/en/music', 'Add new composition'];
-        yield 'blog'          => ['/en/blog', '/en/blog/posts/'];
-        yield 'blog post'     => [
-            '/en/blog/posts/SL402801T/upcoming-lauch-december-18th',
-            '<h1>What is Schoenstatt Link?</h1>',
-        ];
         yield 'dictionary'    => ['/en/dictionary', '</html>'];
         yield 'dictionary es' => ['/en/dictionary/es', 'Fr. Kentenich dictionary German to Spanish'];
         yield '150 preguntas' => [
@@ -82,7 +77,6 @@ class Batch4SymfonySmokeTest extends SmokeTestCase
     {
         yield 'timeline'   => ['/timeline', '/en/timeline'];
         yield 'music'      => ['/music', '/en/music'];
-        yield 'blog'       => ['/blog', '/en/blog'];
         yield 'dictionary' => ['/dictionary', '/en/dictionary'];
         yield '150'        => [
             '/literature/150-preguntas-sobre-schoenstatt',
@@ -99,39 +93,6 @@ class Batch4SymfonySmokeTest extends SmokeTestCase
         $this->assertStringEndsWith($target, $response['redirect'], $path);
     }
 
-    /**
-     * A post reached without its slug is canonicalised rather than served.
-     *
-     * This is the one place the ported route deliberately does something laminas does
-     * not: `Books\Controller\BlogController::showAction()` assembles that redirect with
-     * `text_id`, which is not a parameter of the `blog/blog-post` route, so laminas
-     * answers **500**. Measured with tools/port-baseline.php before the route moved.
-     */
-    public function testAPostWithoutItsSlugIsRedirectedToTheCanonicalUrl(): void
-    {
-        $response = $this->request('GET', '/en/blog/posts/SL402801T');
-
-        $this->assertSame(302, $response['status']);
-        $this->assertStringEndsWith(
-            '/en/blog/posts/SL402801T/upcoming-lauch-december-18th',
-            $response['redirect']
-        );
-    }
-
-    /**
-     * A well-formed site-wide id naming no row goes to the **home page**, not to the
-     * blog index — because the `blog-post` entity spec sets no `index_route` and
-     * SionController::showAction() falls back to `sion_model.default_redirect_route`.
-     * Measured; it is the kind of detail a reasonable rewrite gets wrong.
-     */
-    public function testAMissingPostRedirectsToTheDefaultRoute(): void
-    {
-        $response = $this->request('GET', '/en/blog/posts/SL409999T/nothing-here');
-
-        $this->assertSame(302, $response['status']);
-        $this->assertStringEndsWith('/en/', $response['redirect']);
-    }
-
     /** An unknown dictionary language goes back to the dictionary index, as laminas does. */
     public function testAnUnknownDictionaryLanguageRedirectsToTheIndex(): void
     {
@@ -139,32 +100,6 @@ class Batch4SymfonySmokeTest extends SmokeTestCase
 
         $this->assertSame(302, $response['status']);
         $this->assertStringEndsWith('/en/dictionary', $response['redirect']);
-    }
-
-    /**
-     * The blog post page renders in every locale.
-     *
-     * Not a formality: on **laminas** this page answers `200` with a *zero-byte body*
-     * in all four non-English locales, because show.phtml passes the whole post through
-     * translate(), JTranslate records the miss, and writing it back overflows
-     * `phrase` — a MvcEvent::FINISH exception that discards the response. See
-     * docs/strangler.md. So this assertion is the one that says the ported page does
-     * not inherit that, and it would have been meaningless in English alone.
-     */
-    public function testTheBlogPostRendersInEveryLocale(): void
-    {
-        foreach (['en', 'es', 'de', 'pt', 'it'] as $locale) {
-            $path     = "/$locale/blog/posts/SL402801T/upcoming-lauch-december-18th";
-            $response = $this->request('GET', $path);
-
-            $this->assertSame(200, $response['status'], $path);
-            $this->assertGreaterThan(
-                2000,
-                strlen($response['body']),
-                $path . ': an empty or near-empty 200 is the fatal-200 shape, not a rendering'
-            );
-            $this->assertStringContainsString('<h1>', $response['body'], $path);
-        }
     }
 
     /**

@@ -72,7 +72,7 @@ class EntityFormatterTest extends TestCase
      * The branches of the original that no spec reaches and this port therefore omits.
      *
      * `defaultRouteParams` was on this list until the first run of this test failed and
-     * named blog-post, text and composition — which is exactly what it is for. That
+     * named text and composition — which is exactly what it is for. That
      * branch is now reproduced in both wrapAsLink() and the edit pencil; these two are
      * not, and no spec sets either.
      */
@@ -126,12 +126,12 @@ class EntityFormatterTest extends TestCase
 
     /**
      * The counterpart: the branch that *is* reproduced is exercised on the specs that use
-     * it. blog-post, text and composition carry no showRouteKey, so their link can only
+     * it. text and composition carry no showRouteKey, so their link can only
      * come from `defaultRouteParams` — if that branch regressed, the name would render as
      * bare text and no other assertion here would see it.
      *
      * **Both directions, because the link is ACL-dependent** and this test runs with no
-     * identity. `route/blog/blog-post` and `route/composition` admit an anonymous visitor;
+     * identity. `route/text` and `route/composition` admit an anonymous visitor;
      * `route/text` does not (measured in docs/acl-rules.md). So the expected outcome is
      * read from the ACL rather than assumed — which makes this a test of isActionAllowed()
      * as well: a formatter that ignored permissions would link `text` and fail here.
@@ -141,7 +141,7 @@ class EntityFormatterTest extends TestCase
         $formatter = $this->formatter();
         $entities  = $this->entities();
 
-        foreach (['blog-post', 'text', 'composition'] as $type) {
+        foreach (['text', 'composition'] as $type) {
             $spec = $entities[$type] ?? null;
             self::assertNotNull($spec, "no $type spec");
             /** @var array<string, string> $map */

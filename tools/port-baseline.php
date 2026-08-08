@@ -129,9 +129,6 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  */
 const PATHS = [
     // batch 4 — the public browse surface
-    '/blog',
-    '/blog/posts/SL402803T/launch-of-new-schoenstatt-shrines-app-for-android',
-    '/blog/posts/SL402801T/upcoming-lauch-december-18th',
     '/music',
     '/timeline',
     '/dictionary',
@@ -154,15 +151,12 @@ const PATHS = [
     '/admin',
     '/sm/data-problems',
     '/sm/view-changes',
-    //Edge cases, and **last on purpose**. Each is a branch a ported controller has to
-    //reproduce: a post without its slug (canonicalising redirect), an unknown dictionary
-    //language, and a well-formed site-wide id naming no row. Their laminas twins set a
-    //flash message, and a flash is read and cleared by the *next* page rendered with the
-    //same session — so anywhere but last, they decorate an unrelated page with "Blog-post
-    //not found." on one front controller and not the other. Diagnosed after exactly that.
-    '/blog/posts/SL402801T',
+    //Edge cases, and **last on purpose**: an unknown dictionary language is a branch a
+    //ported controller has to reproduce. Its laminas twin sets a flash message, and a
+    //flash is read and cleared by the *next* page rendered with the same session — so
+    //anywhere but last, it decorates an unrelated page with a message on one front
+    //controller and not the other. Diagnosed after exactly that.
     '/dictionary/xx',
-    '/blog/posts/SL409999T/nothing-here',
 ];
 
 exit(main($argv));
@@ -571,8 +565,8 @@ function httpRequest(string $method, string $url, string $jar, ?array $post = nu
         CURLOPT_TIMEOUT        => 120,
         //Not decoration. ext/curl sends no User-Agent unless told to, and
         //SionTable::registerVisit() reads $_SERVER['HTTP_USER_AGENT'] unguarded — so a
-        //capture without this one line renders every visit-registering page (the blog
-        //posts, the dictionaries) with three PHP warnings printed above the doctype,
+        //capture without this one line renders every visit-registering page (the
+        //dictionaries) with three PHP warnings printed above the doctype,
         //and the second and third of those are "Cannot modify header information",
         //i.e. the page also loses its Content-Security-Policy. That is a real
         //robustness bug in SionModel, not an artefact of this tool; the tool just

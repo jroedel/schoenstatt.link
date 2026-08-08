@@ -32,7 +32,7 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | `cache_enabled` | false |
 | `role_providers` | `BjyAuthorize\Provider\Role\LaminasDb`, `JUser\Provider\Role\UserIdRoles` |
 | `resource_providers` | `BjyAuthorize\Provider\Resource\Config`, `Books\Model\EventTextTable`, `Books\Model\LibraryTable` |
-| `rule_providers` | `BjyAuthorize\Provider\Rule\Config`, `Books\Model\EventTextTable`, `Books\Model\LibraryTable` |
+| `rule_providers` | `BjyAuthorize\Provider\Rule\Config`, `Books\Model\LibraryTable` |
 | `guards` | `BjyAuthorize\Guard\Route` |
 
 ## Summary counts
@@ -40,24 +40,24 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 167 |
-| guarded routes total | 167 |
+| guarded routes existing | 162 |
+| guarded routes total | 162 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 43 |
-| route guard entries | 169 |
+| route guard entries | 164 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 23 |
+| routes shadowed by symfony | 22 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 42 |
+| symfony routes acl checked | 38 |
 | symfony routes open | 9 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 51 |
-| total routes | 192 |
+| symfony served routes | 47 |
+| total routes | 187 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (167 + 25 = 192). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (162 + 25 = 187). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -93,10 +93,6 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `api-v2/shrines-json.locale` | `/{_locale}/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
 | `associations` | `/associations` | `route/associations` | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssociationsController` |
 | `associations.locale` | `/{_locale}/associations` | `route/associations` | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssociationsController` |
-| `blog` | `/blog` | `route/blog` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\BlogController::index` |
-| `blog.locale` | `/{_locale}/blog` | `route/blog` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\BlogController::index` |
-| `blog/blog-post` | `/blog/posts/{sw_id}/{slug}` | `route/blog/blog-post` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\BlogController::show` |
-| `blog/blog-post.locale` | `/{_locale}/blog/posts/{sw_id}/{slug}` | `route/blog/blog-post` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\BlogController::show` |
 | `developers` | `/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `developers.locale` | `/{_locale}/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `dictionary` | `/dictionary` | `route/dictionary` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\DictionaryController::index` |
@@ -170,7 +166,6 @@ warning at the top of this file.
 | `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | `api-v1/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
 | `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | `api-v2/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
 | `associations` | `/associations` | `associations` | restricted to sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/associations` — **the same resource** |
-| `blog` | `/blog` | `blog` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/blog` — **the same resource** |
 | `developers` | `/developers` | `developers` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/developers` — **the same resource** |
 | `dictionary` | `/dictionary` | `dictionary` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/dictionary` — **the same resource** |
 | `events` | `/timeline` | `events` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/events` — **the same resource** |
@@ -343,11 +338,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `associations/do-work` | yes | `null`, guest, user | **everyone (public)** — 43 named roles plus anonymous | yes |  |
 | `associations/import` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `associations/old-association` | yes | guest, sch_basic, sch_user, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `blog` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `blog/blog-post` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `blog/blog-post/delete` | yes | blog_contributor | blog_administrator, blog_contributor (2) | no |  |
-| `blog/blog-post/edit` | yes | blog_contributor | blog_administrator, blog_contributor (2) | no |  |
-| `blog/create` | yes | blog_contributor | blog_administrator, blog_contributor (2) | no |  |
 | `books/book` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `books/book/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `books/create` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
@@ -574,7 +564,7 @@ request time (one resource per library / event text), so no config-derived table
 
 **Not in this snapshot:** these rule providers generate row-level rules from the database at request
 time — a `show`/`checkout`/`administrate` allow per library row and per event text — so the parity
-check for them has to be behavioural, not textual: `Books\Model\EventTextTable`, `Books\Model\LibraryTable`.
+check for them has to be behavioural, not textual: `Books\Model\LibraryTable`.
 
 ## Controller guard entries
 

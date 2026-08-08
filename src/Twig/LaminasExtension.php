@@ -9,7 +9,6 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use Laminas\I18n\Translator\TranslatorInterface;
-use DateTimeInterface;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
 use SionModel\Entity\Entity;
@@ -90,8 +89,6 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
             new TwigFunction('label', $this->label(...), $html),
-            new TwigFunction('diff_for_humans', $this->diffForHumans(...), $html),
-            new TwigFunction('truncate_by_width', $this->truncateByWidth(...)),
         ];
     }
 
@@ -233,7 +230,7 @@ final class LaminasExtension extends AbstractExtension
     /**
      * SionModel\View\Helper\EditPencilNew, reimplemented — the `editRoute` + params
      * form of the same pencil, which is what an entity spec using `defaultRouteParams`
-     * reaches instead of the `editRouteKeyField` branch above (blog-post, text).
+     * reaches instead of the `editRouteKeyField` branch above (text, composition).
      *
      * Its guard is its own: no params or no route renders nothing, and the route
      * permission failure is swallowed the same way, with the same "assume no route
@@ -323,29 +320,6 @@ final class LaminasExtension extends AbstractExtension
         $markup = $this->helpers->label()->__invoke($text, $class);
 
         return is_string($markup) ? $markup : '';
-    }
-
-    /**
-     * "7 years ago" wrapped in an `<abbr>` carrying the absolute date, localized by
-     * Carbon. Markup, and the helper escapes nothing it is given — but neither of its
-     * two inputs comes from a caller: both are derived from the DateTime.
-     */
-    public function diffForHumans(mixed $date): string
-    {
-        return $date instanceof DateTimeInterface
-            ? (string) $this->helpers->diffForHumans()->__invoke($date)
-            : '';
-    }
-
-    /**
-     * SionModel\Text\Text::truncateByWidth — `truncate` with `trimWidth`, which counts
-     * display width rather than bytes. The blog index cuts posts to 1,000 before handing
-     * them to the Markdown parser, so the ellipsis lands inside whatever list item or
-     * paragraph the cut fell in; that is what the page shows today.
-     */
-    public function truncateByWidth(mixed $text, int $length = 100): string
-    {
-        return is_string($text) ? (string) Text::truncateByWidth($text, $length) : '';
     }
 
     /**

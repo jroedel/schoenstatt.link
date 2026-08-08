@@ -12,7 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * The redirect an HTML route owes its own *unprefixed* form.
  *
- * Every ported path is declared twice — `/blog` and `/{_locale}/blog` — because
+ * Every ported path is declared twice — `/music` and `/{_locale}/music` — because
  * every caller uses the prefixed form and Symfony, unlike laminas, has no
  * SlmLocale\Strategy\UriPathStrategy to strip the segment before routing. But
  * SlmLocale does not *serve* the unprefixed form either: it answers it with a 302 to

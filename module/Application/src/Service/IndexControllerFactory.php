@@ -16,7 +16,6 @@ use Application\Controller\IndexController;
 use Laminas\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
-use Books\Model\EventTextTable;
 use Books\Model\DictionaryTable;
 
 class IndexControllerFactory implements FactoryInterface
@@ -26,7 +25,6 @@ class IndexControllerFactory implements FactoryInterface
         $navigation = $container->get(Navigation::class);
         $publicationsTable = $container->get(PublicationsTable::class);
         $schoenstattTable = $container->get(SchoenstattTable::class);
-        $eventTextTable = $container->get(EventTextTable::class);
         $dictionaryTable = $container->get(DictionaryTable::class);
         $helperPluginManager = $container->get('ViewHelperManager');
         $config = $container->get('Config');
@@ -34,7 +32,6 @@ class IndexControllerFactory implements FactoryInterface
             $navigation,
             $publicationsTable,
             $schoenstattTable,
-            $eventTextTable,
             $dictionaryTable,
             $helperPluginManager,
             $config

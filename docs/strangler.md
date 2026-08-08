@@ -51,9 +51,6 @@ public/index.php
                                        │                       └─ _changes-table.html.twig
                                        ├─ [/{_locale}]/timeline
                                        │                 → App\Controller\TimelineController
-                                       ├─ [/{_locale}]/blog              ⎫ App\Controller\
-                                       ├─ [/{_locale}]/blog/posts/{sw_id}/{slug}
-                                       │                                 ⎭ BlogController
                                        ├─ [/{_locale}]/music
                                        │                 → App\Controller\MusicController
                                        ├─ [/{_locale}]/dictionary        ⎫ App\Controller\
@@ -87,7 +84,7 @@ by asking whether `_route` is anything other than `legacy`:
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
-As of batch 4, **51 of the 192 laminas routes are served by Symfony** (23 distinct paths,
+As of batch 4, **47 of the 187 laminas routes are served by Symfony** (21 distinct paths,
 each declared twice for its locale prefix); `docs/acl-rules.md` carries the count and the
 guard each one is checked against.
 
@@ -297,12 +294,12 @@ and the page still renders. Audited in full 2026-08-08 — four modules define o
 | module | what `onBootstrap` does | reproduced by |
 |---|---|---|
 | `Application` | attaches `GdprStrategy` | `App\Http\GdprCookieListener` |
-| | builds the DB-derived navigation branches and caches them in APCu | **declared per route** since 2026-08-08 — `App\View\SiteChrome` reads the raw `navigation` config, so a page whose laminas twin lights up an ancestor names it with `SiteChrome::NAV_ROUTE`. `/blog/posts/…` declares `blog`; `/dictionary/{lang}` and `/literature/150-…` declare `publications`. Not derivable from route names — `dictionary/inLanguage` hangs under `publications` |
+| | builds the DB-derived navigation branches and caches them in APCu | **declared per route** since 2026-08-08 — `App\View\SiteChrome` reads the raw `navigation` config, so a page whose laminas twin lights up an ancestor names it with `SiteChrome::NAV_ROUTE`. `/dictionary/{lang}` and `/literature/150-…` both declare `publications`. Not derivable from route names — `dictionary/inLanguage` hangs under `publications` |
 | `Schoenstatt` | attaches `ModuleRouteListener` | **nothing, and nothing needed** — it rewrites laminas-mvc route matches, which a Symfony-served route does not have |
 | `JUser` | starts the session, prunes pre-Laminas values | `App\Http\SessionListener` |
 | | `GlobalAdapterFeature::setStaticAdapter()` | **nothing** — used only by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, and no ported route renders a form. **A prerequisite for the first form route ported**, which would otherwise get a null adapter from its `NoRecordExists` validator |
 | `JTranslate` | configures the translator: locale, fallback, the DB-report listener, and the file patterns that *are* the translations | `App\Laminas\TranslatorConfigurator` |
-| | `TranslationsTable::finishUp()` on `MvcEvent::FINISH`, which **writes the collected missing phrases to the database** | **nothing, and deliberately** — a ported route collects misses and never flushes them, so it contributes nothing to `/admin/translations`. Wiring it up would also reproduce the blank-blog-post bug below on the ported pages; fix the `phrase` overflow first |
+| | `TranslationsTable::finishUp()` on `MvcEvent::FINISH`, which **writes the collected missing phrases to the database** | **nothing, and deliberately** — a ported route collects misses and never flushes them, so it contributes nothing to `/admin/translations`. Wiring it up is not free: it is what made every blog post blank in four locales (`Data too long for column 'phrase'` at FINISH, response discarded), so the overflow needs bounding first |
 | | sets the `translate`/`formLabel`/… helper text domains per controller module | the `_text_domain` route default, read by `App\Twig\LaminasExtension::translate()` |
 
 Two rows there are still "nothing", and both are deliberate rather than pending: the
@@ -511,7 +508,6 @@ and what a later port should reuse rather than reinvent:
 | `src/Laminas/RouteUrl.php` | assembles laminas URLs, locale prefix included. **The reason any of this works** |
 | `src/Laminas/ViewHelpers.php` | the only door to a laminas view helper, one typed method per allowed helper |
 | `src/View/SiteChrome.php` | the chrome's decisions: ACL-filtered navigation, language chooser, search box |
-| `templates/books/_blog-front-matter.html.twig` | the blog's author/date/tags line, shared by the index and the post page |
 | `templates/books/_library-list.html.twig` | the library list, written as a partial now because the literature home page will need it |
 | `src/Http/LocalePrefix.php` | the 302 an HTML route owes its own unprefixed form, in one place |
 | `src/Books/EventTimeline.php` | the timeline's grouping, pinned against the laminas action by a parity test |
@@ -642,7 +638,7 @@ Three things to know before using it:
   `editRouteParams`), because no entity spec sets them.
   `test/Integration/EntityFormatterTest` walks all 24 specs and fails the day one does
   — which is how `defaultRouteParams` came to be reproduced: it was on that omitted
-  list until the test's first run named blog-post, text and composition.
+  list until the test's first run named text and composition.
 - **`role` and `publication` are gated differently on a deleted row**, and this is the
   one place the two originals disagree. `Schoenstatt\View\Helper\FormatEntity` switches
   on the type at the very top of `__invoke()`, before anything reads `isDeleted` — so a
@@ -794,8 +790,8 @@ to go before anything can be compared at all: the language chooser draws its fla
 So the comparison is scoped to what porting a page owns — `<title>`, the breadcrumb
 trail, the navbar (including which item is active), the flash region and the whole page
 body — and is whitespace-insensitive between tags. On that basis batch 4 came to **257 of
-300 responses identical**, and the 43 that differ are itemized under "Known differences"
-below.
+300 responses identical** while it still included the blog; the differences that remain
+are itemized under "Known differences" below.
 
 On production the same comparison is available without any file edit, through the cookie
 canary above — and that is where it should be repeated, because production has
@@ -809,30 +805,18 @@ defect in a page ported by this batch; three are improvements and two are older.
 | what | where | why |
 |---|---|---|
 | a commented-out `<td>`, a stray space before a `<p>`, and a missing `//<!-- -->` script wrapper | `/shrines`, `/wayside-shrines` (20 responses) | batch-2 template nits, invisible in a browser. Left alone: they are shipped code and this batch has no business editing it |
-| laminas answers **`200` with a zero-byte body**, Symfony renders the page | `/{es,de,pt,it}/blog/posts/…` (8) | a live laminas bug the port fixes. See below |
-| laminas answers **500**, Symfony `302`s to the canonical URL | `/blog/posts/{sw_id}` with no slug (6) | the laminas redirect names `text_id`, which is not a parameter of that route |
 | `?redirect=/roles` vs `?redirect=/en/roles` | unprefixed form of a guarded path (5) | the redirect-order divergence already documented above, now visible on five routes |
 | — | | |
 
-#### The blank blog post, in four languages
+#### A note on that FINISH listener
 
-`books/blog/show.phtml` passes the post's **entire Markdown body** through `translate()`.
-In any locale that has no translation for it — i.e. every locale but English — JTranslate's
-reporter records the miss and `TranslationsTable::finishUp()` tries to INSERT it:
-
-```
-Data too long for column 'phrase' at row 1
-```
-
-That fires on `MvcEvent::FINISH`, *after* the response is assembled, so laminas discards
-the body and the visitor gets an empty 200. Every blog post is blank in Spanish, German,
-Portuguese and Italian, on production, today.
-
-A Symfony-served route escapes it because `finishUp()` is an MVC listener and never runs —
-which is the same reason **a ported route records no missing phrases at all**. The
-translator delegator attaches `TranslatorEventListener`, so misses are still *collected*;
-nothing flushes them. Wiring a flush up is not a safe change on its own: it would
-reproduce this bug on the ported pages. Fix the overflow first.
+The blog is gone (see history.md), and with it the worst instance of a hazard that is
+not: `JTranslate\Model\TranslationsTable::finishUp()` writes collected missing phrases
+on `MvcEvent::FINISH`, and the `phrase` column is not wide enough for an arbitrary
+string. Any laminas page that passes a long value through `translate()` can therefore
+throw *after* its response is assembled, and the visitor gets a 200 with an empty body.
+Ported routes never run that listener, which is why they cannot hit it — and why they
+also record nothing. Bounding the write is the fix; it is not done.
 
 ## Routes that are not portable yet, and why
 
@@ -922,9 +906,8 @@ between here and the end of the migration.
 The music *index* is ported; an individual song is not. `composition` has a comment
 predicate (`comment-comments-composition`), so `SionController::showAction()` builds a
 `CommentForm` and the template renders it for any signed-in visitor who may comment.
-`blog-post` has none — the `comment-comments-text` predicate names `text`, not `blog-post`
-— which is exactly why the blog's show page could be ported in this batch and this one
-could not.
+The `text` entity is in the same position — `comment-comments-text` names it — so
+`/texts/…` show pages are blocked on the same thing.
 
 **A note on the fetch/display ratio, for whoever tunes this next.** With
 `changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows
@@ -935,8 +918,8 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 
 ## Verifying
 
-- `php composer.phar test` — **802 tests** (measured 2026-08-08, after the ten routes of
-  batch 4; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
+- `php composer.phar test` — **791 tests** (measured 2026-08-08, after the eight routes of
+  batch 4 and the removal of the blog; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
   631 after the wayside-shrine port, 618 after the authorization bridge, 551 before it,
   527 before the shrines port).
 
@@ -987,11 +970,9 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
   serves only the Symfony kernel, so no single URL can exercise both in one run —
   the test's docblock is explicit about that limit rather than implying a stronger
   claim.
-- `test/Smoke/Batch4SymfonySmokeTest.php` covers the nine public routes of batch 4 —
+- `test/Smoke/Batch4SymfonySmokeTest.php` covers the seven public routes of batch 4 —
   each one served by Symfony rather than bridged, each unprefixed form redirecting, and
-  the four branches the blog's show action has. Its most valuable assertion is that the
-  blog post renders **in every locale**: on laminas it is an empty 200 in four of the
-  five, so an English-only check would have proved nothing.
+  the dictionary's two edge cases.
 - `test/Smoke/RestrictedIndexAuthorizationSmokeTest.php` covers the three restricted
   indexes, and is the first authorization test in the suite with a *positive* case for an
   ordinary account: registration grants `sch_user`, which `route/associations` names, so
