@@ -1,0 +1,54 @@
+{#
+  module/SionModel/view/sion-model/sion-model/changes-table.phtml, ported.
+
+  Expects: changes (list), max_rows (int|null), show_entity (bool).
+
+  Kept a separate template because the original is a separate partial: SionModel renders
+  `changes-table` from an entity's own change panel as well as from /sm/view-changes, so
+  the next port to need it should include this rather than copy it.
+
+  Five things here are the original's behaviour rather than choices, and every one of them
+  would look like a bug to someone tidying up:
+
+  1. **A fresh <thead> every time the date changes.** The original emits a new header row
+     whenever the short date differs from the previous row's, so one table carries many
+     <thead> elements. Invalid-ish, universally rendered, and what the page has always
+     looked like.
+  2. **`<span >`, with a stray quote, when a row has no ipAddress.** The original opens
+     `<span ` and writes the tooltip attributes conditionally, but the closing `">` sits
+     *outside* the condition. Reproduced, because the alternative is a port whose output
+     differs.
+  3. **updatedBy prints only when it is an array**, and only its `username`. A change made
+     by a user id the users table no longer holds arrives as `['userId' => n]` — an array
+     with no `username` — and the original prints nothing for it (an undefined-index
+     notice, swallowed). `?? ''` is that same nothing, without the notice; Twig's
+     strict_variables would otherwise make it an exception on a live page.
+  4. **The row limit is applied here, in the view.** It is now also applied by the query
+     (SionTable::getChanges), but keeping it here is what makes max_rows meaningful when a
+     caller passes more rows than it wants shown.
+  5. **oldValue/newValue truncate to 150 characters**, ellipsis included, via
+     SionModel\Text\Text::truncate — the same static call the original makes.
+
+  Escaping: Twig escapes every interpolation, which is what escapeHtml/escapeHtmlAttr did
+  by hand. `entity()` returns markup and is declared is_safe, so it is the one value that
+  is not escaped — exactly as the original's bare `echo` of formatEntity.
+#}
+{% import 'schoenstatt/_entity-format.html.twig' as fmt %}
+<div class="responsive-table">
+<table class="table">
+{% set standing_date = null %}{% for row in changes %}{% if max_rows is null or loop.index <= max_rows %}{% set row_date = short_date(row.updatedOn) %}{% if row_date != standing_date %}{% set standing_date = row_date %}	<thead>
+	<tr>
+		<th>{{ row_date }}</th>{% if show_entity %}			<th>{{ translate('Entity') }}</th>{% endif %}		<th>{{ translate('Field') }}</th>
+		<th>{{ translate('Old Value') }}</th>
+		<th>{{ translate('New Value') }}</th>
+	</tr>
+	</thead>
+	{% endif %}	<tr>
+    	<td><span{% if row.ipAddress is defined and row.ipAddress %} data-toggle="tooltip" data-placement="bottom" data-container="body"
+    	title="{{ row.ipAddress }}{% endif %}">{{ row.updatedBy is iterable ? (row.updatedBy.username ?? '') : '' }}</span>
+    	</td>{% if show_entity %}		<td>{% if row.object is defined and row.object is not null %}{{ fmt.entity(row.entityType, row.object, {'displayEditPencil': (row.object.isDeleted ?? null) is null, 'failSilently': true}) }}{% endif %}</td>{% endif %}		<td>{{ row.field }}</td>
+		<td>{{ truncate(row.oldValue, 150) }}</td>
+		<td>{{ truncate(row.newValue, 150) }}</td>
+	</tr>
+{% endif %}{% endfor %}</table>
+</div>

@@ -51,6 +51,7 @@ final class ChromeExtension extends AbstractExtension
     {
         return [
             new TwigFunction('current_route', $this->currentRoute(...)),
+            new TwigFunction('current_path', $this->currentPath(...)),
             new TwigFunction('current_locale', $this->currentLocale(...)),
             new TwigFunction('current_language', $this->currentLanguage(...)),
             new TwigFunction('server_url', $this->serverUrl(...)),
@@ -83,6 +84,28 @@ final class ChromeExtension extends AbstractExtension
         $request = $this->request();
 
         return null === $request ? '' : SymfonyRoute::routeName($request);
+    }
+
+    /**
+     * The requested path with no query string, which is what a breadcrumb href is
+     * compared against to decide whether the crumb is the current page.
+     *
+     * That comparison is how the layout reproduces Laminas\Navigation\Page\Mvc::
+     * isActive(), which the breadcrumbs partial calls non-recursively: a crumb is
+     * active when it *is* the current page, not when it is an ancestor of it.
+     * Measured against the laminas rendering of /es/developers, where the "Home"
+     * crumb carries no class at all — so "every ancestor is active", which this
+     * layout assumed until 2026-08-07, was simply wrong. Comparing hrefs also gets
+     * the shrine index right, where two crumbs legitimately share the current route
+     * and laminas marks both.
+     */
+    public function currentPath(): string
+    {
+        $request = $this->request();
+
+        return null === $request
+            ? '/' . Locales::aliasFor(Locale::getDefault())
+            : $request->getBaseUrl() . $request->getPathInfo();
     }
 
     public function currentLocale(): string

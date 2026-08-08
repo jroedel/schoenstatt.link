@@ -29,12 +29,12 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 5,
+        "routes_shadowed_by_symfony": 15,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 6,
-        "symfony_routes_open": 5,
+        "symfony_routes_acl_checked": 22,
+        "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 11,
+        "symfony_served_routes": 31,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6481,6 +6481,15 @@
     },
     "laminas_routes_shadowed_by_symfony": [
         {
+            "laminas_route": "acknowledgements",
+            "path": "/acknowledgements",
+            "symfony_route": "acknowledgements",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/acknowledgements",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "admin",
             "path": "/admin",
             "symfony_route": "admin",
@@ -6490,12 +6499,57 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "api-v1/shrines-json",
+            "path": "/api/v1/associations/shrines.json",
+            "symfony_route": "api-v1/shrines-json",
+            "was_guarded": true,
+            "was_public": true,
+            "now_checks": null,
+            "access_kind": "open"
+        },
+        {
+            "laminas_route": "api-v2/shrines-json",
+            "path": "/api/v2/associations/shrines.json",
+            "symfony_route": "api-v2/shrines-json",
+            "was_guarded": true,
+            "was_public": true,
+            "now_checks": null,
+            "access_kind": "open"
+        },
+        {
+            "laminas_route": "developers",
+            "path": "/developers",
+            "symfony_route": "developers",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/developers",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "privacy",
+            "path": "/privacy",
+            "symfony_route": "privacy",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/privacy",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "shrines",
             "path": "/shrines",
             "symfony_route": "shrines",
             "was_guarded": true,
             "was_public": true,
             "now_checks": "route/shrines",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "shrines/submitting-photos",
+            "path": "/shrines/submitting-photos",
+            "symfony_route": "shrines/submitting-photos",
+            "was_guarded": true,
+            "was_public": true,
+            "now_checks": "route/shrines/submitting-photos",
             "access_kind": "acl"
         },
         {
@@ -6517,12 +6571,48 @@
             "access_kind": "open"
         },
         {
+            "laminas_route": "sion-model/data-problems",
+            "path": "/sm/data-problems",
+            "symfony_route": "sion-model/data-problems",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sion-model/data-problems",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "sion-model/phpinfo",
+            "path": "/sm/phpinfo",
+            "symfony_route": "sion-model/phpinfo",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sion-model/phpinfo",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "sion-model/view-changes",
+            "path": "/sm/view-changes",
+            "symfony_route": "sion-model/view-changes",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sion-model/view-changes",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "wayside-shrines",
             "path": "/wayside-shrines",
             "symfony_route": "wayside-shrines",
             "was_guarded": true,
             "was_public": true,
             "now_checks": "route/wayside-shrines",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "welcome",
+            "path": "/",
+            "symfony_route": "welcome",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/welcome",
             "access_kind": "acl"
         }
     ],
@@ -7478,6 +7568,26 @@
         }
     ],
     "symfony_routes": {
+        "acknowledgements": {
+            "path": "/acknowledgements",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/acknowledgements",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "acknowledgements.locale": {
+            "path": "/{_locale}/acknowledgements",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/acknowledgements",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "admin": {
             "path": "/admin",
             "controller": "App\\Controller\\AdminController",
@@ -7498,6 +7608,66 @@
                 "denial_style": "html"
             }
         },
+        "api-v1/shrines-json": {
+            "path": "/api/v1/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v1/shrines-json.locale": {
+            "path": "/{_locale}/api/v1/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v2/shrines-json": {
+            "path": "/api/v2/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v2/shrines-json.locale": {
+            "path": "/{_locale}/api/v2/associations/shrines.json",
+            "controller": "App\\Controller\\ShrinesGeoJsonController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
+                "denial_style": "n/a"
+            }
+        },
+        "developers": {
+            "path": "/developers",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/developers",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "developers.locale": {
+            "path": "/{_locale}/developers",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/developers",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "health": {
             "path": "/_health",
             "controller": "App\\Controller\\HealthController",
@@ -7506,6 +7676,26 @@
                 "resource": null,
                 "reason": "shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all",
                 "denial_style": "n/a"
+            }
+        },
+        "privacy": {
+            "path": "/privacy",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/privacy",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "privacy.locale": {
+            "path": "/{_locale}/privacy",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/privacy",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "shrines": {
@@ -7524,6 +7714,86 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/shrines",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "shrines/submitting-photos": {
+            "path": "/shrines/submitting-photos",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/shrines/submitting-photos",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "shrines/submitting-photos.locale": {
+            "path": "/{_locale}/shrines/submitting-photos",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/shrines/submitting-photos",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/data-problems": {
+            "path": "/sm/data-problems",
+            "controller": "App\\Controller\\DataProblemsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/data-problems",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/data-problems.locale": {
+            "path": "/{_locale}/sm/data-problems",
+            "controller": "App\\Controller\\DataProblemsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/data-problems",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/phpinfo": {
+            "path": "/sm/phpinfo",
+            "controller": "App\\Controller\\PhpInfoController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/phpinfo",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/phpinfo.locale": {
+            "path": "/{_locale}/sm/phpinfo",
+            "controller": "App\\Controller\\PhpInfoController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/phpinfo",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/view-changes": {
+            "path": "/sm/view-changes",
+            "controller": "App\\Controller\\ViewChangesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/view-changes",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/view-changes.locale": {
+            "path": "/{_locale}/sm/view-changes",
+            "controller": "App\\Controller\\ViewChangesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/view-changes",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -7584,6 +7854,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/wayside-shrines",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "welcome": {
+            "path": "/",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/welcome",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "welcome.locale": {
+            "path": "/{_locale}/",
+            "controller": "App\\Controller\\ContentPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/welcome",
                 "reason": null,
                 "denial_style": "html"
             }

@@ -144,11 +144,23 @@ class AssociationsApiV2Controller extends AbstractRestfulController
         return $view;
     }
 
+    /**
+     * @deprecated 2026-08-07 The shrine GeoJSON feed is on its way out; it is still
+     *      served and still correct, but nothing new should be built on it. The response
+     *      carries `Deprecation: true` (IETF draft) so existing callers find out without
+     *      reading this file. No `Sunset` date, because no removal date has been decided
+     *      — see docs/BACKLOG.md.
+     *
+     *      The header is set here as well as in App\Controller\ShrinesGeoJsonController
+     *      because production still serves this action: SYMFONY_KERNEL is unset there, so
+     *      a deprecation announced only on the ported route would reach nobody.
+     */
     public function shrinesJsonAction()
     {
         $table = $this->schoenstattTable;
         $geoJson = $table->getShrineGeoJson();
         $serialized = $geoJson->jsonSerialize();
+        $this->getResponse()->getHeaders()->addHeaderLine('Deprecation', 'true');
         return new JsonModel($serialized);
     }
 

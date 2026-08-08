@@ -31,11 +31,29 @@ public/index.php
                                        │                 → App\Controller\WaysideShrinesController
                                        │                       └─ shares _shrine-index.html.twig
                                        │                          with ShrinesController
+                                       ├─ [/{_locale}]/                  ⎫
+                                       ├─ [/{_locale}]/developers        ⎪
+                                       ├─ [/{_locale}]/acknowledgements  ⎬ App\Controller\
+                                       ├─ [/{_locale}]/privacy           ⎪ ContentPageController
+                                       ├─ [/{_locale}]/shrines/submitting-photos
+                                       │                                 ⎭ templates/content/
+                                       ├─ [/{_locale}]/api/v1/associations/shrines.json
+                                       ├─ [/{_locale}]/api/v2/associations/shrines.json
+                                       │                 → App\Controller\ShrinesGeoJsonController
+                                       │                       (one controller, both versions)
+                                       ├─ [/{_locale}]/sm/phpinfo
+                                       │                 → App\Controller\PhpInfoController
+                                       ├─ [/{_locale}]/sm/data-problems
+                                       │                 → App\Controller\DataProblemsController
+                                       │                       └─ App\Laminas\EntityFormatter
+                                       ├─ [/{_locale}]/sm/view-changes
+                                       │                 → App\Controller\ViewChangesController
+                                       │                       └─ _changes-table.html.twig
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
 
-Five kernel listeners run on a Symfony-served route and on **no** bridged one,
+Six kernel listeners run on a Symfony-served route and on **no** bridged one,
 because on a bridged one laminas-mvc or `LaminasResponseConverter` has already done
 the equivalent. `App\Http\SymfonyRoute::isPorted()` is how each of them tells,
 by asking whether `_route` is anything other than `legacy`:
@@ -43,6 +61,7 @@ by asking whether `_route` is anything other than `legacy`:
 | listener | event | what it restores |
 |---|---|---|
 | `LocaleListener` | request | `\Locale::setDefault()` from `_locale`, else negotiated — SlmLocale's job |
+| `SessionListener` | request | starts the session through `Laminas\Session\ManagerInterface` and prunes pre-Laminas values — `JUser\Module::onBootstrap()`'s job. Only when a session cookie is present |
 | `AuthorizationListener` | request | the route guard — `BjyAuthorize\Guard\Route`. See "Authorization" below |
 | `CspListener` | response | the `Content-Security-Policy` + nonce `SionModel\Mvc\CspListener` sends |
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
@@ -406,7 +425,70 @@ ported page passes in explicitly.
 
 Replacing one of these is a small, mechanical job — reproduce the helper's decisions
 against `RouteUrl`, keep its markup byte-identical so a real difference cannot hide
-in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
+in whitespace noise. `LaminasExtension::editPencil()` is the smallest worked example;
+**`formatEntity` is the largest, and it is done** — see below.
+
+### formatEntity, and why its reproduction is split in two
+
+`formatEntity` is the most-reused of the unavailable helpers, so it gated most of the
+remaining admin pages. Reproducing it needed one fact that is easy to miss: the name
+resolves to **`Schoenstatt\View\Helper\FormatEntity`**, not SionModel's — the
+Schoenstatt module registers the same helper name and wins the merge — and that
+subclass switches on the entity type *before* deferring:
+
+```
+person       -> formatPerson       ─┐ reproduced as macros in
+association  -> formatAssociation  ─┘ templates/schoenstatt/_entity-format.html.twig
+role         -> its own inline markup            ─┐ reproduced in
+publication  -> formatPublication (via SionModel) ─┘ App\Laminas\EntityFormatter
+everything else -> SionModel\View\Helper\FormatEntity::__invoke()
+                     -> App\Laminas\EntityFormatter
+```
+
+**All four special cases are reproduced now** (2026-08-08), which is what made
+/sm/view-changes portable. The split is by *whether a Twig macro is involved*, not by
+importance: person and association were already macros for the shrine tables, so their
+dispatch has to be in Twig; role and publication need no macro and live in the formatter.
+
+The reproduction is therefore in two layers, and the split is forced rather than
+chosen: the general path is PHP (`App\Laminas\EntityFormatter`, reachable as the
+`format_entity` Twig function), and the *dispatch* is the `entity()` macro in
+`_entity-format.html.twig`, because two of its branches are macros and a Twig function
+cannot call a macro. `formats_entity_generally()` is what stops the two lists drifting.
+
+Three things to know before using it:
+
+- **`route_permission_checking_enabled` is `true`** in this application, so
+  `isActionAllowed()` really runs: a link is suppressed when the viewer may not reach
+  its route, and again when the row's `aclResourceIdField` denies them. Both are
+  reproduced. Not optional detail — dropping it would show every viewer links to pages
+  they cannot open.
+- **Two branches of the original are deliberately absent** (`showRouteParams`,
+  `editRouteParams`), because no entity spec sets them.
+  `test/Integration/EntityFormatterTest` walks all 24 specs and fails the day one does
+  — which is how `defaultRouteParams` came to be reproduced: it was on that omitted
+  list until the test's first run named blog-post, text and composition.
+- **`role` and `publication` are gated differently on a deleted row**, and this is the
+  one place the two originals disagree. `Schoenstatt\View\Helper\FormatEntity` switches
+  on the type at the very top of `__invoke()`, before anything reads `isDeleted` — so a
+  deleted *role* still gets the role branch, pencil included. SionModel's `__invoke()`
+  puts `! $isDeleted` on its `formatViewHelper` deferral — so a deleted *publication*
+  falls through to the general path. Getting that backwards left exactly one row of 500
+  different from the laminas rendering.
+- **The role branch reads different option names.** `editPencil` and `showLabel`, not
+  `displayEditPencil`. So `changes-table.phtml`, which passes `displayEditPencil`, does
+  **not** turn a role's pencil off. Looks like a typo; is not.
+- **Only `display => title` of FormatPublication is reproduced.** The other four modes
+  are chosen by an explicit option no page this side passes, and raise rather than
+  silently returning a title.
+
+This is also the first port with **no two-sided parity test**, and the reason is worth
+remembering: the laminas helper cannot be driven at all without an MvcEvent, so there
+is nothing to compare against in-process. The agreement was established once, by hand
+— the signed-in laminas rendering of `/en/sm/data-problems` captured before the route
+moved, then compared with the ported rendering: 9,206 bytes of table body over 30 real
+problem rows, byte-identical. Do that before deleting a guarded page's laminas twin;
+after the route moves, the baseline is unobtainable.
 
 ## Adding a Symfony route
 
@@ -472,11 +554,82 @@ in whitespace noise. `LaminasExtension::editPencil()` is the worked example.
 6. Regenerate `docs/acl-rules.md` and `docs/acl-baseline.json`
    (`tools/acl-table.php`) and read the diff.
 
+## Routes that are not portable yet, and why
+
+A route can be blocked by something that has nothing to do with the strangler. Recording
+those here saves the next porter the rediscovery.
+
+### `sion-model/view-changes` (`/sm/view-changes`) — fixed 2026-08-07, ported 2026-08-08
+
+**The page was dead** until 2026-08-07 and nobody noticed, because it sits behind
+`sch_general_moderator`:
+
+```
+Fatal error: Allowed memory size of 536870912 bytes exhausted
+  in vendor/laminas/laminas-db/src/Adapter/Driver/Pdo/Result.php on line 175
+```
+
+Two bugs in `SionModel`, both now fixed:
+
+1. **`SionTable::getChanges()` filtered by the wrong name.** It asked for the changed
+   entities by their database column (`TextId`) where `queryObjects()` matches entity
+   *field* names (`textId`) — a mismatch it answers by `continue`-ing past the
+   predicate, so the query came back **unfiltered**. It loaded all 2,757 rows of a
+   table averaging 85 KB a row instead of the 250 that had changed. That single hop
+   was 520 MB; it is 66 MB now. `SionTable::entityFieldForTableKey()` is the fix.
+2. **`ChangesCollector::getAllChanges()` took no limit at all**, so `changes_max_rows`
+   bounded only the display, and `viewChangesAction()`'s single-table branch passed the
+   `changes_show_all` *flag* where an int row count belonged — `limit(false)`. One
+   number governs fetch and display now, set explicitly as
+   `sion_model.changes_max_rows` (500).
+
+Measured after the fix: 200, 211 KB, 500 rows, 1.96 s, and a 214 MB peak for the
+collector at 500 rows per table — against a 512 MB limit. 1000 per table would be
+352 MB, so 500 is the number with headroom rather than an arbitrary one.
+`test/Smoke/ViewChangesSmokeTest` guards all of it.
+
+**Then it was ported**, once `App\Laminas\EntityFormatter` stopped refusing
+`publication` and `role`: the entity column formats whatever type each change row names,
+and `sch_changes` holds 18,243 and 1,317 of them.
+
+Verifying it needed a trick worth reusing. The newest 500 changes in the capsule dump are
+*all* `book` rows, so the default view exercises only the general path and would have
+proved nothing about the two new branches. Pointing `changes_model` at
+`PublicationsTable` and then `SchoenstattTable` — with `changes_show_all` off — makes the
+page render those types instead, and all three renderings were captured from laminas
+before the route moved and compared byte for byte against the ported ones:
+
+| view | laminas bytes | result |
+|---|---|---|
+| default, all tables (500 rows, 13 date groups) | 202,411 | identical |
+| `changes_model = PublicationsTable` (453 hand-checked, 88 data-source, 86 merged icons) | — | identical |
+| `changes_model = SchoenstattTable` (roles with labels, associations, persons) | — | identical |
+
+Remember to put `changes_show_all`/`changes_model` back, and to clear `data/config/`
+either way — the merged config is cached there and an edit looks like it did nothing.
+
+`sion-model/auto-fix-data-problems` remains unported and is a separate matter: it is
+POST-and-CSRF, and there is no form layer on the Symfony side yet.
+
+**A note on the fetch/display ratio, for whoever tunes this next.** With
+`changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows
+hydrated so the view can show the newest 500. That is correct rather than wasteful in
+the strict sense (which table's rows win is unknown until they are merged), but a
+two-pass collector — merge the change rows first, hydrate only the survivors — would cut
+it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable`.
+
 ## Verifying
 
-- `php composer.phar test` — 631 tests (measured 2026-08-07, after the wayside-shrine
-  port; 618 after the authorization bridge, 551 before it, 527 before the shrines
-  port). Per suite: unit 119, integration 376, fuzz 18, smoke 118. The smoke suite
+- `php composer.phar test` — 729 tests (measured 2026-08-07, after this batch of nine
+  ported routes plus the view-changes repair; 631 after the wayside-shrine port, 618
+  after the authorization bridge, 551 before it, 527 before the shrines port). Per
+  suite: unit 119, integration 426, fuzz 18, smoke 166.
+
+  That script now passes `-d memory_limit=1G`, as `composer fuzz` always has. Without
+  it the *combined* run exhausts 512M in `Books\Form\Publication`'s factory, which
+  loads every publication row to build its keyword options — the earlier suites' memory
+  is still held by then. It failed identically on master before this batch; the fuzz
+  suite alone passes either way. The smoke suite
   runs against the capsule, i.e. through the Symfony front controller, so it is the
   bridge's regression test. `test/Smoke/SymfonyKernelSmokeTest.php` covers what the
   catch-all would hide: that Symfony served anything itself.

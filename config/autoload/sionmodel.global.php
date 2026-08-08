@@ -49,6 +49,19 @@ return [
         'navigation_key' => 'default',
 
         'changes_show_all' => true,
+
+        /**
+         * How many change rows /sm/view-changes reads *and* displays — one number for
+         * both since 2026-08-07, because it used to bound only the display. Set
+         * explicitly rather than left to the controller's default so that the page's
+         * cost is visible here: each row can pull in the entity row it describes, and
+         * with `changes_show_all` on the limit applies per registered table.
+         *
+         * 500 is the previous display limit, kept. The page died at a 512 MB limit
+         * before this was a real bound; at 500 it renders in well under that. Raising it
+         * is a memory decision, not a cosmetic one.
+         */
+        'changes_max_rows' => 500,
         'visits_model' => SchoenstattTable::class,
         'files_directory' => 'data/files',
         'public_files_directory' => 'public/files',

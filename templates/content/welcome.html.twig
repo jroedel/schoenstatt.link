@@ -1,0 +1,49 @@
+{#
+  module/Application/view/application/index/index.phtml, ported.
+
+  Two templates now render this page: this one under the Symfony front controller
+  and the .phtml under the laminas one, which production still serves. See
+  docs/strangler.md.
+
+  The Markdown is a copy of the heredoc in that .phtml, byte for byte — it is the
+  page's content, not code, and test/Integration/ContentPageParityTest pins the two
+  against each other so a later edit to one shows up as a failure rather than as a
+  page that quietly says something different in production.
+
+  The verbatim wrapper is defensive rather than required: no Twig delimiter appears
+  in this prose today, but prose is exactly the kind of text that grows a brace, and
+  with strict_variables on that would be an exception on a live page rather than a
+  typo.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+{% apply markdown %}{% verbatim %}
+## Our mission
+
+Schoenstatt Link is effectively a database for anything related to the Schoenstatt Movement. 
+We hope to encourage the creation of new widely-featured phone applications. We provide a 
+framework for wide, multi-lingual data collection projects. 
+**Please [create an account](user/register) and help us make Schoenstatt accessible to all!**
+
+This site is currently coordinated by Fr. Jeff Roedel, a US Schoenstatt Father, and is maintained by many volunteers. It was developed in communication with, and at the service of the General Presidium and the [International Coordination](https://schoenstatt.com).
+
+## Who are we reaching out to?
+
+We have three main audiences we wish to serve:
+
+1. **Schoenstatt Movement leaders**. By modeling Schoenstatt's organizational structure, we hope to provide a dynamic way to maintain movement contacts throughout the world while respecting everyone's privacy.
+2. **Schoenstatt academics**. Hundreds of thousands of hours have gone into researching our founder, Fr. Joseph Kentenich, yet it is often difficult to access these resources. We hope provide a comprehensive list of [Schoenstatt-related literature](literature) published, especially academic papers. This list links to digital copies of materials and [library catalogue entries](libraries) where physical copies may be found.
+3. **Web and phone application developers**. Our [REST APIs](https://docs.google.com/spreadsheets/d/1yht-M2D9kM-Y-LU84LO2CBZuHGrkIYOCbjJY59FKl7M/edit?usp=sharing) expose direct access to our database. We hope this will encourage programmers to innovate and invest in new Schoenstatt applications.
+
+## How can I help?
+
+1. **Updating data**. Is your [shrine information](/shrines) up-to-date? [Create an account](user/register) to update it.
+2. **Translating**. We try to keep this website and its data available in 5 languages: English, Spanish, German, Portuguese, and Italian. Please email [webmaster@schoenstatt.link](mailto:webmaster@schoenstatt.link) if you can help.
+3. **Programming**. The schoenstatt.link web application is written in PHP in the [Laminas framework](https://getlaminas.org/). Our codebase is hosted privately on bitbucket. Please email [webmaster@schoenstatt.link](mailto:webmaster@schoenstatt.link) if you can help.
+
+{% endverbatim %}{% endapply %}
+</div></div>
+{% endblock %}
