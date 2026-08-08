@@ -130,6 +130,38 @@ Three things to know:
 - **It fails closed.** Anything wrong with the cookie, the header or the file leaves the
   visitor on laminas.
 
+### Switching it from a browser
+
+Administrators get a **Switch kernel** item in the navbar, which sets or clears the
+cookie and drops them back on the page they came from with a flash saying which kernel
+they are now on. `sch_administrator` only — the canary is not a privilege, but a menu
+item that changes how the site renders is not something to offer visitors.
+
+It is a **laminas** route (`kernel-switch`), and that is the design decision worth
+keeping: the Symfony kernel bridges every unported path back to laminas, so one action
+switches the canary *both* ways. A ported route could only ever switch it off — you would
+have no way to turn it on, because you are on laminas when you want to.
+
+Two things it has to handle, both in
+`Application\Controller\IndexController::kernelSwitchAction()`:
+
+- **Consent, first.** Both GDPR strategies call `header_remove('Set-Cookie')` for a
+  visitor who has not accepted cookies, so without consent the toggle *cannot* work. It
+  says so rather than redirecting with a success message and changing nothing.
+- **The Referer, carefully.** The admin is sent back where they came from, and that
+  header is attacker-controlled — so it is followed only when its scheme and host match
+  the current request, and falls back to the home page otherwise.
+
+The cookie is written with **no expiry**, i.e. a session cookie: closing the browser
+reverts to laminas, so nobody leaves themselves on the Symfony kernel for weeks without
+noticing.
+
+`test/Integration/KernelCanaryTest` is what stops the two definitions of the cookie name
+drifting — the PHP constant and the Apache directive — because nothing in PHP reads
+`.htaccess` and a rename on either side has *no symptom at all*: the toggle sets a
+cookie, the admin is redirected, a success message appears, and the front controller
+never changes.
+
 `tools/smoke-prod.sh` runs a canary pass when `SMOKE_PROD_CANARY_COOKIE` is set, and it
 asserts **both directions** — that the cookie reaches the Symfony kernel, *and* that
 requests without it still get laminas. A canary that never engages and a canary that

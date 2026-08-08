@@ -22,12 +22,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 166,
-        "guarded_routes_total": 166,
+        "guarded_routes_existing": 167,
+        "guarded_routes_total": 167,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 43,
-        "route_guard_entries": 168,
+        "route_guard_entries": 169,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 15,
         "rules_from_rule_config": 34,
@@ -35,7 +35,7 @@
         "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 31,
-        "total_routes": 191,
+        "total_routes": 192,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
     },
@@ -3723,6 +3723,29 @@
             "matchable": true,
             "public": true,
             "route": "juser/verify-email"
+        },
+        "kernel-switch": {
+            "anonymous_allowed": false,
+            "assertion": null,
+            "declaration_count": 1,
+            "declarations": [
+                {
+                    "roles": [
+                        "sch_administrator"
+                    ],
+                    "assertion": null
+                }
+            ],
+            "declared_roles": [
+                "sch_administrator"
+            ],
+            "effective_roles": [
+                "sch_administrator"
+            ],
+            "exists_in_router": true,
+            "matchable": true,
+            "public": false,
+            "route": "kernel-switch"
         },
         "libraries": {
             "anonymous_allowed": false,
