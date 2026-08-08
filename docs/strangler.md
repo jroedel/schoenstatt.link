@@ -82,7 +82,7 @@ config key.
 | where | set in | value now |
 |---|---|---|
 | capsule | `docker/apache-vhost.conf` (committed, baked into the image) | `1` |
-| production | `public/.htaccess` (untracked, server-side) | not set → `0` |
+| production | `public/.htaccess` (**tracked and deployed**) | not set → `0`, plus a cookie-gated canary |
 
 So **the capsule runs the Symfony front controller and production does not.**
 That is the whole point of the gate: reverting production is a `SetEnv` edit and
@@ -91,12 +91,59 @@ has its mid-deploy broken window. To A/B locally, edit
 `docker/apache-vhost.conf`, then `docker compose build && docker compose up -d`
 (the vhost is `COPY`d into the image, not mounted).
 
-To flip production on, add to `public/.htaccess` next to the existing
+**`public/.htaccess` is tracked and phploy deploys it** — this file said "untracked,
+server-side" until 2026-08-08 and that was simply wrong. The pre-deploy hook copies the
+server's version into `data/htaccess-backups/` on every run *because* the deploy
+overwrites it, so a hand-edit on the server survives exactly until the next deploy. Edit
+the repo copy.
+
+To flip production on for everyone, add next to the existing
 `SetEnv "APP_ENV" "production"`:
 
 ```apache
 SetEnv "SYMFONY_KERNEL" "1"
 ```
+
+### The canary: verifying in production without flipping it
+
+Since 2026-08-08 `public/.htaccess` carries a cookie gate instead:
+
+```apache
+SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1
+```
+
+A request carrying that cookie gets `App\Kernel`; everyone else keeps getting
+laminas-mvc. That is what makes the ported routes testable against production's real
+data, real ICU (**72.1** here against the capsule's 76.1 — 27 `IntlDateFormatter` call
+sites) and real session store, without a window in which all traffic is on them.
+
+Three things to know:
+
+- **`SetEnv` beats `SetEnvIf`.** mod_env runs *after* mod_setenvif, so adding
+  `SetEnv SYMFONY_KERNEL 0` beside the canary to "make the default explicit" silently
+  disables it, whatever order they appear in. Measured, after making that mistake.
+- **It is a toggle, not a secret.** Anyone can set the cookie. That is safe because both
+  front controllers consult the same ACL — `App\Authorization\RouteGuard` asks about the
+  same `route/<name>` resources `BjyAuthorize\Guard\Route` does, from the same config —
+  so an opted-in visitor reaches nothing they could not already reach. `docs/acl-rules.md`
+  is what guarantees that, not the cookie.
+- **It fails closed.** Anything wrong with the cookie, the header or the file leaves the
+  visitor on laminas.
+
+`tools/smoke-prod.sh` runs a canary pass when `SMOKE_PROD_CANARY_COOKIE` is set, and it
+asserts **both directions** — that the cookie reaches the Symfony kernel, *and* that
+requests without it still get laminas. A canary that never engages and a canary that
+leaks to everyone are both failures, and only the negative checks tell either apart from
+success. The discriminators are `/_health` (a route only Symfony has) and
+`slm_locale=en_US` (a cookie only SlmLocale sets).
+
+What it cannot reach is a signed-in page: the script does no sign-in, so the four guarded
+routes are checked for their *refusal* — the 302 to the sign-in page that
+`App\Authorization\RouteGuard` reproduces from `JUser\View\RedirectionStrategy`. That is
+worth more than it sounds: a ported guarded route that admitted everyone would look
+perfectly healthy, and this is the check that sees it. Verifying the pages themselves
+means browsing them with the cookie set and a moderator session, which is the manual
+step.
 
 **Beware `APP_ENV` when reasoning about either.** `public/.htaccess` sets
 `APP_ENV=production`, and because `AllowOverride All` is on, that wins over the
