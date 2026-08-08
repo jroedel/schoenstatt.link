@@ -1,0 +1,22 @@
+{#
+  module/SionModel/view/sion-model/sion-model/view-changes.phtml, ported.
+
+  The .phtml is four lines: a headTitle, an <h1>, and a partial. The <h1> says
+  "Database edits" while the page title says "View Changes" — reproduced rather than
+  reconciled, because a port is not the place to decide which one is right.
+
+  The table itself is _changes-table.html.twig, kept separate for the same reason the
+  original keeps `changes-table` a partial: SionModel renders it from more than one place
+  (an entity's own change panel), so the next port to need it should extend this file's
+  include rather than copy the table.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Database edits') }}</h1>
+{% include 'sion-model/_changes-table.html.twig' with {
+    'changes': changes,
+    'max_rows': max_rows,
+    'show_entity': show_entity,
+} only %}
+{% endblock %}

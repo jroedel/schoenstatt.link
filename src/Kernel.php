@@ -14,6 +14,7 @@ use App\Controller\HealthController;
 use App\Controller\PhpInfoController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
+use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
 use App\Http\CspListener;
@@ -228,6 +229,13 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // *and* Twig, and its template reaches back for formatEntity through
             // App\Laminas\EntityFormatter.
             DataProblemsController::class => fn (): DataProblemsController => new DataProblemsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The changes log. Reads the merged sion_model config to decide how much of
+            // the database to read, so it needs the bridge as well as Twig.
+            ViewChangesController::class => fn (): ViewChangesController => new ViewChangesController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()

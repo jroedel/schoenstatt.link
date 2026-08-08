@@ -50,15 +50,16 @@ use const ENT_SUBSTITUTE;
  * `formatViewHelper`, which in this application is only `publication` ->
  * formatPublication.
  *
- * This class is the "everything else" branch. `person` and `association` are
- * reproduced already, as the macros in templates/schoenstatt/_entity-format.html.twig,
- * and the dispatch between them lives in that file's `entity()` macro — in Twig
- * because that is the layer that can reach a macro. `role` and `publication` are
- * **not** reproduced and this class refuses them loudly rather than formatting them by
- * the general rules, which would produce plausible but wrong markup. Neither is
- * reachable from the page this was written for: `problem_specifications` across all
- * modules names only book, collection, library, association and person, so the
- * refusal is a guard for the next port and not a live gap.
+ * This class is the "everything else" branch **plus** the two special cases that need
+ * no Twig macro: `role` (formatRole) and `publication` (formatPublication). `person` and
+ * `association` stay out of it, because they were already reproduced as macros for the
+ * shrine tables and a Twig function cannot call a macro — the dispatch to those lives in
+ * that file's `entity()` macro, and this class refuses them so the two lists cannot
+ * silently disagree.
+ *
+ * Adding role and publication is what made /sm/view-changes portable: its entity column
+ * takes whatever type the change row names, and `sch_changes` holds 18,243 publication
+ * and 1,317 role rows.
  *
  * ## Route permission checking is ON in this application
  *
@@ -82,12 +83,12 @@ final class EntityFormatter
      * the label markup and the name composition each of them applies.
      */
     private const SPECIALIZED = [
-        //Schoenstatt\View\Helper\FormatEntity's own switch — reproduced as Twig macros
+        //Schoenstatt\View\Helper\FormatEntity's own switch. These two need a URL built
+        //from more than a single key, and both were already reproduced as Twig macros
+        //for the shrine tables — so the dispatch to them lives in Twig, where a macro
+        //can be called, and this class refuses them.
         'person'      => 'the person() macro in templates/schoenstatt/_entity-format.html.twig',
         'association' => 'the association() macro in templates/schoenstatt/_entity-format.html.twig',
-        //not reproduced anywhere yet
-        'role'        => 'Schoenstatt\View\Helper\FormatEntity\'s `role` branch, which needs the `label` helper',
-        'publication' => 'Books\View\Helper\FormatPublication',
     ];
 
     /** @var array<string, Entity>|null */
@@ -137,6 +138,27 @@ final class EntityFormatter
             ));
         }
 
+        $isDeleted = (bool) ($data['isDeleted'] ?? false);
+
+        //Dispatched before the general path, and **the two are gated differently** —
+        //which is not a subtlety worth smoothing over, because it is visible on the page.
+        //
+        //Schoenstatt\View\Helper\FormatEntity switches on the entity type at the very top
+        //of __invoke(), before anything looks at isDeleted. So a *deleted* role still gets
+        //the role branch, and that branch's pencil defaults to on. SionModel's own
+        //__invoke() is where `! $isDeleted` guards the formatViewHelper deferral, so a
+        //deleted publication falls through to the general path instead.
+        //
+        //Measured, not reasoned: getting this backwards left exactly one row of 500
+        //different from the laminas rendering — a deleted role that had lost its edit
+        //pencil.
+        if ('role' === $entityType) {
+            return $this->formatRole($data, $options);
+        }
+        if ('publication' === $entityType && ! $isDeleted) {
+            return $this->formatPublication($data, $options);
+        }
+
         $spec = $this->entities()[$entityType] ?? null;
         //the original throws unless failSilently, which defaults *on* at every call
         //site in this application
@@ -148,8 +170,7 @@ final class EntityFormatter
             throw new LogicException('Unknown entity type passed: ' . $entityType);
         }
 
-        $isDeleted = (bool) ($data['isDeleted'] ?? false);
-        $options   = $this->defaults($options, $isDeleted);
+        $options = $this->defaults($options, $isDeleted);
 
         $keyField  = self::specString($spec, 'entityKeyField');
         $nameField = self::specString($spec, 'nameField');
@@ -176,6 +197,138 @@ final class EntityFormatter
         }
 
         return $markup;
+    }
+
+    /**
+     * Schoenstatt\View\Helper\FormatEntity's `role` branch.
+     *
+     * Two option names differ from every other branch and are **not** a slip to tidy up:
+     * that switch reads `editPencil` and `showLabel`, while SionModel's general path
+     * reads `displayEditPencil`. So `changes-table.phtml`, which passes
+     * `displayEditPencil`, does *not* turn the pencil off for a role — it falls back to
+     * the default `true`. Reproduced as written; renaming the keys here would change what
+     * the page shows.
+     *
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $options
+     */
+    private function formatRole(array $data, array $options): string
+    {
+        $markup = $this->escape((string) ($data['formattedRoleTitle'] ?? ''));
+
+        if ((bool) ($options['editPencil'] ?? true)) {
+            $id = $data['roleId'] ?? null;
+            if (is_int($id) || is_string($id)) {
+                $markup .= $this->pencil('role', $id);
+            }
+        }
+
+        if ((bool) ($options['showLabel'] ?? true)) {
+            if ((bool) ($data['isMainRole'] ?? false)) {
+                $markup .= '&nbsp;' . $this->label('Main role', 'label-primary');
+            }
+            if ((bool) ($data['isMainContact'] ?? false)) {
+                $markup .= '&nbsp;' . $this->label('Main contact', 'label-info');
+            }
+            if (isset($data['isActive']) && ! $data['isActive']) {
+                $markup .= '&nbsp;' . $this->label('Inactive', 'label-warning');
+            }
+        }
+
+        return $markup;
+    }
+
+    /**
+     * Books\View\Helper\FormatPublication, `display => title` only.
+     *
+     * That is the default and the only mode reachable from a page this side serves:
+     * every other mode (`authors`, `translators`, `edition`, `disambiguatingTitle`) is
+     * chosen by an explicit `display` option, and the two callers here —
+     * changes-table.phtml and data-problems.phtml — pass none. Rather than reproduce four
+     * unreachable branches, an explicit `display` raises, so the first page that needs
+     * one finds out at the call site instead of silently getting the title.
+     *
+     * The five defaults that follow from `display => title`: link on, edit pencil on
+     * (unless the caller says otherwise), hand-checked/data-source/merged icons on,
+     * language and resource labels off.
+     *
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $options
+     */
+    private function formatPublication(array $data, array $options): string
+    {
+        $display = $options['display'] ?? 'title';
+        if ('title' !== $display) {
+            throw new LogicException(sprintf(
+                'Books\View\Helper\FormatPublication\'s "%s" display mode is not reproduced; only '
+                . '"title" is. See App\Laminas\EntityFormatter::formatPublication().',
+                is_string($display) ? $display : 'non-string'
+            ));
+        }
+
+        //the original's own guard, and it comes before everything: too little to show
+        if (! isset($data['publicationId'], $data['title'])) {
+            return '';
+        }
+
+        $title  = (string) $data['title'];
+        $markup = '';
+
+        //link when both halves of the URL are present; the original checks each
+        if (isset($data['identifier'], $data['slug'])) {
+            $markup .= sprintf(
+                '<a href="%s">%s</a>',
+                $this->urls->path('publication', ['sw_id' => $data['identifier'], 'slug' => $data['slug']]),
+                $this->escape($title)
+            );
+        } else {
+            $markup .= $this->escape($title);
+        }
+
+        //`isset($data['identifier'])` only — the permission check lives inside the pencil
+        if ((bool) ($options['displayEditPencil'] ?? true) && isset($data['identifier'])) {
+            $id = $data['identifier'];
+            if (is_int($id) || is_string($id)) {
+                $markup .= $this->pencil('publication', $id);
+            }
+        }
+
+        //three status icons, each a plain truthiness/isset test in the original
+        if (! empty($data['isRevisedWithBookInHand'])) {
+            $markup .= $this->icon('fa-check-circle-o fa-3 text-success', 'Information has been hand checked');
+        }
+        if (isset($data['dataSource'])) {
+            $markup .= $this->icon('fa-database', 'This row comes from an external data source');
+        }
+        if (isset($data['mergedIntoPublicationId'])) {
+            $markup .= $this->icon('fa-sign-in', 'This row has been merged into the main corpus');
+        }
+
+        return $markup;
+    }
+
+    /** The status-icon markup FormatPublication emits, with its translated tooltip. */
+    private function icon(string $classes, string $tooltip): string
+    {
+        return sprintf(
+            '&nbsp;<span class="fa %s" title="%s"></span>',
+            $classes,
+            $this->translate($tooltip)
+        );
+    }
+
+    /**
+     * TwbBundle's label helper, which escapes both the text and the class attribute —
+     * hence the `&#x20;` between the two class names in its output.
+     *
+     * `render()` rather than `__invoke()`: the latter returns **the helper itself** when
+     * handed an empty message, so its return type is `string|TwbBundleAlert` and casting
+     * it would hide that. Every call here passes a literal, so render() is both the
+     * honest entry point and the correctly typed one.
+     */
+    private function label(string $text, string $class): string
+    {
+        return $this->helpers->label()->render($text, $class);
     }
 
     /**
