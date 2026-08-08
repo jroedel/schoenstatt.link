@@ -1,0 +1,11 @@
+{#
+  module/Books/view/books/publications/one-fifty-preguntas.phtml, whose entire body is
+  `readfile("data/publications/one-fifty-preguntas.html")`.
+
+  `document` is a Twig\Markup built by the controller, so it prints unescaped without a
+  `|raw` here. See App\Controller\OneFiftyPreguntasController for why that file is
+  trusted and why a missing one raises rather than rendering an empty page.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}{{ document }}{% endblock %}

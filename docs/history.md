@@ -10,11 +10,55 @@ State reached by 2026-08-04: production runs **PHP 8.4.24** on a current
 Laminas stack with OPcache enabled, master is fully deployed, `composer audit
 --locked` reports zero advisories, and 198 tests run across three suites.
 
-State reached by 2026-08-08: **ten routes ported to the Symfony kernel and
-deployed, dormant** — `SYMFONY_KERNEL` is still unset in production, so every one
-of them continues to render through laminas and turning them on is a `SetEnv` in
-`public/.htaccess`, not a deploy. 737 tests across four suites. See
+State reached by 2026-08-08: **twenty routes ported to the Symfony kernel**, ten of them
+deployed dormant — `SYMFONY_KERNEL` is still unset in production, so every one of them
+continues to render through laminas and turning them on is a `SetEnv` in
+`public/.htaccess`, not a deploy. 802 tests across four suites. See
 [strangler.md](strangler.md) for the mechanism and the route table.
+
+## Symfony strangler, batch 4: ten routes (2026-08-08, not yet deployed)
+
+The public browse surface — `/timeline`, `/blog`, `/blog/posts/{sw_id}/{slug}`, `/music`,
+`/dictionary`, `/dictionary/{inLanguage}`, `/literature/150-preguntas-sobre-schoenstatt` —
+plus three restricted index pages, `/associations`, `/roles` and `/libraries`. Ten routes,
+every one a read-only GET; no form moved, because none can yet.
+
+**The verification became a tool.** `tools/port-baseline.php` is the
+both-front-controllers, five-locale, two-identity diff that batch 3 ran by hand: 300
+responses per capture, raw on disk, normalized at compare time. Batch 4 finished at **257
+of 300 identical**, and every one of the 43 that differ is itemized in strangler.md.
+
+It also corrected the record. "65 of 65 responses identical" was not true as stated —
+whole documents were never identical, because the Twig layout is a reproduction of
+`layout.phtml` rather than a byte copy, and because two things differ between two runs of
+the *same* front controller: the language chooser draws its flag at random, and
+`registerVisit()` bumps a counter the page prints.
+
+**Four defects it found, three of them pre-existing and one live in production:**
+
+- **Every blog post is blank in Spanish, German, Portuguese and Italian.**
+  `show.phtml` passes the whole post body through `translate()`; JTranslate tries to
+  record the miss; `Data too long for column 'phrase'`; the exception fires on
+  `MvcEvent::FINISH` and the assembled body is discarded, leaving a 200 with zero bytes.
+  The ported route does not inherit it, because `finishUp()` is an MVC listener — which is
+  also why a ported route now records no missing phrases at all. Both written up in
+  strangler.md.
+- **Every ported page's `<title>` was English in all five locales.** `headTitle()`
+  translates by default and the Twig layout printed the string verbatim. Fixed in the
+  layout; the dictionary page opts out because it pre-translates, exactly as its `.phtml`
+  disables the translator.
+- **Navigation labels were translated in the wrong domain**, so a signed-in Spanish
+  visitor saw "Administración" where laminas says "Admin". The navigation helper uses
+  `default`, not the page's domain. Only visible signed in — the item is ACL-gated.
+- **`SionTable::registerVisit()` reads `$_SERVER['HTTP_USER_AGENT']` unguarded**, so a
+  request with no `User-Agent` gets three PHP warnings printed above the doctype and loses
+  its `Content-Security-Policy` to "headers already sent". Not fixed — it is a SionModel
+  change — but it is why the capture tool sets a User-Agent.
+
+Two smaller things worth keeping: `SionTable::existsEntity()` is annotated `@return
+boolean` in a file that imports `Laminas\Filter\Boolean`, so static analysis reads it as
+returning that *class*; and `tools/form-regression.php` sends its consent cookie with the
+value `1` where the strategy wants `'true'`, so its sign-in cannot work.
 
 ## Symfony strangler, batch 3: ten routes (2026-08-07/08, DEPLOYED dormant)
 

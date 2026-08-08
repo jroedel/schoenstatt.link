@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use Parsedown;
 use ParsedownExtra;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -40,12 +41,14 @@ use Twig\TwigFilter;
 final class MarkdownExtension extends AbstractExtension
 {
     private ?ParsedownExtra $parser = null;
+    private ?Parsedown $safeParser = null;
 
     /** @return list<TwigFilter> */
     public function getFilters(): array
     {
         return [
             new TwigFilter('markdown', $this->markdown(...), ['is_safe' => ['html']]),
+            new TwigFilter('markdown_safe', $this->markdownSafe(...), ['is_safe' => ['html']]),
         ];
     }
 
@@ -56,5 +59,37 @@ final class MarkdownExtension extends AbstractExtension
         }
 
         return ($this->parser ??= new ParsedownExtra())->text($text);
+    }
+
+    /**
+     * `\Parsedown` with safe mode **on** — not ParsedownExtra, and not the filter above.
+     *
+     * This exists because the blog does it, and because the blog does it *inconsistently*:
+     * `books/blog/show.phtml` builds `new \Parsedown()` and calls `setSafeMode(true)`,
+     * while `books/blog/index.phtml` renders the same column through the `markdown` view
+     * helper, which is a ParsedownExtra with safe mode off. So the identical post is
+     * sanitized on its own page and not on the index that excerpts it.
+     *
+     * Both are reproduced exactly, because reproducing the *rendering* is the contract for
+     * this port and a post containing inline HTML renders differently under the two. It is
+     * worth knowing which way round the risk runs: `markdown` above is documented as being
+     * for template literals only, and the blog index is the first caller to hand it a
+     * database column. The column is written by `blog_contributor`, which is a trusted
+     * role — so this is a pre-existing trust assumption being carried across unchanged,
+     * not a new hole. Tightening it is a content decision for the site owner, and it
+     * belongs in a change that says so rather than inside a porting batch.
+     */
+    public function markdownSafe(?string $text): string
+    {
+        if (null === $text || '' === $text) {
+            return '';
+        }
+
+        if (null === $this->safeParser) {
+            $this->safeParser = new Parsedown();
+            $this->safeParser->setSafeMode(true);
+        }
+
+        return $this->safeParser->text($text);
     }
 }

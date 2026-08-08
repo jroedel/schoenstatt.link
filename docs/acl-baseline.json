@@ -29,12 +29,12 @@
         "roles": 43,
         "route_guard_entries": 169,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 15,
+        "routes_shadowed_by_symfony": 23,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 22,
+        "symfony_routes_acl_checked": 42,
         "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 31,
+        "symfony_served_routes": 51,
         "total_routes": 192,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6540,6 +6540,24 @@
             "access_kind": "open"
         },
         {
+            "laminas_route": "associations",
+            "path": "/associations",
+            "symfony_route": "associations",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/associations",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "blog",
+            "path": "/blog",
+            "symfony_route": "blog",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/blog",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "developers",
             "path": "/developers",
             "symfony_route": "developers",
@@ -6549,12 +6567,66 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "dictionary",
+            "path": "/dictionary",
+            "symfony_route": "dictionary",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/dictionary",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "events",
+            "path": "/timeline",
+            "symfony_route": "events",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/events",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "libraries",
+            "path": "/libraries",
+            "symfony_route": "libraries",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "music",
+            "path": "/music",
+            "symfony_route": "music",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/music",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "privacy",
             "path": "/privacy",
             "symfony_route": "privacy",
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/privacy",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "publications/one-fifty-preguntas",
+            "path": "/literature/150-preguntas-sobre-schoenstatt",
+            "symfony_route": "publications/one-fifty-preguntas",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/one-fifty-preguntas",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "roles",
+            "path": "/roles",
+            "symfony_route": "roles",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/roles",
             "access_kind": "acl"
         },
         {
@@ -7671,6 +7743,66 @@
                 "denial_style": "n/a"
             }
         },
+        "associations": {
+            "path": "/associations",
+            "controller": "App\\Controller\\AssociationsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "associations.locale": {
+            "path": "/{_locale}/associations",
+            "controller": "App\\Controller\\AssociationsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "blog": {
+            "path": "/blog",
+            "controller": "App\\Controller\\BlogController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/blog",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "blog.locale": {
+            "path": "/{_locale}/blog",
+            "controller": "App\\Controller\\BlogController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/blog",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "blog/blog-post": {
+            "path": "/blog/posts/{sw_id}/{slug}",
+            "controller": "App\\Controller\\BlogController::show",
+            "access": {
+                "kind": "acl",
+                "resource": "route/blog/blog-post",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "blog/blog-post.locale": {
+            "path": "/{_locale}/blog/posts/{sw_id}/{slug}",
+            "controller": "App\\Controller\\BlogController::show",
+            "access": {
+                "kind": "acl",
+                "resource": "route/blog/blog-post",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "developers": {
             "path": "/developers",
             "controller": "App\\Controller\\ContentPageController",
@@ -7691,6 +7823,66 @@
                 "denial_style": "html"
             }
         },
+        "dictionary": {
+            "path": "/dictionary",
+            "controller": "App\\Controller\\DictionaryController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/dictionary",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "dictionary.locale": {
+            "path": "/{_locale}/dictionary",
+            "controller": "App\\Controller\\DictionaryController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/dictionary",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "dictionary/inLanguage": {
+            "path": "/dictionary/{inLanguage}",
+            "controller": "App\\Controller\\DictionaryController::inLanguage",
+            "access": {
+                "kind": "acl",
+                "resource": "route/dictionary/inLanguage",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "dictionary/inLanguage.locale": {
+            "path": "/{_locale}/dictionary/{inLanguage}",
+            "controller": "App\\Controller\\DictionaryController::inLanguage",
+            "access": {
+                "kind": "acl",
+                "resource": "route/dictionary/inLanguage",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "events": {
+            "path": "/timeline",
+            "controller": "App\\Controller\\TimelineController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/events",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "events.locale": {
+            "path": "/{_locale}/timeline",
+            "controller": "App\\Controller\\TimelineController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/events",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "health": {
             "path": "/_health",
             "controller": "App\\Controller\\HealthController",
@@ -7699,6 +7891,46 @@
                 "resource": null,
                 "reason": "shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all",
                 "denial_style": "n/a"
+            }
+        },
+        "libraries": {
+            "path": "/libraries",
+            "controller": "App\\Controller\\LibrariesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries.locale": {
+            "path": "/{_locale}/libraries",
+            "controller": "App\\Controller\\LibrariesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "music": {
+            "path": "/music",
+            "controller": "App\\Controller\\MusicController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/music",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "music.locale": {
+            "path": "/{_locale}/music",
+            "controller": "App\\Controller\\MusicController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/music",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "privacy": {
@@ -7717,6 +7949,46 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/privacy",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/one-fifty-preguntas": {
+            "path": "/literature/150-preguntas-sobre-schoenstatt",
+            "controller": "App\\Controller\\OneFiftyPreguntasController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/one-fifty-preguntas",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/one-fifty-preguntas.locale": {
+            "path": "/{_locale}/literature/150-preguntas-sobre-schoenstatt",
+            "controller": "App\\Controller\\OneFiftyPreguntasController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/one-fifty-preguntas",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "roles": {
+            "path": "/roles",
+            "controller": "App\\Controller\\RolesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/roles",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "roles.locale": {
+            "path": "/{_locale}/roles",
+            "controller": "App\\Controller\\RolesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/roles",
                 "reason": null,
                 "denial_style": "html"
             }

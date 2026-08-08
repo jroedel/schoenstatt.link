@@ -1,0 +1,35 @@
+{#
+  module/Books/view/books/libraries/index.phtml.
+
+  `headTitle($headText)` is called with the **untranslated** English string while the
+  `<h1>` right beneath it is `translate($headText)`. So on /es/libraries the browser tab
+  says "Schoenstatt Library System" and the page heading says whatever Spanish the
+  catalogue has. Reproduced — the controller passes the raw string as `page_title` and
+  the heading translates it here.
+
+  The "contact us" paragraph does a `str_replace` on the *translated* sentence to turn
+  two words into a mailto link. That only works when the translation contains the
+  literal English "contact us", so in most locales the link silently disappears. Also
+  reproduced, and also not a thing to fix inside a port.
+
+  That paragraph is the one `|raw` in templates/, and it is load-bearing rather than
+  habitual: the value is a translated sentence with an `<a>` spliced into it, so escaping
+  it would print the anchor as text. The laminas original echoes the same string with no
+  escaping at all. What it costs is that a *translation* of this one sentence is trusted
+  markup — the phrases come from the translation catalogue, which only a
+  `sch_general_moderator` or `translator` can edit, and those roles can already edit page
+  content. Worth knowing about; not worth diverging from the original inside a port.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Schoenstatt Library System') }}</h1>
+<p>{{ translate("The Schoenstatt Library System was developed in the Schoenstatt Fathers' seminary in Santiago, Chile to help with studies, but is made available to the whole Schoenstatt family with 3 objectives:") }}</p>
+<ol>
+  <li>{{ translate("To develop a comprehensive, open, and up-to-date catalog of Schoenstatt literature") }}</li>
+  <li>{{ translate("To help Father Kentenich scholars locate rare books and manuscripts") }}</li>
+  <li>{{ translate("To encourage collaboration within the Schoenstatt family to further our knowledge of Father Kentenich's thinking and mission in the world") }}</li>
+</ol>
+<p>{{ translate("Please contact us if you are willing to help with the project or if you would like to add a library to the catalog.")|replace({'contact us': '<a href="mailto:webmaster@schoenstatt.link">contact us</a>'})|raw }}</p>
+{% include 'books/_library-list.html.twig' %}
+{% endblock %}
