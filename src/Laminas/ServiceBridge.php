@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Laminas;
 
+use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
 use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 
@@ -84,6 +85,27 @@ final class ServiceBridge
         (new ServiceManagerConfig($this->serviceManagerConfig()))->configureServiceManager($services);
         $services->setService('ApplicationConfig', $this->appConfig);
         $services->get('ModuleManager')->loadModules();
+
+        //After loadModules(), because MvcTranslator is defined by the merged module
+        //config and there is nothing to decorate before that. Before anything asks for
+        //it, which nothing has yet — the delegator would throw if the instance already
+        //existed.
+        //
+        //This is the translator half of JTranslate\Module::onBootstrap(), which a
+        //Symfony-served route never runs: without it the translator has no sources and
+        //every translated string on every ported page falls back to its English source.
+        //Measured on production. See App\Laminas\TranslatorConfigurator.
+        //Keyed on the **canonical** class, not on `MvcTranslator`: that name is an
+        //alias for it, and laminas-servicemanager resolves an alias before it looks for
+        //delegators, so one registered under the alias never runs. Measured — the first
+        //attempt used 'MvcTranslator' and silently did nothing. Registering the class
+        //covers every alias pointing at it, `MvcTranslator` and `jtranslate_translator`
+        //included.
+        $services->configure([
+            'delegators' => [
+                MvcI18nTranslator::class => [TranslatorConfigurator::class],
+            ],
+        ]);
 
         return $this->services = $services;
     }

@@ -38,6 +38,7 @@ use App\Controller\ShrinesGeoJsonController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
+use App\Twig\LaminasExtension;
 use App\Locale\Locales;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
@@ -88,6 +89,15 @@ $routes->add('health', new Route('/_health', [
  * class. It merges *under* the two keys above, so a page cannot redeclare its own
  * authorization by accident.
  */
+/**
+ * The module text domain each page's strings live in — the domain JTranslate's dispatch
+ * listener would have set from the laminas controller's namespace. Without it every
+ * phrase that lives only in a module domain renders in English: measured on production,
+ * `/es/shrines` showed "Schoenstatt shrine" where laminas shows "Santuario de
+ * Schoenstatt". See App\Twig\LaminasExtension::translate().
+ */
+$textDomain = static fn (string $domain): array => [LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => $domain];
+
 $locales = Locales::pattern();
 /** @param array<string, mixed> $extra */
 $ported = static function (
@@ -140,7 +150,13 @@ $ported(
 // check costs nothing extra, and if that guard is ever tightened both front
 // controllers tighten together. The laminas route it shadows stays exactly as it was
 // — production still serves it, SYMFONY_KERNEL being unset there.
-$ported('shrines', '/shrines', ShrinesController::class, RouteAccess::guardedBy('route/shrines'));
+$ported(
+    'shrines',
+    '/shrines',
+    ShrinesController::class,
+    RouteAccess::guardedBy('route/shrines'),
+    $textDomain('Schoenstatt')
+);
 
 // The same index over the wayside-shrine associations, ported 2026-08-07. Guarded
 // `['user', 'guest', null]` exactly as `shrines` is, and checked against its own
@@ -154,7 +170,8 @@ $ported(
     'wayside-shrines',
     '/wayside-shrines',
     WaysideShrinesController::class,
-    RouteAccess::guardedBy('route/wayside-shrines')
+    RouteAccess::guardedBy('route/wayside-shrines'),
+    $textDomain('Schoenstatt')
 );
 
 // The first *restricted* route, ported 2026-08-06 — the proof that
@@ -168,7 +185,13 @@ $ported(
 // /admin/maintenance, /admin/literature-maintenance, /admin/translations — are
 // separate routes with their own guards, and a literal path with no trailing-slash
 // variant is what leaves every one of them falling through to `legacy`.
-$ported('admin', '/admin', AdminController::class, RouteAccess::guardedBy('route/admin'));
+$ported(
+    'admin',
+    '/admin',
+    AdminController::class,
+    RouteAccess::guardedBy('route/admin'),
+    $textDomain('Schoenstatt')
+);
 
 // The static content pages, ported 2026-08-07. Five routes, one controller and one
 // template each: on the laminas side these are five actions whose entire body is
@@ -185,10 +208,16 @@ $ported('admin', '/admin', AdminController::class, RouteAccess::guardedBy('route
  * @param list<array{label: string, route: string}> $breadcrumbs
  * @return array<string, mixed>
  */
-$content = static fn (string $template, string $title, array $breadcrumbs = []): array => [
-    ContentPageController::TEMPLATE    => $template,
-    ContentPageController::PAGE_TITLE  => $title,
-    ContentPageController::BREADCRUMBS => $breadcrumbs,
+$content = static fn (
+    string $template,
+    string $title,
+    array $breadcrumbs = [],
+    string $domain = 'Application'
+): array => [
+    ContentPageController::TEMPLATE         => $template,
+    ContentPageController::PAGE_TITLE       => $title,
+    ContentPageController::BREADCRUMBS      => $breadcrumbs,
+    LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => $domain,
 ];
 $home = ['label' => 'Home', 'route' => 'welcome'];
 
@@ -249,7 +278,7 @@ $ported(
     $content('content/submitting-photos.html.twig', 'Submitting photos', [
         ['label' => 'Shrines', 'route' => 'shrines'],
         ['label' => 'Submitting photos', 'route' => 'shrines/submitting-photos'],
-    ])
+    ], 'Schoenstatt')
 );
 
 // The shrine GeoJSON endpoints, ported 2026-08-07 — the first ported routes that
@@ -298,7 +327,8 @@ $ported(
     'sion-model/phpinfo',
     '/sm/phpinfo',
     PhpInfoController::class,
-    RouteAccess::guardedBy('route/sion-model/phpinfo')
+    RouteAccess::guardedBy('route/sion-model/phpinfo'),
+    $textDomain('SionModel')
 );
 
 // SionModel's data-problems list, ported 2026-08-07. Guarded `sch_general_moderator`
@@ -314,7 +344,8 @@ $ported(
     'sion-model/data-problems',
     '/sm/data-problems',
     DataProblemsController::class,
-    RouteAccess::guardedBy('route/sion-model/data-problems')
+    RouteAccess::guardedBy('route/sion-model/data-problems'),
+    $textDomain('SionModel')
 );
 
 // SionModel's changes log, ported 2026-08-08 — the last of the ten in this batch, and
@@ -330,7 +361,8 @@ $ported(
     'sion-model/view-changes',
     '/sm/view-changes',
     ViewChangesController::class,
-    RouteAccess::guardedBy('route/sion-model/view-changes')
+    RouteAccess::guardedBy('route/sion-model/view-changes'),
+    $textDomain('SionModel')
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"

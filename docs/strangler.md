@@ -232,6 +232,26 @@ and everything behind them carry over unchanged, because `LegacyBridge` and
 `HealthController` are plain callables and `App\Container` is only a PSR-11
 container — which is all `ContainerControllerResolver` ever asks for.
 
+## What every `onBootstrap` does, and who reproduces it
+
+A ported route runs no module's `onBootstrap`, and that is the single most productive
+place to look for a defect in this migration: work that lives there is invisibly absent,
+and the page still renders. Audited in full 2026-08-08 — four modules define one:
+
+| module | what `onBootstrap` does | reproduced by |
+|---|---|---|
+| `Application` | attaches `GdprStrategy` | `App\Http\GdprCookieListener` |
+| | builds the DB-derived navigation branches and caches them in APCu | **nothing** — `App\View\SiteChrome` reads the raw `navigation` config, which loses a top-level item lighting up for a database-derived descendant. Documented under "The Twig layer" |
+| `Schoenstatt` | attaches `ModuleRouteListener` | **nothing, and nothing needed** — it rewrites laminas-mvc route matches, which a Symfony-served route does not have |
+| `JUser` | starts the session, prunes pre-Laminas values | `App\Http\SessionListener` |
+| | `GlobalAdapterFeature::setStaticAdapter()` | **nothing** — used only by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, and no ported route renders a form. **A prerequisite for the first form route ported**, which would otherwise get a null adapter from its `NoRecordExists` validator |
+| `JTranslate` | configures the translator: locale, fallback, the DB-report listener, and the file patterns that *are* the translations | `App\Laminas\TranslatorConfigurator` |
+| | sets the `translate`/`formLabel`/… helper text domains per controller module | the `_text_domain` route default, read by `App\Twig\LaminasExtension::translate()` |
+
+Two rows there are still "nothing", and both are deliberate rather than pending: the
+navigation branches, and the static adapter. Neither is reachable from a route ported so
+far; the static adapter becomes a blocker the moment a form is.
+
 ## What a ported route loses
 
 A Symfony-served route never boots laminas-mvc — `LegacyBridge` is what calls
@@ -440,6 +460,34 @@ compile cache is used only when its directory is writable, with `auto_reload` on
 because Twig keys a compiled file by the template's *name*, not its contents — with
 `auto_reload` off, an edited or deployed template is never recompiled.
 
+### Translations, and the text domain
+
+`translate()` in a template goes through `App\Twig\LaminasExtension`, and two things
+about it are not obvious:
+
+1. **The translator is configured by a delegator, not by the extension.**
+   `App\Laminas\TranslatorConfigurator` decorates the translator service and does what
+   `JTranslate\Module::onBootstrap()` does — locale, fallback, the missing-translation
+   reporter, and the `addTranslationFilePattern()` calls that are the only reason any
+   translation exists. Lazy, so `/_health` and the maintenance endpoints pay nothing; and
+   it covers *models* as well as templates, which matters because
+   `SchoenstattTable::nameByLocale` is itself built by calling `translate()`.
+   Register it on the **canonical** `Laminas\Mvc\I18n\Translator`, never on the
+   `MvcTranslator` alias — aliases are resolved before delegators are looked up, so one
+   attached to the alias never runs and fails completely silently.
+2. **A phrase's text domain is per page, and the phrases are genuinely scattered.**
+   laminas sets the `translate` helper's domain to the controller's module namespace, so
+   each ported route declares the equivalent as a `_text_domain` default and
+   `translate()` tries it before `default`. Measured in es_ES: `Shrines` lives *only* in
+   `default`, `Wayside shrines` and `Fr.` *only* in `Schoenstatt`. No single default
+   domain can render a page correctly, which is why the lookup consults two.
+
+`translate()`'s two-domain lookup is a **superset** of laminas' behaviour, not a mirror
+of it — laminas has no cross-domain fallback. It cannot lose a translation laminas finds;
+in principle it could find one laminas misses, which would show as the ported page being
+*more* translated. Verified equal across all five locales; see the both-front-controllers
+procedure below.
+
 ### The MvcEvent helper limitation
 
 `Router` assembles URLs with no MvcEvent, which is the fact the whole layer rests
@@ -601,6 +649,47 @@ after the route moves, the baseline is unobtainable.
 6. Regenerate `docs/acl-rules.md` and `docs/acl-baseline.json`
    (`tools/acl-table.php`) and read the diff.
 
+## Verifying a port against production, across every locale
+
+The technique that found the translation defect, and the one to reach for before
+trusting any port. It exists because two cheaper checks are both insufficient:
+
+- **The capsule cannot compare front controllers.** Its vhost sets
+  `SYMFONY_KERNEL=1` unconditionally, and `SetEnv` beats `SetEnvIf`, so everything there
+  is Symfony-served. A capsule-only "before and after" compares Symfony with Symfony.
+- **English proves almost nothing.** The batch-3 ports were diffed byte-for-byte on
+  `/en/…` and passed, while all four other languages were rendering English source text.
+  In English a missing translation *is* the source string, so the defect showed up as a
+  capitalisation — `Schoenstatt Shrine` → `Schoenstatt shrine` — that nobody would look
+  at twice.
+
+So: drive **both** front controllers over **all five locales**.
+
+Locally, `public/.htaccess` overrides the vhost (`AllowOverride All`), and `SetEnv` beats
+`SetEnvIf`, so appending one line forces laminas:
+
+```apache
+SetEnv SYMFONY_KERNEL 0     # temporary; capture the baseline, then remove
+```
+
+Capture every ported path × `en es de pt it`, remove the line, capture again, and diff.
+Two classes of difference are expected and benign, and a comparison that does not
+normalise them will drown in noise:
+
+- **Guarded routes' 302 bodies.** laminas renders the *entire sign-in page* into the body
+  of its 302 (8,957 bytes); Symfony's `RedirectResponse` sends a 378-byte meta-refresh
+  stub. Same status, same `Location`, and nothing reads a 302 body. Compare status and
+  `Location`, not the body.
+- **HTML entities in translated text.** Twig escapes a `"` inside a translated string to
+  `&quot;`; the laminas `.phtml` echoes it raw. Identical in a browser, and Twig's is the
+  safer of the two. Unescape before comparing.
+
+With those normalised, the batch-3 ports plus the two shrine indexes came to **65 of 65
+responses identical across 5 locales × 13 routes**. On production the same comparison is
+available without any file edit, through the cookie canary above — and that is where it
+should be repeated, because production has translations, ICU 72.1 and five years more
+data than the capsule dump.
+
 ## Routes that are not portable yet, and why
 
 A route can be blocked by something that has nothing to do with the strangler. Recording
@@ -670,7 +759,7 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 - `php composer.phar test` — 729 tests (measured 2026-08-07, after this batch of nine
   ported routes plus the view-changes repair; 631 after the wayside-shrine port, 618
   after the authorization bridge, 551 before it, 527 before the shrines port). Per
-  suite: unit 119, integration 426, fuzz 18, smoke 166.
+  suite: unit 119, integration 426, fuzz 18, smoke 166. (746 after the translator fix.)
 
   That script now passes `-d memory_limit=1G`, as `composer fuzz` always has. Without
   it the *combined* run exhausts 512M in `Books\Form\Publication`'s factory, which
