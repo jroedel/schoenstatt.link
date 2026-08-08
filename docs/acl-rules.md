@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 166 |
-| guarded routes total | 166 |
+| guarded routes existing | 167 |
+| guarded routes total | 167 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 43 |
-| route guard entries | 168 |
+| route guard entries | 169 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 15 |
 | rules from rule config | 34 |
@@ -53,11 +53,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 9 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 31 |
-| total routes | 191 |
+| total routes | 192 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (166 + 25 = 191). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (167 + 25 = 192). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -352,6 +352,7 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `juser/user/edit` | yes | administrator | administrator (1) | no |  |
 | `juser/user/show` | yes | administrator | administrator (1) | no |  |
 | `juser/verify-email` | yes | `null`, guest, user | **everyone (public)** — 43 named roles plus anonymous | yes |  |
+| `kernel-switch` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `libraries` | yes | lib_administrator | lib_administrator (1) | no |  |
 | `libraries/create` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `libraries/library` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |

@@ -41,6 +41,26 @@ return [
                 'route' => 'schoenstatt',
                 'resource' => 'route/schoenstatt',
             ],
+            /**
+             * The Symfony-kernel canary toggle, in the navbar so an administrator can
+             * switch front controllers from whatever page they are on and switch back
+             * from the page they land on.
+             *
+             * `resource` is what hides it from everyone else — both the laminas
+             * navigation helper and App\View\SiteChrome::isPageVisible() filter on it,
+             * so the item is ACL-gated in the same place the route is, and the two
+             * cannot disagree.
+             *
+             * The label does not say which kernel is currently active, because a
+             * navigation label is static config and both layouts render it verbatim.
+             * The action answers that question instead, in the flash message it
+             * redirects with.
+             */
+            [
+                'label' => 'Switch kernel',
+                'route' => 'kernel-switch',
+                'resource' => 'route/kernel-switch',
+            ],
             [
                 'label' => 'Shrines',
                 'route' => 'shrines',

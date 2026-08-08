@@ -21,6 +21,8 @@ use samdark\sitemap\Sitemap;
 use Laminas\View\HelperPluginManager;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use App\Http\KernelCanary;
+use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use function False\true;
 
 class IndexController extends AbstractActionController
@@ -135,6 +137,94 @@ class IndexController extends AbstractActionController
     public function privacyAction()
     {
         return new ViewModel();
+    }
+
+    /**
+     * Toggle the Symfony-kernel canary cookie for the administrator who asked.
+     *
+     * Lives here, on the laminas side, because it has to work under **both** front
+     * controllers: you turn the canary on while laminas is serving you and off while
+     * Symfony is. The Symfony kernel bridges every unported path back to this
+     * application, so one laminas action covers both directions; a Symfony-side route
+     * could only ever switch it off.
+     *
+     * ## Consent is checked first, and that is not a formality
+     *
+     * Both GDPR strategies call `header_remove('Set-Cookie')` for a visitor who has not
+     * accepted cookies — Application\View\GdprStrategy::onFinish() and, on the ported
+     * side, App\Http\GdprCookieListener. So without consent this action *cannot* work:
+     * the Set-Cookie is stripped after it returns and the admin is left clicking a menu
+     * item that does nothing, with no clue why. Saying so is the whole reason the
+     * branch exists.
+     *
+     * ## GET, deliberately
+     *
+     * A GET that changes state invites CSRF, and here the worst outcome is that an
+     * administrator renders pages through the other front controller — no privilege
+     * changes, because both consult the same ACL, and the next click undoes it. A CSRF
+     * token would mean a form and a POST for a debugging toggle whose entire value is
+     * being one click away. The trade is deliberate rather than overlooked.
+     */
+    public function kernelSwitchAction()
+    {
+        $cookies = $this->getRequest()->getCookie();
+
+        if (! KernelCanary::hasConsent($cookies)) {
+            $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)->addMessage(
+                'Accept cookies first — without consent the site strips every Set-Cookie, '
+                . 'so the kernel switch cannot take effect.'
+            );
+
+            return $this->redirect()->toUrl($this->kernelSwitchReturnUrl());
+        }
+
+        if (KernelCanary::isActive($cookies)) {
+            //expire it: back to laminas-mvc, which is what every other visitor gets
+            setcookie(KernelCanary::COOKIE, '', $_SERVER['REQUEST_TIME'] - 42000, '/');
+            $message = 'Legacy kernel: pages now render through Laminas\Mvc\Application, '
+                . 'the same as for every other visitor.';
+        } else {
+            //a session cookie, with no expiry on purpose: closing the browser reverts to
+            //laminas, so an admin cannot leave themselves on the Symfony kernel for weeks
+            //without noticing
+            setcookie(KernelCanary::COOKIE, KernelCanary::VALUE, 0, '/');
+            $message = 'Symfony kernel: pages now render through App\Kernel for you only. '
+                . 'Check /_health — it answers 200 only on the Symfony side.';
+        }
+
+        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)->addMessage($message);
+
+        return $this->redirect()->toUrl($this->kernelSwitchReturnUrl());
+    }
+
+    /**
+     * Where to send the admin back to: the page they came from, but only when it is
+     * ours.
+     *
+     * The Referer is attacker-controllable, so an unchecked redirect back to it is an
+     * open redirect on a route administrators are expected to click. Same scheme and
+     * host as the current request, or the home page.
+     */
+    protected function kernelSwitchReturnUrl()
+    {
+        $request  = $this->getRequest();
+        $referer  = $request->getHeader('Referer');
+        $fallback = $this->url()->fromRoute('welcome');
+
+        if (! $referer) {
+            return $fallback;
+        }
+
+        $target = parse_url((string) $referer->getFieldValue());
+        $here   = $request->getUri();
+        if (! is_array($target) || ! isset($target['host'])) {
+            return $fallback;
+        }
+        if ($target['host'] !== $here->getHost() || ($target['scheme'] ?? null) !== $here->getScheme()) {
+            return $fallback;
+        }
+
+        return (string) $referer->getFieldValue();
     }
 
     public function signInNoCookiesAction()
