@@ -35,6 +35,7 @@ use App\Controller\HealthController;
 use App\Controller\PhpInfoController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
+use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
 use App\Locale\Locales;
@@ -314,6 +315,22 @@ $ported(
     '/sm/data-problems',
     DataProblemsController::class,
     RouteAccess::guardedBy('route/sion-model/data-problems')
+);
+
+// SionModel's changes log, ported 2026-08-08 — the last of the ten in this batch, and
+// the one that needed two other things fixed first. It exhausted a 512 MB limit before it
+// could be characterized (fixed in SionModel), and its entity column formats whatever
+// type each change row names, which meant App\Laminas\EntityFormatter had to stop
+// refusing `publication` and `role` — sch_changes holds 18,243 and 1,317 of them.
+//
+// Guarded `sch_general_moderator, view_changes`. Only the page itself: the entity-level
+// change panel that renders the same partial lives inside laminas' SionController and is
+// not a route.
+$ported(
+    'sion-model/view-changes',
+    '/sm/view-changes',
+    ViewChangesController::class,
+    RouteAccess::guardedBy('route/sion-model/view-changes')
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"

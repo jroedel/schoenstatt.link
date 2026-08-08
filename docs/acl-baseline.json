@@ -29,12 +29,12 @@
         "roles": 43,
         "route_guard_entries": 168,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 14,
+        "routes_shadowed_by_symfony": 15,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 20,
+        "symfony_routes_acl_checked": 22,
         "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 29,
+        "symfony_served_routes": 31,
         "total_routes": 191,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -6589,6 +6589,15 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "sion-model/view-changes",
+            "path": "/sm/view-changes",
+            "symfony_route": "sion-model/view-changes",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sion-model/view-changes",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "wayside-shrines",
             "path": "/wayside-shrines",
             "symfony_route": "wayside-shrines",
@@ -7765,6 +7774,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/sion-model/phpinfo",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/view-changes": {
+            "path": "/sm/view-changes",
+            "controller": "App\\Controller\\ViewChangesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/view-changes",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sion-model/view-changes.locale": {
+            "path": "/{_locale}/sm/view-changes",
+            "controller": "App\\Controller\\ViewChangesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sion-model/view-changes",
                 "reason": null,
                 "denial_style": "html"
             }

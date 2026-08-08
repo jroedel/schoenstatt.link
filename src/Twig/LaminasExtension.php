@@ -9,12 +9,15 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use Laminas\I18n\Translator\TranslatorInterface;
+use IntlDateFormatter;
 use SionModel\Entity\Entity;
+use SionModel\Text\Text;
 use SionModel\Service\EntitiesService;
 use Throwable;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
+use function is_scalar;
 use function is_string;
 use function sprintf;
 
@@ -73,6 +76,8 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('url_object_link', $this->urlObjectLink(...), $html),
             new TwigFunction('edit_pencil', $this->editPencil(...), $html),
             new TwigFunction('format_entity', $this->formatEntity(...), $html),
+            new TwigFunction('short_date', $this->shortDate(...)),
+            new TwigFunction('truncate', $this->truncate(...)),
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
         ];
@@ -211,6 +216,38 @@ final class LaminasExtension extends AbstractExtension
     public function formatEntity(string $entityType, array $data, array $options = []): string
     {
         return $this->entityFormatter()->format($entityType, $data, $options);
+    }
+
+    /**
+     * A date with no time, in the current locale's short form — `dateFormat($d,
+     * IntlDateFormatter::SHORT, IntlDateFormatter::NONE)`, which is the only way the
+     * changes table formats one. Plain text, so Twig escapes it.
+     */
+    public function shortDate(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::SHORT,
+            IntlDateFormatter::NONE
+        );
+    }
+
+    /**
+     * SionModel\Text\Text::truncate, reused rather than reimplemented: it is static,
+     * needs no view, and test/Unit/TextTest already covers its edge cases. The changes
+     * table truncates old and new values to 150 characters.
+     */
+    public function truncate(mixed $text, int $length = 100): string
+    {
+        if (! is_string($text)) {
+            return null === $text ? '' : (string) (is_scalar($text) ? $text : '');
+        }
+
+        return (string) Text::truncate($text, $length);
     }
 
     /**

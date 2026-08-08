@@ -46,6 +46,9 @@ public/index.php
                                        ├─ [/{_locale}]/sm/data-problems
                                        │                 → App\Controller\DataProblemsController
                                        │                       └─ App\Laminas\EntityFormatter
+                                       ├─ [/{_locale}]/sm/view-changes
+                                       │                 → App\Controller\ViewChangesController
+                                       │                       └─ _changes-table.html.twig
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
@@ -436,11 +439,16 @@ subclass switches on the entity type *before* deferring:
 ```
 person       -> formatPerson       ─┐ reproduced as macros in
 association  -> formatAssociation  ─┘ templates/schoenstatt/_entity-format.html.twig
-role         -> its own inline markup            ─┐ not reproduced;
-publication  -> formatPublication (via SionModel) ─┘ format_entity() raises for both
+role         -> its own inline markup            ─┐ reproduced in
+publication  -> formatPublication (via SionModel) ─┘ App\Laminas\EntityFormatter
 everything else -> SionModel\View\Helper\FormatEntity::__invoke()
                      -> App\Laminas\EntityFormatter
 ```
+
+**All four special cases are reproduced now** (2026-08-08), which is what made
+/sm/view-changes portable. The split is by *whether a Twig macro is involved*, not by
+importance: person and association were already macros for the shrine tables, so their
+dispatch has to be in Twig; role and publication need no macro and live in the formatter.
 
 The reproduction is therefore in two layers, and the split is forced rather than
 chosen: the general path is PHP (`App\Laminas\EntityFormatter`, reachable as the
@@ -460,11 +468,19 @@ Three things to know before using it:
   `test/Integration/EntityFormatterTest` walks all 24 specs and fails the day one does
   — which is how `defaultRouteParams` came to be reproduced: it was on that omitted
   list until the test's first run named blog-post, text and composition.
-- **`role` and `publication` raise rather than render.** Formatting them by the general
-  rules would produce plausible, wrong markup on an admin page; a `LogicException`
-  naming the type sends the next porter to the helper they need. Neither is reachable
-  from `/sm/data-problems` — `problem_specifications` names only book, collection,
-  library, association and person.
+- **`role` and `publication` are gated differently on a deleted row**, and this is the
+  one place the two originals disagree. `Schoenstatt\View\Helper\FormatEntity` switches
+  on the type at the very top of `__invoke()`, before anything reads `isDeleted` — so a
+  deleted *role* still gets the role branch, pencil included. SionModel's `__invoke()`
+  puts `! $isDeleted` on its `formatViewHelper` deferral — so a deleted *publication*
+  falls through to the general path. Getting that backwards left exactly one row of 500
+  different from the laminas rendering.
+- **The role branch reads different option names.** `editPencil` and `showLabel`, not
+  `displayEditPencil`. So `changes-table.phtml`, which passes `displayEditPencil`, does
+  **not** turn a role's pencil off. Looks like a typo; is not.
+- **Only `display => title` of FormatPublication is reproduced.** The other four modes
+  are chosen by an explicit option no page this side passes, and raise rather than
+  silently returning a title.
 
 This is also the first port with **no two-sided parity test**, and the reason is worth
 remembering: the laminas helper cannot be driven at all without an MvcEvent, so there
@@ -543,7 +559,7 @@ after the route moves, the baseline is unobtainable.
 A route can be blocked by something that has nothing to do with the strangler. Recording
 those here saves the next porter the rediscovery.
 
-### `sion-model/view-changes` (`/sm/view-changes`) — fixed, still not ported
+### `sion-model/view-changes` (`/sm/view-changes`) — fixed 2026-08-07, ported 2026-08-08
 
 **The page was dead** until 2026-08-07 and nobody noticed, because it sits behind
 `sch_general_moderator`:
@@ -572,15 +588,27 @@ collector at 500 rows per table — against a 512 MB limit. 1000 per table would
 352 MB, so 500 is the number with headroom rather than an arbitrary one.
 `test/Smoke/ViewChangesSmokeTest` guards all of it.
 
-**It is still not ported, and the remaining blocker is a different one.** The page
-formats each change's entity through `formatEntity`, and the entity type comes from the
-data — `sch_changes` holds 18,243 `publication` rows and 1,317 `role` rows, which are
-exactly the two types `App\Laminas\EntityFormatter` refuses (see above). Porting it
-means reproducing `Books\View\Helper\FormatPublication` and the `role` branch of
-`Schoenstatt\View\Helper\FormatEntity` first. That is a bounded, mechanical job, and it
-is the next thing to do if this page is wanted on the Symfony side.
+**Then it was ported**, once `App\Laminas\EntityFormatter` stopped refusing
+`publication` and `role`: the entity column formats whatever type each change row names,
+and `sch_changes` holds 18,243 and 1,317 of them.
 
-Its sibling `sion-model/auto-fix-data-problems` is a separate matter again: it is
+Verifying it needed a trick worth reusing. The newest 500 changes in the capsule dump are
+*all* `book` rows, so the default view exercises only the general path and would have
+proved nothing about the two new branches. Pointing `changes_model` at
+`PublicationsTable` and then `SchoenstattTable` — with `changes_show_all` off — makes the
+page render those types instead, and all three renderings were captured from laminas
+before the route moved and compared byte for byte against the ported ones:
+
+| view | laminas bytes | result |
+|---|---|---|
+| default, all tables (500 rows, 13 date groups) | 202,411 | identical |
+| `changes_model = PublicationsTable` (453 hand-checked, 88 data-source, 86 merged icons) | — | identical |
+| `changes_model = SchoenstattTable` (roles with labels, associations, persons) | — | identical |
+
+Remember to put `changes_show_all`/`changes_model` back, and to clear `data/config/`
+either way — the merged config is cached there and an edit looks like it did nothing.
+
+`sion-model/auto-fix-data-problems` remains unported and is a separate matter: it is
 POST-and-CSRF, and there is no form layer on the Symfony side yet.
 
 **A note on the fetch/display ratio, for whoever tunes this next.** With

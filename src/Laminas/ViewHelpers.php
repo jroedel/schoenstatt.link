@@ -7,11 +7,13 @@ namespace App\Laminas;
 use BjyAuthorize\View\Helper\IsAllowed;
 use JTranslate\View\Helper\Flag;
 use JUser\View\Helper\ZfcUserDisplayName;
+use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
 use Laminas\View\HelperPluginManager;
 use SionModel\View\Helper\Email;
 use SionModel\View\Helper\FormatUrlObject;
 use SionModel\View\Helper\Telephone;
+use TwbBundle\View\Helper\TwbBundleLabel;
 
 /**
  * The laminas view helpers a Symfony-served route may reuse — and, by being the
@@ -92,6 +94,37 @@ final class ViewHelpers
     {
         /** @var FlashMessenger $helper */
         $helper = $this->helpers()->get('flashMessenger');
+
+        return $helper;
+    }
+
+    /**
+     * TwbBundle's Bootstrap label — `<span class="label-info label">…</span>`.
+     *
+     * On the allowlist for the same reason `flag` is: it is real logic (a translator
+     * domain, and escaping of both the text and the class attribute, which is why the
+     * space in the class arrives as `&#x20;`) and it was measured to run with no
+     * MvcEvent. Reproducing it would mean copying that escaping by hand and getting the
+     * entity right, on markup that appears beside a role on the changes page.
+     */
+    /**
+     * Laminas' Intl date formatter. Reaches ext/intl and \Locale::getDefault() and
+     * nothing else — no MvcEvent — and reproducing it would mean re-deriving the
+     * IntlDateFormatter pattern per locale, which is exactly the kind of thing to reuse
+     * rather than copy.
+     */
+    public function dateFormat(): DateFormat
+    {
+        /** @var DateFormat $helper */
+        $helper = $this->helpers()->get('dateFormat');
+
+        return $helper;
+    }
+
+    public function label(): TwbBundleLabel
+    {
+        /** @var TwbBundleLabel $helper */
+        $helper = $this->helpers()->get('label');
 
         return $helper;
     }

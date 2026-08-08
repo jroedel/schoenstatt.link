@@ -30,9 +30,18 @@ use function substr_count;
  * which only an HTTP request can observe — the page returned 200 with a fatal-error
  * fragment for a body, so a status assertion alone would have passed throughout.
  *
- * The route is still served by laminas: getting the page working again is not the same
- * change as porting it, and it was never portable while it could not render. See
- * docs/strangler.md.
+ * **The route is now served by Symfony** (ported 2026-08-08). Fixing the page and porting
+ * it were two separate changes in that order, and they had to be: a port is verified by
+ * comparing its rendering against the laminas one, and there was no laminas rendering
+ * while the page exhausted memory. Porting additionally needed
+ * App\Laminas\EntityFormatter to stop refusing `publication` and `role`, which the
+ * entity column meets constantly — sch_changes holds 18,243 and 1,317 of them.
+ *
+ * The three renderings were captured from laminas before the route moved and compared
+ * byte for byte against the ported ones: the default all-tables view (500 rows, 13 date
+ * groups), and — by pointing `changes_model` at PublicationsTable and then
+ * SchoenstattTable — one view dominated by publications and one containing roles,
+ * associations and persons. All three identical. See docs/strangler.md.
  */
 class ViewChangesSmokeTest extends SmokeTestCase
 {
@@ -58,10 +67,19 @@ class ViewChangesSmokeTest extends SmokeTestCase
         $this->signIn($jar, ['sch_general_moderator']);
 
         $started  = microtime(true);
-        $response = $this->get('/en/sm/view-changes', false, $jar);
+        $response = $this->request('GET', '/en/sm/view-changes', [], false, $jar);
         $elapsed  = (microtime(true) - $started) * 1000;
 
         self::assertSame(200, $response['status']);
+
+        //the discriminator every ported route needs: laminas sends
+        //`Set-Cookie: slm_locale=en_US` on every response and a ported route never does,
+        //so without this the assertions below would pass against the laminas page too
+        self::assertStringNotContainsString(
+            'slm_locale=en_US',
+            $response['headers']['set-cookie'] ?? '',
+            'a slm_locale cookie means laminas-mvc served this, not the ported route'
+        );
 
         //the discriminator that matters: the old failure *was* a 200, with a fatal-error
         //fragment where the page should be
@@ -105,13 +123,42 @@ class ViewChangesSmokeTest extends SmokeTestCase
         self::assertLessThan(2_000_000, strlen($body), 'the response grew by an order of magnitude');
     }
 
-    /** Still guarded, and still by laminas — this page has not been ported. */
-    public function testItIsStillGuarded(): void
+    /** Anonymous: the sign-in redirect App\Authorization\Denial reproduces. */
+    public function testAnAnonymousVisitorIsRedirectedToSignIn(): void
     {
         $response = $this->get('/en/sm/view-changes');
 
         self::assertSame(302, $response['status']);
         self::assertStringEndsWith('/en/user/login?redirect=/en/sm/view-changes', $response['redirect']);
+        self::assertStringNotContainsString('Database edits', $response['body'], 'the refusal leaked the page');
+    }
+
+    /**
+     * Signed in without the role: 403, not another redirect. The guard reads
+     * `route/sion-model/view-changes`, which admits sch_general_moderator and
+     * view_changes — sch_moderator is neither.
+     */
+    public function testASignedInVisitorWithoutTheRoleGetsForbidden(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar, ['sch_moderator']);
+
+        $response = $this->get('/en/sm/view-changes', false, $jar);
+
+        self::assertSame(403, $response['status']);
+        self::assertStringNotContainsString('Database edits', $response['body']);
+    }
+
+    /** The unprefixed form redirects the way SlmLocale does, before the guard is reached. */
+    public function testTheUnprefixedFormRedirectsToThePrefixedOne(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar, ['sch_general_moderator']);
+
+        $response = $this->get('/sm/view-changes', false, $jar);
+
+        self::assertSame(302, $response['status']);
+        self::assertStringEndsWith('/en/sm/view-changes', $response['redirect']);
     }
 
     protected function tearDown(): void

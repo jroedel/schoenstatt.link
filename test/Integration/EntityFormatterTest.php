@@ -55,10 +55,11 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *     and `defaultRouteParams` branches. No entity spec in this application sets any of
  *     them, so they are not reproduced — and the day one does, this fails instead of a
  *     link silently disappearing from an admin page.
- *  2. **The specialized types are refused, loudly.** person, association, role and
- *     publication are formatted by other helpers in laminas. Two are reproduced as Twig
- *     macros; two are not reproduced at all. Formatting any of them by the general
- *     rules would produce plausible, wrong markup, so `format()` raises.
+ *  2. **The macro-backed types are refused, loudly.** person and association are
+ *     formatted by other laminas helpers and were reproduced as Twig macros, so
+ *     formatting them by the general rules would produce plausible, wrong markup and
+ *     `format()` raises instead. role and publication are the two special cases that need
+ *     no macro; they have their own branches here and are asserted to *work*.
  *  3. **The Twig dispatcher covers every type the formatter refuses.** The switch in
  *     templates/schoenstatt/_entity-format.html.twig and the SPECIALIZED list in the
  *     formatter are two lists that have to agree, in different languages.
@@ -77,8 +78,15 @@ class EntityFormatterTest extends TestCase
      */
     private const UNREPRODUCED_BRANCHES = ['showRouteParams', 'editRouteParams'];
 
-    /** Types laminas formats with a helper other than SionModel's general path. */
-    private const SPECIALIZED = ['person', 'association', 'role', 'publication'];
+    /**
+     * Types this class refuses, because their laminas formatting was reproduced as a Twig
+     * *macro* (for the shrine tables) and a Twig function cannot call a macro. The other
+     * two special cases — role and publication — need no macro and live in the formatter.
+     */
+    private const SPECIALIZED = ['person', 'association'];
+
+    /** Special cases the formatter handles itself, each with its own branch. */
+    private const OWN_BRANCHES = ['role', 'publication'];
 
     private static ?ServiceBridge $bridge = null;
 
@@ -169,7 +177,119 @@ class EntityFormatterTest extends TestCase
         return (bool) (new ViewHelpers($this->bridge()))->isAllowed()->__invoke('route/' . $route);
     }
 
-    /** Each specialized type is refused rather than formatted by the wrong rules. */
+    /**
+     * role and publication are dispatched to their own branches, not refused and not sent
+     * down the general path. Both appear in sch_changes (18,243 and 1,317 rows), so this
+     * is what /sm/view-changes depends on.
+     */
+    #[DataProvider('ownBranchTypes')]
+    public function testTheFormatterHandlesItsOwnSpecialCases(string $entityType): void
+    {
+        self::assertTrue($this->formatter()->handles($entityType));
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function ownBranchTypes(): array
+    {
+        $cases = [];
+        foreach (self::OWN_BRANCHES as $type) {
+            $cases[$type] = [$type];
+        }
+
+        return $cases;
+    }
+
+    /**
+     * The role branch reads **`editPencil`**, not `displayEditPencil`, and `showLabel` —
+     * Schoenstatt\View\Helper\FormatEntity's switch uses different option names from
+     * SionModel's general path. That is why changes-table.phtml, which passes
+     * `displayEditPencil`, does not turn a role's pencil off. Pinned because it looks
+     * exactly like a typo worth "fixing".
+     */
+    public function testTheRoleBranchUsesItsOwnOptionNames(): void
+    {
+        $formatter = $this->formatter();
+        $role      = ['formattedRoleTitle' => 'Diocesan coordinator', 'roleId' => 1468];
+
+        //the general path's key is ignored here: the pencil stays on
+        $withGeneralKey = $formatter->format('role', $role, ['displayEditPencil' => false]);
+        self::assertStringContainsString('PENCIL', $withGeneralKey, 'displayEditPencil must not reach the role branch');
+
+        //its own key does turn it off
+        $withOwnKey = $formatter->format('role', $role, ['editPencil' => false]);
+        self::assertStringNotContainsString('PENCIL', $withOwnKey);
+    }
+
+    /**
+     * A *deleted* role still gets the role branch, while a deleted publication does not
+     * get the publication branch. The asymmetry is the original's: Schoenstatt's switch
+     * runs above any isDeleted test, SionModel's formatViewHelper deferral runs below one.
+     * Getting it wrong cost exactly one row of 500 against the laminas rendering.
+     */
+    public function testDeletedRowsFollowTheOriginalsAsymmetry(): void
+    {
+        $formatter = $this->formatter();
+
+        $deletedRole = $formatter->format(
+            'role',
+            ['formattedRoleTitle' => 'Role Id: 269', 'roleId' => 269, 'isDeleted' => true],
+            ['displayEditPencil' => false]
+        );
+        self::assertStringContainsString('PENCIL', $deletedRole, 'a deleted role keeps the role branch, pencil and all');
+
+        //a deleted publication falls through to the general path, which has no status
+        //icons — the publication branch's hand-checked marker is the discriminator
+        $deletedPublication = $formatter->format('publication', [
+            'publicationId'           => 1,
+            'title'                   => 'A title',
+            'isRevisedWithBookInHand' => true,
+            'isDeleted'               => true,
+        ]);
+        self::assertStringNotContainsString('fa-check-circle-o', $deletedPublication);
+    }
+
+    /**
+     * The publication branch's three status icons, each independently switched by the row.
+     * They are the visible part of that branch — 453 hand-checked, 88 data-source and 86
+     * merged icons in the 500 rows this was verified against.
+     */
+    public function testThePublicationBranchRendersItsStatusIcons(): void
+    {
+        $formatter = $this->formatter();
+        $base      = ['publicationId' => 1, 'title' => 'A title'];
+
+        $plain = $formatter->format('publication', $base);
+        foreach (['fa-check-circle-o', 'fa-database', 'fa-sign-in'] as $icon) {
+            self::assertStringNotContainsString($icon, $plain);
+        }
+
+        $all = $formatter->format('publication', $base + [
+            'isRevisedWithBookInHand' => true,
+            'dataSource'              => 'somewhere',
+            'mergedIntoPublicationId' => 7,
+        ]);
+        foreach (['fa-check-circle-o', 'fa-database', 'fa-sign-in'] as $icon) {
+            self::assertStringContainsString($icon, $all);
+        }
+    }
+
+    /**
+     * Only `display => title` is reproduced, and the other four modes raise rather than
+     * quietly returning a title. No page this side serves passes `display`, so the guard
+     * is for the next one that does.
+     */
+    public function testAnUnreproducedPublicationDisplayModeRaises(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('authors');
+        $this->formatter()->format(
+            'publication',
+            ['publicationId' => 1, 'title' => 'A title'],
+            ['display' => 'authors']
+        );
+    }
+
+    /** Each macro-backed type is refused rather than formatted by the wrong rules. */
     #[DataProvider('specializedTypes')]
     public function testTheGeneralPathRefusesASpecializedType(string $entityType): void
     {
@@ -260,14 +380,18 @@ class EntityFormatterTest extends TestCase
         $helpers = new ViewHelpers($bridge);
         $urls    = new RouteUrl($bridge, '');
 
-        //the two closures the formatter takes: in production they come from
-        //App\Twig\LaminasExtension, and here they are only reached by tests that render
+        //The three closures the formatter takes. In production they come from
+        //App\Twig\LaminasExtension; here the two pencil renderers return a marker rather
+        //than '' so that "was the pencil emitted?" is answerable — several assertions
+        //above turn on exactly that, and a stub returning an empty string would make them
+        //pass no matter what. The translator is identity, so a tooltip comes back as its
+        //untranslated source string.
         return new EntityFormatter(
             $bridge,
             $helpers,
             $urls,
-            static fn (string $type, int|string|null $id): string => '',
-            static fn (string $route, array $params): string => '',
+            static fn (string $type, int|string|null $id): string => "PENCIL($type:$id)",
+            static fn (string $route, array $params): string => 'PENCIL(' . $route . ')',
             static fn (string $message): string => $message
         );
     }
