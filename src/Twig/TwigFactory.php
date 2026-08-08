@@ -98,7 +98,7 @@ final class TwigFactory
                 : new ForgivingCache(new FilesystemCache($cacheDir, FilesystemCache::FORCE_BYTECODE_INVALIDATION)),
             'auto_reload'      => true,
         ]);
-        $twig->addExtension(new LaminasExtension($laminas, $helpers, $urls));
+        $twig->addExtension(new LaminasExtension($laminas, $helpers, $urls, $requests));
         $twig->addExtension(new ChromeExtension(new SiteChrome($laminas, $helpers, $urls), $requests, $nonce));
         $twig->addExtension(new MarkdownExtension());
 
