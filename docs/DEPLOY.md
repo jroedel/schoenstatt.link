@@ -56,6 +56,31 @@ the capsule verifies before the rung lands.
 Also copy the per-version `php.ini` across (see Server facts below) — the new
 version reads a different file.
 
+## The Symfony-kernel canary
+
+`public/.htaccess` carries `SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1`, so
+a request with that cookie is served by the Symfony kernel and everyone else stays on
+laminas-mvc. It is deployed with the file — nothing to enable by hand.
+
+To have the post-deploy smoke run exercise it, add the cookie to the hook's environment
+in `phploy.ini` (beside `SMOKE_PROD_CACHE_KEY`):
+
+```
+post-deploy[] = "SMOKE_PROD_CACHE_KEY=… SMOKE_PROD_CANARY_COOKIE='sl_symfony_canary=1' bash tools/smoke-prod.sh"
+```
+
+That adds ~17 checks and asserts **both** directions: that the cookie reaches the Symfony
+kernel, and that traffic without it still gets laminas. Leaving the variable unset skips
+the whole block, which is the default.
+
+Checking a *signed-in* ported page is still manual and is the one thing the canary buys
+that a global flip could not: set the cookie in your browser, sign in as a moderator, and
+load `/en/sm/view-changes`, `/en/sm/data-problems`, `/en/sm/phpinfo` and `/en/admin`.
+Clear the cookie to go back to laminas.
+
+**Never add `SetEnv SYMFONY_KERNEL 0` beside the canary.** mod_env runs after
+mod_setenvif, so it wins regardless of order and the canary stops working silently.
+
 ## The deploy
 
 ```bash

@@ -47,6 +47,27 @@ RewriteRule ^(.*) - [E=BASE:%1]
 RewriteRule ^(.*)$ %{ENV:BASE}index.php [L]
 SetEnv "APP_ENV" "production"
 
+# Symfony-kernel canary — see docs/strangler.md.
+#
+# Absent by default, so every visitor keeps getting Laminas\Mvc\Application
+# exactly as they always have. A request carrying this cookie gets App\Kernel
+# instead, which is how the ported routes get exercised against production's real
+# data, real ICU and real session store without a window where all traffic is on
+# them.
+#
+# **Not a secret and not a security boundary.** It is an opt-in toggle anyone can
+# set, and that is safe because both front controllers enforce the *same* ACL:
+# App\Authorization\RouteGuard asks about the same `route/<name>` resources
+# BjyAuthorize\Guard\Route does, from the same config, so an opted-in visitor
+# reaches nothing they could not already reach. If it ever stops being true that
+# the two agree, this line is not what protects you — docs/acl-rules.md is.
+#
+# **Do not add `SetEnv SYMFONY_KERNEL 0` beside this** to make the default
+# explicit. mod_env runs *after* mod_setenvif, so a SetEnv wins over this line
+# regardless of the order they appear in, and the canary silently stops working.
+# Measured 2026-08-08, after exactly that mistake.
+SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1
+
 # compress text, html, javascript, css, xml, json:
 <IfModule deflate_module>
     # Enable compression for the following file types.
