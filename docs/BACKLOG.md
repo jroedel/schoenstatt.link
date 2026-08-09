@@ -151,12 +151,25 @@ readability — the destination is **Symfony**, reached gradually:
   cache-size work ([caching.md](caching.md)), but two expunges were observed
   within hours on deploy day — still worth the one ticket.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
-- [ ] **Flip `SYMFONY_KERNEL=1` in production's `.htaccess`** once the capsule has
-  soaked. The code is deployed either way; the flag is what activates it, and
-  reverting is removing the line plus an Apache reload — no deploy. Watch for:
-  doubled or missing `Set-Cookie` on sign-in, `Cache-Control` on authenticated
-  pages, and the sitemap route's gzip. All three are covered by tests, but the
-  capsule is not behind a TLS-terminating proxy and production is.
+- [ ] **Flip `SYMFONY_KERNEL=1` in production's `.htaccess`** — now one added line, and
+  everything around it is prepared (2026-08-09). The line, the ordering rule, the two
+  checklists and the three rollbacks are in
+  [DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally); do not write it as
+  `SetEnv`, and do not write it below the cookie overrides.
+  - The three things this item said to watch for are now **checked against production**
+    by `tools/smoke-prod.sh` on every deploy, on a bridged page and therefore behind the
+    TLS-terminating proxy the capsule lacks: doubled `Set-Cookie`, invented
+    `Cache-Control`, and the sitemap's gzip. All three passed on 2026-08-09.
+  - What prep added beyond that: the `sl_symfony_canary=0` escape hatch back to laminas
+    (deployed ahead of the flip so it is exercised before it is the only way out), the
+    navbar toggle rewritten to offer whichever kernel you are not on so it needs no edit
+    on flip day, and the configured error-reporting pipeline wired into `App\Kernel` —
+    without which every failure on a ported route would have been recorded and never
+    notified for all traffic rather than just the canary's.
+  - **Known and accepted at the flip:** ported pages stop contributing missing phrases to
+    `/admin/translations` (the `MvcEvent::FINISH` listener nothing reproduces — see the
+    bounding item below), and the unprefixed form of a guarded path redirects with
+    `?redirect=/roles` instead of `?redirect=/en/roles` (the listener item below).
   - While the flag is off, **production and the capsule run different front
     controllers**. That is deliberate, and it is also the one thing to remember
     before concluding anything from a local reproduction.
@@ -200,8 +213,10 @@ readability — the destination is **Symfony**, reached gradually:
 
 - [ ] **Flip `SYMFONY_KERNEL` globally** — now the gate on the v3 API being usable at
   all, since agents will not send the canary cookie. v3 and `association-edit` are
-  deployed and verified through the canary (2026-08-09); everything else about the flip
-  is unchanged from the strangler plan.
+  deployed and verified through the canary (2026-08-09). Preparation landed the same day;
+  the remaining work is the one-line commit and the checklists, both under
+  [DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally). Tracked as the "Now"
+  item of the same name — this entry is the *why*, that one is the *how*.
 
 - [ ] **More form routes, now that the form layer exists.** `src/Form/BootstrapFormRenderer`
   landed with `association-edit` (2026-08-09) and reproduces TwbBundle's markup
@@ -584,10 +599,10 @@ readability — the destination is **Symfony**, reached gradually:
   the right route *and* granting it, so it belongs with the item above.
 - [ ] Sweep legacy `Zend\*` strings from the merged runtime config as the
   remaining vendor modules are replaced.
-- [ ] Re-track `public/.htaccess` (or a `.htaccess.dist`) — untracked,
-  hand-edited server-side state since 2017. Now more than tidiness: it is where
-  `SYMFONY_KERNEL` gets set (see [strangler.md](strangler.md)), so the switch
-  between front controllers lives in a file no commit can describe.
+- [x] ~~Re-track `public/.htaccess`~~ — **done 2026-08-08**: the file is tracked and
+  phploy deploys it, which is what makes the front-controller switch reviewable and the
+  flip a commit rather than a hand-edit. `test/Integration/KernelCanaryTest` now reads it
+  as a fixture. This entry stays only for the measurement below it.
   - Found 2026-08-05 while wiring that flag: because `AllowOverride All` is on,
     `.htaccess`'s `SetEnv "APP_ENV" "production"` **wins inside the capsule too**,
     which makes `docker/apache-vhost.conf`'s `SetEnv APP_ENV "development"` dead

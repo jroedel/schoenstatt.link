@@ -47,26 +47,56 @@ RewriteRule ^(.*) - [E=BASE:%1]
 RewriteRule ^(.*)$ %{ENV:BASE}index.php [L]
 SetEnv "APP_ENV" "production"
 
-# Symfony-kernel canary — see docs/strangler.md.
+# ---------------------------------------------------------------------------
+# Which front controller serves this request — see docs/strangler.md.
 #
-# Absent by default, so every visitor keeps getting Laminas\Mvc\Application
-# exactly as they always have. A request carrying this cookie gets App\Kernel
-# instead, which is how the ported routes get exercised against production's real
-# data, real ICU and real session store without a window where all traffic is on
-# them.
+# public/index.php branches on SYMFONY_KERNEL: unset or "0" is the
+# Laminas\Mvc\Application entry point that has always been here, "1" is
+# App\Kernel with a catch-all route bridging every unported path back to it.
 #
-# **Not a secret and not a security boundary.** It is an opt-in toggle anyone can
-# set, and that is safe because both front controllers enforce the *same* ACL:
-# App\Authorization\RouteGuard asks about the same `route/<name>` resources
-# BjyAuthorize\Guard\Route does, from the same config, so an opted-in visitor
-# reaches nothing they could not already reach. If it ever stops being true that
-# the two agree, this line is not what protects you — docs/acl-rules.md is.
+# Three rules govern this block, each of them measured rather than assumed:
 #
-# **Do not add `SetEnv SYMFONY_KERNEL 0` beside this** to make the default
-# explicit. mod_env runs *after* mod_setenvif, so a SetEnv wins over this line
-# regardless of the order they appear in, and the canary silently stops working.
-# Measured 2026-08-08, after exactly that mistake.
+# 1. **The site-wide default comes first, the per-visitor overrides after it.**
+#    mod_setenvif evaluates its directives top to bottom and the *last* match
+#    wins. Put an override above the default and the default silently overwrites
+#    it — the cookie is then dead with no symptom at all. Probed 2026-08-09: with
+#    the order reversed, a request carrying sl_symfony_canary=0 still came out
+#    with SYMFONY_KERNEL=1.
+#
+# 2. **Never express the default with `SetEnv`.** mod_env runs *after* the whole
+#    of mod_setenvif, so a `SetEnv SYMFONY_KERNEL` beats every line here whatever
+#    the file order, and both cookies stop working. Measured 2026-08-08, after
+#    exactly that mistake. test/Integration/KernelCanaryTest fails on it.
+#
+# 3. **Neither cookie is a secret or a security boundary.** Anyone can set
+#    either, and that is safe because both front controllers enforce the *same*
+#    ACL: App\Authorization\RouteGuard asks about the same `route/<name>`
+#    resources BjyAuthorize\Guard\Route does, from the same config, so an
+#    opted-in visitor reaches nothing they could not already reach. If that ever
+#    stops being true, these lines are not what protects you — docs/acl-rules.md
+#    is.
+#
+# THE GLOBAL FLIP GOES HERE, as one line above the two overrides:
+#
+#     SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1
+#
+# While it is absent every visitor gets laminas-mvc and the opt-in cookie below
+# is the only way to reach App\Kernel. docs/DEPLOY.md holds the procedure and the
+# rollback.
+
+# Opt *in* to App\Kernel for one visitor. Before the flip this is the canary that
+# exercises the ported routes against production's real data, real ICU and real
+# session store. After it, it is what pins an administrator to the new kernel
+# even while an incident has the default rolled back.
 SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1
+
+# Opt back *out* to laminas-mvc for one visitor. A no-op until the flip, and
+# deployed ahead of it deliberately: it makes the flip one added line rather than
+# an edit plus an addition, and it means the escape hatch has been exercised
+# before it is the only one left. Administrators reach both through the
+# **Switch kernel** navbar item, which offers whichever kernel they are not on.
+SetEnvIf Cookie "sl_symfony_canary=0" SYMFONY_KERNEL=0
+# ---------------------------------------------------------------------------
 
 # compress text, html, javascript, css, xml, json:
 <IfModule deflate_module>

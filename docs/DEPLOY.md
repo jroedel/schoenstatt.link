@@ -102,11 +102,19 @@ the capsule verifies before the rung lands.
 Also copy the per-version `php.ini` across (see Server facts below) — the new
 version reads a different file.
 
-## The Symfony-kernel canary
+## The two front controllers, and the cookies that override them
 
-`public/.htaccess` carries `SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1`, so
-a request with that cookie is served by the Symfony kernel and everyone else stays on
-laminas-mvc. It is deployed with the file — nothing to enable by hand.
+`public/.htaccess` picks one front controller per request, from a site-wide default plus
+two per-visitor overrides. It is deployed with the file — nothing to enable by hand.
+
+| cookie | front controller | what it is for |
+|---|---|---|
+| *(none)* | the site default — **laminas-mvc today** | every visitor and every agent |
+| `sl_symfony_canary=1` | `App\Kernel` | verifying ported routes against production before the flip |
+| `sl_symfony_canary=0` | `Laminas\Mvc\Application` | the way back for one person after the flip |
+
+Both overrides are deployed now, so the global flip is one *added* line rather than an
+edit; see "Flipping the Symfony kernel on globally" below.
 
 To have the post-deploy smoke run exercise it, add the cookie to the hook's environment
 in `phploy.ini` (beside `SMOKE_PROD_CACHE_KEY`):
@@ -115,9 +123,13 @@ in `phploy.ini` (beside `SMOKE_PROD_CACHE_KEY`):
 post-deploy[] = "SMOKE_PROD_CACHE_KEY=… SMOKE_PROD_CANARY_COOKIE='sl_symfony_canary=1' bash tools/smoke-prod.sh"
 ```
 
-That adds ~17 checks and asserts **both** directions: that the cookie reaches the Symfony
-kernel, and that traffic without it still gets laminas. Leaving the variable unset skips
-the whole block, which is the default.
+That adds ~35 checks. The variable is only a switch now — its *value* is not read, because
+there are two cookies and the script names both itself. What it asserts is the **pair**:
+whichever kernel is the site default really serves ordinary traffic, and the override
+really reaches the other one. It probes which is the default rather than assuming, so the
+same hook keeps working across the flip instead of failing loudly on the one day it most
+needs to be believed. Leaving the variable unset skips the whole block, which is the
+default.
 
 Two things worth checking through the canary after a deploy that touches ported routes,
 both public and side-effect-free:
@@ -134,17 +146,79 @@ not that v3 is broken.
 
 Checking a *signed-in* ported page is still manual and is the one thing the canary buys
 that a global flip could not. Sign in as an administrator and use the **Switch kernel**
-item in the navbar — it sets the cookie and tells you which kernel you are on — then load
-`/en/sm/view-changes`, `/en/sm/data-problems`, `/en/sm/phpinfo` and `/en/admin`. Click it
-again to go back to laminas; closing the browser does the same, since it is a session
-cookie.
+item in the navbar — it offers whichever kernel you are *not* currently on, and says which
+you have moved to — then load `/en/sm/view-changes`, `/en/sm/data-problems`,
+`/en/sm/phpinfo`, `/en/admin` and one association edit form. Click it again to clear the
+override and go back to the site default; closing the browser does the same, since it is a
+session cookie.
 
 The item is visible to `sch_administrator` only, and it needs cookie consent: without it
 the site strips every `Set-Cookie` and the toggle reports that instead of appearing to
 work.
 
-**Never add `SetEnv SYMFONY_KERNEL 0` beside the canary.** mod_env runs after
-mod_setenvif, so it wins regardless of order and the canary stops working silently.
+**Never add a `SetEnv SYMFONY_KERNEL` line to `.htaccess`, for either value.** mod_env
+runs after all of mod_setenvif, so it wins regardless of order and both cookies stop
+working silently. `test/Integration/KernelCanaryTest` fails on it.
+
+## Flipping the Symfony kernel on globally
+
+The one change that makes every visitor — and every automated agent, which sends no
+cookie — reach `App\Kernel` instead of `Laminas\Mvc\Application`. It is what the v3 API is
+waiting for. Everything it needs is already deployed; the flip is one line.
+
+**Add it above the two cookie overrides in `public/.htaccess`:**
+
+```apache
+SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1
+```
+
+Order and directive are both load-bearing, and each failure mode is silent — a default
+written *below* an override overwrites it (mod_setenvif takes the last match), and a
+`SetEnv` beats every override whatever the order. Both are pinned by
+`test/Integration/KernelCanaryTest`, which is why the flip should be a commit rather than
+a hand-edit on the server.
+
+### Before
+
+- [ ] `SMOKE_PROD_CANARY_COOKIE` is wired into the `phploy.ini` smoke hook, and the last
+      deploy's run passed. That is the pre-flip evidence: it renders every public ported
+      route through the Symfony kernel against production's own data, ICU and
+      translations, and checks the three `LaminasResponseConverter` rules on a bridged
+      page behind the real TLS proxy — the one thing the capsule cannot reproduce.
+- [ ] `database/db6.6.sql` is applied and at least one agent account holds the API-bot
+      role (see the v3 prerequisites above). Without it every agent request 401s the
+      moment the flip makes v3 reachable.
+- [ ] The signed-in walk-through above has been done through the canary, in a
+      non-English locale as well as English. `tools/port-baseline.php` is the mechanical
+      version; `docs/strangler.md` has the procedure and the known differences.
+
+### After
+
+- [ ] Re-run `bash tools/smoke-prod.sh` (with the canary variable set). It flips its own
+      assertions automatically: the default is now Symfony and the `=0` cookie must
+      reach laminas.
+- [ ] Watch `data/exceptions` — `tools/fetch-exceptions.sh`. Ported routes now report
+      through the configured pipeline including notification, so a new failure class
+      arrives as email rather than silence.
+- [ ] `/en/sm/cache-status` for APCu saturation: the Twig compile cache is on disk, not
+      APCu, but ported routes touch different cache keys than the laminas twins did.
+
+### Rolling back
+
+In order of how much they cost:
+
+1. **One person, no deploy.** Set `sl_symfony_canary=0` — the **Switch kernel** navbar
+   item does it — and that visitor is back on laminas immediately. Enough to compare a
+   suspect page against its laminas twin.
+2. **Everyone, no deploy.** Delete the added line from the server's
+   `public_html/schoenstatt.link/public/.htaccess`. Takes effect on the next request; no
+   pool restart, because `.htaccess` is read per request. Note that **the next deploy
+   overwrites it** — the pre-deploy hook copies the server's file into
+   `data/htaccess-backups/` precisely because of that — so this buys time, it does not
+   end the incident.
+3. **Everyone, durably.** Revert the flip commit and deploy. This is the only rollback
+   that survives the next deploy, and the reason to keep the flip as its own commit that
+   touches nothing else.
 
 ## The deploy
 
