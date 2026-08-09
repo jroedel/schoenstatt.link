@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Controller\Api;
 
 use App\Api\BotIdentity;
-use App\JTranslate\Phrase\PhraseValidator;
 use App\Laminas\ServiceBridge;
+use JTranslate\Form\PhraseValidator;
 use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use Laminas\Validator\InArray;
@@ -171,7 +171,8 @@ final class ApiSchemaController
      */
     private function phrase(): Response
     {
-        $validator = PhraseValidator::fromServices($this->laminas->get(...));
+        /** @var PhraseValidator $validator */
+        $validator = $this->laminas->get(PhraseValidator::class);
         $locales   = $validator->writableLocales();
         $filter    = $validator->inputFilter();
 
