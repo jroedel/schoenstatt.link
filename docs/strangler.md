@@ -872,8 +872,9 @@ before the route moved and compared byte for byte against the ported ones:
 Remember to put `changes_show_all`/`changes_model` back, and to clear `data/config/`
 either way — the merged config is cached there and an edit looks like it did nothing.
 
-`sion-model/auto-fix-data-problems` remains unported and is a separate matter: it is
-POST-and-CSRF, and there is no form layer on the Symfony side yet.
+`sion-model/auto-fix-data-problems` remains unported: it is POST-and-CSRF. The form layer
+it was waiting for now exists (`src/Form/BootstrapFormRenderer`), so it is a candidate
+for the next batch rather than a blocked one.
 
 ### `sitemap` (`/sitemap.xml`) — blocked on `Laminas\Navigation`
 
@@ -888,18 +889,36 @@ database-derived branches `Application\Module::onBootstrap()` builds and caches 
 which is the same work as replacing `SiteChrome`'s config-only navigation with a real
 one. Worth doing once, for both; not worth doing for one route.
 
-### The form routes — blocked on two things, not one
+### The form routes — one obstacle, not two, and the first one is gone
 
-Everything that renders a `Laminas\Form` is unported, and the missing form layer is only
-the first obstacle. The second is `JUser\Module::onBootstrap()`'s
-`GlobalAdapterFeature::setStaticAdapter()`, which nothing on the Symfony side reproduces:
-`CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm` each build a
-`NoRecordExists` validator that reads the static adapter, and a null one is a fatal rather
-than a validation failure. It has to be dealt with before the first form route moves.
+This section used to say the form routes were blocked on two things. Both claims needed
+correcting when `association-edit` was ported on 2026-08-09.
 
-That is what keeps `/literature` (a search form), `/movement`, `/persons`, `/texts` and
-every create/edit/delete page on laminas, and it is the largest single thing standing
-between here and the end of the migration.
+**The missing form layer was real, and is now `src/Form/BootstrapFormRenderer`.** It
+reproduces `SionModel\Form\View\Helper\SionFormRow` — i.e. TwbBundle's Bootstrap 3
+markup — closely enough that the ported `/en/SL100319A/edit` and the laminas rendering of
+the same URL are identical except for whitespace between tags. That was verified by
+capturing the live page with `tools/form-regression.php probe` before the port and
+diffing after; five things had to be reproduced exactly, and each is documented in that
+class: attribute order, `FormSelect`'s attribute whitelist, TwbBundle's
+escape-only-if-no-tags help-block rule, per-select option translation, and the submit
+button's classes.
+
+**The static-adapter claim was too broad.** `GlobalAdapterFeature::setStaticAdapter()` is
+read by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, through a
+`NoRecordExists` validator — and by nothing else. `AssociationForm` and `SionForm` never
+touch it. So it blocks the **user and translation** forms and does not block the rest;
+`association-edit` moved without it being dealt with.
+
+What a form route still needs, and what `association-edit` establishes the pattern for:
+the form comes from the laminas container through the `ServiceBridge` (so its value
+options and its validation are the application's, not a copy), CSRF works because
+`App\Http\SessionListener` has already started the laminas session — a token minted by
+either front controller is accepted by the other — and the write goes through
+`SionTable::updateEntity()` exactly as `SionController` does it.
+
+Still on laminas: `/literature` (a search form), `/movement`, `/persons`, `/texts`, the
+user and translation forms (the static adapter), and every other create/edit/delete page.
 
 ### `composition` (`/{sw_id}/{slug}` for a song) — blocked on the comment form
 

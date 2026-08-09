@@ -3,6 +3,7 @@ namespace Schoenstatt\Service;
 
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
+use App\Schoenstatt\Association\AssociationFieldDomains;
 use Schoenstatt\Form\AssociationForm;
 use Schoenstatt\Model\SchoenstattTable;
 
@@ -39,6 +40,15 @@ class AssociationFormFactory implements FactoryInterface
         $form->get('parentId')->setValueOptions($associations);
         $form->get('kind')->setValueOptions($kinds);
         $form->get('country')->setValueOptions($countryNames);
+
+        //The dropdown contents above and the validation domains below are deliberately
+        //not the same thing: a dropdown offers only active parents, while a row whose
+        //parent was later deactivated must still be editable. See
+        //App\Schoenstatt\Association\AssociationFieldDomains.
+        $form->setFieldDomains(AssociationFieldDomains::fromServices(
+            static fn (string $id): mixed => $container->get($id)
+        ));
+
         return $form;
     }
 }

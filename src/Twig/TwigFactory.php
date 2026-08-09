@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use App\Form\BootstrapFormRenderer;
 use App\Http\CspNonce;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
@@ -98,7 +99,15 @@ final class TwigFactory
                 : new ForgivingCache(new FilesystemCache($cacheDir, FilesystemCache::FORCE_BYTECODE_INVALIDATION)),
             'auto_reload'      => true,
         ]);
-        $twig->addExtension(new LaminasExtension($laminas, $helpers, $urls, $requests));
+        $laminasExtension = new LaminasExtension($laminas, $helpers, $urls, $requests);
+        $twig->addExtension($laminasExtension);
+        //The form helpers, translating through the same page-aware translate() the
+        //rest of the templates use — a form label lives in its module's text domain
+        //just as a heading does, and a renderer with its own translator would render
+        //every label in English on /es.
+        $twig->addExtension(new FormExtension(
+            new BootstrapFormRenderer($laminasExtension->translate(...))
+        ));
         $twig->addExtension(new ChromeExtension(new SiteChrome($laminas, $helpers, $urls), $requests, $nonce));
         $twig->addExtension(new MarkdownExtension());
 

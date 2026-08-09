@@ -190,9 +190,15 @@ class PortedRouteTranslationTest extends TestCase
     /** True for a route whose controller renders a Twig template. */
     private function rendersHtml(string $name): bool
     {
-        //the two maintenance endpoints and /_health answer JSON; the GeoJSON pair does too
+        //the two maintenance endpoints and /_health answer JSON; the GeoJSON pair does
+        //too, and so does the whole of v3 — an API for automated agents emits field
+        //names and validation messages, not localized prose, and giving it a text
+        //domain would start translating the messages an agent parses
         $jsonOnly = ['health', 'sm-cache-status', 'sm-clear-persistent-cache',
-                     'api-v1/shrines-json', 'api-v2/shrines-json'];
+                     'api-v1/shrines-json', 'api-v2/shrines-json',
+                     'api-v3/schema', 'api-v3/associations', 'api-v3/association',
+                     'api-v3/association-patch', 'api-v3/associations-method',
+                     'api-v3/association-method', 'api-v3/schema-method'];
         foreach ($jsonOnly as $json) {
             if ($name === $json || $name === $json . '.locale') {
                 return false;

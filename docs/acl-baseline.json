@@ -25,15 +25,15 @@
         "guarded_routes_total": 162,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
-        "roles": 43,
+        "roles": 44,
         "route_guard_entries": 164,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 22,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 38,
-        "symfony_routes_open": 9,
+        "symfony_routes_acl_checked": 40,
+        "symfony_routes_open": 16,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 47,
+        "symfony_served_routes": 56,
         "total_routes": 187,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -450,6 +450,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -693,6 +694,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1110,6 +1112,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1179,6 +1182,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1538,6 +1542,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1665,6 +1670,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1734,6 +1740,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1803,6 +1810,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1872,6 +1880,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -2339,6 +2348,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -3378,6 +3388,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -3516,6 +3527,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5393,6 +5405,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5462,6 +5475,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5554,6 +5568,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5623,6 +5638,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5969,6 +5985,7 @@
                 "pub_sisters_moderator",
                 "pub_user",
                 "sch_administrator",
+                "sch_api_bot",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -6848,6 +6865,11 @@
             "descendants": [],
             "parent": "sch_general_moderator"
         },
+        "sch_api_bot": {
+            "ancestors": [],
+            "descendants": [],
+            "parent": null
+        },
         "sch_basic": {
             "ancestors": [
                 "user"
@@ -7542,6 +7564,96 @@
                 "resource": null,
                 "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
                 "denial_style": "n/a"
+            }
+        },
+        "api-v3/association": {
+            "path": "/api/v3/associations/{sw_id}",
+            "controller": "App\\Controller\\Api\\AssociationsV3Controller::show",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/association-method": {
+            "path": "/api/v3/associations/{sw_id}",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/association-patch": {
+            "path": "/api/v3/associations/{sw_id}",
+            "controller": "App\\Controller\\Api\\AssociationsV3Controller::patch",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/associations": {
+            "path": "/api/v3/associations",
+            "controller": "App\\Controller\\Api\\AssociationsV3Controller::index",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/associations-method": {
+            "path": "/api/v3/associations",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/schema": {
+            "path": "/api/v3/schema",
+            "controller": "App\\Controller\\Api\\ApiSchemaController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/schema-method": {
+            "path": "/api/v3/schema",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "association-edit": {
+            "path": "/{sw_id}/edit",
+            "controller": "App\\Controller\\AssociationEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association-edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "association-edit.locale": {
+            "path": "/{_locale}/{sw_id}/edit",
+            "controller": "App\\Controller\\AssociationEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association-edit",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "associations": {
