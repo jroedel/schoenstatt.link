@@ -30,6 +30,7 @@ use App\Controller\AdminController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
+use App\Controller\Api\PhrasesV3Controller;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
@@ -540,9 +541,14 @@ $apiV3 = RouteAccess::openToEveryone(
 );
 
 $routes->add('api-v3/schema', new Route('/api/v3/schema', [
-    '_controller'          => ApiSchemaController::class,
+    '_controller'          => [ApiSchemaController::class, 'index'],
     RouteAccess::ATTRIBUTE => $apiV3,
 ], [], [], '', [], ['GET']));
+
+$routes->add('api-v3/schema-entity', new Route('/api/v3/schema/{entity}', [
+    '_controller'          => [ApiSchemaController::class, 'entity'],
+    RouteAccess::ATTRIBUTE => $apiV3,
+], ['entity' => '[a-z][a-z-]*'], [], '', [], ['GET']));
 
 $routes->add('api-v3/associations', new Route('/api/v3/associations', [
     '_controller'          => [AssociationsV3Controller::class, 'index'],
@@ -566,6 +572,42 @@ $routes->add('api-v3/association-patch', new Route('/api/v3/associations/{sw_id}
     RouteAccess::ATTRIBUTE => $apiV3,
 ], $associationIdentifier, [], '', [], ['PATCH']));
 
+// The translation phrases. Same pattern, different role: `sch_api_translator` rather
+// than `sch_api_bot`, because a translation agent rewrites every string the site
+// renders in four languages and a shrine agent rewrites the shrine database, and
+// neither is a reason to be able to do the other. Before this endpoint existed
+// App\Api\BotIdentity named one role in a constant, so the question could not be
+// asked — see database/db6.8.sql.
+$apiV3Phrases = RouteAccess::openToEveryone(
+    'shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a '
+    . 'different audience — and BjyAuthorize reads its identity from a session an agent does not have. '
+    . 'The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role'
+);
+
+$phraseIdentifier = ['phrase_id' => '[0-9]+'];
+
+$routes->add('api-v3/phrases', new Route('/api/v3/phrases', [
+    '_controller'          => [PhrasesV3Controller::class, 'index'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], [], [], '', [], ['GET']));
+
+// The batch write, on the collection. A PATCH of many resources is not a PATCH of one,
+// so it carries its own body shape and honours no If-Match; see the controller.
+$routes->add('api-v3/phrases-patch', new Route('/api/v3/phrases', [
+    '_controller'          => [PhrasesV3Controller::class, 'patchCollection'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], [], [], '', [], ['PATCH']));
+
+$routes->add('api-v3/phrase', new Route('/api/v3/phrases/{phrase_id}', [
+    '_controller'          => [PhrasesV3Controller::class, 'show'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], $phraseIdentifier, [], '', [], ['GET']));
+
+$routes->add('api-v3/phrase-patch', new Route('/api/v3/phrases/{phrase_id}', [
+    '_controller'          => [PhrasesV3Controller::class, 'patch'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], $phraseIdentifier, [], '', [], ['PATCH']));
+
 // Any other verb on a v3 path. Below the real routes so it only ever catches what
 // they refused, and above `legacy` so a PUT gets a 405 with an Allow header rather
 // than laminas' 302 to the sign-in page.
@@ -584,6 +626,21 @@ $routes->add('api-v3/schema-method', new Route('/api/v3/schema', [
     MethodNotAllowedController::ALLOWED => ['GET'],
     RouteAccess::ATTRIBUTE              => $apiV3,
 ]));
+$routes->add('api-v3/schema-entity-method', new Route('/api/v3/schema/{entity}', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET'],
+    RouteAccess::ATTRIBUTE              => $apiV3,
+], ['entity' => '[a-z][a-z-]*']));
+$routes->add('api-v3/phrases-method', new Route('/api/v3/phrases', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET', 'PATCH'],
+    RouteAccess::ATTRIBUTE              => $apiV3Phrases,
+]));
+$routes->add('api-v3/phrase-method', new Route('/api/v3/phrases/{phrase_id}', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET', 'PATCH'],
+    RouteAccess::ATTRIBUTE              => $apiV3Phrases,
+], $phraseIdentifier));
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

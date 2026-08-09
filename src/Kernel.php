@@ -10,6 +10,7 @@ use App\Controller\AdminController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
+use App\Controller\Api\PhrasesV3Controller;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
@@ -342,6 +343,14 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // touches the database at all before authenticating, and it is public.
             AssociationsV3Controller::class => fn (): AssociationsV3Controller => new AssociationsV3Controller(
                 $this->laminas(),
+                new BotIdentity($this->laminas())
+            ),
+            // The translation API. It takes RouteUrl as well as the bridge, because a
+            // phrase's only context is the route it was first seen on and turning that
+            // into a URL an agent can fetch is exactly what RouteUrl does.
+            PhrasesV3Controller::class => fn (): PhrasesV3Controller => new PhrasesV3Controller(
+                $this->laminas(),
+                $this->routeUrl(),
                 new BotIdentity($this->laminas())
             ),
             ApiSchemaController::class => fn (): ApiSchemaController => new ApiSchemaController($this->laminas()),

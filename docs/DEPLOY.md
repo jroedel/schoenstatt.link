@@ -45,8 +45,9 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 
 ## Before the v3 API can be used: one migration and one account per agent
 
-The code shipped 2026-08-09. Three things it deliberately does **not** do for you,
-because none of them should happen without someone deciding it:
+The code shipped 2026-08-09; the phrase endpoints followed. Four things it
+deliberately does **not** do for you, because none of them should happen without
+someone deciding it:
 
 1. ~~**Run `database/db6.6.sql`** on production.~~ **Done 2026-08-09.** It creates the
    `sch_api_bot` role, and nothing else on the site names that role — so until it existed,
@@ -69,13 +70,36 @@ because none of them should happen without someone deciding it:
    Nothing breaks for the mobile apps: the v1 API does not consult the registry, and
    the tokens already in the field keep working.
 
-3. **Create each bot account and grant it the role.** Register the address like any
-   other account, then grant `sch_api_bot` through the users screen or:
+3. **Run `database/db6.8.sql`** on production, before deploying the phrase endpoints.
+   It creates `sch_api_translator`, the role `/api/v3/phrases` is gated on, and nothing
+   else on the site names it — so until it exists every translation-agent request is a
+   401. Idempotent, like db6.6.
+
+   Same cache note as db6.6: a raw `INSERT` leaves `roles-value-options` stale, so run
+   `php bin/console cache:flush-persistent` or the role will not appear in the users
+   screen's Roles multiselect.
+
+   **Why a second role rather than reusing `sch_api_bot`.** A translation agent can
+   rewrite every string the site renders in five languages; a shrine agent can rewrite
+   the shrine database. Neither is a reason to be able to do the other, and while
+   `BotIdentity` named one role in a constant the question could not even be asked —
+   the reach of every credential would have widened silently each time v3 grew an
+   endpoint. See [api-v3.md](api-v3.md) and the header of the migration itself.
+
+4. **Create each bot account and grant it the role it needs.** Register the address
+   like any other account, then grant the role through the users screen or:
 
    ```sql
+   -- shrines
    INSERT INTO user_role_linker (user_id, role_id)
    SELECT <user_id>, id FROM user_role WHERE role_id = 'sch_api_bot';
+
+   -- translations
+   INSERT INTO user_role_linker (user_id, role_id)
+   SELECT <user_id>, id FROM user_role WHERE role_id = 'sch_api_translator';
    ```
+
+   One role per agent unless one agent genuinely does both jobs.
 
    Deleting that row cuts the account off from the API immediately — the role is checked
    on every request, not baked into the token. It is the blunt instrument, though: it
@@ -83,7 +107,10 @@ because none of them should happen without someone deciding it:
    `/en/users/:id/api-tokens`.
 
 Tokens are issued from that same screen; see [api-v3.md](api-v3.md) for the whole
-flow, including why the button only appears for accounts holding `sch_api_bot`.
+flow, including why the button only appears for accounts holding one of the roles named
+in `juser.api_token_roles` — which is `sch_api_bot` and `sch_api_translator`, and which
+**must be extended whenever a new API role is introduced**, or the account is refused
+everywhere and no screen will issue it a token.
 
 **Until `SYMFONY_KERNEL` is flipped globally, v3 answers only behind the canary
 cookie** — which an agent will not send. The canary is how to verify the endpoints
@@ -137,6 +164,8 @@ both public and side-effect-free:
 ```bash
 curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/schema        # 200 JSON
 curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/associations  # 401
+curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/schema/phrase # 200 JSON
+curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/phrases       # 401
 ```
 
 The first proves the whole ServiceBridge path works in production — the schema is
