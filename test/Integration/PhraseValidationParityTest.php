@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
-use App\JTranslate\Phrase\PhraseValidator;
 use JTranslate\Form\EditPhraseForm;
+use JTranslate\Form\PhraseValidator;
 use Laminas\Db\Adapter\Adapter;
 use Laminas\Db\TableGateway\Feature\GlobalAdapterFeature;
 use Laminas\Mvc\Service\ServiceManagerConfig;
@@ -52,7 +52,17 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *    `GlobalAdapterFeature::getStaticAdapter()` while building its `RecordExists`
  *    validator, and nothing populates that registry on a Symfony-served route — see
  *    PhraseValidator. That is a wiring difference, not a rules difference, and
- *    testTheSameInputsAreValidatedOnBothSides is what says so.
+ *    testCsrfIsTheOnlyInputTheApiDoesNotEnforce is what says so.
+ *
+ * ## It tests across a repository boundary, on purpose
+ *
+ * Both sides now come from JTranslate: `EditPhraseForm` and
+ * `JTranslate\Form\PhraseValidator`, resolved from this application's container. That
+ * is the arrangement this test is most useful under. The validator used to live in
+ * `src/` here, which meant a JTranslate release could reshape `EditPhraseForm` and the
+ * only thing standing between that and a silently looser API was a test in a *different*
+ * repository that JTranslate's own CI never runs. Now the library owns both halves and
+ * this file checks that the application still gets what it was promised.
  */
 final class PhraseValidationParityTest extends TestCase
 {
@@ -71,7 +81,10 @@ final class PhraseValidationParityTest extends TestCase
      */
     private static function validator(): PhraseValidator
     {
-        return PhraseValidator::fromServices(self::services()->get(...));
+        /** @var PhraseValidator $validator */
+        $validator = self::services()->get(PhraseValidator::class);
+
+        return $validator;
     }
 
     /** The web form, built the way JTranslate's own factory builds it. */
