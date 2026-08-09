@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 162 |
-| guarded routes total | 162 |
+| guarded routes existing | 164 |
+| guarded routes total | 164 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 44 |
-| route guard entries | 164 |
+| route guard entries | 166 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 22 |
 | rules from rule config | 34 |
@@ -53,11 +53,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 16 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 56 |
-| total routes | 187 |
+| total routes | 189 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (162 + 25 = 187). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (164 + 25 = 189). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -384,6 +384,8 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `juser/create` | yes | administrator | administrator (1) | no |  |
 | `juser/create-role` | yes | administrator | administrator (1) | no |  |
 | `juser/thanks` | yes | `null`, guest, user | **everyone (public)** — 44 named roles plus anonymous | yes |  |
+| `juser/user/api-token-revoke` | yes | administrator | administrator (1) | no |  |
+| `juser/user/api-tokens` | yes | administrator | administrator (1) | no |  |
 | `juser/user/delete` | yes | administrator | administrator (1) | no |  |
 | `juser/user/edit` | yes | administrator | administrator (1) | no |  |
 | `juser/user/show` | yes | administrator | administrator (1) | no |  |

@@ -21,12 +21,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 162,
-        "guarded_routes_total": 162,
+        "guarded_routes_existing": 164,
+        "guarded_routes_total": 164,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 44,
-        "route_guard_entries": 164,
+        "route_guard_entries": 166,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 22,
         "rules_from_rule_config": 34,
@@ -34,7 +34,7 @@
         "symfony_routes_open": 16,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 56,
-        "total_routes": 187,
+        "total_routes": 189,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
     },
@@ -3406,6 +3406,52 @@
             "matchable": true,
             "public": true,
             "route": "juser/thanks"
+        },
+        "juser/user/api-token-revoke": {
+            "anonymous_allowed": false,
+            "assertion": null,
+            "declaration_count": 1,
+            "declarations": [
+                {
+                    "roles": [
+                        "administrator"
+                    ],
+                    "assertion": null
+                }
+            ],
+            "declared_roles": [
+                "administrator"
+            ],
+            "effective_roles": [
+                "administrator"
+            ],
+            "exists_in_router": true,
+            "matchable": true,
+            "public": false,
+            "route": "juser/user/api-token-revoke"
+        },
+        "juser/user/api-tokens": {
+            "anonymous_allowed": false,
+            "assertion": null,
+            "declaration_count": 1,
+            "declarations": [
+                {
+                    "roles": [
+                        "administrator"
+                    ],
+                    "assertion": null
+                }
+            ],
+            "declared_roles": [
+                "administrator"
+            ],
+            "effective_roles": [
+                "administrator"
+            ],
+            "exists_in_router": true,
+            "matchable": true,
+            "public": false,
+            "route": "juser/user/api-tokens"
         },
         "juser/user/delete": {
             "anonymous_allowed": false,
