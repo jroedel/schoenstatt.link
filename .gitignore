@@ -15,7 +15,23 @@ ubuntu-xenial-16.04-cloudimg-console.log
 phploy.ini
 phploy.log
 .phploy
+# Compiled translation catalogs, both places JTranslate writes them:
+# `language/<TextDomain>/` for a domain that is not a module, and
+# `module/<Module>/language/` for one that is. See
+# JTranslate\Model\TranslationsTable::writePhpTranslationArrays().
+#
+# These are build output, not source. `bin/console jtranslate:export-catalogs`
+# rebuilds them from the phrase table, and a hand edit is discarded on the next
+# write — so committing them means every translation an admin saves shows up as a
+# diff, and running the export once produced a ~1000-line diff of pure build output
+# across four repositories.
+#
+# module/Schoenstatt has carried its own rule for this since before the pattern
+# below existed; the JTranslate, JUser and SionModel submodules carry theirs in
+# their own repositories, because a superproject .gitignore does not reach inside a
+# submodule.
 /language/
+/module/*/language/
 node_modules
 .idea/
 .env
