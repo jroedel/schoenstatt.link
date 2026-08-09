@@ -152,6 +152,24 @@ class IndexController extends AbstractActionController
      * changes, because both consult the same ACL, and the next click undoes it. A CSRF
      * token would mean a form and a POST for a debugging toggle whose entire value is
      * being one click away. The trade is deliberate rather than overlooked.
+     *
+     * ## It offers the kernel you are not on, and never needs to know the default
+     *
+     * The cookie has three states — absent, `1`, `0` — because public/.htaccess has a
+     * site-wide default plus an override each way. So this is a toggle between "what
+     * everyone else gets" and "the other one", which is the only pair an administrator
+     * ever wants, and it is built from two questions that are both answerable:
+     *
+     * - **Am I overriding anything?** From the cookie. If so, clear it and land back on
+     *   the default, whatever that currently is.
+     * - **Which kernel is serving me?** From `getenv('SYMFONY_KERNEL')`, which Apache
+     *   exports to a bridged request too. If nothing is overridden, set the cookie to
+     *   the *opposite* of that.
+     *
+     * What deliberately does not appear anywhere here is the site default itself. PHP
+     * cannot read .htaccess, and inferring it would be guessing — so the day
+     * `SYMFONY_KERNEL=1` becomes the default for everyone, this action keeps working
+     * with no edit, and the two branches simply swap which kernel they hand out.
      */
     public function kernelSwitchAction()
     {
@@ -166,18 +184,29 @@ class IndexController extends AbstractActionController
             return $this->redirect()->toUrl($this->kernelSwitchReturnUrl());
         }
 
-        if (KernelCanary::isActive($cookies)) {
-            //expire it: back to laminas-mvc, which is what every other visitor gets
+        if (KernelCanary::isOverriding($cookies)) {
+            //expire it: back to whatever public/.htaccess makes the default, which this
+            //action cannot see and so does not claim to know. Naming the kernel here
+            //would be a guess that reads as fact the moment the default flips.
             setcookie(KernelCanary::COOKIE, '', $_SERVER['REQUEST_TIME'] - 42000, '/');
-            $message = 'Legacy kernel: pages now render through Laminas\Mvc\Application, '
-                . 'the same as for every other visitor.';
+            $message = 'Kernel override cleared: you now get the same front controller as '
+                . 'every other visitor. Check /_health — it answers 200 only on the Symfony side.';
         } else {
-            //a session cookie, with no expiry on purpose: closing the browser reverts to
-            //laminas, so an admin cannot leave themselves on the Symfony kernel for weeks
+            //a session cookie, with no expiry on purpose: closing the browser drops the
+            //override, so an admin cannot leave themselves off the site default for weeks
             //without noticing
-            setcookie(KernelCanary::COOKIE, KernelCanary::VALUE, 0, '/');
-            $message = 'Symfony kernel: pages now render through App\Kernel for you only. '
-                . 'Check /_health — it answers 200 only on the Symfony side.';
+            $toLaminas = KernelCanary::symfonyKernelIsLive();
+            setcookie(
+                KernelCanary::COOKIE,
+                $toLaminas ? KernelCanary::FORCE_LAMINAS : KernelCanary::FORCE_SYMFONY,
+                0,
+                '/'
+            );
+            $message = $toLaminas
+                ? 'Legacy kernel: pages now render through Laminas\Mvc\Application for you only. '
+                    . 'Check /_health — it stops answering 200 on the laminas side.'
+                : 'Symfony kernel: pages now render through App\Kernel for you only. '
+                    . 'Check /_health — it answers 200 only on the Symfony side.';
         }
 
         $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)->addMessage($message);
