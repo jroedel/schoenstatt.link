@@ -6,6 +6,7 @@ namespace App;
 
 use App\Authorization\RouteGuard;
 use App\Controller\AdminController;
+use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
@@ -275,6 +276,14 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     $this->routeUrl()
                 ),
             AssociationsController::class => fn (): AssociationsController => new AssociationsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The first form route. Same three dependencies as every other ported
+            // HTML page — the form itself comes from the laminas container through
+            // the bridge, so nothing new is wired here.
+            AssociationEditController::class => fn (): AssociationEditController => new AssociationEditController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()

@@ -30,10 +30,10 @@
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 22,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 38,
+        "symfony_routes_acl_checked": 40,
         "symfony_routes_open": 9,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 47,
+        "symfony_served_routes": 49,
         "total_routes": 187,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -7542,6 +7542,26 @@
                 "resource": null,
                 "reason": "the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries \u2014 some through Books\\Model\\LibraryTable \u2014 on an endpoint the mobile apps poll, for a foregone answer",
                 "denial_style": "n/a"
+            }
+        },
+        "association-edit": {
+            "path": "/{sw_id}/edit",
+            "controller": "App\\Controller\\AssociationEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association-edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "association-edit.locale": {
+            "path": "/{_locale}/{sw_id}/edit",
+            "controller": "App\\Controller\\AssociationEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association-edit",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "associations": {

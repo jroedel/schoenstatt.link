@@ -49,10 +49,10 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | routes declared twice | 2 |
 | routes shadowed by symfony | 22 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 38 |
+| symfony routes acl checked | 40 |
 | symfony routes open | 9 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 47 |
+| symfony served routes | 49 |
 | total routes | 187 |
 | unguarded routes | 25 |
 | unguarded routes matchable | 14 |
@@ -91,6 +91,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `api-v1/shrines-json.locale` | `/{_locale}/api/v1/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
 | `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
 | `api-v2/shrines-json.locale` | `/{_locale}/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
+| `association-edit` | `/{sw_id}/edit` | `route/association-edit` | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssociationEditController` |
+| `association-edit.locale` | `/{_locale}/{sw_id}/edit` | `route/association-edit` | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssociationEditController` |
 | `associations` | `/associations` | `route/associations` | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssociationsController` |
 | `associations.locale` | `/{_locale}/associations` | `route/associations` | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssociationsController` |
 | `developers` | `/developers` | `route/developers` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |

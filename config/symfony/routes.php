@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
+use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
@@ -47,6 +48,7 @@ use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
 use App\Twig\LaminasExtension;
 use App\View\SiteChrome;
+use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use App\Locale\Locales;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
@@ -464,6 +466,41 @@ $ported(
     LibrariesController::class,
     RouteAccess::guardedBy('route/libraries'),
     $textDomain('Books')
+);
+
+// ---------------------------------------------------------------------------
+// The first *form* route, ported 2026-08-09, and the reason src/Form/ exists.
+// ---------------------------------------------------------------------------
+//
+// docs/strangler.md called the form routes the largest single thing left, blocked on
+// two things: no form layer, and JUser's unreproduced static table adapter. The first
+// was true and App\Form\BootstrapFormRenderer answers it. The second turns out not to
+// apply here — only CreateRoleForm, EditUserForm, DeleteUserForm and EditPhraseForm
+// read that adapter, through a NoRecordExists validator, and AssociationForm touches
+// neither. So this form could move while the user forms still cannot.
+//
+// GET renders, POST validates and writes. Both methods on one route because the
+// laminas route has no method constraint either, and adding one would turn a
+// mistaken GET into a 405 where today it renders the form.
+//
+// Guarded by its own resource. `route/association-edit` admits sch_moderator and
+// sch_user — and registration grants sch_user, so in practice any signed-in visitor
+// may edit any association. That is the *existing* rule, unchanged by the port and
+// stated here because it is surprising: the port neither widens nor narrows it.
+//
+// The `sw_id` constraint is the association identifier regex itself, from
+// Schoenstatt\Validator\SchoenstattLinkIdentifier, so that /SL200001L/edit — a
+// publication, still on laminas — keeps falling through to `legacy` rather than
+// being swallowed here and 404'd.
+$ported(
+    'association-edit',
+    '/{sw_id}/edit',
+    AssociationEditController::class,
+    RouteAccess::guardedBy('route/association-edit'),
+    $textDomain('Schoenstatt'),
+    ['sw_id' => trim(SchoenstattLinkIdentifier::ENTITY_REGEXS[
+        SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
+    ], '/^$')]
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
