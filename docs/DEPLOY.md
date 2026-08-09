@@ -43,6 +43,34 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
+## Before the v3 API can be used: one migration and one account per agent
+
+The code shipped 2026-08-09. Two things it deliberately does **not** do for you, because
+neither should happen without someone deciding it:
+
+1. **Run `database/db6.6.sql`** on production. It creates the `sch_api_bot` role, and
+   nothing else on the site names that role — so until it exists, every agent request is
+   a 401 and no amount of token-fiddling will change that. The script is idempotent
+   (`INSERT … WHERE NOT EXISTS`), so re-running it is safe.
+2. **Create each bot account and grant it the role.** Register the address like any
+   other account, then grant `sch_api_bot` through the users screen or:
+
+   ```sql
+   INSERT INTO user_role_linker (user_id, role_id)
+   SELECT <user_id>, id FROM user_role WHERE role_id = 'sch_api_bot';
+   ```
+
+   Revoking an agent is deleting that row, which invalidates it immediately — the role
+   is checked on every request, not baked into the token. Note the corollary: revocation
+   is per **account**, not per token, so give each agent its own account rather than
+   sharing one.
+
+The token itself comes from the existing endpoints; see [api-v3.md](api-v3.md).
+
+**Until `SYMFONY_KERNEL` is flipped globally, v3 answers only behind the canary
+cookie** — which an agent will not send. The canary is how to verify the endpoints
+against production data before the flip, not a way to run agents.
+
 ## Before deploying a PHP-version rung
 
 **Flip the konsoleH PHP version first, then deploy — never the other way
@@ -72,6 +100,19 @@ post-deploy[] = "SMOKE_PROD_CACHE_KEY=… SMOKE_PROD_CANARY_COOKIE='sl_symfony_c
 That adds ~17 checks and asserts **both** directions: that the cookie reaches the Symfony
 kernel, and that traffic without it still gets laminas. Leaving the variable unset skips
 the whole block, which is the default.
+
+Two things worth checking through the canary after a deploy that touches ported routes,
+both public and side-effect-free:
+
+```bash
+curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/schema        # 200 JSON
+curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/associations  # 401
+```
+
+The first proves the whole ServiceBridge path works in production — the schema is
+generated from live config and a live database query — and the second proves the token
+gate is on. A 302 to `/en/…` from either means the canary cookie did not take effect,
+not that v3 is broken.
 
 Checking a *signed-in* ported page is still manual and is the one thing the canary buys
 that a global flip could not. Sign in as an administrator and use the **Switch kernel**
