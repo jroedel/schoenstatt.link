@@ -391,9 +391,12 @@ links. Lessons that shaped DEPLOY.md (the living procedure):
 - phploy's `-m` submodule mode has a fatal directory-purge bug — it
   recursively deleted `module/JUser/src` *after* uploading it. Never again;
   submodules deploy via `tools/deploy-submodules.sh` in post-deploy hooks.
-- `public/.htaccess` is untracked since 2017 and forced
+- `public/.htaccess` was untracked from 2017 and forced
   `SetEnv APP_ENV development` since 2016 — production ran development mode
-  for years. Hand-edited server-side at deploy time.
+  for years. Hand-edited server-side at deploy time. **Superseded:** it was
+  committed in `36eb75c` and phploy deploys it, so the repo copy is the one to
+  edit; a hand-edit on the server survives until the next deploy, which is why
+  the pre-deploy hook backs the server's copy into `data/htaccess-backups/`.
 - A stale `data/config/` cache produces "Unable to resolve service X" for a
   service plainly present in config — the deploy hooks purge it every time.
 
