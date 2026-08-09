@@ -173,9 +173,12 @@ final class ApiSchemaController
     {
         /** @var PhraseValidator $validator */
         $validator = $this->laminas->get(PhraseValidator::class);
+        $languages = $validator->languages();
         $locales   = $validator->writableLocales();
         $filter    = $validator->inputFilter();
 
+        //Read off a locale, because the *form* is keyed by locale; published as a
+        //language, because the API is.
         $maxLength = null;
         if ([] !== $locales && $filter->has($locales[0])) {
             foreach ($filter->get($locales[0])->getValidatorChain()->getValidators() as $entry) {
@@ -191,30 +194,33 @@ final class ApiSchemaController
             'entity'       => 'phrase',
             'requiredRole' => BotIdentity::TRANSLATOR_ROLE,
             'description'  => 'The phrases this site renders, and their translations. '
-                . 'PATCH /api/v3/phrases/{phraseId} with a JSON object of locale code to translation, '
+                . 'PATCH /api/v3/phrases/{phraseId} with a JSON object of language code to translation, '
                 . 'or PATCH /api/v3/phrases with a `phrases` object to write many at once. '
                 . 'Translations are validated by the same rules the translator web form uses.',
             'writable'     => [
-                'locales'   => $locales,
+                'languages' => $languages->languages(),
                 'maxLength' => is_numeric($maxLength) ? (int) $maxLength : null,
                 'notes'     => [
                     'The source `phrase` is read-only: it is the key the site looks itself up by, '
                         . 'not editable content, so changing it would orphan the row rather than '
                         . 'change what any page renders.',
-                    'An empty string means "leave this locale alone", not "blank it" — the web form '
+                    'An empty string means "leave this language alone", not "blank it" — the web form '
                         . 'behaves the same way, and there is no way to remove a translation through '
                         . 'either surface.',
-                    'A locale not listed here is refused rather than ignored. The list is read from '
-                        . 'the merged configuration at request time, so it is what this site actually '
-                        . 'writes rather than what any one config file says.',
+                    'Languages are ISO 639-1 codes: `de`, not `de_DE`. The region subtag is an '
+                        . 'artefact of how catalogs are keyed internally and is never part of this '
+                        . 'API. A code not listed here is refused rather than ignored, and that '
+                        . 'includes the locale form of a language that is listed.',
+                    'The list is read from the merged configuration at request time, so it is what '
+                        . 'this site actually writes rather than what any one config file says.',
                 ],
             ],
             'filters'      => [
                 'textDomain'     => 'exact match on the phrase\'s text domain',
                 'originRoute'    => 'exact match on the route the phrase was first seen on',
                 'search'         => 'substring of the source phrase',
-                'untranslatedIn' => 'a locale code; phrases with no usable translation in it',
-                'translatedIn'   => 'a locale code; phrases that do have one',
+                'untranslatedIn' => 'a language code; phrases with no usable translation in it',
+                'translatedIn'   => 'a language code; phrases that do have one',
                 'limit'          => 'page size, default 100, maximum 500',
                 'offset'         => 'page offset',
             ],

@@ -178,7 +178,7 @@ discovering by rejection.
   "version": 3,
   "entity": "phrase",
   "requiredRole": "sch_api_translator",
-  "writable": { "locales": ["de_DE", "en_US", "es_ES", "it_IT", "pt_BR"], "maxLength": 2000 },
+  "writable": { "languages": ["es", "de", "pt", "it", "en"], "maxLength": 2000 },
   "filters":  { "textDomain": "…", "originRoute": "…", "search": "…",
                 "untranslatedIn": "…", "translatedIn": "…" },
   "sideEffects": { "catalogs": "…", "batching": "…" }
@@ -186,13 +186,33 @@ discovering by rejection.
 ```
 
 An association has thirty-odd heterogeneous fields each with its own rules; a phrase
-has one rule repeated across five locales. Describing the locales as `fields` would
+has one rule repeated across five languages. Describing the languages as `fields` would
 have been this document's template applied to the wrong thing.
 
-**The locale list is the merged configuration's, read at request time.** JTranslate's
-module config names three locales and `config/autoload/jtranslate.global.php` appends
-`it_IT`, so the real answer on this site is five including the key locale. Anything
-that hardcodes it — including an agent — is wrong here today.
+**The list is the merged configuration's, read at request time.** JTranslate's module
+config names three locales and `config/autoload/jtranslate.global.php` appends `it_IT`,
+so the real answer on this site is five including the key locale. Anything that
+hardcodes it — including an agent — is wrong here today.
+
+### Languages, not locales
+
+This API addresses translations by **language code**: `de`, never `de_DE`. The region
+subtag is an artefact of how catalogs are keyed internally — the column really does
+hold `de_DE`, and the compiled catalog really is `de_DE.lang.php` — and none of that is
+your problem. It is also what the site's own URLs have always used (`/de/shrines`), and
+`test/Integration/SymfonyLocaleAliasTest` fails if the two ever name a language
+differently.
+
+**The locale form is refused, not accepted as a synonym.** `{"de_DE": "…"}` is a `422`
+naming `de` as what would have worked. That is deliberate: accepting both would make
+the key a translation is stored under depend on which spelling you happened to send,
+and the two spellings would drift apart in the table with nothing to notice.
+
+One consequence worth stating: a language code identifies a translation only while no
+two configured locales share a primary subtag. If this site ever needs `pt_BR` *and*
+`pt_PT`, `JTranslate\I18n\LanguageMap` throws rather than guessing, and this part of
+the contract has to be redesigned. That is the intended failure — silently picking one
+of them is the alternative.
 
 ## Associations
 
@@ -310,13 +330,13 @@ filters reach the database rather than being applied after the paging decision.
 | `textDomain` | exact match, e.g. `Schoenstatt` |
 | `originRoute` | exact match on the route the phrase was first seen on |
 | `search` | substring of the source phrase (`%` and `_` are literal) |
-| `untranslatedIn` | a locale code — phrases with no usable translation in it |
-| `translatedIn` | a locale code — phrases that do have one |
+| `untranslatedIn` | a language code — phrases with no usable translation in it |
+| `translatedIn` | a language code — phrases that do have one |
 | `limit`, `offset` | default 100, maximum 500 |
 
-`?untranslatedIn=de_DE&textDomain=Application` is the query an agent actually wants,
+`?untranslatedIn=de&textDomain=Application` is the query an agent actually wants,
 and it is a `WHERE` clause. An unknown parameter is a `422` rather than being ignored,
-for the same reason an unknown field is: `?locale=de_DE` would otherwise return the
+for the same reason an unknown field is: `?language=de` would otherwise return the
 *unfiltered* collection with a `200`, and the agent would work through the wrong list
 believing it was the right one.
 
@@ -333,10 +353,10 @@ One phrase. Returns an `ETag`.
   "textDomain": "Application",
   "phrase": "Access to entity denied.",
   "translations": {
-    "de_DE": { "text": null,                    "modifiedOn": null,  "modifiedBy": null },
-    "en_US": { "text": "Access to entity denied.", "modifiedOn": "2023-06-18T11:01:15+00:00",
-               "modifiedBy": 18 }
-    // …one entry per writable locale, always, whether or not it has a row
+    "de": { "text": null,                       "modifiedOn": null,  "modifiedBy": null },
+    "en": { "text": "Access to entity denied.", "modifiedOn": "2023-06-18T11:01:15+00:00",
+            "modifiedBy": 18 }
+    // …one entry per writable language, always, whether or not it has a row
   },
   "context": { "originRoute": "sign-in-no-cookies",
                "url": "https://schoenstatt.link/en/sign-in-no-cookies" },
@@ -344,7 +364,7 @@ One phrase. Returns an `ETag`.
 }
 ```
 
-Every key of `translations` is a key you may send back. A locale with no row is
+Every key of `translations` is a key you may send back. A language with no row is
 present with `"text": null` rather than absent — an agent that has to distinguish "key
 missing" from "key null" to find its work will get it wrong.
 
@@ -372,23 +392,23 @@ page already translated, which is the one thing you must not mistake for the sou
 
 ### `PATCH /api/v3/phrases/{phraseId}`
 
-A JSON object of locale code to translation.
+A JSON object of language code to translation.
 
 ```bash
 curl -X PATCH https://schoenstatt.link/api/v3/phrases/10028 \
   -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
   -H "If-Match: $ETAG" \
-  -d '{"de_DE": "Zugriff auf Objekt verweigert."}'
+  -d '{"de": "Zugriff auf Objekt verweigert."}'
 ```
 
 ```jsonc
-{ "changed": ["de_DE"], "phrase": { ...the new representation... } }
+{ "changed": ["de"], "phrase": { ...the new representation... } }
 ```
 
-Same contract as an association PATCH: `changed` lists the locales that actually
+Same contract as an association PATCH: `changed` lists the languages that actually
 moved, re-sending stored text is a `200` with `"changed": []` and no write, an unknown
-locale is a `422` naming the writable ones, and `If-Match` is honoured with a `412`.
+language is a `422` naming the writable ones, and `If-Match` is honoured with a `412`.
 
 Two differences worth knowing:
 
@@ -396,7 +416,7 @@ Two differences worth knowing:
   validation because `name` and `kind` are required there. Nothing here is required
   except the phrase id, which comes from the URL, so a patch naming one locale is
   already a complete submission.
-- **An empty string means "leave this locale alone", not "blank it".**
+- **An empty string means "leave this language alone", not "blank it".**
   `TranslationsTable::updatePhrase()` skips falsy values, and the web form behaves
   identically — an empty textarea is how a translator says "not my language". There is
   therefore **no way to remove a translation** through either surface. That is the
@@ -406,13 +426,13 @@ Two differences worth knowing:
 ### `PATCH /api/v3/phrases` — the batch
 
 ```jsonc
-{ "phrases": { "10028": { "de_DE": "…" }, "6197": { "es_ES": "…", "pt_BR": "…" } } }
+{ "phrases": { "10028": { "de": "…" }, "6197": { "es": "…", "pt": "…" } } }
 ```
 
 ```jsonc
 {
   "results": {
-    "10028": { "ok": true,  "changed": ["de_DE"] },
+    "10028": { "ok": true,  "changed": ["de"] },
     "6197":  { "ok": false, "status": 422, "message": "The translation would not be valid.", ... }
   },
   "summary": { "received": 2, "applied": 1, "failed": 1 }
@@ -445,7 +465,7 @@ When the files cannot be written the response carries a `warning` and the write 
 succeeded:
 
 ```jsonc
-{ "changed": ["de_DE"], "phrase": { ... },
+{ "changed": ["de"], "phrase": { ... },
   "warning": "The translations were saved, but the compiled catalogs could not be written, so the site will keep showing the old text until that is fixed." }
 ```
 
@@ -484,6 +504,7 @@ batch over a broad speculative rewrite.
 - **Delete a phrase.** `deletePhrase()` cascades its translations away and there is no
   history to recover them from.
 - **Blank a translation.** See above — empty means "skip", on both surfaces.
+- **Address a translation by locale.** `de_DE` is a `422`; the API speaks `de`.
 - **Read another project's phrases.** `trans_phrases` is shared with two other
   projects, and every read here is scoped to this one in the `WHERE` clause. A phrase
   id belonging to `patres` is a `404`, not a leak.
@@ -522,7 +543,8 @@ normalizes both sides — echo back whatever you were given and it will match.
 | `src/Schoenstatt/Association/AssociationResource.php` | the representation, merge and ETag |
 | `src/Schoenstatt/Association/AssociationValidator.php` | the form's filter, headless |
 | `src/Schoenstatt/Association/AssociationInputFilterSpec.php` | the rules themselves |
-| `src/JTranslate/Phrase/PhraseResource.php` | the phrase representation, ETag and change detection |
+| `src/JTranslate/Phrase/PhraseResource.php` | the phrase representation, ETag and change detection — and the language↔locale conversion on both edges |
+| `module/JTranslate/src/I18n/LanguageMap.php` | the mapping itself, and why an ambiguous configuration throws |
 | `src/JTranslate/Phrase/PhraseValidator.php` | the translator form's filter, headless — and the static-adapter seam |
 | `module/JTranslate/src/Model/TranslationsTable.php` | `getPhrasePage()`, `countPhrases()`, `getPhraseById()`; the project scoping |
 | `config/autoload/juser.global.php` | `api_token_roles` — which accounts a token can be issued *for* |
