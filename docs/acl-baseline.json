@@ -25,15 +25,15 @@
         "guarded_routes_total": 164,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
-        "roles": 44,
+        "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 22,
         "rules_from_rule_config": 34,
         "symfony_routes_acl_checked": 40,
-        "symfony_routes_open": 16,
+        "symfony_routes_open": 24,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 56,
+        "symfony_served_routes": 64,
         "total_routes": 189,
         "unguarded_routes": 25,
         "unguarded_routes_matchable": 14
@@ -451,6 +451,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -695,6 +696,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1113,6 +1115,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1183,6 +1186,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1543,6 +1547,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1671,6 +1676,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1741,6 +1747,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1811,6 +1818,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -1881,6 +1889,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -2349,6 +2358,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -3389,6 +3399,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -3574,6 +3585,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5452,6 +5464,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5522,6 +5535,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5615,6 +5629,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -5685,6 +5700,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -6032,6 +6048,7 @@
                 "pub_user",
                 "sch_administrator",
                 "sch_api_bot",
+                "sch_api_translator",
                 "sch_basic",
                 "sch_general_moderator",
                 "sch_institute",
@@ -6916,6 +6933,11 @@
             "descendants": [],
             "parent": null
         },
+        "sch_api_translator": {
+            "ancestors": [],
+            "descendants": [],
+            "parent": null
+        },
         "sch_basic": {
             "ancestors": [
                 "user"
@@ -7662,9 +7684,89 @@
                 "denial_style": "n/a"
             }
         },
+        "api-v3/phrase": {
+            "path": "/api/v3/phrases/{phrase_id}",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::show",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-method": {
+            "path": "/api/v3/phrases/{phrase_id}",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-patch": {
+            "path": "/api/v3/phrases/{phrase_id}",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::patch",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrases": {
+            "path": "/api/v3/phrases",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::index",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrases-method": {
+            "path": "/api/v3/phrases",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrases-patch": {
+            "path": "/api/v3/phrases",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::patchCollection",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
         "api-v3/schema": {
             "path": "/api/v3/schema",
-            "controller": "App\\Controller\\Api\\ApiSchemaController",
+            "controller": "App\\Controller\\Api\\ApiSchemaController::index",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/schema-entity": {
+            "path": "/api/v3/schema/{entity}",
+            "controller": "App\\Controller\\Api\\ApiSchemaController::entity",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public \u2014 it describes the field contract and exposes no data",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/schema-entity-method": {
+            "path": "/api/v3/schema/{entity}",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
             "access": {
                 "kind": "open",
                 "resource": null,
