@@ -7,6 +7,7 @@ namespace App\JTranslate\Phrase;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
+use JTranslate\I18n\LanguageMap;
 
 use function is_scalar;
 use function is_string;
@@ -75,18 +76,18 @@ final class PhraseResource
 {
     /**
      * @param array<string, mixed> $phrase a record as TranslationsTable::getPhraseById() returns
-     * @param list<string> $locales the writable locale set, from TranslationsTable::getLocales(true)
+     * @param LanguageMap $languages the writable set, addressed by language code
      * @param string|null $contextPath the resolved page path, or null when the route needs parameters
      * @param string $baseUrl scheme and host, from the request this is answering
      * @return array<string, mixed>
      */
     public static function represent(
         array $phrase,
-        array $locales,
+        LanguageMap $languages,
         ?string $contextPath = null,
         string $baseUrl = ''
     ): array {
-        $translations = self::translations($phrase, $locales);
+        $translations = self::translations($phrase, $languages);
         $base         = rtrim($baseUrl, '/');
 
         return [
@@ -117,18 +118,24 @@ final class PhraseResource
     }
 
     /**
-     * The locale map, one entry per configured locale whether or not a row exists.
+     * The translations, **keyed by language code**, one entry per configured language
+     * whether or not a row exists.
+     *
+     * `de`, not `de_DE`. The record this reads is keyed by locale because that is what
+     * `trans_translations` stores; the document this writes is keyed by language because
+     * that is what a caller outside the application means. The translation happens here,
+     * at the boundary, and nowhere else.
      *
      * @param array<string, mixed> $phrase
-     * @param list<string> $locales
      * @return array<string, array<string, mixed>>
      */
-    public static function translations(array $phrase, array $locales): array
+    public static function translations(array $phrase, LanguageMap $languages): array
     {
         $document = [];
-        foreach ($locales as $locale) {
-            $text = $phrase[$locale] ?? null;
-            $document[$locale] = [
+        foreach ($languages->languages() as $language) {
+            $locale = (string) $languages->localeFor($language);
+            $text   = $phrase[$locale] ?? null;
+            $document[$language] = [
                 //'' and null both mean "nobody has translated this". The table holds
                 //both — the column is NOT NULL, so a blanked translation is an empty
                 //string while an untouched locale has no row at all — and an agent
@@ -164,18 +171,20 @@ final class PhraseResource
     }
 
     /**
-     * The locales a patch actually asks to change, ignoring those already holding the
+     * The languages a patch actually asks to change, ignoring those already holding the
      * submitted text.
      *
-     * Reported back so an agent can tell "I changed three locales" from "I sent three
-     * and two were already right" — the difference between a useful write and a
-     * catalog recompile that changed nothing.
+     * Takes a locale-keyed patch — the shape the write itself uses — and answers in
+     * language codes, because `changed` is part of the response and the response speaks
+     * languages. Reported back so an agent can tell "I changed three languages" from "I
+     * sent three and two were already right", which is the difference between a useful
+     * write and a catalog recompile that changed nothing.
      *
      * @param array<string, mixed> $phrase
-     * @param array<string, mixed> $patch
-     * @return list<string>
+     * @param array<string, mixed> $patch keyed by locale
+     * @return list<string> language codes
      */
-    public static function changedLocales(array $phrase, array $patch): array
+    public static function changedLanguages(array $phrase, array $patch, LanguageMap $languages): array
     {
         $changed = [];
         foreach ($patch as $locale => $text) {
@@ -184,7 +193,7 @@ final class PhraseResource
             //strings a loose comparison should call equal. '0' and 0 do not both occur
             //here the way they do on an association's checkbox columns.
             if ((string) $current !== (string) $text) {
-                $changed[] = (string) $locale;
+                $changed[] = $languages->languageFor((string) $locale) ?? (string) $locale;
             }
         }
 
@@ -200,19 +209,33 @@ final class PhraseResource
      * keys at all, and an agent cannot steer a write at another phrase's row even in
      * principle.
      *
-     * Unlike the association API this does **not** merge the unpatched locales back
-     * in. updatePhrase() skips any locale the submission does not carry, so a partial
-     * patch is already partial, and re-sending a locale's stored text would only
-     * produce work for the change detector to discard.
+     * **The keys are translated back to locales here.** The caller sends `de`; the form
+     * and `updatePhrase()` both work in `de_DE`, because that is what
+     * `trans_translations.locale` holds. This is the one place that conversion happens
+     * on the way in, mirroring translations() on the way out — a language code must
+     * never reach the database and a locale must never reach the caller.
      *
-     * @param array<string, mixed> $patch
-     * @return array<string, mixed>
+     * Unlike the association API this does **not** merge the unpatched languages back
+     * in. updatePhrase() skips any locale the submission does not carry, so a partial
+     * patch is already partial, and re-sending stored text would only produce work for
+     * the change detector to discard.
+     *
+     * @param array<string, mixed> $patch keyed by language code
+     * @return array<string, mixed> keyed by locale, plus phraseId
      */
-    public static function submission(int $phraseId, array $patch): array
+    public static function submission(int $phraseId, array $patch, LanguageMap $languages): array
     {
         $data = ['phraseId' => $phraseId];
-        foreach ($patch as $locale => $text) {
-            $data[(string) $locale] = $text;
+        foreach ($patch as $language => $text) {
+            $locale = $languages->localeFor((string) $language);
+            if (null === $locale) {
+                //Unreachable: the controller refuses an unknown language with a 422
+                //before it gets here. Skipped rather than passed through, because a
+                //language code arriving in the form's data would be validated as an
+                //unknown field and the 422 would name the wrong thing.
+                continue;
+            }
+            $data[$locale] = $text;
         }
 
         return $data;
