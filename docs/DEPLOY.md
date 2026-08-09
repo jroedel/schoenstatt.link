@@ -372,6 +372,13 @@ Two things about it that bear on deploying specifically:
   (it is a class file) while the merged service map stays stale, so you get
   `Unable to resolve service ...` for a service that is plainly registered in
   the config you are looking at.
+  - Step 3 is what clears it, and it runs *after* the upload in step 2, so
+    between them the new files meet the old service map. That window is the
+    reason `layout.phtml` asks whether the `servingNote` helper is registered
+    before calling it: an unresolved view helper inside a layout throws after
+    the response is assembled, which is a blank HTTP 200 on every
+    laminas-rendered page rather than one missing footer line. Any future
+    layout-level helper wants the same guard.
 - **Failures before the container exists** — a broken merged config, a module
   that will not load — are recorded but *cannot* be emailed: the recipients live
   in the very configuration that failed to build. They land in the store and in

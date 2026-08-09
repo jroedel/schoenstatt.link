@@ -66,6 +66,14 @@
  *    nothing to do with the page: `<head>` in full, the language chooser, every
  *    `application/ld+json` block, `<body >`'s stray space, and Twig's added
  *    `aria-current="page"`.
+ * 8. **The footer's serving note** (App\View\ServingNote), which is the one rule here
+ *    that erases a difference between the two renderings — and does so because that
+ *    difference *is the feature*: the note says "Twig template" on one side and
+ *    ".phtml view script via LegacyBridge" on the other, on purpose, so that a human
+ *    can tell at a glance what served the page. Comparing it would report drift on
+ *    every path in every locale and drown everything else. What is lost is nothing this
+ *    tool was ever checking: the note is pinned by test/Unit/ServingNoteTest and
+ *    test/Smoke/ServingNoteSmokeTest instead. Goes away when the note does.
  *
  * ## Why rules 6 and 7, and what they cost
  *
@@ -347,6 +355,11 @@ function normalize(string $html, string $account): string
     $html = str_replace('<body >', '<body>', $html);
     $html = str_replace(' aria-current="page"', '', $html);
     $html = 'TITLE: ' . ($title[1] ?? '') . "\n" . $html;
+
+    // rule 8 — the serving note differs between the two renderings by design; see the
+    // file docblock. Matched on the class rather than the text so that rewording the
+    // note never silently un-strips it.
+    $html = preg_replace('#<p class="[^"]*serving-note[^"]*">.*?</p>#s', '', $html) ?? $html;
 
     // rule 6 — the two layouts are not whitespace-identical and never were. Two steps:
     // collapse every run to one space, then drop the space *between two tags*
