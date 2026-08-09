@@ -259,3 +259,9 @@ curl -i https://schoenstatt.link/api/v3/schema
 agent will not send a canary cookie — and should not be asked to, since the cookie is a
 staging device, not an API contract. Until then the canary is how to prove the endpoints
 work against real production data.
+
+That flip is one line in `public/.htaccess`, and everything around it was prepared on
+2026-08-09: the procedure, its two checklists and its three rollbacks are in
+[DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally). Note the v3 prerequisite
+it names — `database/db6.6.sql` applied and at least one bot account holding the role, or
+every agent request 401s the moment the endpoints become reachable.

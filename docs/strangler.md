@@ -102,15 +102,15 @@ config key.
 
 | where | set in | value now |
 |---|---|---|
-| capsule | `docker/apache-vhost.conf` (committed, baked into the image) | `1` |
-| production | `public/.htaccess` (**tracked and deployed**) | not set → `0`, plus a cookie-gated canary |
+| capsule | `docker/apache-vhost.conf` (committed, baked into the image) | `1`, with `SetEnv` — so **no cookie can move a capsule request off it** |
+| production | `public/.htaccess` (**tracked and deployed**) | no site-wide default → `0`, plus a cookie override each way |
 
 So **the capsule runs the Symfony front controller and production does not.**
-That is the whole point of the gate: reverting production is a `SetEnv` edit and
-an Apache reload rather than a phploy deploy, which matters while phploy still
-has its mid-deploy broken window. To A/B locally, edit
-`docker/apache-vhost.conf`, then `docker compose build && docker compose up -d`
-(the vhost is `COPY`d into the image, not mounted).
+That is the whole point of the gate: reverting production is an `.htaccess` edit and
+nothing else, which matters while phploy still has its mid-deploy broken window. To A/B
+locally, edit `docker/apache-vhost.conf`, then
+`docker compose build && docker compose up -d` (the vhost is `COPY`d into the image, not
+mounted).
 
 **`public/.htaccess` is tracked and phploy deploys it** — this file said "untracked,
 server-side" until 2026-08-08 and that was simply wrong. The pre-deploy hook copies the
@@ -118,45 +118,69 @@ server's version into `data/htaccess-backups/` on every run *because* the deploy
 overwrites it, so a hand-edit on the server survives exactly until the next deploy. Edit
 the repo copy.
 
-To flip production on for everyone, add next to the existing
-`SetEnv "APP_ENV" "production"`:
+### The three states, and the two ways to write the flip wrongly
+
+`public/.htaccess` has room for a site-wide default and carries two per-visitor
+overrides:
 
 ```apache
-SetEnv "SYMFONY_KERNEL" "1"
+#   SetEnvIf Request_URI ".*"             SYMFONY_KERNEL=1   <- the flip; not there yet
+SetEnvIf Cookie "sl_symfony_canary=1"     SYMFONY_KERNEL=1
+SetEnvIf Cookie "sl_symfony_canary=0"     SYMFONY_KERNEL=0
 ```
 
-### The canary: verifying in production without flipping it
+So the cookie has **three** states: absent means "whatever everyone else gets", `1`
+forces `App\Kernel`, `0` forces `Laminas\Mvc\Application`. Before the flip the opt-in is
+the canary that makes ported routes testable against production's real data, real ICU
+(**72.1** there against the capsule's 76.1 — 27 `IntlDateFormatter` call sites) and real
+session store, without a window in which all traffic is on them. After it, the opt-out is
+how one person gets back to laminas without a deploy. `App\Http\KernelCanary` is the
+single PHP-side definition of all of it.
 
-Since 2026-08-08 `public/.htaccess` carries a cookie gate instead:
+**Both overrides are deployed before the flip on purpose**, so that the flip is one
+*added* line and the escape hatch has been exercised before it is the only one left. The
+two ways to add that line and silently kill the escape hatch, both measured:
 
-```apache
-SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1
-```
+- **Below an override.** mod_setenvif evaluates top to bottom and the *last* match wins,
+  so a default below an override overwrites it. Probed 2026-08-09: with the order
+  reversed, a request carrying `sl_symfony_canary=0` still arrived with
+  `SYMFONY_KERNEL=1`.
+- **With `SetEnv`.** mod_env runs *after* all of mod_setenvif, so `SetEnv
+  SYMFONY_KERNEL 1` beats every line in the block whatever the file order. Measured
+  2026-08-08, after making that exact mistake with `SetEnv SYMFONY_KERNEL 0`.
 
-A request carrying that cookie gets `App\Kernel`; everyone else keeps getting
-laminas-mvc. That is what makes the ported routes testable against production's real
-data, real ICU (**72.1** here against the capsule's 76.1 — 27 `IntlDateFormatter` call
-sites) and real session store, without a window in which all traffic is on them.
+Neither has any symptom beyond a cookie that stops doing anything, which is why
+`test/Integration/KernelCanaryTest` pins both against the file itself — before the flip
+is written rather than after. `docs/DEPLOY.md` carries the flip runbook and the three
+rollbacks.
 
-Three things to know:
+Two further things to know:
 
-- **`SetEnv` beats `SetEnvIf`.** mod_env runs *after* mod_setenvif, so adding
-  `SetEnv SYMFONY_KERNEL 0` beside the canary to "make the default explicit" silently
-  disables it, whatever order they appear in. Measured, after making that mistake.
-- **It is a toggle, not a secret.** Anyone can set the cookie. That is safe because both
+- **These are toggles, not secrets.** Anyone can set either. That is safe because both
   front controllers consult the same ACL — `App\Authorization\RouteGuard` asks about the
   same `route/<name>` resources `BjyAuthorize\Guard\Route` does, from the same config —
-  so an opted-in visitor reaches nothing they could not already reach. `docs/acl-rules.md`
-  is what guarantees that, not the cookie.
-- **It fails closed.** Anything wrong with the cookie, the header or the file leaves the
-  visitor on laminas.
+  so an opted-in visitor reaches nothing they could not already reach.
+  `docs/acl-rules.md` is what guarantees that, not the cookie.
+- **The pre-flip state fails closed.** Anything wrong with the cookie, the header or the
+  file leaves the visitor on laminas. That inverts at the flip, which is the honest
+  reason the rollback list in DEPLOY.md is three items long rather than one.
 
 ### Switching it from a browser
 
-Administrators get a **Switch kernel** item in the navbar, which sets or clears the
-cookie and drops them back on the page they came from with a flash saying which kernel
-they are now on. `sch_administrator` only — the canary is not a privilege, but a menu
-item that changes how the site renders is not something to offer visitors.
+Administrators get a **Switch kernel** item in the navbar, which drops them back on the
+page they came from with a flash saying what changed. `sch_administrator` only — the
+canary is not a privilege, but a menu item that changes how the site renders is not
+something to offer visitors.
+
+It **offers whichever kernel you are not on**, and the way it decides is the part worth
+keeping: `Application\Controller\IndexController::kernelSwitchAction()` asks two
+questions it can actually answer — "am I overriding anything?" from the cookie, and
+"which kernel is serving me?" from `getenv('SYMFONY_KERNEL')`, which Apache exports to a
+bridged request too. Holding an override clears it; holding none sets the opposite of the
+live kernel. The site *default* appears nowhere in that logic, because PHP cannot read
+`.htaccess` and inferring it would be a guess — which is why the action needs no edit on
+flip day, and why its message for the clear branch says "the same front controller as
+every other visitor" rather than naming one.
 
 It is a **laminas** route (`kernel-switch`), and that is the design decision worth
 keeping: the Symfony kernel bridges every unported path back to laminas, so one action
@@ -174,29 +198,67 @@ Two things it has to handle, both in
   the current request, and falls back to the home page otherwise.
 
 The cookie is written with **no expiry**, i.e. a session cookie: closing the browser
-reverts to laminas, so nobody leaves themselves on the Symfony kernel for weeks without
+drops the override, so nobody leaves themselves off the site default for weeks without
 noticing.
 
-`test/Integration/KernelCanaryTest` is what stops the two definitions of the cookie name
-drifting — the PHP constant and the Apache directive — because nothing in PHP reads
-`.htaccess` and a rename on either side has *no symptom at all*: the toggle sets a
-cookie, the admin is redirected, a success message appears, and the front controller
-never changes.
+`test/Integration/KernelCanaryTest` is what stops the definitions drifting — the PHP
+constants and the Apache directives — because nothing in PHP reads `.htaccess` and a
+rename on either side has *no symptom at all*: the toggle sets a cookie, the admin is
+redirected, a success message appears, and the front controller never changes. It also
+pins the two ordering rules above, and that the variable is named the same thing in
+`.htaccess` and `public/index.php`.
 
-`tools/smoke-prod.sh` runs a canary pass when `SMOKE_PROD_CANARY_COOKIE` is set, and it
-asserts **both directions** — that the cookie reaches the Symfony kernel, *and* that
-requests without it still get laminas. A canary that never engages and a canary that
-leaks to everyone are both failures, and only the negative checks tell either apart from
+`tools/smoke-prod.sh` runs a front-controller pass when `SMOKE_PROD_CANARY_COOKIE` is
+set. It **probes which kernel is the site default** and then asserts the pair: that the
+default really serves ordinary traffic, and that the override really reaches the other
+one. A default that has silently reverted and an override that has silently stopped
+working are both failures, and only checking both directions tells either apart from
 success. The discriminators are `/_health` (a route only Symfony has) and
 `slm_locale=en_US` (a cookie only SlmLocale sets).
 
-What it cannot reach is a signed-in page: the script does no sign-in, so the four guarded
+Probing rather than assuming is deliberate: the script used to hard-code "production is
+laminas, the cookie is the exception", which turns into a false failure on flip day — the
+one day the deploy's own smoke run most needs to be believed. As of 2026-08-09 it also
+covers every public ported route rather than the first seven, the v3 API's public schema
+and its JSON 401, and three of `LaminasResponseConverter`'s four rules on a *bridged*
+page: real gzip under `Content-Encoding: gzip`, no duplicated `Set-Cookie`, and no
+invented `Cache-Control`. Those last three are the whole site's path after the flip, and
+production is the only place they can be checked behind a TLS-terminating proxy. Pointing
+the script at the capsule fails the two opt-out checks by design, because the vhost's
+`SetEnv` outranks any cookie there.
+
+What it cannot reach is a signed-in page: the script does no sign-in, so the guarded
 routes are checked for their *refusal* — the 302 to the sign-in page that
 `App\Authorization\RouteGuard` reproduces from `JUser\View\RedirectionStrategy`. That is
 worth more than it sounds: a ported guarded route that admitted everyone would look
 perfectly healthy, and this is the check that sees it. Verifying the pages themselves
 means browsing them with the cookie set and a moderator session, which is the manual
 step.
+
+### What flipping the default changes that the canary never showed
+
+Everything a ported route does is already exercised in production through the cookie. What
+the flip changes is *who* and *how much*, and three consequences only appear at that
+scale:
+
+- **Failures on ported routes now notify.** A ported route runs no module's
+  `onBootstrap`, so `SionModel\Module` never upgraded `FatalErrorHandler` past its
+  container-free fallback: a record in `data/exceptions`, default capture settings, and
+  no email. `App\Kernel::handle()` installs the configured resolver itself (2026-08-09),
+  lazily, and returns `[null, null]` rather than throwing if the container is what broke
+  — because `FatalErrorHandler::report()` wraps resolve *and* report in one try/catch, so
+  a throwing resolver would cost the whole record. Pinned by
+  `test/Integration/PortedRouteErrorReportingTest`.
+- **Missing translation phrases stop being recorded for ported pages, for everyone.**
+  `JTranslate`'s `MvcEvent::FINISH` listener is what writes them, and no ported route runs
+  it. Deliberate — see the FINISH-listener note below — but until the flip it applied to
+  canary traffic only. `/admin/translations` will therefore stop learning about phrases on
+  ported pages.
+- **The bridge is in front of every unported request.** Measured 2026-08-09 in the capsule
+  on `/en/user/login`, sequential warm requests: median 175 ms bridged against 169 ms
+  direct, with an A-B-A control drifting by the same 2–6 ms. So the kernel, the route
+  match and the response conversion together are inside the noise of a page that spends
+  ~170 ms in laminas. Not a reason to hesitate; recorded so nobody has to re-derive it.
 
 **Beware `APP_ENV` when reasoning about either.** `public/.htaccess` sets
 `APP_ENV=production`, and because `AllowOverride All` is on, that wins over the
@@ -937,7 +999,8 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 
 ## Verifying
 
-- `php composer.phar test` — **791 tests** (measured 2026-08-08, after the eight routes of
+- `php composer.phar test` — **916 tests** (measured 2026-08-09, after the flip
+  preparation; 791 after the eight routes of
   batch 4 and the removal of the blog; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
   631 after the wayside-shrine port, 618 after the authorization bridge, 551 before it,
   527 before the shrines port).
@@ -981,7 +1044,17 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
   merged config from `config/symfony/routes.php` would load every laminas module
   before the first route existed, and `/_health` would start paying for it.
 - `test/Integration/LaminasResponseConverterTest.php` pins the four conversion
-  rules above. None of them are visible to a status-code assertion.
+  rules above. None of them are visible to a status-code assertion. Three of the four are
+  additionally checked against production on a bridged page by `tools/smoke-prod.sh`,
+  which is where the TLS-terminating proxy the capsule lacks is in the path.
+- `test/Integration/PortedRouteErrorReportingTest.php` invokes the resolver
+  `App\Kernel::handle()` installs and asserts it produces the *real* `ErrorHandling` and
+  `RequestContext`, not null. It exists because the failure it guards is doubly silent:
+  a ported route whose failures are recorded but never notified looks exactly like one
+  whose failures never happen, and the resolver swallows its own exceptions by design.
+  It caught a plausible-looking `SionModel\Error\ErrorHandling` import — the class lives
+  in `SionModel\Service` — that had degraded the whole thing back to the container-free
+  path.
 - `test/Integration/CacheStatusParityTest.php` pins that the ported
   `/sm/cache-status` and the laminas action it coexists with describe the same JSON
   document, and that the two JSON encoders involved agree on the bytes. It compares
