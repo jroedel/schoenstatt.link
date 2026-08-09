@@ -276,10 +276,16 @@ class SchoenstattTable extends SionTable implements
     }
 
     /**
-     * Gets a simple key => value array of the generation
-     * @param TranslatorInterface $translator
-     * @param string $includeInactive
-     * @param string $includeNonLifeLongMembership
+     * Gets a simple associationId => name array, for a dropdown or for a domain check.
+     *
+     * The two flags were documented as `string` and there is no `$translator`
+     * parameter; both are read as booleans throughout the body. Corrected because
+     * App\Schoenstatt\Association\AssociationFieldDomains passes `true` deliberately —
+     * a validation haystack must include inactive associations even though a dropdown
+     * should not offer them.
+     *
+     * @param bool $includeInactive
+     * @param bool $includeNonLifeLongMembership
      * @return string[]
      */
     public function getAssociationValueOptions($includeInactive = false, $includeNonLifeLongMembership = true)

@@ -1,0 +1,154 @@
+{#
+  The association (and shrine) edit form — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/associations/edit.phtml and its
+  fields-partial.phtml, which still render this page on production.
+
+  Field order and grouping are copied from that partial deliberately and should be
+  changed in both or neither: the two renderings are live at the same time on
+  different front controllers, and a moderator who edits a shrine through one and
+  then the other should not see the form rearrange itself.
+
+  The two hand-built groups at the top are the partial's, not a row helper's — it
+  packs the name field together with its two checkboxes, and the internal name with
+  three more, rather than giving each its own row. That is why form_label/
+  form_element/help_block appear individually here and everything below is a plain
+  form_row.
+#}
+{% extends 'layout.html.twig' %}
+
+{#
+  The two assets fields-partial.phtml appends through headLink()/headScript(). The
+  script filename carries the primary language, because the bundle contains the
+  jQuery-validate locale strings.
+#}
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-validate-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Edit Association') }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_hidden(form.get('associationId')) }}
+<div class="form-group ">
+    {{- form_label(form.get('name')) }}
+    {{- form_element(form.get('name')) }}
+    {{- form_errors(form.get('name')) }}
+    {{- help_block(form.get('name')) }}
+    {{- form_element(form.get('overrideNameFormat')) }}
+    {{- form_errors(form.get('overrideNameFormat')) }}
+    {{- help_block(form.get('overrideNameFormat')) }}<br>
+    {{- form_element(form.get('isNameTranslateable')) }}
+    {{- form_errors(form.get('isNameTranslateable')) }}
+    {{- help_block(form.get('isNameTranslateable')) }}
+</div>
+<div class="form-group ">
+    {{- form_label(form.get('internalName')) }}
+    {{- form_element(form.get('internalName')) }}
+    {{- form_errors(form.get('internalName')) }}
+    {{- help_block(form.get('internalName')) }}
+    {{- form_element(form.get('isInternalNameTranslateable')) }}
+    {{- form_errors(form.get('isInternalNameTranslateable')) }}
+    {{- help_block(form.get('isInternalNameTranslateable')) }}<br>
+    {#- @todo only show this for associationKinds which could actually be life communities #}
+    {{- form_element(form.get('isLifeCommunity')) }}
+    {{- form_errors(form.get('isLifeCommunity')) }}
+    {{- help_block(form.get('isLifeCommunity')) }}<br>
+    {{- form_element(form.get('isActive')) }}
+    {{- form_errors(form.get('isActive')) }}
+    {{- help_block(form.get('isActive')) }}
+</div>
+{#
+  `false` is the partial's `$this->formSelect()->setTranslatorEnabled(false)`, which
+  wraps exactly these seven rows: an association name, a country name, an IANA zone
+  identifier and a kind label are data, not interface text, and running them through
+  the translator turns a shrine called "Office" into whatever the catalogue says.
+  The rows after this block are back to translated options — "Alternate cell phone"
+  really does render as "Alternative cell phone" through the en catalogue.
+#}
+{{ form_row(form.get('parentId'), false) }}
+{{ form_row(form.get('kind'), false) }}
+{{ form_row(form.get('country'), false) }}
+{{ form_row(form.get('timeZoneId'), false) }}
+{{ form_row(form.get('openingHoursHuman'), false) }}
+{{ form_row(form.get('openingHoursSpecificationJson'), false) }}
+{{ form_row(form.get('eventsHuman'), false) }}
+{{ form_row(form.get('foundationDate')) }}
+{{ form_row(form.get('foundationDatePrecision')) }}
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
+{{ form_row(form.get('publicNotes')) }}
+{{ form_row(form.get('adminNotes')) }}
+    <hr>
+    <h2>{{ translate('Contact Info') }}</h2>
+{{ form_row(form.get('email')) }}
+{{ form_row(form.get('phone1')) }}
+{{ form_row(form.get('phone1Label')) }}
+{{ form_row(form.get('phone2')) }}
+{{ form_row(form.get('phone2Label')) }}
+{{ form_row(form.get('phone3')) }}
+{{ form_row(form.get('phone3Label')) }}
+{{ form_row(form.get('twitterUser')) }}
+{{ form_row(form.get('instagramUser')) }}
+{{ form_row(form.get('facebookUrl')) }}
+{{ form_row(form.get('url1')) }}
+{{ form_row(form.get('url1Label')) }}
+{{ form_row(form.get('url2')) }}
+{{ form_row(form.get('url2Label')) }}
+{{ form_row(form.get('url3')) }}
+{{ form_row(form.get('url3Label')) }}
+{{ form_row(form.get('geoPoint')) }}
+{{ form_row(form.get('street1')) }}
+{{ form_row(form.get('street2')) }}
+{{ form_row(form.get('cityState')) }}
+{{ form_row(form.get('zip')) }}
+{{ form_row(form.get('googlePlaceId')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  selectize on the free-text label selects, and on country. `create: true` on the
+  six label fields is the UI half of the decision recorded in
+  App\Schoenstatt\Association\AssociationInputFilterSpec: those fields have no
+  InArray precisely because a moderator is expected to type a label the list does
+  not have, and 12 stored values already are.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='country']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='phone1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}

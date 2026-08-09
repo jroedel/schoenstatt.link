@@ -30,6 +30,11 @@
                            navbar beside it says "Literatura". Measured; do not
                            "fix" it in a page template.
     block content          the page body.
+    block page_stylesheets   a page's own <link> tags, after gen-basic.css. The
+                           laminas counterpart is headLink()->appendStylesheet()
+                           called from the view script.
+    block page_scripts     a page's own <script src>, after gen-basic.js — the
+                           headScript()->appendFile() counterpart.
     block inline_scripts   scripts at the end of <body>. Anything inline MUST
                            carry nonce="{{ csp_nonce() }}" or the CSP blocks it.
 
@@ -62,6 +67,12 @@
         {% endfor %}
 
         <link href="/css/gen-basic.css" media="screen" rel="stylesheet" type="text/css">
+        {#
+          A page's own stylesheets, which the laminas layout gets from
+          headLink()->appendStylesheet() inside the view script. Emitted here, after
+          gen-basic.css, because that is where headLink appends them.
+        #}
+        {% block page_stylesheets %}{% endblock %}
 
         <!-- ****** faviconit.com favicons ****** -->
         <link rel="shortcut icon" href="/favicon.ico">
@@ -88,6 +99,8 @@
 
         <!-- Scripts -->
         <script src="/js/gen-basic.js"></script>
+        {# a page's own scripts, the headScript()->appendFile() counterpart #}
+        {% block page_scripts %}{% endblock %}
         <!--[if lt IE 9]><script src="/js/html5shiv.min.js"></script><![endif]-->
         <!--[if lt IE 9]><script src="/js/respond.min.js"></script><![endif]-->
     </head>
