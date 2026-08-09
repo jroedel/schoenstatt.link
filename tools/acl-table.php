@@ -228,8 +228,15 @@ function symfonyRoutes(): array
     $ported = new Symfony\Component\Routing\RouteCollection();
     $routes = [];
     foreach ($collection->all() as $name => $route) {
-        $controller = (string) $route->getDefault('_controller');
-        if ($controller === 'App\Http\LegacyBridge') {
+        //`[Class::class, 'method']` since batch 4: a controller serving more than one
+        //route. Rendered as `Class::method`, which is what the table wants to show and
+        //what a string controller already looks like — casting the array would be an
+        //"Array to string conversion" notice and the word "Array" in the column.
+        $rawController = $route->getDefault('_controller');
+        $controller    = is_array($rawController)
+            ? implode('::', array_map('strval', $rawController))
+            : (string) $rawController;
+        if (str_starts_with($controller, 'App\Http\LegacyBridge')) {
             continue;
         }
         $routes[(string) $name] = [

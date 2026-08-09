@@ -1,0 +1,12 @@
+{#
+  module/Books/view/books/dictionary/index.phtml, which is a six-byte file containing
+  `<?php` and nothing else. So /dictionary is the site layout wrapped around an empty
+  body, and this template reproduces exactly that.
+
+  It is not a mistake to fix here. The dictionaries are reached from /literature, which
+  lists them; this route exists because `dictionary/inLanguage` is its child and a Part
+  route needs a parent. Giving it content would be a new feature.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}{% endblock %}

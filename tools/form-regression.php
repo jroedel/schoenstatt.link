@@ -51,7 +51,7 @@ const CANDIDATE_URLS = [
     '/en/assignments/2/edit',
     '/en/assignments/advanced-search',
     '/en/associations/create',
-    // Books / libraries / publications / texts / dictionary / blog
+    // Books / libraries / publications / texts / dictionary
     '/en/books/create/1',
     '/en/books/18370/edit',
     '/en/libraries/create',
@@ -63,7 +63,6 @@ const CANDIDATE_URLS = [
     '/en/texts/create',
     '/en/SL400001T/edit',   // text 1 via its schoenstatt.link short id
     '/en/dictionary/create',
-    '/en/blog/create',
     // JUser
     '/en/users/create',
     '/en/users/5/edit',

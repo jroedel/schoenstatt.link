@@ -6,14 +6,21 @@ namespace App;
 
 use App\Authorization\RouteGuard;
 use App\Controller\AdminController;
+use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
+use App\Controller\DictionaryController;
 use App\Controller\HealthController;
+use App\Controller\LibrariesController;
+use App\Controller\MusicController;
+use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PhpInfoController;
+use App\Controller\RolesController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
+use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
@@ -236,6 +243,48 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // The changes log. Reads the merged sion_model config to decide how much of
             // the database to read, so it needs the bridge as well as Twig.
             ViewChangesController::class => fn (): ViewChangesController => new ViewChangesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // Batch 4. Every one of these is the same three dependencies — the
+            // laminas services for its table, Twig for its template, RouteUrl for
+            // its links — because that is what a read-only index page needs and
+            // nothing more. Where a controller needs none of the three it says so.
+            TimelineController::class => fn (): TimelineController => new TimelineController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            MusicController::class => fn (): MusicController => new MusicController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            DictionaryController::class => fn (): DictionaryController => new DictionaryController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The one batch-4 controller that needs no laminas services: its content is
+            // a file on disk, and RouteUrl reaches laminas only when a link is
+            // assembled.
+            OneFiftyPreguntasController::class
+                => fn (): OneFiftyPreguntasController => new OneFiftyPreguntasController(
+                    $this->twig(),
+                    $this->routeUrl()
+                ),
+            AssociationsController::class => fn (): AssociationsController => new AssociationsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            RolesController::class => fn (): RolesController => new RolesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            LibrariesController::class => fn (): LibrariesController => new LibrariesController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()

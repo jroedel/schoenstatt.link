@@ -49,6 +49,23 @@ public/index.php
                                        ├─ [/{_locale}]/sm/view-changes
                                        │                 → App\Controller\ViewChangesController
                                        │                       └─ _changes-table.html.twig
+                                       ├─ [/{_locale}]/timeline
+                                       │                 → App\Controller\TimelineController
+                                       ├─ [/{_locale}]/music
+                                       │                 → App\Controller\MusicController
+                                       ├─ [/{_locale}]/dictionary        ⎫ App\Controller\
+                                       ├─ [/{_locale}]/dictionary/{inLanguage}
+                                       │                                 ⎭ DictionaryController
+                                       ├─ [/{_locale}]/literature/150-preguntas-sobre-schoenstatt
+                                       │                 → App\Controller\OneFiftyPreguntasController
+                                       ├─ [/{_locale}]/associations
+                                       │                 → App\Controller\AssociationsController
+                                       │                       └─ shares _associations-table.html.twig
+                                       │                          with both shrine indexes
+                                       ├─ [/{_locale}]/roles
+                                       │                 → App\Controller\RolesController
+                                       ├─ [/{_locale}]/libraries
+                                       │                 → App\Controller\LibrariesController
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
 ```
@@ -66,6 +83,10 @@ by asking whether `_route` is anything other than `legacy`:
 | `CspListener` | response | the `Content-Security-Policy` + nonce `SionModel\Mvc\CspListener` sends |
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
+
+As of batch 4, **47 of the 187 laminas routes are served by Symfony** (21 distinct paths,
+each declared twice for its locale prefix); `docs/acl-rules.md` carries the count and the
+guard each one is checked against.
 
 `config/symfony/routes.php` **is** the migration status of the site, read top to
 bottom: `UrlMatcher` takes the first route that matches, so everything declared
@@ -273,11 +294,12 @@ and the page still renders. Audited in full 2026-08-08 — four modules define o
 | module | what `onBootstrap` does | reproduced by |
 |---|---|---|
 | `Application` | attaches `GdprStrategy` | `App\Http\GdprCookieListener` |
-| | builds the DB-derived navigation branches and caches them in APCu | **nothing** — `App\View\SiteChrome` reads the raw `navigation` config, which loses a top-level item lighting up for a database-derived descendant. Documented under "The Twig layer" |
+| | builds the DB-derived navigation branches and caches them in APCu | **declared per route** since 2026-08-08 — `App\View\SiteChrome` reads the raw `navigation` config, so a page whose laminas twin lights up an ancestor names it with `SiteChrome::NAV_ROUTE`. `/dictionary/{lang}` and `/literature/150-…` both declare `publications`. Not derivable from route names — `dictionary/inLanguage` hangs under `publications` |
 | `Schoenstatt` | attaches `ModuleRouteListener` | **nothing, and nothing needed** — it rewrites laminas-mvc route matches, which a Symfony-served route does not have |
 | `JUser` | starts the session, prunes pre-Laminas values | `App\Http\SessionListener` |
 | | `GlobalAdapterFeature::setStaticAdapter()` | **nothing** — used only by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, and no ported route renders a form. **A prerequisite for the first form route ported**, which would otherwise get a null adapter from its `NoRecordExists` validator |
 | `JTranslate` | configures the translator: locale, fallback, the DB-report listener, and the file patterns that *are* the translations | `App\Laminas\TranslatorConfigurator` |
+| | `TranslationsTable::finishUp()` on `MvcEvent::FINISH`, which **writes the collected missing phrases to the database** | **nothing, and deliberately** — a ported route collects misses and never flushes them, so it contributes nothing to `/admin/translations`. Wiring it up is not free: it is what made every blog post blank in four locales (`Data too long for column 'phrase'` at FINISH, response discarded), so the overflow needs bounding first |
 | | sets the `translate`/`formLabel`/… helper text domains per controller module | the `_text_domain` route default, read by `App\Twig\LaminasExtension::translate()` |
 
 Two rows there are still "nothing", and both are deliberate rather than pending: the
@@ -461,10 +483,12 @@ issue the locale redirect, so it answers `/admin` with one hop to
 one redirect later; every real caller uses the prefixed form. Fixing it properly
 means moving the unprefixed-to-prefixed redirect out of the controllers and into a
 listener above the guard, which is a separate change and needs a per-route
-declaration of its own (the maintenance endpoints must *not* redirect). As of the
-wayside-shrine port there are **three** copies of that redirect —
-`ShrinesController`, `AdminController`, `WaysideShrinesController` — which is the
-threshold BACKLOG.md set for doing it.
+declaration of its own (the maintenance endpoints must *not* redirect). As of batch 4
+there are **eleven** routes doing it: the three original hand-written copies
+(`ShrinesController`, `AdminController`, `WaysideShrinesController`) plus eight going
+through `App\Http\LocalePrefix`, which was extracted so the batch did not add eight more
+hand-written ones. The helper is not the fix — it only makes the rule exist once — and
+the listener still wants doing. Consolidating the three originals belongs with it.
 
 ## The Twig layer
 
@@ -484,6 +508,9 @@ and what a later port should reuse rather than reinvent:
 | `src/Laminas/RouteUrl.php` | assembles laminas URLs, locale prefix included. **The reason any of this works** |
 | `src/Laminas/ViewHelpers.php` | the only door to a laminas view helper, one typed method per allowed helper |
 | `src/View/SiteChrome.php` | the chrome's decisions: ACL-filtered navigation, language chooser, search box |
+| `templates/books/_library-list.html.twig` | the library list, written as a partial now because the literature home page will need it |
+| `src/Http/LocalePrefix.php` | the 302 an HTML route owes its own unprefixed form, in one place |
+| `src/Books/EventTimeline.php` | the timeline's grouping, pinned against the laminas action by a parity test |
 
 Three settings in `TwigFactory` are decisions, each with its reasoning in the
 class docblock: `strict_variables` is **on** (the opposite of `PhpRenderer`),
@@ -513,6 +540,23 @@ about it are not obvious:
    `translate()` tries it before `default`. Measured in es_ES: `Shrines` lives *only* in
    `default`, `Wayside shrines` and `Fr.` *only* in `Schoenstatt`. No single default
    domain can render a page correctly, which is why the lookup consults two.
+
+**Three places take a domain other than the page's, and all three were wrong until
+2026-08-08.** Each was found by comparing a *signed-in* rendering in a non-English locale,
+which is why they survived batch 3:
+
+- **`<title>`** is translated by the layout, because laminas' `headTitle()` helper
+  translates by default and every ported page hands it a raw English string. Until this
+  batch the layout printed it verbatim, so `/es/developers` said "Developers Center" where
+  laminas says "Centro de desarrolladores". A page that has *already* translated its title
+  sets `page_title_translate = false`; only the dictionary does, mirroring its
+  `setTranslatorEnabled(false)`.
+- **Navigation labels** take the **`default`** domain, not the page's. Both halves are
+  measured: `Literature` → "Literatura" in es, so labels are translated; `Admin` → "Admin"
+  in es even though `Schoenstatt` holds "Administración", so it is not the page's domain.
+- **Breadcrumb labels are never translated at all.** `partial/breadcrumbs.phtml` prints
+  them verbatim, so `/es/dictionary/es` shows "Literature" in its trail beside a navbar
+  that says "Literatura". Do not "fix" that in a page template.
 
 `translate()`'s two-domain lookup is a **superset** of laminas' behaviour, not a mirror
 of it — laminas has no cross-domain fallback. It cannot lose a translation laminas finds;
@@ -594,7 +638,7 @@ Three things to know before using it:
   `editRouteParams`), because no entity spec sets them.
   `test/Integration/EntityFormatterTest` walks all 24 specs and fails the day one does
   — which is how `defaultRouteParams` came to be reproduced: it was on that omitted
-  list until the test's first run named blog-post, text and composition.
+  list until the test's first run named text and composition.
 - **`role` and `publication` are gated differently on a deleted row**, and this is the
   one place the two originals disagree. `Schoenstatt\View\Helper\FormatEntity` switches
   on the type at the very top of `__invoke()`, before anything reads `isDeleted` — so a
@@ -716,11 +760,63 @@ normalise them will drown in noise:
   `&quot;`; the laminas `.phtml` echoes it raw. Identical in a browser, and Twig's is the
   safer of the two. Unescape before comparing.
 
-With those normalised, the batch-3 ports plus the two shrine indexes came to **65 of 65
-responses identical across 5 locales × 13 routes**. On production the same comparison is
-available without any file edit, through the cookie canary above — and that is where it
-should be repeated, because production has translations, ICU 72.1 and five years more
-data than the capsule dump.
+### `tools/port-baseline.php` does all of that
+
+Since 2026-08-08 the procedure is a tool rather than a set of instructions:
+
+```
+# append `SetEnv SYMFONY_KERNEL 0` to public/.htaccess
+docker compose exec -T app php tools/port-baseline.php capture laminas
+# remove that line again
+docker compose exec -T app php tools/port-baseline.php capture symfony
+docker compose exec -T app php tools/port-baseline.php compare laminas symfony
+```
+
+It fetches every path in `PATHS` × 6 locale forms × 2 identities — **anonymous and an
+account holding every role** — and stores the raw responses; normalization happens at
+compare time, so changing a rule never costs another capture (and taking the laminas one
+means editing `public/.htaccess`). Read its docblock before trusting a result: the seven
+normalization rules are listed there with the reason each is not cheating.
+
+**It corrects the claim this file used to make.** "65 of 65 responses identical" was
+wrong as stated: whole documents were never identical and cannot be, because
+`templates/layout.html.twig` is a *reproduction* of `layout.phtml` and not a byte copy —
+different indentation, different `<head>` order, a different JSON-LD encoder, an added
+`aria-current`. Measured 2026-08-08 on batch-3 pages before this batch touched anything.
+Two further things differ between any two runs of the *same* front controller and have
+to go before anything can be compared at all: the language chooser draws its flag at
+**random**, and `SionTable::registerVisit()` bumps a counter the page then prints.
+
+So the comparison is scoped to what porting a page owns — `<title>`, the breadcrumb
+trail, the navbar (including which item is active), the flash region and the whole page
+body — and is whitespace-insensitive between tags. On that basis batch 4 came to **257 of
+300 responses identical** while it still included the blog; the differences that remain
+are itemized under "Known differences" below.
+
+On production the same comparison is available without any file edit, through the cookie
+canary above — and that is where it should be repeated, because production has
+translations, ICU 72.1 and five years more data than the capsule dump.
+
+### Known differences, and why each one stays
+
+Every remaining difference from the batch-4 run falls into one of five groups. None is a
+defect in a page ported by this batch; three are improvements and two are older.
+
+| what | where | why |
+|---|---|---|
+| a commented-out `<td>`, a stray space before a `<p>`, and a missing `//<!-- -->` script wrapper | `/shrines`, `/wayside-shrines` (20 responses) | batch-2 template nits, invisible in a browser. Left alone: they are shipped code and this batch has no business editing it |
+| `?redirect=/roles` vs `?redirect=/en/roles` | unprefixed form of a guarded path (5) | the redirect-order divergence already documented above, now visible on five routes |
+| — | | |
+
+#### A note on that FINISH listener
+
+The blog is gone (see history.md), and with it the worst instance of a hazard that is
+not: `JTranslate\Model\TranslationsTable::finishUp()` writes collected missing phrases
+on `MvcEvent::FINISH`, and the `phrase` column is not wide enough for an arbitrary
+string. Any laminas page that passes a long value through `translate()` can therefore
+throw *after* its response is assembled, and the visitor gets a 200 with an empty body.
+Ported routes never run that listener, which is why they cannot hit it — and why they
+also record nothing. Bounding the write is the fix; it is not done.
 
 ## Routes that are not portable yet, and why
 
@@ -779,6 +875,40 @@ either way — the merged config is cached there and an edit looks like it did n
 `sion-model/auto-fix-data-problems` remains unported and is a separate matter: it is
 POST-and-CSRF, and there is no form layer on the Symfony side yet.
 
+### `sitemap` (`/sitemap.xml`) — blocked on `Laminas\Navigation`
+
+`IndexController::sitemapAction()` walks the **Navigation service** with a
+`RecursiveIteratorIterator` and asks the `navigation()->sitemap()` view helper for each
+page's URL. Both are on the unavailable list for the same reason: the service's factory
+calls `$application->getMvcEvent()->getRouteMatch()`, so it cannot be *built* on a
+Symfony-served route, let alone rendered.
+
+Porting it therefore means reproducing the navigation tree itself, including the six
+database-derived branches `Application\Module::onBootstrap()` builds and caches in APCu —
+which is the same work as replacing `SiteChrome`'s config-only navigation with a real
+one. Worth doing once, for both; not worth doing for one route.
+
+### The form routes — blocked on two things, not one
+
+Everything that renders a `Laminas\Form` is unported, and the missing form layer is only
+the first obstacle. The second is `JUser\Module::onBootstrap()`'s
+`GlobalAdapterFeature::setStaticAdapter()`, which nothing on the Symfony side reproduces:
+`CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm` each build a
+`NoRecordExists` validator that reads the static adapter, and a null one is a fatal rather
+than a validation failure. It has to be dealt with before the first form route moves.
+
+That is what keeps `/literature` (a search form), `/movement`, `/persons`, `/texts` and
+every create/edit/delete page on laminas, and it is the largest single thing standing
+between here and the end of the migration.
+
+### `composition` (`/{sw_id}/{slug}` for a song) — blocked on the comment form
+
+The music *index* is ported; an individual song is not. `composition` has a comment
+predicate (`comment-comments-composition`), so `SionController::showAction()` builds a
+`CommentForm` and the template renders it for any signed-in visitor who may comment.
+The `text` entity is in the same position — `comment-comments-text` names it — so
+`/texts/…` show pages are blocked on the same thing.
+
 **A note on the fetch/display ratio, for whoever tunes this next.** With
 `changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows
 hydrated so the view can show the newest 500. That is correct rather than wasteful in
@@ -788,10 +918,10 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 
 ## Verifying
 
-- `php composer.phar test` — 729 tests (measured 2026-08-07, after this batch of nine
-  ported routes plus the view-changes repair; 631 after the wayside-shrine port, 618
-  after the authorization bridge, 551 before it, 527 before the shrines port). Per
-  suite: unit 119, integration 426, fuzz 18, smoke 166. (746 after the translator fix.)
+- `php composer.phar test` — **791 tests** (measured 2026-08-08, after the eight routes of
+  batch 4 and the removal of the blog; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
+  631 after the wayside-shrine port, 618 after the authorization bridge, 551 before it,
+  527 before the shrines port).
 
   That script now passes `-d memory_limit=1G`, as `composer fuzz` always has. Without
   it the *combined* run exhausts 512M in `Books\Form\Publication`'s factory, which
@@ -840,6 +970,19 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
   serves only the Symfony kernel, so no single URL can exercise both in one run —
   the test's docblock is explicit about that limit rather than implying a stronger
   claim.
+- `test/Smoke/Batch4SymfonySmokeTest.php` covers the seven public routes of batch 4 —
+  each one served by Symfony rather than bridged, each unprefixed form redirecting, and
+  the dictionary's two edge cases.
+- `test/Smoke/RestrictedIndexAuthorizationSmokeTest.php` covers the three restricted
+  indexes, and is the first authorization test in the suite with a *positive* case for an
+  ordinary account: registration grants `sch_user`, which `route/associations` names, so
+  that page is where "the guard runs" and "the guard says yes to the right people" can be
+  told apart. Every other one asserts a refusal and would pass against a guard that
+  refused everybody.
+- `test/Integration/EventTimelineParityTest.php` drives
+  `EventsController::groupEventsByEpochAndYear()` and `App\Books\EventTimeline::group()`
+  over the same rows and compares the *shape* — period order, year order, event keys —
+  because comparing the rows themselves compares object identity and proves nothing.
 - Audit new code at a real level:
   `phpstan analyse src --level 8` (config in `phpstan.neon.dist` stays at 0 for
   the legacy tree — see the level-ladder measurement in BACKLOG.md).

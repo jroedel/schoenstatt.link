@@ -36,7 +36,7 @@ use function str_contains;
  *
  *  - The navbar renders `setMinDepth(0)->setMaxDepth(0)`, i.e. **top-level pages
  *    only**. Everything Application\Module::onBootstrap() spends a request budget
- *    priming — the dictionary, publication, association, library, blog and music
+ *    priming — the dictionary, publication, association, library and music
  *    branches it builds from the database and caches in APCu — hangs below depth 0
  *    and never reaches the navbar. It feeds the breadcrumbs and the deeper menus
  *    on pages that render them, not this.
@@ -45,14 +45,28 @@ use function str_contains;
  *    render for a guest, because `Movement` and `Admin` declare resources
  *    (`route/schoenstatt`, `route/admin`) that a guest is denied.
  *
- * The one thing not reproduced is a top-level item lighting up because a
- * *database-derived* descendant is the current page — `Shrines` going active on an
- * individual shrine's page, say. Matching descends the static config only. No
- * ported route is such a page, and the port that makes one will have to prime the
- * branch it needs.
+ * A top-level item lighting up because a *database-derived* descendant is the current
+ * page is **declared, not derived**. Matching descends the static `navigation` config
+ * only, and Application\Module::onBootstrap() hangs a page per dictionary, per library
+ * and per publication underneath it — branches this class
+ * cannot see, because the Navigation service they are attached to cannot be built
+ * without an MvcEvent.
+ *
+ * So a ported route whose laminas twin lights up an ancestor says which one, as a
+ * `NAV_ROUTE` route default: /dictionary/{lang} and
+ * /literature/150-preguntas-sobre-schoenstatt both declare `publications`. Declared
+ * rather than inferred from the route name because the route names do **not** encode
+ * it — `dictionary/inLanguage` hangs under `publications`, and no prefix rule gets that
+ * right. Measured against the laminas rendering of each page, not guessed.
  */
 final class SiteChrome
 {
+    /**
+     * Route default naming the navigation item a page should mark active, when that is
+     * not the page's own route. See the class docblock.
+     */
+    public const NAV_ROUTE = '_nav_route';
+
     /**
      * Route names the layout refuses to put a search box on, verbatim from the
      * long conditional in layout.phtml.

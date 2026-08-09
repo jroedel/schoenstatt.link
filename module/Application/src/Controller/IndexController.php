@@ -15,7 +15,6 @@ use Carbon\Carbon;
 use Laminas\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
-use Books\Model\EventTextTable;
 use Books\Model\DictionaryTable;
 use samdark\sitemap\Sitemap;
 use Laminas\View\HelperPluginManager;
@@ -43,11 +42,6 @@ class IndexController extends AbstractActionController
     protected $schoenstattTable;
 
     /**
-     * @var EventTextTable $eventTextTable
-     */
-    protected $eventTextTable;
-
-    /**
      * @var DictionaryTable $dictionaryTable
      */
     protected $dictionaryTable;
@@ -59,7 +53,6 @@ class IndexController extends AbstractActionController
         Navigation $navigation,
         PublicationsTable $publicationsTable,
         SchoenstattTable $schoenstattTable,
-        EventTextTable $eventTextTable,
         DictionaryTable $dictionaryTable,
         HelperPluginManager $helperPluginManager,
         array $config
@@ -67,7 +60,6 @@ class IndexController extends AbstractActionController
         $this->navigation = $navigation;
         $this->publicationsTable = $publicationsTable;
         $this->schoenstattTable = $schoenstattTable;
-        $this->eventTextTable = $eventTextTable;
         $this->dictionaryTable = $dictionaryTable;
         $this->helperPluginManager = $helperPluginManager;
         $this->config = $config;
@@ -76,14 +68,10 @@ class IndexController extends AbstractActionController
     public function indexAction()
     {
 //         $changeCounts = $this->get6MonthsChanges();
-        $blogPosts = $this->eventTextTable->getObjects(
-            'text',
-            ['kind' => EventTextTable::TEXT_KIND_BLOG],
-            ['limit' => 5]
-        );
+        //index.phtml renders neither of these; the blog query that used to sit here read
+        //five rows nothing displayed, and went with the blog itself.
         return new ViewModel([
             'changeCounts' => [],
-            'blogPosts' => $blogPosts,
         ]);
     }
 

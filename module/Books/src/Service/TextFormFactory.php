@@ -21,7 +21,7 @@ class TextFormFactory implements FactoryInterface
         /** @var EventTextTable $table **/
         $table = $container->get(EventTextTable::class);
 
-        $keywords = $table->getTextTagsOptions(EventTextTable::TEXT_KIND_BLOG);
+        $keywords = $table->getTextTagsOptions(EventTextTable::TEXT_KIND_JK_TEXT);
 
         $form = new TextForm();
         $form->get('tags')->setValueOptions($keywords);

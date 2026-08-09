@@ -436,7 +436,7 @@ final class EntityFormatter
             return sprintf('<a href="%s">%s</a>', $this->urls->path($route, [$key => $data[$field]]), $linkText);
         }
 
-        //blog-post, text and composition reach this: they carry no showRouteKey and
+        //text and composition reach this: they carry no showRouteKey and
         //name their route parameters as a map of routeParam => entityField instead
         $params = $this->routeParams($spec, 'defaultRouteParams', $data);
         if (null !== $params) {
@@ -501,7 +501,7 @@ final class EntityFormatter
             return is_int($id) || is_string($id) ? $this->pencil($entityType, $id) : '';
         }
 
-        //blog-post and text: no editRouteKeyField, so the pencil is built from the
+        //text: no editRouteKeyField, so the pencil is built from the
         //edit route plus the default params — SionModel\View\Helper\EditPencilNew
         $params = $this->routeParams($spec, 'defaultRouteParams', $data);
 

@@ -27,7 +27,10 @@ class TextForm extends SionForm implements InputFilterProviderInterface
             'name' => 'markdownText',
             'type' => 'Textarea',
             'options' => [
-                'label' => 'Blog text',
+                //was 'Blog text' — this is the Fr. Kentenich texts form, and the blog it
+                //was named after is gone. The old phrase stays in the catalogues as a
+                //stale key until someone runs a translation export.
+                'label' => 'Text',
             ],
             'attributes' => [
                 'required' => false,
@@ -89,7 +92,11 @@ class TextForm extends SionForm implements InputFilterProviderInterface
             'name' => 'kind',
             'type' => 'Hidden',
             'attributes' => [
-                'value' => EventTextTable::TEXT_KIND_BLOG,
+                //jk-text, not blog. This form is the Fr. Kentenich texts form and it used
+                //to stamp every row it created as a blog post — 2,753 of the 2,757 rows in
+                //`texts` are jk-text, so the hidden default disagreed with the data. Changed
+                //when the blog was removed; new texts now carry the kind the feature reads.
+                'value' => EventTextTable::TEXT_KIND_JK_TEXT,
             ]
         ]);
 //We won't allow editing the legacy columns
@@ -138,7 +145,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
                     [
                         'name' => Identical::class,
                         'options' => [
-                            'token' => EventTextTable::TEXT_KIND_BLOG,
+                            'token' => EventTextTable::TEXT_KIND_JK_TEXT,
                         ],
                     ],
                 ]
