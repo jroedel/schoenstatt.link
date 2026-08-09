@@ -45,6 +45,21 @@
 #   --group  group to grant write to with --fix. Defaults to the user's own group.
 #   --fix    repair ownership and modes. Needs root, or ownership of the paths.
 #
+# THE SAME THING WITHOUT THIS SCRIPT
+#
+# What --fix does to modes is exactly these two, which is where they came from:
+#
+#   find language module/*/language -type d -exec chmod 2775 {} +
+#   find language module/*/language -type f -name '*.lang.php' -exec chmod 0664 {} +
+#
+# They belong together: the first grants the group write and makes it survive into new
+# subdirectories, the second undoes the exec bit the pre-2.0 code set on generated data.
+# Run them as a pair or not at all.
+#
+# --fix additionally chgrps to the PHP user's group, which those two cannot do and which
+# matters wherever the directories are not already owned by the right group — on a
+# deploy target they usually are not.
+#
 # RUN IT WHERE PHP RUNS
 #
 # On a containerised local setup, run this *inside* the container:
@@ -74,7 +89,7 @@ while [ $# -gt 0 ]; do
         --user)  TARGET_USER="${2:?--user needs a value}"; shift 2 ;;
         --group) TARGET_GROUP="${2:?--group needs a value}"; shift 2 ;;
         --fix)   FIX=1; shift ;;
-        -h|--help) sed -n '2,54p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help) sed -n '2,68p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -155,8 +170,10 @@ report() {
 fix_dir() {
     dir=$1
     chgrp "$TARGET_GROUP" "$dir" 2>/dev/null || true
-    chmod g+w "$dir" 2>/dev/null || true
-    chmod g+s "$dir" 2>/dev/null || true
+    # 2775 absolute rather than g+w,g+s additive: the same end state whatever the
+    # directory started as, so re-running cannot leave a half-fixed mode. 2 is the
+    # setgid bit, which is the part people leave out and the part that makes it stick.
+    chmod 2775 "$dir" 2>/dev/null || true
 }
 
 check_dir() {
@@ -221,19 +238,22 @@ done
 # but an exec bit on generated data is wrong and worth flagging.
 echo
 echo "Catalog files (mode only; rename() does not need them writable):"
-EXEC_COUNT=0
+# 0664 is what the library writes, so anything else is drift: an exec bit from the
+# pre-2.0 code, or a tighter mode from a deploy. --fix normalises every catalog rather
+# than only the executable ones, so one pass leaves them uniform.
+ODD_COUNT=0
 for f in $(find "$ROOT/language" "$ROOT"/module/*/language -name '*.lang.php' -type f 2>/dev/null); do
-    if [ -x "$f" ]; then
-        EXEC_COUNT=$((EXEC_COUNT + 1))
-        [ "$FIX" -eq 1 ] && chmod 0664 "$f" 2>/dev/null || true
-    fi
+    mode=$(stat -c '%a' "$f" 2>/dev/null) || continue
+    [ "$mode" = "664" ] && continue
+    ODD_COUNT=$((ODD_COUNT + 1))
+    [ "$FIX" -eq 1 ] && chmod 0664 "$f" 2>/dev/null || true
 done
-if [ "$EXEC_COUNT" -eq 0 ]; then
-    echo "  ok    no catalog carries an exec bit"
+if [ "$ODD_COUNT" -eq 0 ]; then
+    echo "  ok    every catalog is 0664"
 elif [ "$FIX" -eq 1 ]; then
-    echo "  fixed $EXEC_COUNT catalog(s) had an exec bit; set to 0664"
+    echo "  fixed $ODD_COUNT catalog(s) were not 0664; normalised"
 else
-    echo "  warn  $EXEC_COUNT catalog(s) carry an exec bit (data files; harmless but wrong)"
+    echo "  warn  $ODD_COUNT catalog(s) are not 0664 (generated data files)"
     WARNINGS=$((WARNINGS + 1))
 fi
 
