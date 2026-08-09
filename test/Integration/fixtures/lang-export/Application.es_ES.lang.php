@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'About half of the work to maintain a reliable, centralized source of information depends on programmers who can provide the easy-to-use tools to submit and access the data.' => 'Casi la mitad del trabajo de mantener una fuente centralizada y confiable de información descansa en las manos de programadores quienes entregan las herramientas fáciles para enviar y acceder a los datos.',
+    'Are you a developer?' => '¿Eres un programador?',
+    'Are you a Kentenich scholar?' => '¿Estudias al Padre Kentenich?',
+    'Are you bilingual?' => '¿Eres bilingüe?',
+    'Contact us' => 'Contáctanos',
+    'Developers Center' => 'Centro de desarrolladores',
+    'Email' => 'Email',
+    'Google Knowledge Graph' => 'Gráfico de Conocimiento de Google',
+    'https://en.wikipedia.org/wiki/Knowledge_Graph' => 'https://es.wikipedia.org/wiki/Gr%C3%A1fico_de_conocimiento',
+    'Learn more' => 'Leer más',
+    'Literature' => 'Literatura',
+    'Probably the greatest challenge for our generation is transmitting the wisdom and charism of our Father and Founder. Help us by completing our bibliography of Fr. Kentenich and writing brief book summaries.' => 'Probablemente el desafío más grande para nuestra generación es transmitir la sabiduría y el carisma de nuestro Fundador. Ayúdanos completando nuestra bibliografía del Padre Kentenich y de Schoenstatt en todos los idiomas y escribiendo cortas reseñas de libros.',
+    'publication edits' => 'aportes PK',
+    'schoenstatt edits' => 'aportes schoenstatt',
+    'Schoenstatt is an international movement which requires to provide information in many languages. Help us make our site accessible to the whole world!' => 'Schoenstatt es un movimiento internacional que requiere proveer información en muchas lenguas. ¡Ayúdanos a disponer esta información para todo el mundo!',
+    'Schoenstatt Link' => 'Schoenstatt Link',
+    'Schoenstatt Link hopes to facilitate communication by dramatically increasing and improving Schoenstatt\'s web presence. We use the %s to help internet users find the Schoenstatt communities and shrines nearby, as well information on Schoenstatt books and material. Please help us centralize this information by the end of 2018!' => 'Schoenstatt Link busca facilitar la comunicación, aumentando y mejorando la presencia web de Schoenstatt. Utilizamos el %s para ayudar a los usuarios de internet encontrar  las comunidades y santuarios de Schoenstatt a su alrededor e información sobre libros y materiales schoenstattianos. Por favor, ¡ayúdanos a centralizar esta información antes del fin del 2018!',
+    'Search contacts' => 'Buscar contactos',
+    'Search publications' => 'Buscar publicaciones',
+    'Sign in' => 'Acceder',
+    'translation edits' => 'aportes traducción',
+    'Turn down for what' => 'Posteo traducido',
+    'Username' => 'Nombre de usuario',
+    'We need your help!' => '¡Ayúdanos!',
+];

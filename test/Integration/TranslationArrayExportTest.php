@@ -5,6 +5,9 @@ namespace SchoenstattTest\Integration;
 use JTranslate\Model\TranslationsTable;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+
+use function array_merge;
+use function glob;
 use ReflectionClass;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -19,11 +22,26 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * Rather than add the dependency, the generator was replaced with a local
  * exporter (docs/BACKLOG.md, PHPStan repair).
  *
- * The check is a round-trip against the 24 committed *.lang.php files: read the
- * array back out of each one, re-export it, and require the result to match the
- * file byte for byte. Those files are exactly what the old generator produced,
- * so matching them is the strongest available evidence of fidelity — and it
- * guarantees regenerating the language files yields no spurious diff.
+ * The check is a round-trip: read the array back out of a `.lang.php`, re-export
+ * it, and require the result to match the file byte for byte. Files the old
+ * generator produced are the strongest available evidence of fidelity, and matching
+ * them guarantees regenerating the catalogs yields no spurious diff.
+ *
+ * ## The corpus is a fixture now, not the live catalogs
+ *
+ * This used to glob `module/*​/language/` and compare against the 24 catalogs
+ * committed there. That worked only by accident: those files were doing two
+ * unrelated jobs at once — build output the site renders from, and frozen evidence
+ * of the old generator's format.
+ *
+ * When the catalogs stopped being tracked both jobs vanished together. A fresh
+ * checkout had none, the data provider returned an empty set, and PHPUnit errored —
+ * correctly, because the test's premise was gone. `fixtures/lang-export/` holds three
+ * of those files verbatim so the guarantee survives independently of whether anyone
+ * has run `jtranslate:export-catalogs`; see the README beside them.
+ *
+ * Any catalogs that *do* exist on disk are still swept in on top, so a local run also
+ * checks the real corpus. That half is a bonus and is empty on CI.
  *
  * Needs vendor/ for autoloading, so it runs in the capsule:
  * php composer.phar integration
@@ -31,12 +49,23 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 class TranslationArrayExportTest extends TestCase
 {
     /**
+     * The fixture corpus, plus any live catalogs this checkout happens to have.
+     *
+     * The fixtures come first and are never empty, which is the point: a data provider
+     * that yields nothing is a PHPUnit *error*, not a skipped test, and it takes the
+     * whole class down. That is exactly what happened when the catalogs stopped being
+     * tracked.
+     *
      * @return array<string, array{string}>
      */
     public static function languageFiles(): array
     {
-        $root  = dirname(__DIR__, 2);
-        $files = glob($root . '/module/*/language/*.lang.php') ?: [];
+        $root = dirname(__DIR__, 2);
+
+        $files = glob(__DIR__ . '/fixtures/lang-export/*.lang.php') ?: [];
+        //Whatever the working tree has, if anything. Gitignored and generated, so
+        //present in a developer's capsule and absent on CI.
+        $files = array_merge($files, glob($root . '/module/*/language/*.lang.php') ?: []);
 
         $cases = [];
         foreach ($files as $file) {
@@ -60,14 +89,13 @@ class TranslationArrayExportTest extends TestCase
     }
 
     /**
-     * Trailing newlines are compared loosely: exactly half the committed corpus
-     * (12 of 24 files) ends without one, so the files disagree with each other
-     * and cannot all be matched. The generator emits one — which is both
-     * POSIX-correct and what FileGenerator did — and everything up to it must
-     * be identical.
+     * Trailing newlines are compared loosely. The original 24-file corpus disagreed
+     * with itself — 12 of them ended without one — so no single expectation could
+     * match them all. The exporter emits one, which is both POSIX-correct and what
+     * FileGenerator did, and everything up to it must be identical.
      */
     #[DataProvider('languageFiles')]
-    public function testCommittedLanguageFilesRoundTripExactly(string $file): void
+    public function testLanguageFilesRoundTripExactly(string $file): void
     {
         $translations = include $file;
         self::assertIsArray($translations, "$file should return an array");
