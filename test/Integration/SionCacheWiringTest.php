@@ -7,10 +7,12 @@ namespace SchoenstattTest\Integration;
 use App\Laminas\ServiceBridge;
 use JUser\Model\UserTable;
 use Laminas\Cache\Storage\Adapter\Apcu;
+use Laminas\Db\Adapter\Adapter;
 use Laminas\EventManager\EventManager;
 use Laminas\Mvc\MvcEvent;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
+use Throwable;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -57,6 +59,25 @@ final class SionCacheWiringTest extends TestCase
     }
 
     /**
+     * Building a UserTable builds a database adapter, which CI has no
+     * configuration for. Checks local.php before asking the container, because
+     * asking without it raises a warning and failOnWarning makes that a failure
+     * no later catch can undo.
+     */
+    private function requireDatabase(): void
+    {
+        if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
+            self::markTestSkipped('no config/autoload/local.php, so no database configuration');
+        }
+        try {
+            $adapter = $this->bridge()->get(Adapter::class);
+            $adapter->getDriver()->getConnection()->connect();
+        } catch (Throwable $e) {
+            self::markTestSkipped('no database: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Attaching twice used to mean writing twice: two listeners, two passes over
      * the same queue, two setItem() calls per key on every request that cached
      * anything. The guard lives in the trait so it protects every table, not
@@ -95,6 +116,7 @@ final class SionCacheWiringTest extends TestCase
      */
     public function testTheUserTableCachesInTheJUserNamespace(): void
     {
+        $this->requireDatabase();
         $bridge = $this->bridge();
         if (! $bridge->has(UserTable::class)) {
             $this->markTestSkipped('JUser is not enabled in this configuration');
@@ -119,6 +141,7 @@ final class SionCacheWiringTest extends TestCase
      */
     public function testSwappingTheStorageLeavesNoMapFromTheOldNamespace(): void
     {
+        $this->requireDatabase();
         $bridge = $this->bridge();
         if (! $bridge->has(UserTable::class)) {
             $this->markTestSkipped('JUser is not enabled in this configuration');
