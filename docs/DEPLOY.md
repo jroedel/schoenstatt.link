@@ -192,20 +192,32 @@ working silently. `test/Integration/KernelCanaryTest` fails on it.
 ## Flipping the Symfony kernel on globally
 
 The one change that makes every visitor — and every automated agent, which sends no
-cookie — reach `App\Kernel` instead of `Laminas\Mvc\Application`. It is what the v3 API is
-waiting for. Everything it needs is already deployed; the flip is one line.
+cookie — reach `App\Kernel` instead of `Laminas\Mvc\Application`. It is what the v3 API was
+waiting for.
 
-**Add it above the two cookie overrides in `public/.htaccess`:**
+**Committed 2026-08-10**, above the two cookie overrides in `public/.htaccess`:
 
 ```apache
 SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1
 ```
 
+**It is in the repository, not yet in production.** It takes effect on the next deploy,
+and the checklist below is what has to be true before that deploy runs — not before the
+merge.
+
 Order and directive are both load-bearing, and each failure mode is silent — a default
 written *below* an override overwrites it (mod_setenvif takes the last match), and a
 `SetEnv` beats every override whatever the order. Both are pinned by
-`test/Integration/KernelCanaryTest`, which is why the flip should be a commit rather than
-a hand-edit on the server.
+`test/Integration/KernelCanaryTest`, which is why the flip is a commit rather than a
+hand-edit on the server.
+
+**The capsule cannot verify any of this.** `docker/apache-vhost.conf` sets
+`SYMFONY_KERNEL` with `SetEnv`, and mod_env runs after all of mod_setenvif, so every
+kernel line in `.htaccess` — the default and both cookies — is masked locally. Measured:
+a request carrying `sl_symfony_canary=0` is served by Symfony in the capsule both with
+and without the flip line. Production's vhost has no such `SetEnv`, which is why
+`.htaccess` governs there. The behaviour has to be checked against production, through
+the "After" list below.
 
 ### Before
 
@@ -214,9 +226,12 @@ a hand-edit on the server.
       route through the Symfony kernel against production's own data, ICU and
       translations, and checks the three `LaminasResponseConverter` rules on a bridged
       page behind the real TLS proxy — the one thing the capsule cannot reproduce.
-- [ ] `database/db6.6.sql` is applied and at least one agent account holds the API-bot
-      role (see the v3 prerequisites above). Without it every agent request 401s the
-      moment the flip makes v3 reachable.
+- [ ] `database/db6.6.sql` **and `database/db6.8.sql`** are applied, and at least one
+      agent account holds the relevant API role (see the v3 prerequisites above).
+      Without it every agent request 401s the moment the flip makes v3 reachable —
+      db6.6 for `/api/v3/associations`, db6.8 for `/api/v3/phrases`.
+- [ ] `database/db6.9.sql` is applied, or two `pt_BR` strings render in English. Unrelated
+      to the flip; it is simply the other migration waiting on a deploy.
 - [ ] The signed-in walk-through above has been done through the canary, in a
       non-English locale as well as English. `tools/port-baseline.php` is the mechanical
       version; `docs/strangler.md` has the procedure and the known differences.
@@ -238,7 +253,8 @@ In order of how much they cost:
 
 1. **One person, no deploy.** Set `sl_symfony_canary=0` — the **Switch kernel** navbar
    item does it — and that visitor is back on laminas immediately. Enough to compare a
-   suspect page against its laminas twin.
+   suspect page against its laminas twin. This is now the escape hatch rather than a
+   curiosity, which is why it was deployed ahead of the flip and exercised first.
 2. **Everyone, no deploy.** Delete the added line from the server's
    `public_html/schoenstatt.link/public/.htaccess`. Takes effect on the next request; no
    pool restart, because `.htaccess` is read per request. Note that **the next deploy

@@ -540,11 +540,12 @@ normalizes both sides — echo back whatever you were given and it will match.
 
 ## Is it live?
 
-The v3 routes are served by the **Symfony** front controller, and production still runs
-the laminas one for ordinary traffic. So v3 is **deployed and canary-gated**, not
-dormant and not general: a request carrying `sl_symfony_canary=1` is served by the
-Symfony kernel and reaches v3, everything else gets laminas and a 404. See the
-canary section of [DEPLOY.md](DEPLOY.md).
+The v3 routes are served by the **Symfony** front controller. Until 2026-08-10 production
+ran the laminas one for ordinary traffic, so v3 was reachable only behind
+`sl_symfony_canary=1`. The site-wide flip is now committed in `public/.htaccess`, which
+means v3 becomes generally reachable **on the next deploy** — an agent sends no cookie
+and does not have to. Until that deploy the canary is still the only way in. See
+[DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally).
 
 Verified on production 2026-08-09:
 
@@ -565,14 +566,13 @@ afterwards and exist only in the capsule so far. The same three checks apply to
 applied first or the role the endpoints ask for does not exist and every request 401s
 — exactly as `db6.6.sql` had to precede the association endpoints.
 
-**An agent cannot use v3 until `SYMFONY_KERNEL` is flipped globally**, because an
+**An agent could not use v3 until `SYMFONY_KERNEL` was flipped globally**, because an
 agent will not send a canary cookie — and should not be asked to, since the cookie is a
-staging device, not an API contract. Until then the canary is how to prove the endpoints
-work against real production data.
+staging device, not an API contract.
 
-That flip is one line in `public/.htaccess`, and everything around it was prepared on
-2026-08-09: the procedure, its two checklists and its three rollbacks are in
+That flip is one line in `public/.htaccess` and it is committed. Its procedure, two
+checklists and three rollbacks are in
 [DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally). Note the v3 prerequisite
 it names — `database/db6.6.sql` and `database/db6.8.sql` applied and at least one bot
-account holding the relevant role, or
-every agent request 401s the moment the endpoints become reachable.
+account holding the relevant role, or **every agent request 401s the moment the endpoints
+become reachable**. That is the one ordering mistake this change makes possible.
