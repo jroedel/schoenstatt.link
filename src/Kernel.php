@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App;
 
 use App\Authorization\RouteGuard;
+use App\Api\BotIdentity;
 use App\Controller\AdminController;
+use App\Controller\Api\ApiSchemaController;
+use App\Controller\Api\AssociationsV3Controller;
+use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
@@ -280,6 +284,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl()
             ),
+            // The v3 API. BotIdentity and the controller share one ServiceBridge like
+            // everything else here, so a request that never reaches them loads no
+            // laminas modules — /api/v3/schema is the only one of the three that
+            // touches the database at all before authenticating, and it is public.
+            AssociationsV3Controller::class => fn (): AssociationsV3Controller => new AssociationsV3Controller(
+                $this->laminas(),
+                new BotIdentity($this->laminas())
+            ),
+            ApiSchemaController::class => fn (): ApiSchemaController => new ApiSchemaController($this->laminas()),
+            MethodNotAllowedController::class
+                => static fn (): MethodNotAllowedController => new MethodNotAllowedController(),
             // The first form route. Same three dependencies as every other ported
             // HTML page — the form itself comes from the laminas container through
             // the bridge, so nothing new is wired here.
