@@ -43,15 +43,22 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
-## Before the v3 API can be used: one migration and one account per agent
+## Before the v3 API can be used: one account per agent
 
 The code shipped 2026-08-09. Two things it deliberately does **not** do for you, because
 neither should happen without someone deciding it:
 
-1. **Run `database/db6.6.sql`** on production. It creates the `sch_api_bot` role, and
-   nothing else on the site names that role — so until it exists, every agent request is
-   a 401 and no amount of token-fiddling will change that. The script is idempotent
-   (`INSERT … WHERE NOT EXISTS`), so re-running it is safe.
+1. ~~**Run `database/db6.6.sql`** on production.~~ **Done 2026-08-09.** It creates the
+   `sch_api_bot` role, and nothing else on the site names that role — so until it existed,
+   every agent request was a 401. The script is idempotent (`INSERT … WHERE NOT EXISTS`),
+   so re-running it on any environment that lags is safe.
+
+   If the role was inserted by raw SQL rather than through the create-role screen, flush
+   the persistent cache: `UserTable::getRolesValueOptions()` is APCu-cached under
+   `roles-value-options` and invalidated by the `user-role` entity, which a direct
+   `INSERT` does not touch — so the role stays missing from the users screen's Roles
+   multiselect until `php bin/console cache:flush-persistent` runs. The role itself works
+   regardless; `BotIdentity` reads `user_role` directly.
 2. **Create each bot account and grant it the role.** Register the address like any
    other account, then grant `sch_api_bot` through the users screen or:
 
