@@ -299,6 +299,16 @@ trait MagicLinkSignIn
         );
         $linker->execute(['pattern' => $pattern]);
 
+        //user_api_token carries no foreign key — deliberately, so deleting an
+        //account never erases the record that it once held live credentials (see
+        //database/db6.7.sql). That is the right call in production and a leak
+        //here, so the test cleans up after itself explicitly.
+        $tokens = $pdo->prepare(
+            'DELETE FROM user_api_token'
+            . ' WHERE user_id IN (SELECT user_id FROM user WHERE email LIKE :pattern)'
+        );
+        $tokens->execute(['pattern' => $pattern]);
+
         $users = $pdo->prepare('DELETE FROM user WHERE email LIKE :pattern');
         $users->execute(['pattern' => $pattern]);
     }
