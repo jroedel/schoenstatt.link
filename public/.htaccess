@@ -76,25 +76,34 @@ SetEnv "APP_ENV" "production"
 #    stops being true, these lines are not what protects you — docs/acl-rules.md
 #    is.
 #
-# THE GLOBAL FLIP GOES HERE, as one line above the two overrides:
+# THE GLOBAL FLIP, done. Every visitor and every automated agent — which sends no
+# cookie — reaches App\Kernel from here on; the two overrides below still let one
+# visitor choose either kernel for themselves.
 #
-#     SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1
+# This line must stay **above** both overrides and must stay a SetEnvIf. Below
+# them it silently overwrites them (mod_setenvif takes the last match); as a
+# SetEnv it beats them whatever the order, because mod_env runs after all of
+# mod_setenvif. Both mistakes have been made here and both are invisible in
+# testing — test/Integration/KernelCanaryTest is what catches them.
 #
-# While it is absent every visitor gets laminas-mvc and the opt-in cookie below
-# is the only way to reach App\Kernel. docs/DEPLOY.md holds the procedure and the
-# rollback.
+# docs/DEPLOY.md holds the before/after checklists and the three rollbacks. The
+# cheap one is deleting this single line on the server, which takes effect on the
+# next request and lasts until the next deploy overwrites it; the durable one is
+# reverting the commit that added it, which is why that commit touches nothing
+# else.
+SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1
 
-# Opt *in* to App\Kernel for one visitor. Before the flip this is the canary that
-# exercises the ported routes against production's real data, real ICU and real
-# session store. After it, it is what pins an administrator to the new kernel
-# even while an incident has the default rolled back.
+# Opt *in* to App\Kernel for one visitor. Redundant for ordinary traffic now that
+# the default above says the same thing, and kept because it is what pins an
+# administrator to the new kernel even while an incident has the default rolled
+# back — the rollback that deletes one line on the server leaves this one standing.
 SetEnvIf Cookie "sl_symfony_canary=1" SYMFONY_KERNEL=1
 
-# Opt back *out* to laminas-mvc for one visitor. A no-op until the flip, and
-# deployed ahead of it deliberately: it makes the flip one added line rather than
-# an edit plus an addition, and it means the escape hatch has been exercised
-# before it is the only one left. Administrators reach both through the
-# **Switch kernel** navbar item, which offers whichever kernel they are not on.
+# Opt back *out* to laminas-mvc for one visitor. This is now the important one: it
+# is the per-visitor escape hatch, and it was deployed ahead of the flip
+# deliberately so that it had been exercised before it was the only one left.
+# Administrators reach both through the **Switch kernel** navbar item, which
+# offers whichever kernel they are not on.
 SetEnvIf Cookie "sl_symfony_canary=0" SYMFONY_KERNEL=0
 # ---------------------------------------------------------------------------
 
