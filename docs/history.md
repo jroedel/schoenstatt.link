@@ -10,11 +10,99 @@ State reached by 2026-08-04: production runs **PHP 8.4.24** on a current
 Laminas stack with OPcache enabled, master is fully deployed, `composer audit
 --locked` reports zero advisories, and 198 tests run across three suites.
 
-State reached by 2026-08-08: **ten routes ported to the Symfony kernel and
-deployed, dormant** — `SYMFONY_KERNEL` is still unset in production, so every one
-of them continues to render through laminas and turning them on is a `SetEnv` in
-`public/.htaccess`, not a deploy. 737 tests across four suites. See
+State reached by 2026-08-08: **eighteen routes ported to the Symfony kernel**, ten of them
+deployed dormant — `SYMFONY_KERNEL` is still unset in production, so every one of them
+continues to render through laminas and turning them on is a `SetEnv` in
+`public/.htaccess`, not a deploy. 802 tests across four suites. See
 [strangler.md](strangler.md) for the mechanism and the route table.
+
+## Symfony strangler, batch 4: eight routes, and the blog retired (2026-08-08, not yet deployed)
+
+The public browse surface — `/timeline`, `/music`, `/dictionary`,
+`/dictionary/{inLanguage}`, `/literature/150-preguntas-sobre-schoenstatt` — plus three
+restricted index pages, `/associations`, `/roles` and `/libraries`. Eight routes, every
+one a read-only GET; no form moved, because none can yet.
+
+`/blog` and `/blog/posts/{sw_id}/{slug}` were ported too and then removed in the same
+branch: the blog was on the chopping block and porting it was a wasted step. **The whole
+feature came out** — see below — so the net change never adds it.
+
+**The verification became a tool.** `tools/port-baseline.php` is the
+both-front-controllers, five-locale, two-identity diff that batch 3 ran by hand: 300
+responses per capture, raw on disk, normalized at compare time. Batch 4 finished at **257
+of 300 identical**, and every one of the 43 that differ is itemized in strangler.md.
+
+It also corrected the record. "65 of 65 responses identical" was not true as stated —
+whole documents were never identical, because the Twig layout is a reproduction of
+`layout.phtml` rather than a byte copy, and because two things differ between two runs of
+the *same* front controller: the language chooser draws its flag at random, and
+`registerVisit()` bumps a counter the page prints.
+
+**Four defects it found, three of them pre-existing and one live in production:**
+
+- **Every blog post was blank in Spanish, German, Portuguese and Italian.**
+  `show.phtml` passed the whole post body through `translate()`; JTranslate tried to
+  record the miss; `Data too long for column 'phrase'`; the exception fired on
+  `MvcEvent::FINISH` and the assembled body was discarded, leaving a 200 with zero bytes.
+  Moot now that the blog is gone, but the *mechanism* is not: any laminas page that
+  translates a long value can do the same. A ported route cannot, because `finishUp()` is
+  an MVC listener — which is also why a ported route records no missing phrases at all.
+- **Every ported page's `<title>` was English in all five locales.** `headTitle()`
+  translates by default and the Twig layout printed the string verbatim. Fixed in the
+  layout; the dictionary page opts out because it pre-translates, exactly as its `.phtml`
+  disables the translator.
+- **Navigation labels were translated in the wrong domain**, so a signed-in Spanish
+  visitor saw "Administración" where laminas says "Admin". The navigation helper uses
+  `default`, not the page's domain. Only visible signed in — the item is ACL-gated.
+- **`SionTable::registerVisit()` reads `$_SERVER['HTTP_USER_AGENT']` unguarded**, so a
+  request with no `User-Agent` gets three PHP warnings printed above the doctype and loses
+  its `Content-Security-Policy` to "headers already sent". Not fixed — it is a SionModel
+  change — but it is why the capture tool sets a User-Agent.
+
+Two smaller things worth keeping: `SionTable::existsEntity()` is annotated `@return
+boolean` in a file that imports `Laminas\Filter\Boolean`, so static analysis reads it as
+returning that *class*; and `tools/form-regression.php` sends its consent cookie with the
+value `1` where the strategy wants `'true'`, so its sign-in cannot work.
+
+### Retiring the blog
+
+Five routes (`blog`, `blog/create`, `blog/blog-post`, `blog/blog-post/edit`,
+`blog/blog-post/delete`), their controller, four view scripts, the `blog-post` entity
+spec, `BlogPostUserIdFilter`, the navigation item and its database-derived branch, and
+the blog logic inside `EventTextTable` — the three `TEXT_KIND_BLOG*` constants, the
+`blog-post` select branch, the per-author `resourceId` generation, the draft→published
+date reset, `getBlogPostSchema()` and the whole of `getRules()`.
+
+Unlike the Bible module this was **not** self-contained, and three couplings had to be
+decided rather than deleted:
+
+- **`Books\Form\TextForm` is shared with the Fr. Kentenich texts feature** and hardcoded
+  `kind = blog`, with an `Identical` validator enforcing it — so `/texts/create` stamped
+  every new text as a blog post, while 2,753 of the 2,757 rows in `texts` are `jk-text`.
+  Switched to `TEXT_KIND_JK_TEXT`; a behaviour change to a live form, taken deliberately.
+- **`EventTextTable` stopped being a rule provider** and stayed a resource provider. Every
+  rule it returned was a blog grant, but its *resources* (`txt_institute`, `txt_public`)
+  are what gate the texts. Its `blog_post_*` bucketing turned out never to have fired:
+  no row in `texts` has ever carried such an `AclResourceId`.
+- **`Application\Controller\IndexController` lost its `EventTextTable` dependency**,
+  which existed only for a five-row query the front page never rendered.
+
+`'blog'` in the SionModel and Schoenstatt configs is a *social-link type* — an
+association's blog URL, `img/blogger.png` — and was left alone.
+
+Verified the way the Bible removal was: regenerate the authorization table and diff.
+192 routes → 187, 167 guarded → 162, and **every removed row is a blog route**; the only
+other line to move is `rule_providers` losing `EventTextTable`. Suite 802 → 791, still
+green, PHPStan clean at level 0 across the tree and level 8 on `src`.
+
+The `blog_administrator` and `blog_contributor` roles remain in `user_role` and are now
+unused, and the three `kind = blog` rows remain in `texts`, as do their `sch_changes`
+entries. Data was not touched. The consequence worth knowing is that `/blog` and each
+post URL now **404** rather than redirect.
+
+The changes log is unaffected, which was worth checking rather than assuming: every edit
+to a `texts` row is logged as `text`, not `blog-post` — 11,041 rows, none of them
+`blog-post` — and the `text` entity spec stays, so `formatEntity` still resolves them.
 
 ## Symfony strangler, batch 3: ten routes (2026-08-07/08, DEPLOYED dormant)
 

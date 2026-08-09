@@ -1,0 +1,31 @@
+{#
+  module/Books/view/books/events/index.phtml.
+
+  A one-to-one transcription, whitespace included: PHP drops a single newline
+  directly after `?>` and Twig drops one directly after `%}`, so `{% for %}` sits
+  exactly where `<?php foreach: ?>` sat and the two renderings agree byte for byte.
+  Verified with tools/port-baseline.php rather than by eye.
+
+  The introduction is a literal in the original — not passed through translate() —
+  so it is English in all five locales. Reproduced, not fixed: this batch ports
+  pages, and making a page newly translatable changes what four of the five locales
+  show.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Fr. Kentenich Timeline') }}</h1>
+<p>This timeline is the fruit of a collaborative effort since 2006 of several generations of students of the Schoenstatt Fathers community. The basic idea is to better understand the main events of Fr. Kentenich's biography by seeing them in relation to world and Church events. Please let us know if you would like to collaborate!</p>
+{% for period, years in periods %}
+<h2>{{ translate(period_names[period]) }}</h2>
+{% for year, event_objects in years %}
+<div class="row">
+<div class="col-4"><strong>{{ year }}</strong></div>
+<div class="col-8">{% for event in event_objects %}
+<span>{{ event.titleEn }}</span><br>
+{% endfor %}
+</div>
+</div>
+{% endfor %}
+{% endfor %}
+{% endblock %}

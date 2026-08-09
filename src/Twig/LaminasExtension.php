@@ -88,6 +88,7 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('truncate', $this->truncate(...)),
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
+            new TwigFunction('label', $this->label(...), $html),
         ];
     }
 
@@ -229,7 +230,7 @@ final class LaminasExtension extends AbstractExtension
     /**
      * SionModel\View\Helper\EditPencilNew, reimplemented — the `editRoute` + params
      * form of the same pencil, which is what an entity spec using `defaultRouteParams`
-     * reaches instead of the `editRouteKeyField` branch above (blog-post, text).
+     * reaches instead of the `editRouteKeyField` branch above (text, composition).
      *
      * Its guard is its own: no params or no route renders nothing, and the route
      * permission failure is swallowed the same way, with the same "assume no route
@@ -303,6 +304,22 @@ final class LaminasExtension extends AbstractExtension
             IntlDateFormatter::SHORT,
             IntlDateFormatter::NONE
         );
+    }
+
+    /**
+     * TwbBundle's Bootstrap label. Markup, and it escapes both the text and the class
+     * attribute itself — which is why the space inside `class="label-info label"`
+     * arrives as `&#x20;` and why this is `is_safe: html` rather than escaped again.
+     */
+    public function label(string $text, string $class = ''): string
+    {
+        //TwbBundleLabel::__invoke() returns the helper itself when called with no
+        //arguments, which is the fluent form nothing here uses; with a $text it always
+        //returns the rendered markup. Narrowed rather than cast, so that the fluent
+        //return can never be stringified into "the object" on a page.
+        $markup = $this->helpers->label()->__invoke($text, $class);
+
+        return is_string($markup) ? $markup : '';
     }
 
     /**

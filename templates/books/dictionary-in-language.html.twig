@@ -1,0 +1,48 @@
+{#
+  module/Books/view/books/dictionary/in-language.phtml.
+
+  The title string is built once and used twice — headTitle() and the <h1> — exactly as
+  the original does, which is why it is a `set` rather than two calls.
+
+  The breadcrumb trail is one laminas derives from a *database-backed* navigation branch
+  (Application\Module::onBootstrap() builds one page per available dictionary under
+  Literature > Dictionaries). App\View\SiteChrome cannot see those branches — see
+  docs/strangler.md — so the trail is spelled out. Its middle crumb points at
+  `/literature#dictionaries`, fragment included, because that is what the navigation
+  page carries.
+
+  An inactive entry is shown struck through to anyone who may edit dictionary entries
+  and hidden from everyone else, which is the original's `continue`.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% set head_text = translate(title_format)|format(translate(in_language_name)) %}
+{# already translated, exactly as in-language.phtml's headTitle()->setTranslatorEnabled(false) #}
+{% set page_title = head_text %}
+{% set page_title_translate = false %}
+{# untranslated on purpose: the laminas breadcrumbs partial does not translate labels #}
+{% set breadcrumbs = [
+    {'label': 'Literature', 'href': literature_url},
+    {'label': 'Dictionaries', 'href': literature_url ~ '#dictionaries'},
+    {'label': 'German to %s Dictionary'|format(in_language_name), 'href': dictionary_url},
+] %}
+
+{% block content %}
+<div class="row"><div class="col-md-12">
+<h1>{{ head_text }}</h1>
+{% for object in objects %}
+{% if object.isActive or is_allowed('route/dictionary/entry/edit') %}
+<p id="{{ object.slug }}"><strong>{% if not object.isActive %}<del>{% endif %}
+{{- format.entity('dictionary-entry', object, {'displayAsLink': false}) -}}
+</strong> {{ object.entry }}
+{%- for link_slug in object.links %} <a href="#{{ link_slug }}">{{ truncate(link_slug, 50) }}</a> {% endfor %}
+{%- if not object.isActive %}</del>{% endif %}</p>
+{% endif %}
+{% endfor %}
+<p class="text-center"><strong>{{ translate('Total views') }}</strong>: {{ visits.total }} <strong>{{ translate('Views this month') }}</strong>: {{ visits.pastMonth }}</p>
+</div></div>
+<script type="application/ld+json">
+{{ schemata }}
+</script>
+{% endblock %}

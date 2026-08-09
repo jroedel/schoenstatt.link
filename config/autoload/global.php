@@ -124,10 +124,6 @@ return [
                 'route' => 'music',
             ],
             [
-                'label' => 'Blog',
-                'route' => 'blog',
-            ],
-            [
                 'label' => 'Admin',
                 'route' => 'admin',
                 'resource' => 'route/admin',

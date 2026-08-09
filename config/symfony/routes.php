@@ -27,18 +27,26 @@ declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
+use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
+use App\Controller\DictionaryController;
 use App\Controller\HealthController;
+use App\Controller\LibrariesController;
+use App\Controller\MusicController;
+use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PhpInfoController;
+use App\Controller\RolesController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
+use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
 use App\Twig\LaminasExtension;
+use App\View\SiteChrome;
 use App\Locale\Locales;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
@@ -99,20 +107,34 @@ $routes->add('health', new Route('/_health', [
 $textDomain = static fn (string $domain): array => [LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => $domain];
 
 $locales = Locales::pattern();
-/** @param array<string, mixed> $extra */
+/**
+ * $controller is either a service id — the controller class, for a class with one
+ * `__invoke()` — or `[serviceId, 'method']` for a class serving more than one route.
+ * Symfony's ControllerResolver hands a string class straight to instantiateController(),
+ * which App\Container answers, so both forms resolve out of the same container.
+ *
+ * @param string|array{class-string, string} $controller
+ * @param array<string, mixed> $extra
+ * @param array<string, string> $requirements patterns for the path's own placeholders.
+ *        Merged *under* the `_locale` constraint so a route cannot widen it by accident.
+ */
 $ported = static function (
     string $name,
     string $path,
-    string $controller,
+    string|array $controller,
     RouteAccess $access,
-    array $extra = []
+    array $extra = [],
+    array $requirements = []
 ) use (
     $routes,
     $locales
 ): void {
     $defaults = ['_controller' => $controller, RouteAccess::ATTRIBUTE => $access] + $extra;
-    $routes->add($name, new Route($path, $defaults));
-    $routes->add($name . '.locale', new Route('/{_locale}' . $path, $defaults, ['_locale' => $locales]));
+    $routes->add($name, new Route($path, $defaults, $requirements));
+    $routes->add(
+        $name . '.locale',
+        new Route('/{_locale}' . $path, $defaults, $requirements + ['_locale' => $locales])
+    );
 };
 
 // SionModel's maintenance endpoints, ported 2026-08-05. Both are machine
@@ -221,9 +243,7 @@ $content = static fn (
 ];
 $home = ['label' => 'Home', 'route' => 'welcome'];
 
-// The site's front page. Its laminas action reads five blog posts that index.phtml
-// never renders; the port drops the query, and ContentPageParityTest is what shows
-// that costs the response nothing. Empty page title on purpose — indexAction sets no
+// The site's front page. Empty page title on purpose — indexAction sets no
 // headTitle, so laminas renders `<title>Schoenstatt Link</title>` and the layout
 // reproduces that by omitting the separator.
 $ported(
@@ -363,6 +383,87 @@ $ported(
     ViewChangesController::class,
     RouteAccess::guardedBy('route/sion-model/view-changes'),
     $textDomain('SionModel')
+);
+
+// ---------------------------------------------------------------------------
+// Batch 4, ported 2026-08-08: the public browse surface plus three restricted
+// index pages. Everything here is a read-only GET whose laminas action is a query
+// and a template — no form is ported, because there is no form layer on the
+// Symfony side and JUser's static table adapter (see the onBootstrap table in
+// docs/strangler.md) is still unreproduced.
+// ---------------------------------------------------------------------------
+
+// The Fr. Kentenich timeline. Route name `events`, path /timeline — they disagree
+// on the laminas side too, and the *name* is what has to be kept: it is how the
+// layout recognises the current page.
+$ported(
+    'events',
+    '/timeline',
+    TimelineController::class,
+    RouteAccess::guardedBy('route/events'),
+    $textDomain('Books')
+);
+
+// Every composition, grouped by language.
+$ported('music', '/music', MusicController::class, RouteAccess::guardedBy('route/music'), $textDomain('Books'));
+
+// The dictionaries. `/dictionary` renders an empty body — that is what its .phtml does,
+// see App\Controller\DictionaryController — and `/dictionary/{inLanguage}` is the page.
+$ported(
+    'dictionary',
+    '/dictionary',
+    [DictionaryController::class, 'index'],
+    RouteAccess::guardedBy('route/dictionary'),
+    $textDomain('Books')
+);
+$ported(
+    'dictionary/inLanguage',
+    '/dictionary/{inLanguage}',
+    [DictionaryController::class, 'inLanguage'],
+    RouteAccess::guardedBy('route/dictionary/inLanguage'),
+    //Literature, not a "Dictionary" item — there is none in the navbar. The dictionary
+    //pages hang under Literature > Dictionaries, so `publications` is what lights up.
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications'],
+    //the laminas route puts no constraint on this segment either, but it must not eat
+    //`/dictionary/create` or `/dictionary/{entry_id}/edit`, both of which are still on
+    //laminas. A two-letter language code is what every real caller uses.
+    ['inLanguage' => '[a-z]{2,3}']
+);
+
+// A book served from a file on disk. Declared before nothing in particular — no other
+// ported route lives under /literature yet — but it must stay above `legacy`.
+$ported(
+    'publications/one-fifty-preguntas',
+    '/literature/150-preguntas-sobre-schoenstatt',
+    OneFiftyPreguntasController::class,
+    RouteAccess::guardedBy('route/publications/one-fifty-preguntas'),
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications']
+);
+
+// The three restricted index pages. Each is one table behind one guard, and each guard
+// is a different shape, which is what makes them worth having together: `associations`
+// admits most signed-in movement roles, `roles` admits sch_moderator and its two
+// descendants, and `libraries` admits lib_administrator alone.
+$ported(
+    'associations',
+    '/associations',
+    AssociationsController::class,
+    RouteAccess::guardedBy('route/associations'),
+    $textDomain('Schoenstatt')
+);
+$ported(
+    'roles',
+    '/roles',
+    RolesController::class,
+    RouteAccess::guardedBy('route/roles'),
+    $textDomain('Schoenstatt')
+);
+$ported(
+    'libraries',
+    '/libraries',
+    LibrariesController::class,
+    RouteAccess::guardedBy('route/libraries'),
+    $textDomain('Books')
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"

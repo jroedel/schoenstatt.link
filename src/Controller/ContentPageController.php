@@ -24,7 +24,7 @@ use function sprintf;
  * actions that differ in nothing but which heredoc they echo —
  * `developersAction()`, `acknowledgementsAction()`, `privacyAction()` and
  * `submittingPhotosAction()` are each literally `return new ViewModel()`, and
- * `indexAction()` fetches five blog posts that index.phtml never reads. Reproducing
+ * `indexAction()` is the same thing with an empty variable. Reproducing
  * that as five identical Symfony controllers would port the duplication along with
  * the pages, which is the mistake docs/strangler.md records from the wayside-shrine
  * port: between two *ported* routes, share.
@@ -40,10 +40,10 @@ use function sprintf;
  * its target is still on the laminas side. That is also what lets the layout decide
  * which crumb is the current page by comparing hrefs.
  *
- * `indexAction()`'s unread blog-post query is not reproduced. It is five rows read
- * out of the text table and discarded before rendering, so dropping it changes no
- * byte of the response and takes one query off the site's busiest page. The parity
- * test asserts the rendered equality rather than trusting that reading.
+ * `indexAction()` used to read five blog posts that index.phtml never rendered, and this
+ * controller deliberately did not reproduce the query — ContentPageParityTest showed it
+ * cost the response nothing. The blog has since been removed and the laminas action no
+ * longer makes that query either, so the two now agree by construction.
  */
 final class ContentPageController
 {
