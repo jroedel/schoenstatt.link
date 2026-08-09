@@ -25,10 +25,40 @@ inside the same document.
 
 An agent is a normal account with one extra role.
 
-1. **Register the bot's address** like any other account.
-2. **Grant it `sch_api_bot`** (users screen, or an `INSERT` into `user_role_linker`).
-   This is the whole authorization model — see below.
-3. **Exchange a login code for a JWT** through the existing endpoints:
+1. **Create the account** at `/en/users/create` (administrators only). Fill in the
+   address, then in **Roles select `sch_api_bot` and deselect `sch_user`** — the form
+   pre-selects the default roles, and `sch_user` opens the moderator edit form for
+   every association. Leaving it ticked is the one mistake that undoes the whole
+   separation below.
+2. **Issue a token** at `/en/users/:id/api-tokens`. Give it a label saying what the
+   agent is for, press *Issue token*, and copy the JWT out of the message: it is shown
+   once and is not recoverable, because only its identifier is stored. Six months by
+   default (`juser.api_jwt_lifetime`).
+3. Hand it to the agent as `Authorization: Bearer <jwt>`.
+
+The button appears only for accounts holding a role named in
+`juser.api_token_roles`, which at this site is `sch_api_bot` and nothing else. That
+restriction is the point: unrestricted, the screen would mint six-month bearer tokens
+for *any* account including another administrator's — credentials that outlive the
+session that made them and that no role or password change revokes.
+
+### Revoking
+
+Same screen. Revocation takes effect on the token's **next request** and is per
+token, not per account, so one compromised agent credential does not mean cutting off
+every agent that account runs. Revoked tokens stay listed as a record; expired ones
+are cleared a day after they lapse.
+
+This works because since `db6.7` every issued token has a row in `user_api_token`
+keyed by its `jti` claim, and the API refuses any token whose `jti` is missing from
+that table or marked revoked. **Fail closed, not fail open** — "we have no record of
+issuing this" and "this was revoked" are the same answer, which is what makes the
+registry worth having. Only the identifier is stored, never the token.
+
+### The email flow still works
+
+An agent that can read its own mailbox can sign itself in, and the mobile apps
+already do:
 
 ```
 POST /api/v1/users/request-verification-token   identity=<email>
@@ -36,12 +66,17 @@ POST /api/v1/users/login-with-verification-token identity=<email>&token=<code>
    → { "jwt": "...", "expiration": "2027-02-09T12:00:00Z" }
 ```
 
-Send it as `Authorization: Bearer <jwt>`. Tokens last six months.
+Tokens issued this way are registered and revocable exactly like minted ones; they
+show as *(self, by email)* on the token screen. It is no longer the recommended path
+for a bot, because it forces you to run a real deliverable mailbox for an account
+that has nobody to read it — and that mailbox is then a permanent credential-recovery
+path into the bot account.
 
 ### The role is the security boundary
 
-`sch_api_bot` is named by **nothing else on this site** — no ACL guard, no route, no
-menu. Two consequences, both deliberate:
+Two things gate a write: the token must be one we still vouch for (above), and the
+account must hold `sch_api_bot`. The role is named by **nothing else on this site** —
+no ACL guard, no route, no menu. Two consequences, both deliberate:
 
 - A leaked bot token reaches `/api/v3` and nothing else.
 - A *human's* token cannot write through the API. This matters more than it looks:
@@ -50,8 +85,8 @@ menu. Two consequences, both deliberate:
   form**. Reusing `sch_user` for bots would have made an automation credential a
   general-purpose site credential.
 
-Refusals are uninformative on purpose: missing, malformed, expired, unknown user and
-missing role are all `401` with one message.
+Refusals are uninformative on purpose: missing, malformed, expired, revoked,
+unregistered, unknown user and missing role are all `401` with one message.
 
 ## Endpoints
 
@@ -122,7 +157,7 @@ is a `200` with `"changed": []` and no write — so a polling agent does not fil
 | status | meaning |
 |---|---|
 | `200` | applied (or nothing to apply) |
-| `401` | no usable token, or the account lacks `sch_api_bot` |
+| `401` | no usable token — missing, expired, **revoked**, or the account lacks `sch_api_bot` |
 | `404` | no association has that identifier |
 | `412` | `If-Match` no longer matches — re-read and re-apply |
 | `422` | the change would leave the association invalid, or names an unknown field |
@@ -192,7 +227,12 @@ they are recorded so they can be found afterwards.
 | `src/Schoenstatt/Association/AssociationValidator.php` | the form's filter, headless |
 | `src/Schoenstatt/Association/AssociationInputFilterSpec.php` | the rules themselves |
 | `database/db6.6.sql` | the `sch_api_bot` role |
+| `database/db6.7.sql` | `user_api_token`, and why a token is refused unless vouched for |
+| `module/JUser/src/Service/ApiTokenService.php` | the one place a JWT is minted and recorded |
+| `module/JUser/src/Model/ApiTokenTable.php` | the registry; uncached, on purpose |
+| `module/JUser/src/Controller/UsersController.php` | `apiTokensAction`, `revokeApiTokenAction` |
 | `test/Smoke/ApiV3SmokeTest.php` | the whole surface over HTTP |
+| `test/Smoke/ApiTokenAdminSmokeTest.php` | issue in the browser → use against the API → revoke → refused |
 
 ## Is it live?
 

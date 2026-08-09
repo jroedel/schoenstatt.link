@@ -42,9 +42,20 @@ use function substr;
  * `SionTable::setActingUserId()`, and every field an agent changes lands in
  * `sch_changes` under that account.
  *
- * ## The role is the whole authorization model
+ * ## A token must also be one we still vouch for
  *
- * Holding a valid token is not enough. The account must also hold **`sch_api_bot`**,
+ * A valid signature says the token came from us. It does not say the token is still
+ * meant to work. Since db6.7 every issued token has a row in `user_api_token` keyed
+ * by its `jti`, and this class refuses any token whose `jti` is missing from that
+ * table or marked revoked — so revocation is per *token*, takes effect on the next
+ * request, and does not require deleting the account's role.
+ *
+ * Fail closed, not fail open: an unregistered token is refused, not admitted. See
+ * tokenIsLive().
+ *
+ * ## The role is the rest of the authorization model
+ *
+ * Holding a live token is not enough. The account must also hold **`sch_api_bot`**,
  * a role introduced for this and named by nothing else on the site — see
  * database/db6.6.sql. Two consequences, both intended:
  *
@@ -61,8 +72,8 @@ use function substr;
  *
  * ## Failure is deliberately uninformative
  *
- * Missing token, malformed token, expired token, unknown user, missing role: all 401
- * with one message. Distinguishing them tells an attacker which half of a guess was
+ * Missing token, malformed token, expired token, unknown user, missing role, revoked
+ * or unregistered token: all 401 with one message. Distinguishing them tells an attacker which half of a guess was
  * right, and no legitimate agent needs to be told — its token either works from the
  * first request or was issued wrongly.
  */
@@ -87,12 +98,14 @@ final class BotIdentity
             return null;
         }
 
-        $userId = $this->userIdFrom($token);
-        if (null === $userId) {
+        $claims = $this->claimsFrom($token);
+        if (null === $claims) {
             return null;
         }
 
-        return $this->holdsRequiredRole($userId) ? $userId : null;
+        [$userId, $jti] = $claims;
+
+        return $this->tokenIsLive($jti, $userId) && $this->holdsRequiredRole($userId) ? $userId : null;
     }
 
     /**
@@ -115,8 +128,16 @@ final class BotIdentity
         return 1 === preg_match('/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/', $token) ? $token : null;
     }
 
-    /** The `sub` claim of a token that verifies, or null for one that does not. */
-    private function userIdFrom(string $token): ?int
+    /**
+     * The `sub` and `jti` claims of a token that verifies, or null for one that does not.
+     *
+     * Both are required. A token with no `jti` cannot be looked up in the registry
+     * and therefore cannot be revoked, so it is refused rather than trusted — see
+     * tokenIsLive() on why that direction is the only one that means anything.
+     *
+     * @return array{0: int, 1: string}|null
+     */
+    private function claimsFrom(string $token): ?array
     {
         /** @var array<string, mixed> $config */
         $config    = $this->laminas->get('config');
@@ -149,8 +170,56 @@ final class BotIdentity
         }
 
         $subject = $payload->sub ?? null;
+        $jti     = $payload->jti ?? null;
 
-        return is_numeric($subject) ? (int) $subject : null;
+        if (! is_numeric($subject) || ! is_string($jti) || '' === $jti) {
+            return null;
+        }
+
+        return [(int) $subject, $jti];
+    }
+
+    /**
+     * Whether this exact token is one we issued to this account and have not revoked.
+     *
+     * **Fail closed.** Not "refuse if revoked" but "refuse unless positively
+     * vouched for": a token whose `jti` has no row is refused just as firmly as
+     * one whose row is revoked. The difference matters because those are the same
+     * thing from the outside — an unregistered token is indistinguishable from a
+     * forged one at the point of use, and a registry that only rejects what it has
+     * explicitly heard of protects nothing.
+     *
+     * This is affordable to switch on because it shipped before any bot account
+     * existed in production. It does not touch the v1 API, which the mobile apps
+     * authenticate against with tokens minted before the registry existed: v1
+     * never consults this table.
+     *
+     * The user id is part of the query rather than compared afterwards, so a valid
+     * `jti` belonging to a different account cannot vouch for this one.
+     */
+    private function tokenIsLive(string $jti, int $userId): bool
+    {
+        /** @var Adapter $adapter */
+        $adapter = $this->laminas->get(Adapter::class);
+
+        $sql    = new Sql($adapter);
+        $select = $sql->select('user_api_token')
+            ->columns(['token_id'])
+            ->where([
+                'jti'        => $jti,
+                'user_id'    => $userId,
+                'revoked_on' => null,
+            ]);
+
+        $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
+
+        //Expiry is deliberately not re-checked here: php-jwt has already rejected
+        //an expired token on its own `exp` claim before this method is reached, and
+        //a second copy of the rule is a second thing to get wrong.
+        //`is_array`, not `null !== $row` — laminas-db answers **false** for an empty
+        //result set. See holdsRequiredRole() below; the same trap inverted the whole
+        //authorization model once already.
+        return is_array($row) || is_object($row);
     }
 
     /**
