@@ -12,9 +12,16 @@ use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
+use function array_diff;
 use function array_keys;
+use function array_merge;
 use function array_values;
+use function in_array;
+use function is_readable;
+use function is_string;
+use function json_encode;
 use function sort;
 use function str_repeat;
 
@@ -114,6 +121,8 @@ final class PhraseValidationParityTest extends TestCase
      */
     public function testCsrfIsTheOnlyInputTheApiDoesNotEnforce(): void
     {
+        self::requireDatabase();
+
         $formInputs = array_keys(self::form()->getInputFilter()->getInputs());
         $apiInputs  = array_keys(self::validator()->inputFilter()->getInputs());
 
@@ -148,6 +157,7 @@ final class PhraseValidationParityTest extends TestCase
     #[DataProvider('locale')]
     public function testEachWritableLocaleIsBounded(string $locale): void
     {
+        self::requireDatabase();
         $filter = self::validator()->inputFilter();
 
         $filter->setData(['phraseId' => self::anExistingPhraseId(), $locale => str_repeat('a', 2001)]);
@@ -158,12 +168,69 @@ final class PhraseValidationParityTest extends TestCase
         self::assertTrue($filter->isValid(), "$locale refuses a translation that fits the column");
     }
 
-    /** @return iterable<string, array{0: string}> */
+    /**
+     * @return iterable<string, array{0: string}>
+     *
+     * A data provider runs before any test method and outside every skip, so it must
+     * not touch the database or the container — an exception here is a *PHPUnit* error
+     * that takes the whole class down rather than a skipped test. The locale list comes
+     * from the merged config files directly, and testEveryConfiguredLocaleIsProvided
+     * asserts it agrees with what TranslationsTable answers when a database exists.
+     */
     public static function locale(): iterable
     {
-        foreach (self::locales() as $locale) {
+        foreach (self::configuredLocales() as $locale) {
             yield $locale => [$locale];
         }
+    }
+
+    /**
+     * The writable locales, read from the config files without building the container.
+     *
+     * The merge is laminas': the module's config first, then `config/autoload/*.global.php`
+     * appending — which is why `it_IT` is writable on this site although JTranslate's own
+     * module config names three locales. Reproducing the merge here rather than
+     * hardcoding a list is the point; a hardcoded list would test a set neither surface
+     * uses.
+     *
+     * @return list<string>
+     */
+    private static function configuredLocales(): array
+    {
+        /** @var array<string, mixed> $module */
+        $module = require __DIR__ . '/../../module/JTranslate/config/module.config.php';
+        /** @var array<string, mixed> $app */
+        $app = require __DIR__ . '/../../config/autoload/jtranslate.global.php';
+
+        $locales = array_merge(
+            $module['jtranslate']['locales_to_translate'] ?? [],
+            $app['jtranslate']['locales_to_translate'] ?? []
+        );
+
+        $keyLocale = $app['jtranslate']['key_locale'] ?? $module['jtranslate']['key_locale'] ?? null;
+        if (is_string($keyLocale) && ! in_array($keyLocale, $locales, true)) {
+            $locales[] = $keyLocale;
+        }
+
+        return array_values($locales);
+    }
+
+    /**
+     * The provider's list and the model's answer are the same set.
+     *
+     * Without this the provider could quietly drift from `getLocales(true)` and every
+     * locale test would keep passing while testing a locale the API does not write.
+     */
+    public function testEveryConfiguredLocaleIsProvided(): void
+    {
+        self::requireDatabase();
+
+        $provided = self::configuredLocales();
+        $actual   = self::locales();
+        sort($provided);
+        sort($actual);
+
+        self::assertSame($actual, $provided, 'the data provider and TranslationsTable::getLocales() disagree');
     }
 
     /**
@@ -177,6 +244,7 @@ final class PhraseValidationParityTest extends TestCase
      */
     public function testAPatchNamingOneLocaleIsAlreadyACompleteSubmission(): void
     {
+        self::requireDatabase();
         $filter = self::validator()->inputFilter();
         $filter->setData(['phraseId' => self::anExistingPhraseId(), 'de_DE' => 'Ein Satz.']);
 
@@ -186,6 +254,7 @@ final class PhraseValidationParityTest extends TestCase
     /** Trimming happens, and the *trimmed* value is what a caller must write. */
     public function testTheFilterTrimsTheValueTheApiThenWrites(): void
     {
+        self::requireDatabase();
         $filter = self::validator()->inputFilter();
         $filter->setData(['phraseId' => self::anExistingPhraseId(), 'de_DE' => "  Ein Satz.\n"]);
 
@@ -203,6 +272,7 @@ final class PhraseValidationParityTest extends TestCase
      */
     public function testAnUnknownPhraseIdIsRefused(): void
     {
+        self::requireDatabase();
         $filter = self::validator()->inputFilter();
         $filter->setData(['phraseId' => 999999999, 'de_DE' => 'Ein Satz.']);
 
@@ -235,6 +305,13 @@ final class PhraseValidationParityTest extends TestCase
      * The application container, built the way bin/console builds it: modules loaded,
      * never bootstrapped. Both sides of the comparison come out of the same one, so a
      * difference between them cannot be a difference in configuration.
+     *
+     * **The config and module-map caches are off**, as in every other integration test
+     * here. Leaving them on makes module loading write `data/config`, which does not
+     * exist on a CI runner — the failure is a `SafeWriter` RuntimeException from inside
+     * `ConfigListener`, several frames from anything this file wrote, and it takes the
+     * whole class down including the data provider. At runtime those caches are the
+     * reason per-request module loading is affordable; in a test they buy nothing.
      */
     private static function services(): ServiceManager
     {
@@ -244,6 +321,8 @@ final class PhraseValidationParityTest extends TestCase
 
         /** @var array<string, mixed> $appConfig */
         $appConfig = require __DIR__ . '/../../config/application.config.php';
+        $appConfig['module_listener_options']['config_cache_enabled']     = false;
+        $appConfig['module_listener_options']['module_map_cache_enabled'] = false;
 
         $services = new ServiceManager();
         (new ServiceManagerConfig($appConfig['service_manager'] ?? []))->configureServiceManager($services);
@@ -251,5 +330,28 @@ final class PhraseValidationParityTest extends TestCase
         $services->get('ModuleManager')->loadModules();
 
         return self::$services = $services;
+    }
+
+    /**
+     * Skip rather than fail where there is no database.
+     *
+     * Every assertion here needs one: `RecordExists` on `phraseId` asks the real table,
+     * and the writable locale set is read through TranslationsTable. CI has no
+     * `config/autoload/local.php` and no MariaDB, so without this the whole class errors
+     * for a reason that has nothing to do with the rules under test.
+     */
+    private static function requireDatabase(): void
+    {
+        if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
+            self::markTestSkipped('no config/autoload/local.php, so no database configuration');
+        }
+
+        try {
+            /** @var Adapter $adapter */
+            $adapter = self::services()->get(Adapter::class);
+            $adapter->getDriver()->getConnection()->connect();
+        } catch (Throwable $e) {
+            self::markTestSkipped('no database: ' . $e->getMessage());
+        }
     }
 }
