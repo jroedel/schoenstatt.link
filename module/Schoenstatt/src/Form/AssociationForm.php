@@ -2,23 +2,10 @@
 namespace Schoenstatt\Form;
 
 use Laminas\InputFilter\InputFilterProviderInterface;
-use Laminas\Filter\ToNull;
+use App\Schoenstatt\Association\AssociationFieldDomains;
+use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use SionModel\Form\SionForm;
-use Schoenstatt\Validator\OpeningHoursSpecificationJson;
 use Schoenstatt\Validator\TimeZone;
-use Laminas\Validator\StringLength;
-use Laminas\Filter\StripTags;
-use Laminas\Filter\StripNewlines;
-use Laminas\Filter\StringTrim;
-use SionModel\Filter\ToGeoPoint;
-use Laminas\Validator\GpsPoint;
-use SionModel\Validator\Twitter;
-use Laminas\Validator\EmailAddress;
-use SionModel\Filter\ToDateTime;
-use SionModel\Filter\ToBit;
-use SionModel\Validator\Instagram;
-use SionModel\Validator\ParseableDate;
-use Schoenstatt\Validator\EventsJson;
 
 class AssociationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -32,9 +19,20 @@ class AssociationForm extends SionForm implements InputFilterProviderInterface
         'Fax' => 'Fax',
     ];
 
+    /**
+     * The value domains for the four fields whose valid values come from the database
+     * or from config. Set by the factory; see getInputFilterSpecification().
+     */
+    private AssociationFieldDomains $fieldDomains;
+
     public function __construct()
     {
         parent::__construct('edit_association');
+    }
+
+    public function setFieldDomains(AssociationFieldDomains $domains): void
+    {
+        $this->fieldDomains = $domains;
     }
 
     public function init()
@@ -148,6 +146,11 @@ For Schoenstatt Shrine names, please use the name of the closest city to which t
                 'label' => 'Association type',
                 'value_options' => [
                 ],
+                //AssociationInputFilterSpec owns the domain check, so the Select's
+                //automatic InArray is off to leave exactly one — the same arrangement
+                //DatePrecision documents. Without the flag a container-built form
+                //validates twice and reports the failure twice.
+                'disable_inarray_validator' => true,
             ],
             'attributes' => [
                 'required' => true,
@@ -161,6 +164,7 @@ For Schoenstatt Shrine names, please use the name of the closest city to which t
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => [],// $this->customValueOptions['country'],
+                'disable_inarray_validator' => true,
             ],
             'attributes' => [
                 'required' => false
@@ -175,6 +179,11 @@ For Schoenstatt Shrine names, please use the name of the closest city to which t
                 'empty_option' => '',
                 'unselected_value' => '',
                 'value_options' => $timeZoneOptions,
+                //Off for the reason above, and for a second one specific to this
+                //field: AssociationsController::editAction() narrows these options to
+                //the association's country for display, so the element's own InArray
+                //would be a *narrower* check than the one the value has to pass.
+                'disable_inarray_validator' => true,
             ],
             'attributes' => [
                 'required' => false,
@@ -686,484 +695,30 @@ so users can double-check. Warning: this field is not translated.',
         $this->filterSpec = $spec;
     }
 
+    /**
+     * Delegated to App\Schoenstatt\Association\AssociationInputFilterSpec, which is
+     * where the rules now live so that the API can hold agents to exactly the same
+     * ones and so that they survive laminas-mvc's removal. See that class for what
+     * changed when they moved, and for the three gaps deliberately left open.
+     *
+     * The domains the specification needs are set by AssociationFormFactory. A form
+     * built without them cannot answer this question — an empty haystack would refuse
+     * every submission — so it says so instead of guessing.
+     */
     public function getInputFilterSpecification()
     {
         if ($this->filterSpec) {
             return $this->filterSpec;
         }
-        $this->filterSpec = [
-            'associationId'  => [
-                'required' => true,
-                'filters' => [
-                    ['name' => 'ToInt'],
-                ],
-            ],
-            'name' => [
-                'required' => true,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 200,
-                        ],
-                    ],
-                ],
-            ],
-            'overrideNameFormat' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToBit::class]
-                ],
-            ],
-            'isNameTranslateable' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToBit::class]
-                ],
-            ],
-            'internalName' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 200,
-                        ],
-                    ],
-                ],
-            ],
-            'isInternalNameTranslateable' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToBit::class]
-                ],
-            ],
-            'parentId' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'ToInt'],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_INTEGER,
-                        ],
-                    ],
-                ],
-            ],
-            'kind' => [
-                'required' => true,
-            ],
-            'country' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => 'StringToUpper'],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 6,
-                        ],
-                    ],
-                ],
-            ],
-            'timeZoneId' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'openingHoursHuman' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 500,
-                        ],
-                    ],
-                ],
-            ],
-            'openingHoursSpecificationJson' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 1000,
-                        ],
-                    ],
-                    ['name' => OpeningHoursSpecificationJson::class]
-                ],
-            ],
-            'eventsHuman' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 1000,
-                        ],
-                    ],
-                ],
-            ],
-            'eventsJson' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ],
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 3000,
-                        ],
-                    ],
-                    ['name' => EventsJson::class]
-                ],
-            ],
-            'foundationDate' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToDateTime::class],
-                ],
-                'validators' => [
-                    ['name' => ParseableDate::class],
-                    [
-                        'name' => 'SionModel\Validator\DateWithinRange',
-                        'options' => ['min' => '1914-10-18', 'max' => 'today'],
-                    ],
-                ],
-            ],
-            'foundationDatePrecision' => \SionModel\Form\DatePrecision::filterSpec(),
-            'isAuthor' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToBit::class]
-                ],
-            ],
-            'isActive' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToBit::class]
-                ],
-            ],
-//             'suppressionDate' => [
-//                 'required' => false,
-//                 'filters' => [
-//                     ['name' => ToDateTime::class],
-//                 ],
-//             ],
-            'isLifeCommunity' => [
-                'required' => false,
-            ],
-            'email' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    ['name' => EmailAddress::class],
-                ],
-            ],
-            'phone1' => $this->phoneInputFilterSpec,
-            'phone1Label' => $this->phoneLabelInputFilterSpec,
-            'phone2' => $this->phoneInputFilterSpec,
-            'phone2Label' => $this->phoneLabelInputFilterSpec,
-            'phone3' => $this->phoneInputFilterSpec,
-            'phone3Label' => $this->phoneLabelInputFilterSpec,
-            'url1' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'url1Label' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'url2' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'url2Label' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'url3' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'url3Label' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'facebookUrl' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'twitterUser' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    ['name' => Twitter::class],
-                ],
-            ],
-            'instagramUser' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    ['name' => Instagram::class],
-                ],
-            ],
-            'geoPoint' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => ToGeoPoint::class],
-                ],
-                'validators' => [
-                    ['name' => GpsPoint::class],
-                ],
-            ],
-            'street1' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 70,
-                        ],
-                    ],
-                ],
-            ],
-            'street2' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 70,
-                        ],
-                    ],
-                ],
-            ],
-            'cityState' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 40,
-                        ],
-                    ],
-                ],
-            ],
-            'zip' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 15,
-                        ],
-                    ],
-                ],
-            ],
-            'googlePlaceId' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => StripNewlines::class],
-                    ['name' => StringTrim::class],
-                    ['name' => ToNull::class],
-                ],
-                'validators' => [
-                    [
-                        'name' => StringLength::class,
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 200,
-                        ],
-                    ],
-                ],
-            ],
-            'publicNotes' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-            'adminNotes' => [
-                'required' => false,
-                'filters' => [
-                    ['name' => StripTags::class],
-                    ['name' => ToNull::class,
-                        'options' => [
-                            'type' => ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-            ],
-        ];
+        if (! isset($this->fieldDomains)) {
+            throw new \RuntimeException(
+                'AssociationForm was built without its field domains, so its validation rules cannot be '
+                . 'assembled. Build it through Schoenstatt\Service\AssociationFormFactory, which supplies '
+                . 'them.'
+            );
+        }
+
+        $this->filterSpec = (new AssociationInputFilterSpec($this->fieldDomains))->toArray();
         return $this->filterSpec;
     }
 
