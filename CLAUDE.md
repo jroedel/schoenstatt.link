@@ -104,6 +104,9 @@ suites run from the superproject working tree.
   TwbBundle's markup and `association-edit` is ported (byte-identical to the laminas
   rendering apart from inter-tag whitespace). The **v3 API** for automated agents
   lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
+  It exposes two resources, associations and translation phrases, and **each is gated on
+  its own role** (`sch_api_bot`, `sch_api_translator`); a new API resource needs a new
+  role, an entry in `juser.api_token_roles`, and a `requiredRole()` on its controller.
   Ported HTML routes render with **Twig** from `templates/` (`layout.html.twig` is
   the shared chrome); the `.phtml` they replace stays, because production still
   serves it. Compiled templates go to `data/cache/twig`, which the factory falls

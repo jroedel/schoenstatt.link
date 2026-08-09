@@ -53,17 +53,23 @@ use function substr;
  * Fail closed, not fail open: an unregistered token is refused, not admitted. See
  * tokenIsLive().
  *
- * ## The role is the rest of the authorization model
+ * ## The role is the rest of the authorization model, and it is per resource
  *
- * Holding a live token is not enough. The account must also hold **`sch_api_bot`**,
- * a role introduced for this and named by nothing else on the site — see
- * database/db6.6.sql. Two consequences, both intended:
+ * Holding a live token is not enough. The account must also hold the role the
+ * *endpoint* asks for — `sch_api_bot` for associations (database/db6.6.sql),
+ * `sch_api_translator` for translation phrases (database/db6.8.sql) — each named by
+ * nothing else on the site. Three consequences, all intended:
  *
  * - A leaked bot token reaches the v3 API and nothing else. It cannot open the edit
  *   form, /admin, or any other guarded page, because no other guard names the role.
  * - A human's token cannot write through the API by accident. `sch_user` — which
  *   every registered account holds, and which *does* open the edit form — is not
  *   `sch_api_bot`.
+ * - **A leaked token of one agent does not reach another agent's resource.** The
+ *   required role is a parameter of resolve() and not a constant of this class,
+ *   because the first version made it a constant and the reach of every credential
+ *   would then have widened silently each time v3 grew an endpoint. An account may
+ *   hold both roles; the point is that somebody has to have granted both.
  *
  * Roles are read straight from `user_role_linker` rather than through BjyAuthorize's
  * identity provider, because that provider is the session-reading one. It is the same
@@ -79,19 +85,23 @@ use function substr;
  */
 final class BotIdentity
 {
-    /** The role an account must hold to write through the v3 API. */
+    /** The role an account must hold to read and write associations through v3. */
     public const REQUIRED_ROLE = 'sch_api_bot';
+
+    /** The role an account must hold to read and write translation phrases through v3. */
+    public const TRANSLATOR_ROLE = 'sch_api_translator';
 
     public function __construct(private readonly ServiceBridge $laminas)
     {
     }
 
     /**
-     * The acting user id behind a bearer token, or null if the request may not write.
+     * The acting user id behind a bearer token, or null if the request may not proceed.
      *
      * @param string|null $authorization the raw `Authorization` header
+     * @param string $requiredRole the role this endpoint's resource is gated on
      */
-    public function resolve(?string $authorization): ?int
+    public function resolve(?string $authorization, string $requiredRole = self::REQUIRED_ROLE): ?int
     {
         $token = self::bearerToken($authorization);
         if (null === $token) {
@@ -105,7 +115,7 @@ final class BotIdentity
 
         [$userId, $jti] = $claims;
 
-        return $this->tokenIsLive($jti, $userId) && $this->holdsRequiredRole($userId) ? $userId : null;
+        return $this->tokenIsLive($jti, $userId) && $this->holdsRole($userId, $requiredRole) ? $userId : null;
     }
 
     /**
@@ -217,19 +227,25 @@ final class BotIdentity
         //an expired token on its own `exp` claim before this method is reached, and
         //a second copy of the rule is a second thing to get wrong.
         //`is_array`, not `null !== $row` — laminas-db answers **false** for an empty
-        //result set. See holdsRequiredRole() below; the same trap inverted the whole
+        //result set. See holdsRole() below; the same trap inverted the whole
         //authorization model once already.
         return is_array($row) || is_object($row);
     }
 
     /**
-     * Whether the account holds `sch_api_bot`.
+     * Whether the account holds the named role.
      *
      * `user_role_linker.role_id` is `user_role.id`, not the slug — the join is the
      * point, and reading the linker alone would compare an integer against a name and
      * silently answer no for everyone.
+     *
+     * Roles do not inherit here. `user_role.parent_id` builds a hierarchy that
+     * BjyAuthorize walks, and walking it would mean an administrator's account
+     * satisfying an API role it was never granted. Both API roles are deliberately
+     * parentless (database/db6.6.sql, database/db6.8.sql), so an exact match is the
+     * whole question.
      */
-    private function holdsRequiredRole(int $userId): bool
+    private function holdsRole(int $userId, string $requiredRole): bool
     {
         //`Adapter::class`, not `AdapterInterface::class`: the application registers the
         //concrete class and nothing aliases the interface, so asking for the interface
@@ -242,7 +258,7 @@ final class BotIdentity
             ->from(['l' => 'user_role_linker'])
             ->columns(['user_id'])
             ->join(['r' => 'user_role'], 'l.role_id = r.id', [])
-            ->where(['l.user_id' => $userId, 'r.role_id' => self::REQUIRED_ROLE]);
+            ->where(['l.user_id' => $userId, 'r.role_id' => $requiredRole]);
 
         $row = $sql->prepareStatementForSqlObject($select)->execute()->current();
 

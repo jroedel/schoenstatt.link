@@ -11,19 +11,27 @@ return [
          * /users/:id/api-tokens. JUser ships this empty — naming a role here is
          * what switches the issue button on.
          *
-         * `sch_api_bot` and nothing else, deliberately. Unrestricted, the button
+         * The two API roles and nothing else, deliberately. Unrestricted, the button
          * would be a "mint a six-month bearer token for any account" tool, and the
          * account it would be most dangerous to mint for is an administrator's: the
          * token outlives the session that created it and no role or password change
-         * revokes it (only /users/:id/api-tokens does). Confined to sch_api_bot, the
-         * worst it can produce is a credential reaching exactly what that role
-         * already reaches, which is /api/v3 and nothing else — see database/db6.6.sql.
+         * revokes it (only /users/:id/api-tokens does). Confined to these, the worst
+         * it can produce is a credential reaching exactly what the role it belongs to
+         * already reaches — see database/db6.6.sql and database/db6.8.sql.
+         *
+         * **A role added to /api/v3 has to be added here too.** This list decides who
+         * can be *given* a token; App\Api\BotIdentity decides what a token then opens.
+         * The two are separate on purpose, and the failure when they disagree is
+         * silent in the confusing direction: sch_api_translator gates the phrase
+         * endpoints, so an account holding it is refused everywhere until it has a
+         * token — and with the role missing from this list there is no screen that
+         * will issue one. Not an error anywhere, just a button that never appears.
          *
          * Never add a role that registration grants. sch_user would mean any
          * registered account could be handed a token that opens the association edit
          * form, which is the failure db6.6.sql exists to prevent.
          */
-        'api_token_roles' => ['sch_api_bot'],
+        'api_token_roles' => ['sch_api_bot', 'sch_api_translator'],
         // cache options have to be compatible with Laminas\Cache\StorageFactory::factory
         'cache_options' => [
             'adapter' => [
