@@ -326,6 +326,31 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     }
 
     /**
+     * An empty translation means "leave this locale alone", and `changed` has to say so.
+     *
+     * `TranslationsTable::updatePhrase()` ignores any falsy value — that is how the web
+     * form lets a translator decline a language, an empty textarea being the whole of
+     * the gesture. The first version of this endpoint counted such a locale as changed
+     * anyway, so `{"de_DE": ""}` answered `"changed": ["de_DE"]` with the stored text
+     * untouched, and the caller was billed a full catalog recompile for a write that
+     * never happened. A polling agent would have done that forever.
+     *
+     * The assertion that matters is the second one: the text is still there. The first
+     * would pass on its own if the endpoint had instead started *blanking* translations,
+     * which is the opposite bug and a destructive one.
+     */
+    public function testAnEmptyTranslationIsANoOpAndIsReportedAsOne(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de_DE' => 'Vorhanden.']);
+
+        $document = $this->decode($this->patch($token, self::ITEM, ['de_DE' => '']));
+
+        $this->assertSame([], $document['changed']);
+        $this->assertSame('Vorhanden.', $this->storedTranslation(self::PHRASE_ID, 'de_DE'));
+    }
+
+    /**
      * Validation is the translator form's, verbatim. 2000 is
      * EditPhraseForm::TRANSLATION_MAX_LENGTH, which is `trans_translations.translation`
      * — so this is also the assertion that an agent cannot provoke a database error the

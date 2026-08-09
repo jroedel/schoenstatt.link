@@ -417,6 +417,24 @@ final class PhrasesV3Controller extends AbstractApiController
         $values    = $filter->getValues();
         $submitted = array_intersect_key($values, array_flip(array_map(strval(...), array_keys($patch))));
 
+        //Drop what the write is going to skip anyway, *before* deciding what changed.
+        //`TranslationsTable::updatePhrase()` ignores any falsy value — that is how the
+        //web form says "leave this locale alone", an empty textarea being how a
+        //translator declines a language. Counting those as changes made this endpoint
+        //lie in the most expensive direction available: `{"de_DE": ""}` answered
+        //`"changed": ["de_DE"]` while the stored text was untouched, and the caller then
+        //got a full catalog recompile for a write that never happened. Measured on
+        //phrase 6197.
+        //
+        //`0 == ''` for this purpose, deliberately: a translation of literally "0" is
+        //falsy in PHP and updatePhrase() skips it too. Mirroring its exact condition
+        //keeps `changed` truthful rather than correct in principle — if that quirk is
+        //ever fixed it should be fixed there, and this follows.
+        $submitted = array_filter($submitted, static fn (mixed $value): bool => (bool) $value);
+        if ([] === $submitted) {
+            return self::applied([]);
+        }
+
         $changed = PhraseResource::changedLocales($phrase, $submitted);
         if ([] === $changed) {
             return self::applied([]);
