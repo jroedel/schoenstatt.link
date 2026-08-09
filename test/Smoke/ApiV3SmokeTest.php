@@ -190,19 +190,52 @@ class ApiV3SmokeTest extends SmokeTestCase
         $this->assertSame(401, $this->getWithBearer($token)['status']);
     }
 
-    /** The schema is public: an agent author must be able to read the contract first. */
-    public function testTheSchemaNeedsNoToken(): void
+    /**
+     * The schema index is public: an agent author must be able to read the contract
+     * first, and must be able to *find* it without being told which entities exist.
+     *
+     * `/api/v3/schema` answered the association contract directly until phrases became
+     * the second entity. It is a directory now, and the contracts live one level down —
+     * see App\Controller\Api\ApiSchemaController::index().
+     */
+    public function testTheSchemaIndexNeedsNoTokenAndNamesEveryEntity(): void
     {
         $response = $this->get('/api/v3/schema');
 
         $this->assertSame(200, $response['status']);
         $document = json_decode($response['body'], true);
         $this->assertSame(3, $document['version']);
+        $this->assertSame(
+            ['association', 'phrase'],
+            array_keys($document['entities']),
+            'an entity was added or removed without the index following it'
+        );
+        //The index says which role each needs, which is the fact that stopped being
+        //uniform when phrases arrived with their own.
+        $this->assertSame('sch_api_bot', $document['entities']['association']['requiredRole']);
+        $this->assertSame('sch_api_translator', $document['entities']['phrase']['requiredRole']);
+    }
+
+    /** The association contract itself, still public and still generated. */
+    public function testTheAssociationSchemaNeedsNoToken(): void
+    {
+        $response = $this->get('/api/v3/schema/association');
+
+        $this->assertSame(200, $response['status']);
+        $document = json_decode($response['body'], true);
+        $this->assertSame(3, $document['version']);
+        $this->assertSame('association', $document['entity']);
         $this->assertArrayHasKey('openingHoursHuman', $document['fields']);
         //Generated from the specification, so the bound and the enum are the live ones.
         $this->assertSame(500, $document['fields']['openingHoursHuman']['maxLength']);
         $this->assertContains('sch-shrine', $document['fields']['kind']['enum']);
         $this->assertArrayNotHasKey('associationId', $document['fields']);
+    }
+
+    /** An entity nobody exposes is a 404, not an empty contract someone might trust. */
+    public function testAnUnknownSchemaEntityIsNotFound(): void
+    {
+        $this->assertSame(404, $this->get('/api/v3/schema/nonesuch')['status']);
     }
 
     /** A wrong verb is a 405 with an Allow header, not laminas' redirect to sign-in. */
@@ -237,7 +270,7 @@ class ApiV3SmokeTest extends SmokeTestCase
     public function testTheRepresentationRoundTrips(): void
     {
         $item   = json_decode($this->getWithBearer($this->botToken())['body'], true);
-        $schema = json_decode($this->get('/api/v3/schema')['body'], true);
+        $schema = json_decode($this->get('/api/v3/schema/association')['body'], true);
 
         $this->assertSame(self::SW_ID, $item['identifier']);
         $this->assertSame([], array_diff(array_keys($item['fields']), array_keys($schema['fields'])));

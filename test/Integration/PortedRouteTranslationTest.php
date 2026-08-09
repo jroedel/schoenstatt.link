@@ -20,6 +20,7 @@ use function is_dir;
 use function is_readable;
 use function is_string;
 use function str_ends_with;
+use function str_starts_with;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
 
@@ -190,15 +191,25 @@ class PortedRouteTranslationTest extends TestCase
     /** True for a route whose controller renders a Twig template. */
     private function rendersHtml(string $name): bool
     {
+        //the whole of v3, by prefix. An API for automated agents emits field names and
+        //validation messages, not localized prose, and giving it a text domain would
+        //start translating the messages an agent parses.
+        //
+        //Matched on the prefix rather than enumerated, because the enumeration was
+        //wrong the first time it was tested: the phrase endpoints were added and this
+        //test failed on eight route names that were never going to render a template.
+        //A list that has to be extended by hand every time v3 grows is a list that
+        //fails for the wrong reason, and the temptation then is to make the *route*
+        //declare a domain it does not want.
+        if (str_starts_with($name, 'api-v3/')) {
+            return false;
+        }
+
         //the two maintenance endpoints and /_health answer JSON; the GeoJSON pair does
-        //too, and so does the whole of v3 — an API for automated agents emits field
-        //names and validation messages, not localized prose, and giving it a text
-        //domain would start translating the messages an agent parses
+        //too. Enumerated because these are individual routes among HTML siblings, not
+        //a namespace.
         $jsonOnly = ['health', 'sm-cache-status', 'sm-clear-persistent-cache',
-                     'api-v1/shrines-json', 'api-v2/shrines-json',
-                     'api-v3/schema', 'api-v3/associations', 'api-v3/association',
-                     'api-v3/association-patch', 'api-v3/associations-method',
-                     'api-v3/association-method', 'api-v3/schema-method'];
+                     'api-v1/shrines-json', 'api-v2/shrines-json'];
         foreach ($jsonOnly as $json) {
             if ($name === $json || $name === $json . '.locale') {
                 return false;

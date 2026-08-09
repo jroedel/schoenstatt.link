@@ -57,10 +57,18 @@ final class RouteUrl
     /**
      * @param array<string, mixed> $params
      * @param array<string, mixed> $options
+     * @param string|null $locale the prefix to assemble under; null means the request's
+     *        own, which is what every HTML page wants. `/api/v3` names one explicitly
+     *        because an API request carries no locale at all, so Locale::getDefault()
+     *        there is whatever php.ini last said rather than anything the caller chose.
      */
-    public function path(string $routeName, array $params = [], array $options = []): string
-    {
-        return $this->router()->assemble($params, array_merge($options, ['name' => $routeName]));
+    public function path(
+        string $routeName,
+        array $params = [],
+        array $options = [],
+        ?string $locale = null
+    ): string {
+        return $this->router($locale)->assemble($params, array_merge($options, ['name' => $routeName]));
     }
 
     /**
@@ -113,17 +121,25 @@ final class RouteUrl
         return $result;
     }
 
-    /** @return TreeRouteStack<HttpRouteInterface> */
-    private function router(): TreeRouteStack
+    /**
+     * @param string|null $locale null means the request's own default
+     * @return TreeRouteStack<HttpRouteInterface>
+     */
+    private function router(?string $locale = null): TreeRouteStack
     {
-        if (null !== $this->router) {
-            return $this->router;
+        $alias = Locales::aliasFor($locale ?? Locale::getDefault());
+
+        //Re-set rather than memoized on the alias: the base URL lives on the router,
+        //which is shared, so remembering "we already configured it" while someone else
+        //asks for a different locale would assemble the second request's links under
+        //the first one's prefix. Setting it is a property assignment.
+        if (null === $this->router) {
+            /** @var TreeRouteStack<HttpRouteInterface> $router */
+            $router       = $this->laminas->get('Router');
+            $this->router = $router;
         }
+        $this->router->setBaseUrl(rtrim($this->baseUrl, '/') . '/' . $alias);
 
-        /** @var TreeRouteStack<HttpRouteInterface> $router */
-        $router = $this->laminas->get('Router');
-        $router->setBaseUrl(rtrim($this->baseUrl, '/') . '/' . Locales::aliasFor(Locale::getDefault()));
-
-        return $this->router = $router;
+        return $this->router;
     }
 }
