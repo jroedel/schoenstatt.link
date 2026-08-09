@@ -93,8 +93,9 @@ suites run from the superproject working tree.
   environment variable: unset/`0` runs `Laminas\Mvc\Application` as it always
   has, `1` runs `App\Kernel` (symfony/http-kernel, hand-wired — no
   FrameworkBundle) with a catch-all route delegating every unported path back to
-  the laminas application. **The capsule sets it to `1`; production does not
-  yet.** Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
+  the laminas application. **Both are now `1`:** the capsule through
+  `docker/apache-vhost.conf`, and production through the site-wide default in
+  `public/.htaccess` — committed 2026-08-10, live from the next deploy. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
   `public/index.php`, or anything about response headers — it records which of
   the two is live where, what the bridge preserves and why, and how to add a
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
@@ -128,7 +129,7 @@ suites run from the superproject working tree.
 ## Local environment (Docker time capsule)
 
 - `docker compose up -d` → app at http://localhost:8080 (redirects to `/en/`), Mailpit UI at http://localhost:8025, MariaDB on host port 33306 (`schoenstatt`/`schoenstatt`, db `ourlink_db1`).
-- The capsule serves through the **Symfony** front controller (`SYMFONY_KERNEL=1` in `docker/apache-vhost.conf`); production still serves through the laminas one. Changing the vhost needs `docker compose build && docker compose up -d` — it is `COPY`d into the image, not mounted. Note also that `public/.htaccess` (untracked) sets `APP_ENV=production` and `AllowOverride All` lets it win, so **the capsule runs in production mode** despite the vhost's `SetEnv APP_ENV "development"`.
+- The capsule serves through the **Symfony** front controller (`SYMFONY_KERNEL=1` in `docker/apache-vhost.conf`); production still serves through the laminas one. Changing the vhost needs `docker compose build && docker compose up -d` — it is `COPY`d into the image, not mounted. Note also that `public/.htaccess` — **tracked, and deployed by phploy** — sets `APP_ENV=production` and `AllowOverride All` lets it win, so **the capsule runs in production mode** despite the vhost's `SetEnv APP_ENV "development"`. One capsule-only caveat: the vhost sets `SYMFONY_KERNEL` with `SetEnv`, and mod_env runs after all of mod_setenvif, so the `.htaccess` kernel lines — including both canary cookies — have **no effect in the capsule**. Production's vhost has no such line, which is why `.htaccess` is the flip mechanism there and why the cookies can only be exercised against production.
 - Apache + MariaDB + APCu. **The PHP version is switchable** via `PHP_VERSION`/`APCU_VERSION` in `.env`, then `docker compose build && docker compose up -d`: `8.5`/`5.1.24` is what the capsule serves now; `8.4`/`5.1.24` matches production; `8.3`/`5.1.24` and `7.4`/`5.1.22` are the earlier rungs, kept switchable for bisecting (8.3+ needs APCu 5.1.24+). Two build gotchas, both cost real time: `docker compose build` has **no DNS** in this environment while `docker build --network=host` does, so build by hand and tag `schoenstattlink-app:latest`, then `docker compose up -d --no-build`; and a single-file bind mount follows the **inode**, so editing `docker/local.docker.php` changes nothing until the container is recreated. `.env` is gitignored, so every machine sets this for itself. Check which one is live with `docker compose exec -T app php -v` before drawing conclusions from a test run. Container config `docker/local.docker.php` is mounted over `config/autoload/local.php`; the host file is untouched.
 - Database comes from a 2021-06-24 production dump in `database/dumps/` (gitignored) + `zz-db6.3.sql`. Re-import: `docker compose down -v && docker compose up -d`.
 - `.env` holds HOST_UID/HOST_GID so Apache workers can write to the bind-mounted `data/` dir.

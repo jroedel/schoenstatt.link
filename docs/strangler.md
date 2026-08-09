@@ -124,18 +124,18 @@ the repo copy.
 overrides:
 
 ```apache
-#   SetEnvIf Request_URI ".*"             SYMFONY_KERNEL=1   <- the flip; not there yet
+SetEnvIf Request_URI ".*"                 SYMFONY_KERNEL=1   <- the flip, committed 2026-08-10
 SetEnvIf Cookie "sl_symfony_canary=1"     SYMFONY_KERNEL=1
 SetEnvIf Cookie "sl_symfony_canary=0"     SYMFONY_KERNEL=0
 ```
 
 So the cookie has **three** states: absent means "whatever everyone else gets", `1`
-forces `App\Kernel`, `0` forces `Laminas\Mvc\Application`. Before the flip the opt-in is
-the canary that makes ported routes testable against production's real data, real ICU
+forces `App\Kernel`, `0` forces `Laminas\Mvc\Application`. Before the flip the opt-in was
+the canary that made ported routes testable against production's real data, real ICU
 (**72.1** there against the capsule's 76.1 — 27 `IntlDateFormatter` call sites) and real
-session store, without a window in which all traffic is on them. After it, the opt-out is
-how one person gets back to laminas without a deploy. `App\Http\KernelCanary` is the
-single PHP-side definition of all of it.
+session store, without a window in which all traffic was on them. Now that the default is
+`1`, the opt-*out* is the one that matters: it is how one person gets back to laminas
+without a deploy. `App\Http\KernelCanary` is the single PHP-side definition of all of it.
 
 **Both overrides are deployed before the flip on purpose**, so that the flip is one
 *added* line and the escape hatch has been exercised before it is the only one left. The
