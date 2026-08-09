@@ -171,8 +171,10 @@ class CacheItemSizeBudgetTest extends TestCase
 }
 
 /**
- * Minimal stand-in for a Laminas cache storage adapter. Only setItem() is
- * exercised; the trait type-hints nothing here, so no interface is needed.
+ * Minimal stand-in for a Laminas cache storage adapter. setItem() is what this
+ * file asserts on; getItem() and incrementItem() are here because the trait
+ * reads its generation counter through them on the write path. The trait
+ * type-hints nothing here, so no interface is needed.
  */
 class RecordingCache
 {
@@ -182,9 +184,30 @@ class RecordingCache
     /** @var string[] */
     private $failing = [];
 
+    /** @var array<string, mixed> */
+    private $items = [];
+
     public function failOn(string $key): void
     {
         $this->failing[] = $key;
+    }
+
+    public function getItem($key, &$success = null, &$casToken = null)
+    {
+        $success = array_key_exists($key, $this->items);
+        return $success ? $this->items[$key] : null;
+    }
+
+    public function removeItem($key)
+    {
+        unset($this->items[$key]);
+        return true;
+    }
+
+    public function incrementItem($key, $value)
+    {
+        $this->items[$key] = (int) ($this->items[$key] ?? 0) + (int) $value;
+        return $this->items[$key];
     }
 
     public function setItem($key, $value)
@@ -193,6 +216,7 @@ class RecordingCache
             //what Laminas\Cache\Storage\Adapter\Apcu does when apcu_store() fails
             throw new RuntimeException("apcu_store('{$key}', <array>, 0) failed");
         }
+        $this->items[$key] = $value;
         $this->written[] = $key;
         return true;
     }
@@ -219,6 +243,14 @@ class RecordingLogger
     private $errors = [];
 
     public function debug($message, $context = [])
+    {
+    }
+
+    public function info($message, $context = [])
+    {
+    }
+
+    public function notice($message, $context = [])
     {
     }
 

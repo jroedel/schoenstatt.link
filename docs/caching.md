@@ -2,9 +2,62 @@
 
 The app caches query results in APCu through `SionModel\Db\Model\SionCacheTrait`
 (mixed into `SionTable`, so every `*Table` model has it, plus JTranslate's
-`TranslationsTable`). This document covers the one thing about that layer that
-is genuinely surprising: **an item too big to store is far worse than no item at
-all**, and what was done about it.
+`TranslationsTable`). This document covers the two things about that layer that
+are genuinely surprising — **an item too big to store is far worse than no item
+at all**, and **an item whose dependency record is gone can never be
+invalidated** — and what was done about each.
+
+## The dependency map, and how it went missing (2026-08-09)
+
+A cached item lives under its own key. What that item *depends on* lives
+somewhere else: one map per table class, `<class>-cachedependencies`, naming
+every key the class has cached and the entities behind it.
+`removeDependentCacheItems()` reads the map, so **a key the map does not name is
+a key nothing can remove.** It keeps answering with whatever the database said
+when it was written, until its own TTL runs out.
+
+That is what happened to the user list. An admin created an account, the row
+landed in the database, and `/en/users` went on showing the world without it. No
+race, no expunge, no full segment (`expunges: 0`, 5% of 256 MB used). The
+sequence:
+
+1. `JUser\Cache` stores with `ttl => 86400`, and both the data and the map live
+   in it, so both expire.
+2. A cache miss rewrote the *data* — pushing its expiry another day out — while
+   the old code rewrote the *map* only when it learned a key it did not already
+   have. A key already on record refreshed nothing.
+3. So within about two days of ordinary traffic the map expired underneath a set
+   of perfectly live cached items.
+4. From then on `removeDependentCacheItems()` iterated an empty map and removed
+   nothing, while `fetchCachedEntityObjects()` kept serving the items it could no
+   longer invalidate.
+
+Four properties now hold, each asserted by name in
+`test/Unit/SionCacheDependencyMapTest`:
+
+- **The map is refreshed whenever the data is.** `cacheEntityObjects()` persists
+  the map on every call, so its TTL cannot fall behind the items it governs.
+- **An item we cannot invalidate is not served.** A hit whose key is absent from
+  the map is reported as a miss, and the caller's query re-registers it. If the
+  map is ever lost anyway, the cache degrades to being slow rather than wrong.
+- **The map is merged, never overwritten.** Two requests registering different
+  keys at the same time would otherwise leave whichever wrote last as the only
+  one on record — orphaning the other's item in milliseconds instead of a day.
+- **A snapshot older than the last change is never written.** Items are written
+  at `MvcEvent::FINISH`, long after they were read; a generation counter bumped
+  on every invalidation (`<class>-cachegeneration`, advanced with the storage's
+  atomic `incrementItem`) lets the writer recognise a snapshot a concurrent
+  change has overtaken and drop it instead of putting it back on top of the
+  removal.
+
+Two related things were wrong in the same place and are fixed with it.
+`SionTable`'s constructor injects `SionModel\PersistentCache` and JUser's factory
+then replaces it with `JUser\Cache` — a different APCu namespace — so
+`setPersistentCache()` now discards the map it read from the previous storage
+rather than letting it vouch for keys in a namespace this instance no longer
+touches. And the factory used to attach `onFinishWriteCache` a second time, which
+is why every JUser key appeared twice in the application log; `wireOnFinishTrigger()`
+is now idempotent. Both are pinned by `test/Integration/SionCacheWiringTest`.
 
 ## Why item size matters so much
 
@@ -141,6 +194,10 @@ silence a production warning rather than fail anything.
 - Declare the dependencies honestly. `cacheEntityObjects()`'s third argument is
   the list of entities whose change invalidates the item; if the payload embeds
   a related record, that entity belongs in the list or the item goes stale.
+- Never write to the persistent cache around `SionCacheTrait` rather than
+  through it. An item stored directly is an item the dependency map does not
+  name, which is exactly the state the 2026-08-09 incident left the user list in
+  — with the difference that this one would be deliberate.
 - Read and write the *same* key. A key built from `$this->getLocale()` on read
   and a bare literal on write is a permanent miss that rebuilds and rewrites
   every request — this happened in `SchoenstattTable::getAssignments()`.
@@ -162,6 +219,15 @@ silence a production warning rather than fail anything.
 - The navigation cache keys written in `onBootstrap()` are never invalidated
   when the underlying data changes; `removeDependentCacheItems()` only clears
   keys registered through `SionCacheTrait`. They go stale until the TTL.
+- `max_items_to_cache` is **2**, so a request touching four cached queries
+  persists the first two and re-queries the rest on every request forever. That
+  is now logged rather than silent ("Cache writes skipped: max_items_to_cache
+  reached"), which makes it measurable; whether 2 is still the right number, on
+  a 256 MB segment rather than the 32 MB it was chosen for, is an open question.
+- `JUser\Cache` (1 day) and `SionModel\PersistentCache` (5 days) have different
+  TTLs for no recorded reason. Nothing depends on the difference now that the
+  map is refreshed with the data, but two numbers where one would do is one
+  number too many.
 - Compression is unusually effective on these repetitive arrays (the book blob
   gzips 45.7 MiB → 3.7 MiB at level 1), but decode plus `unserialize()` costs
   ~540 ms, so it suits mid-sized items rather than the giant ones. Redis — the
