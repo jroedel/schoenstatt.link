@@ -9,6 +9,7 @@ use App\JTranslate\Phrase\PhraseResource;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use JTranslate\Form\PhraseValidator;
+use JTranslate\I18n\LanguageMap;
 use JTranslate\Model\TranslationsTable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -142,8 +143,8 @@ final class PhrasesV3Controller extends AbstractApiController
             return $criteria;
         }
 
-        $table   = $this->table();
-        $locales = $this->validator()->writableLocales();
+        $table     = $this->table();
+        $languages = $this->validator()->languages();
 
         $limit  = self::boundedInt($request->query->get('limit'), self::DEFAULT_LIMIT, 1, self::MAX_LIMIT);
         $offset = self::boundedInt($request->query->get('offset'), 0, 0, PHP_INT_MAX);
@@ -162,7 +163,7 @@ final class PhrasesV3Controller extends AbstractApiController
             'items'  => array_values(array_map(
                 fn (array $phrase): array => PhraseResource::represent(
                     $phrase,
-                    $locales,
+                    $languages,
                     $this->contextPath($phrase),
                     $request->getSchemeAndHttpHost()
                 ),
@@ -185,7 +186,7 @@ final class PhrasesV3Controller extends AbstractApiController
 
         $document = PhraseResource::represent(
             $phrase,
-            $this->validator()->writableLocales(),
+            $this->validator()->languages(),
             $this->contextPath($phrase),
             $request->getSchemeAndHttpHost()
         );
@@ -196,7 +197,7 @@ final class PhrasesV3Controller extends AbstractApiController
     // ----------------------------------------------------------------- write
 
     /**
-     * `PATCH /api/v3/phrases/{id}` — a JSON object of locale code => translation.
+     * `PATCH /api/v3/phrases/{id}` — a JSON object of language code => translation.
      */
     public function patch(Request $request): Response
     {
@@ -214,15 +215,15 @@ final class PhrasesV3Controller extends AbstractApiController
         if (! is_array($patch)) {
             return self::problem(
                 Response::HTTP_BAD_REQUEST,
-                'The request body must be a JSON object of locale code to translation.'
+                'The request body must be a JSON object of language code to translation.'
             );
         }
 
         $validator = $this->validator();
-        $locales   = $validator->writableLocales();
+        $languages = $validator->languages();
         $current   = PhraseResource::represent(
             $phrase,
-            $locales,
+            $languages,
             $this->contextPath($phrase),
             $request->getSchemeAndHttpHost()
         );
@@ -235,7 +236,7 @@ final class PhrasesV3Controller extends AbstractApiController
             );
         }
 
-        $outcome = $this->apply($phrase, $patch, $locales, $validator, $actingUser);
+        $outcome = $this->apply($phrase, $patch, $languages, $validator, $actingUser);
         if (! $outcome['ok']) {
             return self::problem($outcome['status'], $outcome['message'], $outcome['detail']);
         }
@@ -245,7 +246,7 @@ final class PhrasesV3Controller extends AbstractApiController
         $fresh    = $this->table()->getPhraseById((int) $phrase['phraseId']) ?? $phrase;
         $document = PhraseResource::represent(
             $fresh,
-            $locales,
+            $languages,
             $this->contextPath($fresh),
             $request->getSchemeAndHttpHost()
         );
@@ -289,8 +290,8 @@ final class PhrasesV3Controller extends AbstractApiController
         if (! is_array($body) || ! is_array($body['phrases'] ?? null)) {
             return self::problem(
                 Response::HTTP_BAD_REQUEST,
-                'The request body must be a JSON object with a `phrases` object of phrase id to locale map.',
-                ['example' => ['phrases' => ['6198' => ['de_DE' => 'Ein Beispiel']]]]
+                'The request body must be a JSON object with a `phrases` object of phrase id to language map.',
+                ['example' => ['phrases' => ['6198' => ['de' => 'Ein Beispiel']]]]
             );
         }
 
@@ -306,7 +307,7 @@ final class PhrasesV3Controller extends AbstractApiController
 
         $table     = $this->table();
         $validator = $this->validator();
-        $locales   = $validator->writableLocales();
+        $languages = $validator->languages();
 
         $results   = [];
         $anyWrites = false;
@@ -319,7 +320,7 @@ final class PhrasesV3Controller extends AbstractApiController
                 continue;
             }
             if (! is_array($patch)) {
-                $results[$key] = self::entryError('The value must be an object of locale code to translation.');
+                $results[$key] = self::entryError('The value must be an object of language code to translation.');
                 continue;
             }
 
@@ -329,7 +330,7 @@ final class PhrasesV3Controller extends AbstractApiController
                 continue;
             }
 
-            $outcome = $this->apply($phrase, $patch, $locales, $validator, $actingUser);
+            $outcome = $this->apply($phrase, $patch, $languages, $validator, $actingUser);
             if (! $outcome['ok']) {
                 $results[$key] = self::entryError($outcome['message'], $outcome['status']) + $outcome['detail'];
                 continue;
@@ -372,25 +373,30 @@ final class PhrasesV3Controller extends AbstractApiController
      * batch's error shape was defined by JSON round-tripping.
      *
      * @param array<string, mixed> $phrase
-     * @param array<string, mixed> $patch
-     * @param list<string> $locales
+     * @param array<string, mixed> $patch keyed by language code
      * @return array{ok: bool, changed: list<string>, status: int, message: string, detail: array<string, mixed>}
      */
     private function apply(
         array $phrase,
         array $patch,
-        array $locales,
+        LanguageMap $languages,
         PhraseValidator $validator,
         int $actingUser
     ): array {
-        $unknown = array_diff(array_map(strval(...), array_keys($patch)), $locales);
+        $unknown = array_diff(array_map(strval(...), array_keys($patch)), $languages->languages());
         if ([] !== $unknown) {
             //Refused rather than ignored, for the association API's reason: an agent
-            //that misspells `de-DE` and gets a 200 will keep misspelling it forever and
-            //the German it believes it is maintaining never changes.
+            //that sends `de_DE` or `de-DE` and gets a 200 will keep sending it forever
+            //and the German it believes it is maintaining never changes. The locale
+            //form is refused as firmly as a misspelling — this API speaks languages,
+            //and accepting both would make the *stored* key depend on which the caller
+            //happened to send.
             return self::failure(
-                'The request names locales this API does not accept.',
-                ['unknownLocales' => array_values($unknown), 'writableLocales' => $locales]
+                'The request names languages this API does not accept.',
+                [
+                    'unknownLanguages' => array_values($unknown),
+                    'writableLanguages' => $languages->languages(),
+                ]
             );
         }
 
@@ -400,7 +406,7 @@ final class PhrasesV3Controller extends AbstractApiController
         //supplied from the record, so a patch naming one locale is already a complete
         //submission. Merging would only re-submit stored text for the change detector
         //to discard.
-        $filter->setData(PhraseResource::submission((int) $phrase['phraseId'], $patch));
+        $filter->setData(PhraseResource::submission((int) $phrase['phraseId'], $patch, $languages));
 
         if (! $filter->isValid()) {
             //The messages are the translator's, verbatim — see PhraseValidator.
@@ -413,9 +419,15 @@ final class PhrasesV3Controller extends AbstractApiController
         //getValues(), not $patch: the raw body has been through no filter, so writing
         //it discards the trimming and the length bound isValid() just applied — the
         //same trap JTranslateController::editAction() documents.
+        //Back in locale space from here down: getValues() is the form's output, and the
+        //form is keyed the way the database is.
         /** @var array<string, mixed> $values */
-        $values    = $filter->getValues();
-        $submitted = array_intersect_key($values, array_flip(array_map(strval(...), array_keys($patch))));
+        $values      = $filter->getValues();
+        $patchLocales = array_filter(array_map(
+            static fn (string $language): ?string => $languages->localeFor($language),
+            array_map(strval(...), array_keys($patch))
+        ));
+        $submitted   = array_intersect_key($values, array_flip($patchLocales));
 
         //Drop what the write is going to skip anyway, *before* deciding what changed.
         //`TranslationsTable::updatePhrase()` ignores any falsy value — that is how the
@@ -435,7 +447,7 @@ final class PhrasesV3Controller extends AbstractApiController
             return self::applied([]);
         }
 
-        $changed = PhraseResource::changedLocales($phrase, $submitted);
+        $changed = PhraseResource::changedLanguages($phrase, $submitted, $languages);
         if ([] === $changed) {
             return self::applied([]);
         }
@@ -502,7 +514,7 @@ final class PhrasesV3Controller extends AbstractApiController
      * The criteria a caller asked for, or the refusal.
      *
      * An unknown query parameter is refused for the same reason an unknown field is:
-     * `?locale=de_DE` when the parameter is called `untranslatedIn` would otherwise
+     * `?language=de` when the parameter is called `untranslatedIn` would otherwise
      * return the unfiltered collection with a 200, and an agent would work through the
      * wrong list believing it was the right one.
      *
@@ -529,15 +541,25 @@ final class PhrasesV3Controller extends AbstractApiController
             }
         }
 
-        $locales = $this->validator()->writableLocales();
-        foreach (['untranslatedIn', 'translatedIn'] as $localeCriterion) {
-            if (isset($criteria[$localeCriterion]) && ! in_array($criteria[$localeCriterion], $locales, true)) {
+        //The two locale-valued criteria are given in language codes like everything
+        //else on this API, and translated to locales here — TranslationsTable works in
+        //locales, because the column does.
+        $languages = $this->validator()->languages();
+        foreach (['untranslatedIn', 'translatedIn'] as $languageCriterion) {
+            if (! isset($criteria[$languageCriterion])) {
+                continue;
+            }
+
+            $locale = $languages->localeFor($criteria[$languageCriterion]);
+            if (null === $locale) {
                 return self::problem(
                     Response::HTTP_UNPROCESSABLE_ENTITY,
-                    sprintf('`%s` must name a locale this site translates into.', $localeCriterion),
-                    ['writableLocales' => $locales]
+                    sprintf('`%s` must name a language this site translates into.', $languageCriterion),
+                    ['writableLanguages' => $languages->languages()]
                 );
             }
+
+            $criteria[$languageCriterion] = $locale;
         }
 
         return $criteria;

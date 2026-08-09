@@ -191,16 +191,16 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     {
         $token = $this->translatorToken();
 
-        $missing = $this->decode($this->getWithBearer($token, self::COLLECTION . '?untranslatedIn=de_DE&limit=25'));
-        $present = $this->decode($this->getWithBearer($token, self::COLLECTION . '?translatedIn=de_DE&limit=25'));
+        $missing = $this->decode($this->getWithBearer($token, self::COLLECTION . '?untranslatedIn=de&limit=25'));
+        $present = $this->decode($this->getWithBearer($token, self::COLLECTION . '?translatedIn=de&limit=25'));
 
         $this->assertNotEmpty($missing['items']);
         $this->assertNotEmpty($present['items']);
         foreach ($missing['items'] as $item) {
-            $this->assertNull($item['translations']['de_DE']['text'], 'a translated phrase came back as missing');
+            $this->assertNull($item['translations']['de']['text'], 'a translated phrase came back as missing');
         }
         foreach ($present['items'] as $item) {
-            $this->assertNotNull($item['translations']['de_DE']['text']);
+            $this->assertNotNull($item['translations']['de']['text']);
         }
     }
 
@@ -212,7 +212,7 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
      */
     public function testAnUnknownQueryParameterIsRefused(): void
     {
-        $response = $this->getWithBearer($this->translatorToken(), self::COLLECTION . '?locale=de_DE');
+        $response = $this->getWithBearer($this->translatorToken(), self::COLLECTION . '?language=de');
 
         $this->assertSame(422, $response['status']);
         $this->assertStringContainsString('unknownParameters', $response['body']);
@@ -261,8 +261,8 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
 
         $this->assertSame(
             [],
-            array_diff($schema['writable']['locales'], array_keys($document['translations'])),
-            'the schema promises a locale the representation does not carry'
+            array_diff($schema['writable']['languages'], array_keys($document['translations'])),
+            'the schema promises a language the representation does not carry'
         );
     }
 
@@ -283,21 +283,28 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $token  = $this->translatorToken();
         $marker = 'Zugriff verweigert, Agent ' . time();
 
-        $response = $this->patch($token, self::ITEM, ['de_DE' => $marker]);
+        $response = $this->patch($token, self::ITEM, ['de' => $marker]);
         $document = $this->decode($response);
 
         $this->assertSame(200, $response['status'], $response['body']);
-        $this->assertSame(['de_DE'], $document['changed']);
+        $this->assertSame(['de'], $document['changed']);
         //`phrase`, not the top level: a PATCH answers { changed, phrase }, so that an
         //agent can see both what moved and the whole record it now holds.
-        $this->assertSame($marker, $document['phrase']['translations']['de_DE']['text'] ?? null);
+        $this->assertSame($marker, $document['phrase']['translations']['de']['text'] ?? null);
         $this->assertArrayNotHasKey(
             'warning',
             $document,
             'the catalogs could not be written, so the site is stale — the API said so, correctly'
         );
 
+        //`de` went in, `de_DE` came to rest. The API speaks languages and the column
+        //keeps locales, and this pair of lines is the whole reason that split is safe:
+        //a language code reaching the database would key a translation nothing looks up.
         $this->assertSame($marker, $this->storedTranslation(self::PHRASE_ID, 'de_DE'));
+        $this->assertNull(
+            $this->storedTranslation(self::PHRASE_ID, 'de'),
+            'a row was stored under the language code — the boundary conversion leaked'
+        );
         $this->assertSame(
             (string) $this->translatorUserId(),
             $this->storedModifiedBy(self::PHRASE_ID, 'de_DE'),
@@ -308,6 +315,7 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         //compiled catalog, and until that is rewritten the page still shows the old
         //text. This is the assertion that fails if the recompile is ever dropped for
         //being slow.
+        //Also locale-named: the catalogs the site renders from are de_DE.lang.php.
         $catalog = $this->catalogFor($document['phrase']['textDomain'], 'de_DE');
         $this->assertNotNull($catalog, 'no catalog was written at all');
         $this->assertStringContainsString($marker, $catalog);
@@ -317,12 +325,12 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     public function testResendingTheStoredTextChangesNothing(): void
     {
         $token = $this->translatorToken();
-        $this->patch($token, self::ITEM, ['de_DE' => 'Unverändert.']);
+        $this->patch($token, self::ITEM, ['de' => 'Unverändert.']);
 
-        $document = $this->decode($this->patch($token, self::ITEM, ['de_DE' => 'Unverändert.']));
+        $document = $this->decode($this->patch($token, self::ITEM, ['de' => 'Unverändert.']));
 
         $this->assertSame([], $document['changed']);
-        $this->assertSame('Unverändert.', $document['phrase']['translations']['de_DE']['text']);
+        $this->assertSame('Unverändert.', $document['phrase']['translations']['de']['text']);
     }
 
     /**
@@ -342,9 +350,9 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     public function testAnEmptyTranslationIsANoOpAndIsReportedAsOne(): void
     {
         $token = $this->translatorToken();
-        $this->patch($token, self::ITEM, ['de_DE' => 'Vorhanden.']);
+        $this->patch($token, self::ITEM, ['de' => 'Vorhanden.']);
 
-        $document = $this->decode($this->patch($token, self::ITEM, ['de_DE' => '']));
+        $document = $this->decode($this->patch($token, self::ITEM, ['de' => '']));
 
         $this->assertSame([], $document['changed']);
         $this->assertSame('Vorhanden.', $this->storedTranslation(self::PHRASE_ID, 'de_DE'));
@@ -358,22 +366,38 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
      */
     public function testAnOverlongTranslationIsRefusedWithTheFormsMessage(): void
     {
-        $response = $this->patch($this->translatorToken(), self::ITEM, ['de_DE' => str_repeat('a', 2001)]);
+        $response = $this->patch($this->translatorToken(), self::ITEM, ['de' => str_repeat('a', 2001)]);
 
         $this->assertSame(422, $response['status']);
         $this->assertStringContainsString('stringLengthTooLong', $response['body']);
     }
 
-    public function testAnUnknownLocaleIsRefusedRatherThanIgnored(): void
+    /**
+     * @return iterable<string, array{0: string}>
+     *
+     * The locale form is in here deliberately. It is the mistake an agent is *most*
+     * likely to make — the database uses it, the admin GUI shows it, and it looks
+     * right — so accepting it would make the stored key depend on which spelling the
+     * caller happened to send.
+     */
+    public static function refusedLanguageKeys(): iterable
     {
-        $response = $this->patch($this->translatorToken(), self::ITEM, ['de-DE' => 'falsch']);
+        yield 'locale form'      => ['de_DE'];
+        yield 'hyphenated locale' => ['de-DE'];
+        yield 'not a language'   => ['klingon'];
+    }
+
+    #[DataProvider('refusedLanguageKeys')]
+    public function testAnythingButALanguageCodeIsRefusedRatherThanIgnored(string $key): void
+    {
+        $response = $this->patch($this->translatorToken(), self::ITEM, [$key => 'falsch']);
         $document = $this->decode($response);
 
-        $this->assertSame(422, $response['status']);
-        $this->assertSame(['de-DE'], $document['error']['unknownLocales']);
+        $this->assertSame(422, $response['status'], $key);
+        $this->assertSame([$key], $document['error']['unknownLanguages']);
         //The refusal names what would have worked, so an agent can correct itself
         //without a second round trip to the schema.
-        $this->assertContains('de_DE', $document['error']['writableLocales']);
+        $this->assertContains('de', $document['error']['writableLanguages']);
     }
 
     public function testAStaleIfMatchIsRefused(): void
@@ -381,7 +405,7 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $response = $this->patch(
             $this->translatorToken(),
             self::ITEM,
-            ['de_DE' => 'Zu spät.'],
+            ['de' => 'Zu spät.'],
             'W/"0000000000000000000000000000dead"'
         );
 
@@ -400,10 +424,10 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $etag  = $this->getWithBearer($token, self::ITEM)['headers']['etag'] ?? '';
         $this->assertNotSame('', $etag);
 
-        $response = $this->patch($token, self::ITEM, ['de_DE' => 'Rechtzeitig.'], $etag);
+        $response = $this->patch($token, self::ITEM, ['de' => 'Rechtzeitig.'], $etag);
 
         $this->assertSame(200, $response['status'], $response['body']);
-        $this->assertSame(['de_DE'], $this->decode($response)['changed']);
+        $this->assertSame(['de'], $this->decode($response)['changed']);
     }
 
     // --------------------------------------------------------------- batch
@@ -417,9 +441,9 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     {
         $response = $this->patch($this->translatorToken(), self::COLLECTION, [
             'phrases' => [
-                (string) self::PHRASE_ID  => ['de_DE' => 'Erstens.'],
-                (string) self::PHRASE_TWO => ['de_DE' => 'Zweitens.'],
-                '999999999'               => ['de_DE' => 'Kein Satz.'],
+                (string) self::PHRASE_ID  => ['de' => 'Erstens.'],
+                (string) self::PHRASE_TWO => ['de' => 'Zweitens.'],
+                '999999999'               => ['de' => 'Kein Satz.'],
                 (string) self::PHRASE_ID . '0000' => ['de-DE' => 'Falsches Gebietsschema.'],
             ],
         ]);
@@ -439,7 +463,7 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
 
     public function testABatchWithoutAPhrasesObjectIsRefused(): void
     {
-        $response = $this->patch($this->translatorToken(), self::COLLECTION, ['de_DE' => 'nope']);
+        $response = $this->patch($this->translatorToken(), self::COLLECTION, ['de' => 'nope']);
 
         $this->assertSame(400, $response['status']);
     }
@@ -452,7 +476,7 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     {
         $entries = [];
         for ($i = 0; $i < 201; $i++) {
-            $entries[(string) (900000 + $i)] = ['de_DE' => 'zu viel'];
+            $entries[(string) (900000 + $i)] = ['de' => 'zu viel'];
         }
 
         $response = $this->patch($this->translatorToken(), self::COLLECTION, ['phrases' => $entries]);
