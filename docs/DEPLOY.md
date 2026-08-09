@@ -43,10 +43,10 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
-## Before the v3 API can be used: one account per agent
+## Before the v3 API can be used: one migration and one account per agent
 
-The code shipped 2026-08-09. Two things it deliberately does **not** do for you, because
-neither should happen without someone deciding it:
+The code shipped 2026-08-09. Three things it deliberately does **not** do for you,
+because none of them should happen without someone deciding it:
 
 1. ~~**Run `database/db6.6.sql`** on production.~~ **Done 2026-08-09.** It creates the
    `sch_api_bot` role, and nothing else on the site names that role — so until it existed,
@@ -59,7 +59,17 @@ neither should happen without someone deciding it:
    `INSERT` does not touch — so the role stays missing from the users screen's Roles
    multiselect until `php bin/console cache:flush-persistent` runs. The role itself works
    regardless; `BotIdentity` reads `user_role` directly.
-2. **Create each bot account and grant it the role.** Register the address like any
+2. **Run `database/db6.7.sql`** on production, and run it *before* deploying the code
+   that reads it. It creates `user_api_token`, the registry that makes an issued token
+   revocable, and `App\Api\BotIdentity` refuses any token whose `jti` has no row there
+   — so a deploy that lands ahead of the table turns every v3 request into a 401. The
+   table is empty and harmless on a server running the old code, which is why this
+   order is the safe one. `CREATE TABLE IF NOT EXISTS`, so re-running it is safe.
+
+   Nothing breaks for the mobile apps: the v1 API does not consult the registry, and
+   the tokens already in the field keep working.
+
+3. **Create each bot account and grant it the role.** Register the address like any
    other account, then grant `sch_api_bot` through the users screen or:
 
    ```sql
@@ -67,12 +77,13 @@ neither should happen without someone deciding it:
    SELECT <user_id>, id FROM user_role WHERE role_id = 'sch_api_bot';
    ```
 
-   Revoking an agent is deleting that row, which invalidates it immediately — the role
-   is checked on every request, not baked into the token. Note the corollary: revocation
-   is per **account**, not per token, so give each agent its own account rather than
-   sharing one.
+   Deleting that row cuts the account off from the API immediately — the role is checked
+   on every request, not baked into the token. It is the blunt instrument, though: it
+   revokes *every* token the account holds. For one token, use the revoke button on
+   `/en/users/:id/api-tokens`.
 
-The token itself comes from the existing endpoints; see [api-v3.md](api-v3.md).
+Tokens are issued from that same screen; see [api-v3.md](api-v3.md) for the whole
+flow, including why the button only appears for accounts holding `sch_api_bot`.
 
 **Until `SYMFONY_KERNEL` is flipped globally, v3 answers only behind the canary
 cookie** — which an agent will not send. The canary is how to verify the endpoints

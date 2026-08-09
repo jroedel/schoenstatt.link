@@ -11,8 +11,11 @@ use function base64_encode;
 use function hash_hmac;
 use function json_decode;
 use function json_encode;
+use function random_bytes;
 use function rtrim;
+use function str_replace;
 use function strtr;
+use function substr;
 use function time;
 
 /**
@@ -95,7 +98,10 @@ class ApiV3SmokeTest extends SmokeTestCase
     {
         $userId = $this->accountWithoutBotRole();
 
-        $response = $this->getWithBearer($this->mintJwt(['sub' => $userId, 'exp' => time() + 600]), $path);
+        //Registered, so the missing role is the *only* thing wrong with it. An
+        //unregistered token would now be refused on its own account and this test
+        //would keep passing with the role check deleted.
+        $response = $this->getWithBearer($this->registeredToken($userId, time() + 600), $path);
 
         $this->assertSame(401, $response['status'], $path);
     }
@@ -130,9 +136,58 @@ class ApiV3SmokeTest extends SmokeTestCase
     {
         $userId = $this->botUserId();
 
-        $response = $this->getWithBearer($this->mintJwt(['sub' => $userId, 'exp' => time() - 60]));
+        //Registered and unrevoked: expiry is the only defect.
+        $response = $this->getWithBearer($this->registeredToken($userId, time() - 60));
 
         $this->assertSame(401, $response['status']);
+    }
+
+    /**
+     * Revocation is the whole reason the registry exists: a token that worked one
+     * request ago stops working, without touching the account's role.
+     */
+    public function testARevokedBotTokenIsRefused(): void
+    {
+        $userId = $this->botUserId();
+        $jti    = $this->uniqueJti();
+        $token  = $this->registeredToken($userId, time() + 600, $jti);
+
+        //Proves the token was good before the revocation, so the 401 below cannot
+        //be blamed on anything else about it.
+        $this->assertSame(200, $this->getWithBearer($token)['status']);
+
+        $this->pdo()
+            ->prepare('UPDATE user_api_token SET revoked_on = NOW() WHERE jti = :jti')
+            ->execute(['jti' => $jti]);
+
+        $this->assertSame(401, $this->getWithBearer($token)['status']);
+    }
+
+    /**
+     * Fail closed. A correctly signed token for a real bot account, with a `jti`
+     * that was never recorded — refused, because "we have no record of issuing
+     * this" and "this was revoked" are the same answer.
+     *
+     * This is the test that would fail if anyone loosened the check to "reject
+     * only what is explicitly revoked", which is the tempting and useless version.
+     */
+    public function testAnUnregisteredBotTokenIsRefused(): void
+    {
+        $token = $this->mintJwt([
+            'sub' => $this->botUserId(),
+            'exp' => time() + 600,
+            'jti' => $this->uniqueJti(),
+        ]);
+
+        $this->assertSame(401, $this->getWithBearer($token)['status']);
+    }
+
+    /** A token predating the registry carries no jti at all; it cannot be vouched for. */
+    public function testABotTokenWithoutAJtiClaimIsRefused(): void
+    {
+        $token = $this->mintJwt(['sub' => $this->botUserId(), 'exp' => time() + 600]);
+
+        $this->assertSame(401, $this->getWithBearer($token)['status']);
     }
 
     /** The schema is public: an agent author must be able to read the contract first. */
@@ -430,7 +485,42 @@ class ApiV3SmokeTest extends SmokeTestCase
 
     private function botToken(): string
     {
-        return $this->mintJwt(['sub' => $this->botUserId(), 'exp' => time() + 600]);
+        return $this->registeredToken($this->botUserId(), time() + 600);
+    }
+
+    /**
+     * A token that is both correctly signed **and** recorded in `user_api_token`.
+     *
+     * Since db6.7 those are two separate requirements: BotIdentity refuses a token
+     * whose `jti` it cannot find, so a signature alone no longer gets in. Almost
+     * every test here wants a token that is wrong in exactly one way, which means
+     * the registry row has to be right — otherwise a test asserting "refused
+     * because the account lacks the role" would pass without the role check
+     * existing at all.
+     *
+     * @return string the JWT; the row is inserted as a side effect
+     */
+    private function registeredToken(int $userId, int $expiresAt, ?string $jti = null): string
+    {
+        $jti ??= $this->uniqueJti();
+
+        $this->pdo()->prepare(
+            'INSERT INTO user_api_token (jti, user_id, label, issued_on, expires_on)'
+            . ' VALUES (:jti, :user_id, :label, NOW(), FROM_UNIXTIME(:expires))'
+        )->execute([
+            'jti'     => $jti,
+            'user_id' => $userId,
+            'label'   => 'smoke test',
+            'expires' => $expiresAt,
+        ]);
+
+        return $this->mintJwt(['sub' => $userId, 'exp' => $expiresAt, 'jti' => $jti]);
+    }
+
+    /** 43 chars of base62, the shape JUser\Service\ApiTokenService issues. */
+    private function uniqueJti(): string
+    {
+        return substr(str_replace(['+', '/', '='], 'a', base64_encode(random_bytes(48))), 0, 43);
     }
 
     /** @param array<string, mixed> $payload */
