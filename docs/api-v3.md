@@ -194,6 +194,28 @@ they are recorded so they can be found afterwards.
 | `database/db6.6.sql` | the `sch_api_bot` role |
 | `test/Smoke/ApiV3SmokeTest.php` | the whole surface over HTTP |
 
-The v3 routes are served by the **Symfony** front controller. Production still runs the
-laminas one (`SYMFONY_KERNEL` unset), so **v3 does not answer on production until that
-changes** — see [strangler.md](strangler.md).
+## Is it live?
+
+The v3 routes are served by the **Symfony** front controller, and production still runs
+the laminas one for ordinary traffic. So v3 is **deployed and canary-gated**, not
+dormant and not general: a request carrying `sl_symfony_canary=1` is served by the
+Symfony kernel and reaches v3, everything else gets laminas and a 404. See the
+canary section of [DEPLOY.md](DEPLOY.md).
+
+Verified on production 2026-08-09:
+
+```bash
+# 200, the real schema
+curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/schema
+
+# 401 — the endpoint is reachable and the token gate works
+curl -H 'Cookie: sl_symfony_canary=1' https://schoenstatt.link/api/v3/associations
+
+# without the cookie: 302 to /en/… and then laminas' 404, which is correct
+curl -i https://schoenstatt.link/api/v3/schema
+```
+
+**An agent cannot use v3 until `SYMFONY_KERNEL` is flipped globally**, because an
+agent will not send a canary cookie — and should not be asked to, since the cookie is a
+staging device, not an API contract. Until then the canary is how to prove the endpoints
+work against real production data.

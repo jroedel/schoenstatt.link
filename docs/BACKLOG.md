@@ -198,6 +198,28 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Next
 
+- [ ] **Flip `SYMFONY_KERNEL` globally** — now the gate on the v3 API being usable at
+  all, since agents will not send the canary cookie. v3 and `association-edit` are
+  deployed and verified through the canary (2026-08-09); everything else about the flip
+  is unchanged from the strangler plan.
+
+- [ ] **More form routes, now that the form layer exists.** `src/Form/BootstrapFormRenderer`
+  landed with `association-edit` (2026-08-09) and reproduces TwbBundle's markup
+  byte-for-byte. What that unblocks, roughly in order of ease:
+  - `sion-model/auto-fix-data-problems` — POST + CSRF, no new element types, and its
+    template is already ported for the read-only sibling.
+  - `associations/create`, `association-delete` — same form, same renderer; create needs
+    the query-parameter prefill `AssociationsController::createAction()` does.
+  - `/persons`, `/movement`, `/literature` search forms — new element types likely.
+  - **Still blocked:** the user and translation forms (`CreateRoleForm`, `EditUserForm`,
+    `DeleteUserForm`, `EditPhraseForm`), which read JUser's unreproduced
+    `GlobalAdapterFeature::setStaticAdapter()` through a `NoRecordExists` validator.
+    That is the real remaining blocker, and it is narrower than docs/strangler.md used
+    to claim.
+  - Method that worked and should be reused: capture the live page with
+    `tools/form-regression.php probe` **before** porting, then diff after. Five
+    non-obvious TwbBundle behaviours only showed up that way.
+
 - [ ] **Retire the two dependency forks when upstream releases.** `slm/locale`
   and `diablomedia/laminas-twb-bundle` resolve from `jroedel/*` branch
   `feat/php-8.4` via `repositories` entries in `composer.json` (each carries a
@@ -352,6 +374,26 @@ readability — the destination is **Symfony**, reached gradually:
   change).
 
 ## Product decisions needed
+
+- [ ] **Any signed-in account can edit any association.** `route/association-edit` is
+  guarded `['sch_moderator', 'sch_user']` and registration grants `sch_user`, so
+  "registered" and "may edit every shrine in the database" are the same thing today.
+  Surfaced while porting the edit form (2026-08-09); the port neither widened nor
+  narrowed it, and `test/Smoke/AssociationEditSymfonySmokeTest` records the current
+  behaviour rather than endorsing it.
+  - This is why the v3 API uses a dedicated `sch_api_bot` role instead of reusing
+    `sch_user`: a bot token had to not be a general-purpose site credential.
+  - The decision is whether moderation should be a role someone is *given*. If yes, the
+    change is one guard entry plus granting `sch_moderator` to whoever should keep the
+    ability — and the fuzz/ACL baselines will show exactly who loses it. Deliberately
+    not done unilaterally: it takes an ability away from every existing account.
+
+- [ ] **Should agents be able to create shrines?** v3 ships PATCH-only by decision
+  (2026-08-09). Creation would have to settle what an agent-created association's
+  `kind`, `parentId` and associated roles are — `SionTable::createEntity()` has side
+  effects (`createAssociatedRoles()`) that a moderator makes implicitly and an agent
+  cannot. Revisit once there is real traffic and a sense of what agents actually
+  propose. `required_columns_for_creation` for `association` is `['name', 'kind']`.
 
 - [ ] **Retire the shrine GeoJSON feed, or commit to it** — deprecated
   2026-08-07 at the user's direction ("I'm not sure we'll use it going
