@@ -167,16 +167,30 @@ Four distinct defects, one of them live silent data loss:
    translations become permanently invisible.
 
 The root cause is structural: **these are generated build artifacts stored inside
-the deployed source tree**, and inconsistently so.
-`module/Application/language/*` and `module/Books/*` are tracked in git;
-`module/Schoenstatt/language/` is gitignored (`module/Schoenstatt/.gitignore:6`),
-so the site's largest catalog — 65 KB en_US, 52 KB es_ES — is untracked, never
-deployed by phploy, and exists only as a file the web server wrote to itself.
-`/language/` likewise. And **no command regenerates any of it**: `bin/console`
-has two cache commands and nothing for translations. The only trigger is a human
-clicking Save in the admin GUI. A fresh checkout, a `git clean`, or a lost server
-directory leaves the site silently English-only, and the recovery procedure is
-undocumented because it does not exist.
+the deployed source tree.** Two of the three symptoms that used to follow from it
+have since been dealt with; the third has not, and it is the one this section is
+really about.
+
+**Fixed — the inconsistent tracking.** `module/Application/language/*` and
+`module/Books/*` used to be tracked in git while `module/Schoenstatt/language/`
+was ignored, so the site's largest catalog — 65 KB en_US, 52 KB es_ES — was
+untracked, never deployed by phploy, and existed only as a file the web server
+wrote to itself. Since 2026-08-09 nothing is tracked: `/module/*/language/` joins
+`/language/` in `.gitignore`, and the JTranslate, JUser and SionModel submodules
+carry the same rule in their own repositories. Untracking was gated on proving the
+files were regenerable — two `pt_BR` translations turned out to exist *only* in a
+committed catalog and were moved into the database by `database/db6.9.sql` first.
+
+**Fixed — nothing regenerated them.** `bin/console jtranslate:export-catalogs`
+rebuilds every catalog from the phrase table, so a fresh checkout, a `git clean`
+or a lost server directory is now one command rather than an undocumented
+recovery. Before it existed the only trigger was a human clicking Save in the
+admin GUI, and the site would sit silently English-only until someone did.
+
+**Not fixed — the write target is still inside deployed source.** The web server
+still has to write into `module/*/language/` and `language/`, which is where the
+permission failures below come from and where a deploy running as a different user
+collides with it.
 
 No amount of `chmod` fixes this. Anything the web server must write has to live
 outside the source tree, and it has to be rebuildable from the database by a
@@ -344,9 +358,9 @@ tracked in the library's own README rather than here.
 still the real permission fix.
 - Compile to `data/cache/translations/` (writable by design; `data/cache/twig`
   is the existing precedent, including its unwritable-fallback behaviour).
-- Add `translations:export` and `translations:purge` console commands, so the
-  catalogs become rebuildable from the DB by anything — deploy hook, cron, a
-  developer.
+- ~~Add `translations:export` … so the catalogs become rebuildable from the DB by
+  anything — deploy hook, cron, a developer.~~ **Done**: `bin/console
+  jtranslate:export-catalogs`. A `translations:purge` counterpart is still open.
 - Delete `module/*/language/` and `/language/` as write targets; register the new
   path with the translator.
 - Proves itself with: a full rebuild from an empty cache directory, plus a golden
