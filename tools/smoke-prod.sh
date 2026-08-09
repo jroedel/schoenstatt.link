@@ -290,99 +290,207 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
     fi
 fi
 
-# --- Symfony-kernel canary ------------------------------------------------
+# --- The two front controllers --------------------------------------------
 #
-# Production runs the laminas front controller; `SetEnvIf Cookie` in
-# public/.htaccess puts App\Kernel in front for requests carrying one cookie, so
-# the ported routes can be exercised against production's real data, real ICU
-# (72.1 here vs 76.1 in the capsule) and real session store **without** a window
-# where all traffic is on them.
+# public/.htaccess picks one per request: a site-wide default plus two cookie
+# overrides, `sl_symfony_canary=1` for App\Kernel and `=0` for laminas-mvc. See
+# docs/strangler.md.
 #
-# This is the only place the ported code is checked outside the capsule, so the
+# **Which one is the default is asked, not assumed.** This section used to hard-code
+# "production is laminas, the cookie is the exception", and that assertion becomes a
+# false failure the day the flip lands — the one day the script most needs to be
+# believed. So it probes first and then asserts the *pair*: whichever kernel is the
+# default serves ordinary traffic, and the override reaches the other one. A default
+# that has silently reverted and an override that has silently stopped working are
+# both failures, and only checking both directions tells either from success.
+#
+# This is also the only place the ported code is checked outside the capsule, so the
 # assertions have to *discriminate*. Every check above passes under either front
-# controller by design — flipping a kernel and re-running them would prove
-# nothing. Two markers separate them:
+# controller by design — flipping a kernel and re-running them would prove nothing.
+# Two markers separate them:
 #
 #   /_health          exists only in the Symfony route table
 #   slm_locale=en_US  is set by SlmLocale, which only laminas runs
 #
-# Both directions are asserted. A canary that never engages and a canary that
-# leaks to everyone are both failures, and only the negative checks can tell them
-# apart from success.
+# Skipped unless SMOKE_PROD_CANARY_COOKIE is set; the phploy hook passes it. Its
+# *value* is no longer read: both cookies are named here because there are now two of
+# them and neither is a secret (docs/strangler.md explains why that is safe), and
+# because each deploying machine's phploy.ini is a file no commit here can update.
 #
-# Skipped unless SMOKE_PROD_CANARY_COOKIE is set; the phploy hook passes it.
+# **Pointing this at the capsule fails two checks by design.** docker/apache-vhost.conf
+# sets SYMFONY_KERNEL with `SetEnv`, and mod_env beats all of mod_setenvif, so no cookie
+# can move a capsule request off the Symfony kernel — the opt-out assertions below have
+# nothing to work with there. Everything else in this section is useful locally.
 if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
     echo
-    echo "Symfony-kernel canary (cookie-gated; ordinary traffic is unaffected)"
-
-    # 1. The canary must not be leaking. Without the cookie, production is laminas.
-    fetch "$BASE/_health"
-    if [ "$STATUS" != "200" ]; then
-        pass "/_health is not served without the cookie (laminas, status $STATUS)"
-    else
-        fail "/_health answered 200 WITHOUT the canary cookie — the Symfony kernel is serving everyone"
-    fi
-
-    fetch "$BASE/en/shrines"
-    if grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
-        pass "ordinary traffic still gets laminas (SlmLocale set its cookie)"
-    else
-        fail "no slm_locale cookie without the canary — is SYMFONY_KERNEL set for everyone?"
-    fi
-
-    # 2. With the cookie, the Symfony kernel answers.
-    EXTRA_HEADERS=(-H "Cookie: $SMOKE_PROD_CANARY_COOKIE")
+    FORCE_SYMFONY_COOKIE="sl_symfony_canary=1"
+    FORCE_LAMINAS_COOKIE="sl_symfony_canary=0"
 
     fetch "$BASE/_health"
     if [ "$STATUS" = "200" ] && grep -q '"status"' "$BODY"; then
-        pass "canary reaches the Symfony kernel (/_health answers)"
+        DEFAULT_KERNEL=symfony
     else
-        fail "/_health should answer 200 WITH the canary cookie (got $STATUS) — is the SetEnvIf line deployed?"
+        DEFAULT_KERNEL=laminas
+    fi
+    echo "Front controllers (site default: $DEFAULT_KERNEL)"
+
+    if [ "$DEFAULT_KERNEL" = "laminas" ]; then
+        pass "ordinary traffic gets laminas (/_health is not served, status $STATUS)"
+
+        fetch "$BASE/en/shrines"
+        if grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
+            pass "ordinary traffic gets laminas (SlmLocale set its cookie)"
+        else
+            fail "no slm_locale cookie without an override — has SYMFONY_KERNEL been set for everyone?"
+        fi
+
+        # The opt-in override has to reach App\Kernel, or nothing below this proves
+        # anything about the ported routes. Everything after this point runs through it,
+        # including the *bridged* checks at the end — an unported page fetched without the
+        # cookie never touches LaminasResponseConverter at all, so checking it would
+        # assert nothing about the code the flip puts in front of the whole site.
+        SYMFONY_HEADERS=(-H "Cookie: $FORCE_SYMFONY_COOKIE")
+        EXTRA_HEADERS=("${SYMFONY_HEADERS[@]}")
+        fetch "$BASE/_health"
+        if [ "$STATUS" = "200" ] && grep -q '"status"' "$BODY"; then
+            pass "the opt-in cookie reaches the Symfony kernel (/_health answers)"
+        else
+            fail "/_health should answer 200 with $FORCE_SYMFONY_COOKIE (got $STATUS) — is the SetEnvIf deployed?"
+        fi
+        # ...and the ported routes below are then checked through that same cookie
+    else
+        pass "ordinary traffic gets the Symfony kernel (/_health answers)"
+
+        # After the flip this is the check that matters most, because it is the way
+        # back. An admin has no other route to laminas without a deploy, and a
+        # mis-ordered .htaccess kills it with no other symptom (see
+        # test/Integration/KernelCanaryTest).
+        EXTRA_HEADERS=(-H "Cookie: $FORCE_LAMINAS_COOKIE")
+        fetch "$BASE/_health"
+        if [ "$STATUS" != "200" ]; then
+            pass "the opt-out cookie reaches laminas (/_health stops answering, status $STATUS)"
+        else
+            fail "/_health still answered 200 with $FORCE_LAMINAS_COOKIE — the escape hatch back to laminas is dead"
+        fi
+
+        fetch "$BASE/en/shrines"
+        if grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
+            pass "the opt-out cookie really renders through laminas (SlmLocale set its cookie)"
+        else
+            fail "no slm_locale cookie with $FORCE_LAMINAS_COOKIE — the opt-out is not reaching laminas"
+        fi
+
+        # the ported routes are checked as ordinary traffic sees them, i.e. no cookie
+        SYMFONY_HEADERS=()
+        EXTRA_HEADERS=()
     fi
 
-    # 3. Each ported HTML route, rendered by Symfony. The absence of the SlmLocale
-    #    cookie is what proves it was not quietly bridged back to laminas.
-    for path in / /developers /acknowledgements /privacy /shrines/submitting-photos /shrines /wayside-shrines; do
+    # Every ported HTML route that a signed-out visitor may see. The absence of the
+    # SlmLocale cookie is what proves each was not quietly bridged back to laminas —
+    # which is what a route slipping below the catch-all looks like.
+    for path in / /developers /acknowledgements /privacy /shrines/submitting-photos /shrines \
+        /wayside-shrines /timeline /music /dictionary /literature/150-preguntas-sobre-schoenstatt; do
         url="$BASE/en${path%/}"
         [ "$path" = "/" ] && url="$BASE/en/"
         fetch "$url"
         if [ "$STATUS" != "200" ] || ! no_fatals; then
-            fail "canary: /en${path} should render (got $STATUS)"
+            fail "symfony: /en${path} should render (got $STATUS)"
         elif grep -qi '^set-cookie:.*slm_locale=en_US' "$HDRS"; then
-            fail "canary: /en${path} was served by laminas — is the route still above the catch-all?"
+            fail "symfony: /en${path} was served by laminas — is the route still above the catch-all?"
         elif [ "$(wc -c <"$BODY")" -lt 2000 ]; then
             # the empty-200 class: a Twig failure records an exception and emits
             # nothing, so a size floor is what catches it
-            fail "canary: /en${path} rendered only $(wc -c <"$BODY") bytes — Twig cache writable?"
+            fail "symfony: /en${path} rendered only $(wc -c <"$BODY") bytes — Twig cache writable?"
         else
-            pass "canary: /en${path} rendered by Symfony ($(wc -c <"$BODY") bytes)"
+            pass "symfony: /en${path} rendered by Symfony ($(wc -c <"$BODY") bytes)"
         fi
     done
 
-    # 4. The ported JSON routes, including the deprecation header.
+    # HTTP/1.0 is App\Http\ProtocolVersionListener's failure mode, and it is invisible
+    # to every status assertion above: Symfony's Response defaults to 1.0, Apache
+    # honours the status line and closes the connection on every ported page.
+    if [[ "${HTTPVER:-0}" == 1.0* ]]; then
+        fail "symfony: a ported page was served over HTTP/1.0 — ProtocolVersionListener is not running"
+    else
+        pass "symfony: ported pages keep the request's protocol version (HTTP/${HTTPVER:-?})"
+    fi
+
+    # The ported JSON routes, including the deprecation header.
     for V in v1 v2; do
         fetch "$BASE/en/api/$V/associations/shrines.json"
-        json_ok "canary: api/$V shrines.json" '"FeatureCollection"'
+        json_ok "symfony: api/$V shrines.json" '"FeatureCollection"'
         if [ "$(header deprecation)" = "true" ]; then
-            pass "canary: api/$V shrines.json still announces its deprecation"
+            pass "symfony: api/$V shrines.json still announces its deprecation"
         else
-            fail "canary: api/$V shrines.json lost Deprecation: true under the Symfony kernel"
+            fail "symfony: api/$V shrines.json lost Deprecation: true under the Symfony kernel"
         fi
     done
 
-    # 5. The guarded routes. No sign-in here, so what is checked is the *refusal* —
-    #    which is exactly the half that only exists on the Symfony side:
-    #    App\Authorization\RouteGuard, reproducing JUser\View\RedirectionStrategy.
-    #    A ported guarded route that admitted everyone would look perfectly healthy,
-    #    and this is the check that would see it.
-    for path in /admin /sm/phpinfo /sm/data-problems /sm/view-changes; do
+    # The v3 API, which exists *only* on the Symfony kernel and is the reason the flip
+    # matters to anything other than this migration: an automated agent sends no cookie,
+    # so before the flip v3 is unreachable for its actual callers.
+    fetch "$BASE/api/v3/schema"
+    json_ok "symfony: api/v3 schema" '"entity":"association"'
+    fetch "$BASE/api/v3/associations"
+    if [ "$STATUS" = "401" ] && [[ "$CTYPE" == application/json* ]]; then
+        pass "symfony: api/v3 associations refuses an unauthenticated caller as JSON (401)"
+    else
+        # a 302 here means the guard answered with JUser's HTML sign-in page, which a
+        # machine caller reads as success
+        fail "symfony: api/v3 associations should 401 as JSON (got $STATUS '${CTYPE:-none}' -> '$REDIRECT')"
+    fi
+
+    # The guarded HTML routes. No sign-in here, so what is checked is the *refusal* —
+    # exactly the half that only exists on the Symfony side: App\Authorization\RouteGuard,
+    # reproducing JUser\View\RedirectionStrategy. A ported guarded route that admitted
+    # everyone would look perfectly healthy, and this is the check that would see it.
+    for path in /admin /sm/phpinfo /sm/data-problems /sm/view-changes /associations /roles /libraries; do
         fetch "$BASE/en$path"
         if [ "$STATUS" = "302" ] && [[ "$REDIRECT" == *"/en/user/login?redirect=/en$path" ]]; then
-            pass "canary: /en$path refuses anonymous access (302 to sign-in)"
+            pass "symfony: /en$path refuses anonymous access (302 to sign-in)"
         else
-            fail "canary: /en$path should 302 anonymous to sign-in (got $STATUS -> '$REDIRECT')"
+            fail "symfony: /en$path should 302 anonymous to sign-in (got $STATUS -> '$REDIRECT')"
         fi
     done
+
+    # Three things App\Http\LaminasResponseConverter exists to get right, checked on a
+    # *bridged* route because that is the path every unported page takes — i.e. the whole
+    # site once the flip lands, and the one thing the capsule cannot compare.
+    # `--no-compressed` matters, and a request header alone will not do it: CURL_OPTS
+    # carries --compressed, which makes curl decode any Content-Encoding it understands
+    # whatever Accept-Encoding says — so the magic-byte check below would compare against
+    # plaintext no matter what the server actually sent. sitemapAction() gzips
+    # unconditionally, so identity encoding still yields gzip: the app's own quirk, and
+    # convenient here.
+    EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"} --no-compressed
+        -H 'Accept-Encoding: identity')
+    fetch "$BASE/en/sitemap.xml"
+    if [ "$STATUS" = "200" ] && [ "$(header content-encoding)" = "gzip" ] \
+        && [ "$(head -c2 "$BODY" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then
+        pass "bridged: sitemap.xml is still real gzip under its Content-Encoding"
+    else
+        # getBody() instead of getContent() de-gzips the payload and leaves the header on
+        fail "bridged: sitemap.xml should be gzip-encoded gzip (got $STATUS, '$(header content-encoding)')"
+    fi
+    EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"})
+
+    # Duplicated *identical* Set-Cookie lines, which is what a hand-rolled loop over
+    # Laminas\Http\Headers produces where PhpEnvironment\Response replaces all but the
+    # MultipleHeaderInterface ones. Counting cookies by name would not do: /en/user/login
+    # legitimately sends `slm_locale=deleted; expires=1970` (the GDPR strategy) and then
+    # `slm_locale=en_US`, i.e. two lines for one cookie by design.
+    fetch "$BASE/en/user/login"
+    if [ -z "$(grep -i '^set-cookie:' "$HDRS" | sort | uniq -d)" ]; then
+        pass "bridged: no duplicated Set-Cookie (Headers::toArray semantics preserved)"
+    else
+        fail "bridged: an identical Set-Cookie is sent twice — the converter is duplicating headers"
+    fi
+
+    if [[ "$(header cache-control)" == *"no-cache, private"* ]]; then
+        fail "bridged: ResponseHeaderBag's invented 'no-cache, private' Cache-Control is reaching visitors"
+    else
+        pass "bridged: no invented Cache-Control on a bridged page"
+    fi
 
     EXTRA_HEADERS=()
 fi

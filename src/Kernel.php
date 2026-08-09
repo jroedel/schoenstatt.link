@@ -43,6 +43,9 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
+use SionModel\Error\FatalErrorHandler;
+use SionModel\Error\RequestContext as ErrorRequestContext;
+use SionModel\Service\ErrorHandling;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpFoundation\Request;
@@ -57,6 +60,7 @@ use Symfony\Component\HttpKernel\TerminableInterface;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\RouteCollection;
+use Throwable;
 use Twig\Environment;
 
 use function dirname;
@@ -82,7 +86,9 @@ use function dirname;
  * kernel.exception, but nothing listens, so handleThrowable() rethrows and the
  * throwable reaches SionModel\Error\FatalErrorHandler — registered in
  * public/index.php before any of this exists. One error path for both front
- * controllers is worth more than a second, prettier one.
+ * controllers is worth more than a second, prettier one. What handle() adds is
+ * the *configured* half of that path, which a ported route otherwise misses
+ * entirely: see reportFailuresLikeLaminasDoes().
  */
 final class Kernel implements HttpKernelInterface, TerminableInterface
 {
@@ -108,7 +114,53 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         int $type = HttpKernelInterface::MAIN_REQUEST,
         bool $catch = true
     ): Response {
+        $this->reportFailuresLikeLaminasDoes();
+
         return $this->httpKernel()->handle($request, $type, $catch);
+    }
+
+    /**
+     * Give a failure on a *ported* route the same reporting pipeline a laminas-served
+     * one gets — notification included.
+     *
+     * public/index.php installs SionModel\Error\FatalErrorHandler before anything else,
+     * and SionModel\Module::onBootstrap() then upgrades it to the fully configured
+     * pipeline: the configured store, the request context, and the email. A ported route
+     * runs no module's onBootstrap, so until this existed its failures took the
+     * container-free fallback — a record in data/exceptions under default settings, and
+     * **nobody told**. Survivable while the kernel was cookie-gated; not something to
+     * carry into a global flip, where every ported route including the v3 API reports
+     * this way.
+     *
+     * Two properties, both load-bearing:
+     *
+     * - **Lazy.** The closure runs only once something has already failed, so a healthy
+     *   request still builds no ServiceBridge and none of the reporting services —
+     *   ExceptionsLogger opens a file handle when constructed and RequestContext pulls in
+     *   the acting-user provider. That is the same reason the laminas side passes a
+     *   resolver rather than services.
+     * - **It cannot make reporting worse.** FatalErrorHandler::report() wraps resolving
+     *   *and* reporting in one try/catch whose fallback is a single line in
+     *   data/logs/bootstrap-fatal.log, so a resolver that throws costs the whole
+     *   ExceptionRecord. That is not hypothetical here: what failed is quite often the
+     *   reason the container cannot be built. Returning [null, null] instead makes the
+     *   handler take its container-free path, which is exactly what a ported route had
+     *   before this method existed.
+     *
+     * A bridged request boots laminas and onBootstrap replaces this with the real
+     * container's resolver, which is the better answer wherever it is available.
+     */
+    private function reportFailuresLikeLaminasDoes(): void
+    {
+        FatalErrorHandler::upgrade(function (): array {
+            try {
+                $laminas = $this->laminas();
+
+                return [$laminas->get(ErrorHandling::class), $laminas->get(ErrorRequestContext::class)];
+            } catch (Throwable) {
+                return [null, null];
+            }
+        });
     }
 
     public function terminate(Request $request, Response $response): void
