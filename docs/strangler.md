@@ -235,6 +235,58 @@ perfectly healthy, and this is the check that sees it. Verifying the pages thems
 means browsing them with the cookie set and a moderator session, which is the manual
 step.
 
+### The footer says how the page was served
+
+Every HTML page carries one muted line in its footer, visible to everyone, e.g.
+
+```
+Served by the Symfony kernel → Twig template · route shrines.locale ·
+App\Controller\ShrinesController · SYMFONY_KERNEL=1, the site default
+
+Served by the Symfony kernel → .phtml view script via LegacyBridge · route persons ·
+Schoenstatt\Controller\PersonsController::index · SYMFONY_KERNEL=1 from the
+sl_symfony_canary=1 cookie
+```
+
+It exists because the answer is genuinely unreadable from the page. Rows 1 and 3 of the
+table below render *identical markup* — that is what the bridge is for — and the cookie
+that decides which one you got is invisible:
+
+| front controller | renderer | when |
+|---|---|---|
+| `Laminas\Mvc\Application` | `.phtml` | `SYMFONY_KERNEL` off for this visitor |
+| `App\Kernel` | Twig | a ported route |
+| `App\Kernel` → `LegacyBridge` | `.phtml` | an unported route — still most of the site |
+
+Five fields, and the last is the one to read: `SYMFONY_KERNEL=1, the site default`,
+`… from the sl_symfony_canary=1 cookie`, or `… from server config; the
+sl_symfony_canary=0 cookie is being ignored`. That third state is real, not defensive —
+it is what the **capsule** always reports for a cookie, because `docker/apache-vhost.conf`
+uses `SetEnv` and mod_env beats all of mod_setenvif. Without it, "my cookie did nothing"
+reads as a broken toggle rather than the server overruling it.
+
+Three things to know before touching it:
+
+- **`App\View\ServingNote` is the only place the string is built.** Two wirings reach it —
+  a `serving_note()` Twig function in `ChromeExtension` and a `servingNote` laminas view
+  helper — because two layouts render it, and two descriptions of three states would
+  eventually disagree. Each field is reported independently rather than derived from a
+  conclusion, so a state this code does not anticipate shows up as a contradiction rather
+  than a plausible sentence.
+- **The `.phtml` side is guarded on the helper being registered**, and that guard is
+  load-bearing. The helper lives in merged config, production caches merged config in
+  `data/config/`, and the deploy empties that cache *after* uploading files — so in that
+  window the new layout meets the old service map. An unresolved helper inside a layout
+  throws after the response is assembled, i.e. a blank HTTP 200 on every laminas-rendered
+  page. Measured by unregistering it: the page renders in full, minus the note.
+- **`tools/port-baseline.php` strips it** (rule 8). It is the one normalization rule that
+  erases a real difference between the two front controllers, because that difference is
+  the entire feature; comparing it would report drift on every path in every locale.
+
+It is a migration instrument and should die with the migration. Removing it is one
+commit: the two `serving-note` paragraphs, `App\View\ServingNote`, its two callers, its
+two tests, the `servingNote` config entries, and rule 8.
+
 ### What flipping the default changes that the canary never showed
 
 Everything a ported route does is already exercised in production through the cookie. What

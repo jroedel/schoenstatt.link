@@ -173,6 +173,15 @@ readability — the destination is **Symfony**, reached gradually:
   - While the flag is off, **production and the capsule run different front
     controllers**. That is deliberate, and it is also the one thing to remember
     before concluding anything from a local reproduction.
+- [ ] **Remove the footer's serving note when the migration ends.** Every HTML page
+  carries one muted line saying which front controller and which renderer produced it,
+  because rows 1 and 3 of that table render identical markup and the deciding cookie is
+  invisible (see [strangler.md](strangler.md)). It is deliberately temporary. Deleting it
+  is one commit: the two `serving-note` paragraphs in `templates/layout.html.twig` and
+  `module/Application/view/layout/layout.phtml`, `App\View\ServingNote`, the
+  `serving_note` Twig function, the `servingNote` view helper plus its factory and its two
+  config entries, `test/Unit/ServingNoteTest`, `test/Smoke/ServingNoteSmokeTest`, and rule
+  8 in `tools/port-baseline.php`.
 - [ ] **Move the unprefixed-to-prefixed locale redirect out of the ported
   controllers and into a `kernel.request` listener above the authorization
   check.** **Now due**: the wayside-shrine port (2026-08-07) made it the third

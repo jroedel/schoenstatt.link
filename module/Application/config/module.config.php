@@ -185,9 +185,11 @@ return [
         'aliases' => [
             'formElement' => 'TwbBundle\Form\View\Helper\TwbBundleFormElement',
             'requestUri'  => View\Helper\RequestUri::class,
+            'servingNote' => View\Helper\ServingNote::class,
         ],
         'factories' => [
-            View\Helper\RequestUri::class => Service\RequestUriFactory::class,
+            View\Helper\RequestUri::class  => Service\RequestUriFactory::class,
+            View\Helper\ServingNote::class => Service\ServingNoteFactory::class,
         ],
     ],
 ];
