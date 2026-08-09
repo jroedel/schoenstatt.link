@@ -6,9 +6,9 @@ namespace App\Controller\Api;
 
 use App\Api\BotIdentity;
 use App\JTranslate\Phrase\PhraseResource;
-use App\JTranslate\Phrase\PhraseValidator;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
+use JTranslate\Form\PhraseValidator;
 use JTranslate\Model\TranslationsTable;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -596,8 +596,21 @@ final class PhrasesV3Controller extends AbstractApiController
         return $table;
     }
 
+    /**
+     * The translator form's rules, headless.
+     *
+     * Resolved from JTranslate rather than rebuilt here. Building it meant knowing
+     * `EditPhraseForm`'s constructor signature, that the CSRF input is called
+     * `security`, and that the static database adapter has to be populated before the
+     * specification is read — three internals of a module whose admin GUI is the part
+     * most likely to be rewritten rather than ported. The library owns the contract
+     * now; see JTranslate\Form\PhraseValidator.
+     */
     private function validator(): PhraseValidator
     {
-        return PhraseValidator::fromServices($this->laminas->get(...));
+        /** @var PhraseValidator $validator */
+        $validator = $this->laminas->get(PhraseValidator::class);
+
+        return $validator;
     }
 }
