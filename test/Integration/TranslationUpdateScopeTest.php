@@ -273,7 +273,7 @@ class TranslationUpdateScopeTest extends TestCase
      * Deliberately not via getTranslations()/getPhrase(). TranslationsTable
      * carries SionCacheTrait's memory + APCu read-through cache, and
      * getTranslations()'s use of it is currently commented out — an edit away
-     * from returning, and its siblings getTranslatedText()/getPhraseKeysFromDb()
+     * from returning, and its siblings getTranslatedText()/getPhraseIndex()
      * use it today. A cached read could hand back the pre-write state and make
      * this test pass while the hole is wide open, which is the one failure mode a
      * security regression test must not have. A direct SELECT cannot lie.
