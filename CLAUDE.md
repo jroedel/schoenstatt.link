@@ -100,6 +100,10 @@ suites run from the superproject working tree.
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
   itself to PHPStan **level 8** (not the legacy level 0), and its routes are
   declared in `config/symfony/routes.php`, whose order *is* the migration status.
+  Form routes are no longer blocked: `src/Form/BootstrapFormRenderer` reproduces
+  TwbBundle's markup and `association-edit` is ported (byte-identical to the laminas
+  rendering apart from inter-tag whitespace). The **v3 API** for automated agents
+  lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
   Ported HTML routes render with **Twig** from `templates/` (`layout.html.twig` is
   the shared chrome); the `.phtml` they replace stays, because production still
   serves it. Compiled templates go to `data/cache/twig`, which the factory falls
@@ -111,6 +115,11 @@ suites run from the superproject working tree.
 - Each module follows the ZF convention: `config/module.config.php`, `src/` (`Controller/`, `Form/`, `Model/`, `Service/`, `Validator/`, `Filter/`, `View/`), and `view/` for `.phtml` templates.
 - Enabled modules are listed in `config/modules.config.php`; environment-specific config lives in `config/autoload/` (`*.global.php` is committed, `*.local.php` is machine-specific and created from the `.dist` files by `config.sh`).
 - Authorization is BjyAuthorize + zend-permissions-acl (`config/autoload/acl.global.php`); users/auth via ZfcUser + JUser.
+- **Association/shrine validation lives in `App\Schoenstatt\Association`**, not in the form.
+  `AssociationInputFilterSpec` holds the rules, `AssociationForm` delegates to it, and
+  `AssociationValidator` gives the v3 API the form's *own* `InputFilter` (built headlessly —
+  laminas-form needs no laminas-mvc). Changing a rule changes both surfaces at once, which
+  is the point; `test/Integration/AssociationValidationParityTest` fails if they diverge.
 - PSR-4 matters: class namespace and file path must match exactly (a recent commit fixed an autoload break from this) — when adding or moving a class, double-check the path under `module/<Module>/src/`.
 
 ## Local environment (Docker time capsule)

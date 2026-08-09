@@ -27,6 +27,9 @@ declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
+use App\Controller\Api\ApiSchemaController;
+use App\Controller\Api\AssociationsV3Controller;
+use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
@@ -502,6 +505,85 @@ $ported(
         SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
     ], '/^$')]
 );
+
+
+// ---------------------------------------------------------------------------
+// The v3 API, added 2026-08-09: the read/write surface automated agents use to
+// augment and update the shrine database.
+// ---------------------------------------------------------------------------
+//
+// v1 and v2 stay exactly as they are — the map consumers and the mobile apps use
+// them and neither can write. They could not be extended: both implement only
+// getList()/get() over AbstractRestfulController, so every write verb inherits a 405;
+// neither authenticates (authenticateApiKey() exists with every call site commented
+// out) so neither has an identity to attribute a change to; and their schema.org
+// projection does not map back onto the columns an edit writes. See
+// App\Controller\Api\AssociationsV3Controller.
+//
+// **No locale twins.** $ported() is not used here on purpose: these endpoints emit no
+// localized text, an agent has no Accept-Language preference worth honouring, and a
+// second URL for every endpoint is a second thing for an agent author to get wrong.
+// /api/v1 and /api/v2 answer under a prefix only because SlmLocale strips it.
+//
+// **Declared open, gated by bearer token.** This is the /_health and maintenance-key
+// pattern rather than an oversight: there is no laminas twin, so there is no guard
+// entry for RouteAccess::guardedBy() to name, and BjyAuthorize's identity comes from
+// the laminas session, which a token-authenticated agent does not have. The real gate
+// is App\Api\BotIdentity — a valid JWT whose account holds `sch_api_bot`, a role
+// nothing else on this site names. tools/acl-table.php lists these as open, which is
+// accurate: the ACL genuinely does not protect them, and something else does.
+$apiV3 = RouteAccess::openToEveryone(
+    'shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its '
+    . 'identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT '
+    . 'whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes '
+    . 'the field contract and exposes no data'
+);
+
+$routes->add('api-v3/schema', new Route('/api/v3/schema', [
+    '_controller'          => ApiSchemaController::class,
+    RouteAccess::ATTRIBUTE => $apiV3,
+], [], [], '', [], ['GET']));
+
+$routes->add('api-v3/associations', new Route('/api/v3/associations', [
+    '_controller'          => [AssociationsV3Controller::class, 'index'],
+    RouteAccess::ATTRIBUTE => $apiV3,
+], [], [], '', [], ['GET']));
+
+// Method-separated rather than one route dispatching internally, so that a PUT or a
+// DELETE gets Symfony's 405 with a correct Allow header instead of reaching a
+// controller that has to invent one.
+$associationIdentifier = ['sw_id' => trim(SchoenstattLinkIdentifier::ENTITY_REGEXS[
+    SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
+], '/^$')];
+
+$routes->add('api-v3/association', new Route('/api/v3/associations/{sw_id}', [
+    '_controller'          => [AssociationsV3Controller::class, 'show'],
+    RouteAccess::ATTRIBUTE => $apiV3,
+], $associationIdentifier, [], '', [], ['GET']));
+
+$routes->add('api-v3/association-patch', new Route('/api/v3/associations/{sw_id}', [
+    '_controller'          => [AssociationsV3Controller::class, 'patch'],
+    RouteAccess::ATTRIBUTE => $apiV3,
+], $associationIdentifier, [], '', [], ['PATCH']));
+
+// Any other verb on a v3 path. Below the real routes so it only ever catches what
+// they refused, and above `legacy` so a PUT gets a 405 with an Allow header rather
+// than laminas' 302 to the sign-in page.
+$routes->add('api-v3/associations-method', new Route('/api/v3/associations', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET'],
+    RouteAccess::ATTRIBUTE              => $apiV3,
+]));
+$routes->add('api-v3/association-method', new Route('/api/v3/associations/{sw_id}', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET', 'PATCH'],
+    RouteAccess::ATTRIBUTE              => $apiV3,
+], $associationIdentifier));
+$routes->add('api-v3/schema-method', new Route('/api/v3/schema', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET'],
+    RouteAccess::ATTRIBUTE              => $apiV3,
+]));
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.
