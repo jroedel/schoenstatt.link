@@ -105,7 +105,7 @@ A table is in scope if the repository mentions it in `module/`, `src/`, `config/
 `database/` and prose in `docs/` deliberately do not count — old migration files
 name nearly every table this project has ever had.
 
-Sixteen tables are therefore **server maintenance**, not application migrations:
+Nineteen tables are therefore **server maintenance**, not application migrations:
 
 - The nine Bible tables — `bib_books`, `bib_book_abbreviations`, `bib_dh_page`,
   `bib_greek_root_words`, `bib_verses`, and the four `bib_*_temp` tables that exist
@@ -165,3 +165,29 @@ with no foreign key, so id reuse would have silently re-pointed checkout history
 `db6.6`–`db6.9`, so `user_api_token` does not exist until those are applied, and
 `jtranslate_migration` never exists until JTranslate's runner has run. Both are
 in-scope tables. `db7.0.sql` guards the latter and documents the former.
+
+## Applied to production 2026-08-10
+
+Both migrations ran and the site was deployed. Confirmed against the live database:
+
+- All **29** tables the application uses are InnoDB + `utf8mb4_unicode_520_ci`,
+  including the three former MyISAM ones and `sch_visits` at 1.3 GiB.
+- The database got **smaller** — 5.1 GiB to 5.0 GiB. The rebuilds reclaimed more
+  fragmentation than utf8mb4's widening cost: `sch_changes` 329→292 MiB,
+  `sch_associations` 1.5 MiB→432 KiB. `lib_books` grew 7.7→9.5 MiB, which is the
+  MyISAM→InnoDB clustered index rather than the charset.
+- The latin1 conversion is verified correct on live data. Post-migration the
+  round-trip check returns 2 rather than 0, which is the *expected inversion*: the
+  column is utf8mb4 now, so its bytes are valid UTF-8 and the round trip succeeds.
+  phpMyAdmin's warnings name the bytes — `0xC3BA` (`ú`) and `0xC3AD` (`í`), correct
+  two-byte encodings. Double-encoding would have shown `0xC383 0xC2AD` for `í`.
+- **`jtranslate_migration` does not exist in production.** JTranslate's migration
+  runner has never been invoked there — `trans_phrases` and `trans_translations`
+  long predate it. The guard in `db7.0.sql` handled this silently, which is what it
+  was for. Whenever the runner is first run against production it will create the
+  tracking table at 520 directly, so nothing needs revisiting.
+
+Still outstanding, unchanged: the nineteen out-of-scope tables above, and the
+**database default collation, which is still `latin1_swedish_ci`** — visible in
+phpMyAdmin's summary row. Any table created without an explicit charset still
+inherits latin1.
