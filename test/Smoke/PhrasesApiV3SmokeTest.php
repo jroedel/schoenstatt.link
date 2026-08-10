@@ -473,6 +473,28 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         );
     }
 
+    /** One language's thread, and a language that is not one is refused rather than ignored. */
+    public function testTheHistoryNarrowsToOneLanguage(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Vorher ' . time(), 'es' => 'Antes ' . time()]);
+        $this->patch($token, self::ITEM, ['de' => 'Nachher ' . time(), 'es' => 'Después ' . time()]);
+
+        $all     = $this->decode($this->getWithBearer($token, self::ITEM . '/history'));
+        $german  = $this->decode($this->getWithBearer($token, self::ITEM . '/history?language=de'));
+
+        $this->assertGreaterThan(count($german['history']), count($all['history']), 'the filter narrowed nothing');
+        $this->assertSame('de', $german['language']);
+        foreach ($german['history'] as $entry) {
+            $this->assertSame('de', $entry['language']);
+        }
+
+        //A locale, not a language — the same thing a PATCH refuses, and for the same
+        //reason: silently ignoring it returns every language's argument.
+        $refused = $this->getWithBearer($token, self::ITEM . '/history?language=de_DE');
+        $this->assertSame(422, $refused['status'], $refused['body']);
+    }
+
     /** Another project's phrase is not found here either, for the reason `show` is not. */
     public function testTheHistoryOfAnotherProjectsPhraseIsNotFound(): void
     {

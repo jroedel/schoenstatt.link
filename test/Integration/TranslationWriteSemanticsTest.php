@@ -296,6 +296,98 @@ class TranslationWriteSemanticsTest extends TestCase
         }
     }
 
+    /**
+     * The thread survives the phrase row it was written against.
+     *
+     * This is the test the history table's key exists for, and it fails against the
+     * obvious design. A phrase id is not stable: M004 merges duplicates onto the lowest
+     * id and drops the rest, M005 merges again when normalization collapses two, and
+     * `deletePhrase()` removes a row that the next render then *rediscovers* as a new row
+     * with a new id. Keyed on the id, every one of those cuts a thread in half and leaves
+     * the earlier reasoning attached to an id nothing asks for again — at exactly the
+     * moment somebody is asking why a translation keeps being changed back.
+     *
+     * Reproduced here the cheap way: write history, then delete the phrase row and insert
+     * the same string again, which is what rediscovery does and which necessarily
+     * produces a different auto-increment id.
+     */
+    public function testAThreadSurvivesTheRediscoveryOfItsPhrase(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Thread survives rediscovery ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+            $this->insertTranslation($id, 'es_ES', 'Primera versión');
+
+            $this->table->updatePhrase($id, ['es_ES' => 'Segunda versión'], 'the first one read as a noun');
+
+            $before = $this->table->getTranslationHistory($id);
+            self::assertCount(1, $before, 'the overwrite wrote no history at all');
+            self::assertSame('Primera versión', $before[0]['old_translation']);
+
+            //Rediscovery: the row goes, the same string comes back with a new id.
+            $this->adapter->query(
+                'DELETE FROM `trans_phrases` WHERE `translation_phrase_id` = ?',
+                [$id]
+            );
+            $newId = $this->insertPhrase($text);
+            self::assertNotSame($id, $newId, 'the fixture did not actually produce a new id, so this proves nothing');
+
+            $after = $this->table->getTranslationHistory($newId);
+            self::assertCount(
+                1,
+                $after,
+                'the thread did not follow the phrase, so it is keyed on the id rather than the hash'
+            );
+            self::assertSame('Primera versión', $after[0]['old_translation']);
+            self::assertSame('the first one read as a noun', $after[0]['notes']);
+            //The entry still names the row it was written against, which is what anyone
+            //reconstructing events needs and is not the same as the id asked for.
+            self::assertSame($id, (int) $after[0]['translation_phrase_id']);
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** One language's thread, which is the shape an agent deciding about German wants. */
+    public function testTheThreadCanBeNarrowedToOneLanguage(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $id = $this->insertPhrase('Two languages argue ' . bin2hex(random_bytes(5)));
+            $this->insertTranslation($id, 'es_ES', 'Antes');
+            $this->insertTranslation($id, 'de_DE', 'Vorher');
+
+            $this->table->updatePhrase($id, ['es_ES' => 'Después', 'de_DE' => 'Nachher']);
+
+            self::assertCount(2, $this->table->getTranslationHistory($id));
+            $spanish = $this->table->getTranslationHistory($id, 'es_ES');
+            self::assertCount(1, $spanish, 'the language filter did not narrow the thread');
+            self::assertSame('Antes', $spanish[0]['old_translation']);
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** Another project's phrase id answers an empty thread, not that project's. */
+    public function testTheThreadOfAnotherProjectsPhraseIsEmpty(): void
+    {
+        $foreign = $this->adapter->query(
+            'SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `project` <> ? LIMIT 1',
+            [$this->project]
+        )->current();
+        if (null === $foreign) {
+            self::markTestSkipped('this database holds only one project, so there is no cross-project read to try');
+        }
+
+        self::assertSame(
+            [],
+            $this->table->getTranslationHistory((int) ((array) $foreign)['translation_phrase_id'])
+        );
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private function insertPhrase(string $phrase): int

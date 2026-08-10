@@ -139,6 +139,12 @@ final class PhraseResource
      * is keyed the way the table stores it and the document is keyed the way a caller
      * outside the application means it.
      *
+     * The `phraseId` at the top is the one that was asked for. Each entry carries its
+     * own, which can differ: the thread is keyed on the phrase's hash, so it survives a
+     * merge or a delete-and-rediscover, and entries written before one of those name the
+     * row that existed then. An agent that only wants "what happened to this string"
+     * should ignore the per-entry id; one reconstructing events needs it.
+     *
      * @param list<array<string, mixed>> $rows from TranslationsTable::getTranslationHistory()
      * @return array<string, mixed>
      */
@@ -146,7 +152,8 @@ final class PhraseResource
         int $phraseId,
         array $rows,
         LanguageMap $languages,
-        string $baseUrl = ''
+        string $baseUrl = '',
+        ?string $language = null
     ): array {
         $base    = rtrim($baseUrl, '/');
         $entries = [];
@@ -162,6 +169,12 @@ final class PhraseResource
                 //'update' — something replaced it. 'retract' — something deleted it and
                 //the language is empty now.
                 'operation'   => $row['operation'] ?? null,
+                //The domain the row belonged to, and the phrase row it was attached to
+                //at the time. Neither is part of the thread key — see
+                //M006CreateTranslationHistory — but both are what somebody
+                //reconstructing events will ask for next.
+                'textDomain'  => $row['text_domain'] ?? null,
+                'phraseId'    => self::intOrNull($row['translation_phrase_id'] ?? null),
                 //Why, from whoever replaced it — up to 255 characters sent as `_note`
                 //on the PATCH. Null for a write that offered no reason, and for every
                 //write made through the admin GUI, which has no such field. Read in
@@ -177,6 +190,7 @@ final class PhraseResource
 
         return [
             'phraseId' => $phraseId,
+            'language' => $language,
             'history'  => $entries,
             'meta'     => [
                 'count' => count($entries),

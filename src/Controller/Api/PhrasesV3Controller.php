@@ -223,6 +223,11 @@ final class PhrasesV3Controller extends AbstractApiController
      * on `show`, and an id whose phrase exists but has never been overwritten answers
      * 200 with an empty list — "nothing was lost", which is different from "no such
      * phrase" and different again from "no records kept".
+     *
+     * The thread is keyed on the phrase's *hash*, not the id in the URL: the id only
+     * has to name a live row of the string. That is what keeps a thread whole across a
+     * merge or a delete-and-rediscover, both of which give the same English string a new
+     * id. See JTranslate's M006CreateTranslationHistory.
      */
     public function history(Request $request): Response
     {
@@ -236,13 +241,33 @@ final class PhrasesV3Controller extends AbstractApiController
             return self::problem(Response::HTTP_NOT_FOUND, 'No phrase of this project has that id.');
         }
 
+        $languages = $this->validator()->languages();
+
+        //`?language=de` narrows to one language's thread, which is the shape an agent
+        //deciding whether to overwrite German actually wants. Refused rather than
+        //ignored when it is not a language, for the reason a PATCH refuses `de_DE`: a
+        //filter that silently does nothing returns the whole history and the caller
+        //reads another language's argument as if it were about this one.
+        $language = $request->query->get('language');
+        $locale   = null;
+        if (null !== $language && '' !== $language) {
+            if (! is_string($language) || null === $locale = $languages->localeFor($language)) {
+                return self::problem(
+                    Response::HTTP_UNPROCESSABLE_ENTITY,
+                    'That is not a language this API accepts.',
+                    ['writableLanguages' => $languages->languages()]
+                );
+            }
+        }
+
         $phraseId = (int) $phrase['phraseId'];
 
         return new JsonResponse(PhraseResource::representHistory(
             $phraseId,
-            $this->table()->getTranslationHistory($phraseId),
-            $this->validator()->languages(),
-            $request->getSchemeAndHttpHost()
+            $this->table()->getTranslationHistory($phraseId, $locale),
+            $languages,
+            $request->getSchemeAndHttpHost(),
+            $language
         ));
     }
 
