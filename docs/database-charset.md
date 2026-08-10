@@ -187,6 +187,15 @@ Both migrations ran and the site was deployed. Confirmed against the live databa
   was for. Whenever the runner is first run against production it will create the
   tracking table at 520 directly, so nothing needs revisiting.
 
+  That first run is now scheduled: JTranslate migrations 003 and 004 have to be
+  applied before the next deploy — see [DEPLOY.md](DEPLOY.md). They also convert
+  `trans_phrases.phrase` and `trans_translations.translation` from `VARCHAR(2000)` to
+  `TEXT`, which is a widening in the same sense as the charset work here and carries
+  no reinterpretation risk. Note the interaction with the `TEXT` promotion trap
+  described above: these two columns are being promoted *deliberately*, because the
+  varchar limit was silently truncating phrases, so they are the one case where a
+  `TEXT` column is the intended outcome rather than a side effect to be caught.
+
 Still outstanding, unchanged: the nineteen out-of-scope tables above, and the
 **database default collation, which is still `latin1_swedish_ci`** — visible in
 phpMyAdmin's summary row. Any table created without an explicit charset still

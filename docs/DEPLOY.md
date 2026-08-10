@@ -43,6 +43,58 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
+## Before the next deploy: JTranslate's phrase tables need two migrations
+
+Added 2026-08-10. **Run these before deploying the code that goes with them**, in
+this order, or the site will insert phrases without a `phrase_hash` and the
+constraint will reject them.
+
+1. **JTranslate migrations 003 and 004.** They widen `trans_phrases.phrase` and
+   `trans_translations.translation` to `TEXT`, add `phrase_hash BINARY(32)` under
+   `UNIQUE (project, text_domain, phrase_hash)`, add `retired_on`, convert
+   `modified_by` to `INT UNSIGNED`, and merge every duplicate phrase already in the
+   table — keeping the lowest id and moving the translations across rather than
+   cascading them away.
+
+   Production has no `jtranslate_migration` table (see
+   [database-charset.md](database-charset.md)), so nothing is recorded as applied
+   there and 001 will appear pending too; it is a `CREATE TABLE IF NOT EXISTS` and a
+   no-op. The web database user has no DDL rights, so this is the `--pretend` path:
+
+   ```
+   php bin/console jtranslate:migrate --pretend      # print the SQL
+   # run it as a user with DDL rights, then:
+   php bin/console jtranslate:migrate --mark-applied=001-create-phrase-tables
+   php bin/console jtranslate:migrate --mark-applied=003-phrase-identity
+   php bin/console jtranslate:migrate --mark-applied=004-merge-duplicate-phrases
+   php bin/console jtranslate:migrate --pretend      # now prints 002, which needed 003
+   ```
+
+   The second `--pretend` is not a mistake. 002 seeds the GUI's own phrases and has
+   to read `phrase_hash` to know what is missing, and previewing does not create it.
+   The command says so and prints everything else regardless.
+
+   **Expect this to remove a lot of rows.** In the 2021 capsule dump it took project
+   `Schoenstatt` from 6,856 phrases to 1,783, because 5,088 of them were the same two
+   truncated blog-post bodies inserted once per pageview for years. Production has
+   served those posts five years longer, so check the count first and run the DELETE
+   in batches if it is very large:
+
+   ```sql
+   SELECT COUNT(*) FROM trans_phrases WHERE project='Schoenstatt';
+   ```
+
+2. **`database/db7.2.sql`**, which removes the blog's phrases. Its header explains
+   what is lost and how to get it back; it backs everything up into
+   `trans_phrases_blog_backup` / `trans_translations_blog_backup` first. Keep those
+   until the site has been browsed in all four locales.
+
+Afterwards, clear the caches (`/en/sm/clear-cache`) and rebuild the catalogs
+(`php bin/console jtranslate:export-catalogs`). The cache matters more than usual
+here: the phrase index's shape changed, and a stale one would be read wrongly if the
+key had not also been bumped — it was, so the old item is unreachable rather than
+misread, but the new one still has to be built.
+
 ## Before the v3 API can be used: one migration and one account per agent
 
 The code shipped 2026-08-09; the phrase endpoints followed. Four things it

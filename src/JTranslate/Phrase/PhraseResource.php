@@ -61,9 +61,11 @@ use const JSON_THROW_ON_ERROR;
  * ## Context is a route name, and often only a route name
  *
  * `origin_route` records where a phrase was first seen, which is the only clue anyone
- * gets about how it is used. It is a laminas *route name*, not a path, and most of
- * this database's routes take parameters: measured here, 5,111 of 6,874 phrases come
- * from `blog/blog-post`, which cannot be turned into a URL without knowing which post.
+ * gets about how it is used. It is a laminas *route name*, not a path, and many of
+ * this database's routes take parameters: measured here after the 2026-08-10 cleanup,
+ * the largest sources are `text` (219 of 1,783 phrases), `associations/association`
+ * (152) and `associations/association/edit` (151), none of which can be turned into a
+ * URL without knowing *which* text or association.
  *
  * So `context.url` is filled in only where the route assembles with no parameters,
  * and is null otherwise. Guessing — substituting some arbitrary id, or dropping the
