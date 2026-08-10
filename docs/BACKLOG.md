@@ -679,6 +679,44 @@ Background and measurements: [caching.md](caching.md).
 
 ## Deploy ops
 
+- [ ] **Server maintenance pass: the 16 tables `db7.0`/`db7.1` deliberately left
+  alone.** The migrations converted every table this repository *mentions* to
+  InnoDB + `utf8mb4_unicode_520_ci` (see
+  [database-charset.md](database-charset.md)). These are not referenced by any
+  code, so they are a DBA task rather than an application migration — but they are
+  still sitting in the production database on old engines and charsets:
+  - **Nine Bible tables** — `bib_books`, `bib_book_abbreviations`, `bib_dh_page`,
+    `bib_greek_root_words`, `bib_verses`, plus `bib_jeru_en_temp`,
+    `bib_jeru_es_temp`, `bib_jeru_septnt_temp`, `bib_pueblo_temp` (the last four
+    exist only in production, not in the capsule dump). The Bible module was
+    removed 2026-08-05 and the feature moved to another application, so the real
+    question is whether these should be **dropped** rather than converted.
+    `bib_verses` is 236,422 rows / 45.8 MiB and still MyISAM — the largest
+    crash-unsafe table on the server.
+  - **Five `b_bib*` tables** — `b_bibsek`, `b_bibprim_edition`, `b_bibprim_event`,
+    `b_bibprim_epoche`, `b_bibprim_join`. Source data for a one-time import from
+    the old "sion" bibliography system. `PublicationsTable::importPublications()`
+    was the only reader and was deleted with `db7.0` (it called `issett()`, so it
+    fatalled on every invocation and cannot have run in years). Three still carry
+    FULLTEXT indexes that nothing queries.
+  - **`sch_dictionary_dictionary`** (3,084 rows) and **`sch_dictionary_users`**
+    (10 rows). The live dictionary is `sch_dictionary_entries`. `sch_dictionary_users`
+    has a `password` column — legacy credential hashes with nothing reading them,
+    which is a reason to drop rather than convert.
+  - **`user_remember_me`**, **`sch_visits_rollover_2023-11-02`**,
+    **`sch_visits_rollover_2025-07-17`**.
+  - **The database default charset is still `latin1_swedish_ci`**, so any table
+    created without an explicit charset silently inherits latin1. `ALTER DATABASE
+    ourlink_db1 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;` belongs to
+    this same pass. It changes no existing table.
+
+- [ ] **`PublicationsTable::whichKentenichPeriod()` is now unreferenced.** Deleting
+  `importPublications()` orphaned it. It is `protected`, nothing extends
+  `PublicationsTable`, and it encodes real domain data — the eight periods of Fr.
+  Kentenich's life, mapped from a date, feeding the `jkPeriodId` column that still
+  exists on `sch_publications`. Left in place deliberately rather than cascading the
+  deletion; decide whether that mapping is wanted before removing it.
+
 - [ ] **Drop the `?key=` fallback** now that every endpoint also accepts an
   `X-Api-Key` header (`SionModel\Controller\MaintenanceKeyTrait`). The query
   parameter still works only because the deploy config that sends it lives in

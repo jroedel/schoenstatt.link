@@ -27,9 +27,15 @@ return [
         //this capsule can still be switched down to 7.4 for bisecting. Both
         //spellings are the same integer, so the check is only about not emitting
         //a deprecation on the newer rungs.
+        //
+        //utf8mb4, not UTF8: in MariaDB `utf8` means `utf8mb3`, so 'SET NAMES UTF8'
+        //opens a 3-byte connection. Against the utf8mb4 tables that database/db7.0
+        //creates, the server would silently convert anything outside the BMP down
+        //to `?` on the way out — two different emoji sent over such a connection
+        //come back identical and compare equal. See database/db7.0.sql.
         'driver_options' => [
             (class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND)
-                => 'SET NAMES UTF8;',
+                => 'SET NAMES utf8mb4;',
         ],
     ],
     'view_manager' => [
