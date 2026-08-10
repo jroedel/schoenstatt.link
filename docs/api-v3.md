@@ -431,12 +431,28 @@ Two differences worth knowing:
   validation because `name` and `kind` are required there. Nothing here is required
   except the phrase id, which comes from the URL, so a patch naming one locale is
   already a complete submission.
-- **An empty string means "leave this language alone", not "blank it".**
-  `TranslationsTable::updatePhrase()` skips falsy values, and the web form behaves
-  identically — an empty textarea is how a translator says "not my language". There is
-  therefore **no way to remove a translation** through either surface. That is the
-  form's behaviour, inherited deliberately rather than diverged from; if it should
-  change, it should change for both.
+- **`""` and `null` mean different things.** Three cases, and the difference is the
+  whole reason this is spelled out:
+
+  | you send | what happens |
+  |---|---|
+  | the language is absent | left alone |
+  | `""` | left alone |
+  | `null` | the translation is **retracted** — the row is deleted |
+  | any other string, including `"0"` | written |
+
+  `""` means "leave this language alone" because that is what the web form means: it
+  renders every language as a textarea on every edit, so a translator who fills in one
+  posts `""` for the rest. If `""` cleared a translation, saving one language would wipe
+  the others.
+
+  `null` is the retraction, and it is reachable only from this API — a browser cannot
+  post it. Use it to withdraw a translation you got wrong rather than overwriting it with
+  something you are equally unsure of; `"changed"` reports the language, and the next
+  `GET` shows `"text": null`.
+
+  Retracting a language that has no translation is a `200` with `"changed": []` and no
+  write, the same as re-sending stored text.
 
 ### `PATCH /api/v3/phrases` — the batch
 

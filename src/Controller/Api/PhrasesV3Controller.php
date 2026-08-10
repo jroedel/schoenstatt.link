@@ -400,13 +400,26 @@ final class PhrasesV3Controller extends AbstractApiController
             );
         }
 
+        //A null means "retract this translation" and is split out before validation,
+        //because there is no text to validate — a retraction has no length to bound and
+        //nothing to trim. Passing null through the input filter would also make the
+        //outcome depend on how laminas-filter happens to treat a non-string, which is
+        //not a contract worth relying on for a destructive operation.
+        //
+        //Only an explicit JSON null reaches here. `""` is not a retraction: it means
+        //"leave this language alone", the same as the web form's untouched textarea, and
+        //is dropped further down. That asymmetry is deliberate and is documented on
+        //TranslationsTable::updatePhrase().
+        $retractions = array_filter($patch, static fn (mixed $v): bool => null === $v);
+        $writes      = array_diff_key($patch, $retractions);
+
         $filter = $validator->inputFilter();
         //Not merged onto the stored record the way an association patch is, and it does
         //not need to be: nothing in this filter is required except phraseId, which is
         //supplied from the record, so a patch naming one locale is already a complete
         //submission. Merging would only re-submit stored text for the change detector
         //to discard.
-        $filter->setData(PhraseResource::submission((int) $phrase['phraseId'], $patch, $languages));
+        $filter->setData(PhraseResource::submission((int) $phrase['phraseId'], $writes, $languages));
 
         if (! $filter->isValid()) {
             //The messages are the translator's, verbatim — see PhraseValidator.
@@ -423,26 +436,36 @@ final class PhrasesV3Controller extends AbstractApiController
         //form is keyed the way the database is.
         /** @var array<string, mixed> $values */
         $values      = $filter->getValues();
-        $patchLocales = array_filter(array_map(
+        $writeLocales = array_filter(array_map(
             static fn (string $language): ?string => $languages->localeFor($language),
-            array_map(strval(...), array_keys($patch))
+            array_map(strval(...), array_keys($writes))
         ));
-        $submitted   = array_intersect_key($values, array_flip($patchLocales));
+        $submitted   = array_intersect_key($values, array_flip($writeLocales));
 
         //Drop what the write is going to skip anyway, *before* deciding what changed.
-        //`TranslationsTable::updatePhrase()` ignores any falsy value — that is how the
-        //web form says "leave this locale alone", an empty textarea being how a
-        //translator declines a language. Counting those as changes made this endpoint
-        //lie in the most expensive direction available: `{"de_DE": ""}` answered
-        //`"changed": ["de_DE"]` while the stored text was untouched, and the caller then
-        //got a full catalog recompile for a write that never happened. Measured on
-        //phrase 6197.
+        //`TranslationsTable::updatePhrase()` treats `''` as "leave this locale alone" —
+        //an empty textarea being how a translator declines a language in the web form.
+        //Counting those as changes made this endpoint lie in the most expensive
+        //direction available: `{"de": ""}` answered `"changed": ["de"]` while the stored
+        //text was untouched, and the caller then got a full catalog recompile for a
+        //write that never happened. Measured on phrase 6197.
         //
-        //`0 == ''` for this purpose, deliberately: a translation of literally "0" is
-        //falsy in PHP and updatePhrase() skips it too. Mirroring its exact condition
-        //keeps `changed` truthful rather than correct in principle — if that quirk is
-        //ever fixed it should be fixed there, and this follows.
-        $submitted = array_filter($submitted, static fn (mixed $value): bool => (bool) $value);
+        //Only `''` is dropped now, not every falsy value. `'0'` used to be discarded
+        //here to mirror updatePhrase()'s falsy test; that test is gone, so a translation
+        //of literally "0" is now both writable and honestly reported.
+        $submitted = array_filter($submitted, static fn (mixed $value): bool => '' !== $value);
+
+        //Retractions rejoin here, as nulls keyed by locale — the shape updatePhrase()
+        //reads as "delete this row". Added after the `''` filter on purpose: a null must
+        //survive it, and `'' !== null` is true, but relying on that would be a subtle
+        //dependency for something this destructive to rest on.
+        foreach (array_keys($retractions) as $language) {
+            $locale = $languages->localeFor((string) $language);
+            if (null !== $locale) {
+                $submitted[$locale] = null;
+            }
+        }
+
         if ([] === $submitted) {
             return self::applied([]);
         }

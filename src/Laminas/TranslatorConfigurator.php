@@ -140,7 +140,11 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
 
         /** @var TranslationsTable $table */
         $table = $container->get(TranslationsTable::class);
-        (new TranslatorEventListener($table, $table->getLocales()))->attach($inner->getEventManager());
+        //getLocales(TRUE): the argument includes the key locale, and without it an
+        //English page view can never discover a phrase. JTranslate\Module passes the
+        //same thing — a discrepancy would mean discovery worked under one front
+        //controller and not the other. See TranslatorEventListener's class docblock.
+        (new TranslatorEventListener($table, $table->getLocales(true)))->attach($inner->getEventManager());
 
         $modules = $this->moduleLanguageDirectories($container);
         $table->setUserModules($modules);

@@ -53,11 +53,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 24 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 64 |
-| total routes | 189 |
-| unguarded routes | 25 |
-| unguarded routes matchable | 14 |
+| total routes | 188 |
+| unguarded routes | 24 |
+| unguarded routes matchable | 13 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (164 + 25 = 189). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (164 + 24 = 188). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -501,7 +501,7 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-14 of the 25 are endpoints reachable by nobody.
+13 of the 24 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
@@ -520,7 +520,6 @@ the matched route name, so the missing guard costs nothing. The `yes` rows are t
 | `event-delete` | **yes** |
 | `event-edit` | **yes** |
 | `events/create` | **yes** |
-| `jtranslate/clear-cache` | **yes** |
 | `jtranslate/phrase` | no |
 | `juser/user` | no |
 | `libraries/library/delete` | **yes** |
