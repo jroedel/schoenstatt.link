@@ -7,10 +7,11 @@
 -- the translations away and `trans_translations` has no history to recover them from,
 -- so leaving rows in place was always the safer choice and the table only grew.
 --
--- Measured in the capsule (a 2021-06-24 production dump), of 6,856 rows belonging to
--- project `Schoenstatt`, 5,125 came from a `blog%` route and held **40** distinct
--- phrases. Production will hold considerably more of them; see the note on counts
--- below.
+-- Measured in the capsule, of 6,856 rows belonging to project `Schoenstatt`, 5,125 came
+-- from a `blog%` route and held **40** distinct phrases. After JTranslate's migrations
+-- 003 and 004 have merged the duplicates, that collapses to **39 phrase rows carrying 78
+-- translation rows** — which is what this file actually deletes. Production is within a
+-- few rows of the same; see the note on counts below.
 --
 --
 -- WHAT ACTUALLY PRODUCED THEM, BECAUSE IT IS NOT WHAT IT LOOKS LIKE
@@ -80,19 +81,42 @@
 --
 -- ABOUT THE COUNTS
 -- ----------------
--- Every number above was measured in the capsule against the 2021 dump. Production has
--- served those two blog posts for five more years, so its duplicate count is larger —
--- possibly much larger. Check before and after:
+-- An earlier version of this header warned that production's duplicate count would be
+-- far larger than the capsule's, and told you to run the DELETE in batches of 10,000.
+-- **That was wrong and is corrected here**, because the deploy has now happened and the
+-- real numbers are known.
+--
+-- Production's `trans_phrases` stood at AUTO_INCREMENT=12842 against the capsule's
+-- 12803 — 39 additional inserts, ever. The duplication was a burst that ended when
+-- those two blog posts stopped being read, not an ongoing accumulation, so the table
+-- was never large. JTranslate's migrations 003 and 004 ran against the live database on
+-- 2026-08-10 in about 1.2 seconds of statement time, taking project `Schoenstatt` from
+-- 6,895 phrases to 1,787 and `trans_translations` from 12,957 rows to 7,846.
+--
+-- So: no batching, and this file is a matter of seconds. Check before and after anyway,
+-- because a count that surprises you is the one thing that should stop you:
 --
 --     SELECT COUNT(*) FROM trans_phrases WHERE project='Schoenstatt' AND origin_route LIKE 'blog%';
 --
--- If that number is in the hundreds of thousands, run the DELETE in batches rather
--- than as one statement, or the undo log will be the problem rather than the rows:
+-- The capsule answered 39 there after the merge, holding 78 translation rows.
 --
---     DELETE FROM trans_phrases WHERE project='Schoenstatt' AND origin_route LIKE 'blog%' LIMIT 10000;
 --
--- repeated until it reports zero rows affected. The backup tables can be built in one
--- statement regardless; they are inserts, not deletes.
+-- WHAT ACTUALLY HAPPENS TO THE SIX LIVE STRINGS — DEMONSTRATED, NOT PREDICTED
+-- --------------------------------------------------------------------------
+-- Rehearsed in the capsule on 2026-08-10. After this file ran, rendering the pages that
+-- use them re-created all of them within one request each:
+--
+--     phrase                       origin_route    retired_on   translations
+--     Is draft?                    texts/create    NULL         en_US only
+--     Italian                      texts/create    NULL         en_US only
+--     Original language            texts/create    NULL         en_US only
+--     Text successfully created.   texts/create    NULL         en_US only
+--     Text successfully updated.   texts/create    NULL         en_US only
+--
+-- Two things to read off that. The rows come back with an **honest** `origin_route` —
+-- `texts/create`, where they are actually used, not the stale `blog/create` they carried
+-- for years. And they come back with the key locale only: the es/de/pt translations are
+-- gone, exactly as this header says. That is the cost that was accepted.
 --
 --
 -- HOW TO RUN IT

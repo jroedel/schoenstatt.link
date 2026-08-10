@@ -238,11 +238,13 @@ Two facts about the data shape that constrain the design:
 > any longer phrase was silently truncated on insert and could never be matched
 > again — every render of those two blog posts inserted another row. JTranslate's
 > migrations 003 and 004 widen the column, add
-> `UNIQUE (project, text_domain, phrase_hash)` and merge the duplicates; after them
-> the project holds **1,783 phrases averaging 43 characters**, 75 KB of text in
-> total. So "Books alone is 86% of the phrases, and they are data, not source
-> literals" was an artifact of the defect, not a property of the corpus. The
-> content-versus-labels tension below is real but far smaller than it looked.
+> `UNIQUE (project, text_domain, phrase_hash)` and merge the duplicates. **Applied to
+> production 2026-08-10**, where they took project `Schoenstatt` from 6,895 phrases to
+> **1,787** (the capsule lands on 1,744 after `db7.2.sql` also removes the blog's 39),
+> averaging 43 characters — 75 KB of text in total. So "Books alone is 86% of the
+> phrases, and they are data, not source literals" was an artifact of the defect, not a
+> property of the corpus. The content-versus-labels tension below is real but far
+> smaller than it looked, which materially shrinks this whole migration.
 
 Books alone is 86% of the phrases, and they are **data, not source literals** —
 book titles and dictionary entries passed through `translate()`. This is the single
