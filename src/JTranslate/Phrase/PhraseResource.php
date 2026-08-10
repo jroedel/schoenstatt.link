@@ -9,6 +9,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use JTranslate\I18n\LanguageMap;
 
+use function count;
 use function is_scalar;
 use function is_string;
 use function json_encode;
@@ -115,8 +116,78 @@ final class PhraseResource
                 'url'     => isset($phrase['phraseId'])
                     ? sprintf('%s/api/v3/phrases/%d', $base, (int) $phrase['phraseId'])
                     : null,
+                //A link, not the history itself. The history of a well-worked phrase is
+                //longer than the phrase, most callers never want it, and a field that is
+                //usually a long empty list is one every caller learns to skip. Following
+                //the link is the opt-in.
+                'history' => isset($phrase['phraseId'])
+                    ? sprintf('%s/api/v3/phrases/%d/history', $base, (int) $phrase['phraseId'])
+                    : null,
             ],
         ];
+    }
+
+    /**
+     * `GET /api/v3/phrases/{id}/history` — what writing to this phrase has destroyed.
+     *
+     * Newest first, one entry per overwrite or retraction, never one per write: filling
+     * an empty language destroys nothing and appears here not at all. An empty list is
+     * therefore the normal answer and means "nothing has ever been lost here", not
+     * "no records kept".
+     *
+     * `language`, not `locale`, for the reason {@see translations()} gives: the record
+     * is keyed the way the table stores it and the document is keyed the way a caller
+     * outside the application means it.
+     *
+     * @param list<array<string, mixed>> $rows from TranslationsTable::getTranslationHistory()
+     * @return array<string, mixed>
+     */
+    public static function representHistory(
+        int $phraseId,
+        array $rows,
+        LanguageMap $languages,
+        string $baseUrl = ''
+    ): array {
+        $base    = rtrim($baseUrl, '/');
+        $entries = [];
+        foreach ($rows as $row) {
+            $locale    = (string) ($row['locale'] ?? '');
+            $entries[] = [
+                'language'    => $languages->languageFor($locale) ?? $locale,
+                //The text that was destroyed. This is the whole point of the resource:
+                //`trans_translations` keeps no copy, so before this existed a wrong
+                //edit was unrecoverable and the tooling on this side had to be sure
+                //rather than able to correct.
+                'previous'    => $row['old_translation'] ?? null,
+                //'update' — something replaced it. 'retract' — something deleted it and
+                //the language is empty now.
+                'operation'   => $row['operation'] ?? null,
+                //Why, from whoever replaced it — up to 255 characters sent as `_note`
+                //on the PATCH. Null for a write that offered no reason, and for every
+                //write made through the admin GUI, which has no such field. Read in
+                //order these are a conversation: an agent that reverses another's choice
+                //says why here, against the version it removed.
+                'note'        => $row['notes'] ?? null,
+                'writtenBy'   => self::intOrNull($row['written_by'] ?? null),
+                'writtenOn'   => self::scalarize($row['written_on'] ?? null),
+                'replacedBy'  => self::intOrNull($row['replaced_by'] ?? null),
+                'replacedOn'  => self::scalarize($row['replaced_on'] ?? null),
+            ];
+        }
+
+        return [
+            'phraseId' => $phraseId,
+            'history'  => $entries,
+            'meta'     => [
+                'count' => count($entries),
+                'url'   => sprintf('%s/api/v3/phrases/%d', $base, $phraseId),
+            ],
+        ];
+    }
+
+    private static function intOrNull(mixed $value): ?int
+    {
+        return null === $value || '' === $value ? null : (int) $value;
     }
 
     /**
