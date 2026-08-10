@@ -13,6 +13,7 @@ use Laminas\View\Renderer\PhpRenderer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+use function is_readable;
 use function str_contains;
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -42,6 +43,19 @@ class MessengerDataIsNotTranslatedTest extends TestCase
 
     /** A JWT-shaped string: what must never reach the translator. */
     private const SECRET = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.body.signature';
+
+    /**
+     * Building a view helper pulls the merged module config and, through the
+     * persistent cache, APCu — neither of which a bare CI runner has. Same guard as
+     * every other integration test here, and for the same reason: without it this
+     * fails on the runner for a reason that has nothing to do with what it asserts.
+     */
+    protected function setUp(): void
+    {
+        if (! is_readable(__DIR__ . '/../../config/autoload/local.php')) {
+            self::markTestSkipped('no config/autoload/local.php, so no service configuration');
+        }
+    }
 
     public function testTheFlashMessengerHelperIsJTranslates(): void
     {
