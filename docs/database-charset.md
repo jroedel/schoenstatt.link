@@ -187,8 +187,9 @@ Both migrations ran and the site was deployed. Confirmed against the live databa
   was for. Whenever the runner is first run against production it will create the
   tracking table at 520 directly, so nothing needs revisiting.
 
-  That first run is now scheduled: JTranslate migrations 003 and 004 have to be
-  applied before the next deploy — see [DEPLOY.md](DEPLOY.md). They also convert
+  That first run happened on **2026-08-10**: `jtranslate_migration` now exists in
+  production and records 001, 003 and 004 (002 followed after the deploy). See
+  [DEPLOY.md](DEPLOY.md) for the sequence and its two non-obvious constraints. They also convert
   `trans_phrases.phrase` and `trans_translations.translation` from `VARCHAR(2000)` to
   `TEXT`, which is a widening in the same sense as the charset work here and carries
   no reinterpretation risk. Note the interaction with the `TEXT` promotion trap
