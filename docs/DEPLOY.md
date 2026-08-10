@@ -43,57 +43,69 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
-## Before the next deploy: JTranslate's phrase tables need two migrations
+## Done 2026-08-10: JTranslate's phrase-table migrations
 
-Added 2026-08-10. **Run these before deploying the code that goes with them**, in
-this order, or the site will insert phrases without a `phrase_hash` and the
-constraint will reject them.
+Applied to production and deployed. Recorded here rather than deleted, because the
+sequence is the template for the next library migration and two of its constraints are
+not obvious.
 
-1. **JTranslate migrations 003 and 004.** They widen `trans_phrases.phrase` and
-   `trans_translations.translation` to `TEXT`, add `phrase_hash BINARY(32)` under
-   `UNIQUE (project, text_domain, phrase_hash)`, add `retired_on`, convert
-   `modified_by` to `INT UNSIGNED`, and merge every duplicate phrase already in the
-   table — keeping the lowest id and moving the translations across rather than
-   cascading them away.
+**What ran, in this order:**
 
-   Production has no `jtranslate_migration` table (see
-   [database-charset.md](database-charset.md)), so nothing is recorded as applied
-   there and 001 will appear pending too; it is a `CREATE TABLE IF NOT EXISTS` and a
-   no-op. The web database user has no DDL rights, so this is the `--pretend` path:
+1. **JTranslate migrations 001, 003, 004.** Widened `trans_phrases.phrase` and
+   `trans_translations.translation` to `TEXT`, added `phrase_hash BINARY(32)` under
+   `UNIQUE (project, text_domain, phrase_hash)`, added `retired_on`, converted
+   `modified_by` to `INT UNSIGNED`, and merged every duplicate phrase — keeping the
+   lowest id and **moving translations across** rather than cascading them away.
+   001 was a `CREATE TABLE IF NOT EXISTS` no-op; it appeared pending only because
+   production had no `jtranslate_migration` table.
+2. **The code deploy.** Never before step 1 — see the ordering note below.
+3. `jtranslate:migrate` for **002** (the GUI phrase seed, pure `INSERT`s, ordinary app
+   credentials), then `jtranslate:export-catalogs`, then a cache clear.
+4. **`database/db7.2.sql`**, removing the blog's phrases, then another catalog rebuild
+   and cache clear.
 
-   ```
-   php bin/console jtranslate:migrate --pretend      # print the SQL
-   # run it as a user with DDL rights, then:
-   php bin/console jtranslate:migrate --mark-applied=001-create-phrase-tables
-   php bin/console jtranslate:migrate --mark-applied=003-phrase-identity
-   php bin/console jtranslate:migrate --mark-applied=004-merge-duplicate-phrases
-   php bin/console jtranslate:migrate --pretend      # now prints 002, which needed 003
-   ```
+**The numbers.** 7,801 phrase rows → 2,693 (`Schoenstatt` 6,895 → 1,787); 12,957
+translation rows → 7,846. The backfill hashed all 7,801 rows; 5,108 duplicate phrases and
+5,111 redundant translations were deleted, and **7 translations were repointed** onto
+surviving rows — those 7 existed only on duplicates and a dedup-by-deletion would have
+destroyed them silently. Total statement time about 1.2 seconds.
 
-   The second `--pretend` is not a mistake. 002 seeds the GUI's own phrases and has
-   to read `phrase_hash` to know what is missing, and previewing does not create it.
-   The command says so and prints everything else regardless.
+**Two constraints worth reusing.**
 
-   **Expect this to remove a lot of rows.** In the 2021 capsule dump it took project
-   `Schoenstatt` from 6,856 phrases to 1,783, because 5,088 of them were the same two
-   truncated blog-post bodies inserted once per pageview for years. Production has
-   served those posts five years longer, so check the count first and run the DELETE
-   in batches if it is very large:
+- **The schema has to move before the code.** The new code selects `phrase_hash` and
+  `retired_on`, so against the old schema every request hitting a missing translation,
+  plus the admin listing and the v3 API, throws `Unknown column`. Deploying first breaks
+  the site.
+- **Which means `--pretend` cannot be run on production to get the SQL**, because that
+  needs the new code deployed. Take a schema-only dump of the affected tables
+  (`mysqldump --no-data`), load it into a scratch database in the capsule, point the
+  console at it with a `config/autoload/zz-scratch.local.php` overriding the `db` key
+  (`*.local.php` merges after `local.php`, so `zz-` wins), and generate the SQL there.
+  Delete that override afterwards. The output of a schema migration depends only on the
+  schema, so it is exact.
 
-   ```sql
-   SELECT COUNT(*) FROM trans_phrases WHERE project='Schoenstatt';
-   ```
+  A data migration is different: **002 could not be previewed at all** until 003 had
+  actually run, because it reads `phrase_hash` to decide what is missing and previewing
+  executes nothing. `jtranslate:migrate --pretend` reports that and prints everything
+  else rather than aborting, so it is a two-pass procedure by design. 002 was applied
+  after the deploy with ordinary credentials instead.
 
-2. **`database/db7.2.sql`**, which removes the blog's phrases. Its header explains
-   what is lost and how to get it back; it backs everything up into
-   `trans_phrases_blog_backup` / `trans_translations_blog_backup` first. Keep those
-   until the site has been browsed in all four locales.
+**Migrations are not applied in numeric order.** 002 seeds data and runs last;
+`MigrationRunner::MIGRATIONS` is the sequence and the numbers only identify.
 
-Afterwards, clear the caches (`/en/sm/clear-cache`) and rebuild the catalogs
-(`php bin/console jtranslate:export-catalogs`). The cache matters more than usual
-here: the phrase index's shape changed, and a stale one would be read wrongly if the
-key had not also been bumped — it was, so the old item is unreachable rather than
-misread, but the new one still has to be built.
+**Two phpMyAdmin traps**, both hit during this run. A multi-statement batch containing a
+`FROM information_schema.TABLES` query switches phpMyAdmin's tracked "current database"
+for every statement after it — so unqualified names then resolve inside
+`information_schema` and fail with `#1109`. Schema-qualify every table
+(`ourlink_db1.trans_phrases`) and avoid `DATABASE()`. And a `mysqldump` taken without
+`--databases` carries no `USE` statement but does carry `DROP TABLE IF EXISTS`, so it
+applies to whatever database the client is connected to — never load one without naming
+the target database explicitly.
+
+Keep `trans_phrases_blog_backup` / `trans_translations_blog_backup` until the site has
+been browsed in all four locales; then drop them. They hold the 39 phrases and 78
+translations `db7.2.sql` deleted, including the 39 non-English translations that were
+knowingly given up.
 
 ## Before the v3 API can be used: one migration and one account per agent
 
@@ -370,13 +382,35 @@ TODOs get real values):
         sign-in page, the Symfony controller answers `401` with a JSON body.
         `cache:flush-persistent` reports either as a rejected key, so flipping
         the flag needs no change to the hook.
-   3. wget `/en/associations/do-work` with an `X-Api-Key` header —
+   3. ssh — `php bin/console jtranslate:export-catalogs`. Rebuilds every
+      compiled `*.lang.php` from the database.
+      - **Why a deploy needs it at all.** The catalogs are gitignored build
+        output, so phploy never uploads them; the copies on the server are
+        whatever the application last wrote for itself, which happens only
+        when a translator saves a phrase or the discovery path finds one that
+        already had a translation in another text domain. Nothing else ever
+        rebuilt them, which is exactly how they drifted far enough from the
+        database to be worth untracking. A deploy that changes phrases, or a
+        migration that removes some, leaves them stale until this runs.
+      - **It cannot fail the deploy**, by design: the hook swallows the exit
+        status and prints a warning instead. A stale catalog only means some
+        strings render in English, and the translations themselves are safe in
+        the database. Aborting the deploy — or skipping the hooks after it —
+        would be the worse outcome, so re-run it by hand if you see the
+        warning.
+      - It writes as the **ssh** account, not as the web-server user. That is
+        safe because each catalog goes to a temporary file and is `rename()`d
+        into place, and `rename()` needs write permission on the *directory*,
+        not on the existing file — so the web server can still replace a
+        catalog this hook created. `TranslationsTable::writeCatalogAtomically()`
+        documents why; do not "simplify" that write.
+   4. wget `/en/associations/do-work` with an `X-Api-Key` header —
       post-deploy data maintenance. Needs the fully-deployed site. Still a
       wget because the work itself has not been ported to a command yet.
-   4. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
+   5. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
       exactly what went live (`git tag -l 'deploy/*'` answers "what's
       deployed?"). Never pushed.
-   5. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
+   6. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
       scripted smoke checks (next section). A failure ends the deploy
       loudly with a non-zero exit. It runs after the server-side steps,
       so a passing run means the *fully* deployed site is healthy — no
@@ -393,6 +427,7 @@ tar-over-SFTP + extract), then in the app dir
 php composer.phar install --no-dev --no-interaction --optimize-autoloader
 php bin/console cache:clear-config
 php bin/console cache:flush-persistent
+php bin/console jtranslate:export-catalogs
 ```
 
 then re-run the `do-work` wget and `bash tools/smoke-prod.sh` locally.
