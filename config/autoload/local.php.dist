@@ -51,9 +51,16 @@ return [
         //deprecation. Note the *live* local.php on each machine and on the
         //server carries its own copy of this line and has to be updated
         //separately — see docs/BACKLOG.md.
+        //
+        //utf8mb4, not UTF8: in MariaDB `utf8` means `utf8mb3`, so 'SET NAMES UTF8'
+        //opens a 3-byte connection and the server silently degrades anything
+        //outside the BMP to `?` when reading from the utf8mb4 tables that
+        //database/db7.0.sql creates. THIS IS THE LINE THAT HAS TO CHANGE ON THE
+        //SERVER TOO — config/autoload/local.php is gitignored, so deploying this
+        //.dist file changes nothing in production by itself.
         'driver_options' => [
             (class_exists('Pdo\Mysql') ? \Pdo\Mysql::ATTR_INIT_COMMAND : \PDO::MYSQL_ATTR_INIT_COMMAND)
-                => 'SET NAMES UTF8;',
+                => 'SET NAMES utf8mb4;',
         ],
     ],
     /**

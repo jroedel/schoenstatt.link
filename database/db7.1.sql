@@ -1,0 +1,89 @@
+-- db7.1 — sch_visits to utf8mb4_unicode_520_ci
+--
+-- Split out of db7.0 because this one table is larger than everything in that file
+-- combined, and because applying it has an operational cost the others do not.
+--
+--
+-- SIZE, AND WHY THE CAPSULE CANNOT REHEARSE THIS
+-- ----------------------------------------------
+-- In production `sch_visits` is roughly 7.1M rows / 1.3 GiB, with
+-- AUTO_INCREMENT past 24 million. In the capsule it is empty — the local dump
+-- predates the data — so unlike every statement in db7.0, the statement below has
+-- NOT been rehearsed against a realistic table. What has been verified locally is
+-- only that it is syntactically valid and semantically a no-op risk (see below).
+--
+--
+-- THE DATA IS NOT AT RISK; THE AVAILABILITY IS
+-- --------------------------------------------
+-- utf8mb3 -> utf8mb4 is a pure superset widening. Every byte sequence valid in
+-- utf8mb3 is valid and identical in utf8mb4, so no reinterpretation happens and no
+-- content can be mangled, whatever these columns hold. (For the record they hold
+-- very little: `Entity` is an internal slug such as 'person' or 'dictionary-apiv1',
+-- and `IpAddress`/`UserAgent` are written through SionTable::privacyHash().)
+--
+-- The cost is a lock. `CONVERT TO CHARACTER SET` cannot be done in place — it is an
+-- ALGORITHM=COPY table rebuild, which permits reads but blocks writes for its whole
+-- duration. `SionTable::registerVisit()` INSERTs into this table on ordinary page
+-- loads, from SionController and from the persons, dictionary and dictionary-API
+-- controllers. So for as long as the rebuild runs, every page that logs a visit
+-- blocks on the lock rather than rendering.
+--
+-- On 1.3 GiB that is minutes, not seconds, and it is a stall of the live site.
+--
+--
+-- HOW TO RUN IT
+-- -------------
+-- Over SSH with the mysql client, NOT through phpMyAdmin — konsoleH's PHP will time
+-- out long before a 1.3 GiB rebuild finishes, and losing the client mid-ALTER is
+-- how you end up with a half-copied temporary table eating disk.
+--
+--     mysql -u <user> -p ourlink_db1 < db7.1.sql
+--
+-- Requires transient free disk of roughly twice the table size (~3 GiB) for the
+-- rebuild copy, on top of whatever the database already occupies.
+--
+-- Best run in a quiet window. Nothing breaks if it is not — requests queue rather
+-- than error — but they queue against a PHP pool with finite workers, so a long
+-- enough stall under load looks like an outage.
+--
+--
+-- THE ALTERNATIVE, IF THE STALL IS UNACCEPTABLE
+-- ---------------------------------------------
+-- This project already has a rollover practice: `sch_visits_rollover_2023-11-02`
+-- and `sch_visits_rollover_2025-07-17` are previous incarnations of this table,
+-- retired in place. Rolling over again is near-instant and takes no lock worth the
+-- name:
+--
+--     RENAME TABLE `sch_visits` TO `sch_visits_rollover_2026-08-10`;
+--     CREATE TABLE `sch_visits` (
+--       `VisitId`   int(11) NOT NULL AUTO_INCREMENT,
+--       `Entity`    varchar(50) NOT NULL,
+--       `EntityId`  int(11) DEFAULT NULL COMMENT 'If null, it refers to some entity index',
+--       `UserId`    int(11) DEFAULT NULL,
+--       `IpAddress` varchar(255) DEFAULT NULL,
+--       `UserAgent` varchar(255) DEFAULT NULL,
+--       `VisitedAt` datetime NOT NULL,
+--       PRIMARY KEY (`VisitId`)
+--     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+--
+-- The trade is history. `SionTable::getVisitCounts()` reports a per-entity *total*
+-- straight from this table, so a rollover resets every "total visits" figure the
+-- site displays. That has already happened twice, so the displayed total is in any
+-- case only "since 2025-07-17" today — but it would happen again, and that is a
+-- product decision rather than a database one.
+--
+-- The retired table would then join the other two rollovers as a server maintenance
+-- item, outside this repository's migrations, since nothing in the code names it.
+--
+--
+-- WHY NOT JUST LEAVE IT utf8mb3
+-- -----------------------------
+-- Because it is in scope: `config/autoload/sionmodel.global.php` names it as
+-- `visits_table`, so it is a table this application uses, and leaving exactly one
+-- such table off the standard is the kind of thing nobody remembers in two years.
+-- The practical collation-mixing risk is admittedly near zero — `getVisitCounts()`
+-- filters `Entity` against a bound parameter rather than another table's column, so
+-- there is no cross-table string comparison to raise "Illegal mix of collations".
+-- The reason to convert is uniformity, not an active bug.
+
+ALTER TABLE `sch_visits` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_520_ci;
