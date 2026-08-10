@@ -334,6 +334,19 @@ filters reach the database rather than being applied after the paging decision.
 | `translatedIn` | a language code — phrases that do have one |
 | `limit`, `offset` | default 100, maximum 500 |
 
+**Retired phrases are never in the collection.** A phrase can be taken off the
+translator's worklist without being destroyed — `trans_phrases.retired_on`, set by
+`jtranslate:retire`, for strings that left the site when a feature did. The row and its
+translations stay, and the site keeps rendering them, but nobody is asked to work on
+them. There is no parameter to include them: an agent's job is the worklist, and a
+retired phrase is by definition not on it. `GET /api/v3/phrases/{id}` still answers for
+one, so a link that predates a retirement does not turn into a 404.
+
+If a retired phrase is in fact still rendered somewhere and is missing a translation,
+the site un-retires it on its own the next time that page loads, and it reappears in the
+collection. So a phrase showing up that you have not seen before is normal and does not
+mean anything went wrong.
+
 `?untranslatedIn=de&textDomain=Application` is the query an agent actually wants,
 and it is a `WHERE` clause. An unknown parameter is a `422` rather than being ignored,
 for the same reason an unknown field is: `?language=de` would otherwise return the
@@ -379,9 +392,11 @@ missing one, and nothing else in the document says so.
 answers capsule URLs. Fetch it over ordinary HTTP and read it as a visitor would.
 
 **`context.url` is often `null`, and that is the honest answer.** `origin_route` is a
-route *name*, and most of this site's routes take parameters: measured on this
-database, 5,111 of 6,874 phrases come from `blog/blog-post`, which cannot be turned
-into a URL without knowing which post. Guessing — substituting an arbitrary id, or
+route *name*, and many of this site's routes take parameters: measured on this database
+after the 2026-08-10 cleanup, the largest sources are `text` (219 of 1,783 phrases),
+`associations/association` (152) and `associations/association/edit` (151), none of
+which can be turned into a URL without knowing *which* text or association. Guessing —
+substituting an arbitrary id, or
 dropping the parameter segment — would hand you a URL that 404s or, worse, shows a
 different page than the phrase came from, with no way for you to tell. A null says
 "you cannot see this one in situ", which is true and actionable.
