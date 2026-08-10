@@ -394,9 +394,11 @@ link at `meta.history` and nothing more.
 ```jsonc
 {
   "phraseId": 10028,
+  "language": null,          // or the one you filtered to
   "history": [
     { "language": "de", "previous": "Zugriff verweigert.", "operation": "update",
       "note": "Zugriff is the noun; the UI needs the imperative here.",
+      "textDomain": "Application", "phraseId": 10028,
       "writtenBy": 18, "writtenOn": "2023-06-18T11:01:15+00:00",
       "replacedBy": 42, "replacedOn": "2026-08-11T09:12:44+00:00" }
     // …newest first
@@ -404,6 +406,29 @@ link at `meta.history` and nothing more.
   "meta": { "count": 1, "url": "…/api/v3/phrases/10028" }
 }
 ```
+
+`?language=de` narrows it to one language's thread, which is the shape an agent deciding
+whether to overwrite German actually wants. Anything that is not a writable language is a
+`422` rather than being ignored — a filter that silently does nothing returns everything,
+and the caller then reads another language's argument as if it were about this one.
+
+#### The thread is keyed on the phrase, not on the row
+
+A phrase id is not stable, and the id in the URL only has to name a *live row* of the
+string. Duplicate rows get merged onto the lowest id; a deleted phrase is rediscovered by
+the next render as a new row with a new id. The history is keyed on `(project, phrase
+hash, locale)` so it survives all of that: a rediscovered phrase inherits its own thread,
+and a merge concatenates the threads of the rows it merged.
+
+Two consequences to read the document with:
+
+- The `phraseId` at the top is the one you asked for; each **entry** carries its own,
+  which can differ. Ignore the per-entry id if you want "what happened to this string";
+  use it if you are reconstructing events.
+- Entries span every text domain the string appears in. The same English string in
+  `Schoenstatt` and in `default` is one translation problem — the table already treats it
+  that way, copying existing translations onto a new row when a phrase appears in a
+  second domain — so a thread that split by domain would show you half the argument.
 
 One entry per **loss**, not per write. Filling a language that was empty destroys
 nothing and appears here not at all, so an empty list means "nothing has ever been lost
