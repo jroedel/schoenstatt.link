@@ -679,7 +679,7 @@ Background and measurements: [caching.md](caching.md).
 
 ## Deploy ops
 
-- [ ] **Server maintenance pass: the 16 tables `db7.0`/`db7.1` deliberately left
+- [ ] **Server maintenance pass: the 19 tables `db7.0`/`db7.1` deliberately left
   alone.** The migrations converted every table this repository *mentions* to
   InnoDB + `utf8mb4_unicode_520_ci` (see
   [database-charset.md](database-charset.md)). These are not referenced by any
