@@ -38,9 +38,11 @@ use App\Http\LaminasResponseConverter;
 use App\Http\LegacyBridge;
 use App\Http\LocaleListener;
 use App\Http\MaintenanceKey;
+use App\Http\PhraseFlushListener;
 use App\Http\ProtocolVersionListener;
 use App\Http\SessionListener;
 use App\Laminas\RouteUrl;
+use App\Laminas\PhraseFlush;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Twig\TwigFactory;
@@ -95,6 +97,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
 {
     private HttpKernel $httpKernel;
     private ServiceBridge $laminas;
+
+    private PhraseFlush $phrases;
     private RequestStack $requests;
     private CspNonce $cspNonce;
     private Environment $twig;
@@ -218,6 +222,11 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         $dispatcher->addListener(KernelEvents::RESPONSE, new CspListener($this->laminas(), $this->cspNonce()));
         $dispatcher->addListener(KernelEvents::RESPONSE, new GdprCookieListener());
         $dispatcher->addListener(KernelEvents::RESPONSE, new InventedCacheControlListener());
+        //After the response is sent: the write is bookkeeping and the visitor has no
+        //reason to wait for it. This is the counterpart of the MvcEvent::EVENT_FINISH
+        //listener a Symfony-served route never reaches, and without it no phrase a
+        //ported page discovers is ever written. See App\Laminas\PhraseFlush.
+        $dispatcher->addListener(KernelEvents::TERMINATE, new PhraseFlushListener($this->phraseFlush()));
 
         return $this->httpKernel = new HttpKernel(
             $dispatcher,
@@ -460,7 +469,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      */
     private function laminas(): ServiceBridge
     {
-        return $this->laminas ??= new ServiceBridge($this->appConfig);
+        return $this->laminas ??= new ServiceBridge($this->appConfig, $this->phraseFlush());
+    }
+
+    /**
+     * The end-of-request phrase flush, shared between the ServiceBridge that arms it
+     * and the listener that runs it. Built eagerly because it is a single nullable
+     * property — it touches no laminas service until something translates.
+     */
+    private function phraseFlush(): PhraseFlush
+    {
+        return $this->phrases ??= new PhraseFlush();
     }
 
     private function routes(): RouteCollection

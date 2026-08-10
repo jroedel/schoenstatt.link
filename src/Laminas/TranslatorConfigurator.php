@@ -147,6 +147,17 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //controller and not the other. See TranslatorEventListener's class docblock.
         (new TranslatorEventListener($table, $table->getLocales(true)))->attach($inner->getEventManager());
 
+        //The listener above only *queues* a miss; TranslationsTable::flush() writes
+        //it, and laminas calls that from MvcEvent::EVENT_FINISH, which a
+        //Symfony-served route never reaches. Arming here rather than having the
+        //kernel ask for the table is what keeps /_health and the maintenance
+        //endpoints from building one. See App\Laminas\PhraseFlush.
+        if ($container->has(PhraseFlush::class)) {
+            /** @var PhraseFlush $phrases */
+            $phrases = $container->get(PhraseFlush::class);
+            $phrases->arm($table);
+        }
+
         //Validator messages are translated as templates, before laminas fills in
         //%value%/%hostname%/%min%, so a stranger's mistyped input never reaches the
         //translator and never becomes a phrase. JTranslate\Module does the same on

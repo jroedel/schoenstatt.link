@@ -67,9 +67,6 @@ class PortedRouteTranslationTest extends TestCase
 {
     private static ?ServiceBridge $bridge = null;
 
-    /** A phrase measured to live only in the Schoenstatt domain, never in `default`. */
-    private const MODULE_DOMAIN_PHRASE = 'Wayside shrines';
-
     public static function setUpBeforeClass(): void
     {
         Locale::setDefault('es_ES');
@@ -167,24 +164,67 @@ class PortedRouteTranslationTest extends TestCase
             );
         }
 
+        $phrase = $this->aModuleOnlyPhrase();
+
         $translator = $this->bridge()->get('MvcTranslator');
         self::assertInstanceOf(MvcTranslator::class, $translator);
 
-        $inModuleDomain = $translator->translate(self::MODULE_DOMAIN_PHRASE, 'Schoenstatt');
+        $inModuleDomain = $translator->translate($phrase, 'Schoenstatt');
         self::assertNotSame(
-            self::MODULE_DOMAIN_PHRASE,
+            $phrase,
             $inModuleDomain,
-            'the Schoenstatt domain resolved nothing: the translator has no file patterns, i.e. the '
-            . 'delegator is not registering them'
+            'the Schoenstatt domain resolved nothing for "' . $phrase . '": the translator has no '
+            . 'file patterns, i.e. the delegator is not registering them'
         );
 
         //and the domain really is the only place it lives, which is what makes the
         //page-domain-then-default order necessary rather than cosmetic
         self::assertSame(
-            self::MODULE_DOMAIN_PHRASE,
-            $translator->translate(self::MODULE_DOMAIN_PHRASE, 'default'),
-            'this phrase now exists in `default` too, so it no longer demonstrates the case this '
-            . 'test exists for — pick another module-only phrase'
+            $phrase,
+            $translator->translate($phrase, 'default'),
+            '"' . $phrase . '" resolves in `default` too, though the phrase table says it lives '
+            . 'only in `Schoenstatt` — the export on disk is stale'
+        );
+    }
+
+    /**
+     * A phrase that lives in the Schoenstatt domain and nowhere else, chosen at run
+     * time rather than pinned.
+     *
+     * It used to be the constant above, and that rotted the moment phrase discovery
+     * started working on Symfony-served routes: `App\Twig\LaminasExtension::translate()`
+     * looks a miss up in the page's domain *and* in `default`, so both lookups are
+     * recorded, and JTranslate copies the existing translations onto the new row. The
+     * phrase then resolves in `default` and no longer demonstrates anything. Picking
+     * one from the table keeps the assertion meaningful without needing a human to
+     * notice and repin it.
+     */
+    private function aModuleOnlyPhrase(): string
+    {
+        /** @var Adapter $adapter */
+        $adapter = $this->bridge()->get(Adapter::class);
+        $rows    = $adapter->query(
+            'SELECT p.phrase FROM trans_phrases p'
+            . ' JOIN trans_translations t ON t.translation_phrase_id = p.translation_phrase_id'
+            . ' WHERE p.text_domain = ? AND p.retired_on IS NULL AND t.locale = ?'
+            . " AND t.translation <> '' AND t.translation <> p.phrase"
+            . ' AND NOT EXISTS ('
+            . '   SELECT 1 FROM trans_phrases d'
+            . "   WHERE d.text_domain = 'default' AND d.phrase = p.phrase"
+            . ' ) ORDER BY p.translation_phrase_id LIMIT 1',
+            ['Schoenstatt', 'es_ES']
+        );
+
+        foreach ($rows as $row) {
+            $phrase = $row['phrase'] ?? null;
+            if (is_string($phrase) && '' !== $phrase) {
+                return $phrase;
+            }
+        }
+
+        self::markTestSkipped(
+            'no phrase left that lives only in the Schoenstatt domain and is translated into '
+            . 'es_ES, so there is nothing to demonstrate the page-domain-then-default order with'
         );
     }
 
