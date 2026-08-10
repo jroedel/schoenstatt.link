@@ -311,6 +311,29 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **`TranslationsTable::flush()` cannot be called from a console process.**
+  Found 2026-08-10 while rehearsing `db7.2.sql`; pre-existing, not a regression
+  from that work — the same calls are in the pre-change file. Discovering a new
+  phrase makes `writeMissingPhrasesToDb()` ask for the acting user id, which in
+  this application resolves through `JUser\Service\AuthServiceActingUserProvider`
+  → `Laminas\Session\Config\ConfigInterface`, and building that in CLI dies on
+  `'session.cache_expire' is not a valid sessions-related ini setting`.
+
+  Two reasons it matters more than it looks. The failure is **partial**: the
+  phrase row is inserted and then the exception escapes before its key-locale
+  translation row is, leaving a phrase that no later render will ever complete,
+  because the phrase index reports it present. And it silently constrains what
+  a console command may do — `jtranslate:export-catalogs` is safe (it never
+  touches the acting user), but anything that wants to *write* phrases from CLI
+  is not.
+
+  Workaround, and what the fix should probably be: `setActingUserId(null)`
+  before `flush()` replaces the session-backed provider outright, which is
+  exactly the case that method was written for. A real fix is either for
+  `AuthServiceActingUserProvider` to answer `null` rather than throw when there
+  is no session, or for the console bootstrap to install a null provider by
+  default. That is a JUser change, so it needs its own PR.
+
 - [ ] **The shrine table's "Opening hours?" column tests a column that does not
   exist.** `schoenstatt/associations/shrines-table.phtml` and its Twig port both
   read `openingHoursJson`; the association projection has
