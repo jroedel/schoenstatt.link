@@ -131,10 +131,19 @@ final class AssociationEditController
             'page_title'  => 'Edit Association',
             'breadcrumbs' => [
                 ['label' => 'Associations', 'href' => $this->urls->path('associations')],
-                ['label' => (string) ($entity['name'] ?? ''), 'href' => $this->urls->path(
-                    'association',
-                    ['sw_id' => (string) ($entity['identifier'] ?? $swId)]
-                )],
+                //'translate' => false because this label is the record's own name.
+                //The layout translates crumbs, and a translator miss is what files a
+                //phrase — so translating here would put one association name into the
+                //phrase table per association edited, permanently, and stale the
+                //moment a moderator renames it.
+                [
+                    'label'     => (string) ($entity['name'] ?? ''),
+                    'href'      => $this->urls->path(
+                        'association',
+                        ['sw_id' => (string) ($entity['identifier'] ?? $swId)]
+                    ),
+                    'translate' => false,
+                ],
             ],
             'form'        => $form,
             'form_action' => $this->urls->path('association-edit', ['sw_id' => $swId]),

@@ -7,7 +7,16 @@ $routeName = $this->routeName();?>
 <html lang="<?php echo Locale::getPrimaryLanguage(Locale::getDefault()); ?>">
     <head>
         <meta charset="utf-8">
-        <?php echo $this->headTitle($this->translate('Schoenstatt Link', 'Application'))->setSeparator(' - ')->setAutoEscape(false) ?>
+        <?php /*
+          * Raw, not $this->translate(...): headTitle translates every item it holds
+          * when it renders. Handing it an already-translated string made the site
+          * translate its own output, and since a translator miss is what files a
+          * phrase, "Registrar" and "Registrati" became phrase keys of their own —
+          * rows whose key is Spanish and whose English translation is the same
+          * Spanish. The site name is identical in all five locales, so the rendered
+          * title is unchanged.
+          */
+        echo $this->headTitle('Schoenstatt Link')->setSeparator(' - ')->setAutoEscape(false) ?>
 
         <?php echo $this->headMeta()
             ->appendName('viewport', 'width=device-width, initial-scale=1.0')
