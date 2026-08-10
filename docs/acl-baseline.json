@@ -34,9 +34,9 @@
         "symfony_routes_open": 24,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 64,
-        "total_routes": 189,
-        "unguarded_routes": 25,
-        "unguarded_routes_matchable": 14
+        "total_routes": 188,
+        "unguarded_routes": 24,
+        "unguarded_routes_matchable": 13
     },
     "dynamic_providers": {
         "resource": [
@@ -8211,7 +8211,6 @@
         "event-delete",
         "event-edit",
         "events/create",
-        "jtranslate/clear-cache",
         "jtranslate/phrase",
         "juser/user",
         "libraries/library/delete",
@@ -8231,7 +8230,6 @@
         "event-delete",
         "event-edit",
         "events/create",
-        "jtranslate/clear-cache",
         "libraries/library/delete",
         "libraries/library/import",
         "publication-upload-cover",
