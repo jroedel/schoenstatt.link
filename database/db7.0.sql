@@ -90,7 +90,7 @@
 -- migration files name nearly every table this project has ever had, and counting
 -- them would make the rule meaningless.
 --
--- Sixteen tables are therefore NOT converted here. They are a server maintenance
+-- Nineteen tables are therefore NOT converted here. They are a server maintenance
 -- task, not an application concern, and are listed in `docs/BACKLOG.md`:
 --
 --   * The nine Bible tables (`bib_books`, `bib_book_abbreviations`, `bib_dh_page`,
