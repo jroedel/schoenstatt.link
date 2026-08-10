@@ -100,7 +100,7 @@ For Schoenstatt Shrine names, please use the name of the closest city to which t
             'type' => 'Text',
             'options' => [
                 'label' => 'Name within Schoenstatt',
-                'help-block' => 'This is the name that would be that will be shown to most users of the page '
+                'help-block' => 'This is the name that will be shown to most users of the page '
                     . '(supposing most users are Schoenstatters). This field has no name formats as the '
                     . 'public name field does. If the internal name would be the same as the public name, '
                     . 'please leave blank.',

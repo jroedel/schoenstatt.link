@@ -608,6 +608,20 @@ $routes->add('api-v3/phrase-patch', new Route('/api/v3/phrases/{phrase_id}', [
     RouteAccess::ATTRIBUTE => $apiV3Phrases,
 ], $phraseIdentifier, [], '', [], ['PATCH']));
 
+// The append-only history of what writing to a phrase has destroyed. A subresource and
+// not a field of the phrase: it is the answer to a question almost nobody is asking, and
+// a usually-empty list on every item of every page is a field callers learn to skip.
+// Same role as the rest of the resource — a translator who may overwrite a translation
+// is exactly who needs to see what an overwrite cost.
+//
+// Above `api-v3/phrase`, which it cannot actually shadow (`{phrase_id}` is constrained
+// to digits and this path has a second segment), but the ordering is the file's
+// convention and the next more-specific phrase route will need it.
+$routes->add('api-v3/phrase-history', new Route('/api/v3/phrases/{phrase_id}/history', [
+    '_controller'          => [PhrasesV3Controller::class, 'history'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], $phraseIdentifier, [], '', [], ['GET']));
+
 // Any other verb on a v3 path. Below the real routes so it only ever catches what
 // they refused, and above `legacy` so a PUT gets a 405 with an Allow header rather
 // than laminas' 302 to the sign-in page.

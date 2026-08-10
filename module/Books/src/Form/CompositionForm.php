@@ -332,7 +332,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
                 'value_options' => [],
-                'help-block' => 'Tags regarding the content of the content, form or liturgical use of the song.',
+                'help-block' => 'Tags regarding the content, form or liturgical use of the song.',
             ],
             'attributes' => [
                 'required' => false,
