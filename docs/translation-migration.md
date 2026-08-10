@@ -232,6 +232,18 @@ Two facts about the data shape that constrain the design:
 - **Locales** (`trans_translations`): en_US 7,762 · es_ES 2,072 · de_DE 1,532 ·
   pt_BR 1,529 · it_IT 17. Total 12,912 rows.
 
+> **Both counts above are obsolete, and the conclusion drawn from them was wrong.**
+> Measured 2026-08-10: 5,088 of the Books rows were exactly 2,000 characters long
+> and held **two** distinct strings. `trans_phrases.phrase` was `varchar(2000)`, so
+> any longer phrase was silently truncated on insert and could never be matched
+> again — every render of those two blog posts inserted another row. JTranslate's
+> migrations 003 and 004 widen the column, add
+> `UNIQUE (project, text_domain, phrase_hash)` and merge the duplicates; after them
+> the project holds **1,783 phrases averaging 43 characters**, 75 KB of text in
+> total. So "Books alone is 86% of the phrases, and they are data, not source
+> literals" was an artifact of the defect, not a property of the corpus. The
+> content-versus-labels tension below is real but far smaller than it looked.
+
 Books alone is 86% of the phrases, and they are **data, not source literals** —
 book titles and dictionary entries passed through `translate()`. This is the single
 most important thing to understand before touching the design, and it is what the
