@@ -388,6 +388,87 @@ class TranslationWriteSemanticsTest extends TestCase
         );
     }
 
+    /**
+     * A superseded phrase leaves the worklist, and comes back on its own if it returns.
+     *
+     * The mechanism behind Schoenstatt\Model\SchoenstattTable::retireSupersededPhrases(),
+     * which is what stops an edited shrine description leaving its old text at the top of
+     * a translator's queue for ever. Both halves matter: retiring is only safe to do
+     * automatically *because* a phrase that turns out to be in use un-retires itself the
+     * next time a render misses on it.
+     */
+    public function testASupersededPhraseIsRetiredAndRediscoveryBringsItBack(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Superseded description ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+
+            self::assertTrue(
+                $this->table->retirePhraseByText($text, $this->textDomain),
+                'nothing was retired, so the phrase was not found by its text'
+            );
+            self::assertNotNull($this->retiredOn($id), 'the phrase is still on the worklist');
+
+            //What a render does when the string turns out to still be in use. The
+            //discovery insert is an ON DUPLICATE KEY UPDATE that clears retired_on, so
+            //this is the self-healing half rather than a second mechanism.
+            $this->table->reportMissingTranslation([
+                'message'     => $text,
+                'text_domain' => $this->textDomain,
+                'locale'      => 'es_ES',
+            ]);
+            $this->table->flush('integration-test');
+
+            self::assertNull(
+                $this->retiredOn($id),
+                'a phrase that came back into use stayed retired, so a wrong guess is permanent'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** Retiring by text is scoped to this project, like every other write here. */
+    public function testRetiringByTextDoesNotReachAnotherProject(): void
+    {
+        $foreign = $this->adapter->query(
+            'SELECT `phrase`, `text_domain` FROM `trans_phrases` WHERE `project` <> ? AND `retired_on` IS NULL LIMIT 1',
+            [$this->project]
+        )->current();
+        if (null === $foreign) {
+            self::markTestSkipped('this database holds only one project, so there is no cross-project write to try');
+        }
+        $foreign = (array) $foreign;
+
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            self::assertFalse(
+                $this->table->retirePhraseByText($foreign['phrase'], $foreign['text_domain']),
+                'another project\'s phrase was retired from here'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    private function retiredOn(int $phraseId): ?string
+    {
+        foreach (
+            $this->adapter->query(
+                'SELECT `retired_on` FROM `trans_phrases` WHERE `translation_phrase_id` = ?',
+                [$phraseId]
+            ) as $row
+        ) {
+            $value = ((array) $row)['retired_on'] ?? null;
+            return null === $value ? null : (string) $value;
+        }
+
+        return null;
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private function insertPhrase(string $phrase): int
