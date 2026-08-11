@@ -354,35 +354,33 @@ because the lookup hit. On an Italian page the book `Heiligtum der Berufung` was
 *Santuario della Vocazione* — a confidently wrong title, which is §12's own argument for why
 titles must not pass through `translate()` at all.
 
-### Still unaccounted for: the ported crumb
+### The ported crumb: resolved, and it was already done
 
-Statement 3 reported **0 rows**, as db7.5's had. The explanation offered under db7.5 above —
-that production's title text differs — cannot be right, because statement 3 does not test
-the title at all; it matches the literal from the controller. So there is no live row of that
-text on that route, and the likeliest reason is simply that the page has not been rendered
-with a translator miss on production since Symfony began serving it there. Settling it takes
-a query that tests neither route nor title:
+Statement 3 reported **0 rows**, as db7.5's had, and two explanations offered here for that
+zero were both wrong — first that production's title text differs, then that the page had
+never been rendered with a miss. The row's own `retired_on` settled it:
 
-```sql
-SELECT translation_phrase_id, text_domain, origin_route, added_on, retired_on
-FROM trans_phrases WHERE project = 'Schoenstatt' AND phrase LIKE '150 preguntas%';
+```
+translation_phrase_id  text_domain  origin_route  added_on             retired_on
+13417                  Application  publication   2026-08-11 01:13:10  2026-08-11 09:17:31
+13418                  default      publication   2026-08-11 01:13:10  2026-08-11 09:17:31
 ```
 
-If it returns live rows, retire them by id — `php bin/console jtranslate:retire --id=<n>`,
-which is reversible with `--undo` and needs no migration. If it returns nothing, the fix
-landed before the page was ever visited and there is nothing to clean.
+Its `origin_route` is **`publication`**, not the ported page's route. Nine editions in
+`sch_publications` are titled *150 preguntas sobre Schoenstatt*, so an ordinary publication
+show page filed the text hours earlier, and **db7.4 retired it at 09:17** — twenty minutes
+before db7.5 went looking. The ported page has never filed a phrase on production at all; the
+capsule's rows came from rendering it locally.
 
-```bash
-ssh -p 222 <admin>@dedi2934.your-server.de \
-  'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.6.sql'
-```
+Nothing is outstanding, and the code fix still earns its place: it is what stops that page
+filing one the first time somebody visits it in a language with a gap.
 
-Then rebuild the catalogs, as always after a phrase change. Its date bound (09:00 UTC on
-2026-08-11, after the deploy) is deliberate: a row filed *after* the fix means the fix is not
-working, and must stay visible in the check rather than be swept by this file. Proven in the
-capsule against three synthetic rows — a pre-deploy title carrying an `it_IT` translation
-(retired), the ported crumb with no matching title (retired), and a post-deploy arrival
-(**survives**, and shows up in the check as untranslated with a recent `added_on`).
+The reusable part is the trap. **`origin_route` records where a phrase was first *seen*, and
+that is frequently not the page you are reasoning about** — the same string reached the table
+by a route nobody was looking at, and both wrong explanations came from assuming the route
+would name the page whose bug it was. When a targeted search comes back empty, look the row up
+by *text* alone before theorising; `retired_on` and `origin_route` then answer the question
+directly.
 
 ## Done 2026-08-10: JTranslate's phrase-table migrations
 
