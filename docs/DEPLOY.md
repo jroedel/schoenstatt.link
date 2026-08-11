@@ -223,14 +223,21 @@ Fetched over plain HTTPS after the migration, no credentials involved:
 
 Worth knowing what this does **not** prove: that no new title rows are arriving. Nothing
 observable from a rendered page distinguishes a phrase that was filed from one that was not,
-which is the whole reason §12 went unnoticed for a day. Confirming it takes one query —
+which is the whole reason §12 went unnoticed for a day. Confirming it takes a query, and it
+is **statement 2 of `database/db7.5.sql`** — use that rather than writing one, for two
+reasons learned by getting both wrong on 2026-08-11:
 
-```sql
-SELECT COUNT(*) FROM trans_phrases p JOIN sch_publications r ON r.Title = p.phrase
-WHERE p.project = 'Schoenstatt' AND p.retired_on IS NULL;
-```
+- **Count phrases, not join rows.** `JOIN sch_publications ON Title = phrase` multiplies one
+  phrase by every edition sharing that title — nine of them are called *150 preguntas sobre
+  Schoenstatt* — so a naive `COUNT(*)` reported 51 where the answer was about a dozen. Use
+  `EXISTS`.
+- **Zero is the wrong expectation.** A few live rows are *collisions*: interface strings that
+  happen to equal some book's title, on routes that have nothing to do with publications.
+  Five survive in the capsule, all pre-2020 and all translated into other languages. What
+  matters is the breakdown — an untranslated cluster with a recent `added_on` is the defect
+  returning; an old translated one is a coincidence.
 
-which should stay at or near zero, and any growth in it is this defect returning.
+That query found the one instance db7.4 could not, described below.
 
 ### What changes for anyone watching the site
 
@@ -244,6 +251,39 @@ which should stay at or near zero, and any growth in it is this defect returning
   emitted raw.
 - **The translator's worklist loses about 3,000 rows**, and any count of "how much is left
   to translate" taken from the v3 API drops with it.
+
+## Before the next deploy: `database/db7.5.sql`, one crumb db7.4 could not see
+
+Running the standing check above on production the same day turned up **one surviving
+instance** of §12, on a route db7.4 had no reason to look at.
+
+`/literature/150-preguntas-sobre-schoenstatt` is Symfony-served, and its breadcrumb does not
+come from the navigation at all — `App\Controller\OneFiftyPreguntasController` hands the
+trail to the Twig layout, which translates a crumb unless the controller passes
+`'translate' => false`. The label is a book's title, so the page filed it in `Books` and in
+`default` on 2026-08-10: the day discovery started working on ported routes, i.e. the same
+repair that made §12 visible in the first place.
+
+So the lesson db7.4 taught about the laminas partial has an exact counterpart on the Symfony
+side, and it is worth stating as a rule: **a crumb whose label is data needs
+`'translate' => false`, in both layouts.** Every other ported controller was checked and is
+clean — their labels are `Literature`, `Libraries`, `Admin`, `Shrines`, `World`, `Wayside
+shrines`, `Music`, and `AssociationEditController` already passes `false` for the record's
+name.
+
+Same order as before, and for the same reason — discovery clears `retired_on`, so a render
+between the retirement and the fix undoes it:
+
+1. **The code deploy** (the `'translate' => false`).
+2. **`database/db7.5.sql`.** Statement 1 retires the rows; statement 2 prints the standing
+   check, so the run leaves the current picture on screen.
+
+   ```bash
+   ssh -p 222 <admin>@dedi2934.your-server.de \
+     'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.5.sql'
+   ```
+
+3. **Rebuild the catalogs** as in step 3 above.
 
 ## Done 2026-08-10: JTranslate's phrase-table migrations
 

@@ -46,6 +46,14 @@ class BreadcrumbDataLabelsSmokeTest extends SmokeTestCase
                     . ' - ein Hoffnungszeichen auch für Christen / Rudolf Ammann',
             ],
             'composition name' => ['/it/SL500001C/obrigado', 'Obrigado'],
+            //Symfony-served, so this case also covers the *other* front controller: the
+            //Twig layout translates a crumb unless the controller passes 'translate' =>
+            //false, and this label is a book's title. It filed itself into `Books` and
+            //`default` on 2026-08-10, the day discovery started working on ported routes.
+            'ported page title' => [
+                '/it/literature/150-preguntas-sobre-schoenstatt',
+                '150 preguntas sobre Schoenstatt',
+            ],
             'shrine name'      => [
                 '/it/SL100458A/schoenstatt-shrine-mont-sion-gikungu',
                 'Santuario di Schoenstatt Mont Sion Gikungu',
