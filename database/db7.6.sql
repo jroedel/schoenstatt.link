@@ -45,8 +45,21 @@
 -- deployed, so a row filed after it is a defect and must not be hidden by this file.
 --
 --
--- AND THE ONE db7.5 MISSED
--- ------------------------
+-- AND THE ONE db7.5 MISSED — WHICH IT DID NOT
+-- -------------------------------------------
+-- RESOLVED 2026-08-11, after this file ran: statement 3 reported 0 rows on production for the
+-- third time, and the reason is neither of the ones guessed below. The two rows carrying that
+-- text have `origin_route` = `publication` — nine editions are titled that, so an ordinary
+-- publication show page filed it at 01:13 — and **db7.4 retired them at 09:17**, before db7.5
+-- went looking. The ported page has never filed a phrase on production; the capsule's rows
+-- came from rendering it locally. So statement 3 is a no-op everywhere and stays only as the
+-- guard for a page that has not been visited yet.
+--
+-- The trap is worth more than the fix: `origin_route` is where a phrase was **first seen**,
+-- and that is often not the page whose bug it is. Look a missing row up by text alone before
+-- theorising — `retired_on` then answers the question directly.
+--
+-- The original reasoning, kept because it is what the statement was written against:
 -- db7.5 statement 1 reported **0 rows** on production. It required the crumb's text to equal
 -- some `sch_publications.Title`, which is how db7.4 identified titles — but this label is a
 -- literal in `App\Controller\OneFiftyPreguntasController`, not a value read from the table,
