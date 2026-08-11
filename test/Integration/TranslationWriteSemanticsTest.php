@@ -573,6 +573,74 @@ class TranslationWriteSemanticsTest extends TestCase
         }
     }
 
+    /**
+     * Two rows of the same text are two retirements, and one shared thread.
+     *
+     * `UNIQUE (project, text_domain, phrase_hash)` means the *same string* in two text
+     * domains is two rows with one hash — routine here, and the shape the breadcrumb's
+     * two-domain lookup produces one pair at a time. Two things follow, and both surprise
+     * people:
+     *
+     * - **Retiring one does not retire the other.** Each row is its own place on the
+     *   worklist, so a caller clearing a string has to retire every row of it or the string
+     *   keeps asking for work through its sibling.
+     * - **The thread is shared**, because it is keyed on the hash — that is what makes it
+     *   survive a merge or a delete-and-rediscover. So a history read on either id returns
+     *   *both* retirements. That is not double-recording: each entry names its own
+     *   `text_domain` and `translation_phrase_id`, and a reader wanting one row's events
+     *   filters on those.
+     *
+     * Pinned because "one event per state change" is true of a row and reads as though it
+     * were true of a string, and because a reader who mistakes the second entry for a
+     * duplicate would go looking for a bug in the retire endpoint.
+     */
+    public function testTwoRowsOfOneStringRetireSeparatelyIntoOneThread(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text    = 'One string, two domains ' . bin2hex(random_bytes(5));
+            $primary = $this->insertPhrase($text);
+            $sibling = $this->insertPhrase($text, $this->textDomain . 'Sibling');
+            self::assertNotSame($primary, $sibling, 'the fixture did not create two rows');
+
+            self::assertTrue($this->table->retirePhraseById($primary, 'first domain'));
+            self::assertNull(
+                $this->retiredOn($sibling),
+                'retiring one row retired its sibling too, so a caller cannot retire one domain at a time'
+            );
+            self::assertCount(
+                1,
+                $this->table->getTranslationHistory($sibling),
+                'the sibling thread should already show the first retirement — it is the same string'
+            );
+
+            self::assertTrue($this->table->retirePhraseById($sibling, 'second domain'));
+
+            foreach ([$primary, $sibling] as $id) {
+                $thread = $this->table->getTranslationHistory($id);
+                self::assertCount(
+                    2,
+                    $thread,
+                    'a thread read from id ' . $id . ' does not carry both retirements, so one of the two '
+                    . 'judgements is invisible from here'
+                );
+                self::assertSame(
+                    [$sibling, $primary],
+                    array_map(static fn (array $row): int => (int) $row['translation_phrase_id'], $thread),
+                    'the entries do not identify which row each retirement was about'
+                );
+                self::assertSame(
+                    ['second domain', 'first domain'],
+                    array_map(static fn (array $row): ?string => $row['notes'], $thread),
+                    'the notes are not in newest-first order, or one of them was lost'
+                );
+            }
+        } finally {
+            $connection->rollback();
+        }
+    }
+
     /** A retirement leaves every translation exactly where it was. */
     public function testRetiringByIdTouchesNoTranslation(): void
     {
@@ -640,18 +708,20 @@ class TranslationWriteSemanticsTest extends TestCase
 
     // ---------------------------------------------------------------- helpers
 
-    private function insertPhrase(string $phrase): int
+    private function insertPhrase(string $phrase, ?string $textDomain = null): int
     {
+        $textDomain ??= $this->textDomain;
         $this->adapter->query(
             'INSERT INTO `trans_phrases` (`project`, `text_domain`, `phrase`, `phrase_hash`, `added_on`) '
             . 'VALUES (?, ?, ?, ?, UTC_TIMESTAMP())',
-            [$this->project, $this->textDomain, $phrase, PhraseIdentity::raw($phrase)]
+            [$this->project, $textDomain, $phrase, PhraseIdentity::raw($phrase)]
         );
 
         foreach (
             $this->adapter->query(
-                'SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `project` = ? AND `phrase_hash` = ?',
-                [$this->project, PhraseIdentity::raw($phrase)]
+                'SELECT `translation_phrase_id` FROM `trans_phrases` '
+                . 'WHERE `project` = ? AND `text_domain` = ? AND `phrase_hash` = ?',
+                [$this->project, $textDomain, PhraseIdentity::raw($phrase)]
             ) as $row
         ) {
             return (int) $row['translation_phrase_id'];

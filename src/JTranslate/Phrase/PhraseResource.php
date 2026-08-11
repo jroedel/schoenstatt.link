@@ -155,6 +155,25 @@ final class PhraseResource
      * row that existed then. An agent that only wants "what happened to this string"
      * should ignore the per-entry id; one reconstructing events needs it.
      *
+     * ## Several retirements in one thread is correct, not a duplicate
+     *
+     * The per-entry id also differs for a reason that is not churn at all: `UNIQUE
+     * (project, text_domain, phrase_hash)` means the same string in two text domains is
+     * **two live rows sharing one hash**, which is routine — it is what the breadcrumb's
+     * two-domain lookup produces, a pair at a time. Each row is its own place on the
+     * worklist, so each is retired separately and writes its own `retire` entry; and
+     * because the thread is keyed on the hash, a read from *either* id returns *both*.
+     *
+     * So two `retire` entries carrying two different notes is the expected answer for a
+     * string that existed twice, and it does not mean a retry recorded twice — that cannot
+     * happen, since retiring an already-retired row writes nothing. `textDomain` and
+     * `phraseId` on the entry are how a reader tells which row each judgement was about,
+     * and filtering on them is how a caller narrows a thread to one row.
+     *
+     * The corollary matters more than the display: **retiring one row does not retire its
+     * sibling.** A caller clearing a string has to retire every row of it, or the string
+     * keeps asking for work through the domain it did not touch.
+     *
      * @param list<array<string, mixed>> $rows from TranslationsTable::getTranslationHistory()
      * @return array<string, mixed>
      */

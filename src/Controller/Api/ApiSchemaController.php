@@ -306,8 +306,15 @@ final class ApiSchemaController
                     . 'retirement was wrong or the code that files the phrase is. No note, no '
                     . 'retirement — 422.',
                 'idempotent'  => 'Retiring an already-retired phrase is a 200 with `changed: false` and '
-                    . 'writes no second history entry: one event per state change, so a retry cannot '
-                    . 'forge a second judgement.',
+                    . 'writes no second history entry: one event per state change of *that row*, so a '
+                    . 'retry cannot forge a second judgement.',
+                'siblings'    => 'The same string in two text domains is two rows sharing one hash, '
+                    . 'which is routine. Retiring one does NOT retire the other — each row is its own '
+                    . 'place on the worklist, so clear every row of a string or it keeps asking for '
+                    . 'work through the one you left. And because a thread is keyed on the hash, a '
+                    . 'history read on either id returns both retirements: two entries with two notes '
+                    . 'is the correct answer for a string that existed twice, not a double-record. '
+                    . '`textDomain` and `phraseId` on each entry say which row it was about.',
                 'selfHealing' => 'A phrase the site still renders un-retires itself on the next missed '
                     . 'lookup, keeping its translations, and that path writes no history. So a row that '
                     . 'is live again with a `retire` entry and no `unretire` after it is the interesting '
@@ -351,7 +358,9 @@ final class ApiSchemaController
                         . 'the string; each entry carries its own `phraseId`, which can differ.',
                     'Entries span every text domain the string appears in. The same string in two '
                         . 'domains is one translation problem, and a thread split by domain would '
-                        . 'show half the argument.',
+                        . 'show half the argument. This is also why a string that exists as two rows '
+                        . 'shows two `retire` entries here — one per row, each naming its own '
+                        . '`textDomain` and `phraseId`. See `retirement.siblings`.',
                     'This is why a broad overwrite is recoverable now. Reverting is a PATCH with '
                         . 'the text this endpoint gives back.',
                 ],

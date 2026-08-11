@@ -644,6 +644,40 @@ constants document it where a reader of the history table will be; `updatePhrase
 where somebody about to pass `null` will read it; and `jtranslate:retire` says it in its own
 docblock. Five places, because it is the kind of thing that gets half-remembered.
 
+### The thing that will look like a bug on your first retirement
+
+Your queue's two rows — 13661 and 13662, `Meu menino pequenino` in `Application` and in
+`default` — are **two rows sharing one hash**, because `UNIQUE (project, text_domain,
+phrase_hash)` makes the same string in two domains two rows. That is the shape the
+breadcrumb's two-domain lookup always produces, so most of what you retire will arrive in
+pairs. Two things follow:
+
+**Retiring one does not retire the other.** Each row is its own place on the worklist. Retire
+both or the string keeps asking for work through the domain you left — and your untranslated
+count will not move by the two you expected.
+
+**A history read on either id returns *both* retirements.** The thread is keyed on the hash,
+which is the property that lets it survive a merge or a delete-and-rediscover, so after you
+retire the pair, `GET /api/v3/phrases/13661/history` and `…/13662/history` answer identically:
+two `retire` entries, two notes.
+
+```jsonc
+{ "phraseId": 13661,
+  "history": [
+    { "operation": "retire", "phraseId": 13662, "textDomain": "default",    "note": "…" },
+    { "operation": "retire", "phraseId": 13661, "textDomain": "Application", "note": "…" }
+  ] }
+```
+
+**That is correct, and it is not a retry recorded twice** — a retry cannot record anything,
+since retiring an already-retired row writes nothing. Each entry names its own `phraseId` and
+`textDomain`; filter on those to narrow a thread to one row, or read them all to ask what has
+happened to the string. Worth knowing before you see it, because "two identical-looking
+retirement notes" is the kind of thing that gets filed as §16.
+
+It also means a small thing for your notes: since both entries end up in one thread, a note
+that says *which domain and why* reads better than two copies of the same sentence.
+
 ### One thing we changed that you did not ask for
 
 `jtranslate:retire` now retires **one row at a time through the same method the endpoint
