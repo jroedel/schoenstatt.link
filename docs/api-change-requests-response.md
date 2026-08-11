@@ -108,8 +108,17 @@ these.** A translation that drops one produces a message with a literal `%hostna
 
 They also live in the `default` text domain now rather than being scattered across
 `ZfcUser`, `JUser`, `Books` and `Schoenstatt` — they come from the framework and are
-identical wherever they appear. The ~19 existing rows keyed by an *interpolated* message
-are orphaned by this and are worth retiring; we have not.
+identical wherever they appear. The existing rows keyed by an *interpolated* message were
+orphaned by this and **are now retired**, by `database/db7.7.sql` — along with §3's
+concatenations, which had the same status: fixed at the source, with the old rows left on your
+worklist. 18 rows on production, 28 in the capsule.
+
+**The difference between those two numbers is worth your attention.** Your six hostname rows —
+`gmail.com`, `hotmail.com`, `miuandes.cl`, `uc.cl`, `yahoo.com.br`, `yahoo.de` — do not exist
+on production, and never did. They are capsule rows, as §1's four JWTs were. So both of the
+findings you flagged as privacy-adjacent turn out to describe a disposable database, and in
+both cases the code defect behind them was real and is fixed. When a finding is about *data*
+rather than about code, it is worth saying which environment you read it in.
 
 ## 4. Breadcrumbs
 
