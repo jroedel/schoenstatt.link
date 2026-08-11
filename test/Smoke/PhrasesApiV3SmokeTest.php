@@ -625,6 +625,27 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         );
     }
 
+    /**
+     * `""` alongside a retraction of the same language is not a contradiction.
+     *
+     * A client that sends every language on every request — the shape the web form produces
+     * and a generated client naturally would — must be able to retract one without also
+     * having to omit it, since `""` already means "leave this language alone".
+     */
+    public function testAnEmptyStringDoesNotContradictARetraction(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Verschwindet ' . time()]);
+
+        $response = $this->patch($token, self::ITEM, ['de' => '', 'es' => '', '_retract' => ['de']]);
+
+        $this->assertSame(200, $response['status'], $response['body']);
+        $this->assertNull(
+            $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
+            'the retraction was refused because the same language was also present as ""'
+        );
+    }
+
     /** An unknown language in the retraction list is refused the way one in the body is. */
     public function testAnUnknownLanguageInTheRetractionListIsRefused(): void
     {
