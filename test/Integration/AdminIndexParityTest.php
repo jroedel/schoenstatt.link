@@ -24,9 +24,11 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * /admin is answered by two front controllers, and this pins that they describe the
  * same page.
  *
- * The laminas action was left byte-for-byte untouched, because production still serves
- * it — `SYMFONY_KERNEL` is unset there — and editing it to share code would put a live
- * page at risk for the sake of the port. That leaves two copies of the link list, and
+ * The laminas action was not rewritten to share code, because it is still live behind
+ * the canary and restructuring it would put a live page at risk for the sake of the
+ * port. Its link list does still change — the kernel-switch row was appended to both
+ * copies on 2026-08-11 — and this test is exactly what keeps such an edit from landing
+ * in one copy only. That leaves two copies of the link list, and
  * this test is what makes the duplication safe: it drives
  * `Schoenstatt\Controller\AdminController::indexAction()` and compares its ViewModel
  * against `App\Schoenstatt\AdminIndex`. Same pattern as ShrineIndexParityTest, same
