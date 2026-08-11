@@ -50,9 +50,9 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | routes shadowed by symfony | 22 |
 | rules from rule config | 34 |
 | symfony routes acl checked | 40 |
-| symfony routes open | 24 |
+| symfony routes open | 30 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 64 |
+| symfony served routes | 70 |
 | total routes | 188 |
 | unguarded routes | 24 |
 | unguarded routes matchable | 13 |
@@ -97,8 +97,14 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `api-v3/associations` | `/api/v3/associations` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::index` |
 | `api-v3/associations-method` | `/api/v3/associations` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/phrase` | `/api/v3/phrases/{phrase_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::show` |
+| `api-v3/phrase-history` | `/api/v3/phrases/{phrase_id}/history` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::history` |
+| `api-v3/phrase-history-method` | `/api/v3/phrases/{phrase_id}/history` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/phrase-method` | `/api/v3/phrases/{phrase_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/phrase-patch` | `/api/v3/phrases/{phrase_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::patch` |
+| `api-v3/phrase-retire` | `/api/v3/phrases/{phrase_id}/retire` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::retire` |
+| `api-v3/phrase-retire-method` | `/api/v3/phrases/{phrase_id}/retire` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
+| `api-v3/phrase-unretire` | `/api/v3/phrases/{phrase_id}/unretire` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::unretire` |
+| `api-v3/phrase-unretire-method` | `/api/v3/phrases/{phrase_id}/unretire` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/phrases` | `/api/v3/phrases` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::index` |
 | `api-v3/phrases-method` | `/api/v3/phrases` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/phrases-patch` | `/api/v3/phrases` | _open_ | everyone — reason below | n/a | `App\Controller\Api\PhrasesV3Controller::patchCollection` |
@@ -163,8 +169,14 @@ not a default, and this is where the statement is reviewed.
 - `api-v3/associations` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/associations-method` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/phrase` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
+- `api-v3/phrase-history` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
+- `api-v3/phrase-history-method` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
 - `api-v3/phrase-method` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
 - `api-v3/phrase-patch` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
+- `api-v3/phrase-retire` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
+- `api-v3/phrase-retire-method` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
+- `api-v3/phrase-unretire` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
+- `api-v3/phrase-unretire-method` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
 - `api-v3/phrases` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
 - `api-v3/phrases-method` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role
 - `api-v3/phrases-patch` — shadows no laminas route — the translation GUI at route/jtranslate is a different surface with a different audience — and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_translator role

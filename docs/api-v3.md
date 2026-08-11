@@ -184,10 +184,15 @@ discovering by rejection.
                 "notes": ["…the meanings of \"\", null and \"0\"…"] },
   "endpoints": { "collection": "…", "item": "…", "patch": "…", "batch": "…",
                  "history": "GET /api/v3/phrases/{phraseId}/history — …" },
-  "history":  { "url": "…", "operations": { "update": "…", "retract": "…", "retire": "…" },
+  "retirement": { "what": "…", "retire": "POST /api/v3/phrases/{phraseId}/retire — …",
+                "unretire": "…", "noteIsRequired": "…", "idempotent": "…",
+                "selfHealing": "…", "visibility": "…", "notRetraction": "…", "notDeletion": "…" },
+  "history":  { "url": "…", "operations": { "update": "…", "retract": "…", "retire": "…",
+                                            "unretire": "…" },
                 "notes": ["…"] },
-  "filters":  { "textDomain": "…", "originRoute": "…", "search": "…",
-                "untranslatedIn": "…", "translatedIn": "…" },
+  "filters":  { "textDomain": "…", "originRoute": "…", "originRouteLike": "…", "search": "…",
+                "untranslatedIn": "…", "translatedIn": "…", "onlyRetired": "…",
+                "includeRetired": "…" },
   "sideEffects": { "catalogs": "…", "batching": "…" }
 }
 ```
@@ -457,7 +462,13 @@ withdrawn here" rather than "no records kept".
 |---|---|---|---|
 | `update` | something replaced the text | the language | the text that was replaced |
 | `retract` | something deleted it; the language is empty now | the language | the text that was deleted |
-| `retire` | the **phrase** left the translator's worklist because the application knows nothing renders it any more | `null` | `""` |
+| `retire` | the **phrase** left the translator's worklist — because the application knows nothing renders it any more, or because somebody judged it should not have been filed | `null` | `""` |
+| `unretire` | it was put back on the worklist **by hand** | `null` | `""` |
+
+`retire` and `unretire` are the two entries that are about the **phrase** rather than a
+translation, and neither destroys anything — which is why `previous` is empty on both. An
+`unretire` that is *absent* is informative: a phrase that is live again with a `retire` and
+nothing after it came back because a render missed on it, i.e. the retirement was wrong.
 
 A `retire` entry is about the phrase and not about a language, so it appears in **every**
 language's thread, `?language=` filter included — it is usually the answer to "why did this
@@ -575,6 +586,11 @@ Reachable only from this API — a browser cannot post it — and recorded in th
 wrong rather than overwriting it with something you are equally unsure of; `"changed"`
 reports the language, and the next `GET` shows `"text": null`.
 
+**This is not how you make a row go away.** It removes a language's text and leaves the
+phrase on the worklist with one more gap than it had. See
+[Retirement](#retirement-post-apiv3phrasesphraseidretire) for the operation that takes a
+phrase off the list, destroys nothing, and undoes itself if it was wrong.
+
 Rules, all of them 422s rather than guesses:
 
 - The value is a **list of language codes**. A bare string is refused; so is an unknown
@@ -690,6 +706,104 @@ batch are still better than a broad speculative rewrite — but the reason is no
 ordinary one, that a bad batch is work to undo, rather than that it cannot be undone at
 all.
 
+### Retirement: `POST /api/v3/phrases/{phraseId}/retire`
+
+**Retiring a phrase and retracting a translation are different operations on different
+things, and confusing them is expensive in both directions.** This is the table to read
+before using either:
+
+| | `_retract` on a PATCH | `POST …/retire` |
+|---|---|---|
+| acts on | one **language's translation** | the **phrase** |
+| destroys | that text (recoverable only from the history) | **nothing** |
+| effect on the worklist | phrase stays, with **one more gap** | phrase **leaves** the list |
+| effect on the site | that language falls back to English | none — renders exactly as before |
+| reverses itself | no | **yes**, on the next missed lookup |
+| `history.operation` | `retract` | `retire` |
+
+So retracting all five languages to make a row go away does the opposite of what you
+wanted: the phrase is still there, now wholly untranslated, at the top of the list — and
+five translations are gone. If the intent is *"nobody should be asked to translate this"*,
+retire it.
+
+```jsonc
+// POST /api/v3/phrases/13661/retire
+{ "_note": "A composition name filed by the breadcrumb, not an interface string. Not
+            translatable in any language. If this is back, the data-label fix regressed." }
+```
+
+```jsonc
+// 200
+{ "changed": true,
+  "phrase":  { "…": "…", "meta": { "retiredOn": "2026-08-11 12:40:02", "…": "…" } } }
+```
+
+`changed` is a **boolean** here, where the PATCH answers a list of languages: a retirement
+has no per-language granularity. `false` means the row was already in the state you asked
+for; `phrase.meta.retiredOn` says which state that is.
+
+Four rules:
+
+- **`_note` is required**, and it is the only difference in contract from a write's optional
+  note. A write's note explains a replacement the history records anyway; a retirement's note
+  is the entire record of a judgement, and it is read at the one moment it matters — when the
+  phrase is back on the worklist and somebody has to decide whether the retirement was wrong
+  or the code that files the phrase is. No note is a `422`, and so is an empty or whitespace
+  one.
+- **Only `_note`.** Any other key is a `422` naming `_retract`, because the likeliest other
+  key is a language, i.e. a caller reaching for the wrong operation.
+- **Idempotent.** A second retire is `200` with `changed: false` and writes no second history
+  entry — one event per state change, so a retried request cannot forge a second judgement.
+- **No catalog recompile**, because a retired phrase compiles exactly as before. This is the
+  same fact as "the site renders what it rendered".
+
+`If-Match` is **ignored** on both retirement endpoints, and that is deliberate rather than an
+omission: the ETag is computed over the translations alone, and a retirement changes none of
+them. Honouring it would refuse a retirement because somebody had translated a language in the
+meantime, which is not a conflict — the two operations do not contend. A client that adds
+`If-Match` to every write loses nothing here.
+
+#### Why an agent is trusted with this
+
+It repairs itself. The first time a page renders a retired phrase and misses, discovery
+clears `retired_on` and the row is back with its translations intact. A wrong retirement is
+therefore corrected *by the site*, usually within one request, and nobody has to notice — a
+stronger guarantee than the one that justified letting agents overwrite translations, where
+recovery depends on a reviewer who reads that language.
+
+The cost of being wrong is one request rendering English instead of a translation. Retire on
+suspicion, and write the note for the person who will read it.
+
+Two limits, both real. A phrase already translated in **every** locale never misses, so it
+will not wake itself — it stays retired until somebody un-retires it, rendering normally
+throughout. And a retirement made from the console does not reach the web server's APCu
+segment; retirements through this API do, because they happen in the same SAPI.
+
+### `POST /api/v3/phrases/{phraseId}/unretire`
+
+Same body, same rules, opposite direction. `_note` is required here too: a row that has left
+the worklist and returned has had two judgements made about it, and the second explains the
+first.
+
+**This is not how a phrase usually comes back.** The usual way is a render, which writes no
+history at all. So the shape worth looking for when auditing is a phrase that is live again
+with a `retire` entry and **no** `unretire` after it: the site still uses the string, the
+retirement was wrong, and the note says what was believed. That is the feedback signal, not
+a failure of the mechanism.
+
+### Auditing your own retirements
+
+Retired rows are hidden from the collection — that is the point of retiring them — so two
+filters exist for reading them back:
+
+```
+GET /api/v3/phrases?onlyRetired=1          # just the retired ones
+GET /api/v3/phrases?includeRetired=1       # both, with meta.retiredOn as the flag
+```
+
+`meta.retiredOn` is `null` on a live phrase and a UTC timestamp on a retired one. It is in
+`meta` and **not** in the ETag: a retirement changes nothing a conditional write protects.
+
 ### What agents cannot do to phrases
 
 - **Create a phrase.** Phrases are discovered by the site rendering them; inventing one
@@ -699,6 +813,9 @@ all.
   — but it records only what was *overwritten*, so a translation deleted this way while
   it was the current text is not in there.
 - **Blank a translation.** See above — empty means "skip", on both surfaces.
+- **Delete a *phrase*.** Retirement is the API's answer and it is not deletion: the row and
+  its translations stay. A string that must genuinely cease to exist — a leaked secret — is a
+  task for a human with database access.
 - **Address a translation by locale.** `de_DE` is a `422`; the API speaks `de`.
 - **Read another project's phrases.** `trans_phrases` is shared with two other
   projects, and every read here is scoped to this one in the `WHERE` clause. A phrase
@@ -733,7 +850,7 @@ normalizes both sides — echo back whatever you were given and it will match.
 | `src/Http/AuthorizationHeader.php` | why the `Authorization` header needs finding |
 | `src/Controller/Api/AbstractApiController.php` | what every endpoint does identically: the 401, the ETag, the paging bounds |
 | `src/Controller/Api/AssociationsV3Controller.php` | the association endpoints |
-| `src/Controller/Api/PhrasesV3Controller.php` | the phrase endpoints, single and batch |
+| `src/Controller/Api/PhrasesV3Controller.php` | the phrase endpoints, single and batch — and the retirement subresources, which are POSTs and not PATCH keys on purpose |
 | `src/Controller/Api/ApiSchemaController.php` | `/api/v3/schema` and `/api/v3/schema/{entity}` |
 | `src/Schoenstatt/Association/AssociationResource.php` | the representation, merge and ETag |
 | `src/Schoenstatt/Association/AssociationValidator.php` | the form's filter, headless |
@@ -741,7 +858,8 @@ normalizes both sides — echo back whatever you were given and it will match.
 | `src/JTranslate/Phrase/PhraseResource.php` | the phrase representation, ETag and change detection — and the language↔locale conversion on both edges |
 | `module/JTranslate/src/I18n/LanguageMap.php` | the mapping itself, and why an ambiguous configuration throws |
 | `src/JTranslate/Phrase/PhraseValidator.php` | the translator form's filter, headless — and the static-adapter seam |
-| `module/JTranslate/src/Model/TranslationsTable.php` | `getPhrasePage()`, `countPhrases()`, `getPhraseById()`; the project scoping |
+| `module/JTranslate/src/Model/TranslationsTable.php` | `getPhrasePage()`, `countPhrases()`, `getPhraseById()`; the project scoping. Also `retirePhraseById()`/`unretirePhraseById()` and the argument for why retirement is safe where deletion is not |
+| `module/JTranslate/src/Console/Command/RetirePhrasesCommand.php` | the same operation in bulk, for a human: `--origin-route`, `--note`, `--undo` |
 | `config/autoload/juser.global.php` | `api_token_roles` — which accounts a token can be issued *for* |
 | `database/db6.6.sql` | the `sch_api_bot` role |
 | `database/db6.7.sql` | `user_api_token`, and why a token is refused unless vouched for |

@@ -241,6 +241,12 @@ final class ApiSchemaController
                         . 'written and retracted in the same request; that is a 422 rather than a '
                         . 'guess at which half was meant. Sending it as "" is not writing it, so a '
                         . 'caller that posts every language every time can still retract one.',
+                    //Published on the key itself, because this is where a caller looking for
+                    //"how do I get rid of this row" arrives, and it is the wrong answer.
+                    'notRetirement' => 'This deletes one language\'s text and leaves the phrase on '
+                        . 'the worklist — with one more gap than before. If the intent is that nobody '
+                        . 'should be asked to translate the phrase at all, see `retirement` below: it '
+                        . 'destroys nothing and takes the row off the list.',
                 ],
                 'notes'     => [
                     'The source `phrase` is read-only: it is the key the site looks itself up by, '
@@ -275,9 +281,46 @@ final class ApiSchemaController
                     . '`' . PhrasesV3Controller::RETRACT_KEY . '`.',
                 'batch'      => 'PATCH /api/v3/phrases — a `phrases` object of phrase id to that '
                     . 'same body, up to ' . PhrasesV3Controller::MAX_BATCH . ' at a time.',
+                'retire'     => 'POST /api/v3/phrases/{phraseId}/retire — take the phrase off the '
+                    . 'worklist; `' . PhrasesV3Controller::NOTE_KEY . '` required. See `retirement`.',
+                'unretire'   => 'POST /api/v3/phrases/{phraseId}/unretire — put it back; same body.',
                 'history'    => 'GET /api/v3/phrases/{phraseId}/history — what writing to this '
                     . 'phrase has replaced, newest first. `?language=de` narrows to one language\'s '
                     . 'thread; a locale like `de_DE` is a 422 there too. See `history` below.',
+            ],
+            //A capability rather than a field, and the one place the two destructive-sounding
+            //verbs are set against each other. An agent that has read only `writable` has no
+            //way to discover it, and would reach for `_retract` instead — which is worse than
+            //not knowing, because it loses translations and does not achieve the thing.
+            'retirement'   => [
+                'what'        => 'Retirement is about the phrase, not a language. It takes a row off '
+                    . 'the translator\'s worklist and destroys nothing at all: every translation stays, '
+                    . 'the compiled catalogs still carry it, and the site renders exactly what it '
+                    . 'rendered before.',
+                'retire'      => 'POST /api/v3/phrases/{phraseId}/retire — body {"'
+                    . PhrasesV3Controller::NOTE_KEY . '": "why"}',
+                'unretire'    => 'POST /api/v3/phrases/{phraseId}/unretire — same body',
+                'noteIsRequired' => 'Unlike on a write, where it is optional. A retirement\'s note is '
+                    . 'the entire record of a judgement, and it is read at the one moment it matters: '
+                    . 'when the phrase is back on the worklist and somebody has to work out whether the '
+                    . 'retirement was wrong or the code that files the phrase is. No note, no '
+                    . 'retirement — 422.',
+                'idempotent'  => 'Retiring an already-retired phrase is a 200 with `changed: false` and '
+                    . 'writes no second history entry: one event per state change, so a retry cannot '
+                    . 'forge a second judgement.',
+                'selfHealing' => 'A phrase the site still renders un-retires itself on the next missed '
+                    . 'lookup, keeping its translations, and that path writes no history. So a row that '
+                    . 'is live again with a `retire` entry and no `unretire` after it is the interesting '
+                    . 'case: the retirement was wrong, and its note says what was believed.',
+                'visibility'  => 'The collection hides retired rows. `?onlyRetired=1` lists them and '
+                    . '`?includeRetired=1` lists both; `meta.retiredOn` on the document is the flag.',
+                'notRetraction' => 'Not a stronger `' . PhrasesV3Controller::RETRACT_KEY . '`. That '
+                    . 'deletes a translation and keeps the phrase; this keeps every translation and '
+                    . 'removes the phrase from the worklist. Retracting every language to clear a row '
+                    . 'achieves the opposite while destroying five translations.',
+                'notDeletion' => 'The row is not deleted and cannot be through this API. A string that '
+                    . 'must cease to exist — a leaked secret — is a task for a human with database '
+                    . 'access.',
             ],
             'history'      => [
                 'url'        => 'GET /api/v3/phrases/{phraseId}/history',
@@ -286,6 +329,11 @@ final class ApiSchemaController
                         . '`previous` is what it replaced.',
                     TranslationsTable::OPERATION_RETRACT => 'Something deleted it; the language is '
                         . 'empty now. `previous` is what was deleted.',
+                    TranslationsTable::OPERATION_UNRETIRE => 'The phrase was put back on the worklist '
+                        . 'by hand, through the un-retire endpoint. Shaped like `retire` — no language, '
+                        . 'no previous text. Its absence is informative: a phrase that is live again '
+                        . 'with no `unretire` after its `retire` came back because a render missed on '
+                        . 'it, which means the retirement was wrong.',
                     TranslationsTable::OPERATION_RETIRE  => 'The *phrase* left the translator\'s '
                         . 'worklist, because the application knows nothing renders it any more — an '
                         . 'association description replaced by a moderator, say. It destroys '
@@ -314,6 +362,12 @@ final class ApiSchemaController
                 'search'         => 'substring of the source phrase',
                 'untranslatedIn' => 'a language code; phrases with no usable translation in it',
                 'translatedIn'   => 'a language code; phrases that do have one',
+                'onlyRetired'    => 'list *only* retired phrases — how you audit your own '
+                    . 'retirements and notice one that came back',
+                'includeRetired' => 'list retired phrases alongside live ones. Retired rows are hidden '
+                    . 'by default, because the point of retiring one is to stop asking for work on it',
+                'originRouteLike' => 'like `originRoute`, but the caller\'s `%` and `_` are wildcards. '
+                    . '`search` escapes them; this does not',
                 'limit'          => 'page size, default 100, maximum 500',
                 'offset'         => 'page offset',
             ],
