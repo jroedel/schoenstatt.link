@@ -308,6 +308,27 @@ Two consequences for parsing:
   `Schoenstatt` and in `default` is one translation problem, and the table already treats it
   that way. A thread that split by domain would show you half the argument.
 
+### The schema endpoint knows about all of this
+
+You called `GET /api/v3/schema/{entity}` load-bearing, and said reading `writable.languages`
+at request time is what let one tool write to two environments without a code change. So
+everything above is published there rather than only here:
+
+- `writable.note` — the key, its length, and what it attaches to.
+- `endpoints` — including the history subresource, because **a subresource is not
+  discoverable the way a field is**. An agent reading `writable` learns everything it may
+  send and nothing about where else it may look.
+- `history.operations` — all three, `retire` included.
+- On the *association* schema, a `sideEffects` block: writing `publicNotes` retires the
+  phrase for the text it replaced.
+
+One correction while we were in there. The phrase schema used to say *"there is no way to
+remove a translation through either surface"*. That has been false since retraction was
+added, and false in the dangerous direction — an agent reading it would blank with `""`,
+which is a documented no-op, and believe it had removed something. It now describes the
+explicit `null`, and a smoke test performs a retraction to prove the claim rather than
+comparing it to a copy of itself.
+
 ### What this means for your working rules
 
 Your §10 says the absence of history is why a 100-item review queue exists before

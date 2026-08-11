@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Api\BotIdentity;
 use App\Laminas\ServiceBridge;
 use JTranslate\Form\PhraseValidator;
+use JTranslate\Model\TranslationsTable;
 use App\Schoenstatt\Association\AssociationFieldDomains;
 use App\Schoenstatt\Association\AssociationInputFilterSpec;
 use Laminas\Validator\InArray;
@@ -152,6 +153,24 @@ final class ApiSchemaController
                 'ifMatch' => 'PATCH honours If-Match and answers 412 when the record has moved. '
                     . 'Omitting it is permitted and means a blind write.',
             ],
+            //One field of this resource reaches into another, which nothing about a
+            //field's own bounds and filters could tell you.
+            'sideEffects'  => [
+                'publicNotes' => 'This field is translated: the site runs it through the '
+                    . 'translator once per locale, which is how a pilgrim reading in Italian gets '
+                    . 'the description of a shrine in Italian. Two consequences of replacing it. '
+                    . 'The new text is a different phrase, so it renders as itself in every '
+                    . 'language until somebody translates it — nothing shows stale text, but the '
+                    . 'description is untranslated again. And the *old* text\'s phrase is retired '
+                    . 'automatically, because nothing renders it any more; that is reversible, its '
+                    . 'translations are kept, and it is recorded in the phrase\'s history as a '
+                    . '`retire` naming this association. See GET /api/v3/schema/phrase.',
+                'names'       => 'An association\'s name and internal name are translated too, but '
+                    . 'only when the record says they should be — the `isNameTranslateable` and '
+                    . '`isInternalNameTranslateable` flags. The other free-text fields '
+                    . '(`openingHoursHuman`, `eventsHuman`, `adminNotes`, the JSON specifications) '
+                    . 'are never translated.',
+            ],
             'fields'       => $fields,
         ]);
     }
@@ -200,19 +219,80 @@ final class ApiSchemaController
             'writable'     => [
                 'languages' => $languages->languages(),
                 'maxLength' => is_numeric($maxLength) ? (int) $maxLength : null,
+                //The one key of a PATCH body that is not a language. Named from the
+                //constant the controller strips it by, so the two cannot drift.
+                'note'      => [
+                    'key'       => PhrasesV3Controller::NOTE_KEY,
+                    'maxLength' => TranslationsTable::NOTE_LENGTH,
+                    'purpose'   => 'Why you are replacing a translation. Attached to the history '
+                        . 'entries this write produces — one per translation it destroys, none if '
+                        . 'it only fills gaps, since a note on a write that overwrites nothing has '
+                        . 'no version to explain. Longer than the limit is trimmed rather than '
+                        . 'refused; a non-string is a 422.',
+                ],
                 'notes'     => [
                     'The source `phrase` is read-only: it is the key the site looks itself up by, '
                         . 'not editable content, so changing it would orphan the row rather than '
                         . 'change what any page renders.',
-                    'An empty string means "leave this language alone", not "blank it" — the web form '
-                        . 'behaves the same way, and there is no way to remove a translation through '
-                        . 'either surface.',
+                    'An empty string means "leave this language alone", not "blank it" — the web '
+                        . 'form behaves the same way, because an untouched textarea posts one for '
+                        . 'every language the translator skipped.',
+                    'An explicit JSON `null` means "retract this translation" and deletes the row. '
+                        . 'It is the one way to remove one, it is reachable only from this API — no '
+                        . 'browser can post a null — and it is recorded in the history as a '
+                        . '`retract`, so the text is recoverable afterwards.',
+                    'A translation of literally "0" is a legitimate value and is written. It is '
+                        . 'neither an empty string nor a null, and nothing here treats it as either.',
                     'Languages are ISO 639-1 codes: `de`, not `de_DE`. The region subtag is an '
                         . 'artefact of how catalogs are keyed internally and is never part of this '
                         . 'API. A code not listed here is refused rather than ignored, and that '
                         . 'includes the locale form of a language that is listed.',
                     'The list is read from the merged configuration at request time, so it is what '
                         . 'this site actually writes rather than what any one config file says.',
+                ],
+            ],
+            //Listed because a subresource is not discoverable from the collection the way
+            //a field is: an agent reading `writable` learns everything it may send and
+            //nothing about where else it may look.
+            'endpoints'    => [
+                'collection' => 'GET /api/v3/phrases — filtered, paged; see `filters`.',
+                'item'       => 'GET /api/v3/phrases/{phraseId} — carries a link to its history at '
+                    . '`meta.history`.',
+                'patch'      => 'PATCH /api/v3/phrases/{phraseId} — a JSON object of language code '
+                    . 'to translation, plus the optional `' . PhrasesV3Controller::NOTE_KEY . '`.',
+                'batch'      => 'PATCH /api/v3/phrases — a `phrases` object of phrase id to that '
+                    . 'same body, up to ' . PhrasesV3Controller::MAX_BATCH . ' at a time.',
+                'history'    => 'GET /api/v3/phrases/{phraseId}/history — what writing to this '
+                    . 'phrase has replaced, newest first. `?language=de` narrows to one language\'s '
+                    . 'thread; a locale like `de_DE` is a 422 there too. See `history` below.',
+            ],
+            'history'      => [
+                'url'        => 'GET /api/v3/phrases/{phraseId}/history',
+                'operations' => [
+                    TranslationsTable::OPERATION_UPDATE  => 'Something replaced the text. '
+                        . '`previous` is what it replaced.',
+                    TranslationsTable::OPERATION_RETRACT => 'Something deleted it; the language is '
+                        . 'empty now. `previous` is what was deleted.',
+                    TranslationsTable::OPERATION_RETIRE  => 'The *phrase* left the translator\'s '
+                        . 'worklist, because the application knows nothing renders it any more — an '
+                        . 'association description replaced by a moderator, say. It destroys '
+                        . 'nothing, so `language` is null and `previous` is empty, and `note` is the '
+                        . 'whole content. It appears in every language\'s thread, `?language=` '
+                        . 'included.',
+                ],
+                'notes'      => [
+                    'One entry per event that changes what a translator would see, never one per '
+                        . 'write. Filling a language that was empty appears here not at all, so an '
+                        . 'empty list means "nothing has been lost or withdrawn here" rather than '
+                        . '"no records kept".',
+                    'Keyed on the phrase rather than on the row, so a thread survives a merge or a '
+                        . 'delete-and-rediscover. The id in the URL only has to name a live row of '
+                        . 'the string; each entry carries its own `phraseId`, which can differ.',
+                    'Entries span every text domain the string appears in. The same string in two '
+                        . 'domains is one translation problem, and a thread split by domain would '
+                        . 'show half the argument.',
+                    'This is why a broad overwrite is recoverable now. Reverting is a PATCH with '
+                        . 'the text this endpoint gives back.',
                 ],
             ],
             'filters'      => [

@@ -178,12 +178,28 @@ discovering by rejection.
   "version": 3,
   "entity": "phrase",
   "requiredRole": "sch_api_translator",
-  "writable": { "languages": ["es", "de", "pt", "it", "en"], "maxLength": 2000 },
+  "writable": { "languages": ["es", "de", "pt", "it", "en"], "maxLength": 2000,
+                "note": { "key": "_note", "maxLength": 255, "purpose": "…" },
+                "notes": ["…the meanings of \"\", null and \"0\"…"] },
+  "endpoints": { "collection": "…", "item": "…", "patch": "…", "batch": "…",
+                 "history": "GET /api/v3/phrases/{phraseId}/history — …" },
+  "history":  { "url": "…", "operations": { "update": "…", "retract": "…", "retire": "…" },
+                "notes": ["…"] },
   "filters":  { "textDomain": "…", "originRoute": "…", "search": "…",
                 "untranslatedIn": "…", "translatedIn": "…" },
   "sideEffects": { "catalogs": "…", "batching": "…" }
 }
 ```
+
+`endpoints` and `history` are there because a **subresource is not discoverable the way
+a field is**: an agent reading `writable` learns everything it may send and nothing about
+where else it may look. If you are generating a client from this document, read
+`endpoints`.
+
+The association schema carries a `sideEffects` block for the same reason — one of its
+fields reaches into the other resource. Writing `publicNotes` retires the phrase for the
+text it replaced, because nothing renders that text any more, and nothing about a field's
+own bounds and filters could tell you so.
 
 An association has thirty-odd heterogeneous fields each with its own rules; a phrase
 has one rule repeated across five languages. Describing the languages as `fields` would
