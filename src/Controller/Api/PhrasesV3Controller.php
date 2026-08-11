@@ -573,17 +573,22 @@ final class PhrasesV3Controller extends AbstractApiController
         //direction. `{"de": "…", "_retract": ["de"]}` is a caller in two minds, and
         //guessing which half it meant is how an agent's batch loses a translation it wrote
         //in the same request.
-        $writes      = $patch;
-        $contested   = array_intersect($retract, array_map(strval(...), array_keys($writes)));
+        //
+        //`""` is not a second mind: it means "leave this language alone", the same as the
+        //web form's untouched textarea, so it is excluded here. A client that sends every
+        //language on every request — the shape the web form produces and a generated client
+        //naturally would — can retract one of them without having to omit it as well.
+        $writes    = $patch;
+        $contested = array_intersect(
+            $retract,
+            array_map(strval(...), array_keys(array_filter($writes, static fn (mixed $v): bool => '' !== $v)))
+        );
         if ([] !== $contested) {
             return self::failure(
                 'A language cannot be written and retracted in the same request.',
                 ['contestedLanguages' => array_values($contested)]
             );
         }
-        //`""` still means "leave this language alone", the same as the web form's untouched
-        //textarea, and is dropped further down. That asymmetry is deliberate and is
-        //documented on TranslationsTable::updatePhrase().
 
         $filter = $validator->inputFilter();
         //Not merged onto the stored record the way an association patch is, and it does
