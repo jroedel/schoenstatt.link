@@ -24,7 +24,22 @@ if (! isset($this->pages) || count($this->pages) < 1) {
  * a translation, only find one laminas would have missed.
  */
 $navigationTextDomain = $this->navigation()->getTranslatorTextDomain();
-$translateLabel = function ($label) use ($navigationTextDomain) {
+/*
+ * A label that is *record data* is returned untouched. Application\Module marks those
+ * pages when it attaches them: the publication, composition, library and association
+ * branches are one page per database row, labelled with the row's own title or name, and
+ * so are the composed labels above them ('German Schoenstatt Literature'). Passing one of
+ * those through translate() does not merely render oddly — the miss is what files a
+ * phrase, so it put one row per record into trans_phrases, and two rows because of the
+ * domain fallback below. It reached 3,071 publication titles, 61% of the whole table, in
+ * the day after breadcrumbs began being translated at all. See
+ * docs/api-change-requests-response.md §12.
+ */
+$translateLabel = function (\Laminas\Navigation\Page\AbstractPage $page) use ($navigationTextDomain) {
+    $label = (string) $page->getLabel();
+    if ($page->get(\Application\Module::LABEL_IS_DATA)) {
+        return $label;
+    }
     $translated = $this->translate($label, $navigationTextDomain);
     return $translated === $label ? $this->translate($label, 'default') : $translated;
 };?>
@@ -34,7 +49,12 @@ $translateLabel = function ($label) use ($navigationTextDomain) {
     $position = 1;
     // iterate through the pages
     foreach ($this->pages as $key => $page) :
-        $label = $translateLabel($page->getLabel());
+        $label = $translateLabel($page);
+        //The label can now be a moderator's free text — a publication title, a shrine name —
+        //where before it was only ever a string from the navigation config, so it is escaped
+        //on the way into the markup. The schema.org copy keeps the raw text: it is JSON, and
+        //Spatie's writer escapes it for the script context itself.
+        $escapedLabel = $this->escapeHtml($label);
         $listItem = new ListItem();
         $listItem->position($position);
         if ($key < count($this->pages) - 1) {
@@ -59,12 +79,12 @@ $translateLabel = function ($label) use ($navigationTextDomain) {
             // if this isn't the last page, add a link and the separator:
             if ($key < count($this->pages) - 1) :
                 ?>
-                <a href="<?= $page->getHref() ?>"><?= $label ?></a>
+                <a href="<?= $page->getHref() ?>"><?= $escapedLabel ?></a>
                 <?php
             // otherwise, output the name only:
             else :
                 ?>
-                <?= $label ?>
+                <?= $escapedLabel ?>
             <?php endif; ?>
         </li>
     <?php endforeach; ?>

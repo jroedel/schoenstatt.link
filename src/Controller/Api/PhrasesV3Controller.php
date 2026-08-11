@@ -19,6 +19,7 @@ use Throwable;
 use function array_diff;
 use function array_filter;
 use function array_flip;
+use function array_intersect;
 use function array_intersect_key;
 use function array_keys;
 use function array_map;
@@ -27,6 +28,7 @@ use function array_values;
 use function count;
 use function ctype_digit;
 use function error_log;
+use function implode;
 use function in_array;
 use function is_array;
 use function is_int;
@@ -132,6 +134,28 @@ final class PhrasesV3Controller extends AbstractApiController
      * then a thread rather than a log. See M006CreateTranslationHistory.
      */
     public const NOTE_KEY = '_note';
+
+    /**
+     * The only way to remove a translation: `{"_retract": ["de", "pt"]}`.
+     *
+     * A bare `null` used to do this, and it was refused as a design in the reply to change
+     * request §11.3. The argument is the one that matters for a destructive operation: a
+     * `null` is what a *serializer* produces for an absent optional field, a dictionary
+     * comprehension over a language list where one lookup misses, or `json.dumps` of a
+     * Python `None`. None of those look like a deletion at the call site, and all of them
+     * were one. The `''` case was safe against exactly that class of accident — it means
+     * "leave this language alone" — and `null` was not.
+     *
+     * So a null keyed by a language is now a 422 naming this key, and destroying a
+     * translation takes a sentence nobody writes by accident. Deliberately not symmetrical
+     * with the write side: the request has to say what it is doing, not merely what it
+     * wants the result to be.
+     *
+     * Underscored for NOTE_KEY's reason — it cannot collide with a language code now or
+     * later, and the strict body validation means no caller can already be sending it and
+     * meaning something else.
+     */
+    public const RETRACT_KEY = '_retract';
 
     public function __construct(
         private readonly ServiceBridge $laminas,
@@ -476,7 +500,54 @@ final class PhrasesV3Controller extends AbstractApiController
             );
         }
 
-        $unknown = array_diff(array_map(strval(...), array_keys($patch)), $languages->languages());
+        //Split off for the same reason and with the same guard as the note. Its value is a
+        //list of languages to remove, and a shape that is not a list of strings is refused
+        //rather than coerced: this is the destructive key, and `{"_retract": "de"}` is as
+        //likely to be a mistake about the API as an intention.
+        $requested = $patch[self::RETRACT_KEY] ?? [];
+        unset($patch[self::RETRACT_KEY]);
+        if (! is_array($requested)) {
+            return self::failure(
+                'The retraction list must be an array of language codes.',
+                ['retract' => self::RETRACT_KEY . ' takes a list, e.g. ["de", "pt"]']
+            );
+        }
+        /** @var list<string> $retract */
+        $retract = [];
+        foreach ($requested as $language) {
+            if (! is_string($language)) {
+                return self::failure(
+                    'The retraction list must contain language codes.',
+                    ['retract' => self::RETRACT_KEY . ' takes a list, e.g. ["de", "pt"]']
+                );
+            }
+            $retract[] = $language;
+        }
+
+        //A null keyed by a language is refused, not obeyed. See self::RETRACT_KEY: until
+        //2026-08-11 this deleted the translation, which made a serializer's default value
+        //for an absent field a destructive operation with no confirmation step in it.
+        //Refusing is the whole point — the caller finds out from a 422 rather than from a
+        //history entry.
+        $nulls = array_keys(array_filter($patch, static fn (mixed $v): bool => null === $v));
+        if ([] !== $nulls) {
+            return self::failure(
+                'A null does not remove a translation. Name the language in ' . self::RETRACT_KEY . '.',
+                [
+                    'nullLanguages' => array_map(strval(...), $nulls),
+                    'retract'       => sprintf(
+                        '%s: ["%s"] removes them; "" leaves a language alone.',
+                        self::RETRACT_KEY,
+                        implode('", "', array_map(strval(...), $nulls))
+                    ),
+                ]
+            );
+        }
+
+        $unknown = array_diff(
+            array_merge(array_map(strval(...), array_keys($patch)), $retract),
+            $languages->languages()
+        );
         if ([] !== $unknown) {
             //Refused rather than ignored, for the association API's reason: an agent
             //that sends `de_DE` or `de-DE` and gets a 200 will keep sending it forever
@@ -493,18 +564,26 @@ final class PhrasesV3Controller extends AbstractApiController
             );
         }
 
-        //A null means "retract this translation" and is split out before validation,
-        //because there is no text to validate — a retraction has no length to bound and
-        //nothing to trim. Passing null through the input filter would also make the
-        //outcome depend on how laminas-filter happens to treat a non-string, which is
-        //not a contract worth relying on for a destructive operation.
+        //A language named in `_retract` never reaches the input filter: there is no text to
+        //validate — a retraction has no length to bound and nothing to trim — and putting a
+        //null through laminas-filter would make a destructive outcome depend on how it
+        //happens to treat a non-string.
         //
-        //Only an explicit JSON null reaches here. `""` is not a retraction: it means
-        //"leave this language alone", the same as the web form's untouched textarea, and
-        //is dropped further down. That asymmetry is deliberate and is documented on
-        //TranslationsTable::updatePhrase().
-        $retractions = array_filter($patch, static fn (mixed $v): bool => null === $v);
-        $writes      = array_diff_key($patch, $retractions);
+        //Naming a language on both sides is refused rather than resolved in either
+        //direction. `{"de": "…", "_retract": ["de"]}` is a caller in two minds, and
+        //guessing which half it meant is how an agent's batch loses a translation it wrote
+        //in the same request.
+        $writes      = $patch;
+        $contested   = array_intersect($retract, array_map(strval(...), array_keys($writes)));
+        if ([] !== $contested) {
+            return self::failure(
+                'A language cannot be written and retracted in the same request.',
+                ['contestedLanguages' => array_values($contested)]
+            );
+        }
+        //`""` still means "leave this language alone", the same as the web form's untouched
+        //textarea, and is dropped further down. That asymmetry is deliberate and is
+        //documented on TranslationsTable::updatePhrase().
 
         $filter = $validator->inputFilter();
         //Not merged onto the stored record the way an association patch is, and it does
@@ -552,8 +631,8 @@ final class PhrasesV3Controller extends AbstractApiController
         //reads as "delete this row". Added after the `''` filter on purpose: a null must
         //survive it, and `'' !== null` is true, but relying on that would be a subtle
         //dependency for something this destructive to rest on.
-        foreach (array_keys($retractions) as $language) {
-            $locale = $languages->localeFor((string) $language);
+        foreach ($retract as $language) {
+            $locale = $languages->localeFor($language);
             if (null !== $locale) {
                 $submitted[$locale] = null;
             }

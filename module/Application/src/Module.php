@@ -42,6 +42,14 @@ class Module
     ];
 
     /**
+     * Custom navigation-page property: this label is a record's own text, not language.
+     *
+     * Read by partial/breadcrumbs.phtml, which is the only thing that translates a page
+     * label at a depth these branches reach.
+     */
+    public const LABEL_IS_DATA = 'labelIsData';
+
+    /**
      * @param MvcEvent $e
      */
     public function onBootstrap(MvcEvent $e)
@@ -66,13 +74,18 @@ class Module
          *  - publication-pages: labels are untranslated publication titles and the same
          *      always-English language names; params are identifier/slug, neither localized.
          *      Locale-independent.
-         *  - association-pages: embeds $object['slugByLocale'][$locale]. LOCALE-DEPENDENT.
+         *  - association-pages: embeds $object['slugByLocale'][$locale] and, since 2026-08-11,
+         *      $object['nameByLocale'][$locale]. LOCALE-DEPENDENT, and now for two reasons.
          *  - library-pages: label is the raw LibraryName column, param is libraryId.
          *      Locale-independent.
          *  - music-pages: label is the raw composition name, params are identifier and the single
          *      Slug column. Locale-independent.
-         * Labels are translated at render time by the navigation view helper, so an English label
-         * in the cache is not itself a reason to salt.
+         * An English label in the cache is not itself a reason to salt: the navigation view
+         * helper translates labels at render time. What it must *not* translate is a label that
+         * is a record's own text, which is what LABEL_IS_DATA marks — see markDataLabels()
+         * below. Those labels therefore stay in whatever language the record holds, and salting
+         * a branch to fix that would multiply the item count instead. `nameByLocale` above is
+         * the one case where the value was already per-locale for another reason.
          */
         $cacheKeys = [];
         foreach (self::PAGES_CACHE_KEYS as $baseKey) {
@@ -171,10 +184,20 @@ class Module
             $associations = $schoenstattTable->getObjects('association');
 
             foreach ($associations as $object) {
+                /*
+                 * `name` is the raw column; `nameByLocale` is what SchoenstattTable built for
+                 * this locale, honouring IsNameTranslateable and the kind's name format — the
+                 * same value every other screen shows. This branch is already salted per
+                 * locale for the slug, so the better label costs nothing, and it removes the
+                 * only reason a breadcrumb ever had to translate a name itself: the old label
+                 * was English and the crumb tried to render it, which for the thousands of
+                 * names that are proper nouns just filed a phrase per record.
+                 */
+                $localizedName = $object['nameByLocale'][$locale] ?? $object['name'];
                 if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {
                     //@todo this could be subdivided heirarchically
                     $associationPages['movement'][] = [
-                        'label' => $object['name'], //@todo replace this with something translatable
+                        'label' => $localizedName,
                         'route' => 'association',
                         'params' => [
                             'sw_id' => $object['identifier'],
@@ -184,7 +207,7 @@ class Module
                 }
                 if (! isset($object['countryRegion'])) {
                     $associationPages['shrinesWorld'][] = [
-                        'label' => $object['name'],
+                        'label' => $localizedName,
                         'route' => 'association',
                         'params' => [
                             'sw_id' => $object['identifier'],
@@ -202,7 +225,7 @@ class Module
                         ];
                     }
                     $associationPages['shrinesByRegion'][$key]['pages'][] = [
-                        'label' => $object['name'],
+                        'label' => $localizedName,
                         'route' => 'association',
                         'params' => [
                             'sw_id' => $object['identifier'],
@@ -255,6 +278,23 @@ class Module
             $this->cacheNavigationPages($cache, $sm, $cacheKeys['music-pages'], $musicPages);
         }
 
+        /*
+         * Mark the labels that are *record data* before they become pages, so the breadcrumb
+         * partial leaves them alone. A publication's title, a shrine's name, a library's name,
+         * a composition's name and a composed label like 'German Schoenstatt Literature' are
+         * not language in any language: translating one cannot succeed, and a translator miss
+         * is precisely how a phrase is filed. From 2026-08-10, when breadcrumb labels started
+         * being translated at all, that filed one row per record — twice over, because the
+         * partial falls back to the `default` domain — and within a day publication titles
+         * were 61% of the whole phrase table (`docs/api-change-requests-response.md` §12).
+         *
+         * Applied to the arrays *after* they come out of the cache rather than written into
+         * them where they are built: `apc.ttl` is 0 on this host, so a branch cached before
+         * this shipped never expires, and a flag that lived in the cached value would then be
+         * missing for as long as the item survived.
+         */
+        $pagesByCacheKey = self::markDataLabels($pagesByCacheKey);
+
         //build out the navigation a little
         /** @var Navigation $navigation */
         $navigation = $sm->get(Navigation::class);
@@ -279,6 +319,76 @@ class Module
 
         $corsListener = new Listener\CorsListener();
         $corsListener->attach($app->getEventManager());
+    }
+
+    /**
+     * Flag every dynamically built navigation label that is record content.
+     *
+     * Static, pure and keyed on the same names as PAGES_CACHE_KEYS so it can be driven from a
+     * test without a container: this decision is the one thing standing between the phrase
+     * table and one row per publication, and it is not observable from a rendered page until
+     * thousands of rows have arrived.
+     *
+     * The one branch that is *not* data is the region level of `shrinesByRegion`: its labels
+     * are country and region names ('Germany', 'Argentina'), which are translated in all five
+     * languages on purpose. Only its children — the shrines themselves — are data.
+     *
+     * @param array<string, mixed> $pagesByCacheKey branches as onBootstrap() holds them
+     * @return array<string, mixed> the same structure, with LABEL_IS_DATA set where it belongs
+     */
+    public static function markDataLabels(array $pagesByCacheKey): array
+    {
+        foreach (['dictionary-pages', 'publication-pages', 'library-pages', 'music-pages'] as $key) {
+            if (isset($pagesByCacheKey[$key]) && is_array($pagesByCacheKey[$key])) {
+                $pagesByCacheKey[$key] = self::flagLabelsAsData($pagesByCacheKey[$key]);
+            }
+        }
+
+        if (! isset($pagesByCacheKey['association-pages']) || ! is_array($pagesByCacheKey['association-pages'])) {
+            return $pagesByCacheKey;
+        }
+        $associations = $pagesByCacheKey['association-pages'];
+        foreach (['movement', 'shrinesWorld', 'waysideShrines'] as $key) {
+            if (isset($associations[$key]) && is_array($associations[$key])) {
+                $associations[$key] = self::flagLabelsAsData($associations[$key]);
+            }
+        }
+        if (isset($associations['shrinesByRegion']) && is_array($associations['shrinesByRegion'])) {
+            foreach ($associations['shrinesByRegion'] as $regionKey => $region) {
+                if (isset($region['pages']) && is_array($region['pages'])) {
+                    $region['pages'] = self::flagLabelsAsData($region['pages']);
+                }
+                $associations['shrinesByRegion'][$regionKey] = $region;
+            }
+        }
+        $pagesByCacheKey['association-pages'] = $associations;
+
+        return $pagesByCacheKey;
+    }
+
+    /**
+     * Set LABEL_IS_DATA on each page of a list and, recursively, on its children.
+     *
+     * The key reaches the page as a custom property — Laminas\Navigation\Page\AbstractPage::set()
+     * keeps anything it has no setter for — and comes back out of Page::get(self::LABEL_IS_DATA).
+     *
+     * @param array<int|string, array<string, mixed>> $pages
+     * @return array<int|string, array<string, mixed>>
+     */
+    private static function flagLabelsAsData(array $pages): array
+    {
+        foreach ($pages as $index => $page) {
+            if (! is_array($page)) {
+                continue;
+            }
+            $page[self::LABEL_IS_DATA] = true;
+            if (isset($page['pages']) && is_array($page['pages'])) {
+                $page['pages'] = self::flagLabelsAsData($page['pages']);
+            }
+            $pages[$index] = $page;
+        }
+
+        return $pages;
     }
 
     /**

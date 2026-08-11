@@ -324,6 +324,30 @@ readability — the destination is **Symfony**, reached gradually:
   injects a real failure by overriding `key_locale` with a value too long for the
   column, and by `test/Integration/PhraseDiscoveryTest`.
 
+- [ ] **A breadcrumb label files a junk phrase row in `Application` whenever it
+  lives in `default`.** `partial/breadcrumbs.phtml` looks a label up in the
+  navigation text domain and falls back to `default`, and the *first* lookup files
+  a row when it misses — so `Shrines` and `Africa`, whose real translated rows are
+  in `default`, each gained an untranslated `Application` twin on 2026-08-10.
+  Bounded: one row per navigation label, a few dozen, and they are genuine
+  interface strings rather than record content (which is what
+  `Module::markDataLabels()` now keeps out — see
+  `docs/api-change-requests-response.md` §12). Not fixed because the obvious fix,
+  looking `default` up first, changes which domain wins for a label present in
+  both: laminas renders `Admin` from `Application` where `default` holds
+  "Administración", and the Twig layout already documents that measurement.
+  Fixing it properly means asking the translator whether a translation exists
+  without firing `missingTranslation` for the probe.
+- [ ] **Two navigation labels can never be translated, because they are built by
+  concatenation.** `'German Schoenstatt Literature'` and
+  `'German to Spanish Dictionary'` are composed in `Application\Module` from an
+  always-English language name, so the breadcrumb above a publication reads English
+  in all five locales — visible on `/it/literature/de`. `db7.4.sql` retires the rows
+  they filed; the labels stay English. The real fix is §3's shape — translate a
+  `%s` template and interpolate — but the interpolated value is itself a language
+  name needing translation, and doing it per locale means salting
+  `publication-pages` in the cache, which multiplies a 10,166-page branch by five
+  on a 32 MiB APCu segment. That trade is the decision nobody has taken.
 - [ ] **The shrine table's "Opening hours?" column tests a column that does not
   exist.** `schoenstatt/associations/shrines-table.phtml` and its Twig port both
   read `openingHoursJson`; the association projection has
