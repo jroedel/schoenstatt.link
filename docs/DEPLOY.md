@@ -147,6 +147,64 @@ ones and that database is disposable; production has its own or none.
 - **`/admin/translations`** marks phrases with history, and the edit screen shows the
   thread.
 
+## Before the next deploy: breadcrumb data labels and `database/db7.4.sql`
+
+Answers change requests §11–§13, filed after #59 merged. One data file, and one API change
+that breaks a caller on purpose.
+
+**The order is not forgiving here, and it is the opposite of what it looks like.** Deploy
+the code *first*, then run the migration. The migration retires ~3,000 phrase rows that the
+code fix stops arriving; run it first and the next crawl of a publication page files them
+again and clears `retired_on` doing it — discovery un-retires whatever the site still looks
+up, which is the property that makes retirement safe and here makes the order matter.
+
+1. **The code deploy.** `php phploy.phar` as usual. The `post-deploy[]` hooks clear the
+   config cache, flush APCu and rebuild the catalogs. **The APCu flush is load-bearing this
+   time**: the navigation branches are cached there, `apc.ttl` is 0 so they never expire on
+   their own, and the fix reads them back out of the cache before flagging — a stale branch
+   is *harmless* by design, but the flush is what makes the new labels appear at once.
+
+2. **`database/db7.4.sql`.** Ordinary app credentials — five `UPDATE`s, one `INSERT` into
+   the history table, one more `UPDATE`. Re-runnable; every statement is guarded on the
+   state it changes.
+
+   ```bash
+   ssh -p 222 <admin>@dedi2934.your-server.de \
+     'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.4.sql'
+   ```
+
+   Statements 1–5 retire record names the breadcrumb filed as phrases (§12). Statements 6
+   and 7 set three `en_US` rows to the text db7.3 renamed the key to (§13) — the reporting
+   agent already did this on production through the API, so expect them to change nothing
+   there and everything on a restored dump.
+
+3. **Rebuild the catalogs**, because step 2 changed English text:
+
+   ```bash
+   ssh -p 222 <admin>@dedi2934.your-server.de \
+     'cd public_html/schoenstatt.link && php bin/console jtranslate:export-catalogs \
+      && php bin/console cache:flush-persistent'
+   ```
+
+4. **Tell the translation agent that `null` no longer deletes.** `PATCH /api/v3/phrases`
+   answers 422 to `{"de": null}` and takes `{"_retract": ["de"]}` instead (§11.3, adopted
+   at the consumer's own request). It is published as `writable.retract` in
+   `GET /api/v3/schema/phrase`, so a client that reads the schema at request time finds it;
+   one that hardcoded `null` gets a 422 and no data loss, which is the point.
+
+### What changes for anyone watching the site
+
+- **A shrine's breadcrumb reads in the visitor's language.** `/it/…/mont-sion-gikungu` says
+  *Santuario di Schoenstatt Mont Sion Gikungu* rather than the English name — the label is
+  `nameByLocale` now, honouring `IsNameTranslateable` like every other screen.
+- **A publication's, composition's and library's breadcrumb stops being translated at all**,
+  which is what it looked like before 2026-08-10 anyway. Those labels are the record's own
+  title.
+- **Breadcrumb labels are HTML-escaped.** They can now be a moderator's free text, and were
+  emitted raw.
+- **The translator's worklist loses about 3,000 rows**, and any count of "how much is left
+  to translate" taken from the v3 API drops with it.
+
 ## Done 2026-08-10: JTranslate's phrase-table migrations
 
 Applied to production and deployed. Recorded here rather than deleted, because the

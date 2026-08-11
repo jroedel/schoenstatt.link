@@ -180,6 +180,7 @@ discovering by rejection.
   "requiredRole": "sch_api_translator",
   "writable": { "languages": ["es", "de", "pt", "it", "en"], "maxLength": 2000,
                 "note": { "key": "_note", "maxLength": 255, "purpose": "…" },
+                "retract": { "key": "_retract", "value": "…", "purpose": "…" },
                 "notes": ["…the meanings of \"\", null and \"0\"…"] },
   "endpoints": { "collection": "…", "item": "…", "patch": "…", "batch": "…",
                  "history": "GET /api/v3/phrases/{phraseId}/history — …" },
@@ -538,14 +539,14 @@ Two differences worth knowing:
   validation because `name` and `kind` are required there. Nothing here is required
   except the phrase id, which comes from the URL, so a patch naming one locale is
   already a complete submission.
-- **`""` and `null` mean different things.** Three cases, and the difference is the
-  whole reason this is spelled out:
+- **Nothing you can send as a *value* removes a translation.** Four cases, and the
+  difference is the whole reason this is spelled out:
 
   | you send | what happens |
   |---|---|
   | the language is absent | left alone |
   | `""` | left alone |
-  | `null` | the translation is **retracted** — the row is deleted |
+  | `null` | **422** — naming `_retract` as the way to do it |
   | any other string, including `"0"` | written |
 
   `""` means "leave this language alone" because that is what the web form means: it
@@ -553,13 +554,39 @@ Two differences worth knowing:
   posts `""` for the rest. If `""` cleared a translation, saving one language would wipe
   the others.
 
-  `null` is the retraction, and it is reachable only from this API — a browser cannot
-  post it. Use it to withdraw a translation you got wrong rather than overwriting it with
-  something you are equally unsure of; `"changed"` reports the language, and the next
-  `GET` shows `"text": null`.
+  A `null` used to be the retraction. It is a 422 as of 2026-08-11, and the reason is worth
+  knowing because it applies to any API a generated client talks to: a `null` is what a
+  *serializer* produces for an absent optional field, what a dictionary comprehension over
+  a language list produces when one lookup misses, and what `json.dumps` produces for a
+  Python `None`. None of those look like a deletion at the call site, and all of them were
+  one. The `""` case was safe against exactly that accident; `null` was not.
 
-  Retracting a language that has no translation is a `200` with `"changed": []` and no
-  write, the same as re-sending stored text.
+#### `_retract` — removing a translation
+
+```jsonc
+{
+  "_retract": ["de", "pt"],
+  "_note": "Both were machine-translated from the Spanish and read as such."
+}
+```
+
+Reachable only from this API — a browser cannot post it — and recorded in the history as a
+`retract`, so the text stays readable afterwards. Use it to withdraw a translation you got
+wrong rather than overwriting it with something you are equally unsure of; `"changed"`
+reports the language, and the next `GET` shows `"text": null`.
+
+Rules, all of them 422s rather than guesses:
+
+- The value is a **list of language codes**. A bare string is refused; so is an unknown
+  language or a locale like `de_DE`, exactly as in the body.
+- A language cannot be **written and retracted in the same request**. That is a caller in
+  two minds, and guessing which half it meant is how a batch loses a translation it wrote
+  in the same breath. Sending it as `""` is *not* that: `""` means "leave this language
+  alone", so `{"de": "", "_retract": ["de"]}` is accepted and retracts. A client that sends
+  every language on every request does not have to omit a key in order to remove it.
+
+Retracting a language that has no translation is a `200` with `"changed": []` and no
+write, the same as re-sending stored text. An empty list is a no-op.
 
 #### `_note` — saying why
 

@@ -426,9 +426,9 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     public function testFillingAGapWritesNoHistory(): void
     {
         $token = $this->translatorToken();
-        //Retract first, so the language really is empty — an explicit null is the one
-        //way to reach that, and no browser can send it.
-        $this->patch($token, self::ITEM, ['de' => null]);
+        //Retract first, so the language really is empty — `_retract` is the one way to
+        //reach that, and no browser can send it.
+        $this->patch($token, self::ITEM, ['_retract' => ['de']]);
         $before = count($this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history']);
 
         $this->patch($token, self::ITEM, ['de' => 'Aufgefüllt ' . time()]);
@@ -448,7 +448,7 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $text  = 'Wird zurückgezogen ' . time();
         $this->patch($token, self::ITEM, ['de' => $text]);
 
-        $this->patch($token, self::ITEM, ['de' => null]);
+        $this->patch($token, self::ITEM, ['_retract' => ['de']]);
 
         $newest = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'][0] ?? [];
         $this->assertSame('retract', $newest['operation'] ?? null);
@@ -552,28 +552,107 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     }
 
     /**
-     * The schema's claim about retraction is true.
+     * The schema publishes the retraction key, and the key it publishes is the one that works.
      *
-     * It said the opposite until 2026-08-11 — "there is no way to remove a translation
-     * through either surface" — which is stale in the dangerous direction: an agent
-     * reading it would blank with `""`, which is a documented no-op, and believe it had
-     * removed something.
+     * The schema said the opposite until 2026-08-11 — "there is no way to remove a
+     * translation through either surface" — which was stale in the dangerous direction: an
+     * agent reading it would blank with `""`, a documented no-op, and believe it had removed
+     * something. Pinned to behaviour rather than to a copy of its own text: the published key
+     * is the one this test sends.
      */
-    public function testTheSchemaIsRightThatNullRetracts(): void
+    public function testTheSchemaPublishesTheKeyThatRetracts(): void
     {
         $schema = $this->decode($this->get('/api/v3/schema/phrase'));
-        $claims = implode(' ', $schema['writable']['notes'] ?? []);
 
-        $this->assertStringContainsString('retract', $claims, 'the schema does not mention retraction at all');
+        $key = $schema['writable']['retract']['key'] ?? null;
+        $this->assertIsString($key, 'the schema does not publish a retraction key, so it is undiscoverable');
 
         $token = $this->translatorToken();
         $this->patch($token, self::ITEM, ['de' => 'Wird entfernt ' . time()]);
-        $this->patch($token, self::ITEM, ['de' => null]);
+        $this->patch($token, self::ITEM, [$key => ['de']]);
 
         $this->assertNull(
             $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
-            'a null did not retract, so the schema now promises something that does not happen'
+            'the published key did not retract, so the schema promises something that does not happen'
         );
+    }
+
+    /**
+     * A null keyed by a language is refused, and the refusal names the alternative.
+     *
+     * Until 2026-08-11 it deleted the translation. That is the accident the consuming
+     * repository asked about in §11.3 and it is easy to reach without meaning it: a
+     * serializer emitting null for an absent optional field, a dictionary comprehension over
+     * a language list where one lookup misses, `json.dumps` of a Python `None`. None of them
+     * look like a deletion at the call site, and all of them were one.
+     */
+    public function testANullDoesNotRemoveATranslation(): void
+    {
+        $token = $this->translatorToken();
+        $text  = 'Bleibt stehen ' . time();
+        $this->patch($token, self::ITEM, ['de' => $text]);
+
+        $response = $this->patch($token, self::ITEM, ['de' => null]);
+
+        $this->assertSame(422, $response['status'], $response['body']);
+        $this->assertStringContainsString(
+            '_retract',
+            $response['body'],
+            'the refusal does not name the key that does remove a translation, so a caller learns '
+            . 'only that it is wrong'
+        );
+        $this->assertSame(
+            $text,
+            $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
+            'a null destroyed the translation anyway'
+        );
+    }
+
+    /** Writing and retracting the same language in one request is refused, not resolved. */
+    public function testALanguageCannotBeWrittenAndRetractedAtOnce(): void
+    {
+        $token = $this->translatorToken();
+        $text  = 'Widerspruch ' . time();
+        $this->patch($token, self::ITEM, ['de' => $text]);
+
+        $response = $this->patch($token, self::ITEM, ['de' => 'Neu ' . time(), '_retract' => ['de']]);
+
+        $this->assertSame(422, $response['status'], $response['body']);
+        $this->assertSame(
+            $text,
+            $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
+            'a contradictory request was carried out in one of its two directions'
+        );
+    }
+
+    /**
+     * `""` alongside a retraction of the same language is not a contradiction.
+     *
+     * A client that sends every language on every request — the shape the web form produces
+     * and a generated client naturally would — must be able to retract one without also
+     * having to omit it, since `""` already means "leave this language alone".
+     */
+    public function testAnEmptyStringDoesNotContradictARetraction(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Verschwindet ' . time()]);
+
+        $response = $this->patch($token, self::ITEM, ['de' => '', 'es' => '', '_retract' => ['de']]);
+
+        $this->assertSame(200, $response['status'], $response['body']);
+        $this->assertNull(
+            $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
+            'the retraction was refused because the same language was also present as ""'
+        );
+    }
+
+    /** An unknown language in the retraction list is refused the way one in the body is. */
+    public function testAnUnknownLanguageInTheRetractionListIsRefused(): void
+    {
+        $response = $this->patch($this->translatorToken(), self::ITEM, ['_retract' => ['de_DE']]);
+
+        $this->assertSame(422, $response['status'], $response['body']);
+        $this->assertStringContainsString('unknownLanguages', $response['body'], $response['body']);
     }
 
     /** Another project's phrase is not found here either, for the reason `show` is not. */
