@@ -42,6 +42,13 @@ counting rows twice a few hours apart.
 | 11 | schema contradicted the controller about deletion | **fixed** (#61); item 3 **adopted** — `null` no longer deletes |
 | 12 | publication and composition titles reach the phrase table | **fixed**; the cause was the breadcrumb, not `headTitle()` |
 | 13 | renamed phrases kept their old English row | **fixed in the repository too**, so every environment converges |
+| 14 | expose retirement on the API | **built**: `POST …/retire` and `…/unretire`, note mandatory, `?onlyRetired=1` was already there |
+| 15 | a breadcrumb residual on route `composition` | **yours to retire** now that you can — it is the feature's first real use |
+
+**If you read only one thing in this file, read the table under §14.** Retiring a phrase and
+retracting a translation are one keystroke apart in a client and opposite in effect, and one of
+them destroys work. Your own §14 says so in a sentence — *"`_retract` is not the workaround"* —
+and it is now written into the schema, the API doc, the model and the console command.
 
 Two things you did not ask for, both of which change what you can rely on:
 
@@ -578,3 +585,106 @@ than the key. So a rename in place must update `en_US` in the same migration. Th
 languages are unaffected, because their translations were of the meaning and the meaning did
 not change. db7.3 got that wrong for three rows and the only reader positioned to notice was
 one comparing each key against its own English row.
+
+---
+
+## 14. Retirement, on the API
+
+**Built, in the shape you preferred.**
+
+```jsonc
+POST /api/v3/phrases/13661/retire     { "_note": "why" }    // 200 {"changed": true, "phrase": {…}}
+POST /api/v3/phrases/13661/unretire   { "_note": "why" }
+```
+
+A subresource with its own verb rather than a key on the PATCH body, for the reason you gave
+in §11.3 and we adopted: a destructive-*looking* operation should not be reachable by a
+serializer emitting a default value into a body that was about something else. `POST …/retire`
+cannot be a typo in a write.
+
+Everything you asked for in the contract is there:
+
+- **`_note` is mandatory.** Empty, whitespace and non-string are all 422. It is the only
+  difference in contract from a write's optional note, and your argument for it is the one in
+  the code comment.
+- **Only `_note`.** Any other key is a 422 that names `_retract`, because the likeliest other
+  key is a language — a caller reaching for the wrong operation.
+- **Reversible from the API**, with its own `unretire` history operation so a thread does not
+  read as though the phrase is still off the list.
+- **Idempotent**: a second retire is 200 with `changed: false` and writes no second history
+  entry. A retried request cannot forge a second judgement.
+- **No catalog recompile**, because a retired phrase compiles exactly as before. Retirement is
+  the one write on this API that cannot leave the site stale.
+
+**`?retired=true` already existed, under two other names, and that is our documentation
+failure rather than a missing feature.** `onlyRetired` and `includeRetired` have been accepted
+by the collection since v3 shipped — `criteriaFrom()` passes through everything in
+`TranslationsTable::CRITERIA` — but `GET /api/v3/schema/phrase` published only six filters, so
+by your own working rule they did not exist. They are published now, along with
+`originRouteLike`, which was also live and unlisted. `meta.retiredOn` is new on the document:
+without it a `?onlyRetired=1` listing was indistinguishable from a live one.
+
+### The distinction we have now written down everywhere
+
+Your §14 makes the point in one line — *"`_retract` is not the workaround"* — and it is the
+most important sentence in the request, because the two operations are one keystroke apart in
+a client and opposite in effect:
+
+| | `_retract` | `POST …/retire` |
+|---|---|---|
+| acts on | one language's **translation** | the **phrase** |
+| destroys | that text | **nothing** |
+| worklist | phrase stays, one more gap | phrase **leaves** |
+| site | that language falls back to English | renders exactly as before |
+| undoes itself | no | **yes**, on the next missed lookup |
+
+That table is now in `docs/api-v3.md`; the schema carries it as a `retirement` block with a
+`notRetirement` clause on the `retract` key pointing at it; `TranslationsTable`'s operation
+constants document it where a reader of the history table will be; `updatePhrase()` says it
+where somebody about to pass `null` will read it; and `jtranslate:retire` says it in its own
+docblock. Five places, because it is the kind of thing that gets half-remembered.
+
+### One thing we changed that you did not ask for
+
+`jtranslate:retire` now retires **one row at a time through the same method the endpoint
+uses**, so every console retirement also writes a `retire` history entry, and it takes an
+optional `--note`. Before this, the bulk path was a single `UPDATE` that recorded nothing —
+which is how roughly 4,100 rows left the worklist yesterday with no record of who decided that
+or why. Your request pointed straight at that hole even though it was about the API.
+
+### What we did not do
+
+**No batch retire.** You listed it as an option and we think it is the wrong shape here: each
+retirement carries its *own* reasoning, and a batch with one shared note would either lose that
+or invite a generic one. Two requests for two rows is the right price for a per-row judgement.
+Say so if a queue of fifty makes that wrong.
+
+## 15. The composition residual: yours to retire
+
+Confirmed, and thank you for not sweeping it — seeing a pair arrive *after* the deploy that was
+meant to stop them was worth more than a clean count.
+
+They are the §12 signature exactly, and you also correctly identified why the migrations missed
+them: `db7.6.sql` statement 2 is scoped to `origin_route = 'publication'` and joins
+`sch_publications.Title`, and a composition name is neither. Your reading of the `pt` row as
+the inheritance copy is right too — the two rows are the clearest example in the corpus of why
+the "no other language has translated it" test cannot stand on its own.
+
+**We are deliberately not writing a db7.8 for them.** You can retire them yourself now, with
+the note you have already drafted, and that is a better outcome than a migration for two rows:
+it exercises the feature end to end, it puts the reasoning in the history where the next reader
+finds it, and if the breadcrumb fix has regressed for route `composition` the rows come back
+and say so. Your drafted note is exactly the right shape — it names the belief, the evidence
+and what a reappearance would mean.
+
+One thing worth settling, because your write-up offers two explanations and only the second is
+right. `db7.4.sql` retired 302 composition names, and it ran at 09:17 UTC — nearly eight hours
+*after* these rows were filed at 01:38, so they were in scope and it saw them. What spared them
+is its third condition: your `pt` row is a non-English translation, so `NOT EXISTS (… locale <>
+'en_US')` excluded them. **They are a translation-guard escape, exactly like the six publication
+rows**, and db7.6 fixed that guard only for route `publication`.
+
+Which means the general form of your §15 check is right and worth stating as a rule: the guard
+was never sound, so anywhere db7.4 relied on it, inheritance may have left survivors. Your
+classifier answers that question better than another migration would — it scanned all 1,581
+live phrases and these two are the entire remainder.
