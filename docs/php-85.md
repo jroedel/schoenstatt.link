@@ -36,12 +36,16 @@ Measured 2026-08-05 against the installed tree and Packagist.
   everywhere.** This is deliberate and is explained below. It is not an
   oversight, it is not a claim about any machine's PHP, and raising it breaks
   `composer install` outright.
-- **Production runs PHP 8.5 as of 2026-08-11, and the capsule now matches it
-  again.** For the week before that the capsule was deliberately ahead; the
-  trade that bought — continuous 8.5 testing at the cost of not reproducing
-  production exactly — has simply expired, in the good direction. Reproducing a
-  live bug locally no longer needs `PHP_VERSION=8.4` in `.env` first; the
-  earlier rungs stay switchable for bisecting and nothing else.
+- **Production runs PHP 8.5.9 as of 2026-08-11** — the same patch the capsule
+  serves, verified from a live `phpinfo()`, so the two match exactly again. For
+  the week before that the capsule was deliberately ahead; the trade that bought
+  — continuous 8.5 testing at the cost of not reproducing production exactly —
+  has simply expired, in the good direction. Reproducing a live bug locally no
+  longer needs `PHP_VERSION=8.4` in `.env` first; the earlier rungs stay
+  switchable for bisecting and nothing else. Two differences survive the match
+  and are worth knowing before trusting a local repro: ICU is **76.1 in the
+  capsule against 72.1 in production** (the base image's Debian is newer than
+  the hoster's build), and APCu is **5.1.24 against 5.1.27**.
 - **CI runs 8.5 on every job** (`.github/workflows/ci.yml`), for the reason the
   pin makes unavoidable: the resolver is looking at an older PHP than the one
   that will execute the code, so lint and tests on 8.5 are the only thing
