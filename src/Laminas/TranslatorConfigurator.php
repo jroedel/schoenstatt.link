@@ -11,6 +11,7 @@ use Laminas\I18n\Translator\TranslatorInterface;
 use Laminas\Mvc\I18n\Translator as MvcI18nTranslator;
 use Laminas\ModuleManager\ModuleManager;
 use Laminas\ServiceManager\Factory\DelegatorFactoryInterface;
+use Laminas\Validator\AbstractValidator;
 use Locale;
 use Psr\Container\ContainerInterface;
 
@@ -145,6 +146,30 @@ final class TranslatorConfigurator implements DelegatorFactoryInterface
         //same thing — a discrepancy would mean discovery worked under one front
         //controller and not the other. See TranslatorEventListener's class docblock.
         (new TranslatorEventListener($table, $table->getLocales(true)))->attach($inner->getEventManager());
+
+        //The listener above only *queues* a miss; TranslationsTable::flush() writes
+        //it, and laminas calls that from MvcEvent::EVENT_FINISH, which a
+        //Symfony-served route never reaches. Arming here rather than having the
+        //kernel ask for the table is what keeps /_health and the maintenance
+        //endpoints from building one. See App\Laminas\PhraseFlush.
+        if ($container->has(PhraseFlush::class)) {
+            /** @var PhraseFlush $phrases */
+            $phrases = $container->get(PhraseFlush::class);
+            $phrases->arm($table);
+        }
+
+        //Validator messages are translated as templates, before laminas fills in
+        //%value%/%hostname%/%min%, so a stranger's mistyped input never reaches the
+        //translator and never becomes a phrase. JTranslate\Module does the same on
+        //the laminas side; a discrepancy would mean the two front controllers filed
+        //different phrases for the same failed form. The renderers that used to
+        //translate the finished message are off in step with this — see
+        //App\Form\BootstrapFormRenderer::errors().
+        //
+        //The static setter is what laminas-validator itself offers; it is set on the
+        //Mvc wrapper because that, not the inner translator, is what implements
+        //Laminas\Validator\Translator\TranslatorInterface.
+        AbstractValidator::setDefaultTranslator($translator, 'default');
 
         $modules = $this->moduleLanguageDirectories($container);
         $table->setUserModules($modules);

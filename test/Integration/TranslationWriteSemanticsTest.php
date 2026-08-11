@@ -296,6 +296,250 @@ class TranslationWriteSemanticsTest extends TestCase
         }
     }
 
+    /**
+     * The thread survives the phrase row it was written against.
+     *
+     * This is the test the history table's key exists for, and it fails against the
+     * obvious design. A phrase id is not stable: M004 merges duplicates onto the lowest
+     * id and drops the rest, M005 merges again when normalization collapses two, and
+     * `deletePhrase()` removes a row that the next render then *rediscovers* as a new row
+     * with a new id. Keyed on the id, every one of those cuts a thread in half and leaves
+     * the earlier reasoning attached to an id nothing asks for again — at exactly the
+     * moment somebody is asking why a translation keeps being changed back.
+     *
+     * Reproduced here the cheap way: write history, then delete the phrase row and insert
+     * the same string again, which is what rediscovery does and which necessarily
+     * produces a different auto-increment id.
+     */
+    public function testAThreadSurvivesTheRediscoveryOfItsPhrase(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Thread survives rediscovery ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+            $this->insertTranslation($id, 'es_ES', 'Primera versión');
+
+            $this->table->updatePhrase($id, ['es_ES' => 'Segunda versión'], 'the first one read as a noun');
+
+            $before = $this->table->getTranslationHistory($id);
+            self::assertCount(1, $before, 'the overwrite wrote no history at all');
+            self::assertSame('Primera versión', $before[0]['old_translation']);
+
+            //Rediscovery: the row goes, the same string comes back with a new id.
+            $this->adapter->query(
+                'DELETE FROM `trans_phrases` WHERE `translation_phrase_id` = ?',
+                [$id]
+            );
+            $newId = $this->insertPhrase($text);
+            self::assertNotSame($id, $newId, 'the fixture did not actually produce a new id, so this proves nothing');
+
+            $after = $this->table->getTranslationHistory($newId);
+            self::assertCount(
+                1,
+                $after,
+                'the thread did not follow the phrase, so it is keyed on the id rather than the hash'
+            );
+            self::assertSame('Primera versión', $after[0]['old_translation']);
+            self::assertSame('the first one read as a noun', $after[0]['notes']);
+            //The entry still names the row it was written against, which is what anyone
+            //reconstructing events needs and is not the same as the id asked for.
+            self::assertSame($id, (int) $after[0]['translation_phrase_id']);
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** One language's thread, which is the shape an agent deciding about German wants. */
+    public function testTheThreadCanBeNarrowedToOneLanguage(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $id = $this->insertPhrase('Two languages argue ' . bin2hex(random_bytes(5)));
+            $this->insertTranslation($id, 'es_ES', 'Antes');
+            $this->insertTranslation($id, 'de_DE', 'Vorher');
+
+            $this->table->updatePhrase($id, ['es_ES' => 'Después', 'de_DE' => 'Nachher']);
+
+            self::assertCount(2, $this->table->getTranslationHistory($id));
+            $spanish = $this->table->getTranslationHistory($id, 'es_ES');
+            self::assertCount(1, $spanish, 'the language filter did not narrow the thread');
+            self::assertSame('Antes', $spanish[0]['old_translation']);
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** Another project's phrase id answers an empty thread, not that project's. */
+    public function testTheThreadOfAnotherProjectsPhraseIsEmpty(): void
+    {
+        $foreign = $this->adapter->query(
+            'SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `project` <> ? LIMIT 1',
+            [$this->project]
+        )->current();
+        if (null === $foreign) {
+            self::markTestSkipped('this database holds only one project, so there is no cross-project read to try');
+        }
+
+        self::assertSame(
+            [],
+            $this->table->getTranslationHistory((int) ((array) $foreign)['translation_phrase_id'])
+        );
+    }
+
+    /**
+     * A superseded phrase leaves the worklist, and comes back on its own if it returns.
+     *
+     * The mechanism behind Schoenstatt\Model\SchoenstattTable::retireSupersededPhrases(),
+     * which is what stops an edited shrine description leaving its old text at the top of
+     * a translator's queue for ever. Both halves matter: retiring is only safe to do
+     * automatically *because* a phrase that turns out to be in use un-retires itself the
+     * next time a render misses on it.
+     */
+    public function testASupersededPhraseIsRetiredAndRediscoveryBringsItBack(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Superseded description ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+
+            self::assertTrue(
+                $this->table->retirePhraseByText($text, $this->textDomain),
+                'nothing was retired, so the phrase was not found by its text'
+            );
+            self::assertNotNull($this->retiredOn($id), 'the phrase is still on the worklist');
+
+            //What a render does when the string turns out to still be in use. The
+            //discovery insert is an ON DUPLICATE KEY UPDATE that clears retired_on, so
+            //this is the self-healing half rather than a second mechanism.
+            $this->table->reportMissingTranslation([
+                'message'     => $text,
+                'text_domain' => $this->textDomain,
+                'locale'      => 'es_ES',
+            ]);
+            $this->table->flush('integration-test');
+
+            self::assertNull(
+                $this->retiredOn($id),
+                'a phrase that came back into use stayed retired, so a wrong guess is permanent'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /**
+     * A retirement is noted in the thread, and noted exactly once however often it is asked for.
+     *
+     * The second half is the bound on this whole mechanism. `retirePhraseByText()` acts
+     * only on a row that is still live, so calling it again matches nothing and writes
+     * nothing — which is what stops an application that calls it on every save of an
+     * unchanged record from filling the table. Retire and rediscover can alternate, but
+     * each step needs an event from outside and each writes one row.
+     */
+    public function testARetirementIsNotedOnceAndOnlyOnce(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Retirement is noted ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+
+            self::assertTrue($this->table->retirePhraseByText($text, $this->textDomain, 'because I said so'));
+
+            $thread = $this->table->getTranslationHistory($id);
+            self::assertCount(1, $thread, 'the retirement left no trace, so nothing can explain it later');
+            self::assertSame(TranslationsTable::OPERATION_RETIRE, $thread[0]['operation']);
+            self::assertSame('because I said so', $thread[0]['notes']);
+            //No language and no lost text: a retirement destroys nothing, and claiming
+            //otherwise would send somebody looking for a translation to restore.
+            self::assertSame(TranslationsTable::PHRASE_EVENT_LOCALE, $thread[0]['locale']);
+            self::assertSame('', $thread[0]['old_translation']);
+
+            self::assertFalse(
+                $this->table->retirePhraseByText($text, $this->textDomain, 'again'),
+                'an already-retired phrase was retired a second time'
+            );
+            self::assertFalse(
+                $this->table->retirePhraseByText($text, $this->textDomain, 'and again'),
+                'an already-retired phrase was retired a third time'
+            );
+            self::assertCount(
+                1,
+                $this->table->getTranslationHistory($id),
+                'repeated calls each wrote a row, so an application calling this on every save fills the table'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /**
+     * A phrase-level event appears in every language's thread.
+     *
+     * The filtered read is the one most likely to be consulted — an agent looking at
+     * German — and it is the one that would otherwise be unable to say why the phrase
+     * left the worklist.
+     */
+    public function testARetirementShowsInALanguageFilteredThread(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Retirement crosses languages ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+            $this->table->retirePhraseByText($text, $this->textDomain, 'superseded');
+
+            $german = $this->table->getTranslationHistory($id, 'de_DE');
+
+            self::assertCount(1, $german, 'the retirement is invisible to a language-filtered read');
+            self::assertSame(TranslationsTable::OPERATION_RETIRE, $german[0]['operation']);
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** Retiring by text is scoped to this project, like every other write here. */
+    public function testRetiringByTextDoesNotReachAnotherProject(): void
+    {
+        $foreign = $this->adapter->query(
+            'SELECT `phrase`, `text_domain` FROM `trans_phrases` WHERE `project` <> ? AND `retired_on` IS NULL LIMIT 1',
+            [$this->project]
+        )->current();
+        if (null === $foreign) {
+            self::markTestSkipped('this database holds only one project, so there is no cross-project write to try');
+        }
+        $foreign = (array) $foreign;
+
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            self::assertFalse(
+                $this->table->retirePhraseByText($foreign['phrase'], $foreign['text_domain']),
+                'another project\'s phrase was retired from here'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    private function retiredOn(int $phraseId): ?string
+    {
+        foreach (
+            $this->adapter->query(
+                'SELECT `retired_on` FROM `trans_phrases` WHERE `translation_phrase_id` = ?',
+                [$phraseId]
+            ) as $row
+        ) {
+            $value = ((array) $row)['retired_on'] ?? null;
+            return null === $value ? null : (string) $value;
+        }
+
+        return null;
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private function insertPhrase(string $phrase): int

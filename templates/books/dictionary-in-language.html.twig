@@ -21,11 +21,15 @@
 {# already translated, exactly as in-language.phtml's headTitle()->setTranslatorEnabled(false) #}
 {% set page_title = head_text %}
 {% set page_title_translate = false %}
-{# untranslated on purpose: the laminas breadcrumbs partial does not translate labels #}
+{# The last crumb is the page's own title, already translated above and carrying a
+   language name from the database — so it opts out of the layout's translation the
+   way headTitle()->setTranslatorEnabled(false) does. Translating it there would file
+   "German to Italian Dictionary" as a phrase, one row per dictionary. The first two
+   are interface text and translate normally. #}
 {% set breadcrumbs = [
     {'label': 'Literature', 'href': literature_url},
     {'label': 'Dictionaries', 'href': literature_url ~ '#dictionaries'},
-    {'label': 'German to %s Dictionary'|format(in_language_name), 'href': dictionary_url},
+    {'label': head_text, 'href': dictionary_url, 'translate': false},
 ] %}
 
 {% block content %}

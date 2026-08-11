@@ -1,6 +1,14 @@
 <?php /** @var \Laminas\View\Renderer\PhpRenderer $this */
 $headText = $this->entity['title'];
-// $headText = $this->translate($this->entity['title']);
+//setTranslatorEnabled(false) because the title is *data*: headTitle translates
+//everything it holds when it renders, and a translator miss is what files a phrase.
+//A corpus title is a filename (`1965-0613PRED.md`) or a bibliographic citation
+//(`in: KENTENICH, Josef, Die Vision vom Berge Sion, Berg Sion ²1975, 49-93`), and
+//219 of them had accumulated as permanent rows by 2026-05-30 — none translatable,
+//and a "translation" of a filename would change a lookup string. Every other show
+//page in this application already does this; only this one was missed, which is
+//what the commented-out translate() line below was circling.
+$this->headTitle()->setTranslatorEnabled(false);
 $this->headTitle($headText);
 $object = $this->entity;?>
 <h1><?php echo $this->escapeHtml($headText);?></h1>

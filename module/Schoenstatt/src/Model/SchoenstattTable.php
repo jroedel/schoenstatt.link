@@ -1614,7 +1614,84 @@ class SchoenstattTable extends SionTable implements
         if (isset($entityData['associationId'])) {
             $this->nullOutAssociationSlugs($entityData['associationId']);
         }
+        $this->retireSupersededPhrases($data, $entityData);
         return $data;
+    }
+
+    /**
+     * Take a replaced description off the translator's worklist.
+     *
+     * `PublicNotes` is the one association field whose text is run through the
+     * translator — see the `publicNotesByLocale` loop above, which is deliberate and is
+     * how an Italian-speaking pilgrim gets the directions to a shrine in Italian. The
+     * cost of that is what the 2026-08-10 change request called staleness, and it is
+     * worth stating precisely because it is not what it sounds like:
+     *
+     * A phrase's identity is its text, so editing the description does not make its
+     * translations *wrong* — the new text is a different phrase, misses the catalog, and
+     * renders as itself in every language until somebody translates it. Nothing on the
+     * site is stale. What goes stale is the **worklist**: the old string is still a live
+     * phrase row with four good translations that nothing renders any more, sitting in
+     * `/admin/translations` asking for attention it will never repay, indistinguishable
+     * from a phrase that matters. Multiply by every shrine description ever corrected.
+     *
+     * So the signal is retirement, which is exactly what `retired_on` is for. Reversible,
+     * the translations stay, and the phrase would keep rendering if anything still asked
+     * for it. It is also self-healing in the one case where this guesses wrong: if the
+     * string comes back — a moderator reverting an edit, or another association already
+     * using the same words — the next render that misses clears `retired_on` on its own,
+     * because JTranslate's discovery insert is an `ON DUPLICATE KEY UPDATE` that does
+     * that. Which is why this runs in the *pre*processor, where the old value is still
+     * readable, rather than after the write: an update that then fails has retired a
+     * phrase that is still in use, and that repairs itself.
+     *
+     * The one thing it must not do is retire a string another record still shows, since
+     * nothing would ever miss on it and nothing would bring it back. Hence the count.
+     *
+     * @param array $data the incoming update, keyed by entity field
+     * @param array $entityData the record as it stands
+     */
+    protected function retireSupersededPhrases($data, $entityData)
+    {
+        if (! isset($this->translationsTable) || ! is_array($entityData)) {
+            return;
+        }
+        if (! array_key_exists('publicNotes', $data)) {
+            return;
+        }
+
+        $old = $entityData['publicNotes'] ?? null;
+        $new = $data['publicNotes'] ?? null;
+        if (! is_string($old) || '' === trim($old) || $old === $new) {
+            return;
+        }
+
+        //Another association showing the same words keeps it alive. Counted against the
+        //table rather than the phrase table: the question is "does any record still
+        //render this", and only the records can answer it.
+        $gateway = $this->getTableGateway('sch_associations');
+        $others  = $gateway->select(function (Select $select) use ($old, $entityData) {
+            $select->where->equalTo('PublicNotes', $old);
+            if (isset($entityData['associationId'])) {
+                $select->where->notEqualTo('AssociationId', $entityData['associationId']);
+            }
+        });
+        if ($others->count() > 0) {
+            return;
+        }
+
+        //The reason goes into the history, because a phrase with four good translations
+        //vanishing from /admin/translations is exactly the kind of thing somebody has to
+        //be able to explain six months later. Named down to the record, so the answer is
+        //"association 214's description was replaced" rather than "something retired it".
+        $reason = isset($entityData['associationId'])
+            ? sprintf(
+                'Superseded: the description of association %d was replaced.',
+                (int) $entityData['associationId']
+            )
+            : 'Superseded: an association description was replaced.';
+
+        $this->translationsTable->retirePhraseByText($old, self::TRANSLATOR_DOMAIN, $reason);
     }
 
     /**

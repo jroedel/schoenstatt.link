@@ -301,11 +301,14 @@ scale:
   — because `FatalErrorHandler::report()` wraps resolve *and* report in one try/catch, so
   a throwing resolver would cost the whole record. Pinned by
   `test/Integration/PortedRouteErrorReportingTest`.
-- **Missing translation phrases stop being recorded for ported pages, for everyone.**
-  `JTranslate`'s `MvcEvent::FINISH` listener is what writes them, and no ported route runs
-  it. Deliberate — see the FINISH-listener note below — but until the flip it applied to
-  canary traffic only. `/admin/translations` will therefore stop learning about phrases on
-  ported pages.
+- ~~**Missing translation phrases stop being recorded for ported pages, for everyone.**~~
+  **Fixed 2026-08-11.** It was true, and it was the flip's sharpest edge: `JTranslate`'s
+  `MvcEvent::FINISH` listener is what writes a discovered phrase, no ported route runs it,
+  and a queued-but-unwritten phrase renders exactly like a written one — so nothing failed
+  and nothing logged. `App\Laminas\PhraseFlush` plus `App\Http\PhraseFlushListener` now
+  write them on `KernelEvents::TERMINATE`. Measured: one smoke run records 170 phrases that
+  were being discovered and discarded. See the FINISH-listener note below for why the
+  overflow hazard that blocked this no longer applies.
 - **The bridge is in front of every unported request.** Measured 2026-08-09 in the capsule
   on `/en/user/login`, sequential warm requests: median 175 ms bridged against 169 ms
   direct, with an A-B-A control drifting by the same 2–6 ms. So the kernel, the route
@@ -413,7 +416,7 @@ and the page still renders. Audited in full 2026-08-08 — four modules define o
 | `JUser` | starts the session, prunes pre-Laminas values | `App\Http\SessionListener` |
 | | `GlobalAdapterFeature::setStaticAdapter()` | **nothing** — used only by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, and no ported route renders a form. **A prerequisite for the first form route ported**, which would otherwise get a null adapter from its `NoRecordExists` validator |
 | `JTranslate` | configures the translator: locale, fallback, the DB-report listener, and the file patterns that *are* the translations | `App\Laminas\TranslatorConfigurator` |
-| | `TranslationsTable::finishUp()` on `MvcEvent::FINISH`, which **writes the collected missing phrases to the database** | **nothing, and deliberately** — a ported route collects misses and never flushes them, so it contributes nothing to `/admin/translations`. Wiring it up is not free: it is what made every blog post blank in four locales (`Data too long for column 'phrase'` at FINISH, response discarded), so the overflow needs bounding first |
+| | `TranslationsTable::flush()` on `MvcEvent::FINISH`, which **writes the collected missing phrases to the database** | `App\Http\PhraseFlushListener` on `KernelEvents::TERMINATE` (2026-08-11), armed by `App\Laminas\TranslatorConfigurator` so a route that never translates pays nothing. `TERMINATE` and not `RESPONSE` on purpose — see the FINISH-listener note below |
 | | sets the `translate`/`formLabel`/… helper text domains per controller module | the `_text_domain` route default, read by `App\Twig\LaminasExtension::translate()` |
 
 Two rows there are still "nothing", and both are deliberate rather than pending: the
@@ -668,9 +671,14 @@ which is why they survived batch 3:
 - **Navigation labels** take the **`default`** domain, not the page's. Both halves are
   measured: `Literature` → "Literatura" in es, so labels are translated; `Admin` → "Admin"
   in es even though `Schoenstatt` holds "Administración", so it is not the page's domain.
-- **Breadcrumb labels are never translated at all.** `partial/breadcrumbs.phtml` prints
-  them verbatim, so `/es/dictionary/es` shows "Literature" in its trail beside a navbar
-  that says "Literatura". Do not "fix" that in a page template.
+- **Breadcrumb labels are translated** (2026-08-11), on both sides. They were not, and it
+  was the one place a fully translated page contradicted itself: `/it/shrines` said
+  "Santuari" in the navbar and "Shrines" in the breadcrumb directly beneath it. The laminas
+  partial looks a label up in the navigation helper's domain and falls back to `default`;
+  the layout does the same through `translate()`. A crumb whose label is *data* passes
+  `'translate': false` — an association's name on the edit page, the dictionary page's own
+  title — because translating those would put record content in the phrase table, one row
+  per record.
 
 `translate()`'s two-domain lookup is a **superset** of laminas' behaviour, not a mirror
 of it — laminas has no cross-domain fallback. It cannot lose a translation laminas finds;
@@ -924,13 +932,18 @@ defect in a page ported by this batch; three are improvements and two are older.
 
 #### A note on that FINISH listener
 
-The blog is gone (see history.md), and with it the worst instance of a hazard that is
-not: `JTranslate\Model\TranslationsTable::finishUp()` writes collected missing phrases
-on `MvcEvent::FINISH`, and the `phrase` column is not wide enough for an arbitrary
-string. Any laminas page that passes a long value through `translate()` can therefore
-throw *after* its response is assembled, and the visitor gets a 200 with an empty body.
-Ported routes never run that listener, which is why they cannot hit it — and why they
-also record nothing. Bounding the write is the fix; it is not done.
+The hazard it used to carry: `TranslationsTable::flush()` writes collected missing phrases
+on `MvcEvent::FINISH`, and the `phrase` column used to be a `varchar(2000)` that silently
+truncated. A laminas page passing a long value through `translate()` could therefore throw
+*after* its response was assembled, and the visitor got a 200 with an empty body — which is
+what blanked every blog post in four locales. The blog is gone (see history.md), and the
+column became `text` with the phrase-integrity work deployed 2026-08-10, so the write now
+needs a >64 KB string to fail rather than a >2 KB one.
+
+That is why the Symfony side could finally be wired up, and it is wired **on
+`KernelEvents::TERMINATE`, not `RESPONSE`**: terminate runs after the response has been
+sent, so a throw there cannot take the page with it. The laminas listener still has the
+original placement and the original exposure. Bounding the write is still the real fix.
 
 ## Routes that are not portable yet, and why
 

@@ -5,6 +5,7 @@ use SionModel\Controller\SionController;
 use Books\Model\LibraryTable;
 use Books\Service\SpreadsheetReader;
 use JTranslate\Controller\Plugin\NowMessenger;
+use JTranslate\I18n\TranslatableMessage;
 use BjyAuthorize\Exception\UnAuthorizedException;
 use Books\Model\PublicationsTable;
 
@@ -446,10 +447,13 @@ class LibraryImportsController extends SionController
         if (! empty($duplicateWithinLibraryIds)) {
             $simulate = true; //inform the calling function, we weren't able to persist
             //this breaks the idea of the function a little, but there's no better way to let the user know
+            //sprintf here produced the finished string, which the messenger then
+            //translated — so the id list became the phrase. Deferring the sprintf to
+            //render time means the template is what gets looked up.
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
-            ->addMessage(sprintf(
+            ->addMessage(new TranslatableMessage(
                 "File not imported due to duplicate withinLibraryIds: %s.",
-                implode(',', $duplicateWithinLibraryIds)
+                [implode(',', $duplicateWithinLibraryIds)]
             ));
         } elseif (! $simulate) {
             //free up a little memory

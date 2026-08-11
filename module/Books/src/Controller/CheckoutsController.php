@@ -5,6 +5,7 @@ use SionModel\Controller\SionController;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
+use JTranslate\I18n\TranslatableMessage;
 use Books\Form\CheckinForm;
 use Books\Form\MassCheckoutForm;
 use Schoenstatt\Service\PatresGateway;
@@ -55,8 +56,15 @@ class CheckoutsController extends SionController
             }
         }
         if (! empty($badValues)) {
+            //The id list is data, and the messengers translate the finished message —
+            //so concatenating it filed one permanent phrase row per distinct set of
+            //bad ids (ten of them so far), none of which anyone could translate.
+            //Only the template below reaches translate().
             $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
-                ->addMessage('The following book id\'s are invalid: ' . implode(', ', $badValues) . ' Please try again.');
+                ->addMessage(new TranslatableMessage(
+                    'The following book id\'s are invalid: %s Please try again.',
+                    [implode(', ', $badValues)]
+                ));
             return;
         }
 

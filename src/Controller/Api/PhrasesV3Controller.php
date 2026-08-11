@@ -116,6 +116,20 @@ final class PhrasesV3Controller extends AbstractApiController
      */
     private const KEY_LOCALE = 'en_US';
 
+    /**
+     * The one key of a PATCH body that is not a language.
+     *
+     * Underscored so it cannot collide with a language code now or later, and safe to
+     * add because the body was already validated strictly: `_note` was a 422 before this
+     * existed, so no caller can be sending it and meaning something else.
+     *
+     * Its value is attached to the history rows the write produces — one per translation
+     * destroyed, none when the write only fills gaps. That is deliberate: a note is a
+     * justification for *replacing* something, and a phrase's history read in order is
+     * then a thread rather than a log. See M006CreateTranslationHistory.
+     */
+    public const NOTE_KEY = '_note';
+
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly RouteUrl $routeUrl,
@@ -192,6 +206,69 @@ final class PhrasesV3Controller extends AbstractApiController
         );
 
         return self::tagged(new JsonResponse($document), $document['meta']['etag']);
+    }
+
+    /**
+     * `GET /api/v3/phrases/{id}/history` — what writing to this phrase has destroyed.
+     *
+     * A subresource rather than a field or an `?include=`, because it is the answer to
+     * a question almost nobody is asking. The representation carries a link to it and
+     * nothing more, so the ordinary listing and fetch stay the size they were.
+     *
+     * No ETag. There is nothing to concurrency-control: the table is append-only, so a
+     * conditional request could only ever guard against a *longer* history, which is
+     * not a conflict.
+     *
+     * A phrase this project does not own answers 404 here for the same reason it does
+     * on `show`, and an id whose phrase exists but has never been overwritten answers
+     * 200 with an empty list — "nothing was lost", which is different from "no such
+     * phrase" and different again from "no records kept".
+     *
+     * The thread is keyed on the phrase's *hash*, not the id in the URL: the id only
+     * has to name a live row of the string. That is what keeps a thread whole across a
+     * merge or a delete-and-rediscover, both of which give the same English string a new
+     * id. See JTranslate's M006CreateTranslationHistory.
+     */
+    public function history(Request $request): Response
+    {
+        $actingUser = $this->requireAgent($request);
+        if ($actingUser instanceof Response) {
+            return $actingUser;
+        }
+
+        $phrase = $this->phrase($request);
+        if (null === $phrase || ! isset($phrase['phraseId'])) {
+            return self::problem(Response::HTTP_NOT_FOUND, 'No phrase of this project has that id.');
+        }
+
+        $languages = $this->validator()->languages();
+
+        //`?language=de` narrows to one language's thread, which is the shape an agent
+        //deciding whether to overwrite German actually wants. Refused rather than
+        //ignored when it is not a language, for the reason a PATCH refuses `de_DE`: a
+        //filter that silently does nothing returns the whole history and the caller
+        //reads another language's argument as if it were about this one.
+        $language = $request->query->get('language');
+        $locale   = null;
+        if (null !== $language && '' !== $language) {
+            if (! is_string($language) || null === $locale = $languages->localeFor($language)) {
+                return self::problem(
+                    Response::HTTP_UNPROCESSABLE_ENTITY,
+                    'That is not a language this API accepts.',
+                    ['writableLanguages' => $languages->languages()]
+                );
+            }
+        }
+
+        $phraseId = (int) $phrase['phraseId'];
+
+        return new JsonResponse(PhraseResource::representHistory(
+            $phraseId,
+            $this->table()->getTranslationHistory($phraseId, $locale),
+            $languages,
+            $request->getSchemeAndHttpHost(),
+            $language
+        ));
     }
 
     // ----------------------------------------------------------------- write
@@ -383,6 +460,19 @@ final class PhrasesV3Controller extends AbstractApiController
         PhraseValidator $validator,
         int $actingUser
     ): array {
+        //Split off before the language check, or it would be refused as an unknown
+        //language — which is exactly the guard that makes a reserved key safe to add:
+        //`_note` is not a language code, cannot become one, and was a 422 until this
+        //line, so no caller can already be sending it and meaning something else.
+        $note = $patch[self::NOTE_KEY] ?? null;
+        unset($patch[self::NOTE_KEY]);
+        if (null !== $note && ! is_string($note)) {
+            return self::failure(
+                'The note must be a string.',
+                ['note' => self::NOTE_KEY . ' takes up to ' . TranslationsTable::NOTE_LENGTH . ' characters']
+            );
+        }
+
         $unknown = array_diff(array_map(strval(...), array_keys($patch)), $languages->languages());
         if ([] !== $unknown) {
             //Refused rather than ignored, for the association API's reason: an agent
@@ -480,7 +570,12 @@ final class PhrasesV3Controller extends AbstractApiController
         //have, so without this every agent edit lands in trans_translations as
         //modified_by NULL and the admin listing cannot say who wrote a translation.
         $table->setActingUserId($actingUser);
-        $table->updatePhrase((int) $phrase['phraseId'], $submitted);
+        //The note rides along to the history rows this write produces — one per
+        //translation it destroys, none if it only fills gaps. See
+        //TranslationsTable::recordTranslationHistory(); a note on a write that destroys
+        //nothing has nothing to attach to, and is dropped rather than stored somewhere
+        //it would not be found again.
+        $table->updatePhrase((int) $phrase['phraseId'], $submitted, $note);
 
         return self::applied($changed);
     }
