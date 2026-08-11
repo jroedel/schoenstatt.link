@@ -14,9 +14,10 @@ use function count;
  * counters it puts a badge on.
  *
  * A copy of `Schoenstatt\Controller\AdminController::indexAction()`, and copied for
- * the reason docs/strangler.md gives: sharing would mean *editing* the laminas
- * action, and production still serves it — `SYMFONY_KERNEL` is unset there — so the
- * port would be putting a live page at risk to save a duplicate literal.
+ * the reason docs/strangler.md gives: sharing would mean *rewriting* the laminas
+ * action, which is still live behind the canary. Adding a row to its literal array,
+ * as the kernel-switch move did, is not that — it is the one edit shape the
+ * duplication tolerates, because the parity test catches a half-done one.
  * `test/Integration/AdminIndexParityTest` is what makes the duplicate safe: it
  * drives the laminas action and compares both halves against this class. When the
  * laminas route is deleted, the action goes and the test goes with it.
@@ -47,6 +48,11 @@ final class AdminIndex
         'jtranslate'                   => 'Manage Translations',
         'sion-model/data-problems'     => 'Data problems',
         'admin/literature-maintenance' => 'Literature maintenance',
+        //the Symfony-kernel canary toggle, moved here from the navbar 2026-08-11.
+        //`route/kernel-switch` is sch_administrator-only, so the template's per-item
+        //ACL check hides it from the moderators and translators who also reach this
+        //page — the same filtering that already hides six of the ten links above.
+        'kernel-switch'                => 'Switch kernel',
     ];
 
     /**

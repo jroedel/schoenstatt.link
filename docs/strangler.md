@@ -167,10 +167,18 @@ Two further things to know:
 
 ### Switching it from a browser
 
-Administrators get a **Switch kernel** item in the navbar, which drops them back on the
-page they came from with a flash saying what changed. `sch_administrator` only — the
-canary is not a privilege, but a menu item that changes how the site renders is not
-something to offer visitors.
+Administrators get a **Switch kernel** link on the admin landing page (`/en/admin`),
+which drops them back on the page they came from with a flash saying what changed.
+`sch_administrator` only — the canary is not a privilege, but a control that changes how
+the site renders is not something to offer visitors.
+
+It was a navbar item until 2026-08-11 and is now one of the admin page's links, filtered
+by the same `route/kernel-switch` resource the route is guarded by, so the two still
+cannot disagree. What the move costs: "the page they came from" is now almost always
+`/en/admin`, since that is where the Referer points, so inspecting a *particular* page
+under the other kernel means toggling first and navigating second. The action is
+unchanged — it still offers whichever kernel you are not on, and still says which one
+you landed on.
 
 It **offers whichever kernel you are not on**, and the way it decides is the part worth
 keeping: `Application\Controller\IndexController::kernelSwitchAction()` asks two

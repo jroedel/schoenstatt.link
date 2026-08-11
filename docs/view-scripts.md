@@ -381,7 +381,7 @@ laminas guard keys on, so the 149 restricted routes are portable. Mechanism in
   *inside the layout*: `UnauthorizedStrategy` adds its ViewModel as a **child** of
   the layout's, so the refusal keeps the navbar and the language chooser. A bare
   `<h1>403</h1>` would have looked correct in a diff of the strategy's source.
-- **`route/admin` admits a moderator; the page then admits four of its ten links.**
+- **`route/admin` admits a moderator; the page then admits four of its eleven links.**
   Getting through the guard and seeing the page are different permissions, and this
   page is where the difference shows: the template filters each link through
   `isAllowed()` individually. The first draft of the smoke test pinned the ten-link
