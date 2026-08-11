@@ -430,6 +430,77 @@ class TranslationWriteSemanticsTest extends TestCase
         }
     }
 
+    /**
+     * A retirement is noted in the thread, and noted exactly once however often it is asked for.
+     *
+     * The second half is the bound on this whole mechanism. `retirePhraseByText()` acts
+     * only on a row that is still live, so calling it again matches nothing and writes
+     * nothing — which is what stops an application that calls it on every save of an
+     * unchanged record from filling the table. Retire and rediscover can alternate, but
+     * each step needs an event from outside and each writes one row.
+     */
+    public function testARetirementIsNotedOnceAndOnlyOnce(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Retirement is noted ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+
+            self::assertTrue($this->table->retirePhraseByText($text, $this->textDomain, 'because I said so'));
+
+            $thread = $this->table->getTranslationHistory($id);
+            self::assertCount(1, $thread, 'the retirement left no trace, so nothing can explain it later');
+            self::assertSame(TranslationsTable::OPERATION_RETIRE, $thread[0]['operation']);
+            self::assertSame('because I said so', $thread[0]['notes']);
+            //No language and no lost text: a retirement destroys nothing, and claiming
+            //otherwise would send somebody looking for a translation to restore.
+            self::assertSame(TranslationsTable::PHRASE_EVENT_LOCALE, $thread[0]['locale']);
+            self::assertSame('', $thread[0]['old_translation']);
+
+            self::assertFalse(
+                $this->table->retirePhraseByText($text, $this->textDomain, 'again'),
+                'an already-retired phrase was retired a second time'
+            );
+            self::assertFalse(
+                $this->table->retirePhraseByText($text, $this->textDomain, 'and again'),
+                'an already-retired phrase was retired a third time'
+            );
+            self::assertCount(
+                1,
+                $this->table->getTranslationHistory($id),
+                'repeated calls each wrote a row, so an application calling this on every save fills the table'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /**
+     * A phrase-level event appears in every language's thread.
+     *
+     * The filtered read is the one most likely to be consulted — an agent looking at
+     * German — and it is the one that would otherwise be unable to say why the phrase
+     * left the worklist.
+     */
+    public function testARetirementShowsInALanguageFilteredThread(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $text = 'Retirement crosses languages ' . bin2hex(random_bytes(5));
+            $id   = $this->insertPhrase($text);
+            $this->table->retirePhraseByText($text, $this->textDomain, 'superseded');
+
+            $german = $this->table->getTranslationHistory($id, 'de_DE');
+
+            self::assertCount(1, $german, 'the retirement is invisible to a language-filtered read');
+            self::assertSame(TranslationsTable::OPERATION_RETIRE, $german[0]['operation']);
+        } finally {
+            $connection->rollback();
+        }
+    }
+
     /** Retiring by text is scoped to this project, like every other write here. */
     public function testRetiringByTextDoesNotReachAnotherProject(): void
     {

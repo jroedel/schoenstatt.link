@@ -430,11 +430,25 @@ Two consequences to read the document with:
   that way, copying existing translations onto a new row when a phrase appears in a
   second domain — so a thread that split by domain would show you half the argument.
 
-One entry per **loss**, not per write. Filling a language that was empty destroys
-nothing and appears here not at all, so an empty list means "nothing has ever been lost
-here" rather than "no records kept". `operation` is `update` when something replaced the
-text and `retract` when something deleted it, which is the difference between "the
-language says something else now" and "the language is empty now".
+One entry per **event that changed what a translator would see**. Filling a language that
+was empty appears here not at all, so an empty list means "nothing has been lost or
+withdrawn here" rather than "no records kept".
+
+`operation` is one of three:
+
+| | what it means | `language` | `previous` |
+|---|---|---|---|
+| `update` | something replaced the text | the language | the text that was replaced |
+| `retract` | something deleted it; the language is empty now | the language | the text that was deleted |
+| `retire` | the **phrase** left the translator's worklist because the application knows nothing renders it any more | `null` | `""` |
+
+A `retire` entry is about the phrase and not about a language, so it appears in **every**
+language's thread, `?language=` filter included — it is usually the answer to "why did this
+disappear from the queue", and that is the question a language-filtered read is most often
+opened with. It destroys nothing, which is why `previous` is empty: there is no translation
+to restore, and the row exists so the disappearance can be explained rather than guessed at.
+`note` carries the reason, e.g. *"Superseded: the description of association 214 was
+replaced."*
 
 `writtenBy`/`writtenOn` describe the row that was lost — who wrote it and when, because
 losing the attribution is most of what makes an overwrite unrecoverable in practice.

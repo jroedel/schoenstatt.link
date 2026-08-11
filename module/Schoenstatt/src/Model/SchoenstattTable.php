@@ -1680,7 +1680,18 @@ class SchoenstattTable extends SionTable implements
             return;
         }
 
-        $this->translationsTable->retirePhraseByText($old, self::TRANSLATOR_DOMAIN);
+        //The reason goes into the history, because a phrase with four good translations
+        //vanishing from /admin/translations is exactly the kind of thing somebody has to
+        //be able to explain six months later. Named down to the record, so the answer is
+        //"association 214's description was replaced" rather than "something retired it".
+        $reason = isset($entityData['associationId'])
+            ? sprintf(
+                'Superseded: the description of association %d was replaced.',
+                (int) $entityData['associationId']
+            )
+            : 'Superseded: an association description was replaced.';
+
+        $this->translationsTable->retirePhraseByText($old, self::TRANSLATOR_DOMAIN, $reason);
     }
 
     /**
