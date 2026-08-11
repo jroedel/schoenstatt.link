@@ -510,8 +510,21 @@ of live rows are collisions — interface strings that happen to equal some book
 routes unrelated to publications, five of them in the capsule and all translated years ago.
 And **counting them needs `EXISTS`, not a join**: 10,166 publications include duplicate
 titles across editions, nine of them that one, so a join multiplies one phrase into nine.
-The query that answers "is it back" is statement 2 of `database/db7.5.sql`, and what it
-looks for is an *untranslated* cluster with a recent `added_on`.
+
+**And one correction that lands squarely on your §12, because you rely on the same test.**
+Your signature was "the English row is a verbatim copy of the key **and** no other language
+has ever translated it", and db7.4 was built on it. It is not exact.
+`TranslationsTable::writeMissingPhrasesToDb()` **copies translations onto a newly discovered
+phrase** from any row of this project holding the same text in another text domain — so a
+title that collides with an already-translated string arrives pre-translated in four
+languages seconds after it is filed, and then passes your second test. Six such rows
+survived db7.4 on production and `database/db7.6.sql` retires them.
+
+What cannot be forged is where a row came from: route `publication` in `Application` or
+`default` is the breadcrumb's own two-step lookup and nothing else, and the page's real
+interface strings live in `Books` and `Schoenstatt`. So if you are classifying, **read
+`originRoute` and `textDomain` before the translation state.** The query that answers "is it
+back" is statement 4 of `database/db7.6.sql`.
 
 Your closing suggestion — check `headTitle()` on every remaining show page — was taken and
 comes back clean. All seven (`books`, `texts`, `borrowers`, `publications`, `libraries`,
