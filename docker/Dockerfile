@@ -10,12 +10,12 @@
 # Note the base image's Debian release moves under us: php:7.4-apache is still
 # bullseye, but 8.4 and 8.5 are both trixie now (8.4 was bookworm when rung 4b
 # was measured). That matters for one thing in particular — trixie carries ICU
-# 76.1 while production's *8.4* build had ICU 72.1 — so a rebuilt capsule formats
-# dates against newer locale data than that build did, the opposite of the drift
-# recorded in docs/BACKLOG.md. What the hoster's 8.5 build carries has not been
-# measured; the lib-icu platform pin still says 72.1, which is now a fact about
-# a PHP version production no longer runs. Nothing resolves on lib-icu today, so
-# the stale pin costs nothing but a wrong answer to anyone who reads it.
+# 76.1 while production carries 72.1 on its 8.4 *and* its 8.5 build (measured
+# 2026-08-11) — so a rebuilt capsule formats dates against newer locale data than
+# production, the opposite of the drift recorded in docs/BACKLOG.md. Now that the
+# PHP versions match exactly, this is the one way the capsule still fails to
+# reproduce production. composer's lib-icu pin says 72.1 and is correct: it
+# describes production, not this image.
 ARG PHP_VERSION=7.4
 FROM php:${PHP_VERSION}-apache
 
