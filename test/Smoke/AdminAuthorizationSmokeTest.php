@@ -22,13 +22,14 @@ use function preg_match_all;
  * |---|---|
  * | anonymous | 302 `/en/user/login?redirect=/en/admin` |
  * | signed in, no moderator role | 403, the `error/403` page |
- * | signed in, holds `sch_moderator` | 200, the ten admin links |
+ * | signed in, holds `sch_moderator` | 200, the admin links their roles allow |
  *
  * All three were measured against **laminas** first, on the same URL before it was
  * ported (comment the route out of config/symfony/routes.php and re-run this file's
  * probe): 302 to `/en/user/login?redirect=/en/admin`, then 403 with
  * "You are not authorized to access admin.", then 200 with the same ten links in the
- * same order. The assertions below are that measurement, not a design.
+ * same order. The assertions below are that measurement, not a design — with the
+ * eleventh link, the kernel toggle, added in 2026-08-11 when it left the navbar.
  *
  * The signed-in-but-unprivileged case is not contrived: registration assigns
  * lib_user, pub_user, sch_user and bib_user by itself, and none of them is beneath
@@ -68,18 +69,22 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         ['/en/admin/translations', 'Manage Translations'],
         ['/en/sm/data-problems', 'Data problems'],
         ['/en/admin/literature-maintenance', 'Literature maintenance'],
+        //appended 2026-08-11, when the kernel toggle moved out of the navbar. It is
+        //sch_administrator-only, so it appears in this list and in no other case below.
+        ['/en/kernel-switch', 'Switch kernel'],
     ];
 
     /**
      * What `sch_moderator` alone sees — the first four and nothing else, because the
-     * other six name resources no descendant of sch_moderator is allowed
+     * other seven name resources no descendant of sch_moderator is allowed
      * (`route/juser` wants `administrator`, `route/jtranslate` wants
-     * `sch_general_moderator` or `translator`, and so on: docs/acl-rules.md).
+     * `sch_general_moderator` or `translator`, `route/kernel-switch` wants
+     * `sch_administrator`, and so on: docs/acl-rules.md).
      *
      * Worth its own assertion rather than being a smaller version of the same one.
      * Getting through the route guard and seeing the whole page are two different
      * permissions, and this page is where they differ: the guard admits a moderator,
-     * and the *template* then filters ten links through the ACL individually. A port
+     * and the *template* then filters every link through the ACL individually. A port
      * that dropped that per-item check would still pass every status-code assertion in
      * this file.
      *
@@ -212,7 +217,7 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         $this->assertSame(
             self::MODERATOR_LINKS,
             $this->adminLinks($response['body']),
-            'the template filters each link through the ACL, so a moderator sees four of the ten'
+            'the template filters each link through the ACL, so a moderator sees four of the eleven'
         );
     }
 

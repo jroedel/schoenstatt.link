@@ -632,7 +632,7 @@ not that v3 is broken.
 
 Checking a *signed-in* ported page is still manual and is the one thing the canary buys
 that a global flip could not. Sign in as an administrator and use the **Switch kernel**
-item in the navbar — it offers whichever kernel you are *not* currently on, and says which
+link on `/en/admin` — it offers whichever kernel you are *not* currently on, and says which
 you have moved to — then load `/en/sm/view-changes`, `/en/sm/data-problems`,
 `/en/sm/phpinfo`, `/en/admin` and one association edit form. Click it again to clear the
 override and go back to the site default; closing the browser does the same, since it is a
@@ -708,8 +708,8 @@ the "After" list below.
 
 In order of how much they cost:
 
-1. **One person, no deploy.** Set `sl_symfony_canary=0` — the **Switch kernel** navbar
-   item does it — and that visitor is back on laminas immediately. Enough to compare a
+1. **One person, no deploy.** Set `sl_symfony_canary=0` — the **Switch kernel** link on
+   `/en/admin` does it — and that visitor is back on laminas immediately. Enough to compare a
    suspect page against its laminas twin. This is now the escape hatch rather than a
    curiosity, which is why it was deployed ahead of the flip and exercised first.
 2. **Everyone, no deploy.** Delete the added line from the server's

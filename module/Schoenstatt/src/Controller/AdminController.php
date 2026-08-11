@@ -61,6 +61,7 @@ class AdminController extends AbstractActionController
             'jtranslate'                => "Manage Translations",
             'sion-model/data-problems'  => "Data problems",
             'admin/literature-maintenance'  => "Literature maintenance",
+            'kernel-switch'             => "Switch kernel",
         ];
         $badges = [];
 
