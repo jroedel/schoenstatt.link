@@ -7,7 +7,7 @@
   Three notes on the translation from thirteen lines of .phtml:
 
   - **The per-item ACL check is the page**, not decoration. `route/admin` admits
-    sch_moderator and translator; a translator then sees one of these ten links.
+    sch_moderator and translator; a translator then sees one of these eleven links.
     Dropping the check would show every moderator tool to a translator, which is why
     it is here and not in the controller — same place the original has it.
   - **`badge()` is reproduced rather than reached.** TwbBundle's helper renders
@@ -15,7 +15,7 @@
     markup is a literal here. Reaching a laminas form-view helper for one span would
     add it to App\Laminas\ViewHelpers' allowlist for no gain.
   - **The whitespace is not reproduced.** The .phtml emits nine spaces between `</a>`
-    and `</p>` — an artifact of where its `?>` tags fall. Ten lines is few enough
+    and `</p>` — an artifact of where its `?>` tags fall. Eleven lines is few enough
     that a real difference cannot hide in the noise, so the two renderings are
     compared by content (the ordered href/label/badge triples, pinned in
     test/Smoke/AdminAuthorizationSmokeTest) rather than by bytes.

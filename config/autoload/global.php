@@ -42,25 +42,18 @@ return [
                 'resource' => 'route/schoenstatt',
             ],
             /**
-             * The Symfony-kernel canary toggle, in the navbar so an administrator can
-             * switch front controllers from whatever page they are on and switch back
-             * from the page they land on.
+             * The Symfony-kernel canary toggle is deliberately *not* here. It lived in
+             * the navbar until 2026-08-11, where it sat between "Movement" and
+             * "Shrines" as a developer tool in a visitor-facing menu; it is now one of
+             * the admin landing page's links instead (Schoenstatt\Controller\
+             * AdminController::indexAction() and its copy App\Schoenstatt\AdminIndex).
              *
-             * `resource` is what hides it from everyone else — both the laminas
-             * navigation helper and App\View\SiteChrome::isPageVisible() filter on it,
-             * so the item is ACL-gated in the same place the route is, and the two
-             * cannot disagree.
-             *
-             * The label does not say which kernel is currently active, because a
-             * navigation label is static config and both layouts render it verbatim.
-             * The action answers that question instead, in the flash message it
-             * redirects with.
+             * The cost of the move is that the toggle no longer returns you to the page
+             * you were reading — the Referer is the admin page now, so that is where it
+             * comes back to. Switching kernel to inspect a particular page therefore
+             * means /en/admin, click, then navigate; the action itself is unchanged and
+             * still offers whichever kernel you are not on.
              */
-            [
-                'label' => 'Switch kernel',
-                'route' => 'kernel-switch',
-                'resource' => 'route/kernel-switch',
-            ],
             [
                 'label' => 'Shrines',
                 'route' => 'shrines',
