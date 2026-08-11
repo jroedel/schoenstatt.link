@@ -382,10 +382,12 @@ would name the page whose bug it was. When a targeted search comes back empty, l
 by *text* alone before theorising; `retired_on` and `origin_route` then answer the question
 directly.
 
-## Before the next deploy: `database/db7.7.sql`, the §2/§3 residue
+## Done 2026-08-11: `database/db7.7.sql`, the §2/§3 residue
 
-**Data only, no code change, and no ordering constraint** — the code fixes it depends on have
-been live since 2026-08-10.
+**Applied to production 2026-08-11: 18 rows retired**, and the closing check left exactly the
+two live literals — `Error in form submission, please review.` in `JTranslate` and in
+`Application`. Data only, no code change, no ordering constraint: the code fixes it depends on
+had been live since 2026-08-10.
 
 Reported from the translation GUI on 2026-08-11: rows like `Error in form submission, please
 review: security, mainShowDisplay, viewRole, checkoutPersonListKind` on the library routes,
@@ -410,6 +412,14 @@ again):
 The last group is §2's privacy smell — six strangers' mistyped mail domains. Only a domain
 name, no local part, so retiring is enough; if they should cease to exist, that is a `DELETE`
 and a decision, not this file.
+
+**Production had neither of the last two groups.** It retired 18 rows where the capsule
+retired 28: the six hostnames and the four `Assignment Id:` rows are capsule-only, and the six
+hostnames are the same six the change-request report named — `gmail.com`, `hotmail.com`,
+`miuandes.cl`, `uc.cl`, `yahoo.com.br`, `yahoo.de`. So that report was reading the capsule for
+§2, exactly as it was for §1's four JWTs, and **no live registration data was ever in the
+production phrase table.** Worth knowing before anyone treats §2 as a production privacy
+incident; the code defect behind it was real either way.
 
 `Assignment Id:` has **no call site left in any module**: that code is gone, so those four are
 residue of a removed feature rather than of a fixed one.
