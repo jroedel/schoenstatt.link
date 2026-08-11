@@ -497,6 +497,22 @@ Four things to know, in descending order of how much they affect you:
 - `skip-publication-title` in `tools/classify.py` can go once db7.4 has run, and
   `skip-record-content` still needs rebuilding on §6's corrected premise.
 
+**One title survived, and how it was found is the useful part.** Checking the corpus after
+the migration turned up `150 preguntas sobre Schoenstatt`, still live in `Books` and
+`default`. Its page is Symfony-served and its breadcrumb comes from the controller rather
+than the navigation, so db7.4's route scoping could not have reached it — and the crumb was
+translated because the Twig layout translates one unless told not to. Fixed with
+`'translate' => false` and retired by `database/db7.5.sql`; every other ported controller was
+checked and passes only interface labels.
+
+Two things in that for you. **A title-shaped row is not automatically the defect**: a handful
+of live rows are collisions — interface strings that happen to equal some book's title, on
+routes unrelated to publications, five of them in the capsule and all translated years ago.
+And **counting them needs `EXISTS`, not a join**: 10,166 publications include duplicate
+titles across editions, nine of them that one, so a join multiplies one phrase into nine.
+The query that answers "is it back" is statement 2 of `database/db7.5.sql`, and what it
+looks for is an *untranslated* cluster with a recent `added_on`.
+
 Your closing suggestion — check `headTitle()` on every remaining show page — was taken and
 comes back clean. All seven (`books`, `texts`, `borrowers`, `publications`, `libraries`,
 `associations`, `persons`) disable the translator; `library-imports/show` passes an
