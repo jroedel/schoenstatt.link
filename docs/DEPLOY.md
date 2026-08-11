@@ -382,6 +382,50 @@ would name the page whose bug it was. When a targeted search comes back empty, l
 by *text* alone before theorising; `retired_on` and `origin_route` then answer the question
 directly.
 
+## Before the next deploy: `database/db7.7.sql`, the §2/§3 residue
+
+**Data only, no code change, and no ordering constraint** — the code fixes it depends on have
+been live since 2026-08-10.
+
+Reported from the translation GUI on 2026-08-11: rows like `Error in form submission, please
+review: security, mainShowDisplay, viewRole, checkoutPersonListKind` on the library routes,
+with the reasonable question of whether the code was still broken. It is not. Every call site
+now passes either a fixed literal — `'Error in form submission, please review.'`, with a full
+stop where the old rows have a colon and a field list — or a `TranslatableMessage` whose
+template is what reaches `translate()`. What the fixes could not do is remove the rows already
+written, and nobody had.
+
+28 rows in the capsule, none of them translatable and none of them reachable (nothing
+translates a finished message any more, so the interpolated form can never be a lookup key
+again):
+
+| shape | rows | routes |
+|---|---|---|
+| `Error in form submission, please review: <fields>` | 6 | `libraries/create`, `libraries/library/checkout`, `publications/create`, `associations/create` |
+| `The following book id's are invalid: <ids> Please try again.` | 10 | `libraries/library/checkout` |
+| `File not imported due to duplicate withinLibraryIds: <ids>.` | 1 | `library-imports/library-import/edit` |
+| `Assignment Id: <n>` | 4 | `sion-model/view-changes` |
+| `'<host> ' is not a valid hostname for the email address` | 6 | `zfcuser/register` |
+
+The last group is §2's privacy smell — six strangers' mistyped mail domains. Only a domain
+name, no local part, so retiring is enough; if they should cease to exist, that is a `DELETE`
+and a decision, not this file.
+
+`Assignment Id:` has **no call site left in any module**: that code is gone, so those four are
+residue of a removed feature rather than of a fixed one.
+
+Every statement excludes phrases containing a literal `%`, which is the template guard — it is
+what keeps the live `'…withinLibraryIds: %s.'` out of a pattern that would otherwise match it.
+Statement 1 prints what will be retired and statement 3 prints what remains of the same
+shapes, which should be the fixed literal and nothing carrying a value.
+
+```bash
+ssh -p 222 <admin>@dedi2934.your-server.de \
+  'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.7.sql'
+```
+
+Then rebuild the catalogs, as after any phrase change.
+
 ## Done 2026-08-10: JTranslate's phrase-table migrations
 
 Applied to production and deployed. Recorded here rather than deleted, because the
