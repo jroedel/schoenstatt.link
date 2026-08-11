@@ -505,11 +505,21 @@ translated because the Twig layout translates one unless told not to. Fixed with
 `'translate' => false` and retired by `database/db7.5.sql`; every other ported controller was
 checked and passes only interface labels.
 
-Two things in that for you. **A title-shaped row is not automatically the defect**: a handful
-of live rows are collisions — interface strings that happen to equal some book's title, on
-routes unrelated to publications, five of them in the capsule and all translated years ago.
-And **counting them needs `EXISTS`, not a join**: 10,166 publications include duplicate
-titles across editions, nine of them that one, so a join multiplies one phrase into nine.
+Two things in that for you. **A title-shaped row is not automatically the defect**, and the
+live ones are more interesting than a coincidence: they are **shrine names** — §6's feature —
+that happen also to be the title of a book about that shrine. `Santuario del Padre` and
+`Heiligtum der Berufung` are rows in the `Schoenstatt` domain translated in all five
+languages, and their `origin_route` of `publications/publication` records only where the
+string was first seen, in 2019. **Do not treat them as noise; they are what makes a shrine's
+name render in Italian.** And **counting them needs `EXISTS`, not a join**: 10,166
+publications include duplicate titles across editions, nine of them called *150 preguntas
+sobre Schoenstatt*, so a join multiplies one phrase into nine.
+
+That pair also explains something the site was doing that nobody had reported. Because those
+shrine-name rows exist and are translated, a publication whose title equals a shrine's name
+got a breadcrumb lookup that **hit** — so on an Italian page the book `Heiligtum der Berufung`
+was labelled *Santuario della Vocazione*. Not a missing translation: a confidently wrong
+title, which is your own §12 argument arriving from the other direction.
 
 **And one correction that lands squarely on your §12, because you rely on the same test.**
 Your signature was "the English row is a verbatim copy of the key **and** no other language
