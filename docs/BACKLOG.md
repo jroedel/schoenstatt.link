@@ -5,8 +5,9 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 reusable there instead of accumulating DONE narratives.
 
 State as of 2026-08-07, on branch `symfony-upgrade` (not yet merged): the
-**capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
-see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
+**capsule runs PHP 8.5.9**, and since 2026-08-11 so does production — they had
+been deliberately different for a week; see [php-85.md](php-85.md), which also
+explains why `config.platform.php` stays at 8.4.24 regardless. `composer audit --locked` reports zero advisories.
 **631 tests across four suites** (119 unit, 376 integration, 18 fuzz, 118
 smoke), green on 8.5; PHPStan clean at level 0
 (baseline 26 entries); one-command deploy with hooks. First-party code no longer
@@ -143,13 +144,16 @@ readability — the destination is **Symfony**, reached gradually:
   2026-08-03): clients of `GET /api/v1/libraries/:id` and
   `…/pending-labels` that never sent a JWT now get 401s. The label-printing
   workflow is the first candidate; tokens come from `POST /api/v1/login`.
-- [ ] Hetzner/konsoleH support ticket (pending): raise `apc.shm_size` 32M →
-  256M and set `apc.ttl` > 0 so a failed allocation evicts instead of wiping the
-  segment. **The ini to name is now `/home/httpd/php84-ini/ourlink/php.ini`** —
-  verified still 32M / ttl=0 after the 8.4 flip, since the settings were copied
-  across unchanged. Downgraded from blocking by the
-  cache-size work ([caching.md](caching.md)), but two expunges were observed
-  within hours on deploy day — still worth the one ticket.
+- [ ] Hetzner/konsoleH support ticket, **half landed**: `apc.shm_size` is now
+  **256M** (verified 2026-08-11 from a live phpinfo, on the 8.5 build), so the
+  size half of the ask is done and both historical offenders — 45.7 MiB and
+  29.2 MiB — would now fit in the segment. **`apc.ttl` is still 0**, which is
+  the half that did not: a failed allocation still expunges the entire cache
+  instead of evicting selectively, so the failure *mode* is unchanged and only
+  its likelihood dropped. Remaining ask is one line, and the ini to name is
+  now `/home/httpd/php85-ini/ourlink/php.ini` — the path moves with every
+  konsoleH PHP version, which is the trap that makes tuned values silently
+  revert on a flip.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
 - [ ] **Flip `SYMFONY_KERNEL=1` in production's `.htaccess`** — now one added line, and
   everything around it is prepared (2026-08-09). The line, the ordering rule, the two
@@ -672,8 +676,10 @@ readability — the destination is **Symfony**, reached gradually:
   `cs-check`'s exit status carries no signal, which is worse than the four
   cosmetic errors.
 - [ ] Production's server-side `local.php`: dead `acmailer_options` key
-  (harmless), and it still leaks stack traces via its error-display config —
-  clean both next time a deploy touches server config.
+  (harmless) — clean it next time a deploy touches server config. The
+  stack-trace leak that used to share this item is **closed**: error display is
+  off in that file (confirmed 2026-08-11), and PHP's own `display_errors` is
+  `Off` too, so the two layers agree.
 - [ ] Two Application factories still sit on the root-namespace
   `FactoryInterface` shim (deferred from rung 4a).
 - [ ] The exception notifier double-reports a failure that also kills the

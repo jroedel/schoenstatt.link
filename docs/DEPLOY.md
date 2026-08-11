@@ -844,8 +844,9 @@ history.
   `.phploy.dist`); the hooks above live in `phploy.ini` under
   `[production]`.
 - Web PHP is FastCGI with a per-account php.ini at
-  `/home/httpd/php84-ini/ourlink/php.ini` (**per PHP version**: the 8.3-era
-  file was under `php83-ini/`, the 7.4-era one under `php74-ini/`). This is the
+  `/home/httpd/php85-ini/ourlink/php.ini` (**per PHP version**: the 8.4-era file
+  was under `php84-ini/`, the 8.3-era one under `php83-ini/`, the 7.4-era one
+  under `php74-ini/`). This is the
   trap when flipping the konsoleH PHP version: the new version reads a *different*
   file, so anything tuned in the old one silently reverts to defaults — copy it
   across as part of the flip. php.ini changes are the ONE case that
@@ -866,10 +867,12 @@ history.
   same one the `do-work` hook sends), it also polls
   `/en/sm/cache-status` (both APCu **and** OPcache), passing the key as an `X-Api-Key` header rather
   than in the URL, and WARNs — without failing — when the APCu
-  segment is ≥80% full or has ever expunged. Until the production
-  `apc.shm_size` raise lands, expect this to be the early-warning signal
-  that the 32M default is saturating (first live reading 2026-08-03:
-  2 expunges within hours of the PHP 8.3 flip).
+  segment is ≥80% full or has ever expunged. The `apc.shm_size` raise has since
+  landed (32M → **256M**, verified 2026-08-11), so a saturation warning now
+  means something genuinely new rather than the old default filling up — treat
+  one as a real signal, not as the known condition it used to be. (First live
+  reading 2026-08-03, before the raise: 2 expunges within hours of the PHP 8.3
+  flip.)
 - Still manual: a sign-in round trip with a real email.
 
 ## Reading production exceptions

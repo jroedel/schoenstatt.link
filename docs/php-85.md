@@ -32,19 +32,35 @@ Measured 2026-08-05 against the installed tree and Packagist.
   most concrete cost of staying on laminas-mvc that we have measured.
 - **`require.php` is `~8.4.0 || ~8.5.0`** — the application's own code targets
   both, and the lockfile records the same. No package versions moved with it.
-- **`config.platform.php` stays at production's version (8.4.24).** This is
-  deliberate and is explained below. It is not an oversight, and raising it
-  breaks `composer install` outright.
-- **The capsule is therefore ahead of production**, which still serves 8.4.24.
-  That is a deliberate trade: it is what tests 8.5 continuously, and the cost is
-  that the capsule no longer reproduces production exactly. Switching back is
-  `PHP_VERSION=8.4` in `.env` plus a rebuild, and it is the first thing to do
-  before concluding anything from a local reproduction of a live bug.
+- **`config.platform.php` stays at 8.4.24, which is now *below* the runtime
+  everywhere.** This is deliberate and is explained below. It is not an
+  oversight, it is not a claim about any machine's PHP, and raising it breaks
+  `composer install` outright.
+- **Production runs PHP 8.5.9 as of 2026-08-11** — the same patch the capsule
+  serves, verified from a live `phpinfo()`, so the two match exactly again. For
+  the week before that the capsule was deliberately ahead; the trade that bought
+  — continuous 8.5 testing at the cost of not reproducing production exactly —
+  has simply expired, in the good direction. Reproducing a live bug locally no
+  longer needs `PHP_VERSION=8.4` in `.env` first; the earlier rungs stay
+  switchable for bisecting and nothing else. Two differences survive the match
+  and are worth knowing before trusting a local repro: ICU is **76.1 in the
+  capsule against 72.1 in production** (the base image's Debian is newer than
+  the hoster's build), and APCu is **5.1.24 against 5.1.27**.
+- **CI runs 8.5 on every job** (`.github/workflows/ci.yml`), for the reason the
+  pin makes unavoidable: the resolver is looking at an older PHP than the one
+  that will execute the code, so lint and tests on 8.5 are the only thing
+  between an 8.5-only fatal and the live site.
 
 ## The ceiling
 
-Fourteen installed packages cap PHP at `~8.4.0`. Most are incidental and would
-lift on a routine bump. One does not:
+Thirteen locked packages exclude PHP 8.5 — twelve installed by `--no-dev`, the
+thirteenth being `laminas/laminas-developer-tools`. (This line said *fourteen*
+until 2026-08-11. Re-measured with
+`Composer\Semver\Semver::satisfies('8.5.9', …)` over every locked `require.php`,
+and re-measured the same way against the lock as it stood on 2026-08-05: both
+give the identical thirteen names. Nothing moved in the tree; the original
+number was simply one too many.) Most are incidental and would lift on a routine
+bump. One does not:
 
     laminas/laminas-mvc  3.8.0  requires php ~8.1.0 || ~8.2.0 || ~8.3.0 || ~8.4.0
 
@@ -62,7 +78,7 @@ future major admits less than the current stable one. This is consistent with
 laminas-mvc being in security-only maintenance until 2028-12-31, and it is the
 premise the Symfony strangler was adopted on (see [strangler.md](strangler.md)).
 
-## Why the platform pin stays at production's version
+## Why the platform pin stays at 8.4.24, below the runtime
 
 `config.platform` tells composer what to resolve *against*, independently of the
 PHP actually running. Pinning it to 8.4.24 has two effects, and the second is the
@@ -75,18 +91,34 @@ one that matters:
 
 So the application can run on 8.5 with the pin at 8.4.24, and that is the only
 combination that both installs and runs. Raising the pin to 8.5 would make
-`composer install` fail against all fourteen packages, on every machine and on
+`composer install` fail against every capped package, on every machine and on
 the server, for no runtime benefit.
 
-The honest reading: those `~8.4.0` caps are conservative upper bounds declaring
-what each maintainer has *tested*, not statements of incompatibility. Running
-8.5 against them is early adoption, and the thing that makes it defensible is
-test coverage on 8.5 rather than the lockfile.
+Worth knowing before testing this yourself, because it produces a convincing
+false negative: `composer install` verifies the lock against
+`platform-overrides` **recorded in composer.lock**, not against the current
+`composer.json`. Editing the pin and running `install --dry-run` therefore
+succeeds while proving nothing — composer used the old 8.4.24 from the lock and
+never looked at the edit. The claim has to be checked against the constraints
+themselves; `Composer\Semver\Semver::satisfies('8.5.9', $constraint)` over
+`composer.lock` is the one-liner that does it.
 
-**When production moves to 8.5**, move the pin with it and expect
-`composer install` to need `--ignore-platform-req=php+` (the `+` suffix ignores
-only upper-bound violations) until laminas-mvc is gone. Prefer not to reach that
-state: it disables a real safety check for every package at once.
+**Production moved to 8.5 on 2026-08-11, and the pin did not move with it.** An
+earlier draft of this section said it should; that advice is withdrawn, and the
+reasoning is worth keeping because it is the whole value of the pin. Moving it
+would force `--ignore-platform-req=php+` on every install, on every machine and
+on the server, until laminas-mvc is gone — and that flag is not selective. It
+would suppress the upper-bound check for *every* package at once, including the
+next dependency that caps PHP for a reason that is not conservatism. What the
+pin costs today is honesty in one config value; what raising it costs is the
+check itself. Keep the pin, and let CI-on-8.5 be what says the runtime is fine.
+
+Which leaves one thing genuinely unpinned, and it should be stated plainly: a
+`~8.4.0` cap is a declaration of what a maintainer has *tested*, not a statement
+of incompatibility — but twelve production packages are now running on a PHP
+none of their authors claims to support. That is early adoption, and the only
+thing that makes it defensible is test coverage on 8.5 rather than the lockfile:
+green suites locally, and since 2026-08-11 in CI too.
 
 ## The same obstacle blocks FrameworkBundle
 
@@ -133,6 +165,7 @@ deleted. That single removal simultaneously:
   requires.
 
 Until then the two front controllers coexist, PHP 8.5 runs behind a platform pin
-that describes production rather than the runtime, and FrameworkBundle waits.
+that describes neither machine — it describes the ceiling — and FrameworkBundle
+waits.
 [strangler.md](strangler.md) is the mechanism; `config/symfony/routes.php` is the
 progress bar.

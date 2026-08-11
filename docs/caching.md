@@ -61,9 +61,13 @@ is now idempotent. Both are pinned by `test/Integration/SionCacheWiringTest`.
 
 ## Why item size matters so much
 
-Production APCu is a single fixed shared segment. `apc.shm_size` is **32M**
-(`/home/httpd/php74-ini/ourlink/php.ini`, still open — see BACKLOG) and
-`apc.ttl` is **0**.
+Production APCu is a single fixed shared segment. `apc.shm_size` was **32M**
+when this was written and is **256M** since the konsoleH ticket landed (verified
+2026-08-11 on the 8.5 build, `/home/httpd/php85-ini/ourlink/php.ini` — the path
+carries the PHP version, so it moves on every flip). `apc.ttl` is **still 0**,
+which is why everything below still describes the failure mode rather than a
+historical one: an eight-fold larger segment makes a failed allocation much less
+likely, and does not change what happens when one occurs.
 
 With `apc.ttl = 0`, when APCu cannot allocate room for an item it does not evict
 selectively — `apc_cache_default_expunge()` **clears the entire cache**. On top
@@ -91,7 +95,9 @@ Measured against production-scale data (2026-08-01):
 | `unlinked-books` (all books, 46 fields each) | 33,690 | **45.7 MiB** |
 | `query-objects-publication` (all publications, 80 fields each) | 10,166 | **29.2 MiB** |
 
-Each was individually larger than the whole 32M segment. The bloat is
+Each was individually larger than the whole 32M segment as it then was — both
+would fit in today's 256M, which is exactly why the size raise was worth asking
+for and exactly why it is not a fix on its own. The bloat is
 structural, not content: books carry ~300 bytes/row of real data but serialize
 to ~1,423 bytes/row, because every row repeats all 46 string keys and
 `SionTable::filterDbDate()` turns date columns into `DateTime` objects
@@ -230,7 +236,11 @@ silence a production warning rather than fail anything.
   number too many.
 - Compression is unusually effective on these repetitive arrays (the book blob
   gzips 45.7 MiB → 3.7 MiB at level 1), but decode plus `unserialize()` costs
-  ~540 ms, so it suits mid-sized items rather than the giant ones. Redis — the
-  extension is already installed in production — would remove the fixed-segment
-  ceiling and the clear-everything failure mode entirely. Both are strategic
-  options, neither is needed now.
+  ~540 ms, so it suits mid-sized items rather than the giant ones. Redis would
+  remove the fixed-segment ceiling and the clear-everything failure mode
+  entirely, but it is **no longer a free option**: the extension was installed
+  in production and was deliberately **disabled in the hosting console on
+  2026-08-04 to reduce attack surface**, nothing in `composer.json` requiring
+  it. Reaching for it now means re-opening that surface on purpose, which is a
+  security decision rather than a caching one. Both are strategic options,
+  neither is needed now.
