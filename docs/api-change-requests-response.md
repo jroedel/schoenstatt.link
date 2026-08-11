@@ -420,7 +420,9 @@ Two rules around it, both `422` rather than a guess:
 - The value is a **list of language codes**. A bare string, an unknown language, or a
   locale like `de_DE` is refused exactly as in the body.
 - A language cannot be **written and retracted in the same request**. Guessing which half
-  was meant is how a batch loses a translation it wrote in the same breath.
+  was meant is how a batch loses a translation it wrote in the same breath. `""` does not
+  count as writing — it means "leave this language alone" — so if you send every language
+  on every request you can retract one without also omitting it.
 
 `_retract` is published as `writable.retract`, so it is discoverable the documented way, and
 the smoke test that proves retraction works now reads the key *out of the schema* and sends

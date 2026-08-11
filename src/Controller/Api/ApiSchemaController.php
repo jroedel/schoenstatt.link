@@ -239,7 +239,8 @@ final class ApiSchemaController
                         . 'from this API — no browser can post one. Recorded in the history as a '
                         . '`retract`, so the text is recoverable afterwards. A language cannot be '
                         . 'written and retracted in the same request; that is a 422 rather than a '
-                        . 'guess at which half was meant.',
+                        . 'guess at which half was meant. Sending it as "" is not writing it, so a '
+                        . 'caller that posts every language every time can still retract one.',
                 ],
                 'notes'     => [
                     'The source `phrase` is read-only: it is the key the site looks itself up by, '
