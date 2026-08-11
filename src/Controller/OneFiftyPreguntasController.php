@@ -70,8 +70,19 @@ final class OneFiftyPreguntasController
             'breadcrumbs' => [
                 ['label' => 'Literature', 'href' => $this->urls->path('publications')],
                 [
-                    'label' => '150 preguntas sobre Schoenstatt',
-                    'href'  => $this->urls->path('publications/one-fifty-preguntas'),
+                    //'translate' => false because this label is a *work's title*, and the
+                    //layout translates a crumb unless told not to. A title cannot be
+                    //translated — rendering this one in Portuguese would name an edition
+                    //that does not exist — and the attempt is not free: a translator miss
+                    //is what files a phrase, so this crumb filed itself into `Books` and
+                    //`default` on 2026-08-10, the day phrase discovery started working on
+                    //Symfony-served routes. Same defect as the laminas breadcrumb's
+                    //publication titles, one crumb wide; see
+                    //docs/api-change-requests-response.md §12 and Application\Module's
+                    //LABEL_IS_DATA, which covers this page's *laminas* navigation entry.
+                    'label'     => '150 preguntas sobre Schoenstatt',
+                    'href'      => $this->urls->path('publications/one-fifty-preguntas'),
+                    'translate' => false,
                 ],
             ],
             'document'    => new Markup((string) file_get_contents($path), 'UTF-8'),
