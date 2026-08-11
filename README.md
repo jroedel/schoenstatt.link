@@ -4,7 +4,7 @@ schoenstatt.link
 A database application for Schoenstatt-related topics — shrines, the movement,
 literature and libraries, and music — served in four locales. Built on
 the Laminas MVC layer (formerly Zend Framework 3) with a Symfony kernel in front
-of it, running PHP 8.4 in production and 8.5 in development, against MariaDB
+of it, running PHP 8.5 in production and in development, against MariaDB
 10.11.
 
 Live at <https://schoenstatt.link>.
