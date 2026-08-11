@@ -622,6 +622,25 @@ $routes->add('api-v3/phrase-history', new Route('/api/v3/phrases/{phrase_id}/his
     RouteAccess::ATTRIBUTE => $apiV3Phrases,
 ], $phraseIdentifier, [], '', [], ['GET']));
 
+// Taking a phrase off the translator's worklist, and putting it back. Subresources with
+// their own verb rather than keys on the PATCH body, and that is the same decision the
+// `_retract` key records from the other direction: a destructive-looking operation should
+// not be reachable by a serializer emitting a default value into a body that was about
+// something else. `POST /…/retire` cannot be a typo in a write.
+//
+// They are *not* variations on `_retract`, and the naming is deliberate about it: a
+// retraction deletes a translation, a retirement moves a phrase off a worklist and destroys
+// nothing. See the controller; the schema publishes the distinction under `retirement`.
+$routes->add('api-v3/phrase-retire', new Route('/api/v3/phrases/{phrase_id}/retire', [
+    '_controller'          => [PhrasesV3Controller::class, 'retire'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], $phraseIdentifier, [], '', [], ['POST']));
+
+$routes->add('api-v3/phrase-unretire', new Route('/api/v3/phrases/{phrase_id}/unretire', [
+    '_controller'          => [PhrasesV3Controller::class, 'unretire'],
+    RouteAccess::ATTRIBUTE => $apiV3Phrases,
+], $phraseIdentifier, [], '', [], ['POST']));
+
 // Any other verb on a v3 path. Below the real routes so it only ever catches what
 // they refused, and above `legacy` so a PUT gets a 405 with an Allow header rather
 // than laminas' 302 to the sign-in page.
@@ -653,6 +672,24 @@ $routes->add('api-v3/phrases-method', new Route('/api/v3/phrases', [
 $routes->add('api-v3/phrase-method', new Route('/api/v3/phrases/{phrase_id}', [
     '_controller'                       => MethodNotAllowedController::class,
     MethodNotAllowedController::ALLOWED => ['GET', 'PATCH'],
+    RouteAccess::ATTRIBUTE              => $apiV3Phrases,
+], $phraseIdentifier));
+$routes->add('api-v3/phrase-history-method', new Route('/api/v3/phrases/{phrase_id}/history', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['GET'],
+    RouteAccess::ATTRIBUTE              => $apiV3Phrases,
+], $phraseIdentifier));
+// A GET of a retirement path is the shape a caller lands on when it expects retirement to be
+// a *state* it can read. It is not — `meta.retiredOn` on the phrase is — so the 405 names the
+// verb that works rather than 404ing as if the path were wrong.
+$routes->add('api-v3/phrase-retire-method', new Route('/api/v3/phrases/{phrase_id}/retire', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['POST'],
+    RouteAccess::ATTRIBUTE              => $apiV3Phrases,
+], $phraseIdentifier));
+$routes->add('api-v3/phrase-unretire-method', new Route('/api/v3/phrases/{phrase_id}/unretire', [
+    '_controller'                       => MethodNotAllowedController::class,
+    MethodNotAllowedController::ALLOWED => ['POST'],
     RouteAccess::ATTRIBUTE              => $apiV3Phrases,
 ], $phraseIdentifier));
 

@@ -31,9 +31,9 @@
         "routes_shadowed_by_symfony": 22,
         "rules_from_rule_config": 34,
         "symfony_routes_acl_checked": 40,
-        "symfony_routes_open": 24,
+        "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 64,
+        "symfony_served_routes": 70,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -7694,6 +7694,26 @@
                 "denial_style": "n/a"
             }
         },
+        "api-v3/phrase-history": {
+            "path": "/api/v3/phrases/{phrase_id}/history",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::history",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-history-method": {
+            "path": "/api/v3/phrases/{phrase_id}/history",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
         "api-v3/phrase-method": {
             "path": "/api/v3/phrases/{phrase_id}",
             "controller": "App\\Controller\\Api\\MethodNotAllowedController",
@@ -7707,6 +7727,46 @@
         "api-v3/phrase-patch": {
             "path": "/api/v3/phrases/{phrase_id}",
             "controller": "App\\Controller\\Api\\PhrasesV3Controller::patch",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-retire": {
+            "path": "/api/v3/phrases/{phrase_id}/retire",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::retire",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-retire-method": {
+            "path": "/api/v3/phrases/{phrase_id}/retire",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-unretire": {
+            "path": "/api/v3/phrases/{phrase_id}/unretire",
+            "controller": "App\\Controller\\Api\\PhrasesV3Controller::unretire",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route \u2014 the translation GUI at route/jtranslate is a different surface with a different audience \u2014 and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\\Api\\BotIdentity: a bearer JWT whose account holds the sch_api_translator role",
+                "denial_style": "n/a"
+            }
+        },
+        "api-v3/phrase-unretire-method": {
+            "path": "/api/v3/phrases/{phrase_id}/unretire",
+            "controller": "App\\Controller\\Api\\MethodNotAllowedController",
             "access": {
                 "kind": "open",
                 "resource": null,
