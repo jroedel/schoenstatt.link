@@ -5,13 +5,16 @@ requests afterwards. This is the application side's answer: what changed, what d
 and — in two places — where the request's diagnosis was wrong in a way that matters to
 how you work.
 
-Everything below is on branch `fix/phrase-table-hygiene` (schoenstatt.link#59,
-laminas-jtranslate#19, laminas-juser#11) and is **not deployed yet**. Nothing here is
-live until those merge and a deploy runs. The migration and data steps are ordered in
-`database/db7.3.sql`'s header.
+Requests 1–10 are merged (schoenstatt.link#59, laminas-jtranslate#19, laminas-juser#11)
+and deploying; §11 arrived after that merge and its first two items shipped in #61.
+**Requests 11, 12 and 13 are answered at the end of this file** — read those sections
+rather than inferring their status from the earlier ones. The migration and data steps are
+ordered in `database/db7.3.sql`'s and `database/db7.4.sql`'s headers.
 
 Thank you for the report. It was specific enough to act on without re-deriving anything,
 and two of its findings — #1 and #4 — were things nobody here had noticed in six years.
+§12 is the same again: the largest single defect the phrase table has had, found by
+counting rows twice a few hours apart.
 
 ---
 
@@ -29,6 +32,9 @@ and two of its findings — #1 and #4 — were things nobody here had noticed in
 | 8 | two rows differing by a line ending | **fixed**, with a second mechanism you should know about |
 | 9 | source strings containing errors | 4 fixed, 3 retired, 6 are yours |
 | 10 | translations have no revision history | **built**, with an API |
+| 11 | schema contradicted the controller about deletion | **fixed** (#61); item 3 **adopted** — `null` no longer deletes |
+| 12 | publication and composition titles reach the phrase table | **fixed**; the cause was the breadcrumb, not `headTitle()` |
+| 13 | renamed phrases kept their old English row | **fixed in the repository too**, so every environment converges |
 
 Two things you did not ask for, both of which change what you can rely on:
 
@@ -375,3 +381,138 @@ Two things in `api-change-requests.md` will mislead the next agent to read it:
    list mixes record content with form placeholders.
 2. §7's claim that the corpus rows are on the `text` **and** `texts` routes implies both
    are live. Only `text` was — the 90 rows on `texts` stopped arriving in 2019.
+3. §12's diagnosis names `headTitle()`. It was already `setTranslatorEnabled(false)` on
+   both show pages, and had been since 2019 — the path was the breadcrumb, which is why
+   the rows arrived in bulk on 2026-08-11 rather than accumulating for years. Details
+   below; the count and the signature you gave were exactly right.
+
+---
+
+## 11. Retraction: the note is corrected, and item 3 is adopted
+
+Items 1 and 2 shipped in #61, before this section was written: the schema note now
+describes retraction instead of denying it, and `_note` is published as
+`writable.note` — key, length bound, and the fact that it attaches to the entries a write
+*destroys* rather than to the write. `endpoints` and `history.operations` went in at the
+same time, for the reason you gave: an agent told to discover rules from the schema cannot
+discover a subresource from a field list.
+
+**Item 3 is adopted, in its stronger form.** A bare `null` no longer retracts anything — it
+is a `422` naming the alternative:
+
+```jsonc
+// PATCH /api/v3/phrases/7229
+{"de": null}             // 422: "A null does not remove a translation. Name the language in _retract."
+{"_retract": ["de"]}     // retracted; history operation=retract
+{"de": ""}               // unchanged, as always
+```
+
+Your argument is the one that decided it, so it is worth restating: `null` is what a
+*serializer* emits for an absent optional field, what a dictionary comprehension over a
+language list produces when one lookup misses, and what `json.dumps` does with a Python
+`None`. None of those look like a deletion at the call site, and all of them were one. The
+`''` case was safe against precisely that accident; `null` was not. A destructive operation
+reachable by a default value has no confirmation step in it, and "it is recoverable from
+the history" is a repair story, not a guard.
+
+Two rules around it, both `422` rather than a guess:
+
+- The value is a **list of language codes**. A bare string, an unknown language, or a
+  locale like `de_DE` is refused exactly as in the body.
+- A language cannot be **written and retracted in the same request**. Guessing which half
+  was meant is how a batch loses a translation it wrote in the same breath. `""` does not
+  count as writing — it means "leave this language alone" — so if you send every language
+  on every request you can retract one without also omitting it.
+
+`_retract` is published as `writable.retract`, so it is discoverable the documented way, and
+the smoke test that proves retraction works now reads the key *out of the schema* and sends
+that — the schema cannot advertise one spelling while the controller honours another.
+
+**This is a breaking change for you**, and the only one in this batch. Any code sending
+`{"lang": null}` to delete must send `{"_retract": ["lang"]}`. Nothing else moves: `''`,
+`'0'`, absent keys, `_note`, the batch shape and the history all behave as documented.
+
+Your two smaller notes stand as written. `'0'` is writable and honestly reported. The
+history does not backfill, so recoverability begins at the deploy — the 1,041 rows written
+on 2026-08-10 are still unrecoverable, and the review queues built for them keep their
+original weight.
+
+---
+
+## 12. The titles: right about everything except the mechanism
+
+3,071 rows, 61% of the table, one publication per two rows — all confirmed. And the
+signature you found is exact, which is what made it safe to act on.
+
+**But `headTitle()` was not the path.** `books/publications/show.phtml` has called
+`headTitle()->setTranslatorEnabled(false)` since 2019, and `books/compositions/show.phtml`
+never calls `headTitle()` at all. Reproduced in the capsule, and this is where it comes
+from:
+
+`Application\Module::onBootstrap()` builds **one navigation page per database row** —
+10,166 publications, every composition, every library, every association — labelled with
+the row's own title or name. Nothing translated a breadcrumb label until 2026-08-10. Then
+§4's fix did, and a translator miss is how a phrase is filed. So the corpus captured the
+library's whole catalogue in a day, two rows per record because the partial falls back to
+the `default` domain when the navigation domain misses.
+
+That also explains the two things about your report that did not fit `headTitle()`: why the
+rows appeared *the day after* a deploy rather than over years, and why they arrived in
+`Application` **and** `default` rather than in the page's own domain.
+
+**Fixed** by marking the labels that are record content — `Module::markDataLabels()` flags
+the pages, `partial/breadcrumbs.phtml` renders a flagged label untouched — and the fix is
+pinned by a smoke test that renders a publication, a composition and a shrine page and
+asserts the phrase table did not grow. The interface crumbs in the same trail are asserted
+still translated, because a fix that stopped translating everything would quietly undo §4.
+
+Four things to know, in descending order of how much they affect you:
+
+- **The 3,071 rows are retired by `database/db7.4.sql`**, not by the code deploy, and the
+  order matters: the code first, or the next crawl of a publication page files them again
+  and clears `retired_on` doing it. The migration joins each phrase against the table its
+  text comes from, scopes to the record's own show route, and requires that nothing has
+  ever translated it beyond English — three conditions, because any one alone is too broad
+  among 10,166 titles. Your nine interface strings on `publication` survive the third.
+- **A shrine's breadcrumb now reads in the visitor's language.** The label was the raw
+  `AssociationName` column; it is now `nameByLocale`, which is what every other screen
+  shows and honours `IsNameTranslateable`. So `/it/…/schoenstatt-shrine-mont-sion-gikungu`
+  says *Santuario di Schoenstatt Mont Sion Gikungu* where it used to say the English name
+  and file it as a phrase. This is the §6 line again: association names are translated
+  where the record says so, and the translation is looked up rather than filed.
+- **One bounded noise source is left, and we are leaving it.** A crumb label is looked up in
+  the navigation domain (`Application`) and then in `default`, and the first lookup files a
+  row when it misses — which is what `default`-resident labels like `Shrines` and `Africa`
+  do. That is one row per *navigation label*, a set of a few dozen, and they are real
+  interface strings worth translating. Reversing the order would fix the noise and change
+  which domain wins for labels present in both, e.g. `Admin`, so it is not free.
+- `skip-publication-title` in `tools/classify.py` can go once db7.4 has run, and
+  `skip-record-content` still needs rebuilding on §6's corrected premise.
+
+Your closing suggestion — check `headTitle()` on every remaining show page — was taken and
+comes back clean. All seven (`books`, `texts`, `borrowers`, `publications`, `libraries`,
+`associations`, `persons`) disable the translator; `library-imports/show` passes an
+interface string, correctly translated. The pattern is not three for three; it is one for
+one, and the other two were this.
+
+---
+
+## 13. The renamed rows: fixed here as well, and the rule stated
+
+You fixed production and you were right to. It is fixed in the repository too — statements
+6 and 7 of `database/db7.4.sql` — because production is not the only place this database
+exists: any environment restored from a dump older than your write still renders the typos,
+and the capsule did until today.
+
+They are guarded on the corrected texts and on the row actually differing, so they are
+re-runnable and a no-op where your write already landed. Each one appends a
+`trans_translations_history` entry first, carrying the replaced text and the original
+`written_on`/`written_by`, because a migration that destroys a translation silently is
+exactly what the history table exists to prevent — including when the migration is ours.
+
+**The rule, for the next rename:** `en_US` is an ordinary row in `trans_translations`,
+auto-filled with a verbatim copy of the key at discovery, and English pages render it rather
+than the key. So a rename in place must update `en_US` in the same migration. The other four
+languages are unaffected, because their translations were of the meaning and the meaning did
+not change. db7.3 got that wrong for three rows and the only reader positioned to notice was
+one comparing each key against its own English row.
