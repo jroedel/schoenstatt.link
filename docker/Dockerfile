@@ -1,8 +1,8 @@
 # Time capsule. PHP_VERSION selects the target:
 #   7.4 — production as verified 2026-08-01 (the pre-rung-4 baseline)
 #   8.3 — the rung-4 target (production offers 5.3 through 8.5)
-#   8.4 — production as of rung 4b, deployed 2026-08-04
-#   8.5 — the next rung, ahead of production
+#   8.4 — production from rung 4b (2026-08-04) until 2026-08-11
+#   8.5 — production as of 2026-08-11, and what this capsule serves
 # Switch with PHP_VERSION in .env, then `docker compose build && docker compose up -d`.
 # vendor/ is bind-mounted and platform-specific, so re-run composer install after
 # switching — the two versions resolve to different package sets.
@@ -10,10 +10,12 @@
 # Note the base image's Debian release moves under us: php:7.4-apache is still
 # bullseye, but 8.4 and 8.5 are both trixie now (8.4 was bookworm when rung 4b
 # was measured). That matters for one thing in particular — trixie carries ICU
-# 76.1 while production's 8.4 build has ICU 72.1 — so a rebuilt capsule formats
-# dates against *newer* locale data than production, the opposite of the drift
-# recorded in docs/BACKLOG.md. composer's lib-icu platform pin still says 72.1
-# because it describes production, not this image.
+# 76.1 while production's *8.4* build had ICU 72.1 — so a rebuilt capsule formats
+# dates against newer locale data than that build did, the opposite of the drift
+# recorded in docs/BACKLOG.md. What the hoster's 8.5 build carries has not been
+# measured; the lib-icu platform pin still says 72.1, which is now a fact about
+# a PHP version production no longer runs. Nothing resolves on lib-icu today, so
+# the stale pin costs nothing but a wrong answer to anyone who reads it.
 ARG PHP_VERSION=7.4
 FROM php:${PHP_VERSION}-apache
 
