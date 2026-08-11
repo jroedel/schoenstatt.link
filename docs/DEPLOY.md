@@ -43,6 +43,110 @@ deploy — the label-printing workflow is the one to check. Tokens come from
 `/api/v1/associations` and the public dictionary reads stay open, and
 `/api/v1/libraries/:id/books` was already gated.
 
+## Before the next deploy: phrase-table hygiene (schoenstatt.link#59)
+
+The branch answering the translation agent's ten change requests. Two library
+migrations, one data file, one retirement pass, and one production task that is not a
+deploy step at all.
+
+**The code is order-forgiving on purpose.** Unlike the 2026-08-10 run below, nothing here
+selects a column the old schema lacks: every read *and* write of
+`trans_translations_history` is behind a `SHOW TABLES` check, verified by hiding the table
+and driving both paths. So a deploy that lands before the schema degrades to "no history
+shown, none recorded" rather than 500ing the translation admin area. Run it in the order
+below anyway — the point of the guard is that a mistake is survivable, not that the order
+does not matter.
+
+### The order
+
+1. **Merge the two submodule PRs first** (`jroedel/laminas-jtranslate#19`,
+   `jroedel/laminas-juser#11`), then the superproject PR. Already done for the first two;
+   the pointers on the branch reference their merge commits on `modernization`.
+
+2. **JTranslate migrations 005 and 006.** 005 rewrites four CRLF phrases to LF and merges
+   what that collapses; 006 creates `trans_translations_history`. 006 is DDL, so it needs
+   the credentials the 003/004 run used — see the two-pass note below. Preview from the
+   capsule, where the code already exists:
+
+   ```bash
+   docker compose exec -T app php bin/console jtranslate:migrate --status
+   docker compose exec -T app php bin/console jtranslate:migrate --pretend
+   ```
+
+   **005's SQL is exact from the capsule** — it touches no new column and depends only on
+   the data, so what `--pretend` prints is what production will run. Both are re-runnable:
+   005 selects on `phrase LIKE '%\r%'` and 006 is a `CREATE TABLE IF NOT EXISTS` behind a
+   `hasTable()` check.
+
+   005 covers **every project in the shared table**, which is deliberate and argued in its
+   docblock. Two `patres` rows have their line endings rewritten, and `patres` runs
+   JTranslate 1.0.x with no normalization — if one of its templates emits CRLF it will
+   re-insert its own row until that installation moves to this line. Two rows, one
+   sentence each.
+
+3. **The code deploy.** `php phploy.phar` as usual. The `post-deploy[]` hooks already
+   clear the config cache, flush APCu and run `jtranslate:export-catalogs`, so the
+   catalogs rebuild without being asked.
+
+4. **`database/db7.3.sql`.** Ordinary app credentials — it is four `UPDATE`s. It renames
+   three corrected source strings *in place* so their translations follow them (correcting
+   a typo otherwise abandons the phrase, since the text is the identity) and retires four
+   dead ones. It must run **after** step 2: the renames compute hashes the way
+   `PhraseIdentity` now does, over normalized line endings.
+
+   ```bash
+   ssh -p 222 <admin>@dedi2934.your-server.de \
+     'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.3.sql'
+   ```
+
+5. **Rebuild the catalogs again**, because step 4 changed three catalog *keys*:
+
+   ```bash
+   ssh -p 222 <admin>@dedi2934.your-server.de \
+     'cd public_html/schoenstatt.link && php bin/console jtranslate:export-catalogs \
+      && php bin/console cache:flush-persistent'
+   ```
+
+6. **Retire the text corpus**, and only now — the code fix in step 3 is what stops the
+   rows coming back on the next page view of a text. Dry-run first; the counts are 219
+   and 90 in the capsule and production is within a few rows.
+
+   ```bash
+   ssh -p 222 <admin>@dedi2934.your-server.de \
+     'cd public_html/schoenstatt.link && php bin/console jtranslate:retire --origin-route=text --dry-run'
+   ```
+
+   then the same without `--dry-run`, and again for `--origin-route=texts`. Reversible with
+   `--undo`.
+
+### Not a deploy step: the four leaked API tokens
+
+`juser/user/api-tokens` used to append the freshly minted JWT to its success message, and
+the messengers translate the finished message — so real tokens became phrase rows,
+readable by any account holding `sch_api_translator`, and were copied into the English row
+and the exported catalogs on disk. The code path is fixed in step 3; **the rows are not**,
+and retiring is not enough, because the requirement is that the strings cease to exist.
+
+After the deploy: find them (`phrase LIKE '%eyJ%'` on route `juser/user/api-tokens`),
+**revoke the `jti` each one contains** in `user_api_token`, delete the phrase rows, and
+rebuild the catalogs so the files on disk lose them too. The four known ids are capsule
+ones and that database is disposable; production has its own or none.
+
+### What changes for anyone watching the site
+
+- **Breadcrumbs are translated.** `/it/shrines` reads "Santuari" where it read "Shrines".
+- **Validator messages are translated as templates**, so the phrase table now holds
+  `'%hostname%' is not a valid hostname for the email address` with the placeholder
+  intact, in the `default` text domain rather than scattered across four. The ~19 rows
+  keyed by an *interpolated* message are orphaned and worth retiring; nobody has.
+- **Phrase discovery starts working on Symfony-served routes**, which is every route from
+  the `.htaccess` flip onward. It was queueing misses and throwing them away. Expect a
+  step change in new phrases — one smoke run records 170 — and roughly double the rate on
+  ported pages, because the Twig layer looks a miss up in the page's domain and then in
+  `default` and both are now recorded. The second row arrives pre-translated.
+- **`/admin/translations`** marks phrases with history, and the edit screen shows the
+  thread.
+
 ## Done 2026-08-10: JTranslate's phrase-table migrations
 
 Applied to production and deployed. Recorded here rather than deleted, because the
