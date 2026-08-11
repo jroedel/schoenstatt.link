@@ -158,16 +158,22 @@ final class PhraseResource
         $base    = rtrim($baseUrl, '/');
         $entries = [];
         foreach ($rows as $row) {
-            $locale    = (string) ($row['locale'] ?? '');
+            $locale = (string) ($row['locale'] ?? '');
+            //`''` is not a locale: it marks an entry about the *phrase* rather than a
+            //language, which so far means a retirement. Exposed as a null `language`
+            //rather than an empty string, so a caller branching on it cannot mistake it
+            //for a language it failed to recognise.
             $entries[] = [
-                'language'    => $languages->languageFor($locale) ?? $locale,
+                'language'    => '' === $locale ? null : ($languages->languageFor($locale) ?? $locale),
                 //The text that was destroyed. This is the whole point of the resource:
                 //`trans_translations` keeps no copy, so before this existed a wrong
                 //edit was unrecoverable and the tooling on this side had to be sure
                 //rather than able to correct.
                 'previous'    => $row['old_translation'] ?? null,
                 //'update' — something replaced it. 'retract' — something deleted it and
-                //the language is empty now.
+                //the language is empty now. 'retire' — the *phrase* left the translator's
+                //worklist because the application knows nothing renders it any more; it
+                //has no language and no previous text, and `note` is the whole content.
                 'operation'   => $row['operation'] ?? null,
                 //The domain the row belonged to, and the phrase row it was attached to
                 //at the time. Neither is part of the thread key — see
