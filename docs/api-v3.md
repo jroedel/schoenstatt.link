@@ -581,7 +581,9 @@ Rules, all of them 422s rather than guesses:
   language or a locale like `de_DE`, exactly as in the body.
 - A language cannot be **written and retracted in the same request**. That is a caller in
   two minds, and guessing which half it meant is how a batch loses a translation it wrote
-  in the same breath.
+  in the same breath. Sending it as `""` is *not* that: `""` means "leave this language
+  alone", so `{"de": "", "_retract": ["de"]}` is accepted and retracts. A client that sends
+  every language on every request does not have to omit a key in order to remove it.
 
 Retracting a language that has no translation is a `200` with `"changed": []` and no
 write, the same as re-sending stored text. An empty list is a no-op.
