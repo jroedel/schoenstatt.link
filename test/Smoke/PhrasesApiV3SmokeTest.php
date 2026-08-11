@@ -13,6 +13,7 @@ use function count;
 use function explode;
 use function file_get_contents;
 use function hash_hmac;
+use function implode;
 use function is_file;
 use function is_string;
 use function json_decode;
@@ -493,6 +494,86 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         //reason: silently ignoring it returns every language's argument.
         $refused = $this->getWithBearer($token, self::ITEM . '/history?language=de_DE');
         $this->assertSame(422, $refused['status'], $refused['body']);
+    }
+
+    /**
+     * The schema describes the write surface that actually exists.
+     *
+     * The schema endpoint is the one an agent author reads *instead of* the source, and
+     * the consuming repository confirmed it uses it at request time to decide what to
+     * send. So a schema that omits something is not a documentation gap, it is a feature
+     * nobody will ever use — `_note` was invisible until this assertion existed — and a
+     * schema that claims something untrue is worse. Each of these is checked against the
+     * behaviour rather than against a copy of the text.
+     */
+    public function testTheSchemaDescribesTheNoteKeyItAccepts(): void
+    {
+        $schema = $this->decode($this->get('/api/v3/schema/phrase'));
+
+        $key = $schema['writable']['note']['key'] ?? null;
+        $this->assertIsString($key, 'the schema does not mention the note key, so no agent will send one');
+
+        //The key it publishes is the key that works. A schema naming `note` while the
+        //controller strips `_note` would be worse than silence: the agent's reasoning
+        //would be refused as an unknown language and it would stop sending it.
+        $token  = $this->translatorToken();
+        $reason = 'schema says this key works ' . time();
+        $this->patch($token, self::ITEM, ['de' => 'Erst ' . time()]);
+        $this->patch($token, self::ITEM, ['de' => 'Dann ' . time(), $key => $reason]);
+
+        $newest = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'][0] ?? [];
+        $this->assertSame($reason, $newest['note'] ?? null, 'the key the schema publishes did not carry a note');
+        $this->assertSame(
+            255,
+            $schema['writable']['note']['maxLength'] ?? null,
+            'the published note length does not match the column'
+        );
+    }
+
+    /** Every operation the schema names is one the history can actually contain. */
+    public function testTheSchemaNamesTheHistoryOperations(): void
+    {
+        $schema = $this->decode($this->get('/api/v3/schema/phrase'));
+
+        $operations = $schema['history']['operations'] ?? [];
+        foreach (['update', 'retract', 'retire'] as $operation) {
+            $this->assertArrayHasKey(
+                $operation,
+                $operations,
+                "the schema does not explain the `$operation` entries an agent will meet"
+            );
+        }
+
+        $this->assertStringContainsString(
+            '/history',
+            $schema['endpoints']['history'] ?? '',
+            'the history subresource is not listed, so it is undiscoverable from the schema'
+        );
+    }
+
+    /**
+     * The schema's claim about retraction is true.
+     *
+     * It said the opposite until 2026-08-11 — "there is no way to remove a translation
+     * through either surface" — which is stale in the dangerous direction: an agent
+     * reading it would blank with `""`, which is a documented no-op, and believe it had
+     * removed something.
+     */
+    public function testTheSchemaIsRightThatNullRetracts(): void
+    {
+        $schema = $this->decode($this->get('/api/v3/schema/phrase'));
+        $claims = implode(' ', $schema['writable']['notes'] ?? []);
+
+        $this->assertStringContainsString('retract', $claims, 'the schema does not mention retraction at all');
+
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Wird entfernt ' . time()]);
+        $this->patch($token, self::ITEM, ['de' => null]);
+
+        $this->assertNull(
+            $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
+            'a null did not retract, so the schema now promises something that does not happen'
+        );
     }
 
     /** Another project's phrase is not found here either, for the reason `show` is not. */
