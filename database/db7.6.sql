@@ -25,9 +25,17 @@
 --     libraries/library        Books         1        1           2019-11-27   <- collision
 --
 -- Three phrases, filed twice each by the breadcrumb's two-domain lookup, at 03:19 UTC —
--- before that morning's deploy, i.e. while the defect was still live. The three pre-2020
--- rows are the genuine collisions the guard is for; these six are §12 wearing their
--- clothes.
+-- before that morning's deploy, i.e. while the defect was still live.
+--
+-- APPLIED 2026-08-11: statement 2 retired those six. They were `Santuario del Padre`,
+-- `Schoenstatt` and `Heiligtum der Berufung`, each carrying all five languages — and the
+-- rows they inherited from are the three statement 4 still shows, which are **shrine
+-- names** in the `Schoenstatt` domain (`SchoenstattTable::TRANSLATOR_DOMAIN`, the domain
+-- the association-name feature translates in), first seen in 2019 on books named after
+-- those shrines. So the steady state of statement 4 is "the shrine names that double as
+-- book titles" and **those rows must not be retired** — see docs/DEPLOY.md. The comment
+-- below calling them collisions with interface strings was wrong about what they are,
+-- though right that they must be left alone.
 --
 -- **So the durable signal is not "untranslated". It is the route and the domain.** Nothing
 -- but the breadcrumb's own two-step lookup files a phrase under route `publication` into
