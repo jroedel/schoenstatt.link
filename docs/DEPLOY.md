@@ -147,16 +147,34 @@ ones and that database is disposable; production has its own or none.
 - **`/admin/translations`** marks phrases with history, and the edit screen shows the
   thread.
 
-## Before the next deploy: breadcrumb data labels and `database/db7.4.sql`
+## Done 2026-08-11: breadcrumb data labels and `database/db7.4.sql`
 
-Answers change requests §11–§13, filed after #59 merged. One data file, and one API change
-that breaks a caller on purpose.
+Answered change requests §11–§13 (PR #62, jtranslate#21). **Applied to production
+2026-08-11**, in the order below, and verified live. Kept rather than deleted because the
+ordering constraint is the reusable part and it is the opposite of what it looks like.
 
-**The order is not forgiving here, and it is the opposite of what it looks like.** Deploy
-the code *first*, then run the migration. The migration retires ~3,000 phrase rows that the
-code fix stops arriving; run it first and the next crawl of a publication page files them
-again and clears `retired_on` doing it — discovery un-retires whatever the site still looks
-up, which is the property that makes retirement safe and here makes the order matter.
+**Deploy the code *first*, then run the migration.** The migration retires phrase rows that
+the code fix stops arriving; run it first and the next crawl of a publication page files
+them again and clears `retired_on` doing it — discovery un-retires whatever the site still
+looks up, which is the property that makes retirement safe and here makes the order matter.
+
+### What it actually retired
+
+| statement | what | rows |
+|---|---|---|
+| 1 | publication titles | **3,698** (14.4 s) |
+| 2 | composition names | 302 |
+| 3 | library names | not captured |
+| 4 | association names in `Application`/`default` | 108 |
+| 5 | the composed labels above them | 24 |
+| 6 and 7 | db7.3's three `en_US` rows | **0** |
+
+Two of those are worth reading. **3,698 is larger than the 3,086 the reporting agent
+counted** the day before, and larger again than the 436 it counted a few hours before that —
+the corpus was still capturing the catalogue as crawlers walked it, which is what the
+"essentially at its ceiling" reading of those two counts underestimated. And **6 and 7
+touching nothing is the expected result**, not a failure: the reporter had already corrected
+those three rows through the v3 API. They exist for every other environment.
 
 1. **The code deploy.** `php phploy.phar` as usual. The `post-deploy[]` hooks clear the
    config cache, flush APCu and rebuild the catalogs. **The APCu flush is load-bearing this
@@ -191,6 +209,28 @@ up, which is the property that makes retirement safe and here makes the order ma
    at the consumer's own request). It is published as `writable.retract` in
    `GET /api/v3/schema/phrase`, so a client that reads the schema at request time finds it;
    one that hardcoded `null` gets a 422 and no data loss, which is the point.
+
+### Verified live, 2026-08-11
+
+Fetched over plain HTTPS after the migration, no credentials involved:
+
+- `/it/literature/de` and `/it/SL202012L/eine-schule-der-kindlichkeit` — 200, and the
+  publication's crumb reads `Letteratura / German Schoenstatt Literature / Eine Schule der
+  Kindlichkeit`: the interface label translated, the title untouched.
+- `/it/SL100458A/schoenstatt-shrine-mont-sion-gikungu` — 200, crumb
+  `Santuari / Africa / Santuario di Schoenstatt Mont Sion Gikungu`. The third one is the
+  `nameByLocale` change: that name used to render in English *and* be filed as a phrase.
+
+Worth knowing what this does **not** prove: that no new title rows are arriving. Nothing
+observable from a rendered page distinguishes a phrase that was filed from one that was not,
+which is the whole reason §12 went unnoticed for a day. Confirming it takes one query —
+
+```sql
+SELECT COUNT(*) FROM trans_phrases p JOIN sch_publications r ON r.Title = p.phrase
+WHERE p.project = 'Schoenstatt' AND p.retired_on IS NULL;
+```
+
+which should stay at or near zero, and any growth in it is this defect returning.
 
 ### What changes for anyone watching the site
 

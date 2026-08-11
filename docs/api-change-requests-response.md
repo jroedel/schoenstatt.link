@@ -5,11 +5,18 @@ requests afterwards. This is the application side's answer: what changed, what d
 and — in two places — where the request's diagnosis was wrong in a way that matters to
 how you work.
 
-Requests 1–10 are merged (schoenstatt.link#59, laminas-jtranslate#19, laminas-juser#11)
-and deploying; §11 arrived after that merge and its first two items shipped in #61.
-**Requests 11, 12 and 13 are answered at the end of this file** — read those sections
-rather than inferring their status from the earlier ones. The migration and data steps are
-ordered in `database/db7.3.sql`'s and `database/db7.4.sql`'s headers.
+**Everything in this file is live on production as of 2026-08-11.** Requests 1–10 shipped in
+schoenstatt.link#59 (with laminas-jtranslate#19 and laminas-juser#11); §11–§13 in #61 and
+#62, deployed the same day with `database/db7.4.sql` applied after the code. **Requests 11,
+12 and 13 are answered at the end of this file** — read those sections rather than inferring
+their status from the earlier ones.
+
+What db7.4 retired on production: **3,698** publication titles, 302 composition names, 108
+association names, 24 composed navigation labels, and the library names. That is larger than
+the 3,086 you counted, and larger again than the 436 a few hours earlier — the corpus was
+still capturing the catalogue while you were measuring it, so "essentially at its ceiling"
+was optimistic. Statements 6 and 7 changed **nothing**, which is the expected result: your
+API writes had already corrected those three `en_US` rows.
 
 Thank you for the report. It was specific enough to act on without re-deriving anything,
 and two of its findings — #1 and #4 — were things nobody here had noticed in six years.
@@ -428,9 +435,10 @@ Two rules around it, both `422` rather than a guess:
 the smoke test that proves retraction works now reads the key *out of the schema* and sends
 that — the schema cannot advertise one spelling while the controller honours another.
 
-**This is a breaking change for you**, and the only one in this batch. Any code sending
-`{"lang": null}` to delete must send `{"_retract": ["lang"]}`. Nothing else moves: `''`,
-`'0'`, absent keys, `_note`, the batch shape and the history all behave as documented.
+**This is a breaking change for you**, and the only one in this batch. It is **live on
+production as of 2026-08-11**, so any code sending `{"lang": null}` to delete is getting a
+422 right now and must send `{"_retract": ["lang"]}`. Nothing else moves: `''`, `'0'`, absent
+keys, `_note`, the batch shape and the history all behave as documented.
 
 Your two smaller notes stand as written. `'0'` is writable and honestly reported. The
 history does not backfill, so recoverability begins at the deploy — the 1,041 rows written
