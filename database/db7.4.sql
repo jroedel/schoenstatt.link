@@ -58,6 +58,15 @@
 --      source`, `Date published`, `Leave a comment`, `Total views`, `Copy into main
 --      corpus` and the rest.
 --
+--      **This third condition turned out to be weaker than it reads, and db7.6 replaces
+--      it.** `writeMissingPhrasesToDb()` copies translations onto a newly discovered
+--      phrase from any row of the same project holding the same text in another text
+--      domain, so a title that collides with an already-translated string arrives
+--      pre-translated in four languages and passes this test seconds after being filed.
+--      Six such rows survived on production and db7.6 retires them, scoping on the route
+--      and text domain — which the breadcrumb determines and a translation cannot forge —
+--      rather than on how translated the row happens to be.
+--
 -- Association names are treated differently and deliberately so. `IsNameTranslateable` and
 -- the kind name formats mean SchoenstattTable translates some names on purpose, in the
 -- `Schoenstatt` domain, and §6 of the same report is the standing warning about deleting a

@@ -233,9 +233,14 @@ reasons learned by getting both wrong on 2026-08-11:
   `EXISTS`.
 - **Zero is the wrong expectation.** A few live rows are *collisions*: interface strings that
   happen to equal some book's title, on routes that have nothing to do with publications.
-  Five survive in the capsule, all pre-2020 and all translated into other languages. What
-  matters is the breakdown — an untranslated cluster with a recent `added_on` is the defect
-  returning; an old translated one is a coincidence.
+  Five survive in the capsule, all pre-2020 and all translated into other languages.
+- **Read the route and the text domain, not the translation count.** "Untranslated" is not a
+  reliable marker of a filed title: discovery *copies* translations onto a new phrase from
+  any row of the same project holding the same text in another domain, so a colliding title
+  arrives pre-translated in four languages within seconds. What the breadcrumb determines and
+  a translation cannot forge is where the row came from — route `publication` in
+  `Application` or `default` is the breadcrumb's own two-step lookup and nothing else. That
+  is how the last six rows were identified after db7.4 had spared them; see `db7.6.sql`.
 
 That query found the one instance db7.4 could not, described below.
 
@@ -252,7 +257,14 @@ That query found the one instance db7.4 could not, described below.
 - **The translator's worklist loses about 3,000 rows**, and any count of "how much is left
   to translate" taken from the v3 API drops with it.
 
-## Before the next deploy: `database/db7.5.sql`, one crumb db7.4 could not see
+## Done 2026-08-11: `database/db7.5.sql`, one crumb db7.4 could not see
+
+**Deployed and applied 2026-08-11.** Statement 1 reported **0 rows** on production, which was
+not the expected outcome and is explained under db7.6 below: it required the crumb's text to
+equal some `sch_publications.Title`, and production's row for that book does not carry the
+same string. The code fix landed and is verified live — `/it/literature/150-preguntas-sobre-schoenstatt`
+renders the crumb untranslated — so nothing further is being filed; only the existing rows
+remained, and db7.6 retires them.
 
 Running the standing check above on production the same day turned up **one surviving
 instance** of §12, on a route db7.4 had no reason to look at.
@@ -284,6 +296,46 @@ between the retirement and the fix undoes it:
    ```
 
 3. **Rebuild the catalogs** as in step 3 above.
+
+## Before the next deploy: `database/db7.6.sql`, six rows and a corrected guard
+
+**No code change — this one is data only, so it can run whenever.** The standing check on
+production, hours after db7.4, showed three phrases filed twice each under route
+`publication` in `Application` and `default`, at 03:19 UTC that morning: §12 rows that
+db7.4 had spared.
+
+It spared them because its third condition — *nothing has ever translated this beyond
+English* — is weaker than it reads. `TranslationsTable::writeMissingPhrasesToDb()` **copies
+translations onto a newly discovered phrase** from any row of the same project holding the
+same text in another text domain. So a title that collides with an already-translated
+string arrives pre-translated in four languages seconds after it is filed, and then looks
+exactly like the interface strings the condition exists to protect. The agent's §12 uses the
+same test and describes it as exact; it is not, and that is worth knowing before trusting it
+again.
+
+**The durable signal is the route and the text domain.** Nothing but the breadcrumb's own
+two-step lookup files a phrase under route `publication` into `Application` or `default` —
+the page's real interface strings live in `Books` and `Schoenstatt` — and a translation
+cannot forge either field.
+
+db7.6 also retires the crumb db7.5 reported **0 rows** for: db7.5 required the text to equal
+some `sch_publications.Title`, but that label is a literal in the controller and production's
+row for the book carries different text, so the title test was the wrong test for it.
+
+Statement 1 prints what statements 2 and 3 will retire, and statement 4 prints the standing
+check afterwards, so one run leaves both the evidence and the current picture on screen.
+
+```bash
+ssh -p 222 <admin>@dedi2934.your-server.de \
+  'cd public_html/schoenstatt.link && mysql -u<user> -p <db> < database/db7.6.sql'
+```
+
+Then rebuild the catalogs, as always after a phrase change. Its date bound (09:00 UTC on
+2026-08-11, after the deploy) is deliberate: a row filed *after* the fix means the fix is not
+working, and must stay visible in the check rather than be swept by this file. Proven in the
+capsule against three synthetic rows — a pre-deploy title carrying an `it_IT` translation
+(retired), the ported crumb with no matching title (retired), and a post-deploy arrival
+(**survives**, and shows up in the check as untranslated with a recent `added_on`).
 
 ## Done 2026-08-10: JTranslate's phrase-table migrations
 
