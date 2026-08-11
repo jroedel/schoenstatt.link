@@ -3,24 +3,49 @@ use Spatie\SchemaOrg\ListItem;
 // if we aren't receiving any pages, just get out
 if (! isset($this->pages) || count($this->pages) < 1) {
     return;
-}?>
+}
+/*
+ * The labels come out of the navigation config, the same config the menu renders
+ * from — but laminas' Breadcrumbs helper only translates them when it renders the
+ * crumbs itself. In partial mode, which is what the layout asks for, it hands the
+ * raw pages over and translates nothing. So an Italian shrine page said "Santuari"
+ * in the menu and "Shrines" in the breadcrumb directly below it: same word, same
+ * config, one translated and one not, which reads as a half-finished page rather
+ * than as a bug.
+ *
+ * The domain is taken from the navigation helper rather than hardcoded, so a crumb is
+ * looked up in exactly the domain the menu above it was looked up in — JTranslate
+ * sets it from the config key `navigation_text_domain`, and the `translate` helper's
+ * own domain is the dispatched module's, which would be the wrong one here. On a miss
+ * it falls back to `default`, because that is where the navigation strings actually
+ * live: 'Shrines' has one row, in `default`, translated to "Santuari". This is the
+ * same union App\Twig\LaminasExtension::translate() documents and applies on the
+ * Symfony side, and it is what makes the two front controllers agree — it cannot lose
+ * a translation, only find one laminas would have missed.
+ */
+$navigationTextDomain = $this->navigation()->getTranslatorTextDomain();
+$translateLabel = function ($label) use ($navigationTextDomain) {
+    $translated = $this->translate($label, $navigationTextDomain);
+    return $translated === $label ? $this->translate($label, 'default') : $translated;
+};?>
 <ol class="breadcrumb">
     <?php
     $listItems = [];
     $position = 1;
     // iterate through the pages
     foreach ($this->pages as $key => $page) :
+        $label = $translateLabel($page->getLabel());
         $listItem = new ListItem();
         $listItem->position($position);
         if ($key < count($this->pages) - 1) {
             $listItem->setProperty('item', [
                 '@id' => $this->serverUrl() . $page->getHref(),
-                'name' => $page->getLabel()
+                'name' => $label
             ]);
         } else {
             $listItem->setProperty('item', [
                 '@id' => $this->serverUrl() . $this->url(null, [], [], true),
-                'name' => $page->getLabel()
+                'name' => $label
             ]);
         }
         $listItems[] = $listItem;
@@ -34,12 +59,12 @@ if (! isset($this->pages) || count($this->pages) < 1) {
             // if this isn't the last page, add a link and the separator:
             if ($key < count($this->pages) - 1) :
                 ?>
-                <a href="<?= $page->getHref() ?>"><?= $page->getLabel() ?></a>
+                <a href="<?= $page->getHref() ?>"><?= $label ?></a>
                 <?php
             // otherwise, output the name only:
             else :
                 ?>
-                <?= $page->getLabel() ?>
+                <?= $label ?>
             <?php endif; ?>
         </li>
     <?php endforeach; ?>

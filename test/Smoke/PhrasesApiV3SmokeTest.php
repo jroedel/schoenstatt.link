@@ -17,6 +17,7 @@ use function is_file;
 use function is_string;
 use function json_decode;
 use function json_encode;
+use function mb_strlen;
 use function random_bytes;
 use function rtrim;
 use function str_contains;
@@ -319,6 +320,193 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $catalog = $this->catalogFor($document['phrase']['textDomain'], 'de_DE');
         $this->assertNotNull($catalog, 'no catalog was written at all');
         $this->assertStringContainsString($marker, $catalog);
+    }
+
+    /**
+     * An overwrite is recoverable now, and that is the whole point of the table.
+     *
+     * `trans_translations` keeps no history, so until `trans_translations_history`
+     * existed a wrong edit destroyed the previous text with no record — which is why
+     * the tooling on the other side of this API dry-runs by default and treats "fill
+     * gaps, never overwrite" as a hard rule rather than a preference. This asserts the
+     * rule can be relaxed: the text that was there is still readable afterwards.
+     */
+    public function testAnOverwriteLeavesTheTextItDestroyedInTheHistory(): void
+    {
+        $token = $this->translatorToken();
+        $first = 'Erste Fassung ' . time();
+        $this->patch($token, self::ITEM, ['de' => $first]);
+
+        $second = 'Zweite Fassung ' . time();
+        $this->patch($token, self::ITEM, ['de' => $second]);
+
+        $document = $this->decode($this->getWithBearer($token, self::ITEM . '/history'));
+
+        $this->assertSame(self::PHRASE_ID, $document['phraseId']);
+        $newest = $document['history'][0] ?? [];
+        $this->assertSame(
+            $first,
+            $newest['previous'] ?? null,
+            'the overwritten text is not recoverable, so an overwrite is still destructive'
+        );
+        //Newest first, so a caller reading entry 0 gets the most recent loss rather than
+        //the oldest one — which for a phrase edited for ten years is a different answer.
+        $this->assertSame('update', $newest['operation'] ?? null);
+        $this->assertSame('de', $newest['language'] ?? null, 'the history speaks locales, not languages');
+        $this->assertSame(
+            $this->translatorUserId(),
+            $newest['replacedBy'] ?? null,
+            'nothing records who destroyed it'
+        );
+    }
+
+    /**
+     * The reason an overwrite was made, kept against the version it removed.
+     *
+     * This is what makes a phrase's history a thread instead of a log: an agent that
+     * reverses another's choice says why, and the next one to arrive reads that the
+     * obvious rendering was already tried and abandoned rather than trying it again.
+     */
+    public function testAnOverwriteCarriesTheReasonItWasMade(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Zugriff verweigert.']);
+
+        $reason = 'Zugriff is the noun; the UI needs the imperative here.';
+        $this->patch($token, self::ITEM, ['de' => 'Zugang verweigert ' . time(), '_note' => $reason]);
+
+        $newest = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'][0] ?? [];
+        $this->assertSame($reason, $newest['note'] ?? null);
+    }
+
+    /** `_note` is not a language, and must not be mistaken for one in either direction. */
+    public function testTheNoteKeyIsNotWrittenAsATranslation(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Vorher ' . time()]);
+
+        $document = $this->decode($this->patch($token, self::ITEM, [
+            'de'    => 'Nachher ' . time(),
+            '_note' => 'a reason',
+        ]));
+
+        $this->assertSame(
+            ['de'],
+            $document['changed'],
+            'the note was counted as a changed language, so the caller is told it wrote something it did not'
+        );
+        $this->assertNull(
+            $this->storedTranslation(self::PHRASE_ID, '_note'),
+            'the note was stored as a translation, keyed by something no lookup will ever ask for'
+        );
+    }
+
+    /** A note longer than the column is trimmed, not a reason to refuse the translation. */
+    public function testAnOverlongNoteDoesNotCostTheTranslation(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Erste ' . time()]);
+
+        $text     = 'Zweite ' . time();
+        $response = $this->patch($token, self::ITEM, ['de' => $text, '_note' => str_repeat('ü', 400)]);
+
+        $this->assertSame(200, $response['status'], $response['body']);
+        $newest = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'][0] ?? [];
+        $this->assertSame(255, mb_strlen((string) ($newest['note'] ?? '')), 'the note was not trimmed to the column');
+        $this->assertSame($text, $this->storedTranslation(self::PHRASE_ID, 'de_DE'));
+    }
+
+    /**
+     * Filling an empty language destroys nothing, so it records nothing.
+     *
+     * The distinction the table exists to make: a history that grew on every write
+     * would be a second copy of `trans_translations` and would say nothing about risk.
+     */
+    public function testFillingAGapWritesNoHistory(): void
+    {
+        $token = $this->translatorToken();
+        //Retract first, so the language really is empty — an explicit null is the one
+        //way to reach that, and no browser can send it.
+        $this->patch($token, self::ITEM, ['de' => null]);
+        $before = count($this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history']);
+
+        $this->patch($token, self::ITEM, ['de' => 'Aufgefüllt ' . time()]);
+
+        $after = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'];
+        $this->assertCount(
+            $before,
+            $after,
+            'filling an empty language wrote a history entry, so the history is a write log rather than a loss log'
+        );
+    }
+
+    /** A retraction is a loss too, and says so. */
+    public function testARetractionIsRecordedAsOne(): void
+    {
+        $token = $this->translatorToken();
+        $text  = 'Wird zurückgezogen ' . time();
+        $this->patch($token, self::ITEM, ['de' => $text]);
+
+        $this->patch($token, self::ITEM, ['de' => null]);
+
+        $newest = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'][0] ?? [];
+        $this->assertSame('retract', $newest['operation'] ?? null);
+        $this->assertSame($text, $newest['previous'] ?? null);
+    }
+
+    /**
+     * The history is linked from the phrase and not embedded in it.
+     *
+     * Opt-in was the requirement: a usually-empty list on every item of every page is a
+     * field callers learn to skip, and the collection endpoint returns a hundred at a
+     * time.
+     */
+    public function testThePhraseLinksToItsHistoryWithoutCarryingIt(): void
+    {
+        $document = $this->decode($this->getWithBearer($this->translatorToken(), self::ITEM));
+
+        $this->assertArrayNotHasKey('history', $document, 'the history is embedded, so it is not opt-in');
+        $this->assertStringEndsWith(
+            '/api/v3/phrases/' . self::PHRASE_ID . '/history',
+            $document['meta']['history'] ?? '',
+            'nothing links to the history, so an agent has no way to discover it'
+        );
+    }
+
+    /** One language's thread, and a language that is not one is refused rather than ignored. */
+    public function testTheHistoryNarrowsToOneLanguage(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Vorher ' . time(), 'es' => 'Antes ' . time()]);
+        $this->patch($token, self::ITEM, ['de' => 'Nachher ' . time(), 'es' => 'Después ' . time()]);
+
+        $all     = $this->decode($this->getWithBearer($token, self::ITEM . '/history'));
+        $german  = $this->decode($this->getWithBearer($token, self::ITEM . '/history?language=de'));
+
+        $this->assertGreaterThan(count($german['history']), count($all['history']), 'the filter narrowed nothing');
+        $this->assertSame('de', $german['language']);
+        foreach ($german['history'] as $entry) {
+            $this->assertSame('de', $entry['language']);
+        }
+
+        //A locale, not a language — the same thing a PATCH refuses, and for the same
+        //reason: silently ignoring it returns every language's argument.
+        $refused = $this->getWithBearer($token, self::ITEM . '/history?language=de_DE');
+        $this->assertSame(422, $refused['status'], $refused['body']);
+    }
+
+    /** Another project's phrase is not found here either, for the reason `show` is not. */
+    public function testTheHistoryOfAnotherProjectsPhraseIsNotFound(): void
+    {
+        $response = $this->getWithBearer(
+            $this->translatorToken(),
+            //Phrase 1 belongs to the `patres` project in this dump, same as the
+            //`show` case above: a phrase id alone must never be enough to read one,
+            //and a history is as much that project's as its translations are.
+            self::COLLECTION . '/1/history'
+        );
+
+        $this->assertSame(404, $response['status'], $response['body']);
     }
 
     /** Re-sending what is already stored is a 200 that writes nothing. */

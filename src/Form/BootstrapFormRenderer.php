@@ -278,7 +278,20 @@ final class BootstrapFormRenderer
         ));
     }
 
-    /** Validation messages, as `formElementErrors()` renders them. */
+    /**
+     * Validation messages, as `formElementErrors()` renders them.
+     *
+     * Not translated here, and `formElementErrors()` no longer translates either —
+     * both were switched off together. A message arrives already interpolated,
+     * because laminas substitutes `%value%`, `%hostname%` and `%min%` inside the
+     * validator, so translating at this point looked up the *user's input*: a
+     * translator miss is what files a phrase, and six strangers' mistyped email
+     * hostnames ended up as permanent rows in a table other accounts can read.
+     * `AbstractValidator`'s default translator now translates the message templates
+     * instead, before interpolation — see JTranslate\Module::onBootstrap and
+     * App\Laminas\TranslatorConfigurator. Translating in both places would translate
+     * twice.
+     */
     public function errors(ElementInterface $element): string
     {
         $messages = $element->getMessages();
@@ -291,7 +304,7 @@ final class BootstrapFormRenderer
             if (! is_scalar($message)) {
                 continue;
             }
-            $items .= '<li>' . $this->escaper->escapeHtml(($this->translate)((string) $message)) . '</li>';
+            $items .= '<li>' . $this->escaper->escapeHtml((string) $message) . '</li>';
         }
 
         return '' === $items ? '' : '<ul class="help-block">' . $items . '</ul>';

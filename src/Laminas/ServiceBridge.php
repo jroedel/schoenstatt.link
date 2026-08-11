@@ -46,9 +46,17 @@ final class ServiceBridge
 {
     private ?ServiceManager $services = null;
 
-    /** @param array<string, mixed> $appConfig the merged config/application.config.php */
-    public function __construct(private readonly array $appConfig)
-    {
+    /**
+     * @param array<string, mixed> $appConfig the merged config/application.config.php
+     * @param PhraseFlush|null $phraseFlush registered as a service so
+     *        TranslatorConfigurator can arm it when it builds the translator. Null
+     *        outside a request — a test or a console process has no end-of-request
+     *        hook to flush from, and TranslatorConfigurator skips the arming.
+     */
+    public function __construct(
+        private readonly array $appConfig,
+        private readonly ?PhraseFlush $phraseFlush = null
+    ) {
     }
 
     /**
@@ -106,6 +114,14 @@ final class ServiceBridge
                 MvcI18nTranslator::class => [TranslatorConfigurator::class],
             ],
         ]);
+
+        //The other half of onBootstrap's translator wiring: laminas writes discovered
+        //phrases on MvcEvent::EVENT_FINISH, which a Symfony-served route never
+        //reaches. Registered as an instance rather than a factory because the object
+        //is the Kernel's — its listener has to flush the same one the delegator armed.
+        if (null !== $this->phraseFlush) {
+            $services->setService(PhraseFlush::class, $this->phraseFlush);
+        }
 
         return $this->services = $services;
     }

@@ -9,6 +9,7 @@ use DateTimeInterface;
 use DateTimeZone;
 use JTranslate\I18n\LanguageMap;
 
+use function count;
 use function is_scalar;
 use function is_string;
 use function json_encode;
@@ -115,8 +116,98 @@ final class PhraseResource
                 'url'     => isset($phrase['phraseId'])
                     ? sprintf('%s/api/v3/phrases/%d', $base, (int) $phrase['phraseId'])
                     : null,
+                //A link, not the history itself. The history of a well-worked phrase is
+                //longer than the phrase, most callers never want it, and a field that is
+                //usually a long empty list is one every caller learns to skip. Following
+                //the link is the opt-in.
+                'history' => isset($phrase['phraseId'])
+                    ? sprintf('%s/api/v3/phrases/%d/history', $base, (int) $phrase['phraseId'])
+                    : null,
             ],
         ];
+    }
+
+    /**
+     * `GET /api/v3/phrases/{id}/history` — what writing to this phrase has destroyed.
+     *
+     * Newest first, one entry per overwrite or retraction, never one per write: filling
+     * an empty language destroys nothing and appears here not at all. An empty list is
+     * therefore the normal answer and means "nothing has ever been lost here", not
+     * "no records kept".
+     *
+     * `language`, not `locale`, for the reason {@see translations()} gives: the record
+     * is keyed the way the table stores it and the document is keyed the way a caller
+     * outside the application means it.
+     *
+     * The `phraseId` at the top is the one that was asked for. Each entry carries its
+     * own, which can differ: the thread is keyed on the phrase's hash, so it survives a
+     * merge or a delete-and-rediscover, and entries written before one of those name the
+     * row that existed then. An agent that only wants "what happened to this string"
+     * should ignore the per-entry id; one reconstructing events needs it.
+     *
+     * @param list<array<string, mixed>> $rows from TranslationsTable::getTranslationHistory()
+     * @return array<string, mixed>
+     */
+    public static function representHistory(
+        int $phraseId,
+        array $rows,
+        LanguageMap $languages,
+        string $baseUrl = '',
+        ?string $language = null
+    ): array {
+        $base    = rtrim($baseUrl, '/');
+        $entries = [];
+        foreach ($rows as $row) {
+            $locale = (string) ($row['locale'] ?? '');
+            //`''` is not a locale: it marks an entry about the *phrase* rather than a
+            //language, which so far means a retirement. Exposed as a null `language`
+            //rather than an empty string, so a caller branching on it cannot mistake it
+            //for a language it failed to recognise.
+            $entries[] = [
+                'language'    => '' === $locale ? null : ($languages->languageFor($locale) ?? $locale),
+                //The text that was destroyed. This is the whole point of the resource:
+                //`trans_translations` keeps no copy, so before this existed a wrong
+                //edit was unrecoverable and the tooling on this side had to be sure
+                //rather than able to correct.
+                'previous'    => $row['old_translation'] ?? null,
+                //'update' — something replaced it. 'retract' — something deleted it and
+                //the language is empty now. 'retire' — the *phrase* left the translator's
+                //worklist because the application knows nothing renders it any more; it
+                //has no language and no previous text, and `note` is the whole content.
+                'operation'   => $row['operation'] ?? null,
+                //The domain the row belonged to, and the phrase row it was attached to
+                //at the time. Neither is part of the thread key — see
+                //M006CreateTranslationHistory — but both are what somebody
+                //reconstructing events will ask for next.
+                'textDomain'  => $row['text_domain'] ?? null,
+                'phraseId'    => self::intOrNull($row['translation_phrase_id'] ?? null),
+                //Why, from whoever replaced it — up to 255 characters sent as `_note`
+                //on the PATCH. Null for a write that offered no reason, and for every
+                //write made through the admin GUI, which has no such field. Read in
+                //order these are a conversation: an agent that reverses another's choice
+                //says why here, against the version it removed.
+                'note'        => $row['notes'] ?? null,
+                'writtenBy'   => self::intOrNull($row['written_by'] ?? null),
+                'writtenOn'   => self::scalarize($row['written_on'] ?? null),
+                'replacedBy'  => self::intOrNull($row['replaced_by'] ?? null),
+                'replacedOn'  => self::scalarize($row['replaced_on'] ?? null),
+            ];
+        }
+
+        return [
+            'phraseId' => $phraseId,
+            'language' => $language,
+            'history'  => $entries,
+            'meta'     => [
+                'count' => count($entries),
+                'url'   => sprintf('%s/api/v3/phrases/%d', $base, $phraseId),
+            ],
+        ];
+    }
+
+    private static function intOrNull(mixed $value): ?int
+    {
+        return null === $value || '' === $value ? null : (int) $value;
     }
 
     /**

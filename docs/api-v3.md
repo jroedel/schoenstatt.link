@@ -373,7 +373,8 @@ One phrase. Returns an `ETag`.
   },
   "context": { "originRoute": "sign-in-no-cookies",
                "url": "https://schoenstatt.link/en/sign-in-no-cookies" },
-  "meta":    { "addedOn": "…", "etag": "W/\"5730983…\"", "url": "…/api/v3/phrases/10028" }
+  "meta":    { "addedOn": "…", "etag": "W/\"5730983…\"", "url": "…/api/v3/phrases/10028",
+               "history": "…/api/v3/phrases/10028/history" }
 }
 ```
 
@@ -384,6 +385,96 @@ missing" from "key null" to find its work will get it wrong.
 `modifiedOn` is there because staleness matters as much as absence: a translation
 written in 2017 against a source string edited in 2023 is a different problem from a
 missing one, and nothing else in the document says so.
+
+### `GET /api/v3/phrases/{phraseId}/history`
+
+What writing to this phrase has **destroyed**. Opt-in: the phrase document carries a
+link at `meta.history` and nothing more.
+
+```jsonc
+{
+  "phraseId": 10028,
+  "language": null,          // or the one you filtered to
+  "history": [
+    { "language": "de", "previous": "Zugriff verweigert.", "operation": "update",
+      "note": "Zugriff is the noun; the UI needs the imperative here.",
+      "textDomain": "Application", "phraseId": 10028,
+      "writtenBy": 18, "writtenOn": "2023-06-18T11:01:15+00:00",
+      "replacedBy": 42, "replacedOn": "2026-08-11T09:12:44+00:00" }
+    // …newest first
+  ],
+  "meta": { "count": 1, "url": "…/api/v3/phrases/10028" }
+}
+```
+
+`?language=de` narrows it to one language's thread, which is the shape an agent deciding
+whether to overwrite German actually wants. Anything that is not a writable language is a
+`422` rather than being ignored — a filter that silently does nothing returns everything,
+and the caller then reads another language's argument as if it were about this one.
+
+#### The thread is keyed on the phrase, not on the row
+
+A phrase id is not stable, and the id in the URL only has to name a *live row* of the
+string. Duplicate rows get merged onto the lowest id; a deleted phrase is rediscovered by
+the next render as a new row with a new id. The history is keyed on `(project, phrase
+hash, locale)` so it survives all of that: a rediscovered phrase inherits its own thread,
+and a merge concatenates the threads of the rows it merged.
+
+Two consequences to read the document with:
+
+- The `phraseId` at the top is the one you asked for; each **entry** carries its own,
+  which can differ. Ignore the per-entry id if you want "what happened to this string";
+  use it if you are reconstructing events.
+- Entries span every text domain the string appears in. The same English string in
+  `Schoenstatt` and in `default` is one translation problem — the table already treats it
+  that way, copying existing translations onto a new row when a phrase appears in a
+  second domain — so a thread that split by domain would show you half the argument.
+
+One entry per **event that changed what a translator would see**. Filling a language that
+was empty appears here not at all, so an empty list means "nothing has been lost or
+withdrawn here" rather than "no records kept".
+
+`operation` is one of three:
+
+| | what it means | `language` | `previous` |
+|---|---|---|---|
+| `update` | something replaced the text | the language | the text that was replaced |
+| `retract` | something deleted it; the language is empty now | the language | the text that was deleted |
+| `retire` | the **phrase** left the translator's worklist because the application knows nothing renders it any more | `null` | `""` |
+
+A `retire` entry is about the phrase and not about a language, so it appears in **every**
+language's thread, `?language=` filter included — it is usually the answer to "why did this
+disappear from the queue", and that is the question a language-filtered read is most often
+opened with. It destroys nothing, which is why `previous` is empty: there is no translation
+to restore, and the row exists so the disappearance can be explained rather than guessed at.
+`note` carries the reason, e.g. *"Superseded: the description of association 214 was
+replaced."*
+
+`writtenBy`/`writtenOn` describe the row that was lost — who wrote it and when, because
+losing the attribution is most of what makes an overwrite unrecoverable in practice.
+`replacedBy`/`replacedOn` describe the change that ended it.
+
+`note` is the reason, in the words of whoever replaced it: up to 255 characters, sent as
+`_note` on the PATCH that did the replacing (see below). Null when no reason was given,
+and null for every write made through the admin GUI, which has no such field.
+
+**Read in order, these are a conversation.** The current translation explains itself; the
+one that lost an argument does not. An agent that reverses another's choice says why here,
+against the version it removed, and the next agent to arrive reads that the obvious
+rendering was already tried and abandoned instead of trying it again.
+
+**Why this exists.** `trans_translations` kept no history, so an overwrite destroyed
+the previous text with no record, and unlike a wrong phrase — which `retired_on` can
+undo — there was no reversible form of it. That is why the agent tooling on the other
+side of this API dry-runs by default and treats "fill gaps, never overwrite" as a hard
+rule. With this endpoint the rule can be relaxed: a bad translation can be corrected by
+whoever notices, because the text it replaced is still readable.
+
+The table behind it is append-only and nothing prunes it. It is affordable because it
+grows per overwrite rather than per write, and an overwrite is the rare case.
+
+No `ETag`, deliberately: append-only means a conditional request could only ever guard
+against a *longer* history, which is not a conflict.
 
 ### Context: browsing the page a phrase came from
 
@@ -454,6 +545,29 @@ Two differences worth knowing:
   Retracting a language that has no translation is a `200` with `"changed": []` and no
   write, the same as re-sending stored text.
 
+#### `_note` — saying why
+
+A PATCH body is a map of language code to translation, plus one reserved key:
+
+```jsonc
+{
+  "de": "Zugang verweigert.",
+  "_note": "Zugriff is the noun; the UI needs the imperative here."
+}
+```
+
+`_note` is not a language and is never stored as one. It is attached to the history rows
+that write produces — **one per translation it destroys, none if it only fills gaps**. A
+note on a write that overwrites nothing has nothing to attach to and is dropped, which is
+the honest behaviour: there is no version it would explain.
+
+Up to 255 characters; longer is trimmed rather than refused, because losing the tail of a
+justification is a smaller harm than refusing the translation it justifies. A non-string
+is a `422` — an agent that sends a structure and gets a 200 would believe its reasoning
+was recorded.
+
+Batch entries take `_note` too, one per phrase, on the same terms.
+
 ### `PATCH /api/v3/phrases` — the batch
 
 ```jsonc
@@ -522,18 +636,25 @@ attributable.
 `trans_translations.modified_by` carries the bot's user id, so `/admin/translations`
 shows agent edits beside human ones with a name against each.
 
-Note what this is **not**: unlike associations, translations have no `sch_changes`
-history, so a write here is not revertible from the UI and the previous text is gone.
-That is a property of `trans_translations`, not of this API — the web form has always
-worked the same way — but it is the reason to prefer a filtered read and a considered
-batch over a broad speculative rewrite.
+Note what this is and is not. Translations still have no `sch_changes` history, so a
+write here is not revertible **from the UI**. But the text it replaced is no longer
+gone: every write that destroys a translation copies it to `trans_translations_history`
+first, readable at `GET /api/v3/phrases/{phraseId}/history`. Reverting is a PATCH with
+the text that endpoint gives back.
+
+That changes the advice this section used to end with. A filtered read and a considered
+batch are still better than a broad speculative rewrite — but the reason is now the
+ordinary one, that a bad batch is work to undo, rather than that it cannot be undone at
+all.
 
 ### What agents cannot do to phrases
 
 - **Create a phrase.** Phrases are discovered by the site rendering them; inventing one
   would create a key nothing looks up.
-- **Delete a phrase.** `deletePhrase()` cascades its translations away and there is no
-  history to recover them from.
+- **Delete a phrase.** `deletePhrase()` cascades its translations away. The history
+  table survives that — it holds no foreign key precisely so a deletion cannot erase it
+  — but it records only what was *overwritten*, so a translation deleted this way while
+  it was the current text is not in there.
 - **Blank a translation.** See above — empty means "skip", on both surfaces.
 - **Address a translation by locale.** `de_DE` is a `422`; the API speaks `de`.
 - **Read another project's phrases.** `trans_phrases` is shared with two other

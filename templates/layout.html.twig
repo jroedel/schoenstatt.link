@@ -23,12 +23,14 @@
                            *already* translated its title, which is the laminas
                            `headTitle()->setTranslatorEnabled(false)` case — only
                            the dictionary page does it.
-    breadcrumbs   list     [{label, href}], outermost first, or omitted for none.
-                           Labels are printed **verbatim, never translated** —
-                           partial/breadcrumbs.phtml does not translate them, so
-                           /es/dictionary/es says "Literature" in its trail while the
-                           navbar beside it says "Literatura". Measured; do not
-                           "fix" it in a page template.
+    breadcrumbs   list     [{label, href, translate?}], outermost first, or omitted
+                           for none. Labels are translated unless the crumb passes
+                           'translate': false, which is what a label carrying *data*
+                           must do — an association's name, a language name, or a
+                           label the page has already translated itself. Passing data
+                           through translate() does not just render oddly: a
+                           translator miss is how a phrase is filed, so it would put
+                           record content into the phrase table one row per record.
     block content          the page body.
     block page_stylesheets   a page's own <link> tags, after gen-basic.css. The
                            laminas counterpart is headLink()->appendStylesheet()
@@ -191,15 +193,31 @@
                 rather than using loop.last is what also gets the shrine index right,
                 where two crumbs share the current route and laminas marks both. -#}
             {%- set here = current_path() -%}
+            {#- Labels are translated, like every other piece of chrome. They were not,
+                which is the one place on a fully translated page where the same word
+                from the same config appeared twice with only one of them translated:
+                /it/shrines said "Santuari" in the navbar and "Shrines" in the
+                breadcrumb directly beneath it. A crumb whose label is *data* — an
+                association's name, a language name — passes 'translate': false, and a
+                page that has already translated its own label does the same; that is
+                what keeps record content out of the phrase table, since a translator
+                miss is what files a phrase. -#}
+            {%- set crumb_list = [] -%}
+            {%- for crumb in breadcrumbs -%}
+                {%- set crumb_list = crumb_list|merge([{
+                    'label': (crumb.translate ?? true) ? translate(crumb.label) : crumb.label,
+                    'href': crumb.href,
+                }]) -%}
+            {%- endfor -%}
             <ol class="breadcrumb">
-                {% for crumb in breadcrumbs %}
+                {% for crumb in crumb_list %}
                 <li{% if crumb.href == here %} class="active"{% endif %}>
                     {% if not loop.last %}<a href="{{ crumb.href }}">{{ crumb.label }}</a>{% else %}{{ crumb.label }}{% endif %}
                 </li>
                 {% endfor %}
             </ol>
             {% set crumb_items = [] %}
-            {% for crumb in breadcrumbs %}
+            {% for crumb in crumb_list %}
                 {% set crumb_items = crumb_items|merge([{
                     '@type': 'ListItem',
                     'position': loop.index,
