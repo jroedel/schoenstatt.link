@@ -297,12 +297,13 @@ between the retirement and the fix undoes it:
 
 3. **Rebuild the catalogs** as in step 3 above.
 
-## Before the next deploy: `database/db7.6.sql`, six rows and a corrected guard
+## Done 2026-08-11: `database/db7.6.sql`, six rows and a corrected guard
 
-**No code change — this one is data only, so it can run whenever.** The standing check on
-production, hours after db7.4, showed three phrases filed twice each under route
-`publication` in `Application` and `default`, at 03:19 UTC that morning: §12 rows that
-db7.4 had spared.
+**Applied to production 2026-08-11.** Statement 2 retired **6 rows** and the standing check
+came back to the three pre-2020 rows alone. Data only, no code change.
+
+The six were three phrases filed twice each under route `publication` in `Application` and
+`default`, between 02:41 and 03:19 UTC that morning: §12 rows that db7.4 had spared.
 
 It spared them because its third condition — *nothing has ever translated this beyond
 English* — is weaker than it reads. `TranslationsTable::writeMissingPhrasesToDb()` **copies
@@ -324,6 +325,52 @@ row for the book carries different text, so the title test was the wrong test fo
 
 Statement 1 prints what statements 2 and 3 will retire, and statement 4 prints the standing
 check afterwards, so one run leaves both the evidence and the current picture on screen.
+
+### What the six turned out to be, and why the remaining three must stay
+
+The three phrases were `Santuario del Padre`, `Schoenstatt` and `Heiligtum der Berufung`,
+each carrying translations in **all five languages**. The rows they inherited those from are
+the three the check still shows, and they are not "interface strings that collide with a
+title" as this file previously guessed. They are **shrine names**:
+
+| id | phrase | de | en | es |
+|---|---|---|---|---|
+| 6785 | `Santuario del Padre` | Heiligtum des Vaters | Santuario del Padre | Santuario del Padre |
+| 6815 | `Heiligtum der Berufung` | Heiligtum der Berufung | Vocation Shrine | Santuario de la Vocación |
+
+Their text domain is `Schoenstatt`, which is `SchoenstattTable::TRANSLATOR_DOMAIN` — the
+domain the association-name feature translates in (see the reply's §6). Their
+`origin_route` of `publications/publication` only records where the string was *first seen*
+in 2019, on a book named after the shrine.
+
+So **do not retire the rows the check keeps showing.** They are the §6 feature, and the
+steady state of this check is "the shrine names that double as book titles", plus
+`Schoenstatt` on `libraries/library`. What is *not* that steady state is a row under route
+`publication` in `Application` or `default`.
+
+It also tells us what the site did before the fix, which nobody had noticed: a publication
+whose title equalled a shrine's name got the **shrine's translation** as its breadcrumb,
+because the lookup hit. On an Italian page the book `Heiligtum der Berufung` was labelled
+*Santuario della Vocazione* — a confidently wrong title, which is §12's own argument for why
+titles must not pass through `translate()` at all.
+
+### Still unaccounted for: the ported crumb
+
+Statement 3 reported **0 rows**, as db7.5's had. The explanation offered under db7.5 above —
+that production's title text differs — cannot be right, because statement 3 does not test
+the title at all; it matches the literal from the controller. So there is no live row of that
+text on that route, and the likeliest reason is simply that the page has not been rendered
+with a translator miss on production since Symfony began serving it there. Settling it takes
+a query that tests neither route nor title:
+
+```sql
+SELECT translation_phrase_id, text_domain, origin_route, added_on, retired_on
+FROM trans_phrases WHERE project = 'Schoenstatt' AND phrase LIKE '150 preguntas%';
+```
+
+If it returns live rows, retire them by id — `php bin/console jtranslate:retire --id=<n>`,
+which is reversible with `--undo` and needs no migration. If it returns nothing, the fix
+landed before the page was ever visited and there is nothing to clean.
 
 ```bash
 ssh -p 222 <admin>@dedi2934.your-server.de \
