@@ -34,6 +34,7 @@ use function is_array;
 use function is_int;
 use function is_string;
 use function sprintf;
+use function trim;
 
 /**
  * `/api/v3/phrases` — the read/write API automated agents use to review and improve
@@ -296,6 +297,167 @@ final class PhrasesV3Controller extends AbstractApiController
             $request->getSchemeAndHttpHost(),
             $language
         ));
+    }
+
+    // ------------------------------------------------------------- retirement
+
+    /**
+     * `POST /api/v3/phrases/{id}/retire` — take this phrase off the translator's worklist.
+     *
+     * ## Not a retraction, and the distinction is the whole design
+     *
+     * A **retraction** (`_retract` on a PATCH) deletes one language's *text*. It destroys
+     * work, the phrase stays on the worklist, and the language it removed is now a gap —
+     * so retracting all five languages to make a row go away leaves the row exactly where
+     * it was, wholly untranslated, at the top of the list.
+     *
+     * A **retirement** is about the *phrase*, and destroys nothing. Every translation
+     * stays, the compiled catalogs still carry it, the site renders precisely what it
+     * rendered before, and the only change is that nobody is asked to work on it: it
+     * leaves this collection and the translation GUI's listing. `meta.retiredOn` says so
+     * on the document, and `?onlyRetired=1` lists them.
+     *
+     * ## Why an agent is allowed to do this at all
+     *
+     * Because it repairs itself. The first time a page renders a retired phrase and misses,
+     * discovery clears `retired_on` — so a wrong retirement is corrected by the site,
+     * usually within a request, and nobody has to notice. That is a *better* guarantee than
+     * the one that justified letting agents overwrite translations, where recovery needs a
+     * reviewer who reads that language to spot it.
+     *
+     * The cost of being wrong is one request rendering the source string instead of a
+     * translation. The cost of being right is a worklist that reflects what is actually
+     * translatable. See TranslationsTable::retire() for the full argument.
+     *
+     * ## The note is mandatory here, unlike on a write
+     *
+     * A write's note explains a replacement the history records anyway. A retirement's note
+     * is the *entire* record of a judgement — and it is read at the one moment it matters,
+     * when the phrase comes back and somebody has to work out whether the retirement was
+     * wrong or the caller that files it is. So: no note, no retirement, 422. Write it for
+     * whoever finds the row on the worklist again.
+     *
+     * ## Idempotent, and answers what it did
+     *
+     * Retiring an already-retired phrase is a 200 with `"changed": false` and no second
+     * history entry — one event per state change, so a retry cannot forge a second
+     * judgement. No catalog recompile: a retired phrase compiles exactly as before, which
+     * is the same fact as "the site renders what it rendered".
+     */
+    public function retire(Request $request): Response
+    {
+        return $this->setRetirement($request, true);
+    }
+
+    /**
+     * `POST /api/v3/phrases/{id}/unretire` — put it back on the worklist.
+     *
+     * The reversal, and it takes a note for the same reason: a row that has left the
+     * worklist and returned has had two judgements made about it, and the second explains
+     * the first.
+     *
+     * **This is not how a phrase usually comes back.** The usual way is a render: discovery
+     * clears `retired_on` by itself when a page misses on the string, and writes no history
+     * at all. So a phrase that is live again with a `retire` entry and no `unretire` after
+     * it is the interesting case — the site still uses the string, the retirement was
+     * wrong, and the note says what was believed. That is the signal, and it is the reason
+     * to write notes worth reading.
+     */
+    public function unretire(Request $request): Response
+    {
+        return $this->setRetirement($request, false);
+    }
+
+    /**
+     * Both retirement verbs, which differ only in direction and in the words they answer with.
+     */
+    private function setRetirement(Request $request, bool $retire): Response
+    {
+        //No If-Match, and that is a decision rather than an omission: the ETag is computed
+        //over the translations alone and a retirement changes none of them, so honouring it
+        //would refuse this because somebody had filled in a language meanwhile. The two
+        //operations do not contend. See docs/api-v3.md.
+
+        $actingUser = $this->requireAgent($request);
+        if ($actingUser instanceof Response) {
+            return $actingUser;
+        }
+
+        $phrase = $this->phrase($request);
+        if (null === $phrase) {
+            return self::problem(Response::HTTP_NOT_FOUND, 'No phrase of this project has that id.');
+        }
+
+        $body = self::decodeBody($request);
+        if (! is_array($body)) {
+            return self::problem(
+                Response::HTTP_BAD_REQUEST,
+                sprintf('The request body must be a JSON object carrying `%s`.', self::NOTE_KEY)
+            );
+        }
+
+        //Strict about the whole body, not just about the note. This endpoint takes exactly
+        //one key, so anything else is a caller with the wrong shape in mind — most likely a
+        //language, i.e. somebody reaching for a retraction. Saying so is more useful than
+        //ignoring it.
+        $unknown = array_diff(array_map(strval(...), array_keys($body)), [self::NOTE_KEY]);
+        if ([] !== $unknown) {
+            return self::problem(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                sprintf('This endpoint takes only `%s`.', self::NOTE_KEY),
+                [
+                    'unexpectedKeys' => array_values($unknown),
+                    'hint'           => 'A retirement is about the phrase, not a language. To remove one '
+                        . 'language\'s translation, PATCH the phrase with '
+                        . self::RETRACT_KEY . ': ["de"] instead.',
+                ]
+            );
+        }
+
+        $note = $body[self::NOTE_KEY] ?? null;
+        if (! is_string($note) || '' === trim($note)) {
+            return self::problem(
+                Response::HTTP_UNPROCESSABLE_ENTITY,
+                sprintf('`%s` is required here, and must say why.', self::NOTE_KEY),
+                [
+                    'note'   => sprintf(
+                        '%s takes up to %d characters. It is the only record of this judgement, and it is '
+                        . 'read when the phrase comes back.',
+                        self::NOTE_KEY,
+                        TranslationsTable::NOTE_LENGTH
+                    ),
+                    //Named because the two are one keystroke apart in a client's config and
+                    //opposite in effect.
+                    'notRetraction' => 'Retiring takes the phrase off the worklist and destroys nothing. '
+                        . 'Removing a translation is ' . self::RETRACT_KEY . ' on a PATCH.',
+                ]
+            );
+        }
+
+        $table = $this->table();
+        //Attribution, exactly as on a write: without it `replaced_by` is null and the
+        //history cannot say which agent made the judgement.
+        $table->setActingUserId($actingUser);
+        $changed = $retire
+            ? $table->retirePhraseById((int) $phrase['phraseId'], $note)
+            : $table->unretirePhraseById((int) $phrase['phraseId'], $note);
+
+        $fresh    = $table->getPhraseById((int) $phrase['phraseId']) ?? $phrase;
+        $document = PhraseResource::represent(
+            $fresh,
+            $this->validator()->languages(),
+            $this->contextPath($fresh),
+            $request->getSchemeAndHttpHost()
+        );
+
+        //`changed` is a boolean here where the PATCH answers a list of languages, because a
+        //retirement has no per-language granularity — it happened to the phrase or it did
+        //not. False means the row was already in the state asked for; the document says
+        //which state that is, in `meta.retiredOn`.
+        return self::tagged(
+            new JsonResponse(['changed' => $changed, 'phrase' => $document]),
+            $document['meta']['etag']
+        );
     }
 
     // ----------------------------------------------------------------- write

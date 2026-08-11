@@ -7,6 +7,7 @@ namespace SchoenstattTest\Smoke;
 use PDO;
 use PHPUnit\Framework\Attributes\DataProvider;
 
+use function array_column;
 use function array_keys;
 use function base64_encode;
 use function count;
@@ -16,6 +17,8 @@ use function hash_hmac;
 use function implode;
 use function is_file;
 use function is_string;
+use function array_map;
+use function preg_match;
 use function json_decode;
 use function json_encode;
 use function mb_strlen;
@@ -80,6 +83,9 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
 
     /** @var array<int, list<array<string, mixed>>>|null the rows as they were found */
     private ?array $originalRows = null;
+
+    /** @var array<int, string|null> phrase id => `retired_on` as it was found */
+    private array $originalRetirement = [];
 
     private ?int $translatorUserId = null;
     private ?int $shrineBotUserId  = null;
@@ -655,6 +661,262 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
         $this->assertStringContainsString('unknownLanguages', $response['body'], $response['body']);
     }
 
+    // ------------------------------------------------------------- retirement
+
+    /**
+     * A retirement takes the phrase off the worklist and touches no translation.
+     *
+     * The two halves are asserted together on purpose, because the failure that matters is
+     * a retirement implemented as "retract every language" — which would empty the
+     * collection entry too, and pass a test that only looked at the listing.
+     */
+    public function testRetiringHidesThePhraseAndKeepsEveryTranslation(): void
+    {
+        $token = $this->translatorToken();
+        $this->patch($token, self::ITEM, ['de' => 'Bleibt erhalten ' . time()]);
+        $before = $this->storedTranslation(self::PHRASE_ID, 'de_DE');
+
+        $response = $this->post($token, self::ITEM . '/retire', ['_note' => 'Capsule smoke test.']);
+        $body     = $this->decode($response);
+
+        self::assertSame(200, $response['status'], $response['body']);
+        self::assertTrue($body['changed'] ?? null, 'the retirement reported no change');
+        self::assertNotNull(
+            $body['phrase']['meta']['retiredOn'] ?? null,
+            'the document does not say the phrase is retired, so a caller auditing '
+            . '?onlyRetired=1 cannot tell a retired row from a live one'
+        );
+        self::assertSame(
+            $before,
+            $this->storedTranslation(self::PHRASE_ID, 'de_DE'),
+            'retiring the phrase changed a translation. A retirement is about the phrase; nothing '
+            . 'about it may touch trans_translations.'
+        );
+    }
+
+    /** Retired rows leave the default collection and are reachable with `onlyRetired`. */
+    public function testARetiredPhraseLeavesTheCollectionAndIsAuditable(): void
+    {
+        $token = $this->translatorToken();
+        $this->post($token, self::ITEM . '/retire', ['_note' => 'Capsule smoke test.']);
+
+        $live = $this->decode($this->getWithBearer($token, self::COLLECTION . '?limit=500'));
+        self::assertNotContains(
+            self::PHRASE_ID,
+            array_column($live['items'], 'phraseId'),
+            'a retired phrase is still being offered as work'
+        );
+
+        $retired = $this->decode($this->getWithBearer($token, self::COLLECTION . '?onlyRetired=1&limit=500'));
+        self::assertContains(
+            self::PHRASE_ID,
+            array_column($retired['items'], 'phraseId'),
+            'onlyRetired does not list the phrase, so an agent cannot audit its own retirements or '
+            . 'notice one that came back'
+        );
+    }
+
+    /**
+     * The note is required, and the refusal names the operation people confuse this with.
+     *
+     * Mandatory because it is the entire record of a judgement — read at the one moment it
+     * matters, when the row is back on the worklist and somebody has to decide whether the
+     * retirement was wrong or the code that files the phrase is.
+     */
+    public function testRetiringWithoutANoteIsRefused(): void
+    {
+        $token = $this->translatorToken();
+
+        foreach ([[], ['_note' => ''], ['_note' => '   '], ['_note' => 42]] as $body) {
+            $response = $this->post($token, self::ITEM . '/retire', $body);
+            self::assertSame(422, $response['status'], json_encode($body) . ' => ' . $response['body']);
+            self::assertStringContainsString('_retract', $response['body'], 'the refusal does not '
+                . 'distinguish retiring a phrase from retracting a translation');
+        }
+
+        self::assertNull(
+            $this->retiredOn(self::PHRASE_ID),
+            'a refused retirement retired the phrase anyway'
+        );
+    }
+
+    /** A language in the body is a caller reaching for a retraction, and is told so. */
+    public function testALanguageKeyOnTheRetireEndpointIsRefused(): void
+    {
+        $response = $this->post(
+            $this->translatorToken(),
+            self::ITEM . '/retire',
+            ['_note' => 'Wrong shape', 'de' => null]
+        );
+
+        self::assertSame(422, $response['status'], $response['body']);
+        self::assertStringContainsString('unexpectedKeys', $response['body'], $response['body']);
+        self::assertNull($this->retiredOn(self::PHRASE_ID), 'the phrase was retired despite the 422');
+    }
+
+    /**
+     * One event per state change: a retry is a 200 that changed nothing and recorded nothing.
+     *
+     * Without this an agent whose request timed out and retried would file two judgements
+     * about one row, and the second would be the one a reader sees first.
+     */
+    public function testRetiringTwiceRecordsOneEvent(): void
+    {
+        $token = $this->translatorToken();
+        $note  = 'Idempotence check ' . time();
+
+        $first  = $this->decode($this->post($token, self::ITEM . '/retire', ['_note' => $note]));
+        $second = $this->post($token, self::ITEM . '/retire', ['_note' => $note]);
+
+        self::assertTrue($first['changed'] ?? null);
+        self::assertSame(200, $second['status'], $second['body']);
+        self::assertFalse(
+            $this->decode($second)['changed'] ?? null,
+            'retiring an already-retired phrase reported a change'
+        );
+        self::assertSame(
+            1,
+            $this->countHistory(self::PHRASE_ID, 'retire', $note),
+            'the retry wrote a second retire entry'
+        );
+    }
+
+    /**
+     * The history records the retirement as a phrase event, with the note, in every thread.
+     *
+     * `operation: retire`, `language: null` and an empty `previous` — the shape a reader has
+     * to branch on, and the one that says nothing was destroyed. A caller that treated it as
+     * a loss would report an incident that did not happen.
+     */
+    public function testTheRetirementIsRecordedAsAPhraseEvent(): void
+    {
+        $token = $this->translatorToken();
+        $note  = 'Retired because the breadcrumb filed a record name ' . time();
+
+        $this->post($token, self::ITEM . '/retire', ['_note' => $note]);
+
+        $newest = $this->decode($this->getWithBearer($token, self::ITEM . '/history'))['history'][0] ?? [];
+        self::assertSame('retire', $newest['operation'] ?? null, json_encode($newest));
+        self::assertSame($note, $newest['note'] ?? null, 'the note is not in the history, so the '
+            . 'judgement has no record at all');
+        self::assertArrayHasKey('language', $newest, json_encode($newest));
+        self::assertNull($newest['language'], 'a retirement is not about a language');
+        self::assertSame('', $newest['previous'] ?? null, 'a retirement destroyed something');
+
+        //Every language's thread, because the event is about the phrase.
+        $german = $this->decode($this->getWithBearer($token, self::ITEM . '/history?language=de'));
+        self::assertSame('retire', $german['history'][0]['operation'] ?? null, $german['history'][0]['operation'] ?? '');
+    }
+
+    /** Un-retirement is reversible from the API and says why, in its own operation. */
+    public function testUnretiringPutsThePhraseBackAndRecordsWhy(): void
+    {
+        $token = $this->translatorToken();
+        $this->post($token, self::ITEM . '/retire', ['_note' => 'Retired for the un-retire test.']);
+
+        $response = $this->post($token, self::ITEM . '/unretire', ['_note' => 'Wrong call: still rendered.']);
+        $body     = $this->decode($response);
+
+        self::assertSame(200, $response['status'], $response['body']);
+        self::assertTrue($body['changed'] ?? null);
+        self::assertArrayHasKey('retiredOn', $body['phrase']['meta'], $response['body']);
+        self::assertNull($body['phrase']['meta']['retiredOn'], 'the phrase is still retired');
+        self::assertNull($this->retiredOn(self::PHRASE_ID), 'retired_on was not cleared in the table');
+        self::assertSame(
+            1,
+            $this->countHistory(self::PHRASE_ID, 'unretire', 'Wrong call: still rendered.'),
+            'the un-retirement left no record, so a thread reads as though the phrase is still retired'
+        );
+    }
+
+    /** A GET of a retirement path names the verb that works rather than 404ing. */
+    public function testAGetOfTheRetirePathIsRefusedWithAllow(): void
+    {
+        $response = $this->request('GET', self::ITEM . '/retire');
+
+        self::assertSame(405, $response['status']);
+        self::assertSame('POST', $response['headers']['allow'] ?? null);
+    }
+
+    /** Retirement is gated on the same role as the rest of the resource, and no lower. */
+    public function testAnonymousAndShrineBotCallersCannotRetire(): void
+    {
+        $anonymous = $this->requestWithBody(
+            'POST',
+            self::ITEM . '/retire',
+            ['Content-Type: application/json'],
+            '{"_note":"nope"}'
+        );
+        self::assertSame(401, $anonymous['status'], $anonymous['body']);
+
+        $shrineBot = $this->post($this->shrineBotToken(), self::ITEM . '/retire', ['_note' => 'nope']);
+        self::assertSame(401, $shrineBot['status'], $shrineBot['body']);
+
+        self::assertNull($this->retiredOn(self::PHRASE_ID), 'an unauthorized caller retired the phrase');
+    }
+
+    /**
+     * The schema's retirement claims are checked against the endpoint, not against themselves.
+     *
+     * The property that matters: an agent that only reads the schema must be able to find
+     * this capability *and* be told it is not `_retract`. Both halves are asserted, and the
+     * path is taken out of the published string rather than typed here, so a schema that
+     * advertises a path nobody serves fails.
+     */
+    public function testTheSchemaPublishesRetirementAndTheDistinction(): void
+    {
+        $schema     = $this->decode($this->get('/api/v3/schema/phrase'));
+        $retirement = $schema['retirement'] ?? [];
+
+        self::assertNotSame([], $retirement, 'the schema does not mention retirement, so an agent '
+            . 'reading it cannot discover the capability and will reach for _retract instead');
+        self::assertStringContainsString(
+            '_retract',
+            implode(' ', array_map('strval', $retirement)),
+            'the retirement block does not name the operation it is confused with'
+        );
+        self::assertStringContainsString(
+            'retirement',
+            (string) ($schema['writable']['retract']['notRetirement'] ?? ''),
+            'the retract key does not point at retirement, so a caller looking for "make this row go '
+            . 'away" is told only about the destructive option'
+        );
+
+        self::assertSame(
+            1,
+            preg_match('#(/api/v3/phrases/\{[A-Za-z]+\}/retire)#', (string) ($retirement['retire'] ?? ''), $m),
+            'no retire path is published'
+        );
+        $path = str_replace(['{phraseId}', '{phrase_id}', '{id}'], (string) self::PHRASE_ID, $m[1]);
+
+        $response = $this->post($this->translatorToken(), $path, ['_note' => 'Published path check.']);
+        self::assertSame(200, $response['status'], $path . ' => ' . $response['body']);
+    }
+
+    /** `retired_on` straight from the table, since the API hides retired rows by default. */
+    private function retiredOn(int $phraseId): ?string
+    {
+        $statement = $this->pdo()->prepare(
+            'SELECT retired_on FROM trans_phrases WHERE translation_phrase_id = :id'
+        );
+        $statement->execute(['id' => $phraseId]);
+        $value = $statement->fetchColumn();
+
+        return false === $value || null === $value ? null : (string) $value;
+    }
+
+    /** How many history rows this phrase has for one operation and note. */
+    private function countHistory(int $phraseId, string $operation, string $note): int
+    {
+        $statement = $this->pdo()->prepare(
+            'SELECT COUNT(*) FROM trans_translations_history'
+            . ' WHERE translation_phrase_id = :id AND operation = :op AND notes = :note'
+        );
+        $statement->execute(['id' => $phraseId, 'op' => $operation, 'note' => $note]);
+
+        return (int) $statement->fetchColumn();
+    }
+
     /** Another project's phrase is not found here either, for the reason `show` is not. */
     public function testTheHistoryOfAnotherProjectsPhraseIsNotFound(): void
     {
@@ -838,6 +1100,14 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
     /** Every translation row of the phrases this test touches, as it was found. */
     private function rememberPhrases(): void
     {
+        //`retired_on` too, because the retirement endpoints move it and a test that leaves a
+        //capsule phrase retired changes what every later test's collection query returns.
+        $statement = $this->pdo()->prepare(
+            'SELECT translation_phrase_id, retired_on FROM trans_phrases WHERE translation_phrase_id IN (?, ?)'
+        );
+        $statement->execute([self::PHRASE_ID, self::PHRASE_TWO]);
+        $this->originalRetirement = $statement->fetchAll(PDO::FETCH_KEY_PAIR);
+
         $rows = [];
         foreach ([self::PHRASE_ID, self::PHRASE_TWO] as $phraseId) {
             $statement = $this->pdo()->prepare(
@@ -859,11 +1129,25 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
      */
     private function restorePhrases(): void
     {
+        $pdo = $this->pdo();
+        foreach ($this->originalRetirement as $phraseId => $retiredOn) {
+            $pdo->prepare('UPDATE trans_phrases SET retired_on = :on WHERE translation_phrase_id = :id')
+                ->execute(['on' => $retiredOn, 'id' => $phraseId]);
+        }
+        $this->originalRetirement = [];
+        //The history is append-only by design, so the rows this test's retirements produced
+        //cannot be "restored" — they are deleted, the way TranslationSmokeTest deletes its
+        //own. Scoped to the two fixture phrases and to phrase-level events, so a retraction
+        //recorded by another test in the same run survives.
+        $pdo->prepare(
+            'DELETE FROM trans_translations_history WHERE translation_phrase_id IN (?, ?)'
+            . " AND operation IN ('retire', 'unretire')"
+        )->execute([self::PHRASE_ID, self::PHRASE_TWO]);
+
         if (null === $this->originalRows) {
             return;
         }
 
-        $pdo = $this->pdo();
         foreach ($this->originalRows as $phraseId => $rows) {
             $pdo->prepare('DELETE FROM trans_translations WHERE translation_phrase_id = :id')
                 ->execute(['id' => $phraseId]);
@@ -1028,6 +1312,17 @@ class PhrasesApiV3SmokeTest extends SmokeTestCase
      * @return array{status: int, redirect: string, body: string, contentType: string,
      *               headers: array<string, string>}
      */
+    /** @param array<string, mixed> $body */
+    private function post(string $token, string $path, array $body): array
+    {
+        return $this->requestWithBody(
+            'POST',
+            $path,
+            ['Authorization: Bearer ' . $token, 'Content-Type: application/json'],
+            (string) json_encode($body)
+        );
+    }
+
     private function patch(string $token, string $path, array $body, ?string $ifMatch = null): array
     {
         $headers = ['Authorization: Bearer ' . $token, 'Content-Type: application/json'];

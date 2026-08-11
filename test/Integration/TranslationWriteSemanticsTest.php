@@ -525,6 +525,104 @@ class TranslationWriteSemanticsTest extends TestCase
         }
     }
 
+    /**
+     * Retiring by id and putting it back, each recorded once, in its own operation.
+     *
+     * The by-id path is what the v3 API's retire endpoint calls, so this pins the three
+     * properties that endpoint's contract rests on and that a smoke test can only observe
+     * indirectly: one event per *state change*, an `unretire` that is distinguishable from
+     * an absent retirement, and a note on both.
+     */
+    public function testRetiringAndUnretiringByIdAreEachRecordedOnce(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $id = $this->insertPhrase('Retired by id ' . bin2hex(random_bytes(5)));
+
+            self::assertTrue($this->table->retirePhraseById($id, 'filed by a defect'));
+            self::assertNotNull($this->retiredOn($id), 'retired_on was not set');
+            self::assertFalse(
+                $this->table->retirePhraseById($id, 'again'),
+                'an already-retired phrase was retired a second time'
+            );
+
+            self::assertTrue($this->table->unretirePhraseById($id, 'wrong call'));
+            self::assertNull($this->retiredOn($id), 'retired_on was not cleared');
+            self::assertFalse(
+                $this->table->unretirePhraseById($id, 'again'),
+                'a live phrase was un-retired'
+            );
+
+            $thread = $this->table->getTranslationHistory($id);
+            self::assertCount(2, $thread, 'the no-op calls wrote history rows of their own');
+            //Newest first, as the reader gets it.
+            self::assertSame(TranslationsTable::OPERATION_UNRETIRE, $thread[0]['operation']);
+            self::assertSame('wrong call', $thread[0]['notes']);
+            self::assertSame(TranslationsTable::OPERATION_RETIRE, $thread[1]['operation']);
+            self::assertSame('filed by a defect', $thread[1]['notes']);
+            foreach ($thread as $row) {
+                //Both are events about the phrase: no language, nothing destroyed. A reader
+                //that finds text in `old_translation` here would go looking for a
+                //translation to restore that never existed.
+                self::assertSame(TranslationsTable::PHRASE_EVENT_LOCALE, $row['locale']);
+                self::assertSame('', $row['old_translation']);
+            }
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** A retirement leaves every translation exactly where it was. */
+    public function testRetiringByIdTouchesNoTranslation(): void
+    {
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            $id = $this->insertPhrase('Retired with translations ' . bin2hex(random_bytes(5)));
+            $this->table->updatePhrase($id, ['de_DE' => 'Bleibt', 'es_ES' => 'Permanece']);
+            $before = $this->table->getPhraseById($id);
+
+            self::assertTrue($this->table->retirePhraseById($id, 'worklist hygiene'));
+
+            $after = $this->table->getPhraseById($id);
+            self::assertSame($before['de_DE'] ?? null, $after['de_DE'] ?? null, 'German moved');
+            self::assertSame($before['es_ES'] ?? null, $after['es_ES'] ?? null, 'Spanish moved');
+            self::assertSame(
+                $before['phrase'] ?? null,
+                $after['phrase'] ?? null,
+                'the phrase text itself moved'
+            );
+        } finally {
+            $connection->rollback();
+        }
+    }
+
+    /** By id is project-scoped too, for the reason retiring by text is. */
+    public function testRetiringByIdDoesNotReachAnotherProject(): void
+    {
+        $foreign = $this->adapter->query(
+            'SELECT `translation_phrase_id` FROM `trans_phrases` WHERE `project` <> ? AND `retired_on` IS NULL LIMIT 1',
+            [$this->project]
+        )->current();
+        if (null === $foreign) {
+            self::markTestSkipped('this database holds only one project, so there is no cross-project write to try');
+        }
+        $id = (int) ((array) $foreign)['translation_phrase_id'];
+
+        $connection = $this->adapter->getDriver()->getConnection();
+        $connection->beginTransaction();
+        try {
+            self::assertFalse(
+                $this->table->retirePhraseById($id, 'should not reach'),
+                'another project\'s phrase was retired by id from here'
+            );
+            self::assertNull($this->retiredOn($id), 'and it was retired anyway');
+        } finally {
+            $connection->rollback();
+        }
+    }
+
     private function retiredOn(int $phraseId): ?string
     {
         foreach (

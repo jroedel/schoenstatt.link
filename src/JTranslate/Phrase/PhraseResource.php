@@ -112,6 +112,16 @@ final class PhraseResource
             ],
             'meta'         => [
                 'addedOn' => self::scalarize($phrase['addedOn'] ?? null),
+                //Null for a live phrase, a UTC timestamp for a retired one. Needed because
+                //the collection hides retired rows by default: as soon as a caller asks for
+                //them (`?onlyRetired=1`, which is how it audits its own retirements) a
+                //retired document is otherwise indistinguishable from a live one.
+                //
+                //In `meta` rather than at the top level because it is a fact about the row's
+                //place in the *worklist*, not about the phrase or its translations — the same
+                //reason it does not enter the ETag. A retirement changes nothing a
+                //conditional write is protecting.
+                'retiredOn' => self::scalarize($phrase['retiredOn'] ?? null),
                 'etag'    => self::etag($translations),
                 'url'     => isset($phrase['phraseId'])
                     ? sprintf('%s/api/v3/phrases/%d', $base, (int) $phrase['phraseId'])
