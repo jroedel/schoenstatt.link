@@ -103,8 +103,11 @@ final class PhrasesV3Controller extends AbstractApiController
      * whole justification, and it gets worse linearly — 200 individual writes would be
      * around 50 s, i.e. within sight of the execution limit for work that takes one and
      * a quarter seconds done properly.
+     *
+     * Public because ApiSchemaController publishes it: a ceiling an agent discovers by
+     * being refused is one it discovers halfway through a batch.
      */
-    private const MAX_BATCH = 200;
+    public const MAX_BATCH = 200;
 
     /**
      * The locale a context URL is assembled under.
