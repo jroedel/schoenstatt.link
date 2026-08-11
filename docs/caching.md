@@ -236,7 +236,11 @@ silence a production warning rather than fail anything.
   number too many.
 - Compression is unusually effective on these repetitive arrays (the book blob
   gzips 45.7 MiB → 3.7 MiB at level 1), but decode plus `unserialize()` costs
-  ~540 ms, so it suits mid-sized items rather than the giant ones. Redis — the
-  extension is already installed in production — would remove the fixed-segment
-  ceiling and the clear-everything failure mode entirely. Both are strategic
-  options, neither is needed now.
+  ~540 ms, so it suits mid-sized items rather than the giant ones. Redis would
+  remove the fixed-segment ceiling and the clear-everything failure mode
+  entirely, but it is **no longer a free option**: the extension was installed
+  in production and was deliberately **disabled in the hosting console on
+  2026-08-04 to reduce attack surface**, nothing in `composer.json` requiring
+  it. Reaching for it now means re-opening that surface on purpose, which is a
+  security decision rather than a caching one. Both are strategic options,
+  neither is needed now.

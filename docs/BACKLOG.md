@@ -676,8 +676,10 @@ readability — the destination is **Symfony**, reached gradually:
   `cs-check`'s exit status carries no signal, which is worse than the four
   cosmetic errors.
 - [ ] Production's server-side `local.php`: dead `acmailer_options` key
-  (harmless), and it still leaks stack traces via its error-display config —
-  clean both next time a deploy touches server config.
+  (harmless) — clean it next time a deploy touches server config. The
+  stack-trace leak that used to share this item is **closed**: error display is
+  off in that file (confirmed 2026-08-11), and PHP's own `display_errors` is
+  `Off` too, so the two layers agree.
 - [ ] Two Application factories still sit on the root-namespace
   `FactoryInterface` shim (deferred from rung 4a).
 - [ ] The exception notifier double-reports a failure that also kills the
