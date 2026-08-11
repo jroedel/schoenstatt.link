@@ -753,7 +753,9 @@ Four rules:
 - **Only `_note`.** Any other key is a `422` naming `_retract`, because the likeliest other
   key is a language, i.e. a caller reaching for the wrong operation.
 - **Idempotent.** A second retire is `200` with `changed: false` and writes no second history
-  entry — one event per state change, so a retried request cannot forge a second judgement.
+  entry — one event per state change **of that row**, so a retried request cannot forge a
+  second judgement. Note "that row": a string that exists in two text domains has two rows and
+  is retired twice, on purpose. See below.
 - **No catalog recompile**, because a retired phrase compiles exactly as before. This is the
   same fact as "the site renders what it rendered".
 
@@ -790,6 +792,39 @@ history at all. So the shape worth looking for when auditing is a phrase that is
 with a `retire` entry and **no** `unretire` after it: the site still uses the string, the
 retirement was wrong, and the note says what was believed. That is the feedback signal, not
 a failure of the mechanism.
+
+#### One string, two rows: two retirements in one thread
+
+The case that looks like a bug and is not. `UNIQUE (project, text_domain, phrase_hash)`
+means **the same string in two text domains is two rows sharing one hash** — routine here,
+and exactly what the breadcrumb's two-domain lookup produces, a pair at a time (13661 and
+13662 are one such pair).
+
+Two consequences, and the first is operational:
+
+- **Retiring one row does not retire the other.** Each row is its own place on the worklist.
+  A string you want off the list entirely needs a call per row, or it keeps asking for work
+  through the domain you did not touch.
+- **A history read on either id returns both retirements**, because the thread is keyed on
+  the hash — the same property that lets it survive a merge or a delete-and-rediscover. Two
+  `retire` entries with two different notes is therefore the *correct* answer for a string
+  that existed twice.
+
+```jsonc
+// GET /api/v3/phrases/13661/history  — and /13662/history answers identically
+{ "phraseId": 13661,
+  "history": [
+    { "operation": "retire", "phraseId": 13662, "textDomain": "default",
+      "language": null, "previous": "", "note": "…the default copy, same reason" },
+    { "operation": "retire", "phraseId": 13661, "textDomain": "Application",
+      "language": null, "previous": "", "note": "…filed by the breadcrumb, not interface text" }
+  ] }
+```
+
+This is **not** a retry being recorded twice — that cannot happen, since retiring an
+already-retired row writes nothing. To narrow a thread to one row, filter the entries on
+`phraseId` (or `textDomain`); to ask "what has happened to this string", read them all,
+which is what the endpoint is for.
 
 ### Auditing your own retirements
 
