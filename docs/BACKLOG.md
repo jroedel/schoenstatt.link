@@ -5,8 +5,9 @@ Current truth only — no journal. Closed work moves to [history.md](history.md)
 reusable there instead of accumulating DONE narratives.
 
 State as of 2026-08-07, on branch `symfony-upgrade` (not yet merged): the
-**capsule runs PHP 8.5.9** and production runs 8.4.24 — deliberately different,
-see [php-85.md](php-85.md). `composer audit --locked` reports zero advisories.
+**capsule runs PHP 8.5.9**, and since 2026-08-11 so does production — they had
+been deliberately different for a week; see [php-85.md](php-85.md), which also
+explains why `config.platform.php` stays at 8.4.24 regardless. `composer audit --locked` reports zero advisories.
 **631 tests across four suites** (119 unit, 376 integration, 18 fuzz, 118
 smoke), green on 8.5; PHPStan clean at level 0
 (baseline 26 entries); one-command deploy with hooks. First-party code no longer
