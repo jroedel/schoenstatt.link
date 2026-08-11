@@ -497,13 +497,19 @@ Four things to know, in descending order of how much they affect you:
 - `skip-publication-title` in `tools/classify.py` can go once db7.4 has run, and
   `skip-record-content` still needs rebuilding on §6's corrected premise.
 
-**One title survived, and how it was found is the useful part.** Checking the corpus after
-the migration turned up `150 preguntas sobre Schoenstatt`, still live in `Books` and
-`default`. Its page is Symfony-served and its breadcrumb comes from the controller rather
-than the navigation, so db7.4's route scoping could not have reached it — and the crumb was
-translated because the Twig layout translates one unless told not to. Fixed with
-`'translate' => false` and retired by `database/db7.5.sql`; every other ported controller was
-checked and passes only interface labels.
+**One more path was found and closed, and it is the Symfony side of the same thing.** The
+capsule was filing `150 preguntas sobre Schoenstatt` from the breadcrumb of its *ported* page:
+that trail comes from the controller rather than the navigation, and the Twig layout
+translates a crumb unless the controller passes `'translate' => false`. So the rule holds in
+both layouts, and it is now `false` there; every other ported controller was checked and
+passes only interface labels.
+
+On production that page had never filed anything — the two rows carrying that text came from
+an ordinary publication show page, since nine editions are titled that, and db7.4 had already
+retired them. Worth saying because the searches that looked for them (db7.5, db7.6) reported
+zero and two plausible explanations for that zero were wrong before the row's own
+`retired_on` settled it. **A phrase's `origin_route` is where it was first seen, and it is
+often not the page you are thinking about.**
 
 Two things in that for you. **A title-shaped row is not automatically the defect**, and the
 live ones are more interesting than a coincidence: they are **shrine names** — §6's feature —
