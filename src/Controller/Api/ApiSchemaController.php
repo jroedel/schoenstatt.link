@@ -230,6 +230,17 @@ final class ApiSchemaController
                         . 'no version to explain. Longer than the limit is trimmed rather than '
                         . 'refused; a non-string is a 422.',
                 ],
+                //The destructive key, published with the same shape as the note so a caller
+                //reading `writable` finds it without having to be refused first.
+                'retract'   => [
+                    'key'     => PhrasesV3Controller::RETRACT_KEY,
+                    'value'   => 'a list of language codes, e.g. ["de", "pt"]',
+                    'purpose' => 'Remove a translation. The only way to do it, and reachable only '
+                        . 'from this API — no browser can post one. Recorded in the history as a '
+                        . '`retract`, so the text is recoverable afterwards. A language cannot be '
+                        . 'written and retracted in the same request; that is a 422 rather than a '
+                        . 'guess at which half was meant.',
+                ],
                 'notes'     => [
                     'The source `phrase` is read-only: it is the key the site looks itself up by, '
                         . 'not editable content, so changing it would orphan the row rather than '
@@ -237,10 +248,10 @@ final class ApiSchemaController
                     'An empty string means "leave this language alone", not "blank it" — the web '
                         . 'form behaves the same way, because an untouched textarea posts one for '
                         . 'every language the translator skipped.',
-                    'An explicit JSON `null` means "retract this translation" and deletes the row. '
-                        . 'It is the one way to remove one, it is reachable only from this API — no '
-                        . 'browser can post a null — and it is recorded in the history as a '
-                        . '`retract`, so the text is recoverable afterwards.',
+                    'A JSON `null` keyed by a language is a 422, not a deletion. It used to delete '
+                        . 'the translation, which made a serializer\'s default value for an absent '
+                        . 'field a destructive operation nobody had asked for — so removal now takes '
+                        . 'the explicit `' . PhrasesV3Controller::RETRACT_KEY . '` above.',
                     'A translation of literally "0" is a legitimate value and is written. It is '
                         . 'neither an empty string nor a null, and nothing here treats it as either.',
                     'Languages are ISO 639-1 codes: `de`, not `de_DE`. The region subtag is an '
@@ -259,7 +270,8 @@ final class ApiSchemaController
                 'item'       => 'GET /api/v3/phrases/{phraseId} — carries a link to its history at '
                     . '`meta.history`.',
                 'patch'      => 'PATCH /api/v3/phrases/{phraseId} — a JSON object of language code '
-                    . 'to translation, plus the optional `' . PhrasesV3Controller::NOTE_KEY . '`.',
+                    . 'to translation, plus the optional `' . PhrasesV3Controller::NOTE_KEY . '` and '
+                    . '`' . PhrasesV3Controller::RETRACT_KEY . '`.',
                 'batch'      => 'PATCH /api/v3/phrases — a `phrases` object of phrase id to that '
                     . 'same body, up to ' . PhrasesV3Controller::MAX_BATCH . ' at a time.',
                 'history'    => 'GET /api/v3/phrases/{phraseId}/history — what writing to this '
