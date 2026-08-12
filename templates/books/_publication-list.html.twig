@@ -1,0 +1,74 @@
+{#
+  module/Books/view/books/publications/publication-list.phtml, ported — the table used
+  by both the language index and the search results.
+
+  Expects:
+    objects   the publication rows
+    columns   any of cover, authors, title, edition, publicationId, language, dataSourceId
+    covers    map of publicationId => 80px cover URL, for the rows that have one. Built in
+              App\Controller\LiteratureController because deciding it means `file_exists()`
+              once per row — 2,889 stat calls on /literature/de — and a template is the
+              wrong place for that.
+    downloads set of publicationIds that should carry the "downloadable files" icon.
+              Also precomputed: the original's test is "this publication has files, or
+              *any of its sub-editions* does", which is a nested loop per row.
+
+  ## The per-row permission check is the access control
+
+  `is_allowed(entity.resourceId, 'show')` skips a row the visitor may not see, and it is
+  the only thing standing between a public browser and the institute corpus: the *query*
+  behind these pages is not filtered by ACL. Removing it would leak restricted titles
+  into a public list. It is the reason this partial cannot become a simple loop.
+
+  ## Two structural oddities carried over verbatim
+
+  1. **`</tr>` is outside both loops** in the original, so every row after the first opens
+     a `<tr>` that is never closed and one `</tr>` lands at the very end. The markup is
+     invalid and every browser recovers identically. Reproduced, because the port's
+     contract is identical output — fixing it belongs to a change that can be diffed on
+     its own.
+  2. **An unknown column is dropped from the header and ignored in the body**, which is
+     the `unset($columns[$key])` in the original's header loop.
+#}
+{% set names = {
+    'cover':         '',
+    'authors':       'Authors',
+    'title':         'Title',
+    'edition':       'Edition',
+    'publicationId': 'Publication Id',
+    'language':      'Language',
+    'dataSourceId':  'Data source id',
+} %}
+{% set shown = columns|filter(c => names[c] is defined) %}
+<div class="responsive-table">
+<table class="table">
+<tr>{% for column in shown %}
+    <th>{{ translate(names[column]) }}</th>
+    {% endfor %}
+</tr>
+{% for entity in objects|filter(e => is_allowed(e.resourceId, 'show')) %}
+<tr>{% for column in shown %}
+{%- if column == 'cover' %}
+    <td>{% if covers[entity.publicationId] is defined %}
+        <a href="{{ laminas_path('publication', {'sw_id': entity.identifier, 'slug': entity.slug}) }}">
+    <img src="{{ covers[entity.publicationId] }}"
+    height="80px" alt="{{ entity.title }}"></a>
+    {% endif %}</td>
+{%- elseif column == 'authors' %}
+        <td>{{ format_entity('publication', entity, {'display': 'authors'}) }}</td>
+{%- elseif column == 'title' %}
+        <td>{{ format_entity('publication', entity, {'displayLanguageLabel': false, 'displayResourceLabel': true}) }}
+{%- if downloads[entity.publicationId] is defined %}&nbsp;<span class="fa fa-file-text fa-3" title="{{ translate('Downloadable files available') }}"></span>{% endif %}</td>
+{%- elseif column == 'edition' %}
+        <td>{{ format_entity('publication', entity, {'display': 'edition'}) }}</td>
+{%- elseif column == 'publicationId' %}
+        <td>{{ entity.publicationId }}</td>
+{%- elseif column == 'language' %}
+        <td>{{ entity.inLanguage }}</td>
+{%- elseif column == 'dataSourceId' %}
+        <td><a href="?id={{ entity.dataSourceId }}">{{ entity.dataSourceId }}</a></td>
+{%- endif %}
+    {% endfor %}
+{% endfor %}</tr>
+</table>
+</div>

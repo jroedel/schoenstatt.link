@@ -15,6 +15,7 @@ use Books\View\Helper\Markdown;
 use JTranslate\View\Helper\CountryName;
 use JTranslate\View\Helper\Flag;
 use JTranslate\View\Helper\LanguageName;
+use JTranslate\View\Helper\NowMessenger as NowMessengerHelper;
 use JUser\View\Helper\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
@@ -292,6 +293,26 @@ final class ViewHelpers
     {
         /** @var Tooltip $helper */
         $helper = $this->helpers()->get('tooltip');
+
+        return $helper;
+    }
+
+    /**
+     * JTranslate's within-request messenger — the counterpart of `flashMessenger` for
+     * messages meant for the page being rendered rather than the next one.
+     *
+     * templates/layout.html.twig used to say this could not be reproduced "because
+     * nothing on a ported route can populate it". That stopped being true with the
+     * literature search page, which adds "No results found." and the 300-result cap
+     * notice while rendering. Populating it is a matter of reaching the *same* plugin
+     * instance: `NowMessengerFactory` pulls `nowMessenger` out of the shared
+     * ControllerPluginManager and hands it to the helper, so a controller that pushes
+     * into that plugin is pushing into what this renders.
+     */
+    public function nowMessenger(): NowMessengerHelper
+    {
+        /** @var NowMessengerHelper $helper */
+        $helper = $this->helpers()->get('nowMessenger');
 
         return $helper;
     }

@@ -1,0 +1,44 @@
+{#
+  module/Books/view/books/publications/search.phtml, ported — /literature/search.
+
+  The thinnest of the three: a heading, the search bar, and the result table when there
+  is one.
+
+  **`entities` is null before a search and an array after one**, and the distinction is
+  visible: a null renders no table at all, an empty array renders no table either but the
+  controller has already added a "No results found." now-message. Reproduced as the
+  original's `! is_null(...) && 0 !== count(...)`.
+
+  The title here **is** translated by the layout — unlike the other two literature pages,
+  `search.phtml` calls plain `headTitle($title)` with the translator left on. That is why
+  `page_title_translate` is not set false here.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/selectize.bootstrap3.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-publications-search-bar.js"></script>
+{% endblock %}
+
+{% block content %}
+<h3>{{ translate('Publications search') }}</h3>
+{% include 'books/_search-bar.html.twig' with {
+    'form': form,
+    'form_action': search_url,
+    'advanced_search_url': advanced_search_url,
+} only %}
+{% if is_allowed('route/publications/create') %}
+<p><a class="btn btn-primary pull-right" href="{{ create_url }}">{{ translate('Add publication') }}</a>
+{% endif %}
+{% if entities is not null and entities is not empty %}
+{% include 'books/_publication-list.html.twig' with {
+    'objects': entities,
+    'columns': ['cover', 'authors', 'title', 'edition'],
+    'covers': covers,
+    'downloads': {},
+} only %}
+{% endif %}
+{% endblock %}

@@ -240,6 +240,16 @@ final class EntityFormatter
         return $markup;
     }
 
+    /**
+     * The two restricted corpora that get a label beside a publication's title, from
+     * FormatPublication's own static table. A publication in neither — i.e. in
+     * `publication_public` — gets none, which is why this is a lookup and not a formatter.
+     */
+    private const PUBLICATION_RESOURCE_LABELS = [
+        'publication_institute' => 'Institute',
+        'publication_patres'    => 'Patres',
+    ];
+
     /** The five `display` modes Books\View\Helper\FormatPublication accepts. */
     private const PUBLICATION_DISPLAYS = [
         'title',
@@ -286,13 +296,14 @@ final class EntityFormatter
                 is_string($display) ? $display : 'non-string'
             ));
         }
-        foreach (['displayLanguageLabel', 'displayResourceLabel'] as $unreproduced) {
-            if (! empty($options[$unreproduced])) {
-                throw new LogicException(sprintf(
-                    'FormatPublication\'s %s is not reproduced. See App\Laminas\EntityFormatter.',
-                    $unreproduced
-                ));
-            }
+        //`displayLanguageLabel` is the one option still unreproduced, and it raises
+        //rather than being silently ignored. No caller on this side passes it truthy:
+        //publication-list.phtml passes it explicitly *false*, which is also its default.
+        if (! empty($options['displayLanguageLabel'])) {
+            throw new LogicException(
+                'FormatPublication\'s displayLanguageLabel is not reproduced. '
+                . 'See App\Laminas\EntityFormatter.'
+            );
         }
 
         //the original's own guard, and it comes before everything: too little to show
@@ -321,6 +332,22 @@ final class EntityFormatter
             );
         } else {
             $markup .= $escapeMainText ? $this->escape($mainText) : $mainText;
+        }
+
+        //The corpus label — "Institute" or "Patres" beside a restricted publication's
+        //title. Off by default and switched on by the literature list, which is how a
+        //browsing moderator can tell at a glance which rows the public cannot see. The
+        //label helper is put into the `Books` text domain first, exactly as the original
+        //does, because that is where the two words are translated.
+        if (! empty($options['displayResourceLabel'])) {
+            $resource = $data['resourceId'] ?? null;
+            $label    = is_string($resource) ? (self::PUBLICATION_RESOURCE_LABELS[$resource] ?? null) : null;
+            if (null !== $label) {
+                $markup .= ' ' . $this->helpers->label()->setTranslatorTextDomain('Books')->render(
+                    $label,
+                    'label-info'
+                );
+            }
         }
 
         //`isset($data['identifier'])` only — the permission check lives inside the pencil

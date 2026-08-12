@@ -23,11 +23,13 @@ use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
+use App\Controller\LiteratureController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
 use App\Controller\RolesController;
+use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
@@ -437,6 +439,20 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             CommentCreateController::class => fn (): CommentCreateController => new CommentCreateController(
                 $this->laminas(),
                 $this->commentPredicates()
+            ),
+            // The three literature routes behind one controller — they are one page in
+            // three states. ViewHelpers as well as the bridge, because the index heading
+            // interpolates a translated language name.
+            LiteratureController::class => fn (): LiteratureController => new LiteratureController(
+                $this->laminas(),
+                $this->viewHelpers(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The three pre-2020 redirects. No Twig at all: every branch is a redirect.
+            SendToNewUrlController::class => fn (): SendToNewUrlController => new SendToNewUrlController(
+                $this->laminas(),
+                $this->routeUrl()
             ),
         ]);
     }
