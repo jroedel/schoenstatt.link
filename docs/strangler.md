@@ -694,6 +694,36 @@ in principle it could find one laminas misses, which would show as the ported pa
 *more* translated. Verified equal across all five locales; see the both-front-controllers
 procedure below.
 
+**Only the page's own domain discovers a phrase, and the second lookup is a read.** A
+`Translator::translate()` that misses fires `EVENT_MISSING_TRANSLATION`, and JTranslate's
+listener is the only path by which a row enters `trans_phrases` — so while the fallback
+was a second `translate()` call, every string the page's domain could not translate was
+*also filed in `default`*, where nothing had ever asked for it. Measured 2026-08-12:
+`Books/Francese` filed in 2019, `default/Francese` filed by this method; 360 rows added to
+`default` since 2026-08-01 duplicating a row that already existed in a module domain, 284
+of them from Symfony-served routes. That is the pathology the phrase-integrity work
+removed from the other direction — 7,801 rows down to 2,693 — coming back through the Twig
+layer, and it is invisible from any rendered page. The page's domain is still asked with
+`translate()`, because that call is what files an unknown phrase *where it belongs*;
+`default` is read out of its compiled catalog with `getAllMessages()`, which fires nothing.
+So: **a new fallback, of any kind, must be a read.** `test/Integration/PortedRouteTranslationTest`
+spies on the event and asserts the set of domains discovered in is exactly the page's own.
+
+The rows already filed are cleaned up with the command that exists for it —
+`bin/console jtranslate:retire --origin-route='%.locale' --text-domain=default
+--note='…'` — and `--dry-run` first. Retiring is the right verb rather than deleting:
+retired phrases still compile into the catalogs, so nothing a visitor sees changes; only
+the translator's worklist does. Check before running that every row in the selection
+duplicates a non-`default` one, which in the capsule was 231 of 231:
+
+```sql
+SELECT COUNT(*) FROM trans_phrases d
+ WHERE d.text_domain = 'default' AND d.origin_route LIKE '%.locale'
+   AND NOT EXISTS (SELECT 1 FROM trans_phrases o
+                    WHERE o.phrase_hash = d.phrase_hash AND o.project = d.project
+                      AND o.text_domain <> 'default');   -- must be 0
+```
+
 ### The MvcEvent helper limitation
 
 `Router` assembles URLs with no MvcEvent, which is the fact the whole layer rests
