@@ -50,6 +50,17 @@
   trail is passed in rather than derived from the Navigation service, whose factory
   needs an MvcEvent.
 
+  **Every `{% set %}` in this file is prefixed `chrome_`, and that is load-bearing.**
+  A `set` at the top level of a layout is not scoped to the layout: `{% block content %}`
+  is called *from here*, with the context as it stands at that line, so any name set
+  above line ~241 shadows the identically-named variable the controller passed — silently,
+  with no error, in every page that extends this file. It happened: this layout set
+  `languages` for the locale chooser, `/literature` passes `languages` (the ISO-639 map),
+  and the catalogue read the chooser's five options instead. Every row rendered
+  "Catálogo de livros em fr" — the template's own `is defined` fallback to the raw code —
+  on a page that was otherwise perfectly translated, in production, until 2026-08-12.
+  A new chrome local goes in with the prefix; a page variable never needs one.
+
   `nowMessenger` **is** reproduced, as of the literature ports. This file used to say
   it was omitted "because nothing on a ported route can populate it"; that held until
   a ported controller needed to say "No results found." on the page it was rendering.
@@ -61,16 +72,16 @@
 <html lang="{{ current_language() }}">
     <head>
         <meta charset="utf-8">
-        {%- set title_text = page_title and (page_title_translate is not defined or page_title_translate) ? translate(page_title) : page_title -%}
-        <title>{% if title_text %}{{ title_text }} - {% endif %}{{ translate('Schoenstatt Link', 'Application') }}</title>
+        {%- set chrome_title_text = page_title and (page_title_translate is not defined or page_title_translate) ? translate(page_title) : page_title -%}
+        <title>{% if chrome_title_text %}{{ chrome_title_text }} - {% endif %}{{ translate('Schoenstatt Link', 'Application') }}</title>
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
         {# the canonical page is always the English one; every other language is an alternate #}
-        {% set locale_links = canonical_links() %}
-        <link href="{{ locale_links.canonical }}" rel="canonical">
-        {% for language, href in locale_links.alternates %}
+        {% set chrome_locale_links = canonical_links() %}
+        <link href="{{ chrome_locale_links.canonical }}" rel="canonical">
+        {% for language, href in chrome_locale_links.alternates %}
         <link href="{{ href }}" hreflang="{{ language }}" rel="alternate">
         {% endfor %}
 
@@ -137,12 +148,12 @@
                     </ul>
                     {% else %}
                     <ul class="nav navbar-nav pull-right">
-                        {% set search = search_box() %}
-                        {% if search %}
+                        {% set chrome_search = search_box() %}
+                        {% if chrome_search %}
                         <li class="">
-                            <form class="navbar-form" action="{{ search.action }}" method="get" role="search">
+                            <form class="navbar-form" action="{{ chrome_search.action }}" method="get" role="search">
                                 <div class="input-group">
-                                    <input type="text" class="form-control" name="search" placeholder="{{ search.placeholder }}">
+                                    <input type="text" class="form-control" name="search" placeholder="{{ chrome_search.placeholder }}">
                                     <span class="input-group-btn">
                                         <button class="btn btn-info" type="submit">
                                             <i class="glyphicon glyphicon-search"></i>
@@ -179,14 +190,14 @@
         </nav>
         <div class="container" role="main">
             <div class="row">
-            {% set languages = language_options() %}
-            {% set current_language_option = languages|filter(option => option.current)|first %}
+            {% set chrome_languages = language_options() %}
+            {% set chrome_current_language = chrome_languages|filter(option => option.current)|first %}
             <div class="btn-group pull-right">
               <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                {% if current_language_option %}<span class="flag-icon flag-icon-{{ current_language_option.flag }}"></span> {{ current_language_option.label }} {% endif %}<span class="caret"></span>
+                {% if chrome_current_language %}<span class="flag-icon flag-icon-{{ chrome_current_language.flag }}"></span> {{ chrome_current_language.label }} {% endif %}<span class="caret"></span>
               </button>
               <ul class="dropdown-menu">
-                {% for language in languages %}
+                {% for language in chrome_languages %}
                 <li><a href="{{ language.href }}"><span class="flag-icon flag-icon-{{ language.flag }}"></span> {{ language.label }}</a></li>
                 {% endfor %}
               </ul>
@@ -198,7 +209,7 @@
                 /en/developers the "Home" crumb carries no class. Comparing hrefs
                 rather than using loop.last is what also gets the shrine index right,
                 where two crumbs share the current route and laminas marks both. -#}
-            {%- set here = current_path() -%}
+            {%- set chrome_here = current_path() -%}
             {#- Labels are translated, like every other piece of chrome. They were not,
                 which is the one place on a fully translated page where the same word
                 from the same config appeared twice with only one of them translated:
@@ -208,23 +219,23 @@
                 page that has already translated its own label does the same; that is
                 what keeps record content out of the phrase table, since a translator
                 miss is what files a phrase. -#}
-            {%- set crumb_list = [] -%}
+            {%- set chrome_crumb_list = [] -%}
             {%- for crumb in breadcrumbs -%}
-                {%- set crumb_list = crumb_list|merge([{
+                {%- set chrome_crumb_list = chrome_crumb_list|merge([{
                     'label': (crumb.translate ?? true) ? translate(crumb.label) : crumb.label,
                     'href': crumb.href,
                 }]) -%}
             {%- endfor -%}
             <ol class="breadcrumb">
-                {% for crumb in crumb_list %}
-                <li{% if crumb.href == here %} class="active"{% endif %}>
+                {% for crumb in chrome_crumb_list %}
+                <li{% if crumb.href == chrome_here %} class="active"{% endif %}>
                     {% if not loop.last %}<a href="{{ crumb.href }}">{{ crumb.label }}</a>{% else %}{{ crumb.label }}{% endif %}
                 </li>
                 {% endfor %}
             </ol>
-            {% set crumb_items = [] %}
-            {% for crumb in crumb_list %}
-                {% set crumb_items = crumb_items|merge([{
+            {% set chrome_crumb_items = [] %}
+            {% for crumb in chrome_crumb_list %}
+                {% set chrome_crumb_items = chrome_crumb_items|merge([{
                     '@type': 'ListItem',
                     'position': loop.index,
                     'item': {'@id': server_url() ~ crumb.href, 'name': crumb.label},
@@ -233,7 +244,7 @@
             <script type="application/ld+json">{{ json_ld({
                 '@context': 'https://schema.org',
                 '@type': 'BreadcrumbList',
-                'itemListElement': crumb_items,
+                'itemListElement': chrome_crumb_items,
             }) }}</script>
             {% endif %}
             </div>
@@ -245,7 +256,7 @@
     <title> above. A Twig comment cannot live inside the json_ld() call: it is an
     expression, and one placed there is an "Unclosed {" syntax error. -#}
 <script type="application/ld+json">{{ json_ld([
-    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': title_text ?: translate('Schoenstatt Link', 'Application'), 'publisher': {'@id': '#identity'}},
+    {'@context': 'http://schema.org', '@type': 'WebPage', '@id': '#webpage', 'name': chrome_title_text ?: translate('Schoenstatt Link', 'Application'), 'publisher': {'@id': '#identity'}},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/en/', 'inLanguage': 'en'},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/es/', 'inLanguage': 'es'},
     {'@context': 'http://schema.org', '@type': 'WebSite', 'name': 'Schoenstatt Link', 'url': 'https://schoenstatt.link/de/', 'inLanguage': 'de'},
