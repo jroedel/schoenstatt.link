@@ -174,7 +174,10 @@ class EntityFormatterTest extends TestCase
     /** What isActionAllowed() asks, asked directly, so the expectation above is not a guess. */
     private function isAllowedRoute(string $route): bool
     {
-        return (bool) (new ViewHelpers($this->bridge()))->isAllowed()->__invoke('route/' . $route);
+        $bridge  = $this->bridge();
+        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, ''));
+
+        return (bool) $helpers->isAllowed()->__invoke('route/' . $route);
     }
 
     /**
@@ -377,7 +380,7 @@ class EntityFormatterTest extends TestCase
     private function formatter(): EntityFormatter
     {
         $bridge  = $this->bridge();
-        $helpers = new ViewHelpers($bridge);
+        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, ''));
         $urls    = new RouteUrl($bridge, '');
 
         //The three closures the formatter takes. In production they come from
@@ -402,7 +405,7 @@ class EntityFormatterTest extends TestCase
 
         return (new TwigFactory())->create(
             $bridge,
-            new ViewHelpers($bridge),
+            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, '')),
             new RouteUrl($bridge, ''),
             new RequestStack(),
             new CspNonce()

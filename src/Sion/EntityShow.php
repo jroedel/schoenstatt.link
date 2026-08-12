@@ -6,6 +6,7 @@ namespace App\Sion;
 
 use App\Laminas\ServiceBridge;
 use BjyAuthorize\View\Helper\IsAllowed;
+use Closure;
 use RuntimeException;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Db\Model\SionTable;
@@ -84,8 +85,32 @@ final class EntityShow
      * Null rather than three distinct results because the caller does the same thing in
      * all three cases and laminas does too: flash, then redirect to the index. What
      * differs is only the message, and `deniedMessage()` answers that.
+     *
+     * ## `$loader`, and the bug that made it necessary
+     *
+     * `SionController::getEntityObject()` calls `SionTable::getObject()`, and two of the
+     * twelve controllers that inherit it **override that method** —
+     * `AssociationsController` calls `SchoenstattTable::getAssociation()` instead. That
+     * is not a refinement: `getObject('association', …)` falls through to
+     * `tryGettingObject()`, a single unlinked `SELECT`, because the association entity
+     * spec's `get_object_function` is commented out. `getAssociation()` goes through
+     * `getAssociations()` → `linkAssociations()`, which is what attaches
+     * `childAssociations`, `parent`, `roles` and `assignments`.
+     *
+     * So a shared reproduction that always calls `getObject()` renders an association
+     * page **missing its entire "Associated organizations" panel, its parent link, its
+     * role list and its contact people** — and renders perfectly happily while doing it,
+     * because every one of those is an `is not empty` away from simply not being drawn.
+     * Caught by diffing against the laminas baseline: the ported page was 7 KB smaller
+     * and one `panel-title` short. A status-code test would never have seen it.
+     *
+     * Hence the hook, rather than a special case inside this class: the override lives
+     * in the controller on the laminas side, and it lives in the controller here.
+     *
+     * @param Closure(int): mixed $loader replaces `getObject()` for an entity whose
+     *        laminas controller overrides `getEntityObject()`
      */
-    public function load(string $entity, int $id): ?EntityShowData
+    public function load(string $entity, int $id, ?Closure $loader = null): ?EntityShowData
     {
         $table = $this->table($entity);
 
@@ -100,7 +125,7 @@ final class EntityShow
         //is the one that matters. Typing the local would make PHPStan believe the
         //docblock and call the check redundant.
         /** @var mixed $object */
-        $object = $table->getObject($entity, $id, true);
+        $object = null === $loader ? $table->getObject($entity, $id, true) : $loader($id);
         if (! is_array($object) || [] === $object) {
             return null;
         }

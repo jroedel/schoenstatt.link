@@ -1,0 +1,170 @@
+{#
+  module/Books/view/books/publications/publication-info.phtml, ported — the
+  bibliographic panel that is most of a publication page.
+
+  Expects:
+    object            the publication row
+    cover_url         the full-size cover URL, or null when no cover file exists on disk
+    cover_thumb_url   the 400px cover URL, or null
+    edit_url          where the "Edit publication" button goes
+    merged_into_url   the surviving edition's URL, or null when this row is not merged
+    copy_to_corpus_url  the "Copy into main corpus" URL, or null
+    other_editions    subEditions + translations, merged, as the original does
+
+  Everything that needed the filesystem, the router or an identifier filter is resolved
+  in App\Controller\PublicationController and arrives as a variable — `file_exists()`
+  against `public/covers/…` most of all, which a template has no business doing.
+
+  The original also takes an `options` array with `showCover` and a `panelTitle` of
+  `book-title-and-link`, which swaps the "Publication Info" heading for the formatted
+  publication itself. Nothing passes either: the show page renders this with `object`
+  alone, so `showCover` is true and the heading is the literal. `show_cover` survives as
+  a defaulted variable because the layout genuinely changes with it (9 columns against
+  12); the title variant does not, because reproducing an unreachable branch is how a
+  port acquires untested code.
+
+  ## The four FormatPublication display modes
+
+  This partial is the reason App\Laminas\EntityFormatter grew them. It uses `authors`
+  for the author line, `edition` beside each other edition, `disambiguatingTitle` for the
+  current publication, `translators` for the translator line, and the default `title`
+  everywhere else. Each of the three list modes renders **without** a link, a pencil or
+  status icons, because the original defaults all five of those options to the title
+  modes — see that class.
+
+  ## Two permission checks that are not the route guard
+
+  `isAllowed(resourceId, 'edit')` gates the edit button and
+  `isAllowed(resourceId, 'show-admin-info')` gates the admin-notes panel — both against
+  the publication's *own* ACL resource, not the route. A publication in the institute
+  corpus therefore shows its edit button to a different set of people than a public one
+  does, on the same page, and neither has anything to do with reaching the page at all.
+  `format_field`'s `displayOnlyWithPermission` is a third such check, inside the helper.
+#}
+{% set show_cover = show_cover|default(true) %}
+<div class="row">
+{% if show_cover %}
+<div class="col-md-3">
+    {% if cover_thumb_url is not null %}
+        <a href="{{ cover_url }}">
+        <img src="{{ cover_thumb_url }}"
+        class="img-responsive center-block" alt="{{ object.title }}"></a>
+    {% endif %}
+<p class="align-center"></p>
+</div>
+{% endif %}
+<div class="col-md-{{ show_cover ? 9 : 12 }}">
+<div class="panel panel-default" id="infoPanel">
+    <div class="panel-heading">
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title">{{ translate('Publication Info') }}</h3>
+        </div>
+
+        <div class="col-xs-6">
+            {% if is_allowed(object.resourceId, 'edit') %}
+                <span class="pull-right"><a class="btn btn-primary btn-sm" href="{{ edit_url }}">
+                    {{ translate('Edit publication') }}</a>
+                </span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+          <p><strong>{{ translate('Author(s)') }}:</strong></p>
+            {{ format_entity('publication', object, {'display': 'authors'}) }}
+{% if other_editions is not empty %}
+      <p><strong>{{ translate('Other editions') }}:</strong></p>
+{% for sub in other_editions %}
+          <p>{{ format_entity('publication', sub) }} {{ format_entity('publication', sub, {'display': 'edition'}) }}</p>
+{% endfor %}
+{% endif %}
+    </div> <!-- info 1 column -->
+
+    <div class="col-md-6">
+        <p><strong>{{ translate('Language') }}:</strong> {% if object.inLanguage is not empty %}{% for language in object.inLanguage %}{{ language_name(language) }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}</p>
+        {% if object.mainPublication is not null %}
+        <p><strong>{{ translate('Current publication') }}:</strong> {{ format_entity('publication', object.mainPublication, {'display': 'disambiguatingTitle'}) }}</p>
+        {% endif %}
+        {% if object.translatedFromPublication is not null %}
+        <p><strong>{{ translate('Translated from') }}:</strong> {{ format_entity('publication', object.translatedFromPublication) }}</p>
+        {% endif %}
+        {{ format_field('ISBN', object.isbn, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Edition', object.bookEdition, {'displayOnlyIfNotNull': true}) }}
+        {% if object.translatorsAll is not empty %}
+        <p><strong>{{ translate('Translator(s)') }}</strong>: {{ format_entity('publication', object, {'display': 'translators'}) }}</p>
+        {% endif %}
+        {{ format_field('Number of pages', object.numberOfPages, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Date published', object.datePublishedText, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Publisher', object.publisher, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Publishing place', object.publishingPlace, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Copyright year', object.copyrightYear, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Book format', object.bookFormatType, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Volume number', object.volumeNumber, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Contained in', object.containedIn, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Contained in ISBN', object.containedInIsbn, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Genre', object.genre, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Keywords', object.keywords, {'displayOnlyIfNotNull': true, 'translateLabel': false}) }}
+        {{ format_field('Admin tags', object.adminTags, {
+            'displayOnlyIfNotNull': true,
+            'translateLabel': false,
+            'displayOnlyWithPermission': 'route/publication-edit',
+        }) }}
+{#- the <hr> depends on all three, so it stays a single test rather than three -#}
+{% if object.dataSource is not null or object.dataSourceId is not null or object.mergedIntoPublicationId is not null %}<hr>{% endif %}
+        {{ format_field('Data source', object.dataSource, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Original ID within data source', object.dataSourceId, {'displayOnlyIfNotNull': true}) }}
+{% if merged_into_url is not null %}
+            <p><strong>{{ translate('Merged into') }}</strong>:
+                <a href="{{ merged_into_url }}">
+                    {{ object.mergedIntoPublicationId }}</a>
+            </p>
+{% elseif copy_to_corpus_url is not null %}
+            <p><a href="{{ copy_to_corpus_url }}" class="btn btn-default">
+                {{ translate('Copy into main corpus') }}
+            </a></p>
+{% endif %}
+{% for url_object in object.urls %}
+<p>{{ publication_url_object(url_object) }}</p>
+{% endfor %}
+    </div> <!-- info 2 column -->
+    </div></div> <!-- contact info panel body -->
+</div> <!-- info 1 panel -->
+</div> <!-- info 1 column -->
+</div> <!-- Info row -->
+
+{% if object.publicNotes is not empty %}
+<div class="row"> <!-- notes row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="notesPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Notes') }}</h3>
+    </div>
+    <div class="panel-body">
+    <div>{{ markdown(object.publicNotes) }}
+    </div>
+    </div> <!-- notes panel body -->
+</div> <!-- notes panel -->
+</div> <!-- notes column 12 -->
+</div> <!-- notes row -->
+{% endif %}
+
+{% if object.adminNotes is not empty and is_allowed(object.resourceId, 'show-admin-info') %}
+<div class="row"> <!-- notes row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="adminNotesPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Admin notes') }}</h3>
+    </div>
+    <div class="panel-body">
+    <div>{{ markdown(object.adminNotes) }}
+    </div>
+    </div> <!-- notes panel body -->
+</div> <!-- notes panel -->
+</div> <!-- notes column 12 -->
+</div> <!-- notes row -->
+{% endif %}
+
+{{ books_json_ld('publication', object) }}
+{{ coins('publication', object) }}

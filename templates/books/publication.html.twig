@@ -1,0 +1,68 @@
+{#
+  module/Books/view/books/publications/show.phtml, ported — the bibliographic page.
+
+  The `<h1>` is the publication formatted by `FormatPublication` with `link` and
+  `displayEditPencil` both off: a page's own heading should not link to itself, and the
+  pencil lives in the info panel's edit button instead. Those two options are what made
+  App\Laminas\EntityFormatter learn the `link` option — see that class.
+
+  Order matters and is the original's: info panel, "add another edition", Drive files,
+  library copies, comments, change log, visit counts. The Drive panel is skipped entirely
+  when there are no files *or* the visitor lacks `publication_drive`; the library panel
+  always renders, saying so when empty.
+
+  The sortable-table assets belong to the book list and are declared here because the
+  layout takes them in blocks, where the original appended them from inside the partial.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-bootstrap-sortable.min.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-bootstrap-sortable.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ format_entity('publication', entity, {'link': false, 'displayEditPencil': false}) }}</h1>
+{% include 'books/_publication-info.html.twig' with {
+    'object': entity,
+    'cover_url': cover_url,
+    'cover_thumb_url': cover_thumb_url,
+    'edit_url': edit_url,
+    'merged_into_url': merged_into_url,
+    'copy_to_corpus_url': copy_to_corpus_url,
+    'other_editions': other_editions,
+} only %}
+{% if is_allowed('route/publication-create-new-edition') %}
+<p><a class="btn btn-default" href="{{ new_edition_url }}">{{ translate('Add another edition') }}</a></p>
+{% endif %}
+{% if entity.files is not empty and is_allowed('publication_drive') %}
+{% include 'books/_files-list-panel.html.twig' with {
+    'files': entity.files,
+    'columns': ['fileName', 'notes', 'size', 'mimeType'],
+} only %}
+{% endif %}
+{% include 'books/_book-list.html.twig' with {
+    'entities': library_books,
+    'columns': ['library', 'book', 'callNumber'],
+} only %}
+{% include 'sion-model/_comments-list.html.twig' with {'comments': comments} only %}
+{% if is_allowed('route/comments/create') and comment_form is not null %}
+{% include 'sion-model/_comment-create.html.twig' with {
+    'form': comment_form,
+    'form_action': comment_action,
+} only %}
+{% endif %}
+{% if is_allowed('route/publication-edit') %}
+{% include 'sion-model/_entity-changes-panel.html.twig' with {
+    'changes': changes,
+    'panel_title': 'Change log',
+} only %}
+{% endif %}
+
+<div class="row"><div class="col-md-12">
+<p><strong>{{ translate('Total views') }}</strong>: {{ visits.total }} <strong>{{ translate('Views this month') }}</strong>: {{ visits.pastMonth }}</p>
+</div></div>
+{% endblock %}

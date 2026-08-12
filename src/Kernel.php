@@ -11,10 +11,13 @@ use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\Api\PhrasesV3Controller;
+use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
+use App\Controller\CommentCreateController;
+use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
@@ -23,9 +26,11 @@ use App\Controller\LibrariesController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PhpInfoController;
+use App\Controller\PublicationController;
 use App\Controller\RolesController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
+use App\Controller\TextController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
@@ -45,6 +50,8 @@ use App\Laminas\RouteUrl;
 use App\Laminas\PhraseFlush;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
+use App\Sion\CommentPredicates;
+use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
 use SionModel\Error\FatalErrorHandler;
 use SionModel\Error\RequestContext as ErrorRequestContext;
@@ -105,6 +112,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private ViewHelpers $viewHelpers;
     private RouteUrl $routeUrl;
     private RouteGuard $routeGuard;
+    private EntityShow $entityShow;
+    private CommentPredicates $commentPredicates;
 
     /**
      * @param array<string, mixed> $appConfig the merged config/application.config.php,
@@ -392,7 +401,61 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl()
             ),
+            // Batch 5, the reading surface. The four entity show pages share
+            // App\Sion\EntityShow — one reproduction of SionController::showAction()
+            // rather than four copies — and it in turn shares App\Sion\CommentPredicates
+            // with the comment route, so a request that renders a show page asks the
+            // predicates table once.
+            AssociationController::class => fn (): AssociationController => new AssociationController(
+                $this->laminas(),
+                $this->entityShow(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            CompositionController::class => fn (): CompositionController => new CompositionController(
+                $this->laminas(),
+                $this->entityShow(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // The only one of the four needing no ServiceBridge of its own: a text page
+            // is SionController::showAction() and nothing else, so everything it reads
+            // comes through EntityShow.
+            TextController::class => fn (): TextController => new TextController(
+                $this->entityShow(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            PublicationController::class => fn (): PublicationController => new PublicationController(
+                $this->laminas(),
+                $this->entityShow(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // No Twig: it writes and redirects, and the form it validates lives on
+            // whichever show page rendered it.
+            CommentCreateController::class => fn (): CommentCreateController => new CommentCreateController(
+                $this->laminas(),
+                $this->commentPredicates()
+            ),
         ]);
+    }
+
+    /**
+     * The shared reproduction of SionController::showAction(), built at most once per
+     * request. Shared rather than constructed per controller because it memoizes the
+     * comment-predicate map, and because only one show route can match a request anyway
+     * — the sharing is about the *comment* route reaching the same predicates instance
+     * when a POST follows.
+     */
+    private function entityShow(): EntityShow
+    {
+        return $this->entityShow ??= new EntityShow($this->laminas(), $this->commentPredicates());
+    }
+
+    private function commentPredicates(): CommentPredicates
+    {
+        return $this->commentPredicates ??= new CommentPredicates($this->laminas());
     }
 
     /**
@@ -435,7 +498,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
 
     private function viewHelpers(): ViewHelpers
     {
-        return $this->viewHelpers ??= new ViewHelpers($this->laminas());
+        return $this->viewHelpers ??= new ViewHelpers($this->laminas(), $this->routeUrl(...));
     }
 
     /**

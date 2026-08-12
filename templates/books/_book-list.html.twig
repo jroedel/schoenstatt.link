@@ -1,0 +1,70 @@
+{#
+  module/Books/view/books/books/book-list.phtml, ported — the physical copies of a
+  publication held in the library catalogues the visitor may see.
+
+  Expects:
+    entities  the library-book rows, already filtered to visible libraries by the
+              controller
+    columns   which of `library`, `book`, `callNumber`, `withinLibraryId` to show
+
+  The original also has `borrower`, `checkedOutOn`, `dueOn` and `checkedInOn` branches,
+  inherited from the checkout list it was adapted from (its own `@todo` says so). Only
+  the publication show page renders it, and it passes three columns, so those four
+  branches are unreachable from anything ported here and are left out. A future port
+  that needs them should bring them back rather than pass a column this template drops.
+
+  Two behaviours reproduced rather than tidied:
+
+  1. **The unavailable row is `class="danger"`**, and its call-number cell additionally
+     says "(Currently checked out)". Both come from the same `isAvailable` flag, so a
+     row can be red *and* say why.
+  2. **The heading is always "Physical copy availability"**, and the empty case still
+     renders the panel with a sentence inside it. A publication nobody holds shows the
+     panel saying so, which is information; hiding it would look like the lookup failed.
+
+  The sortable-table assets are appended here through the layout's blocks rather than by
+  `headScript()`/`headLink()`, which is the same pair of files in the same order.
+#}
+{% set names = {
+    'library':         'Library',
+    'book':            'Book',
+    'callNumber':      'Call number',
+    'withinLibraryId': 'Barcode',
+} %}
+<div class="panel panel-default">
+
+<div class="panel-heading">
+    <h3 class="panel-title">{{ translate('Physical copy availability') }}</h3>
+</div>
+
+{% if entities is not empty %}
+<div id="book-list" class="table-responsive panel-body">
+    <table class="table sortable">
+        <thead>
+        <tr>
+            {% for col in columns %}
+                <th>{{ translate(names[col]) }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for entity in entities %}
+        <tr {% if not entity.isAvailable %}class="danger"{% endif %}>
+            {% for col in columns %}
+{%- if col == 'library' %}
+            <td>{{ format_entity('library', entity.library, {'displayEditPencil': false}) }}</td>
+{%- elseif col == 'book' %}
+            <td>{{ format_entity('book', entity) }}</td>
+{%- elseif col == 'callNumber' %}
+            <td>{{ entity.callNumber|default('') }}{% if not entity.isAvailable %} {{ translate('(Currently checked out)') }}{% endif %}</td>
+{%- elseif col == 'withinLibraryId' %}
+            <td>{{ entity.withinLibraryId|default('') }}</td>
+{%- endif %}
+            {% endfor %}
+</tr>{% endfor %}</tbody>
+    </table>
+</div>
+{% else %}
+<div class="panel-body">{{ translate('No physical copies available in current library catalogs.') }}</div>
+{% endif %}
+</div>

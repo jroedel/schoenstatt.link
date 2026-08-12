@@ -1,0 +1,38 @@
+{#
+  module/SionModel/view/sion-model/sion-model/entity-changes-panel.phtml, ported.
+
+  The change log an entity show page renders below its body, for a visitor who may edit
+  it. A panel around `_changes-table.html.twig` and nothing more — which is exactly what
+  the original is, and why the table stayed its own partial when /sm/view-changes was
+  ported: this is the second caller it was kept separate for.
+
+  Expects:
+    changes      list of change rows from SionTable::getEntityChanges()
+    panel_title  optional, translated; 'Changes' when absent, as in the original
+    max_rows     optional, passed through to the table
+
+  The empty case is a translated sentence rather than an empty table, and the panel
+  still renders around it — a page whose entity has never been edited shows "No changes
+  recorded.", not a missing panel.
+#}
+{% set title = panel_title|default('Changes') %}
+<div class="row"> <!-- row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="changesPanel">
+<div class="panel-heading">
+	<h3 class="panel-title">{{ translate(title) }}</h3>
+</div>
+<div class="table-responsive panel-body">
+	{% if changes is not empty %}
+{% include 'sion-model/_changes-table.html.twig' with {
+    'changes': changes,
+    'max_rows': max_rows|default(null),
+    'show_entity': false,
+} only %}
+{% else %}
+<p>{{ translate('No changes recorded.') }}</p>
+{% endif %}
+</div>
+</div> <!-- panel -->
+</div> <!-- column 12 -->
+</div> <!-- row -->
