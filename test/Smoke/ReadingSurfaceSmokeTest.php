@@ -232,6 +232,47 @@ class ReadingSurfaceSmokeTest extends SmokeTestCase
     }
 
     /**
+     * The catalogue rows name their language — "Catálogo de livros em Francês", not
+     * "…em fr".
+     *
+     * The page passes `languages` (the ISO-639 map) and `layout.html.twig` set a variable
+     * of the same name for the locale chooser. A `{% set %}` at the top level of a layout
+     * is in scope when `{% block content %}` is called from it, so the layout's five
+     * options shadowed the map, every key missed, and the template's own `is defined`
+     * fallback printed the raw code. It reached production, and the page looked *almost*
+     * right — the pattern around it was translated, only the noun was not.
+     *
+     * Portuguese, because English cannot see this: the fallback prints `fr` where English
+     * prints "French", and both are plausible until you know which one you asked for.
+     */
+    public function testTheCatalogueRowsNameTheirLanguageRatherThanItsCode(): void
+    {
+        $body = $this->get('/pt/literature')['body'];
+
+        self::assertStringContainsString('Catálogo de livros em Francês', $body);
+        self::assertStringNotContainsString('Catálogo de livros em fr', $body);
+    }
+
+    /**
+     * The search box's placeholder is translated.
+     *
+     * `Laminas\Form\View\Helper\AbstractHelper::translateHtmlAttributeValue()` translates
+     * `placeholder` and `title` on every element a form view helper renders;
+     * App\Form\BootstrapFormRenderer did not, so the box read "Search Catalogs" in all
+     * five locales against laminas' "Busca nos catálogos". It is asserted here on the
+     * *escaped* form, because laminas-escaper writes the spaces as `&#x20;` and a test
+     * against the plain string passes for the wrong reason on a page that also contains
+     * the phrase in prose.
+     */
+    public function testTheSearchPlaceholderIsTranslated(): void
+    {
+        $body = $this->get('/pt/literature')['body'];
+
+        self::assertStringContainsString('placeholder="Busca&#x20;nos&#x20;cat&#xE1;logos"', $body);
+        self::assertStringNotContainsString('placeholder="Search', $body);
+    }
+
+    /**
      * A composition's breadcrumb is `Music > <name>`, with the name **not** translated.
      *
      * The trail was absent entirely at first, which
