@@ -31,25 +31,33 @@ use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\Api\PhrasesV3Controller;
+use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
+use App\Controller\CommentCreateController;
+use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
+use App\Controller\LiteratureController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PhpInfoController;
+use App\Controller\PublicationController;
 use App\Controller\RolesController;
+use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
+use App\Controller\TextController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
+use App\Sion\SiteWideIdentifier;
 use App\Twig\LaminasExtension;
 use App\View\SiteChrome;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
@@ -507,6 +515,192 @@ $ported(
     ], '/^$')]
 );
 
+
+// ---------------------------------------------------------------------------
+// Batch 5, ported 2026-08-12: the reading surface. The four entity show pages
+// plus the comment route three of them need.
+// ---------------------------------------------------------------------------
+//
+// **All four share one path shape**, `/{sw_id}[/{slug}]`, and are told apart by the
+// identifier regex alone — `SL1…A` is an association, `SL2…L` a publication, `SL4…T` a
+// text, `SL5…C` a composition. That is the laminas router's arrangement too, and it is
+// why App\Sion\SiteWideIdentifier::pattern() exists: a constraint written by hand here
+// would eventually disagree with Schoenstatt\Validator\SchoenstattLinkIdentifier, and
+// the failure would be one entity type falling through to `legacy` while three do not.
+//
+// The `slug` is optional and unconstrained beyond the laminas route's own
+// `[a-z0-9-]{1,200}`. It is decoration: every one of these controllers resolves the row
+// from `sw_id` and ignores the slug, exactly as the laminas actions do, so a stale slug
+// still reaches the right page.
+//
+// Ordering against `association-edit` above: that route's path is `/{sw_id}/edit`, which
+// a two-segment `/{sw_id}/{slug}` would swallow if it came first. It does not — `edit`
+// is declared above this block — and the slug constraint would refuse `edit` anyway
+// since the laminas pattern excludes nothing of the sort. Both facts are load-bearing
+// together, which is why neither is relied on alone.
+$slug = ['slug' => '[a-z0-9-]{1,200}'];
+
+// The literature browse surface. Declared **above** the entity show routes because
+// `/literature/search` and `/literature/{inLanguage}` are two-segment paths that the
+// publication-old redirect below must not swallow, and because `/literature` itself is
+// a literal that nothing else claims. Order within the three is what matters: `search`
+// is a literal and has to beat `{inLanguage}`, and `{inLanguage}` is constrained to two
+// letters so `/literature/150-preguntas-sobre-schoenstatt` (ported earlier, and declared
+// above this block) and `/literature/{publication_id}` both survive.
+$ported(
+    'publications',
+    '/literature',
+    [LiteratureController::class, 'home'],
+    RouteAccess::guardedBy('route/publications'),
+    $textDomain('Books')
+);
+$ported(
+    'publications/search',
+    '/literature/search',
+    [LiteratureController::class, 'search'],
+    RouteAccess::guardedBy('route/publications/search'),
+    //no NAV_ROUTE: laminas marks nothing active in the navbar on the search page, and
+    //declaring one lit up "Literature" where the original leaves it plain
+    $textDomain('Books')
+);
+$ported(
+    'publications/index',
+    '/literature/{inLanguage}',
+    [LiteratureController::class, 'index'],
+    RouteAccess::guardedBy('route/publications/index'),
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications'],
+    //the laminas constraint exactly: two letters, which is what keeps `/literature/1`
+    //and `/literature/150-preguntas-sobre-schoenstatt` out of this route
+    ['inLanguage' => '[a-z]{2}']
+);
+
+// The three pre-2020 redirects, all 301s. `/literature/{publication_id}` is declared
+// after the two-letter language route above and takes only digits, so the two cannot
+// collide; the association pair sits under the old `/associations` prefix, below the
+// `associations` index itself.
+$ported(
+    'publications/publication-old',
+    '/literature/{publication_id}',
+    [SendToNewUrlController::class, 'publicationById'],
+    RouteAccess::guardedBy('route/publications/publication-old'),
+    $textDomain('Books'),
+    ['publication_id' => '[0-9]{1,5}']
+);
+$ported(
+    'associations/association',
+    '/associations/{sw_id}',
+    [SendToNewUrlController::class, 'associationBySwId'],
+    RouteAccess::guardedBy('route/associations/association'),
+    $textDomain('Schoenstatt'),
+    //`SL1[0-9]{4,5}A` is the laminas constraint, which is *looser* than the association
+    //identifier regex — five or six digits rather than five. Reproduced as written: a
+    //six-digit id that no longer resolves ends at the not-found redirect, which is what
+    //it does today.
+    ['sw_id' => 'SL1[0-9]{4,5}A']
+);
+$ported(
+    'associations/old-association',
+    '/associations/{association_id}',
+    [SendToNewUrlController::class, 'associationById'],
+    RouteAccess::guardedBy('route/associations/old-association'),
+    $textDomain('Schoenstatt'),
+    ['association_id' => '[0-9]{1,5}']
+);
+
+// The page behind every shrine on the map. Guarded `['guest', 'sch_basic', 'sch_user',
+// 'user']`, i.e. public — but the controller carries a second rule the ACL cannot see:
+// an anonymous visitor may see shrines and wayside shrines and is redirected to
+// `welcome` for every other kind. See App\Controller\AssociationController.
+$ported(
+    'association',
+    '/{sw_id}/{slug}',
+    AssociationController::class,
+    RouteAccess::guardedBy('route/association'),
+    $textDomain('Schoenstatt') + ['slug' => null],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION)] + $slug
+);
+
+// An individual song. Public, and the first of the three pages that render a comment
+// list and a CommentForm — the thing docs/strangler.md recorded this route as blocked on.
+$ported(
+    'composition',
+    '/{sw_id}/{slug}',
+    CompositionController::class,
+    RouteAccess::guardedBy('route/composition'),
+    //**No SiteChrome::NAV_ROUTE.** Lighting up "Music" for a song reads as obviously
+    //right and is wrong: the laminas navigation marks nothing active on any of these
+    //show pages, and adding it put a stray ` class="active"` into the navbar that the
+    //baseline diff caught on exactly 15 bytes.
+    $textDomain('Books') + ['slug' => null],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_COMPOSITION)] + $slug
+);
+
+// A document from the Kentenich corpus, and **the batch's restricted show page**:
+// `route/text` is guarded `texts_user`, so this is where all three access outcomes are
+// exercised on a page that also has a body worth comparing.
+$ported(
+    'text',
+    '/{sw_id}/{slug}',
+    TextController::class,
+    RouteAccess::guardedBy('route/text'),
+    $textDomain('Books') + ['slug' => null],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_TEXT)] + $slug
+);
+
+// The bibliographic page. Public at the route level, and the only entity in this batch
+// whose *rows* are individually gated — `publication` declares
+// `acl_resource_id_field => resourceId` plus `acl_show_permission => show`, so
+// App\Sion\EntityShow decides per publication whether this visitor may see it.
+$ported(
+    'publication',
+    '/{sw_id}/{slug}',
+    PublicationController::class,
+    RouteAccess::guardedBy('route/publication'),
+    //no NAV_ROUTE, for the reason given on `composition` above
+    $textDomain('Books') + ['slug' => null],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)] + $slug
+);
+
+// Leaving a comment. **POST only**, and that is a reproduction rather than a narrowing:
+// a GET reaches a view whose template does not exist and is a 500 today, measured. A GET
+// does not become a 405 either — the catch-all below matches it, so it bridges to laminas
+// and stays exactly as broken as it was. See App\Controller\CommentCreateController.
+$commentIdentifiers = [
+    'entity'    => '[a-zA-Z_-]{1,25}',
+    'entity_id' => '[0-9]{1,5}',
+    'kind'      => '(comment|review|rating)',
+];
+//**One RouteAccess instance shared by both twins**, not two equal ones.
+//test/Integration/SymfonyRouteAuthorizationTest asserts object identity, and it is right
+//to: these are one page reached two ways, and two declarations are two things to keep in
+//step. $ported() does this for every other route by construction; this pair is declared by
+//hand only because it needs a POST method constraint, so the sharing has to be explicit.
+$commentAccess   = RouteAccess::guardedBy('route/comments/create');
+$commentDefaults = [
+    '_controller'                           => CommentCreateController::class,
+    RouteAccess::ATTRIBUTE                  => $commentAccess,
+    LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => 'SionModel',
+    //the laminas route's own default, and what makes the `kind` segment optional
+    'kind'                                  => 'comment',
+];
+$routes->add('comments/create', new Route(
+    '/comments/create/{entity}/{entity_id}/{kind}',
+    $commentDefaults,
+    $commentIdentifiers,
+    [],
+    '',
+    [],
+    ['POST']
+));
+$routes->add('comments/create.locale', new Route(
+    '/{_locale}/comments/create/{entity}/{entity_id}/{kind}',
+    $commentDefaults,
+    $commentIdentifiers + ['_locale' => $locales],
+    [],
+    '',
+    [],
+    ['POST']
+));
 
 // ---------------------------------------------------------------------------
 // The v3 API, added 2026-08-09: the read/write surface automated agents use to

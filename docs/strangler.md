@@ -953,6 +953,34 @@ That is why the Symfony side could finally be wired up, and it is wired **on
 sent, so a throw there cannot take the page with it. The laminas listener still has the
 original placement and the original exposure. Bounding the write is still the real fix.
 
+## What the baseline diff catches that nothing else does
+
+Batch 5 (the reading surface, 2026-08-12) is the sharpest evidence so far for running
+`tools/port-baseline.php` rather than trusting a page that renders. **Six defects came out
+of that diff and not one of them would have failed a status-code test:**
+
+| what was wrong | how it looked |
+|---|---|
+| `EntityShow` called `getObject()` where the laminas controller overrides it | association page missing four panels — 7 KB smaller, one `panel-title` short |
+| the comment form's `redirect` field was never populated | thirteen missing bytes in a hidden input; every posted comment would have followed the referer instead |
+| `FormatField` had no text domain | the whole bibliographic panel in English on `/es/…`, identical to laminas on `/en/…` |
+| a breadcrumb leaf passed without `href` | **every** `/literature/{lang}` page an empty 200 |
+| `SiteChrome::NAV_ROUTE` declared on two show pages | a stray ` class="active"` — 15 bytes |
+| a multiple `<select>` rendered without `[]` on its name | the search box would have submitted one language where the visitor picked three |
+
+Two of those are the "English proves almost nothing" trap this document already records
+from batch 3, and one is the fatal-200 wedge. The tool grew a rule in the process: the
+**CSRF token** is per-run by construction and had never been normalized, because no ported
+page carried a form until `association-edit` and no ported page carried one a *signed-in*
+visitor sees until this batch.
+
+**And it caught a deviation that was defensible and still wrong to make.** The three
+pre-2020 redirects were written to skip SlmLocale's locale hop — `/associations/1`
+answering 301 straight to the destination rather than 302 to `/en/associations/1` first —
+on the reasoning that a redirect to a redirect is wasted. Same destination, one hop fewer,
+and a change to URLs search engines have indexed for five years. A port is not where that
+decision belongs.
+
 ## Routes that are not portable yet, and why
 
 A route can be blocked by something that has nothing to do with the strangler. Recording
@@ -1052,16 +1080,48 @@ options and its validation are the application's, not a copy), CSRF works becaus
 either front controller is accepted by the other — and the write goes through
 `SionTable::updateEntity()` exactly as `SionController` does it.
 
-Still on laminas: `/literature` (a search form), `/movement`, `/persons`, `/texts`, the
-user and translation forms (the static adapter), and every other create/edit/delete page.
+Still on laminas: `/movement`, `/persons`, `/texts`, the user and translation forms (the
+static adapter), and every other create/edit/delete page. `/literature`'s search form is
+ported — see below.
 
-### `composition` (`/{sw_id}/{slug}` for a song) — blocked on the comment form
+### The comment form — unblocked 2026-08-12, and it was blocking one entity more than this said
 
-The music *index* is ported; an individual song is not. `composition` has a comment
-predicate (`comment-comments-composition`), so `SionController::showAction()` builds a
-`CommentForm` and the template renders it for any signed-in visitor who may comment.
-The `text` entity is in the same position — `comment-comments-text` names it — so
-`/texts/…` show pages are blocked on the same thing.
+This section used to say `composition` and `text` were blocked on the comment form:
+`SionController::showAction()` builds a `CommentForm` for any entity with a comment
+predicate, and the template renders it for a signed-in visitor who may comment.
+
+**That list was one entity short.** Which entities take comments is *data*, not
+configuration — `SELECT PredicateKind FROM predicates WHERE SubjectEntityKind='comment'`
+answers five rows, and one of them is `comment-reviews-publication`. A port written from
+this document rather than from the table would have shipped a publication page that
+silently stopped accepting reviews. `App\Sion\CommentPredicates` asks the table.
+
+`App\Controller\CommentCreateController` is the port. Two things about it are worth
+knowing before touching it:
+
+- **It is POST-only, and a GET is still a 500.** The laminas route has no method
+  constraint, so a GET reaches a view whose template does not exist —
+  `sion-model/comment/create` singular against a `comments/create` partial — and throws.
+  Measured before porting: 11,953 bytes of exception page. The Symfony route claims POST
+  alone, and a GET then falls through the catch-all to laminas and stays exactly as broken
+  as it was. It is **not** a 405: `UrlMatcher` always finds `legacy`, so MethodNotAllowed
+  is never raised.
+- **The open redirect is reproduced, not introduced.** `redirectAfterCreate()` redirects
+  to an unvalidated hidden field, with its own `@todo` over it. CSRF and the `user` guard
+  narrow it; it is recorded in BACKLOG.
+
+### `composition`, `text`, `publication`, `association` — ported 2026-08-12
+
+All four show pages now run on `App\Sion\EntityShow`, one reproduction of
+`SionController::showAction()`. The thing that reproduction got wrong, and that no test
+would have caught, is worth repeating here: **two of the twelve controllers inheriting
+`showAction()` override `getEntityObject()`**, and `AssociationsController` is one of
+them. `getObject('association', …)` falls through to `tryGettingObject()`, a single
+unlinked `SELECT`, because the entity spec's `get_object_function` is commented out;
+`getAssociation()` goes through `linkAssociations()`, which is what attaches
+`childAssociations`, `parent`, `roles` and `assignments`. A shared reproduction calling
+`getObject()` renders an association page missing four panels and renders it happily.
+`load()` takes a loader hook for exactly this.
 
 **A note on the fetch/display ratio, for whoever tunes this next.** With
 `changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows

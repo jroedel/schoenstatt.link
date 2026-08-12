@@ -24,3 +24,30 @@ parameters:
     bootstrapFiles:
         - vendor/autoload.php
     reportUnmatchedIgnoredErrors: false
+    # Runtime guards that PHPStan calls redundant because it believes a docblock in
+    # the vendored SionModel library. They only surface at level 8 (the standard
+    # `src/` holds itself to; the committed level is 0), and each one is a check that
+    # would be wrong to delete:
+    #
+    #  - `SionTable::existsEntity()` is annotated `@return boolean` and PHPStan infers
+    #    `true`, so `if (! $table->existsEntity(...))` reads as dead code. The method
+    #    plainly `return false`s when the gateway finds no row, and dropping the guard
+    #    would turn a missing entity into a fatal on the next line.
+    #  - `Entity::$aclShowPermission` is annotated `@var string` and is null for every
+    #    entity that does not declare `acl_show_permission` — which is three of this
+    #    batch's four.
+    #
+    # The real fix is to correct those annotations in the SionModel submodule, which
+    # is a cross-repo change and not this batch's. Scoped to the one file rather than
+    # turned off globally via treatPhpDocTypesAsCertain, so the next wrong annotation
+    # is still reported.
+    ignoreErrors:
+        -
+            identifier: booleanNot.alwaysFalse
+            path: src/Sion/EntityShow.php
+        -
+            identifier: ternary.alwaysTrue
+            path: src/Sion/EntityShow.php
+        -
+            identifier: booleanAnd.alwaysTrue
+            path: src/Sion/EntityShow.php

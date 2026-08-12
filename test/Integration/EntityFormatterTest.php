@@ -174,7 +174,10 @@ class EntityFormatterTest extends TestCase
     /** What isActionAllowed() asks, asked directly, so the expectation above is not a guess. */
     private function isAllowedRoute(string $route): bool
     {
-        return (bool) (new ViewHelpers($this->bridge()))->isAllowed()->__invoke('route/' . $route);
+        $bridge  = $this->bridge();
+        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, ''));
+
+        return (bool) $helpers->isAllowed()->__invoke('route/' . $route);
     }
 
     /**
@@ -274,19 +277,65 @@ class EntityFormatterTest extends TestCase
     }
 
     /**
-     * Only `display => title` is reproduced, and the other four modes raise rather than
-     * quietly returning a title. No page this side serves passes `display`, so the guard
-     * is for the next one that does.
+     * All five `display` modes are reproduced as of the publication show page — this test
+     * used to assert that four of them raised, and `books/publications/publication-info`
+     * uses four of the five in one partial.
+     *
+     * What still raises is an **unknown** mode. The original silently falls back to
+     * `title` for one, which is how a typo'd option shows a title where authors were meant
+     * and nobody notices for years; raising is the deliberate difference.
      */
-    public function testAnUnreproducedPublicationDisplayModeRaises(): void
+    public function testAnUnknownPublicationDisplayModeRaises(): void
     {
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('authors');
+        $this->expectExceptionMessage('authorz');
         $this->formatter()->format(
             'publication',
             ['publicationId' => 1, 'title' => 'A title'],
-            ['display' => 'authors']
+            ['display' => 'authorz']
         );
+    }
+
+    /**
+     * `displayLanguageLabel` is the one FormatPublication option still unreproduced, and
+     * it raises rather than being ignored. `publication-list.phtml` passes it explicitly
+     * *false*, which is also its default, so nothing on this side is waiting on it.
+     */
+    public function testTheUnreproducedLanguageLabelOptionRaises(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('displayLanguageLabel');
+        $this->formatter()->format(
+            'publication',
+            ['publicationId' => 1, 'title' => 'A title'],
+            ['displayLanguageLabel' => true]
+        );
+    }
+
+    /**
+     * The four list modes render **without** a link, a pencil or the status icons,
+     * because the original defaults all five of those options to the title modes. That is
+     * why an author line under a publication is plain text where the same helper produces
+     * a linked, pencilled title in the heading above it.
+     */
+    public function testAListModeRendersPlainWhereATitleModeRendersLinked(): void
+    {
+        $row = [
+            'publicationId' => 1,
+            'title'         => 'A title',
+            'identifier'    => 'SL200001L',
+            'slug'          => 'a-title',
+            'authorsText'   => ['Ammann, Rudolf'],
+            'editorsText'   => [],
+            'dataSource'    => 'somewhere',
+        ];
+
+        $title = $this->formatter()->format('publication', $row);
+        self::assertStringContainsString('<a href=', $title);
+        self::assertStringContainsString('fa-database', $title, 'the title mode shows the status icons');
+
+        $authors = $this->formatter()->format('publication', $row, ['display' => 'authors']);
+        self::assertSame('Ammann, Rudolf', $authors);
     }
 
     /** Each macro-backed type is refused rather than formatted by the wrong rules. */
@@ -377,7 +426,7 @@ class EntityFormatterTest extends TestCase
     private function formatter(): EntityFormatter
     {
         $bridge  = $this->bridge();
-        $helpers = new ViewHelpers($bridge);
+        $helpers = new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, ''));
         $urls    = new RouteUrl($bridge, '');
 
         //The three closures the formatter takes. In production they come from
@@ -402,7 +451,7 @@ class EntityFormatterTest extends TestCase
 
         return (new TwigFactory())->create(
             $bridge,
-            new ViewHelpers($bridge),
+            new ViewHelpers($bridge, static fn (): RouteUrl => new RouteUrl($bridge, '')),
             new RouteUrl($bridge, ''),
             new RequestStack(),
             new CspNonce()

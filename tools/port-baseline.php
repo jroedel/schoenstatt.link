@@ -54,8 +54,11 @@
  *    so /dictionary/es reports a higher "Total views" on the second capture than on
  *    the first purely because the first happened. The digits go; the markup around
  *    them stays, which is what would catch the counter disappearing.
- * 4. **The CSP nonce** and **the throwaway account's address**, both of which are
- *    per-run by construction.
+ * 4. **The CSP nonce**, **the throwaway account's address** and **the CSRF token**, all
+ *    three of which are per-run by construction. The token was missing until batch 5 put
+ *    a comment form on three ported pages, and its absence is worth recording: the form
+ *    renders only for a signed-in visitor, so the symptom was "the six signed-in captures
+ *    of every commentable page differ" rather than anything pointing at a token.
  * 5. **The language chooser's flags.** `flag-icon-gb` or `flag-icon-us` for English,
  *    `ar`/`cl`/`mx`/`es` for Spanish: the chooser picks at random among the countries
  *    that speak each language, on **both** front controllers, so two fetches of one URL
@@ -136,6 +139,40 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 5 — the reading surface: the four entity show pages, the literature
+    // browse pages and the three sendToNewUrl redirects.
+    //
+    // Two associations on purpose. AssociationsController::showAction() redirects an
+    // anonymous visitor to `welcome` for every association whose kind is not
+    // `sch-shrine` or `sch-wayside-shrine` — a rule that lives in the controller and
+    // not in the ACL, so no guard entry hints at it. SL100319A is a shrine and renders
+    // for everyone; SL100001A is the Secular Institute and renders only for the
+    // signed-in identity. One of them alone would compare only half the branch.
+    '/SL100319A',
+    '/SL100001A',
+    // A composition and a text: both carry a comment predicate, so both render the
+    // comment list and the CommentForm. The text is the batch's restricted show page
+    // (`texts_user`), i.e. a 302 anonymously and a full page signed in.
+    '/SL500001C',
+    '/SL400003T',
+    // Two publications. 2186 has a `comment-reviews-publication` row — the third
+    // comment predicate, and the only one whose kind is not `comment`. 417 carries
+    // MergedIntoPublicationId, which is the 301-to-the-surviving-edition branch that
+    // fires only for a visitor without `publication_user`.
+    '/SL202186L',
+    '/SL200417L',
+    // The literature browse surface. /literature/de is the largest page on the site
+    // (2,889 rows, ~1.0 MB of HTML) and the one that pays the 192 MiB
+    // `getObjects('publication')` hydration; /literature/es is a tenth of it, and the
+    // pair is what would catch a projection that only works at one size.
+    '/literature',
+    '/literature/de',
+    '/literature/es',
+    '/literature/search',
+    // The three sendToNewUrl redirects, all 301s to the sw_id form.
+    '/literature/1',
+    '/associations/SL100001A',
+    '/associations/1',
     // batch 4 — the public browse surface
     '/music',
     '/timeline',
@@ -341,6 +378,17 @@ function normalize(string $html, string $account): string
     $html = preg_replace('/nonce="[^"]*"/', 'nonce="{{NONCE}}"', $html);
     $html = str_replace($account, '{{ACCOUNT}}', $html);
     $html = preg_replace('/' . preg_quote(EMAIL_PREFIX, '/') . '\d+/', '{{ACCOUNT}}', $html);
+    // ...and the CSRF token, which is the same kind of value and was missing until the
+    // comment form arrived on three ported pages. Laminas\Validator\Csrf mints
+    // `<hash>-<salted hash>` per session per request, so two captures of one URL never
+    // agree and every page carrying a form compared as drift no matter what it rendered.
+    // Anonymous pages hid this: the comment form only renders for a signed-in visitor,
+    // so it first showed as "the six signed-in captures of every commentable page differ".
+    $html = preg_replace(
+        '/(name="security"[^>]*value=")[0-9a-f]{32}-[0-9a-f]{32}/',
+        '$1{{CSRF}}',
+        $html
+    );
 
     // rule 5 — the chooser picks a random country per language, on both sides. Its
     // whole markup goes below anyway; this also covers flags elsewhere on a page.
