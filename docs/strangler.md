@@ -637,6 +637,17 @@ and what a later port should reuse rather than reinvent:
 | `src/Http/LocalePrefix.php` | the 302 an HTML route owes its own unprefixed form, in one place |
 | `src/Books/EventTimeline.php` | the timeline's grouping, pinned against the laminas action by a parity test |
 
+**Every `{% set %}` in `layout.html.twig` is prefixed `chrome_`, and it must stay that
+way.** A `set` at the top level of a layout is not scoped to the layout: `{% block
+content %}` is called *from there*, with the context as it stands at that line, so any
+name the layout sets above the block shadows the identically-named variable the
+controller passed — silently, in every page that extends the file. It happened and it
+reached production: the layout set `languages` for the locale chooser, `/literature`
+passes `languages` (the ISO-639 map), and every catalogue row rendered "Catálogo de livros
+em fr" — the template's own `is defined` fallback to the raw code — on a page that was
+otherwise perfectly translated. A page variable never needs the prefix; a new chrome local
+always does.
+
 Three settings in `TwigFactory` are decisions, each with its reasoning in the
 class docblock: `strict_variables` is **on** (the opposite of `PhpRenderer`),
 `autoescape` is on with markup-returning functions declared `is_safe: html`, and the
