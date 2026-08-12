@@ -20,6 +20,7 @@ use function array_flip;
 use function array_intersect_key;
 use function is_object;
 use function is_scalar;
+use function is_string;
 use function method_exists;
 use function strip_tags;
 use function sprintf;
@@ -494,7 +495,9 @@ final class BootstrapFormRenderer
                 $attributes['class'] = $withClass ? $own . ' form-control' : $own;
                 continue;
             }
-            $attributes[(string) $key] = $value;
+            $attributes[(string) $key] = self::isTranslatable((string) $key) && is_string($value) && '' !== $value
+                ? ($this->translate)($value)
+                : $value;
         }
 
         if ($withClass && ! $hasOwnClass) {
@@ -502,6 +505,27 @@ final class BootstrapFormRenderer
         }
 
         return $attributes;
+    }
+
+    /**
+     * Whether an attribute's *value* is translated before it is escaped.
+     *
+     * Two are, and this is not a convention invented here:
+     * `Laminas\Form\View\Helper\AbstractHelper::translateHtmlAttributeValue()` translates
+     * `placeholder` (its `$translatableAttributes`) and `title` (its static
+     * `$defaultTranslatableHtmlAttributes`) on every element rendered through a form view
+     * helper, using the helper's own text domain. Neither this class nor any Twig template
+     * did, so the literature search box read `placeholder="Search Catalogs"` in all five
+     * locales while laminas rendered "Busca nos catálogos" — on the one page of the batch
+     * whose *only* visible untranslated string it was. Found by tools/port-baseline.php,
+     * not by looking.
+     *
+     * The empty-value guard is the helper's own: it returns early rather than asking the
+     * translator for '', which would file an empty phrase.
+     */
+    private static function isTranslatable(string $attribute): bool
+    {
+        return 'placeholder' === $attribute || 'title' === $attribute;
     }
 
     /**
