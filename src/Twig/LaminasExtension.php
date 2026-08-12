@@ -10,7 +10,9 @@ use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use DateTime;
 use DateTimeInterface;
+use Laminas\I18n\Translator\Translator as I18nTranslator;
 use Laminas\I18n\Translator\TranslatorInterface;
+use Laminas\Mvc\I18n\Translator as MvcTranslator;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
 use SionModel\Entity\Entity;
@@ -147,6 +149,28 @@ final class LaminasExtension extends AbstractExtension
      *
      * An explicit `$domain` skips all of this and is what the layout passes for the
      * strings it knows the domain of.
+     *
+     * ## Exactly one domain discovers, and it is the page's
+     *
+     * The fallback used to be a second `translate()` call, and that is not a read: a
+     * lookup that misses fires `EVENT_MISSING_TRANSLATION`, and JTranslate's listener —
+     * the only path by which a phrase ever enters `trans_phrases` — files a row for it.
+     * So every string the page's domain could not translate was **also filed in
+     * `default`**, where nobody had ever asked for it. laminas files none of those: a
+     * view helper has exactly one domain, so a miss is recorded once, against the module
+     * the string belongs to.
+     *
+     * Measured in the capsule: `Books/Francese` was filed in 2019 and
+     * `default/Francese` on 2026-08-12 by this method; 360 rows added to `default` since
+     * 2026-08-01 duplicate an existing non-default row, 284 of them from Symfony-served
+     * routes. That is the pathology the phrase-integrity work removed from the other
+     * direction — 7,801 rows down to 2,693 — arriving again through the Twig layer.
+     *
+     * So the page's domain is still asked with `translate()`, because that call is what
+     * files an unknown phrase where it belongs, and `default` is now *read* out of its
+     * compiled catalog instead. Same superset, same rendering, no second discovery. A
+     * page whose route declares no domain is unchanged: `default` is then its own domain
+     * and discovering there is correct.
      */
     public function translate(string $message, ?string $domain = null): string
     {
@@ -158,14 +182,66 @@ final class LaminasExtension extends AbstractExtension
         }
 
         $pageDomain = $this->textDomain();
-        if (null !== $pageDomain) {
-            $translated = $translator->translate($message, $pageDomain);
-            if ($translated !== $message) {
-                return $translated;
-            }
+        if (null === $pageDomain) {
+            return $translator->translate($message, self::DEFAULT_TEXT_DOMAIN);
         }
 
-        return $translator->translate($message, self::DEFAULT_TEXT_DOMAIN);
+        $translated = $translator->translate($message, $pageDomain);
+        if ($translated !== $message) {
+            return $translated;
+        }
+
+        //`$translated === $message` is either "no translation" or "the translation is the
+        //source", and the catalog is the only thing that can tell those apart. It matters:
+        //where the domain does hold the phrase, asking `default` could answer with a
+        //*different* string than the one this page's own module chose.
+        if ($this->catalogHas($pageDomain, $message)) {
+            return $translated;
+        }
+
+        return $this->catalogValue(self::DEFAULT_TEXT_DOMAIN, $message) ?? $translated;
+    }
+
+    /**
+     * A message's translation as it stands in a domain's compiled catalog, or null when
+     * the catalog has no usable one.
+     *
+     * A read, deliberately: unlike `Translator::translate()` this fires no
+     * missing-translation event, so consulting a second domain cannot file a phrase in
+     * it. `getAllMessages()` loads the catalog if needed, through the same cache the
+     * translation itself uses, so the cost is a lookup the next line would have made
+     * anyway.
+     *
+     * `null` and `''` count as absent because that is `Translator::translate()`'s own
+     * test — the two values it treats as a miss.
+     */
+    private function catalogValue(string $domain, string $message): ?string
+    {
+        $translator = $this->laminas->get('MvcTranslator');
+        //MvcTranslator decorates the laminas-i18n one and proxies the rest through
+        //__call(); getAllMessages() is not on TranslatorInterface, so reach the decorated
+        //instance where there is one rather than relying on the proxy.
+        if ($translator instanceof MvcTranslator) {
+            $translator = $translator->getTranslator();
+        }
+        if (! $translator instanceof I18nTranslator) {
+            return null;
+        }
+
+        $messages = $translator->getAllMessages($domain);
+        if (null === $messages || ! isset($messages[$message])) {
+            return null;
+        }
+
+        $value = $messages[$message];
+
+        return is_string($value) && '' !== $value ? $value : null;
+    }
+
+    /** Whether a domain's compiled catalog holds a usable translation. */
+    private function catalogHas(string $domain, string $message): bool
+    {
+        return null !== $this->catalogValue($domain, $message);
     }
 
     /**
