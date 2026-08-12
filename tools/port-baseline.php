@@ -136,6 +136,40 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 5 — the reading surface: the four entity show pages, the literature
+    // browse pages and the three sendToNewUrl redirects.
+    //
+    // Two associations on purpose. AssociationsController::showAction() redirects an
+    // anonymous visitor to `welcome` for every association whose kind is not
+    // `sch-shrine` or `sch-wayside-shrine` — a rule that lives in the controller and
+    // not in the ACL, so no guard entry hints at it. SL100319A is a shrine and renders
+    // for everyone; SL100001A is the Secular Institute and renders only for the
+    // signed-in identity. One of them alone would compare only half the branch.
+    '/SL100319A',
+    '/SL100001A',
+    // A composition and a text: both carry a comment predicate, so both render the
+    // comment list and the CommentForm. The text is the batch's restricted show page
+    // (`texts_user`), i.e. a 302 anonymously and a full page signed in.
+    '/SL500001C',
+    '/SL400003T',
+    // Two publications. 2186 has a `comment-reviews-publication` row — the third
+    // comment predicate, and the only one whose kind is not `comment`. 417 carries
+    // MergedIntoPublicationId, which is the 301-to-the-surviving-edition branch that
+    // fires only for a visitor without `publication_user`.
+    '/SL202186L',
+    '/SL200417L',
+    // The literature browse surface. /literature/de is the largest page on the site
+    // (2,889 rows, ~1.0 MB of HTML) and the one that pays the 192 MiB
+    // `getObjects('publication')` hydration; /literature/es is a tenth of it, and the
+    // pair is what would catch a projection that only works at one size.
+    '/literature',
+    '/literature/de',
+    '/literature/es',
+    '/literature/search',
+    // The three sendToNewUrl redirects, all 301s to the sw_id form.
+    '/literature/1',
+    '/associations/SL100001A',
+    '/associations/1',
     // batch 4 — the public browse surface
     '/music',
     '/timeline',

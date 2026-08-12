@@ -10,6 +10,7 @@ use JUser\View\Helper\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
 use Laminas\View\HelperPluginManager;
+use SionModel\View\Helper\DiffForHumans;
 use SionModel\View\Helper\Email;
 use SionModel\View\Helper\FormatUrlObject;
 use SionModel\View\Helper\Telephone;
@@ -117,6 +118,33 @@ final class ViewHelpers
     {
         /** @var DateFormat $helper */
         $helper = $this->helpers()->get('dateFormat');
+
+        return $helper;
+    }
+
+    /**
+     * SionModel's relative-time formatter — `<abbr title="6/13/65, 12:00 AM">57 years
+     * ago</abbr>`.
+     *
+     * On the allowlist rather than reimplemented because what it wraps is a Carbon
+     * locale table: `Carbon::setLocale(\Locale::getDefault())` on first use, then
+     * `diffForHumans()`, which is 60-odd translated relative-time patterns per locale.
+     * Reproducing that is not "keep the markup identical", it is shipping a second
+     * translation catalogue.
+     *
+     * It reaches the renderer only for `dateFormat` — the `title` attribute — so it
+     * runs with no MvcEvent for the same reason dateFormat() above does. Measured on a
+     * ported comment list.
+     *
+     * The first-invocation latch inside the helper is why this returns the *shared*
+     * instance out of the plugin manager rather than a new one: `Carbon::setLocale()`
+     * is global state, and a second instance would set it a second time on a page that
+     * has already formatted a date.
+     */
+    public function diffForHumans(): DiffForHumans
+    {
+        /** @var DiffForHumans $helper */
+        $helper = $this->helpers()->get('diffForHumans');
 
         return $helper;
     }
