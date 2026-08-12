@@ -1,0 +1,67 @@
+{#
+  module/Books/view/books/publications/index.phtml, ported — /literature/{inLanguage}.
+
+  Every publication in one language, grouped by category, with a scrollspy sidebar of the
+  category names. The German catalogue is the largest page on the site: 2,889 rows and
+  about a megabyte of HTML.
+
+  Both loops skip a category with no objects — the same `continue` in the original — so a
+  category that exists but is empty appears in neither the body nor the sidebar. The
+  first *rendered* category gets `class="active"`, which is why the sidebar loop carries
+  its own flag rather than testing `loop.first`: the first category in the list may be
+  the one that was skipped.
+
+  The heading is translated in the controller (see App\Controller\LiteratureController
+  for the three-way choice between "without language", "in %s" and the bare fallback) and
+  set with translation off.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/publications-index.css" media="screen" rel="stylesheet" type="text/css">
+        <link href="/css/selectize.bootstrap3.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-publications-search-bar.js"></script>
+{% endblock %}
+
+{% block content %}
+<h2>{{ page_title }}</h2>
+{% include 'books/_search-bar.html.twig' with {
+    'form': form,
+    'form_action': search_url,
+    'advanced_search_url': advanced_search_url,
+} only %}
+{% if is_allowed('route/publications/create') %}
+<p><a class="btn btn-primary pull-right" href="{{ create_url }}">{{ translate('Add publication') }}</a>
+{% endif %}
+
+<div class="row">
+
+<div class="col-md-9">
+{% for category_name, category in objects|filter(c => c.objects is not empty) %}
+<h3 id="{{ category.bookmark }}">{{ translate(category_name) }}</h3>
+{% include 'books/_publication-list.html.twig' with {
+    'objects': category.objects,
+    'columns': ['cover', 'authors', 'title', 'edition'],
+    'covers': covers,
+    'downloads': downloads,
+} only %}
+{% endfor %}
+
+</div>
+
+ <!--Affix start https://www.w3schools.com/bootstrap/bootstrap_ref_js_scrollspy.asp-->
+ <nav class="col-md-3 pull-right" id="sidebar-nav" role="complementary">
+    <ul class="nav nav-pills nav-stacked" data-spy="affix" data-offset-top="275">
+    {% set first_time = true %}
+    {% for category_name, category in objects|filter(c => c.objects is not empty) %}
+       <li><a href="#{{ category.bookmark }}" {% if first_time %}class="active"{% endif %}>{{ translate(category_name) }}</a></li>
+        {% set first_time = false %}
+    {% endfor %}
+    </ul>
+ </nav>
+ <!--Affix end-->
+</div>
+{% endblock %}

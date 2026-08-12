@@ -43,11 +43,13 @@ use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
+use App\Controller\LiteratureController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
 use App\Controller\RolesController;
+use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
@@ -537,6 +539,71 @@ $ported(
 // since the laminas pattern excludes nothing of the sort. Both facts are load-bearing
 // together, which is why neither is relied on alone.
 $slug = ['slug' => '[a-z0-9-]{1,200}'];
+
+// The literature browse surface. Declared **above** the entity show routes because
+// `/literature/search` and `/literature/{inLanguage}` are two-segment paths that the
+// publication-old redirect below must not swallow, and because `/literature` itself is
+// a literal that nothing else claims. Order within the three is what matters: `search`
+// is a literal and has to beat `{inLanguage}`, and `{inLanguage}` is constrained to two
+// letters so `/literature/150-preguntas-sobre-schoenstatt` (ported earlier, and declared
+// above this block) and `/literature/{publication_id}` both survive.
+$ported(
+    'publications',
+    '/literature',
+    [LiteratureController::class, 'home'],
+    RouteAccess::guardedBy('route/publications'),
+    $textDomain('Books')
+);
+$ported(
+    'publications/search',
+    '/literature/search',
+    [LiteratureController::class, 'search'],
+    RouteAccess::guardedBy('route/publications/search'),
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications']
+);
+$ported(
+    'publications/index',
+    '/literature/{inLanguage}',
+    [LiteratureController::class, 'index'],
+    RouteAccess::guardedBy('route/publications/index'),
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications'],
+    //the laminas constraint exactly: two letters, which is what keeps `/literature/1`
+    //and `/literature/150-preguntas-sobre-schoenstatt` out of this route
+    ['inLanguage' => '[a-z]{2}']
+);
+
+// The three pre-2020 redirects, all 301s. `/literature/{publication_id}` is declared
+// after the two-letter language route above and takes only digits, so the two cannot
+// collide; the association pair sits under the old `/associations` prefix, below the
+// `associations` index itself.
+$ported(
+    'publications/publication-old',
+    '/literature/{publication_id}',
+    [SendToNewUrlController::class, 'publicationById'],
+    RouteAccess::guardedBy('route/publications/publication-old'),
+    $textDomain('Books'),
+    ['publication_id' => '[0-9]{1,5}']
+);
+$ported(
+    'associations/association',
+    '/associations/{sw_id}',
+    [SendToNewUrlController::class, 'associationBySwId'],
+    RouteAccess::guardedBy('route/associations/association'),
+    $textDomain('Schoenstatt'),
+    //`SL1[0-9]{4,5}A` is the laminas constraint, which is *looser* than the association
+    //identifier regex — five or six digits rather than five. Reproduced as written: a
+    //six-digit id that no longer resolves ends at the not-found redirect, which is what
+    //it does today.
+    ['sw_id' => 'SL1[0-9]{4,5}A']
+);
+$ported(
+    'associations/old-association',
+    '/associations/{association_id}',
+    [SendToNewUrlController::class, 'associationById'],
+    RouteAccess::guardedBy('route/associations/old-association'),
+    $textDomain('Schoenstatt'),
+    ['association_id' => '[0-9]{1,5}']
+);
 
 // The page behind every shrine on the map. Guarded `['guest', 'sch_basic', 'sch_user',
 // 'user']`, i.e. public — but the controller carries a second rule the ACL cannot see:

@@ -1,0 +1,75 @@
+{#
+  module/Books/view/books/publications/literature-home.phtml, ported — /literature.
+
+  The catalogue index: one row per language with a count badge, the libraries list, the
+  Kentenich translation dictionaries, and a link into the text corpus for whoever may
+  reach it.
+
+  The title is translated **once, in the controller**, and then set with translation off
+  — `headTitle()->setTranslatorEnabled(false)` around an already-translated string is
+  what the original does, and rendering the translated value through the layout's
+  translator again would look it up a second time in a different domain.
+
+  "%s Catalog" and "German to %s Dictionary" interpolate a language name into a
+  translated pattern. The name is escaped and the pattern is not, for the reason spelled
+  out in `_comments-list.html.twig`: a catalogue entry may legitimately contain quotes.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/selectize.bootstrap3.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-publications-search-bar.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+<h1>{{ page_title }}</h1>
+{% include 'books/_search-bar.html.twig' with {
+    'form': form,
+    'form_action': search_url,
+    'advanced_search_url': advanced_search_url,
+} only %}
+{% if is_allowed('route/publications/create') %}
+<p><a class="btn btn-primary pull-right" href="{{ create_url }}">{{ translate('Add publication') }}</a>
+{% endif %}
+<div class="col-md-8 col-md-offset-2">
+<div class="list-group">
+{% for in_language, count in objects %}
+    <a href="{{ laminas_path('publications/index', {'inLanguage': in_language}) }}" class="list-group-item">
+        <span class="badge alert-info">{{ count }}</span>
+    <h4 class="list-group-item-heading">{{ translate('%s Catalog')|format((languages[in_language] is defined ? translate(languages[in_language]) : in_language)|escape)|raw }}</h4></a>
+{% endfor %}
+    <a href="{{ laminas_path('publications/one-fifty-preguntas') }}" class="list-group-item">
+    <h4 class="list-group-item-heading">150 preguntas sobre Schoenstatt</h4></a>
+</div>
+</div>
+</div>
+
+<div class="row">
+<h2>{{ translate('Schoenstatt libraries') }}</h2>
+{% include 'books/_library-list.html.twig' with {'objects': libraries} only %}
+</div>
+
+
+<div class="row">
+<h2 id="dictionaries">{{ translate('Fr. Kentenich translation dictionaries') }}</h2>
+<div class="col-md-8 col-md-offset-2">
+<div class="list-group">
+{% for dict in dictionaries %}
+    <a href="{{ laminas_path('dictionary/inLanguage', {'inLanguage': dict.inLanguage}) }}" class="list-group-item">
+    <span class="badge alert-info">{{ dict.count }}</span>
+    <h4 class="list-group-item-heading">{{ translate('German to %s Dictionary')|format(dict.inLanguageName|escape)|raw }}</h4></a>
+{% endfor %}
+</div>
+</div>
+</div>
+
+{% if is_allowed('route/texts') %}
+<div class="row">
+<p><a href="{{ laminas_path('texts') }}" class="btn btn-primary">{{ translate('Search Fr. Kentenich texts') }}</a></p>
+</div>
+{% endif %}
+{% endblock %}

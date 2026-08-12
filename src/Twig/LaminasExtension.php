@@ -103,6 +103,7 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('truncate', $this->truncate(...)),
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
+            new TwigFunction('now_messages', $this->nowMessages(...), $html),
             new TwigFunction('label', $this->label(...), $html),
         ];
     }
@@ -530,6 +531,25 @@ final class LaminasExtension extends AbstractExtension
     public function fileSize(mixed $bytes): string
     {
         return (string) $this->helpers->fileSize()->__invoke($bytes);
+    }
+
+    /**
+     * The within-request messages, in the four namespaces and the order the laminas
+     * layout renders them: error, warning, info, success. Empty on every page that
+     * added none, which is all of them but the literature search.
+     *
+     * Markup, and the helper escapes each message itself — `autoEscape` is on.
+     */
+    public function nowMessages(): string
+    {
+        //`JTranslate\View\Helper\NowMessenger::__invoke()` builds and returns the markup
+        //string, but carries the copied docblock of the flash messenger it was adapted
+        //from — `@return FlashMessenger|PluginNowMessenger`. Held as mixed so the cast is
+        //the code's claim rather than the annotation's.
+        /** @var mixed $markup */
+        $markup = $this->helpers->nowMessenger()->__invoke();
+
+        return is_string($markup) ? $markup : '';
     }
 
     /**
