@@ -8,6 +8,8 @@ use App\Laminas\EntityFormatter;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
+use DateTime;
+use DateTimeInterface;
 use Laminas\I18n\Translator\TranslatorInterface;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -85,9 +87,23 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('edit_pencil', $this->editPencil(...), $html),
             new TwigFunction('format_entity', $this->formatEntity(...), $html),
             new TwigFunction('short_date', $this->shortDate(...)),
+            new TwigFunction('diff_for_humans', $this->diffForHumans(...), $html),
+            new TwigFunction('format_field', $this->formatField(...), $html),
+            new TwigFunction('language_name', $this->languageName(...)),
+            new TwigFunction('markdown', $this->markdown(...), $html),
+            new TwigFunction('coins', $this->coins(...), $html),
+            new TwigFunction('books_json_ld', $this->booksJsonLd(...), $html),
+            new TwigFunction('publication_url_object', $this->publicationUrlObject(...), $html),
+            new TwigFunction('file_size', $this->fileSize(...)),
+            new TwigFunction('address', $this->address(...), $html),
+            new TwigFunction('country_name', $this->countryName(...), $html),
+            new TwigFunction('date_precision', $this->datePrecision(...)),
+            new TwigFunction('long_date', $this->longDate(...)),
+            new TwigFunction('tooltip', $this->tooltip(...), $html),
             new TwigFunction('truncate', $this->truncate(...)),
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
+            new TwigFunction('now_messages', $this->nowMessages(...), $html),
             new TwigFunction('label', $this->label(...), $html),
         ];
     }
@@ -304,6 +320,247 @@ final class LaminasExtension extends AbstractExtension
             IntlDateFormatter::SHORT,
             IntlDateFormatter::NONE
         );
+    }
+
+    /**
+     * A relative time — `<abbr title="6/13/65, 12:00 AM">57 years ago</abbr>`.
+     *
+     * Markup, and `is_safe: html` on the same terms as the rest: the helper builds the
+     * `title` through `dateFormat` and the body through Carbon, both of which produce
+     * formatted dates rather than anything a visitor typed. No user input reaches it.
+     *
+     * **Null and non-DateTime return the empty string rather than throwing**, which is
+     * the one deliberate difference from the helper. `SionModel\View\Helper\DiffForHumans`
+     * throws `InvalidArgumentException` on anything that is not a `DateTime`, and every
+     * .phtml that calls it guards the call first — `if ($object['createdOn'] instanceof
+     * \DateTime)` in comments-list.phtml, `if (isset($this->entity['createdOn']))` in
+     * texts/show.phtml. Those guards exist because the columns really are nullable.
+     * Reproducing the guard at each of a dozen Twig call sites is how one gets forgotten,
+     * and a forgotten one is a 500 on a page whose only defect is a missing timestamp.
+     */
+    public function diffForHumans(mixed $date): string
+    {
+        if (! $date instanceof DateTimeInterface) {
+            return '';
+        }
+
+        //the helper's signature is \DateTime, and DateTimeImmutable is not one — the
+        //laminas rows hydrate as \DateTime, but nothing in the type system says so
+        if (! $date instanceof DateTime) {
+            $date = DateTime::createFromInterface($date);
+        }
+
+        return (string) $this->helpers->diffForHumans()->__invoke($date);
+    }
+
+    /**
+     * A labelled field row — `<p><strong>ISBN</strong>: 978-…</p>` — or nothing when the
+     * value is absent and the caller passed `displayOnlyIfNotNull`.
+     *
+     * Markup, and the helper escapes the value itself. It also reads the ACL for
+     * `displayOnlyWithPermission`, which is how `publication-info` hides the admin-tags
+     * row from a visitor who may not edit the publication: that check has to stay inside
+     * the helper, or a template that forgets it leaks a moderator's tags onto a public
+     * page.
+     *
+     * @param array<string, mixed> $options
+     */
+    public function formatField(string $label, mixed $value, array $options = []): string
+    {
+        //**The text domain has to be set, and the failure is invisible in English.**
+        //FormatField translates its label through the *view* translator, whose domain
+        //JTranslate's dispatch listener sets from the laminas controller's namespace —
+        //`Books` for a publication page. Nothing sets it on a Symfony-served route, so the
+        //helper looks in `default`, finds nothing, and returns the English source. On
+        ///en/SL202186L that is indistinguishable from working; on /es/SL202186L the whole
+        //bibliographic panel came out as "Number of pages" where laminas says "Número de
+        //páginas". Exactly the trap docs/strangler.md records from batch 3, caught the
+        //same way — by diffing all five locales rather than English.
+        $this->helpers->useTextDomain($this->textDomain() ?? self::DEFAULT_TEXT_DOMAIN);
+
+        return (string) $this->helpers->formatField()->__invoke($label, $value, $options);
+    }
+
+    /**
+     * A language code as its name in the current locale — `de` → "German", "Alemán".
+     * Plain text, so Twig escapes it.
+     */
+    public function languageName(mixed $language, ?string $inLanguage = null): string
+    {
+        if (! is_string($language) || '' === $language) {
+            return '';
+        }
+
+        return $this->helpers->languageName()->__invoke($language, $inLanguage);
+    }
+
+    /**
+     * A Markdown column rendered to HTML through the application's configured CommonMark
+     * filter — the same one the laminas templates call, so a moderator's notes render
+     * identically on both front controllers.
+     *
+     * Markup by definition: the whole point is to emit the tags the filter produced.
+     * What keeps that safe is the filter's own configuration, not this binding.
+     */
+    public function markdown(mixed $value): string
+    {
+        if (! is_string($value) || '' === $value) {
+            return '';
+        }
+
+        return (string) $this->helpers->markdown()->__invoke($value);
+    }
+
+    /**
+     * The COinS span — an OpenURL context object in a `title` attribute, which is how
+     * Zotero and friends pick a citation off the page. Invisible markup, and dropping it
+     * would silently break every reference manager pointed at this site.
+     *
+     * @param array<string, mixed> $object
+     */
+    public function coins(string $entityType, array $object): string
+    {
+        return (string) $this->helpers->coins()->__invoke($entityType, $object);
+    }
+
+    /**
+     * The schema.org `<script type="application/ld+json">` block for a publication.
+     *
+     * Emitted by the helper complete with its script tag, which is why this is markup
+     * rather than something the template wraps: the helper decides whether there is
+     * anything to emit at all.
+     *
+     * @param array<string, mixed> $object
+     */
+    public function booksJsonLd(string $entityType, array $object): string
+    {
+        return (string) $this->helpers->booksJsonLd()->__invoke($entityType, $object);
+    }
+
+    /**
+     * One of a publication's external links, as a button when its label is Borrow,
+     * Purchase or Download and as a plain link otherwise.
+     *
+     * Carries the same caveat FormatUrlObject does and which this class's own docblock
+     * records: the helper interpolates the URL itself unescaped. Pre-existing on the
+     * laminas side, unchanged here, and worth a fix in both at once rather than a
+     * divergence in one.
+     *
+     * @param array<string, mixed>|string $url
+     */
+    public function publicationUrlObject(array|string $url, bool $openInNewTab = true): string
+    {
+        return (string) $this->helpers->formatPublicationUrlObject()->__invoke($url, $openInNewTab);
+    }
+
+    /**
+     * A postal address block. Markup — the helper emits `<p>` and `<br>` between the
+     * lines it finds — and it escapes each column itself.
+     *
+     * @param array<string, mixed>|null $data
+     */
+    public function address(?array $data): string
+    {
+        if (null === $data) {
+            return '';
+        }
+
+        return (string) $this->helpers->address()->__invoke($data);
+    }
+
+    /**
+     * A country code as its name in the current locale, optionally preceded by the flag.
+     * Markup when `$addFlag` is true, which is why it is declared safe; the helper
+     * escapes the name either way.
+     */
+    public function countryName(
+        mixed $code,
+        bool $addFlag = false,
+        string $commonOrOfficial = 'common'
+    ): string {
+        if (! is_string($code) || '' === $code) {
+            return '';
+        }
+
+        return (string) $this->helpers->countryName()->__invoke($code, $addFlag, $commonOrOfficial);
+    }
+
+    /**
+     * A date rendered only as precisely as it was recorded — `1914`, `October 1914` or
+     * `October 18, 1914` — which is what the `foundationDatePrecision` column is for.
+     * Plain text, so Twig escapes it.
+     *
+     * The day format defaults to **LONG** rather than the helper's own MEDIUM, because
+     * the one caller — the association page's foundation date — passes LONG explicitly
+     * and passing an IntlDateFormatter constant through Twig means `constant()`, which
+     * is worse than a documented default.
+     */
+    public function datePrecision(
+        mixed $date,
+        mixed $precision = null,
+        int $dayFormat = IntlDateFormatter::LONG
+    ): string {
+        if (! $date instanceof DateTimeInterface) {
+            return '';
+        }
+
+        return (string) $this->helpers->datePrecisionFormat()->__invoke($date, $precision, $dayFormat);
+    }
+
+    /**
+     * A Bootstrap tooltip span. Markup, and the helper escapes both the visible text and
+     * the tooltip unless a caller opts out — no caller here does.
+     */
+    public function tooltip(
+        string $text,
+        string $tooltipText,
+        bool $escape = true,
+        string $placement = 'bottom'
+    ): string {
+        return (string) $this->helpers->tooltip()->__invoke($text, $tooltipText, $escape, $placement);
+    }
+
+    /**
+     * A date with no time in the current locale's *long* form — `October 18, 1914`.
+     * The `short_date` above is the changes table's; this is the association page's
+     * suppression date, and the two really are different formats on the laminas side.
+     */
+    public function longDate(mixed $date): string
+    {
+        if (! $date instanceof DateTimeInterface) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::LONG,
+            IntlDateFormatter::NONE
+        );
+    }
+
+    /** A byte count as `1.4 MB`, or the literal `n/a`. Plain text, so Twig escapes it. */
+    public function fileSize(mixed $bytes): string
+    {
+        return (string) $this->helpers->fileSize()->__invoke($bytes);
+    }
+
+    /**
+     * The within-request messages, in the four namespaces and the order the laminas
+     * layout renders them: error, warning, info, success. Empty on every page that
+     * added none, which is all of them but the literature search.
+     *
+     * Markup, and the helper escapes each message itself — `autoEscape` is on.
+     */
+    public function nowMessages(): string
+    {
+        //`JTranslate\View\Helper\NowMessenger::__invoke()` builds and returns the markup
+        //string, but carries the copied docblock of the flash messenger it was adapted
+        //from — `@return FlashMessenger|PluginNowMessenger`. Held as mixed so the cast is
+        //the code's claim rather than the annotation's.
+        /** @var mixed $markup */
+        $markup = $this->helpers->nowMessenger()->__invoke();
+
+        return is_string($markup) ? $markup : '';
     }
 
     /**

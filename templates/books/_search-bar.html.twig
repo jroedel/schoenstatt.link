@@ -1,0 +1,69 @@
+{#
+  module/Books/view/books/publications/search-bar.phtml, ported — the literature search
+  box, rendered at the top of all three literature pages.
+
+  Expects:
+    form              the PublicationsSearchForm from the laminas container
+    form_action       /literature/search
+    center_on_page    optional; adds the `search-bar-center` class
+    advanced_search_url  the advanced-search link, or null when the visitor may not
+                      reach it. The .phtml calls `isAllowed('route/publications/advanced-search')`
+                      and then assembles the URL; the resource is not in the ACL table at
+                      all, so resolving it in the controller is what keeps a
+                      never-registered resource from reaching the ACL as a lookup.
+
+  **A GET form**, which is why there is no CSRF token here and no `security` element
+  rendered: the search posts nothing and changes nothing. `form_open()` emits
+  `method="POST"` unconditionally, so the tag is written out by hand — the one place in
+  this batch where the renderer is not used for the opening tag.
+
+  The two assets the .phtml appends through headLink()/headScript() —
+  selectize.bootstrap3.css and gen-publications-search-bar.js — are declared by each page
+  that includes this, because Twig blocks only work through inheritance and an included
+  template cannot contribute to one.
+
+  The `inLanguage` select renders with **translation off**, which the original does by
+  toggling `formSelect()->setTranslatorEnabled(false)` around it and back on afterwards:
+  the options are language names already localized by the model, and translating them a
+  second time turns "Deutsch" into whatever the catalogue has for it.
+#}
+<div class="row search-bar {% if center_on_page|default(false) %} search-bar-center{% endif %}">
+      <div class="col-md-6 col-md-offset-3 col-xs-12">
+          <div id="custom-search-input">
+            <form method="GET" name="{{ form.getName() }}" action="{{ form_action }}" class="form-horizontal" id="{{ form.getName() }}">
+              <div class="input-group col-md-12">
+                    {{ form_element(form.get('search')) }}
+                  <span class="input-group-btn">
+                      <button class="btn btn-info btn-lg" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                      </button>
+                  </span>
+              </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <a data-toggle="collapse" data-target="#options" aria-expanded="false" aria-controls="options">{{ translate('Advanced options') }}</a>
+                    {% if advanced_search_url is not null %}
+                        &nbsp;&nbsp;<a href="{{ advanced_search_url }}">{{ translate('Advanced search') }}</a>
+                    {% endif %}
+                </div>
+                <div id="options" class= "collapse row">
+                    <div class="checkbox col-md-3">
+                        {{ form_element(form.get('showEditionsSeparately')) }}
+                    </div>
+                    <div class="checkbox col-md-3">
+                        {{ form_element(form.get('includeDataSources')) }}
+                    </div>
+                    <div class="checkbox col-md-3">
+                        <div class="pull-right">{{ form_label(form.get('inLanguage')) }}</div>
+                    </div>
+                    <div class="checkbox col-md-3">
+                        {#- the third argument turns the Bootstrap class off: the .phtml renders this one
+                            through the plain formSelect() helper, which adds none -#}
+                        {{ form_element(form.get('inLanguage'), false, false) }}
+                    </div>
+                </div>
+            </div>
+            </form>
+          </div>
+      </div>
+</div>

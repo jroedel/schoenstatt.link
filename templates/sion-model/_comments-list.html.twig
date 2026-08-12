@@ -1,0 +1,36 @@
+{#
+  The published comments on an entity — the Twig counterpart of
+  module/SionModel/view/sion-model/comments/comments-list.phtml, which still renders
+  this list on production.
+
+  Parameters:
+    comments  list of comment rows as PredicatesTable::getComments() returns them,
+              each with `createdByUsername`, `createdOn` (a DateTime, or null) and
+              `comment`. An empty list renders nothing at all — not a heading, not an
+              empty <div> — which is what the .phtml's `!empty()` guard does and what
+              lets a show page include this unconditionally.
+
+  `%s says` is one translated phrase with the username interpolated, not the two
+  fragments `format()` would tempt: the phrase table is keyed on the source string, so
+  splitting it would file a phrase per commenter.
+
+  The escaping of that line is deliberate and reproduces the .phtml exactly: laminas
+  escapes the **username** and interpolates it into an unescaped phrase
+  (`sprintf($this->translate('%s says'), $this->escapeHtml(...))`). Twig would escape
+  the composed string instead, which would mangle any catalogue entry containing a
+  quote or an angle bracket — es_ES already renders `%s dice`, and a future
+  translation is free to use typographic quotes. So the variable is escaped by hand
+  and the result marked raw. This is the one place in the batch where `|raw` is
+  load-bearing rather than laziness, which is why it is spelled out here.
+
+  createdOn is guarded on the laminas side with `instanceof \DateTime` because the
+  column is nullable. Here the guard lives in App\Twig\LaminasExtension::diffForHumans(),
+  which answers '' for anything that is not a date — see its docblock for why that is
+  the safer place for it.
+#}
+{% for object in comments %}
+    <h3><i class="fa fa-comment"></i> {{ translate('%s says')|format(object.createdByUsername|escape)|raw }}:
+        <small> {{ diff_for_humans(object.createdOn) }}</small>
+    </h3>
+    <p>{{ object.comment }}</p>
+{% endfor %}

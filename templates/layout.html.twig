@@ -46,10 +46,16 @@
   those, and a per-controller obligation to supply them is one a later port would
   forget.
 
-  Two things this layout cannot reproduce and does not pretend to: the breadcrumb
-  trail is passed in rather than derived from the Navigation service (whose factory
-  needs an MvcEvent), and `nowMessenger` is omitted because nothing on a ported
-  route can populate it — it is a within-request messenger, not a session one.
+  One thing this layout cannot reproduce and does not pretend to: the breadcrumb
+  trail is passed in rather than derived from the Navigation service, whose factory
+  needs an MvcEvent.
+
+  `nowMessenger` **is** reproduced, as of the literature ports. This file used to say
+  it was omitted "because nothing on a ported route can populate it"; that held until
+  a ported controller needed to say "No results found." on the page it was rendering.
+  A ported controller reaches the same shared plugin the view helper renders from —
+  see App\Laminas\ViewHelpers::nowMessenger() — so the messages arrive here the way
+  they always did.
 #}
 <!DOCTYPE html>
 <html lang="{{ current_language() }}">
@@ -231,7 +237,7 @@
             }) }}</script>
             {% endif %}
             </div>
-            {{ flash_messages() }}
+            {{ flash_messages() }}{{ now_messages() }}
             {% block content %}{% endblock %}
 {#- the WebPage name below is headTitle()[0] in the laminas layout, which for a page
     that never called headTitle() is the site name the layout appends itself —

@@ -1,0 +1,331 @@
+{#
+  module/Schoenstatt/view/schoenstatt/associations/show.phtml, ported — the largest
+  template in this batch, and the page behind every shrine on the map.
+
+  Everything that needed the router or trigonometry is resolved in
+  App\Controller\AssociationController and arrives as a variable: the six
+  `associations/create` URLs with their differing query strings, the OpenStreetMap tile
+  coordinates, and the two edit links.
+
+  ## Four behaviours reproduced rather than tidied
+
+  1. **The `<h1>` and `<title>` are the locale-specific name**, `nameByLocale[locale]`,
+     with translation off — the name is data, and translating it would file a phrase per
+     association.
+  2. **The kind line is hidden for shrines only.** `if ('sch-shrine' !== kind)`, so a
+     wayside shrine does show "(Wayside shrine)" and a shrine shows nothing.
+  3. **The "Up-to-date" tooltip says 'jeff'.** That is a hardcoded name in the original —
+     `sprintf($this->translate('Updated by %s %s'), 'jeff', …)` — not a column. Carried
+     over unchanged; fixing it is a content decision, not a porting one.
+  4. **The national/child/neither branch is a three-way `if`/`elseif`/`elseif`**, and the
+     third arm renders only an "Add" button with an unclosed `<p>`. The stray tag is the
+     original's.
+
+  The photo block appears twice on purpose: the first photo goes beside the contact panel,
+  and photos 2..n go in the thumbnail strip below. `photos|slice(1)` is the original's
+  `for ($i = 1; ...)`.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% block content %}
+<h1>{{ name }}</h1>
+{% if entity.internalName is not null %}
+<p>{{ entity.internalName }}{% if internal_name_localized is not null and entity.internalName != internal_name_localized %} ({{ internal_name_localized }}){% endif %}</p>
+{% endif %}
+{% if entity.kind != 'sch-shrine' %}
+<p>({{ format.association_kind(entity, kind_labels) }})</p>
+{% endif %}
+<div class="row">
+{% if entity.photos is not empty %}
+{% set main_photo = entity.photos|first %}
+<div class="col-md-3">
+<a href="{{ main_photo['2000px'] }}"><img src="{{ main_photo['400px'] }}" class="img-responsive center-block" alt="{{ name }}"></a>
+</div>
+{% endif %}
+<div class="col-md-9">
+<div class="panel panel-default" id="contactInfoPanel">
+    <div class="panel-heading">
+        <div class="row">
+        <div class="col-xs-4">
+            <h3 class="panel-title">{{ translate('Contact Info') }}
+        </h3>
+        </div>
+        <div class="col-xs-5">
+            {% if entity.contactInfoUpdatedOn is not null %}
+                <span class="pull-right"><small>{{ translate('Updated %s')|format(diff_for_humans(entity.contactInfoUpdatedOn))|raw }}</small></span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+        <!-- Here goes the logo -->
+        <div class="col-md-7">{% if entity.email is not null %}
+            <p><strong>{{ translate('Email') }}:</strong> {{ email_link(entity.email) }}</p>{% endif %}
+            {% if map_url is not null %}
+                <a href="{{ map_url }}" target="_blank">
+                <img alt="{{ translate('Open Street Maps') }}" src="{{ map_tile_url }}" height="256" width="256"/></a>
+            {% endif %}
+        </div>
+        <div class="col-md-5">
+            {% for phone_row in entity.phones %}
+                <p><strong>{{ translate(phone_row.label) }}:</strong>
+                <span>{{ telephone_link(phone_row.number, phone_row.whatsApp|default(false), is_allowed('route/persons/person/edit-contact-info')) }}</span></p>
+            {% endfor %}
+            {% if entity.phonesUpdatedOn is not null %}
+                <p class="text-right">{{ tooltip('✓ Up-to-date', phones_updated_tooltip) }}</p>
+            {% endif %}
+            {% if entity.urls is not empty %}
+            <p><strong>{{ translate('Links') }}:</strong>
+            <div class="row">
+            <div class="col-md-12">
+                <div class="row"><div class="col-md-12">
+                {% for url_row in entity.urls %}
+                <a target="_blank" href="{{ url_row.url }}">
+                    <img src="/{{ url_row.logo|default('img/www.png') }}" alt="{{ url_row.label }}" class="img-circle" height="70px">
+                </a>&nbsp;
+                {% endfor %}
+                </div></div> <!-- Websites row and column -->
+            </div> <!-- Links column -->
+            </div> <!-- Links row -->
+            {% endif %}
+            {% if entity.address is not null %}
+            <p><strong>{{ translate('Postal address') }}:</strong></p>
+            {% endif %}
+            {{ address(entity.address) }}
+            {#
+              Both of the following are commented-out *markup* in the original, not
+              commented-out PHP, so laminas emits them into the page and a reader viewing
+              source sees them. Dropping them looked like tidying and is a byte
+              difference the baseline diff caught. The first is a disabled contactNotes
+              block whose `@todo` calls the field deprecated; the second is a note to
+              whoever maintains the phone numbers.
+            #}
+            <!--
+                <p><strong>:</strong></p>
+                <div id="contactNotes"></div>
+             -->
+            <!--
+            Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
+            Please help in confirming and/or updating out-dated information.
+             -->
+        </div> <!-- phones column -->
+        </div>
+    </div> <!-- contact info panel body -->
+</div> <!-- contact info panel -->
+</div> <!-- col-md-9 -->
+</div>
+<div class="row">
+<div class="col-md-12">
+<div class="panel panel-default" id="infoPanel">
+    <div class="panel-heading">
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title">{{ translate('Association Info') }}</h3>
+        </div>
+        <div class="col-xs-6">
+            {% if is_allowed('route/association-edit') %}
+                <span class="pull-right"><a class="btn btn-primary btn-sm" href="{{ edit_url }}">
+                    {{ translate('Edit association') }}</a>
+                </span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+        <p><strong>{{ translate('Foundation date') }}:</strong>
+        {% if entity.foundationDate is not null %}{{ date_precision(entity.foundationDate, entity.foundationDatePrecision) }}{% endif %}</p>
+        {% if entity.suppressionDate is not null %}
+            <p><strong>{{ translate('Suppression date') }}:</strong> {{ long_date(entity.suppressionDate) }}</p>
+        {% endif %}
+        {% if entity.country is not null %}
+            <p><strong>{{ translate('Country') }}:</strong> {{ country_name(entity.country, true) }}</p>
+        {% endif %}
+        {% if entity.parent is not null %}
+            <p><strong>{{ translate('Parent organization') }}:</strong> {{ format.entity('association', entity.parent) }}</p>
+        {% endif %}
+    </div> <!-- info 1 column -->
+
+    <div class="col-md-6">
+        {% if entity.publicNotes %}
+            <p class="text-center"><strong>{{ translate('Additional Info') }}</strong></p>
+            {{ markdown(public_notes) }}
+        {% endif %}
+        {% if entity.openingHoursHuman %}
+            <p class="text-center"><strong>{{ translate('Opening hours') }}:</strong></p>
+            {{ markdown(entity.openingHoursHuman) }}
+        {% endif %}
+        {% if entity.eventsHuman %}
+            <p class="text-center"><strong>{{ translate('Mass, adoration, confession or other events') }}:</strong></p>
+            {{ markdown(entity.eventsHuman) }}
+        {% endif %}
+    </div> <!-- info 2 column -->
+    </div></div> <!-- contact info panel body -->
+</div> <!-- course info 1 panel -->
+</div><!-- info 1 column -->
+</div> <!-- Info row -->
+
+<!-- photos -->
+{% if entity.photos|length > 1 %}
+<div id="association-photos" class="row">
+    {% for photo in entity.photos|slice(1) %}
+  <div class="col-xs-6 col-md-3">
+    <a href="{{ photo['2000px'] }}" class="thumbnail">
+      <img src="{{ photo['180px'] }}" height="180px" alt="...">
+    </a>
+  </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if entity.assignments is not empty or is_allowed('route/assignments/create') %}
+<div class="row">
+<div class="col-md-12">
+<div class="panel panel-default" id="assignmentsPanel">
+    <div class="panel-heading">
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title">{{ translate('Contact persons') }}</h3>
+        </div>
+        <div class="col-xs-6">
+            {% if is_allowed('route/assignments/create') %}
+                <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="{{ add_assignment_url }}">
+                    {{ translate('Add assignment') }}</a>
+                </span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+        <p>&nbsp;</p>
+        {% include 'schoenstatt/_assignments-table.html.twig' with {
+            'assignments': entity.assignments,
+            'show_active': true,
+            'show_inactive': false,
+        } only %}
+    </div> <!-- assignments 1 column -->
+    <div class="col-md-6">
+        {% include 'schoenstatt/_assignments-table.html.twig' with {
+            'assignments': entity.assignments,
+            'show_active': false,
+            'show_inactive': true,
+            'header_text': translate('Past contacts'),
+        } only %}
+    </div> <!-- assignments 2 column -->
+    </div></div>
+</div></div></div>
+{% endif %}
+
+{% if entity.kind == 'sch-national-movement' and entity.nationalOrganizations is defined %}
+<div class="panel panel-default">
+<!-- Default panel contents -->
+<div class="panel-heading">
+    <div class="row">
+    <div class="col-xs-6">
+        <h3 class="panel-title">{{ translate('National organizations') }}</h3>
+    </div>
+    <div class="col-xs-6">
+        {% if is_allowed('route/associations/create') %}
+            <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="{{ add_national_url }}">
+                {{ translate('Add national association') }}</a>
+            </span>
+        {% endif %}
+    </div>
+    </div>
+</div>
+    {% if entity.nationalOrganizations is empty %}
+    <div class="panel-body"><p>{{ translate('No other national organizations are registered in %s.')|format(country_name(entity.country))|raw }}</p></div>
+    {% else %}
+{% include 'schoenstatt/_associations-table.html.twig' with {
+    'objects': entity.nationalOrganizations,
+    'kind_labels': kind_labels,
+} only %}
+    {% endif %}
+</div>
+
+{% elseif entity.childAssociations is not empty %}
+<div class="panel panel-default">
+<!-- Default panel contents -->
+<div class="panel-heading">
+    <div class="row">
+    <div class="col-xs-6">
+        <h3 class="panel-title">{{ translate('Associated organizations') }}</h3>
+    </div>
+    <div class="col-xs-6">
+        {% if is_allowed('route/associations/create') %}
+        <span class="pull-right"><a target="_blank" class="btn btn-primary btn-sm" href="{{ add_child_url }}">
+            {{ translate(add_child_label) }}</a>
+        </span>
+        {% endif %}
+    </div>
+    </div>
+</div>
+{% include 'schoenstatt/_associations-table.html.twig' with {
+    'objects': entity.childAssociations,
+    'kind_labels': kind_labels,
+} only %}
+</div>
+{% elseif is_allowed('route/associations/create') %}
+<p><a target="_blank" class="btn btn-primary btn-sm" href="{{ add_child_url }}">
+                {{ translate(add_child_label) }}</a>
+        <p>
+{% endif %}
+
+
+<!-- Left side roles, right side Admin notes -->
+{% if is_allowed('route/associations/create') %}
+<div class="row">
+<div class="col-md-12">
+<div class="panel panel-default" id="adminPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Admin info') }}</h3>
+    </div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+    {% if entity.roles is not empty %}
+    <p>{{ translate('Association roles') }}</p>
+    <ul class="list-group">
+        {% for role in entity.roles %}
+            <li class="list-group-item">{{ format.entity('role', role) }}
+            <a target="_blank" href="{{ role_assignment_urls[role.roleId] }}">
+                <span class="glyphicon glyphicon-plus">&nbsp;</span></a></li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if is_allowed('route/roles/create') %}
+        <p><a class="btn btn-default btn-sm" href="{{ add_role_url }}">
+            <span class="glyphicon glyphicon-plus">&nbsp;</span>{{ translate('Add role') }}</a>
+        </p>
+    {% endif %}
+    </div>
+    <div class="col-md-6"><!-- Admin notes column -->
+        {% if entity.adminNotes is not null %}
+            <p><strong>{{ translate('Admin notes') }}:</strong></p>
+            <div>{{ markdown(entity.adminNotes) }}</div>
+        {% endif %}
+    </div>
+    </div></div>
+</div></div></div>
+{% endif %}
+
+
+{% if is_allowed('route/association-edit') %}
+{% include 'sion-model/_entity-changes-panel.html.twig' with {
+    'changes': changes,
+    'panel_title': 'Change log',
+} only %}
+{% endif %}
+
+<div class="row"><div class="col-md-12">
+{% if is_allowed('route/association-edit') %}
+      <p><a class="btn btn-primary" href="{{ edit_url }}">{{ translate('Edit details') }}</a><p>
+{% endif %}
+<p><strong>{{ translate('Total views') }}</strong>: {{ visits.total }} <strong>{{ translate('Views this month') }}</strong>: {{ visits.pastMonth }}</p>
+</div></div>
+{% if schema is not null %}
+<script type="application/ld+json">{{ json_ld(schema) }}</script>
+{% endif %}
+{% endblock %}

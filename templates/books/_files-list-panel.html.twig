@@ -1,0 +1,66 @@
+{#
+  module/Books/view/books/files/files-list-panel.phtml and its list-files.phtml, ported
+  as one template.
+
+  The two were separate on the laminas side and are merged here because nothing else
+  calls either: `files-list-panel` is rendered from the publication show page alone, and
+  `list-files` from `files-list-panel` alone. Splitting a partial that has exactly one
+  caller reproduces the indirection without the reuse.
+
+  Expects:
+    files        the Drive file rows, each with `url`, `fileName` and optionally
+                 `notes`, `size`, `mimeType`, `tags`
+    columns      which of those to show, in order
+    panel_title  optional; 'Associated Files' when absent, as in the original
+
+  A column name the table does not know is dropped rather than rendered as an empty
+  cell — the original `unset()`s it out of the header loop, which silently shortens the
+  header while leaving the body loop's `switch` to fall through to its `default`. Here
+  the same filtering is applied once, to both.
+
+  These rows come from the Google Drive gateway and never from the database. In the
+  capsule the gateway has no credentials, so this panel is empty locally and only the
+  empty branch is exercised — worth knowing before concluding that a change here is
+  verified.
+#}
+{% set known = {
+    'fileName': 'File name',
+    'size':     'Size',
+    'tags':     'Tags',
+    'notes':    'Notes',
+    'mimeType': 'Mime Type',
+} %}
+{% set shown = columns|filter(c => known[c] is defined) %}
+<div class="row"> <!-- row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="files">
+<div class="panel-heading">
+    <h3 class="panel-title">{{ translate(panel_title|default('Associated Files')) }}</h3>
+</div>
+<div class="panel-body">
+    {% if files is not empty %}
+<div class="responsive-table">
+<table class="table"><thead>
+<tr>{% for column in shown %}
+    <th>{{ translate(known[column]) }}</th>
+    {% endfor %}
+</tr></thead><tbody>
+{% for entity in files %}
+<tr>{% for column in shown %}
+{%- if column == 'fileName' %}
+        <td><a target="_blank" href="{{ entity.url }}">{{ entity.fileName }}</a></td>
+{%- elseif column == 'size' %}
+        <td>{% if entity.size is defined and entity.size is not null %}{{ file_size(entity.size) }}{% endif %}</td>
+{%- else %}
+        <td>{{ attribute(entity, column)|default('') }}</td>
+{%- endif %}
+{% endfor %}</tr>{% endfor %}</tbody>
+</table>
+</div>
+{% else %}
+<p>{{ translate('No files found.') }}</p>
+{% endif %}
+</div>
+</div> <!-- panel -->
+</div> <!-- column 12 -->
+</div> <!-- row -->

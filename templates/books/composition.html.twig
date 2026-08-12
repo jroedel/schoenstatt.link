@@ -1,0 +1,52 @@
+{#
+  module/Books/view/books/compositions/show.phtml, ported — an individual song.
+
+  The ChordPro chart arrives already formatted (`chordpro_html`) because parsing is work
+  and belongs in App\Controller\CompositionController; `chordpro` says whether there was
+  any, which is what decides both the chart and its stylesheet.
+
+  Two things reproduced rather than tidied:
+
+  1. The heading is an `<h2>`, not an `<h1>`, and there is no `headTitle()` call — so the
+     browser tab reads "Schoenstatt Link" alone. Measured against the laminas rendering
+     of /en/SL500001C.
+  2. The stray `<p></p>` below the chart is the original's. It is vertical space that the
+     page has always had, and removing it moves the buttons up.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+{%- if chordpro %}
+        <link href="/css/chordpro.css" media="screen" rel="stylesheet" type="text/css">
+{%- endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row"><div class="col-md-12">
+<h2>{{ entity.name }}</h2>
+{% if chordpro %}{{ chordpro_html|raw }}{% endif %}
+<p></p>
+{% if is_allowed('route/composition-edit') %}
+<p><a class="btn btn-primary" href="{{ edit_url }}">{{ translate('Edit song') }}</a>
+{% if is_allowed('route/composition-delete') %}
+&nbsp;<a class="btn btn-danger" href="{{ delete_url }}">{{ translate('Delete song') }}</a>{% endif %}</p>
+{% endif %}
+{% include 'sion-model/_comments-list.html.twig' with {'comments': comments} only %}
+{% if is_allowed('route/comments/create') and comment_form is not null %}
+{% include 'sion-model/_comment-create.html.twig' with {
+    'form': comment_form,
+    'form_action': comment_action,
+} only %}
+{% endif %}
+{% if is_allowed('route/composition-edit') %}
+{% include 'sion-model/_entity-changes-panel.html.twig' with {
+    'changes': changes,
+    'panel_title': 'Change log',
+} only %}
+{% endif %}
+<p><strong>{{ translate('Total views') }}</strong>: {{ visits.total }} <strong>{{ translate('Views this month') }}</strong>: {{ visits.pastMonth }}</p>
+</div></div>
+{% if schema is not null %}
+<script type="application/ld+json">{{ json_ld(schema) }}</script>
+{% endif %}
+{% endblock %}

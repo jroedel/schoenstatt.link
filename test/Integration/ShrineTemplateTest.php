@@ -204,7 +204,7 @@ class ShrineTemplateTest extends TestCase
 
         return (new TwigFactory())->create(
             $this->bridge(),
-            new ViewHelpers($this->bridge()),
+            new ViewHelpers($this->bridge(), fn (): RouteUrl => new RouteUrl($this->bridge(), '')),
             new RouteUrl($this->bridge(), ''),
             $requests,
             new CspNonce()

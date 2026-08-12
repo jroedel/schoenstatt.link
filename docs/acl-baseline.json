@@ -28,12 +28,12 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 22,
+        "routes_shadowed_by_symfony": 24,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 40,
+        "symfony_routes_acl_checked": 62,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 70,
+        "symfony_served_routes": 92,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -6493,12 +6493,30 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "publications",
+            "path": "/literature",
+            "symfony_route": "publications",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "publications/one-fifty-preguntas",
             "path": "/literature/150-preguntas-sobre-schoenstatt",
             "symfony_route": "publications/one-fifty-preguntas",
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/publications/one-fifty-preguntas",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "publications/search",
+            "path": "/literature/search",
+            "symfony_route": "publications/search",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/search",
             "access_kind": "acl"
         },
         {
@@ -7844,6 +7862,16 @@
                 "denial_style": "n/a"
             }
         },
+        "association": {
+            "path": "/{sw_id}/{slug}",
+            "controller": "App\\Controller\\AssociationController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "association-edit": {
             "path": "/{sw_id}/edit",
             "controller": "App\\Controller\\AssociationEditController",
@@ -7864,6 +7892,16 @@
                 "denial_style": "html"
             }
         },
+        "association.locale": {
+            "path": "/{_locale}/{sw_id}/{slug}",
+            "controller": "App\\Controller\\AssociationController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "associations": {
             "path": "/associations",
             "controller": "App\\Controller\\AssociationsController",
@@ -7880,6 +7918,86 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/associations",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "associations/association": {
+            "path": "/associations/{sw_id}",
+            "controller": "App\\Controller\\SendToNewUrlController::associationBySwId",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations/association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "associations/association.locale": {
+            "path": "/{_locale}/associations/{sw_id}",
+            "controller": "App\\Controller\\SendToNewUrlController::associationBySwId",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations/association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "associations/old-association": {
+            "path": "/associations/{association_id}",
+            "controller": "App\\Controller\\SendToNewUrlController::associationById",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations/old-association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "associations/old-association.locale": {
+            "path": "/{_locale}/associations/{association_id}",
+            "controller": "App\\Controller\\SendToNewUrlController::associationById",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations/old-association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "comments/create": {
+            "path": "/comments/create/{entity}/{entity_id}/{kind}",
+            "controller": "App\\Controller\\CommentCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/comments/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "comments/create.locale": {
+            "path": "/{_locale}/comments/create/{entity}/{entity_id}/{kind}",
+            "controller": "App\\Controller\\CommentCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/comments/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "composition": {
+            "path": "/{sw_id}/{slug}",
+            "controller": "App\\Controller\\CompositionController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/composition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "composition.locale": {
+            "path": "/{_locale}/{sw_id}/{slug}",
+            "controller": "App\\Controller\\CompositionController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/composition",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8034,6 +8152,66 @@
                 "denial_style": "html"
             }
         },
+        "publication": {
+            "path": "/{sw_id}/{slug}",
+            "controller": "App\\Controller\\PublicationController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication.locale": {
+            "path": "/{_locale}/{sw_id}/{slug}",
+            "controller": "App\\Controller\\PublicationController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications": {
+            "path": "/literature",
+            "controller": "App\\Controller\\LiteratureController::home",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications.locale": {
+            "path": "/{_locale}/literature",
+            "controller": "App\\Controller\\LiteratureController::home",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/index": {
+            "path": "/literature/{inLanguage}",
+            "controller": "App\\Controller\\LiteratureController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/index",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/index.locale": {
+            "path": "/{_locale}/literature/{inLanguage}",
+            "controller": "App\\Controller\\LiteratureController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/index",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "publications/one-fifty-preguntas": {
             "path": "/literature/150-preguntas-sobre-schoenstatt",
             "controller": "App\\Controller\\OneFiftyPreguntasController",
@@ -8050,6 +8228,46 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/publications/one-fifty-preguntas",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/publication-old": {
+            "path": "/literature/{publication_id}",
+            "controller": "App\\Controller\\SendToNewUrlController::publicationById",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/publication-old",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/publication-old.locale": {
+            "path": "/{_locale}/literature/{publication_id}",
+            "controller": "App\\Controller\\SendToNewUrlController::publicationById",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/publication-old",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/search": {
+            "path": "/literature/search",
+            "controller": "App\\Controller\\LiteratureController::search",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/search.locale": {
+            "path": "/{_locale}/literature/search",
+            "controller": "App\\Controller\\LiteratureController::search",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/search",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8212,6 +8430,26 @@
                 "resource": null,
                 "reason": "the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\\Http\\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer",
                 "denial_style": "n/a"
+            }
+        },
+        "text": {
+            "path": "/{sw_id}/{slug}",
+            "controller": "App\\Controller\\TextController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/text",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "text.locale": {
+            "path": "/{_locale}/{sw_id}/{slug}",
+            "controller": "App\\Controller\\TextController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/text",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "wayside-shrines": {
