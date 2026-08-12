@@ -368,8 +368,19 @@ function normalize(string $html, string $account): string
 
     // rule 3 — registerVisit() INSERTs on every request, so these climb by
     // themselves. The labels stay, so the counters vanishing still diffs.
+    //
+    // The list is per *label*, and therefore per locale, which is why the Italian pair is
+    // here: a capture run visits each page ten times (five locales x two identities), so
+    // any label this list misses reports a clean +10 on the second capture and lands in
+    // the diff as a difference between the two front controllers. That is exactly what it
+    // did — thirteen Italian pages, all "+10" — while the same pages in the other four
+    // locales were silent, because only Italian has these two phrases translated.
+    // Matching structurally instead was tried and rejected: the counters are two adjacent
+    // `<strong>label</strong>: number` pairs, and so are ISBN/Edition/Number of pages
+    // directly above them, so a structural rule would blank real bibliographic data.
     $html = preg_replace(
-        '/(Total views|Views this month|Vistas totales|Visitas totales)(<\/strong>)?:\s*\d+/u',
+        '/(Total views|Views this month|Vistas totales|Visitas totales'
+        . '|Visualizzazioni totali|Visualizzazioni questo mese)(<\/strong>)?:\s*\d+/u',
         '$1$2: {{VISITS}}',
         $html
     );
