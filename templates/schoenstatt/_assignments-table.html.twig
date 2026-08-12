@@ -1,0 +1,79 @@
+{#
+  module/Schoenstatt/view/schoenstatt/assignments/assignments-table-partial.phtml, ported.
+
+  Expects:
+    assignments    the rows, each with `isActive`, `roleTitle`, `person`, `association`
+    show_active    include active rows (default true)
+    show_inactive  include inactive rows (default true)
+    columns        default ['role', 'person']; also 'email', 'telephone', 'association'
+    header_text    optional; rendered above the table, **pre-translated by the caller**
+    wrap_in_panel  optional; wraps the table in a panel (default false)
+
+  The association show page renders it twice with complementary filters — active in the
+  left column, inactive in the right under "Past contacts" — which is why the two flags
+  exist rather than one.
+
+  **The whole table disappears when the filter matches nothing**, header included. That
+  is the original's `if ($count > 0)` and it is why the right-hand column of a shrine
+  with no past contacts is empty rather than showing an empty "Past contacts" table.
+
+  Not reproduced: the original's `array_unshift($columns, $column)` in the header loop,
+  which is unreachable — it fires only for a column name not in the header map, and then
+  *prepends that same name back onto the array it is iterating*, which would loop
+  forever if it ever ran. No caller passes an unknown column. Here an unknown column is
+  simply dropped, as it already effectively is in the body.
+#}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+{% set show_active = show_active|default(true) %}
+{% set show_inactive = show_inactive|default(true) %}
+{% set columns = columns|default(['role', 'person']) %}
+{% set wrap_in_panel = wrap_in_panel|default(false) %}
+{% set headers = {
+    'role':        'Role',
+    'person':      'Contact person',
+    'email':       'Email',
+    'telephone':   'Telephone',
+    'association': 'Association',
+} %}
+{% set shown = columns|filter(c => headers[c] is defined) %}
+{% set rows = assignments|filter(a => (a.isActive and show_active) or (not a.isActive and show_inactive)) %}
+{% if rows|length > 0 %}
+{% if wrap_in_panel %}
+    <div class="panel panel-default">
+        <!-- Default panel contents -->
+        {% if header_text is defined and header_text %}
+            <div class="panel-heading">{{ header_text }}</div>
+        {% endif %}
+{% endif %}
+{% if header_text is defined and header_text and not wrap_in_panel %}
+        <p class="text-center"><strong><u>{{ header_text }}</u></strong></p>
+{% endif %}
+<div id="assignments" class="table-responsive panel-body">
+    <table class="table sortable">
+    <thead><tr>
+    {% for column in shown %}<th>{{ translate(headers[column]) }}</th>{% endfor %}
+    </tr></thead>
+    <tbody>
+    {% for assignment in rows %}
+            <tr>
+            {% for column in shown %}
+{%- if column == 'association' %}
+                        <td>{% if assignment.association is defined and assignment.association %}{{ format.entity('association', assignment.association, association_format_options|default({})) }}{% endif %}</td>
+{%- elseif column == 'role' %}
+                        <td>{% if assignment.roleTitle is defined and assignment.roleTitle %}{{ format.entity('assignment', assignment, {'displayAsLink': false}) }}{% endif %}</td>
+{%- elseif column == 'person' %}
+                        <td>{% if assignment.person is defined and assignment.person %}{{ format.entity('person', assignment.person, person_format_options|default({'displayEditPencil': false})) }}{{ edit_pencil('assignment', assignment.assignmentId) }}{% endif %}</td>
+{%- elseif column == 'email' %}
+                        <td>{% if assignment.person is defined and assignment.person %}{{ email_link(assignment.person.email) }}{% elseif assignment.association is defined and assignment.association %}{{ email_link(assignment.association.email) }}{% endif %}</td>
+{%- elseif column == 'telephone' %}
+                        <td>{% if assignment.person is defined and assignment.person %}{{ telephone_link(assignment.person.cellPhone) }}{% elseif assignment.association is defined and assignment.association %}{{ telephone_link(assignment.association.phone1) }}{% endif %}</td>
+{%- endif %}
+            {% endfor %}
+            </tr>
+    {% endfor %}
+    </tbody></table>
+</div>
+{% if wrap_in_panel %}
+    </div>
+{% endif %}
+{% endif %}

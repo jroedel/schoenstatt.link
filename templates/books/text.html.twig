@@ -1,0 +1,43 @@
+{#
+  module/Books/view/books/texts/show.phtml, ported — a document from the corpus.
+
+  Three things reproduced deliberately:
+
+  1. **The comment form comes before the comment list**, which is the opposite of every
+     other show page in this batch. That is the original's order, not an oversight of
+     this port.
+  2. **`htmlText` is emitted raw.** It is stored markup, rendered from the moderator's
+     Markdown by the model layer, and the .phtml echoes it unescaped. Escaping it here
+     would show the reader a page of HTML source.
+  3. **The tag links go nowhere** — `<a href="">` with a `@todo translate this later`
+     over them in the original. Reproduced as-is; a link with an empty href reloads the
+     current page, which is what it has always done.
+
+  The `<title>` is the text's own title with translation off — see
+  App\Controller\TextController for the 219 permanent phrase rows that decision is about.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ entity.title }}</h1>
+
+<p><i class="fa fa-calendar"></i> {{ translate('Posted') }} {{ diff_for_humans(entity.createdOn|default(null)) }}</p>
+<p><i class="fa fa-tags"></i> {{ translate('Tags') }}: {% for tag in tags %}
+<a href=""><span class="badge badge-info">{{ tag }}</span></a>
+{% endfor %}</p>
+<hr>
+{% if entity.htmlText is defined and entity.htmlText %}{{ entity.htmlText|raw }}{% endif %}
+<hr>
+    <!-- the comment box -->
+{% if comment_form is not null %}
+{% include 'sion-model/_comment-create.html.twig' with {
+    'form': comment_form,
+    'form_action': comment_action,
+} only %}
+{% endif %}
+{% include 'sion-model/_comments-list.html.twig' with {'comments': comments} only %}
+
+<div class="row"><div class="col-md-12">
+<p><strong>{{ translate('Total views') }}</strong>: {{ visits.total }} <strong>{{ translate('Views this month') }}</strong>: {{ visits.pastMonth }}</p>
+</div></div>
+{% endblock %}

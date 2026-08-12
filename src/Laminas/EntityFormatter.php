@@ -14,6 +14,8 @@ use Throwable;
 
 use function count;
 use function htmlspecialchars;
+use function implode;
+use function in_array;
 use function is_array;
 use function is_bool;
 use function is_int;
@@ -238,19 +240,36 @@ final class EntityFormatter
         return $markup;
     }
 
+    /** The five `display` modes Books\View\Helper\FormatPublication accepts. */
+    private const PUBLICATION_DISPLAYS = [
+        'title',
+        'disambiguatingTitle',
+        'authors',
+        'edition',
+        'translators',
+    ];
+
     /**
-     * Books\View\Helper\FormatPublication, `display => title` only.
+     * Books\View\Helper\FormatPublication — all five `display` modes.
      *
-     * That is the default and the only mode reachable from a page this side serves:
-     * every other mode (`authors`, `translators`, `edition`, `disambiguatingTitle`) is
-     * chosen by an explicit `display` option, and the two callers here —
-     * changes-table.phtml and data-problems.phtml — pass none. Rather than reproduce four
-     * unreachable branches, an explicit `display` raises, so the first page that needs
-     * one finds out at the call site instead of silently getting the title.
+     * Until the publication show page was ported this reproduced `title` alone and
+     * raised on anything else, because the two callers on this side
+     * (changes-table.phtml, data-problems.phtml) pass no `display` and four unreachable
+     * branches are four branches nothing tests. `books/publications/publication-info`
+     * is what changed that: one partial uses `authors`, `edition`,
+     * `disambiguatingTitle` **and** `translators`, so all four became reachable at once.
      *
-     * The five defaults that follow from `display => title`: link on, edit pencil on
-     * (unless the caller says otherwise), hand-checked/data-source/merged icons on,
-     * language and resource labels off.
+     * The mode drives six defaults in the original, and getting *that* right matters more
+     * than the branches themselves: `link`, `displayEditPencil`, `displayHandChecked`,
+     * `displayDataSource` and `displayMerged` all default to
+     * `title || disambiguatingTitle`, i.e. **off** for the three list modes. So an
+     * `authors` rendering carries no link, no pencil and no status icons unless the
+     * caller asks — which is why the author line under a publication is plain text where
+     * the same helper produces a linked, pencilled title in the heading above it.
+     *
+     * `displayLanguageLabel` and `displayResourceLabel` default off in every mode and no
+     * caller on this side passes them, so they are the one part left unreproduced; both
+     * raise rather than being silently ignored.
      *
      * @param array<string, mixed> $data
      * @param array<string, mixed> $options
@@ -258,12 +277,22 @@ final class EntityFormatter
     private function formatPublication(array $data, array $options): string
     {
         $display = $options['display'] ?? 'title';
-        if ('title' !== $display) {
+        if (! is_string($display) || ! in_array($display, self::PUBLICATION_DISPLAYS, true)) {
+            //the original silently falls back to `title` for an unknown mode. Raising is
+            //the deliberate difference: a typo'd display option there shows a title where
+            //authors were meant and nobody notices for years.
             throw new LogicException(sprintf(
-                'Books\View\Helper\FormatPublication\'s "%s" display mode is not reproduced; only '
-                . '"title" is. See App\Laminas\EntityFormatter::formatPublication().',
+                'Unknown FormatPublication display mode "%s". See App\Laminas\EntityFormatter.',
                 is_string($display) ? $display : 'non-string'
             ));
+        }
+        foreach (['displayLanguageLabel', 'displayResourceLabel'] as $unreproduced) {
+            if (! empty($options[$unreproduced])) {
+                throw new LogicException(sprintf(
+                    'FormatPublication\'s %s is not reproduced. See App\Laminas\EntityFormatter.',
+                    $unreproduced
+                ));
+            }
         }
 
         //the original's own guard, and it comes before everything: too little to show
@@ -271,40 +300,158 @@ final class EntityFormatter
             return '';
         }
 
-        $title  = (string) $data['title'];
-        $markup = '';
+        //`title || disambiguatingTitle` is the original's default for five separate
+        //options, spelled once here
+        $titleMode = 'title' === $display || 'disambiguatingTitle' === $display;
 
-        //link when both halves of the URL are present; the original checks each
-        if (isset($data['identifier'], $data['slug'])) {
+        //`link`, not `displayAsLink`: FormatPublication takes its own option name. The
+        //publication *show* page is the caller that needs it —
+        //`formatPublication('publication', $entity, ['link' => false, ...])` — because a
+        //page's own <h1> linking to itself is what the original avoids.
+        $link = isset($options['link']) ? (bool) $options['link'] : $titleMode;
+
+        [$mainText, $escapeMainText] = $this->publicationMainText($display, $data);
+
+        $markup = '';
+        if ($link && isset($data['identifier'], $data['slug'])) {
             $markup .= sprintf(
                 '<a href="%s">%s</a>',
                 $this->urls->path('publication', ['sw_id' => $data['identifier'], 'slug' => $data['slug']]),
-                $this->escape($title)
+                $escapeMainText ? $this->escape($mainText) : $mainText
             );
         } else {
-            $markup .= $this->escape($title);
+            $markup .= $escapeMainText ? $this->escape($mainText) : $mainText;
         }
 
         //`isset($data['identifier'])` only — the permission check lives inside the pencil
-        if ((bool) ($options['displayEditPencil'] ?? true) && isset($data['identifier'])) {
+        $pencil = isset($options['displayEditPencil']) ? (bool) $options['displayEditPencil'] : $titleMode;
+        if ($pencil && isset($data['identifier'])) {
             $id = $data['identifier'];
             if (is_int($id) || is_string($id)) {
                 $markup .= $this->pencil('publication', $id);
             }
         }
 
-        //three status icons, each a plain truthiness/isset test in the original
-        if (! empty($data['isRevisedWithBookInHand'])) {
+        //three status icons, each a plain truthiness/isset test in the original, each
+        //defaulting to the title modes
+        if (
+            (isset($options['displayHandChecked']) ? (bool) $options['displayHandChecked'] : $titleMode)
+            && ! empty($data['isRevisedWithBookInHand'])
+        ) {
             $markup .= $this->icon('fa-check-circle-o fa-3 text-success', 'Information has been hand checked');
         }
-        if (isset($data['dataSource'])) {
+        if (
+            (isset($options['displayDataSource']) ? (bool) $options['displayDataSource'] : $titleMode)
+            && isset($data['dataSource'])
+        ) {
             $markup .= $this->icon('fa-database', 'This row comes from an external data source');
         }
-        if (isset($data['mergedIntoPublicationId'])) {
+        if (
+            (isset($options['displayMerged']) ? (bool) $options['displayMerged'] : $titleMode)
+            && isset($data['mergedIntoPublicationId'])
+        ) {
             $markup .= $this->icon('fa-sign-in', 'This row has been merged into the main corpus');
         }
 
         return $markup;
+    }
+
+    /**
+     * The body text of a publication rendering, and whether it still needs escaping.
+     *
+     * The two-value return is the original's `$mainText` / `$escapeMainText` pair: the
+     * list modes escape each element as they build it and hand back markup, while the
+     * title modes hand back a raw column value the caller escapes. Collapsing that would
+     * either double-escape the semicolons-and-`<strong>` of an edition line or leave a
+     * title unescaped.
+     *
+     * @param array<string, mixed> $data
+     * @return array{0: string, 1: bool}
+     */
+    private function publicationMainText(string $display, array $data): array
+    {
+        if ('title' === $display || 'disambiguatingTitle' === $display) {
+            //`$data[$displayOption]` in the original, so a row with no
+            //disambiguatingTitle renders empty rather than falling back to the title
+            $value = $data[$display] ?? '';
+
+            return [is_scalar($value) ? (string) $value : '', true];
+        }
+
+        if ('authors' === $display) {
+            //authorsText then editorsText, each escaped as it goes, joined with '; '.
+            //The commented-out association/person branches in the original are left out
+            //for the same reason they are commented out there: they never run.
+            $parts = [];
+            foreach ($this->stringList($data, 'authorsText') as $text) {
+                $parts[] = $this->escape($text);
+            }
+            $editorSuffix = sprintf(' (%s)', $this->translate('Ed.'));
+            foreach ($this->stringList($data, 'editorsText') as $text) {
+                $parts[] = $this->escape($text) . $editorSuffix;
+            }
+
+            return [implode('; ', $parts), false];
+        }
+
+        if ('translators' === $display) {
+            $parts = [];
+            foreach ($this->stringList($data, 'translatorsText') as $text) {
+                $parts[] = $this->escape($text);
+            }
+
+            return [implode('; ', $parts), false];
+        }
+
+        //edition: the bold edition number, then the published date, then the place —
+        //each separated only when something precedes it, which is why the separators are
+        //conditional on the string built so far rather than on which fields exist
+        $text = '';
+        if (isset($data['bookEdition'])) {
+            $text .= sprintf('<strong>%s</strong>', $this->escape((string) $data['bookEdition']));
+        }
+        if (isset($data['datePublishedText'])) {
+            if ('' !== $text) {
+                $text .= ', ';
+            }
+            $text .= $this->escape((string) $data['datePublishedText']);
+        }
+        if (isset($data['publishingPlace'])) {
+            if ('' !== $text) {
+                $text .= ' ';
+            }
+            $text .= $this->escape((string) $data['publishingPlace']);
+        }
+
+        return [$text, false];
+    }
+
+    /**
+     * One of the `*Text` columns as a list of strings.
+     *
+     * The original iterates them with no guard at all — `foreach ($data['authorsText']
+     * as $text)` — which is an undefined-index notice plus a fatal for any row whose
+     * projection omits the column. Every projection that reaches these branches includes
+     * them, so this is defensive rather than corrective.
+     *
+     * @param array<string, mixed> $data
+     * @return list<string>
+     */
+    private function stringList(array $data, string $key): array
+    {
+        $value = $data[$key] ?? null;
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $strings = [];
+        foreach ($value as $item) {
+            if (is_scalar($item)) {
+                $strings[] = (string) $item;
+            }
+        }
+
+        return $strings;
     }
 
     /** The status-icon markup FormatPublication emits, with its translated tooltip. */
