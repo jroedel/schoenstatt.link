@@ -4,17 +4,25 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Integration;
 
+use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\TranslatorConfigurator;
+use App\Laminas\ViewHelpers;
 use App\Twig\LaminasExtension;
 use Laminas\Db\Adapter\Adapter;
+use Laminas\EventManager\EventInterface;
+use Laminas\I18n\Translator\Translator;
 use Laminas\Mvc\I18n\Translator as MvcTranslator;
 use Locale;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
 use Throwable;
 
+use function array_unique;
+use function array_values;
 use function implode;
 use function is_dir;
 use function is_readable;
@@ -185,6 +193,84 @@ class PortedRouteTranslationTest extends TestCase
             '"' . $phrase . '" resolves in `default` too, though the phrase table says it lives '
             . 'only in `Schoenstatt` — the export on disk is stale'
         );
+    }
+
+    /**
+     * **Only the page's own domain discovers a phrase.**
+     *
+     * The two-domain lookup above is a reading convenience; it must not become a writing
+     * one. A `Translator::translate()` that misses fires `EVENT_MISSING_TRANSLATION`, and
+     * JTranslate's listener is the only path by which a row enters `trans_phrases` — so
+     * when the fallback was a second `translate()` call, every string the page's domain
+     * could not translate was *also* filed in `default`, where nothing had ever asked for
+     * it. Measured in the capsule before the fix: 360 rows added to `default` since
+     * 2026-08-01 duplicating a row that already existed in a module domain, 284 of them
+     * from Symfony-served routes. laminas files none of them — a view helper has one
+     * domain — and this is the check that keeps it that way.
+     *
+     * The spy stops propagation, so JTranslate's listener never runs and the test writes
+     * nothing. That is also what lets it use a phrase guaranteed to be missing: any real
+     * string would already be in the table and prove nothing.
+     */
+    public function testTheFallbackDomainReadsButNeverDiscovers(): void
+    {
+        $this->requireDatabase();
+
+        /** @var MvcTranslator $translator */
+        $translator = $this->bridge()->get('MvcTranslator');
+
+        $domains = [];
+        $spy     = $translator->getEventManager()->attach(
+            Translator::EVENT_MISSING_TRANSLATION,
+            static function (EventInterface $e) use (&$domains): void {
+                $domains[] = $e->getParam('text_domain');
+                //before JTranslate's reporter, which would write a row for a phrase that
+                //exists only inside this test
+                $e->stopPropagation(true);
+            },
+            1000
+        );
+
+        try {
+            $extension = new LaminasExtension(
+                $this->bridge(),
+                new ViewHelpers($this->bridge(), static fn (): string => ''),
+                new RouteUrl($this->bridge(), ''),
+                $this->requestsForTextDomain('Schoenstatt')
+            );
+
+            $phrase = 'A phrase no catalog holds, filed by nothing: ' . self::class;
+            self::assertSame($phrase, $extension->translate($phrase), 'an unknown phrase renders as itself');
+        } finally {
+            $translator->getEventManager()->detach($spy, Translator::EVENT_MISSING_TRANSLATION);
+        }
+
+        //the *set* of domains, not the number of events: Translator::translate() retries
+        //in the fallback locale and fires once per locale, so two events for one lookup
+        //is normal and says nothing about domains
+        self::assertSame(
+            ['Schoenstatt'],
+            array_values(array_unique($domains)),
+            'a phrase must be discovered only in the page\'s own text domain. Discovering it in '
+            . '`default` as well files a duplicate row for every string a module domain cannot '
+            . 'translate — read the fallback out of the compiled catalog instead '
+            . '(App\Twig\LaminasExtension::catalogValue()).'
+        );
+    }
+
+    /**
+     * A RequestStack holding one request that declares a text domain, which is what a
+     * ported route does through its `defaults`.
+     */
+    private function requestsForTextDomain(string $domain): RequestStack
+    {
+        $request = new Request();
+        $request->attributes->set(LaminasExtension::TEXT_DOMAIN_ATTRIBUTE, $domain);
+
+        $requests = new RequestStack();
+        $requests->push($request);
+
+        return $requests;
     }
 
     /**
