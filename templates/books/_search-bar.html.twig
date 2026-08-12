@@ -57,7 +57,9 @@
                         <div class="pull-right">{{ form_label(form.get('inLanguage')) }}</div>
                     </div>
                     <div class="checkbox col-md-3">
-                        {{ form_element(form.get('inLanguage'), false) }}
+                        {#- the third argument turns the Bootstrap class off: the .phtml renders this one
+                            through the plain formSelect() helper, which adds none -#}
+                        {{ form_element(form.get('inLanguage'), false, false) }}
                     </div>
                 </div>
             </div>

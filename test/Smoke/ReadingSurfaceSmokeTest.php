@@ -1,0 +1,252 @@
+<?php
+
+declare(strict_types=1);
+
+namespace SchoenstattTest\Smoke;
+
+use PHPUnit\Framework\Attributes\DataProvider;
+
+use function implode;
+use function preg_match;
+use function strlen;
+
+/**
+ * The reading surface — the ten routes ported to the Symfony kernel on 2026-08-12: the
+ * four entity show pages, the comment route three of them need, the three literature
+ * browse pages and the three pre-2020 redirects.
+ *
+ * **The real verification of this batch is not here**, for the reason
+ * Batch4SymfonySmokeTest gives: these pages were diffed against their laminas renderings
+ * across all five locales and both identities with `tools/port-baseline.php`, which is
+ * the only check that sees a wrong translation or a panel that stopped rendering. Six
+ * defects came out of that diff and none of them would have failed a status-code test.
+ * This file is the CI-side net, and every assertion in it is one of those six turned into
+ * a regression guard.
+ */
+class ReadingSurfaceSmokeTest extends SmokeTestCase
+{
+    /**
+     * The discriminator between the two front controllers, from ShrinesSymfonySmokeTest:
+     * laminas sends `Set-Cookie: slm_locale=en_US` on every response because SlmLocale's
+     * cookie strategy sets it at MvcEvent::FINISH, and a ported route never runs
+     * SlmLocale. A locale cookie coming back means the request went through
+     * App\Http\LegacyBridge and every other assertion is measuring the laminas page.
+     *
+     * @return iterable<string, array{0: string, 1: string}>
+     */
+    public static function portedPaths(): iterable
+    {
+        yield 'association (shrine)' => ['/en/SL100319A', 'Original Schoenstatt Shrine'];
+        yield 'composition'          => ['/en/SL500001C', 'Obrigado'];
+        yield 'publication'          => ['/en/SL202186L', 'Publication Info'];
+        yield 'literature home'      => ['/en/literature', 'Schoenstatt Literature Tools'];
+        yield 'literature index'     => ['/en/literature/es', 'Schoenstatt Literature in Spanish'];
+        yield 'literature search'    => ['/en/literature/search', 'Publications search'];
+    }
+
+    #[DataProvider('portedPaths')]
+    public function testEachPortedPathIsServedBySymfony(string $path, string $marker): void
+    {
+        $response = $this->get($path);
+
+        self::assertSame(200, $response['status'], "$path did not answer 200");
+        self::assertStringContainsString($marker, $response['body'], "$path is missing its own content");
+        //`slm_locale=en_US`, not bare `slm_locale`: App\Http\GdprCookieListener *deletes*
+        //that cookie on a Symfony-served response, so the header carries
+        //`slm_locale=deleted` and a substring test on the name alone fails on every page
+        //it is meant to pass.
+        self::assertStringNotContainsString(
+            'slm_locale=en_US',
+            implode("\n", $response['headers']),
+            "$path came back with SlmLocale's cookie, so laminas served it through the bridge"
+        );
+    }
+
+    /**
+     * `/literature/{lang}` for every language the catalogue has, because the page took
+     * itself down once and only one language was being watched.
+     *
+     * A breadcrumb leaf was passed without an `href`, which the layout reads
+     * unconditionally; Twig's strict_variables turned that into a RuntimeError and every
+     * language page became an empty 200 — the fatal-200 signature. A single-language check
+     * would have caught it, and a single-language check is what nearly missed it: the
+     * manual probe before the breadcrumb was added had passed.
+     *
+     * @return iterable<string, array{0: string}>
+     */
+    public static function catalogueLanguages(): iterable
+    {
+        foreach (['de', 'es', 'en', 'pt', 'it'] as $language) {
+            yield $language => ["/en/literature/$language"];
+        }
+    }
+
+    #[DataProvider('catalogueLanguages')]
+    public function testEachLanguageCatalogueRendersARealPage(string $path): void
+    {
+        $response = $this->get($path);
+
+        self::assertSame(200, $response['status']);
+        //the fatal-200 wedge is an ~800-byte body; a catalogue is tens of kilobytes
+        self::assertGreaterThan(
+            5000,
+            strlen($response['body']),
+            "$path answered 200 with almost no body, which is what a template error looks like"
+        );
+    }
+
+    /**
+     * The three pre-2020 redirects, each a **301** to the site-wide identifier form, and
+     * each taking SlmLocale's locale hop first.
+     *
+     * Both halves have been wrong here. The association pair 302'd to the index because
+     * the slug was read from `slug` where an association keeps `slugByLocale`, which looks
+     * exactly like a row that does not exist; and all three skipped the locale hop, on the
+     * reasonable-sounding grounds that a redirect to a redirect is wasted.
+     *
+     * @return iterable<string, array{0: string, 1: string}>
+     */
+    public static function redirects(): iterable
+    {
+        yield 'publication by id'    => ['/en/literature/1', '/en/SL200001L/'];
+        yield 'association by id'    => ['/en/associations/1', '/en/SL100001A/'];
+        yield 'association by sw_id' => ['/en/associations/SL100001A', '/en/SL100001A/'];
+    }
+
+    #[DataProvider('redirects')]
+    public function testEachLegacyUrlIsPermanentlyRedirected(string $path, string $target): void
+    {
+        $response = $this->get($path);
+
+        self::assertSame(301, $response['status'], "$path must be a permanent redirect, not a temporary one");
+        self::assertStringContainsString($target, $response['redirect']);
+    }
+
+    /** The bare form takes the locale hop first, as SlmLocale does on the laminas side. */
+    public function testTheBareFormOfARedirectGoesToTheLocalePrefixedOneFirst(): void
+    {
+        $response = $this->get('/associations/1');
+
+        self::assertSame(302, $response['status']);
+        self::assertStringContainsString('/en/associations/1', $response['redirect']);
+    }
+
+    /**
+     * A merged publication sends an anonymous visitor to the surviving edition, and shows
+     * the merged row itself to anyone holding `publication_user`. The 301 is the visitor's
+     * only route to the real record.
+     */
+    public function testAMergedPublicationRedirectsToItsSurvivingEdition(): void
+    {
+        $response = $this->get('/en/SL200417L');
+
+        self::assertSame(301, $response['status']);
+        self::assertStringContainsString('/en/SL207340L/', $response['redirect']);
+    }
+
+    /**
+     * A GET on the comment route **falls through to laminas**, which is a stronger
+     * reproduction than the 405 this was first written to expect.
+     *
+     * Declaring the Symfony route POST-only does not make a GET a 405: the catch-all
+     * `legacy` route matches every path, so Symfony's UrlMatcher finds *a* route and never
+     * raises MethodNotAllowed. The GET therefore reaches App\Http\LegacyBridge and gets
+     * exactly what it got before the port — a 302 to sign-in for an anonymous visitor, and
+     * for a signed-in one the same 500 the missing `sion-model/comment/create` template has
+     * always produced.
+     *
+     * That is the right answer and it is worth pinning, because it is easy to "fix" into a
+     * 405 by moving the route below the catch-all or adding a method-not-allowed twin, and
+     * either would change behaviour a caller may depend on.
+     */
+    public function testAGetOnTheCommentRouteStillReachesLaminas(): void
+    {
+        $response = $this->get('/en/comments/create/composition/1');
+
+        self::assertSame(302, $response['status'], 'an anonymous GET is the guard redirect, as on laminas');
+        self::assertStringContainsString('/user/login', $response['redirect']);
+    }
+
+    /**
+     * The restricted show page refuses an anonymous visitor by sending them to sign in —
+     * the guard branch that proves App\Authorization\RouteGuard runs on a route whose
+     * controller would otherwise have rendered a page.
+     */
+    public function testTheTextShowPageIsGuarded(): void
+    {
+        $response = $this->get('/en/SL400003T');
+
+        self::assertSame(302, $response['status']);
+        self::assertStringContainsString('/user/login', $response['redirect']);
+    }
+
+    /**
+     * An anonymous visitor may read a shrine and not an institute, and that rule is in
+     * `AssociationsController::showAction()` rather than in the ACL — no guard entry
+     * hints at it and `tools/acl-table.php` cannot see it. Both halves are asserted
+     * because either alone passes against a page that got the rule backwards.
+     */
+    public function testOnlyShrinesAreReadableAnonymously(): void
+    {
+        self::assertSame(200, $this->get('/en/SL100319A')['status'], 'a shrine is public');
+
+        $institute = $this->get('/en/SL100001A');
+        self::assertSame(302, $institute['status'], 'a non-shrine association is not');
+        self::assertStringContainsString('/en/', $institute['redirect']);
+    }
+
+    /**
+     * The comment form's `redirect` field carries the page the visitor is on.
+     *
+     * Empty, every posted comment falls through to App\Controller\CommentCreateController's
+     * referer fallback — a different URL whenever the visitor arrived from anywhere but the
+     * page itself. It was empty, and the symptom was thirteen missing bytes in a hidden
+     * input on a page that otherwise rendered perfectly.
+     *
+     * Anonymous visitors get no form (`route/comments/create` is guarded `user`), so this
+     * asserts the *absence* for them and leaves the populated case to the parity test.
+     */
+    public function testTheCommentFormIsNotOfferedAnonymously(): void
+    {
+        $body = $this->get('/en/SL500001C')['body'];
+
+        self::assertStringNotContainsString('commentCreatePanel', $body);
+    }
+
+    /**
+     * The publication page's field labels are translated, which they were not.
+     *
+     * `Books\View\Helper\FormatField` translates through the *view* translator, whose text
+     * domain JTranslate's dispatch listener sets from the controller's namespace and which
+     * nothing set on a Symfony route. The lookup landed in `default`, missed, and returned
+     * the English source — invisible on `/en/…`, where the source *is* the English text,
+     * and wrong on every other locale. This is the check that only a non-English page can
+     * make.
+     */
+    public function testPublicationFieldLabelsAreTranslated(): void
+    {
+        $body = $this->get('/es/SL202186L')['body'];
+
+        self::assertStringContainsString('Número de páginas', $body);
+        self::assertStringNotContainsString('Number of pages', $body);
+    }
+
+    /**
+     * A composition's breadcrumb is `Music > <name>`, with the name **not** translated.
+     *
+     * The trail was absent entirely at first, which
+     * test/Smoke/BreadcrumbDataLabelsSmokeTest caught — it asserts against `trans_phrases`
+     * rather than the markup, because a translated record name reads correctly and files a
+     * phrase per row. This asserts the shape; that test asserts the cost.
+     */
+    public function testACompositionBreadcrumbNamesTheMusicIndexAndTheSong(): void
+    {
+        $body = $this->get('/en/SL500001C/obrigado')['body'];
+
+        self::assertSame(
+            1,
+            preg_match('#<ol class="breadcrumb">.*?>\s*Music\s*<.*?>\s*Obrigado\s*<.*?</ol>#s', $body),
+            'the composition breadcrumb should read Music > Obrigado'
+        );
+    }
+}

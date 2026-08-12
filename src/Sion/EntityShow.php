@@ -109,9 +109,20 @@ final class EntityShow
      *
      * @param Closure(int): mixed $loader replaces `getObject()` for an entity whose
      *        laminas controller overrides `getEntityObject()`
+     * @param string|null $selfUrl where a posted comment should come back to — the
+     *        `redirect` field of the CommentForm, which `showAction()` fills with
+     *        `url(null, [], [], true)`, i.e. the page the visitor is on. **Not optional
+     *        in practice**: leaving it empty makes every comment fall through to
+     *        App\Controller\CommentCreateController's referer fallback, which is a
+     *        different URL whenever a visitor arrives from anywhere but the page itself.
+     *        Caught by the baseline diff as thirteen missing bytes in a hidden input.
      */
-    public function load(string $entity, int $id, ?Closure $loader = null): ?EntityShowData
-    {
+    public function load(
+        string $entity,
+        int $id,
+        ?Closure $loader = null,
+        ?string $selfUrl = null
+    ): ?EntityShowData {
         $table = $this->table($entity);
 
         if (! $table->existsEntity($entity, $id)) {
@@ -154,6 +165,7 @@ final class EntityShow
             //see App\Controller\CommentCreateController::form() for why `new` is the
             //application's own answer here rather than a container lookup
             $commentForm = new CommentForm();
+            $commentForm->get('redirect')->setValue($selfUrl ?? '');
         }
 
         //registerVisit() takes the *key field's* value, not the route id — they are the

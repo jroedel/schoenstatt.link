@@ -559,7 +559,9 @@ $ported(
     '/literature/search',
     [LiteratureController::class, 'search'],
     RouteAccess::guardedBy('route/publications/search'),
-    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications']
+    //no NAV_ROUTE: laminas marks nothing active in the navbar on the search page, and
+    //declaring one lit up "Literature" where the original leaves it plain
+    $textDomain('Books')
 );
 $ported(
     'publications/index',
@@ -625,7 +627,11 @@ $ported(
     '/{sw_id}/{slug}',
     CompositionController::class,
     RouteAccess::guardedBy('route/composition'),
-    $textDomain('Books') + ['slug' => null] + [SiteChrome::NAV_ROUTE => 'music'],
+    //**No SiteChrome::NAV_ROUTE.** Lighting up "Music" for a song reads as obviously
+    //right and is wrong: the laminas navigation marks nothing active on any of these
+    //show pages, and adding it put a stray ` class="active"` into the navbar that the
+    //baseline diff caught on exactly 15 bytes.
+    $textDomain('Books') + ['slug' => null],
     ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_COMPOSITION)] + $slug
 );
 
@@ -650,37 +656,45 @@ $ported(
     '/{sw_id}/{slug}',
     PublicationController::class,
     RouteAccess::guardedBy('route/publication'),
-    $textDomain('Books') + ['slug' => null] + [SiteChrome::NAV_ROUTE => 'publications'],
+    //no NAV_ROUTE, for the reason given on `composition` above
+    $textDomain('Books') + ['slug' => null],
     ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)] + $slug
 );
 
 // Leaving a comment. **POST only**, and that is a reproduction rather than a narrowing:
-// a GET reaches a view whose template does not exist and is a 500 today, measured. See
-// App\Controller\CommentCreateController.
-//
-// No locale twin from $ported()'s point of view — it gets one, because the form's action
-// is assembled by RouteUrl and therefore carries the visitor's prefix. What it does not
-// get is a GET.
+// a GET reaches a view whose template does not exist and is a 500 today, measured. A GET
+// does not become a 405 either — the catch-all below matches it, so it bridges to laminas
+// and stays exactly as broken as it was. See App\Controller\CommentCreateController.
 $commentIdentifiers = [
     'entity'    => '[a-zA-Z_-]{1,25}',
     'entity_id' => '[0-9]{1,5}',
     'kind'      => '(comment|review|rating)',
 ];
-$routes->add('comments/create', new Route('/comments/create/{entity}/{entity_id}/{kind}', [
+//**One RouteAccess instance shared by both twins**, not two equal ones.
+//test/Integration/SymfonyRouteAuthorizationTest asserts object identity, and it is right
+//to: these are one page reached two ways, and two declarations are two things to keep in
+//step. $ported() does this for every other route by construction; this pair is declared by
+//hand only because it needs a POST method constraint, so the sharing has to be explicit.
+$commentAccess   = RouteAccess::guardedBy('route/comments/create');
+$commentDefaults = [
     '_controller'                           => CommentCreateController::class,
-    RouteAccess::ATTRIBUTE                  => RouteAccess::guardedBy('route/comments/create'),
+    RouteAccess::ATTRIBUTE                  => $commentAccess,
     LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => 'SionModel',
     //the laminas route's own default, and what makes the `kind` segment optional
     'kind'                                  => 'comment',
-], $commentIdentifiers, [], '', [], ['POST']));
+];
+$routes->add('comments/create', new Route(
+    '/comments/create/{entity}/{entity_id}/{kind}',
+    $commentDefaults,
+    $commentIdentifiers,
+    [],
+    '',
+    [],
+    ['POST']
+));
 $routes->add('comments/create.locale', new Route(
     '/{_locale}/comments/create/{entity}/{entity_id}/{kind}',
-    [
-        '_controller'                           => CommentCreateController::class,
-        RouteAccess::ATTRIBUTE                  => RouteAccess::guardedBy('route/comments/create'),
-        LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => 'SionModel',
-        'kind'                                  => 'comment',
-    ],
+    $commentDefaults,
     $commentIdentifiers + ['_locale' => $locales],
     [],
     '',

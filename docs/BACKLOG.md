@@ -231,6 +231,33 @@ readability — the destination is **Symfony**, reached gradually:
   [DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally). Tracked as the "Now"
   item of the same name — this entry is the *why*, that one is the *how*.
 
+- [ ] **The comment form's open redirect.** `SionModel\Controller\CommentController::
+  redirectAfterCreate()` redirects to `$data['redirect']` — a hidden form field — under a
+  `@todo confirm that redirect is a valid route`. Narrowed by CSRF (the POST must come
+  from a page this site rendered) and by `route/comments/create` being guarded `user`, so
+  a signed-in visitor can only bounce themselves. Reproduced rather than fixed when the
+  route was ported on 2026-08-12: `App\Controller\CommentCreateController` refuses only
+  what laminas would also refuse. Fixing it means deciding what a valid target is —
+  path-absolute and same-origin is the obvious answer — and changing **both** front
+  controllers at once.
+
+- [ ] **`publications/admin-tasks` and `publications/trim-titles` mutate on a GET.**
+  `adminTasksAction()` calls `fillDatePublished()` and `clearCopyrightYear()` with no
+  confirmation of any kind; `trimTitlesAction()` writes unless `?simulate=1` is present,
+  i.e. **a bare GET writes**. Both are `pub_administrator`. Deliberately left out of the
+  2026-08-12 batch: porting them faithfully means porting the defect, and they need a
+  decision (POST + CSRF, or a console command) rather than a port.
+
+- [ ] **`route/publications/advanced-search` is not a resource this application defines.**
+  `search-bar.phtml` asks `isAllowed()` about it and `docs/acl-rules.md` has no row for it
+  — no route, no guard entry. `App\Controller\LiteratureController::advancedSearchUrl()`
+  catches the failure and reads it as "no", which is defensive rather than correct. Belongs
+  with the other misnamed guards below.
+
+- [ ] **The association page's "Up-to-date" tooltip says `jeff`.** A hardcoded literal
+  where a user name belongs — `sprintf($this->translate('Updated by %s %s'), 'jeff', …)` —
+  carried over verbatim by the 2026-08-12 port. A content decision, not a porting one.
+
 - [ ] **More form routes, now that the form layer exists.** `src/Form/BootstrapFormRenderer`
   landed with `association-edit` (2026-08-09) and reproduces TwbBundle's markup
   byte-for-byte. What that unblocks, roughly in order of ease:
@@ -244,6 +271,9 @@ readability — the destination is **Symfony**, reached gradually:
     `GlobalAdapterFeature::setStaticAdapter()` through a `NoRecordExists` validator.
     That is the real remaining blocker, and it is narrower than docs/strangler.md used
     to claim.
+  - **No longer blocked:** the comment form (ported 2026-08-12), which turns out not to
+    read the static adapter either — `CommentForm` is the second form after
+    `AssociationForm` that does not.
   - Method that worked and should be reused: capture the live page with
     `tools/form-regression.php probe` **before** porting, then diff after. Five
     non-obvious TwbBundle behaviours only showed up that way.

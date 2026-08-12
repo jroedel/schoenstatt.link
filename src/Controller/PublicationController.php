@@ -93,7 +93,10 @@ final class PublicationController
             return $this->notFound();
         }
 
-        $data = $this->show->load(self::ENTITY, $id);
+        //the request path is `url(null, [], [], true)` — the page the visitor is on,
+        //which is where a posted comment returns them
+        $selfUrl = $request->getPathInfo();
+        $data    = $this->show->load(self::ENTITY, $id, null, $selfUrl);
         if (null === $data) {
             $this->flash($this->show->deniedMessage(self::ENTITY, $id));
 
@@ -123,6 +126,16 @@ final class PublicationController
                 $this->translate('Bibliographical information about "%s".'),
                 (string) ($entity['title'] ?? '')
             ),
+            //[Literature, <title>]. The laminas trail has a third crumb between them —
+            //the language catalogue, e.g. "German Schoenstatt Literature" — which comes
+            //from a Navigation branch built per language in Application\Module and cannot
+            //be derived here; docs/BACKLOG.md already records those labels as
+            //untranslatable by construction. The leaf carries `translate: false` because
+            //it is a bibliographic title: see test/Smoke/BreadcrumbDataLabelsSmokeTest.
+            'breadcrumbs'    => [
+                ['label' => 'Literature', 'href' => $this->urls->path('publications')],
+                ['label' => (string) ($entity['title'] ?? ''), 'href' => $selfUrl, 'translate' => false],
+            ],
             'entity'         => $entity,
             'sw_id'          => $swId,
             'other_editions' => array_merge(

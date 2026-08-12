@@ -82,7 +82,6 @@ final class BootstrapFormRenderer
         $this->escaper = new Escaper('utf-8');
     }
 
-    /** @param FormInterface<array<string, mixed>> $form */
     /**
      * @param FormInterface<array<string, mixed>> $form
      * @param string $class the form's own class attribute. `form-horizontal` is what
@@ -197,13 +196,23 @@ final class BootstrapFormRenderer
     }
 
     /** The control itself, with no label, errors or help block around it. */
-    public function element(ElementInterface $element, bool $translateOptions = true): string
-    {
+    /**
+     * @param bool $withClass whether the Bootstrap `form-control` class is added. True
+     *        everywhere it is rendered through a row, which is where TwbBundle adds it;
+     *        the literature search bar renders its language select **directly**, as the
+     *        .phtml does with `$this->formSelect(...)`, and the plain laminas helper adds
+     *        no class at all.
+     */
+    public function element(
+        ElementInterface $element,
+        bool $translateOptions = true,
+        bool $withClass = true
+    ): string {
         if ($element instanceof Checkbox) {
             return $this->checkbox($element);
         }
         if ($element instanceof Select) {
-            return $this->select($element, $translateOptions);
+            return $this->select($element, $translateOptions, $withClass);
         }
         if ($element instanceof Textarea) {
             return $this->textarea($element);
@@ -393,9 +402,20 @@ final class BootstrapFormRenderer
         );
     }
 
-    private function select(Select $element, bool $translateOptions = true): string
+    private function select(Select $element, bool $translateOptions = true, bool $withClass = true): string
     {
-        $attributes = $this->attributes($element, ['name' => (string) $element->getName()]);
+        //**`name="inLanguage[]"` when the select is multiple.**
+        //`Laminas\Form\View\Helper\FormSelect::render()` appends the brackets itself, and
+        //without them a browser posts only the *last* selected option — so the literature
+        //search box would have silently searched one language where the visitor picked
+        //three. The association form has no multiple select, which is why this survived
+        //the first form port; found by the byte diff on /literature/search.
+        $name = (string) $element->getName();
+        if (true === $element->getAttribute('multiple')) {
+            $name .= '[]';
+        }
+
+        $attributes = $this->attributes($element, ['name' => $name], $withClass);
         //Laminas\Form\View\Helper\FormSelect renders only these; `maxlength`, which
         //three of this form's selects declare, is silently dropped there and must be
         //dropped here too.
@@ -448,18 +468,36 @@ final class BootstrapFormRenderer
     private function attributes(ElementInterface $element, array $seed, bool $withClass = true): array
     {
         $declared = $element->getAttributes();
-        unset($declared['name'], $declared['type'], $declared['value'], $declared['class']);
+        unset($declared['name'], $declared['type'], $declared['value']);
 
         /** @var array<string, scalar> $attributes */
         $attributes = $seed;
+        $hasOwnClass = false;
+
+        //**An element's own class keeps its declared position and `form-control` is
+        //appended to it**, rather than being dropped in favour of a `form-control`
+        //written last. Until the literature search box was ported no element on a ported
+        //form declared a class at all, so overwriting looked correct in every direction.
+        //That input declares `class="input-lg search-query"` and lost both the classes
+        //*and* the attribute's position — the field went on working and rendered at the
+        //wrong size, which is the kind of difference only a byte comparison finds.
         foreach ($declared as $key => $value) {
             if (! is_scalar($value)) {
+                continue;
+            }
+            if ('class' === $key) {
+                $own = trim((string) $value);
+                if ('' === $own) {
+                    continue;
+                }
+                $hasOwnClass          = true;
+                $attributes['class'] = $withClass ? $own . ' form-control' : $own;
                 continue;
             }
             $attributes[(string) $key] = $value;
         }
 
-        if ($withClass) {
+        if ($withClass && ! $hasOwnClass) {
             $attributes['class'] = 'form-control';
         }
 

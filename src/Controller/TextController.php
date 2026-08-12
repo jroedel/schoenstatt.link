@@ -76,7 +76,10 @@ final class TextController
             return $this->notFound();
         }
 
-        $data = $this->show->load(self::ENTITY, $id);
+        //the request path is `url(null, [], [], true)` — the page the visitor is on,
+        //which is where a posted comment returns them
+        $selfUrl = $request->getPathInfo();
+        $data    = $this->show->load(self::ENTITY, $id, null, $selfUrl);
         if (null === $data) {
             //`text` declares no index_route, so showAction() falls back to
             //getDefaultRedirectRoute() — `welcome`, from sionmodel.global.php
@@ -90,6 +93,18 @@ final class TextController
         return new Response($this->twig->render('books/text.html.twig', [
             'page_title'           => (string) ($data->entity['title'] ?? ''),
             'page_title_translate' => false,
+            //[Texts, <title>] — the corpus index and this document. Same
+            //`translate: false` rule as the other three, and for the sharper reason
+            //recorded in this class's docblock: 219 corpus titles had already accumulated
+            //as permanent phrase rows by 2026-05-30.
+            'breadcrumbs'          => [
+                ['label' => 'Texts', 'href' => $this->urls->path('texts')],
+                [
+                    'label'     => (string) ($data->entity['title'] ?? ''),
+                    'href'      => $selfUrl,
+                    'translate' => false,
+                ],
+            ],
             'entity'               => $data->entity,
             'tags'                 => is_array($tags) ? $tags : [],
             'comments'             => $data->comments,

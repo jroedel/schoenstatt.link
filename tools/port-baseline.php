@@ -54,8 +54,11 @@
  *    so /dictionary/es reports a higher "Total views" on the second capture than on
  *    the first purely because the first happened. The digits go; the markup around
  *    them stays, which is what would catch the counter disappearing.
- * 4. **The CSP nonce** and **the throwaway account's address**, both of which are
- *    per-run by construction.
+ * 4. **The CSP nonce**, **the throwaway account's address** and **the CSRF token**, all
+ *    three of which are per-run by construction. The token was missing until batch 5 put
+ *    a comment form on three ported pages, and its absence is worth recording: the form
+ *    renders only for a signed-in visitor, so the symptom was "the six signed-in captures
+ *    of every commentable page differ" rather than anything pointing at a token.
  * 5. **The language chooser's flags.** `flag-icon-gb` or `flag-icon-us` for English,
  *    `ar`/`cl`/`mx`/`es` for Spanish: the chooser picks at random among the countries
  *    that speak each language, on **both** front controllers, so two fetches of one URL
@@ -375,6 +378,17 @@ function normalize(string $html, string $account): string
     $html = preg_replace('/nonce="[^"]*"/', 'nonce="{{NONCE}}"', $html);
     $html = str_replace($account, '{{ACCOUNT}}', $html);
     $html = preg_replace('/' . preg_quote(EMAIL_PREFIX, '/') . '\d+/', '{{ACCOUNT}}', $html);
+    // ...and the CSRF token, which is the same kind of value and was missing until the
+    // comment form arrived on three ported pages. Laminas\Validator\Csrf mints
+    // `<hash>-<salted hash>` per session per request, so two captures of one URL never
+    // agree and every page carrying a form compared as drift no matter what it rendered.
+    // Anonymous pages hid this: the comment form only renders for a signed-in visitor,
+    // so it first showed as "the six signed-in captures of every commentable page differ".
+    $html = preg_replace(
+        '/(name="security"[^>]*value=")[0-9a-f]{32}-[0-9a-f]{32}/',
+        '$1{{CSRF}}',
+        $html
+    );
 
     // rule 5 — the chooser picks a random country per language, on both sides. Its
     // whole markup goes below anyway; this also covers flags elsewhere on a page.

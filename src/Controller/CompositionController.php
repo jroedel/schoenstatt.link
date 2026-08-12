@@ -81,7 +81,10 @@ final class CompositionController
             return $this->notFound();
         }
 
-        $data = $this->show->load(self::ENTITY, $id);
+        //the request path is `url(null, [], [], true)` — the page the visitor is on,
+        //which is where a posted comment returns them
+        $selfUrl = $request->getPathInfo();
+        $data    = $this->show->load(self::ENTITY, $id, null, $selfUrl);
         if (null === $data) {
             //`index_route` for `composition` is `music`, so that is where
             //SionController::showAction() sends a visitor whose song is missing
@@ -102,6 +105,14 @@ final class CompositionController
             //the laminas rendering of /en/SL500001C rather than assumed, because every
             //other show page in this batch does set one.
             'page_title'   => '',
+            //[Music, <name>] — the trail laminas derives from the Navigation service,
+            //measured on /it/SL500001C/obrigado. `translate: false` on the leaf is the
+            //whole point of test/Smoke/BreadcrumbDataLabelsSmokeTest: a composition name
+            //run through the translator is a miss, and a miss files a phrase per row.
+            'breadcrumbs'  => [
+                ['label' => 'Music', 'href' => $this->urls->path('music')],
+                ['label' => (string) ($data->entity['name'] ?? ''), 'href' => $selfUrl, 'translate' => false],
+            ],
             'entity'       => $data->entity,
             'entity_id'    => $id,
             'sw_id'        => $swId,
