@@ -8,6 +8,8 @@ use App\Laminas\EntityFormatter;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
+use DateTime;
+use DateTimeInterface;
 use Laminas\I18n\Translator\TranslatorInterface;
 use IntlDateFormatter;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -85,6 +87,7 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('edit_pencil', $this->editPencil(...), $html),
             new TwigFunction('format_entity', $this->formatEntity(...), $html),
             new TwigFunction('short_date', $this->shortDate(...)),
+            new TwigFunction('diff_for_humans', $this->diffForHumans(...), $html),
             new TwigFunction('truncate', $this->truncate(...)),
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
             new TwigFunction('flash_messages', $this->flashMessages(...), $html),
@@ -304,6 +307,37 @@ final class LaminasExtension extends AbstractExtension
             IntlDateFormatter::SHORT,
             IntlDateFormatter::NONE
         );
+    }
+
+    /**
+     * A relative time — `<abbr title="6/13/65, 12:00 AM">57 years ago</abbr>`.
+     *
+     * Markup, and `is_safe: html` on the same terms as the rest: the helper builds the
+     * `title` through `dateFormat` and the body through Carbon, both of which produce
+     * formatted dates rather than anything a visitor typed. No user input reaches it.
+     *
+     * **Null and non-DateTime return the empty string rather than throwing**, which is
+     * the one deliberate difference from the helper. `SionModel\View\Helper\DiffForHumans`
+     * throws `InvalidArgumentException` on anything that is not a `DateTime`, and every
+     * .phtml that calls it guards the call first — `if ($object['createdOn'] instanceof
+     * \DateTime)` in comments-list.phtml, `if (isset($this->entity['createdOn']))` in
+     * texts/show.phtml. Those guards exist because the columns really are nullable.
+     * Reproducing the guard at each of a dozen Twig call sites is how one gets forgotten,
+     * and a forgotten one is a 500 on a page whose only defect is a missing timestamp.
+     */
+    public function diffForHumans(mixed $date): string
+    {
+        if (! $date instanceof DateTimeInterface) {
+            return '';
+        }
+
+        //the helper's signature is \DateTime, and DateTimeImmutable is not one — the
+        //laminas rows hydrate as \DateTime, but nothing in the type system says so
+        if (! $date instanceof DateTime) {
+            $date = DateTime::createFromInterface($date);
+        }
+
+        return (string) $this->helpers->diffForHumans()->__invoke($date);
     }
 
     /**

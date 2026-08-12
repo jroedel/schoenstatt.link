@@ -83,14 +83,30 @@ final class BootstrapFormRenderer
     }
 
     /** @param FormInterface<array<string, mixed>> $form */
-    public function open(FormInterface $form, string $action): string
+    /**
+     * @param FormInterface<array<string, mixed>> $form
+     * @param string $class the form's own class attribute. `form-horizontal` is what
+     *        TwbBundle\Form\View\Helper\TwbBundleForm::openTag() emits and what every
+     *        form on the site got until the comment form needed otherwise: its
+     *        .phtml renders the open tag and then does
+     *        `str_replace("form-horizontal", "form", $openTag)`, calling that in its
+     *        own comment "an ugly hack to get around limitations in TwbBundleForm".
+     *        The hack exists because a horizontal form puts the textarea in a
+     *        10-column offset gutter inside an already-narrow panel. Reproduced as a
+     *        parameter rather than as a string replacement, because the replacement
+     *        would also rewrite the *name* and *id* attributes of any form whose name
+     *        happened to contain `form-horizontal` — and because a caller asking for a
+     *        class reads as what it is.
+     */
+    public function open(FormInterface $form, string $action, string $class = 'form-horizontal'): string
     {
         $name = (string) $form->getName();
 
         return sprintf(
-            '<form method="POST" name="%s" action="%s" class="form-horizontal" id="%s">',
+            '<form method="POST" name="%s" action="%s" class="%s" id="%s">',
             $this->escaper->escapeHtmlAttr($name),
             $this->escaper->escapeHtmlAttr($action),
+            $this->escaper->escapeHtmlAttr($class),
             $this->escaper->escapeHtmlAttr($name)
         );
     }

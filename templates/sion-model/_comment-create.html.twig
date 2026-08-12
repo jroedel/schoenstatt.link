@@ -1,0 +1,48 @@
+{#
+  The "leave a comment" panel — the Twig counterpart of
+  module/SionModel/view/sion-model/comments/create.phtml, which still renders it on
+  production.
+
+  Parameters:
+    form         the SionModel\Form\CommentForm out of the laminas container, with its
+                 `redirect` value and its action already set by the caller. The .phtml
+                 supports a second mode where it builds the form itself from `entity`,
+                 `entityId` and `kind` parameters; nothing in this application uses it
+                 — all four show pages pass a prepared form — so it is not reproduced.
+                 If a template ever needs it, build the form in the controller.
+    form_action  where the POST goes: /comments/create/{entity}/{entity_id}/{kind}.
+
+  The panel title is the `comment` element's own label ("Leave a comment") rather than
+  a second literal, which is what the .phtml does — so the heading and the field label
+  are one phrase in the catalogue, not two that can drift apart.
+
+  `class="form"` rather than the usual `form-horizontal`: see
+  App\Form\BootstrapFormRenderer::open(), which now takes the class rather than
+  leaving the caller to str_replace it out of the rendered tag.
+
+  The comment field is rendered as a bare element inside a plain `form-group` — no
+  label, no help block — because the label is already the panel heading above it. The
+  three below it are full rows.
+#}
+<div class="row"> <!-- comment create row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="commentCreatePanel">
+    <div class="panel-heading">
+        <h3 class="panel-title"><i class="fa fa-paper-plane-o"></i> {{ translate(form.get('comment').getLabel()) }}</h3>
+    </div>
+    <div class="panel-body">
+    <div>
+    	{{ form_open(form, form_action, 'form') }}
+        <div class="form-group">
+            {{ form_element(form.get('comment')) }}
+        </div>
+        {{- form_row(form.get('redirect')) }}
+        {{- form_row(form.get('security')) }}
+        {{- form_row(form.get('submit')) }}
+        <!-- <button type="submit" class="btn btn-primary"><i class="fa fa-reply"></i> Submit</button> -->
+	{{ form_close() }}
+    </div>
+    </div> <!-- notes panel body -->
+</div> <!-- comment create panel -->
+</div> <!-- comment create column 12 -->
+</div> <!-- comment create row -->
