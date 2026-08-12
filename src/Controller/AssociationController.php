@@ -133,6 +133,7 @@ final class AssociationController
             'page_title'           => $this->localized($entity, 'nameByLocale', $locale),
             'page_title_translate' => false,
             'name'                 => $this->localized($entity, 'nameByLocale', $locale),
+            'breadcrumbs'          => $this->breadcrumbs($entity, $locale, $request->getPathInfo()),
             'internal_name_localized' => $this->localizedOrNull($entity, 'internalNameByLocale', $locale),
             'entity'               => $entity,
             'kind_labels'          => $this->kindLabels(),
@@ -169,6 +170,42 @@ final class AssociationController
         $table = $this->laminas->get(SchoenstattTable::class);
 
         return $table;
+    }
+
+    /**
+     * The breadcrumb trail: the index this association belongs to, then its own name.
+     *
+     * The laminas trail has a third crumb between them — a *region*, e.g. "Africa" on
+     * `/it/SL100458A/…` — which the Navigation service builds from a database-derived
+     * branch that cannot be reproduced on this side. That is the same limitation the
+     * publication trail records; what matters and is reproduced is the leaf.
+     *
+     * **`translate: false` on the leaf is load-bearing.** An association name run through
+     * the translator is a miss, and a miss files a phrase — one per association,
+     * permanently. `test/Smoke/BreadcrumbDataLabelsSmokeTest` asserts exactly this
+     * against `trans_phrases` rather than against the markup, because the crumb reads
+     * correctly either way and the cost lands in a table nobody looks at.
+     *
+     * @param array<string, mixed> $entity
+     * @return list<array{label: string, href: string, translate?: bool}>
+     */
+    private function breadcrumbs(array $entity, string $locale, string $selfUrl): array
+    {
+        $kind = $entity['kind'] ?? null;
+        [$label, $route] = match ($kind) {
+            'sch-shrine'         => ['Shrines', 'shrines'],
+            'sch-wayside-shrine' => ['Wayside shrines', 'wayside-shrines'],
+            default              => ['Associations', 'associations'],
+        };
+
+        return [
+            ['label' => $label, 'href' => $this->urls->path($route)],
+            [
+                'label'     => $this->localized($entity, 'nameByLocale', $locale),
+                'href'      => $selfUrl,
+                'translate' => false,
+            ],
+        ];
     }
 
     /**

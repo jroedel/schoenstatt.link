@@ -119,6 +119,7 @@ final class LiteratureController
                 . 'of the Schoenstatt Fathers and will continue to grow as we review the information of '
                 . 'further books.'
             ),
+            'breadcrumbs'  => $this->breadcrumbs(),
             'objects'      => $counts,
             'languages'    => $table->getLanguageNames(Locale::getPrimaryLanguage(Locale::getDefault())),
             'dictionaries' => $dictionaries->getAvailableDictionaryLanguages(),
@@ -153,6 +154,10 @@ final class LiteratureController
         return new Response($this->twig->render('books/literature-index.html.twig', $this->chrome() + [
             'page_title'           => $this->indexTitle($language),
             'page_title_translate' => false,
+            'breadcrumbs'          => $this->breadcrumbs(
+                $this->indexTitle($language),
+                $this->urls->path('publications/index', ['inLanguage' => $language])
+            ),
             'objects'              => $this->groupByCategory($objects),
             'covers'               => $this->covers($objects),
             'downloads'            => $this->downloads($objects),
@@ -205,7 +210,11 @@ final class LiteratureController
         return new Response($this->twig->render('books/literature-search.html.twig', $this->chrome($form) + [
             //`headTitle($title)` with the translator left **on**, unlike the other two
             //literature pages — so no page_title_translate here
-            'page_title' => 'Publications search',
+            //**No breadcrumbs.** The laminas search page renders an empty
+            //`<div class="row"></div>` where the trail would go — it is not in the
+            //`navigation` config, so the Navigation service produces nothing for it. Adding
+            //one looked like an improvement and is a difference the baseline diff caught.
+            'page_title'  => 'Publications search',
             'entities'   => $entities,
             'covers'     => null === $entities ? [] : $this->covers($entities),
         ]));
@@ -226,6 +235,42 @@ final class LiteratureController
             'create_url'          => $this->urls->path('publications/create'),
             'advanced_search_url' => $this->advancedSearchUrl(),
         ];
+    }
+
+    /**
+     * The breadcrumb trail, which a ported page states rather than derives.
+     *
+     * The laminas trail comes from the Navigation service, which no Symfony route can
+     * build — its factory needs an MvcEvent — so every ported page has passed its own
+     * since batch 3. Where the navigation's label is DB-derived the two differ, and that
+     * is a known, accepted divergence rather than a new one: `/dictionary/es` has shown
+     * "German to Spanish Dictionary" against the ported page's "Fr. Kentenich dictionary
+     * German to Spanish" since it was ported, and docs/BACKLOG.md records those two
+     * labels as untranslatable-by-construction anyway.
+     *
+     * What *is* reproduced is the shape: `Literature` first, linked, then the page. The
+     * laminas trail for `/literature` itself ends in a second crumb reading
+     * "Dictionaries" — the navigation tree's last matching node, because this page has a
+     * `#dictionaries` anchor — which is an artifact rather than a trail anyone meant, and
+     * is not reproduced.
+     *
+     * @param string|null $leafHref the leaf's own URL. Required, not optional: the
+     *        layout reads `crumb.href` unconditionally — both to compare against the
+     *        current path and to build the JSON-LD trail — and Twig's strict_variables
+     *        makes a missing key a RuntimeError, i.e. an empty 200 on the page. Measured:
+     *        a leaf passed without one took every `/literature/{lang}` page down.
+     * @return list<array{label: string, href: string, translate?: bool}>
+     */
+    private function breadcrumbs(?string $leaf = null, ?string $leafHref = null): array
+    {
+        $trail = [['label' => 'Literature', 'href' => $this->urls->path('publications')]];
+        if (null !== $leaf && null !== $leafHref) {
+            //`translate => false`: the leaf is this page's own already-translated title,
+            //and running it through the translator again would file a phrase per language
+            $trail[] = ['label' => $leaf, 'href' => $leafHref, 'translate' => false];
+        }
+
+        return $trail;
     }
 
     /**

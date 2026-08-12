@@ -40,10 +40,15 @@ use function ucwords;
  * signed-in session: `GET /en/comments/create/composition/1` → 500, 11,953 bytes of
  * exception page.
  *
- * Reproducing *that* would mean porting a five-year-old broken page. Answering 405
- * with an `Allow: POST` header says the same thing accurately, and matches how the v3
- * API already answers a verb it does not serve. The route declares the constraint, so
- * Symfony emits the 405 before this class is reached; what is here is the POST.
+ * So the Symfony route claims POST only — and what a GET then gets is **not** a 405, which
+ * is worth being precise about because 405 is what this docblock first claimed. The
+ * catch-all `legacy` route matches every path, so `UrlMatcher` always finds *a* route and
+ * never raises MethodNotAllowed; a GET therefore falls through to App\Http\LegacyBridge
+ * and gets exactly what it got before the port. That is the better outcome: the broken
+ * page stays exactly as broken as it was, on the front controller that owns it, rather
+ * than being replaced by a different answer this port invented.
+ * `test/Smoke/ReadingSurfaceSmokeTest` pins it, because "fixing" it into a 405 is an easy
+ * and plausible-looking change.
  *
  * ## The write is the application's, not a copy
  *

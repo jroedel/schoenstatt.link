@@ -18,6 +18,7 @@ use JTranslate\View\Helper\LanguageName;
 use JTranslate\View\Helper\NowMessenger as NowMessengerHelper;
 use JUser\View\Helper\ZfcUserDisplayName;
 use Laminas\I18n\View\Helper\DateFormat;
+use Laminas\I18n\View\Helper\Translate;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
 use Laminas\View\HelperPluginManager;
 use SionModel\I18n\View\Helper\DatePrecisionFormat;
@@ -341,6 +342,30 @@ final class ViewHelpers
         return $helper;
     }
 
+    /**
+     * Point the shared `translate` **view helper** at a text domain, which is what
+     * JTranslate's dispatch listener does for a laminas request and what nothing does
+     * for a Symfony-served one.
+     *
+     * This is not the same translator App\Twig\LaminasExtension::translate() uses. That
+     * one is asked directly, with the domain passed per call. This is the helper that
+     * *other helpers* reach through `$this->view->translate(...)` —
+     * `Books\View\Helper\FormatField` is the case that forced it — and they pass no
+     * domain, so whatever is set here is what they get.
+     *
+     * The failure it fixes is invisible in English: an unset domain means the lookup
+     * lands in `default`, misses, and returns the source string, which *is* the English
+     * text. `/es/SL202186L` rendered its whole bibliographic panel in English against a
+     * laminas page that renders it in Spanish.
+     */
+    public function useTextDomain(string $domain): void
+    {
+        $translate = $this->helpers()->get('translate');
+        if ($translate instanceof Translate) {
+            $translate->setTranslatorTextDomain($domain);
+        }
+    }
+
     private function helpers(): HelperPluginManager
     {
         if (null !== $this->helpers) {
@@ -361,7 +386,15 @@ final class ViewHelpers
         //class *does* expose. So a working implementation is registered in its place
         //rather than the caller being reimplemented — see App\Laminas\LocaleUrlSubstitute
         //for how that was discovered and what it costs.
+        //`setAllowOverride(true)` because the plugin manager is a *shared* service and
+        //this class is not: a second ViewHelpers built against the same ServiceBridge —
+        //which is what test/Integration/ShrineTemplateTest and EntityFormatterTest do —
+        //finds the substitute already registered and `setService()` throws
+        //ContainerModificationsNotAllowedException. Registering is idempotent this way,
+        //and the flag is put back so nothing else acquires the licence.
+        $helpers->setAllowOverride(true);
         $helpers->setService('localeUrl', new LocaleUrlSubstitute($this->urls));
+        $helpers->setAllowOverride(false);
 
         return $this->helpers = $helpers;
     }

@@ -94,6 +94,22 @@
             <p><strong>{{ translate('Postal address') }}:</strong></p>
             {% endif %}
             {{ address(entity.address) }}
+            {#
+              Both of the following are commented-out *markup* in the original, not
+              commented-out PHP, so laminas emits them into the page and a reader viewing
+              source sees them. Dropping them looked like tidying and is a byte
+              difference the baseline diff caught. The first is a disabled contactNotes
+              block whose `@todo` calls the field deprecated; the second is a note to
+              whoever maintains the phone numbers.
+            #}
+            <!--
+                <p><strong>:</strong></p>
+                <div id="contactNotes"></div>
+             -->
+            <!--
+            Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
+            Please help in confirming and/or updating out-dated information.
+             -->
         </div> <!-- phones column -->
         </div>
     </div> <!-- contact info panel body -->

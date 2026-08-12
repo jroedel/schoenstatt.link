@@ -367,6 +367,17 @@ final class LaminasExtension extends AbstractExtension
      */
     public function formatField(string $label, mixed $value, array $options = []): string
     {
+        //**The text domain has to be set, and the failure is invisible in English.**
+        //FormatField translates its label through the *view* translator, whose domain
+        //JTranslate's dispatch listener sets from the laminas controller's namespace —
+        //`Books` for a publication page. Nothing sets it on a Symfony-served route, so the
+        //helper looks in `default`, finds nothing, and returns the English source. On
+        ///en/SL202186L that is indistinguishable from working; on /es/SL202186L the whole
+        //bibliographic panel came out as "Number of pages" where laminas says "Número de
+        //páginas". Exactly the trap docs/strangler.md records from batch 3, caught the
+        //same way — by diffing all five locales rather than English.
+        $this->helpers->useTextDomain($this->textDomain() ?? self::DEFAULT_TEXT_DOMAIN);
+
         return (string) $this->helpers->formatField()->__invoke($label, $value, $options);
     }
 
