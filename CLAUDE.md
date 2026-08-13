@@ -112,6 +112,16 @@ suites run from the superproject working tree.
   the shared chrome); the `.phtml` they replace stays, because production still
   serves it. Compiled templates go to `data/cache/twig`, which the factory falls
   back from when it is unwritable.
+- **The sitemap is not a route.** `bin/console sitemap:build` writes
+  `public/sitemap.xml` plus one `public/sitemap-<kind>.xml` per entity kind and
+  Apache serves them directly; PHP is reached only when a file is missing. The
+  filenames must stay at the **docroot root** — a sitemap may only list URLs at or
+  below its own directory, and the previous `/sitemap/` layout put all 36,730 URLs
+  out of scope, so Google discarded the entire file. `<lastmod>` comes from
+  `sch_changes`, never from an entity's own `UpdatedOn` column, which is not
+  maintained. Read [docs/sitemap.md](docs/sitemap.md) before changing anything
+  here, including which pages are published — three separate access rules decide
+  that and only one of them is a route guard.
 - Application modules live in `module/` and are PSR-4 autoloaded via `composer.json`:
   `Application`, `Books`, `JTranslate`, `JUser`, `RestApi`, `Schoenstatt`, `SionModel`.
   (`Bible` was removed 2026-08-05 — the feature moved to another application.)

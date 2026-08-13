@@ -8,267 +8,359 @@ use App\Laminas\ServiceBridge;
 use App\Locale\Locales;
 use App\View\NavigationTree;
 use Books\Model\PublicationsTable;
-use Laminas\Cache\Storage\StorageInterface;
-use samdark\sitemap\Index;
-use samdark\sitemap\Sitemap;
+use DateTimeImmutable;
+use DateTimeZone;
+use Schoenstatt\Model\SchoenstattTable;
 use Throwable;
 
-use function file_exists;
-use function is_dir;
 use function array_keys;
-use function is_int;
-use function mkdir;
-use function preg_match;
+use function clearstatcache;
+use function file_exists;
+use function filemtime;
+use function in_array;
+use function is_array;
+use function is_numeric;
+use function is_string;
 use function rtrim;
+use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function substr;
-use function time;
 
 /**
- * Writes the sitemap files, and knows when it does not have to.
+ * Builds the sitemap files, and knows when it does not have to.
  *
- * ## What the laminas version did, and what this changes
+ * ## What this is now, after 2026-08-13
  *
- * `IndexController::sitemapAction()` walked the navigation container, handed every page to
- * `samdark\sitemap\Sitemap`, and served back `data/sitemap/sitemap.xml`. Two things were
- * wrong with that, both found by diffing this port against it:
+ * Static files in the docroot, written by `bin/console sitemap:build` and served by Apache.
+ * PHP is not in the request path at all: `public/.htaccess` passes any request whose
+ * `REQUEST_FILENAME` exists straight through, and `mod_deflate` compresses `text/xml` on the
+ * way out — which is why nothing here gzips anything any more, and why the old
+ * `Content-Encoding: gzip` dance in `SitemapController` is gone with it.
  *
- * 1. **Three quarters of the site was never published.** The library splits at 10 MB and
- *    wrote four files — 3,022 + 3,000 + 3,032 + 1,920 = 10,974 pages — and the action read
- *    back only the first. Nothing wrote an index, and `public/robots.txt` names
- *    `/en/sitemap.xml`, so a crawler saw 3,022 pages: every association, the first 2,500
- *    publications, and **not one composition**. The library ships `Index` and
- *    `Sitemap::getSitemapUrls()` for exactly this; they were simply never called.
- * 2. **It rebuilt everything on every request** — about 11,000 route assemblies, 1.25 s
- *    measured on the capsule — with no caching of any kind.
+ * Four things were wrong before, all of them measured against production rather than
+ * reasoned about:
  *
- * So `/sitemap.xml` is now a sitemap *index* pointing at `/sitemap/pages.xml`,
- * `/sitemap/pages_2.xml` and so on. robots.txt keeps working unchanged, which is the point
- * of putting the index at the old URL.
+ * 1. **The files were in the wrong directory, so Google discarded every URL.** A sitemap may
+ *    only list URLs at or below its own directory. The parts were served from `/sitemap/`
+ *    and listed `/en/…`, and robots.txt named `/en/sitemap.xml` while the index it points at
+ *    listed files under `/sitemap/` — two violations of the same rule, together covering all
+ *    36,730 URLs. See SitemapWriter.
+ * 2. **1,260 entries were pages an anonymous visitor cannot open.** See GuestAccess.
+ * 3. **30 entries carried a `#fragment`**, which Google discards, making them duplicates of
+ *    pages already listed. See `isPublishable()`.
+ * 4. **No `<lastmod>` anywhere.** See ChangeLog.
  *
- * ## Merged publications are excluded
+ * ## Freshness is a fact about the data, not a cached flag
  *
- * A merged publication answers **301** to its surviving edition — that is all its URL does.
- * 3,627 of the 10,104 public publications here are merged, so more than a third of the
- * publication entries the old sitemap did publish were permanent redirects presented to
- * crawlers as canonical pages. They are dropped here rather than in
+ * `isStale()` compares the newest row in `sch_changes` against the index file's mtime. That
+ * is deliberately not a cache entry, and the reason is not tidiness: an APCu segment belongs
+ * to the SAPI that created it, so a stamp written by this console process would be invisible
+ * to the web server and vice versa. A filesystem timestamp and a database column are the
+ * only two things both SAPIs agree on. It also means invalidation needs no hook in the write
+ * path — editing an association makes the sitemap stale by definition, and the next build
+ * notices.
+ *
+ * ## Merged publications are still excluded
+ *
+ * A merged publication answers 301 to its surviving edition, and 3,627 of the 10,104 public
+ * publications here are merged. They are dropped here rather than in
  * `Application\Navigation\PageBuilder`, which would also change the laminas menus and
- * breadcrumbs: in a menu a merged publication is merely harmless, and this port's job is
- * the sitemap.
- *
- * ## Freshness without putting 40 MB in APCu
- *
- * The files stay on disk and APCu holds only a **stamp** — the generation time under one
- * small key. That is deliberate and is a deviation from "cache it in APCu" as literally
- * stated: the four uncompressed parts are about 38 MB, `apc.ttl` is 0 on this host, and a
- * failed allocation there expunges the *entire* segment rather than evicting (see
- * docs/caching.md). Putting the payload in APCu would make the sitemap capable of wiping
- * every other cache on the site.
- *
- * The stamp lives in the same segment the navigation branches do, so
- * `cache:flush-persistent` — the thing that already refreshes navigation — refreshes this
- * too: the stamp disappears with everything else and the next request regenerates. MAX_AGE
- * is the backstop for a site that is never flushed.
+ * breadcrumbs: in a menu a merged publication is merely harmless.
  */
 final class SitemapGenerator
 {
-    /** Where the parts are written, relative to the application root. */
-    public const DIRECTORY = 'data/sitemap';
-
-    /** The first part's filename; the library derives `pages_2.xml`, `pages_3.xml`, … */
-    public const BASENAME = 'pages.xml';
-
-    /** The URL path the parts are served under, matching config/symfony/routes.php. */
-    public const PART_PATH = '/sitemap/';
-
-    /** APCu key holding the generation time. Small on purpose — see the class docblock. */
-    private const STAMP_KEY = 'sitemap-generated-at';
-
-    /** Regenerate at least this often even if nothing ever flushes the cache. */
-    private const MAX_AGE = 86400;
+    /** The index, and the only name robots.txt or Search Console ever needs. */
+    public const INDEX = 'sitemap.xml';
 
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly NavigationTree $tree,
-        private readonly string $root
+        private readonly ChangeLog $changes,
+        private readonly GuestAccess $access,
+        private readonly string $docroot
     ) {
     }
 
     /**
-     * Ensure the files on disk are current, and return the index's own path.
+     * Whether the files need rebuilding.
      *
-     * @param string $serverUrl scheme and host the file's absolute URLs are built on,
-     *        taken from the request exactly as laminas' `serverUrl` view helper does
-     * @param bool $force ignore the stamp and rebuild; the maintenance endpoint's door
+     * True when the index is missing, when its mtime cannot be read, or when the change log
+     * holds something newer. A change log we cannot query reads as stale, which costs a
+     * rebuild nobody needed rather than freezing the sitemap forever.
      */
-    public function ensure(string $serverUrl, bool $force = false): string
+    public function isStale(): bool
     {
-        $indexPath = $this->root . '/' . self::DIRECTORY . '/sitemap.xml';
+        $index = $this->docroot . '/' . self::INDEX;
 
-        if (! $force && $this->isFresh() && file_exists($indexPath)) {
-            return $indexPath;
+        clearstatcache(true, $index);
+        if (! file_exists($index)) {
+            return true;
         }
 
-        $this->generate($indexPath, rtrim($serverUrl, '/'));
-        $this->stamp();
-
-        return $indexPath;
-    }
-
-    /** The absolute path of one part, or null when it is not a name we wrote. */
-    public function partPath(string $filename): ?string
-    {
-        //`pages.xml`, `pages_2.xml`, … and nothing else. The filename reaches this from a
-        //route parameter, so it decides which file is read: anything not matching the
-        //shape the library writes is refused rather than resolved.
-        if (1 !== preg_match('/^pages(_[1-9][0-9]{0,3})?\.xml$/', $filename)) {
-            return null;
+        $builtAt = filemtime($index);
+        if (false === $builtAt) {
+            return true;
         }
 
-        $path = $this->root . '/' . self::DIRECTORY . '/' . $filename;
+        $newestChange = $this->changes->newest();
+        if (null === $newestChange) {
+            return true;
+        }
 
-        return file_exists($path) ? $path : null;
+        $built = new DateTimeImmutable('@' . $builtAt, new DateTimeZone('UTC'));
+
+        return $newestChange > $built;
     }
 
     /**
-     * Build every part and the index that lists them.
+     * Build every file and return the index's absolute path.
      *
-     * The per-page work is the laminas action's, kept deliberately: one item per page, with
-     * one URL per locale, each carrying the whole set as `xhtml:link` alternates. The
-     * substring arithmetic is its too — the assembled URL is locale-prefixed, and each
-     * language's copy is that URL with its own prefix swapped in.
+     * @param string $baseUrl scheme and host, no trailing slash
+     * @return list<string> the basenames written
      */
-    private function generate(string $indexPath, string $serverUrl): void
+    public function build(string $baseUrl): array
     {
-        $directory = $this->root . '/' . self::DIRECTORY;
-        if (! is_dir($directory)) {
-            mkdir($directory, 0o775, true);
+        $writer = new SitemapWriter($this->docroot, rtrim($baseUrl, '/'), $this->languages());
+
+        foreach ($this->sections() as $section => $entries) {
+            $writer->writeSection(SitemapSection::from($section), $entries);
         }
+        $writer->writeIndex();
 
-        $sitemap = new Sitemap($directory . '/' . self::BASENAME, true);
-        $sitemap->setUseGzip(true);
+        return $writer->writtenFiles();
+    }
 
-        $bases = [];
+    /** @return list<string> */
+    private function languages(): array
+    {
+        $languages = [];
         foreach (array_keys(Locales::ALIASES) as $language) {
-            $bases[$language] = $serverUrl . '/' . $language . '/';
+            $languages[] = (string) $language;
         }
-        //the assembled hrefs carry a locale prefix already; each language's copy is that
-        //URL with its own prefix swapped in, which is the laminas action's own arithmetic
-        $prefixLength = strlen($bases[Locales::aliasFor(Locales::DEFAULT_LOCALE)]);
 
-        $merged = $this->mergedPublicationIds();
-        $seen   = [];
+        return $languages;
+    }
+
+    /**
+     * Every publishable page, bucketed by the file it belongs in.
+     *
+     * Walks the navigation tree once — it is the expensive thing here, about 0.6 s for the
+     * whole container — and returns arrays rather than generators because the buckets have to
+     * be complete before the first one is written.
+     *
+     * @return array<string, list<SitemapEntry>>
+     */
+    private function sections(): array
+    {
+        $buckets = [];
+        foreach (SitemapSection::cases() as $section) {
+            $buckets[$section->value] = [];
+        }
+
+        $stamps    = $this->stampsBySection();
+        $excluded  = $this->excludedRecordIds();
+        $prefixLen = strlen('/' . Locales::aliasFor(Locales::DEFAULT_LOCALE) . '/');
+        $seen      = [];
 
         foreach ($this->tree->flattened() as $page) {
             $href = $page['href'];
-            if ('' === $href || ! str_starts_with($href, '/')) {
-                continue;
-            }
-            if (null !== $page['id'] && $this->isMergedPublication($page['id'], $merged)) {
+            if (! $this->isPublishable($href, $page['route'], $page['id'])) {
                 continue;
             }
 
-            $url = $serverUrl . $href;
-            //Sitemap::url() deduplicates by returning null for a URL it has already
-            //emitted, and the laminas action skipped those. `World` and `Shrines` share a
-            //route, so this is not hypothetical.
-            if (isset($seen[$url])) {
+            $section = SitemapSection::forPageId($page['id']);
+            $prefix  = $section->idPrefix();
+            $id      = null !== $prefix && is_string($page['id'])
+                ? SitemapSection::recordId($page['id'], $prefix)
+                : null;
+
+            if (null !== $id && isset($excluded[$section->value][$id])) {
                 continue;
             }
-            $seen[$url] = true;
 
-            $tail    = substr($url, $prefixLength);
-            $locales = [];
-            foreach ($bases as $language => $base) {
-                $locales[$language] = $base . $tail;
+            //The tail is everything after the locale prefix; the writer puts each language's
+            //own prefix back. Same arithmetic the laminas action used.
+            $tail = substr($href, $prefixLen);
+            if (isset($seen[$tail])) {
+                //`World` and `Shrines` share a route, so a duplicate here is not theoretical
+                continue;
             }
-            $sitemap->addItem($locales);
+            $seen[$tail] = true;
+
+            $buckets[$section->value][] = new SitemapEntry(
+                $tail,
+                null !== $id ? ($stamps[$section->value][$id] ?? null) : null
+            );
         }
 
-        $sitemap->write();
-
-        $index = new Index($indexPath);
-        //the parts are gzipped and the controller sends one `Content-Encoding: gzip` for
-        //everything it serves, so the index has to be gzipped too. It was not, and the
-        //symptom is a 354-byte index that no client can read.
-        $index->setUseGzip(true);
-        foreach ($sitemap->getSitemapUrls($serverUrl . self::PART_PATH) as $partUrl) {
-            $index->addSitemap($partUrl);
-        }
-        $index->write();
-    }
-
-    /** @return array<int, int> merged publication ids, keyed on themselves */
-    private function mergedPublicationIds(): array
-    {
-        /** @var PublicationsTable $table */
-        $table = $this->laminas->get(PublicationsTable::class);
-
-        /** @var array<int, int> $merged */
-        $merged = $table->getMergedPublicationIds();
-
-        return $merged;
+        return $buckets;
     }
 
     /**
-     * Whether a navigation page id names a publication that has been merged away.
+     * Is this page one a crawler should be given?
      *
-     * `pub_1234` is PageBuilder's own id format, not a convention inferred from the URL —
-     * which is why the id is carried through the tree in the first place.
+     * Five refusals, in the order they are cheapest to decide. Every one of them was a live
+     * entry in the published sitemap on 2026-08-13, and each is a different Google error:
      *
-     * @param array<int, int> $merged
+     *  - **No href**, or one that is not a rooted path. Nothing to publish.
+     *  - **A `#fragment`.** Google discards it, so `/en/shrines#Africa` is a duplicate entry
+     *    for `/en/shrines`, which the tree also contains. 30 such entries; the old
+     *    deduplication keyed on the whole URL, so the fragment defeated it.
+     *  - **A path ending in `/`.** `Application\Navigation\PageBuilder` groups publications
+     *    by language and files the ones with no language under `''`, so it assembles
+     *    `publications/index` with `inLanguage => ''` and produces `/en/literature/`, which
+     *    **404s** — while `/en/literature` is listed separately and answers 200. The
+     *    navigation menu still shows that dead "Other Schoenstatt Literature" link; fixing
+     *    that is a menu change and is deliberately not done here.
+     *  - **A route `guest` may not reach** — `/admin`, `/movement`, `/libraries`, all 302 to
+     *    the login page.
+     *  - **A record `guest` may not see**, which is not the same question: `/libraries/1` and
+     *    `/libraries/5` share one route and one guard entry, and the ACL separates them by a
+     *    per-library resource. See GuestAccess::isAllowedAsGuest().
      */
-    private function isMergedPublication(string $pageId, array $merged): bool
+    private function isPublishable(string $href, string $routeName, ?string $pageId): bool
     {
-        if (! str_starts_with($pageId, 'pub_')) {
+        if ('' === $href || ! str_starts_with($href, '/')) {
+            return false;
+        }
+        if (str_contains($href, '#')) {
+            return false;
+        }
+        //the locale root assembles as `/en/`, whose tail is '' — every *other* trailing slash
+        //is a route assembled with an empty parameter
+        $localeRoot = '/' . Locales::aliasFor(Locales::DEFAULT_LOCALE) . '/';
+        if (str_ends_with($href, '/') && strlen($href) > strlen($localeRoot)) {
+            return false;
+        }
+        if (! $this->access->isRoutePublic($routeName)) {
             return false;
         }
 
-        $publicationId = (int) substr($pageId, 4);
-
-        return isset($merged[$publicationId]);
+        return $this->isRecordVisible($pageId);
     }
 
-    private function isFresh(): bool
+    /**
+     * The per-record half of the ACL, for the page kinds that have one.
+     *
+     * Only libraries today. Kept separate from the route check because it asks a different
+     * question of a different resource, and because a page kind that gains a per-record rule
+     * later should be added here rather than hidden inside the route lookup.
+     */
+    private function isRecordVisible(?string $pageId): bool
     {
-        $cache = $this->cache();
-        if (null === $cache) {
-            return false;
+        if (null === $pageId) {
+            return true;
         }
 
-        try {
-            $generatedAt = $cache->getItem(self::STAMP_KEY);
-        } catch (Throwable) {
-            return false;
+        $libraryId = SitemapSection::recordId($pageId, 'lib_');
+        if (null === $libraryId) {
+            return true;
         }
 
-        return is_int($generatedAt) && (time() - $generatedAt) < self::MAX_AGE;
+        return $this->access->isAllowedAsGuest('library_' . $libraryId, 'show');
     }
 
-    private function stamp(): void
+    /**
+     * Record ids that must not be published, per section.
+     *
+     * @return array<string, array<int, true>>
+     */
+    private function excludedRecordIds(): array
     {
-        $cache = $this->cache();
-        if (null === $cache) {
-            return;
-        }
-
-        try {
-            $cache->setItem(self::STAMP_KEY, time());
-        } catch (Throwable) {
-            //a cache that will not take a 4-byte integer is not a reason to fail a request
-            //that has already written the files
-        }
+        return [
+            SitemapSection::PUBLICATIONS->value => $this->mergedPublicationIds(),
+            SitemapSection::ASSOCIATIONS->value => $this->nonPublicAssociationIds(),
+        ];
     }
 
-    private function cache(): ?StorageInterface
+    /**
+     * Merged publications: their URL is a 301 and nothing else.
+     *
+     * @return array<int, true>
+     */
+    private function mergedPublicationIds(): array
     {
+        $ids = [];
+
         try {
-            $cache = $this->laminas->get('SionModel\PersistentCache');
+            /** @var PublicationsTable $table */
+            $table = $this->laminas->get(PublicationsTable::class);
+            /** @var array<int, int> $merged */
+            $merged = $table->getMergedPublicationIds();
         } catch (Throwable) {
-            return null;
+            return [];
         }
 
-        return $cache instanceof StorageInterface ? $cache : null;
+        foreach ($merged as $id) {
+            $ids[(int) $id] = true;
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Associations `AssociationController` redirects an anonymous visitor away from.
+     *
+     * The rule is the controller's, not the ACL's, so it cannot be seen by
+     * `GuestAccess::isRoutePublic()` or by `tools/acl-table.php`: `route/association` is
+     * public and the controller then sends a guest to the home page for every kind outside
+     * `PUBLIC_KINDS`. 248 of the 498 associations here, so this is the bulk of what the
+     * filtering removes.
+     *
+     * A failure to read the kinds excludes nothing rather than everything — the same
+     * direction every other guard here fails in.
+     *
+     * @return array<int, true>
+     */
+    private function nonPublicAssociationIds(): array
+    {
+        $public = $this->access->publicAssociationKinds();
+        $ids    = [];
+
+        try {
+            /** @var SchoenstattTable $table */
+            $table   = $this->laminas->get(SchoenstattTable::class);
+            $objects = $table->getObjects('association');
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (! is_array($objects)) {
+            return [];
+        }
+
+        foreach ($objects as $object) {
+            if (! is_array($object)) {
+                continue;
+            }
+            $id   = $object['associationId'] ?? null;
+            $kind = $object['kind'] ?? null;
+            if (! is_numeric($id)) {
+                continue;
+            }
+            if (! is_string($kind) || ! in_array($kind, $public, true)) {
+                $ids[(int) $id] = true;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Last-changed times per record, per section.
+     *
+     * @return array<string, array<int, DateTimeImmutable>>
+     */
+    private function stampsBySection(): array
+    {
+        $stamps = [];
+        foreach (SitemapSection::cases() as $section) {
+            $entity = $section->entity();
+            $stamps[$section->value] = null === $entity ? [] : $this->changes->perRecord($entity);
+        }
+
+        return $stamps;
     }
 }

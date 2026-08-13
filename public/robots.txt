@@ -1,1 +1,1 @@
-Sitemap: https://schoenstatt.link/en/sitemap.xml
+Sitemap: https://schoenstatt.link/sitemap.xml

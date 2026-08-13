@@ -13,6 +13,58 @@ control — mixing the two makes the order unpredictable.
 deletes freshly-uploaded trees (it took out `module/JUser/src` on
 2026-08-02; see docs/BACKLOG.md "Deploy ops").
 
+## Before the next deploy: the sitemap needs a cron entry
+
+The sitemap became a set of static files in the docroot
+([docs/sitemap.md](sitemap.md)). Two things have to happen on the server, and
+until they do the sitemap works but never refreshes on its own.
+
+1. **Add the cron entry** — in konsoleH, or `crontab -e` on the port-222 shell
+   account:
+
+   ```cron
+   */15 * * * * cd ~/public_html/schoenstatt.link && php bin/console sitemap:build >/dev/null
+   ```
+
+   A run with nothing to do costs ~0.11 s: one `MAX()` over an indexed column,
+   then it exits. Only a run that finds new data walks the navigation (~1.2 s).
+
+2. **Mirror the build into `phploy.ini`'s `post-deploy[]`** by hand, the same way
+   the `jtranslate:export-catalogs` hook had to be — the file is gitignored, so
+   nothing in the repo can do it for you:
+
+   ```ini
+   post-deploy[] = "ssh -p 222 <admin>@dedi2934.your-server.de 'cd public_html/schoenstatt.link && php bin/console sitemap:build --force'"
+   ```
+
+   `--force` because a deploy can change which pages exist without changing a
+   single database row — the ACL, a route, or the filtering rules — and none of
+   that moves `MAX(sch_changes.UpdatedOn)`.
+
+**Delete the old files after the first deploy.** They are outside the docroot and
+phploy will not remove them:
+
+```bash
+ssh -p 222 <admin>@dedi2934.your-server.de \
+  'cd public_html/schoenstatt.link && rm -rf data/sitemap'
+```
+
+**Then resubmit in Search Console.** The advertised URL changed from
+`/en/sitemap.xml` to `/sitemap.xml`, and the old one is what Search Console has
+on file. The prefixed URL still answers, so nothing breaks if this is forgotten —
+it just goes on reporting the old file's errors.
+
+Verify, once deployed:
+
+```bash
+curl -sSI https://schoenstatt.link/sitemap.xml | grep -iE 'etag|accept-ranges'
+curl -sS https://schoenstatt.link/sitemap.xml | grep -o '<loc>[^<]*</loc>'
+```
+
+An `ETag` means Apache is serving it rather than PHP. Every `<loc>` must be
+`https://schoenstatt.link/sitemap-*.xml` — one under a subdirectory again means
+Google discards the whole sitemap.
+
 ## Before the next deploy: check the API signing key
 
 One-time prerequisite for the firebase/php-jwt 7 upgrade (2026-08-03). v7

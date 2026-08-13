@@ -59,6 +59,8 @@ use App\Laminas\PhraseFlush;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Sion\CommentPredicates;
+use App\Sitemap\ChangeLog;
+use App\Sitemap\GuestAccess;
 use App\Sitemap\SitemapGenerator;
 use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
@@ -84,6 +86,9 @@ use Throwable;
 use Twig\Environment;
 
 use function dirname;
+use function is_array;
+use function is_string;
+use function rtrim;
 
 /**
  * The Symfony kernel, hand-wired from components.
@@ -266,16 +271,22 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 new LaminasResponseConverter()
             ),
             HealthController::class => static fn (): HealthController => new HealthController(),
-            // The sitemap. Its generator is the only thing on this side that walks the
-            // whole navigation tree — 10,974 pages, 0.60s cold — which is why nothing
-            // else is given a NavigationTree and why the files it writes are reused
-            // until the persistent cache is flushed.
+            // The sitemap, and the one route here that is normally never reached: the files
+            // are static and Apache serves them, so this only runs when public/sitemap.xml is
+            // missing. Its generator is still the only thing on this side that walks the whole
+            // navigation container — 0.6s cold — which is why nothing else is given a
+            // NavigationTree, and why `bin/console sitemap:build` rather than a request is
+            // what normally does the walking.
             SitemapController::class => fn (): SitemapController => new SitemapController(
                 new SitemapGenerator(
                     $this->laminas(),
                     new NavigationTree($this->laminas(), $this->routeUrl()),
-                    dirname(__DIR__)
-                )
+                    new ChangeLog($this->laminas()),
+                    new GuestAccess($this->laminas()),
+                    dirname(__DIR__) . '/public'
+                ),
+                dirname(__DIR__) . '/public',
+                $this->canonicalBaseUrl()
             ),
             // The ported maintenance endpoints. They share one ServiceBridge, so
             // a request that reaches either loads the laminas modules once — and
@@ -578,6 +589,24 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             $this->laminas(),
             $this->requests()->getMainRequest()?->getBaseUrl() ?? ''
         );
+    }
+
+    /**
+     * The site's canonical scheme and host, or '' if the deployment has not set one.
+     *
+     * Only the sitemap fallback reads this, and it needs it because a sitemap must list
+     * canonical URLs: whichever hostname the request that triggered the build happened to
+     * arrive on is not necessarily the one the site is published under. Reached through the
+     * ServiceBridge rather than from a config file so that a request which never builds a
+     * sitemap never merges the laminas config for it.
+     */
+    private function canonicalBaseUrl(): string
+    {
+        $config    = $this->laminas()->config();
+        $sionModel = $config['sion_model'] ?? [];
+        $baseUrl   = is_array($sionModel) ? $sionModel['canonical_base_url'] ?? null : null;
+
+        return is_string($baseUrl) ? rtrim($baseUrl, '/') : '';
     }
 
     private function cspNonce(): CspNonce
