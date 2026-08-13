@@ -71,6 +71,40 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
     }
 
     /**
+     * A checkbox row is `<div class="checkbox">`, not a form-group.
+     *
+     * `TwbBundleFormRow` returns a checkbox *before* it reaches `renderElementFormGroup()`,
+     * so the element's own `<div class="checkbox">` wrapper is the whole row. The renderer
+     * emitted `<div class="form-group ">` until the batch-7 baseline caught it, on every
+     * checkbox of all eight ported forms — Bootstrap 3 styles the two differently, so it
+     * was visible misalignment rather than a byte-level nicety.
+     *
+     * It survived earlier batches because `association-edit`, the only form ported before
+     * this one, renders its checkboxes through `form_element` inside hand-built groups and
+     * never through a row. Pinned here because the next form ported through `form_row` would
+     * inherit the same bug silently.
+     */
+    public function testACheckboxRowIsNotWrappedInAFormGroup(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $body = $this->get('/en/SL400003T/edit', false, $jar)['body'];
+
+        $this->assertStringContainsString(
+            '<div class="checkbox"><input type="hidden" name="isDraft" value="0">',
+            $body,
+            'a checkbox row must open with TwbBundle\'s checkbox wrapper'
+        );
+        $this->assertStringNotContainsString(
+            '<div class="form-group "><input type="hidden" name="isDraft"',
+            $body,
+            'a checkbox must not be wrapped in a form-group — that is the pre-baseline bug'
+        );
+    }
+
+    /**
      * The three library-scoped forms, and a field that only each *rendered* form contains.
      *
      * **These need their own test because the shared one cannot reach them.** Their guard
@@ -272,6 +306,24 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
             $response['redirect'],
             'the not-found branch redirects to the entity index the spec names'
         );
+
+        //**And it says "not found", not "denied".** The distinction is the visitor's: one
+        //means the record is unreachable, the other means they lack a permission, and
+        //telling a moderator the wrong one sends them to ask for access they already have.
+        //
+        //This is the defect the batch-7 baseline caught. deniedMessage() asked
+        //existsEntity() — role 1 *does* exist in sch_roles, it just does not hydrate — and
+        //so flashed "Access to entity denied." where laminas flashes "Role not found.".
+        //editAction() never calls existsEntity() at all; it branches on getObject() being
+        //null. The message is only visible on the *next* page, which is why no rendering
+        //test saw it and a two-front-controller capture did.
+        $next = $this->get('/en/roles/255/edit', false, $jar);
+        $this->assertStringContainsString(
+            'Role not found.',
+            $next['body'],
+            'the flash carried to the next page must name the real reason'
+        );
+        $this->assertStringNotContainsString('Access to entity denied.', $next['body']);
     }
 
     #[DataProvider('editPaths')]
