@@ -345,19 +345,56 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
-- [ ] **`association-delete` matches no association that exists.** Its route declares
-  `sw_id` as `SL1[0-9]{4,4}A` — the `1` plus **four** digits — where every valid
-  association identifier is `SL1[0-9]{5,5}A`
-  (`Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS`). So the route has
-  never matched, and `/SL100319A/delete` falls through to the `association` show route
-  on **both** front controllers. Measured 2026-08-13 against the laminas router
-  directly, while fixing the reserved-verb bug below; `test/Smoke/ReservedVerbRoutingSmokeTest`
-  pins the current behaviour so that repairing this is a deliberate, visible change.
-  Not fixed in that PR on purpose: the one-character fix makes a **delete confirmation
-  reachable for the first time**, on a live site, for `sch_general_moderator`. That
-  wants its own change with the delete path actually exercised — the confirmation
-  form, the CSRF token, and what `deleteAction()` does to an association with
-  children.
+- [x] ~~**`association-delete` matches no association that exists.**~~ **Fixed
+  2026-08-14.** Its route declared `sw_id` as `SL1[0-9]{4,4}A` — the `1` plus **four**
+  digits — where every valid association identifier is `SL1[0-9]{5,5}A`
+  (`Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS`). So the route never
+  matched, and `/SL100319A/delete` fell through to the `association` show route on
+  **both** front controllers.
+
+  The constraint is now *derived* from `ENTITY_REGEXS` rather than written out, which is
+  the actual repair: its four siblings (`publication-`, `text-`, `event-`,
+  `composition-delete`) all derive theirs and not one of them drifted in five years. A
+  five-digit identifier is not a near miss to tolerate either — it is the pre-April-2020
+  form, and `redirect-pre-april-2020-sl-id` owns it, which
+  `test/Smoke/ReservedVerbRoutingSmokeTest` now asserts so nobody "fixes" this by
+  widening the constraint to accept both.
+
+  `test/Smoke/AssociationDeleteSmokeTest` covers what the route had never had: the guard,
+  the confirmation, the CSRF token, a real delete, and what the delete leaves behind.
+
+  **Exercising the delete uncovered a second, latent bug and fixed it too.** A change log
+  row whose entity no longer exists carries a placeholder — `{isDeleted, associationId,
+  associationName}` and nothing else — and the ported
+  `templates/schoenstatt/_entity-format.html.twig` read `entity.country` straight off it.
+  Under laminas an absent key reads as null and `FormatAssociation`'s own `isDeleted`
+  branch handles the case; under Twig's `strict_variables` it raises, *after* the response
+  is assembled, so `/en/sm/view-changes` answered **HTTP 200 with zero bytes** — the
+  fatal-200 wedge. Recorded 28 times from 2026-08-12 with nothing connecting it to a
+  deleted record, because until this repair nothing could delete an association through
+  the interface to produce such a row deliberately. The `person()` macro had the same
+  exposure by the same mechanism and got the same treatment. Pinned by
+  `EntityFormatterTest::testADeletedEntityPlaceholderRendersAsTheLaminasHelperRendersIt`.
+
+- [ ] **Deleting a record orphans everything that referenced it, on all five delete
+  routes.** `SionTable::deleteEntity()` is a bare `DELETE ... WHERE <key> = ?`, and
+  **the schema has no foreign keys at all** — measured 2026-08-14: zero constraints
+  reference `sch_associations`. So deleting a parent association leaves its children
+  pointing at a row that is gone, and deleting an association leaves its roles the same
+  way. Association 8 has 60 children; 1,468 roles name an association.
+
+  This is not new and not specific to associations — the four other delete routes have
+  been reachable in production for years with the same behaviour, and the capsule already
+  carries **142 roles and one association whose referent no longer exists**. It is filed
+  here rather than fixed alongside the constraint repair because "what should deletion do
+  to dependants" is a product decision with at least three defensible answers (refuse,
+  cascade, reparent), and picking one silently while fixing a routing typo would be the
+  wrong way to make it.
+
+  Current behaviour is pinned by
+  `test/Smoke/AssociationDeleteSmokeTest::testDeletingAParentLeavesItsChildrenPointingAtNothing`,
+  which is a characterization test: whoever takes this decision should expect it to fail
+  and should update it deliberately.
 
 - [x] ~~**`tools/acl-table.php` cannot see a parameterized route being shadowed.**~~
   **Fixed 2026-08-14.** `shadowedBySymfony()` passed the *composed laminas pattern* to

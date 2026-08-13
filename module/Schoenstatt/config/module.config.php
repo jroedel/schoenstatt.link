@@ -1184,7 +1184,19 @@ return [
                 'options' => [
                     'route'    => '/:sw_id/delete',
                     'constraints' => [
-                        'sw_id' => 'SL1[0-9]{4,4}A',
+                        // Derived, not written out, because writing it out is how it
+                        // broke: this asked for `SL1[0-9]{4,4}A` — one digit short of
+                        // every identifier that exists — from 2020 until 2026-08-14, so
+                        // the route matched nothing and `/SL1xxxxxA/delete` fell through
+                        // to the show page on both front controllers. Its four siblings
+                        // (publication-, text-, event-, composition-delete) all derive
+                        // theirs the same way and none of them drifted.
+                        'sw_id' => trim(
+                            Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS[
+                                Validator\SchoenstattLinkIdentifier::ENTITY_ASSOCIATION
+                            ],
+                            '/^$'
+                        ),
                     ],
                     'defaults' => [
                         'controller' => Controller\AssociationsController::class,

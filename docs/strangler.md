@@ -703,6 +703,18 @@ em fr" — the template's own `is defined` fallback to the raw code — on a pag
 otherwise perfectly translated. A page variable never needs the prefix; a new chrome local
 always does.
 
+**`strict_variables` is why a reproduced helper must reproduce its guards, not just its
+output.** A laminas view helper written around PHP's "absent key reads as null" gets that
+behaviour for free; the Twig reproduction of it raises instead, and raises *after* the
+response is assembled, which is the fatal-200 wedge. The case to keep in mind is the
+deleted-entity placeholder: when a change log row names a record that no longer exists,
+`SionTable` substitutes `{isDeleted, <keyField>, <nameField>}` and nothing else, so every
+other field the formatting reads is simply gone. `_entity-format.html.twig` read
+`entity.country` off it and wedged `/en/sm/view-changes` 28 times before anyone connected
+the two — it took repairing `association-delete` on 2026-08-14 to make such a row
+producible on purpose. When porting a helper, look for what its **early returns** protect
+against, not only for what its happy path emits.
+
 Three settings in `TwigFactory` are decisions, each with its reasoning in the
 class docblock: `strict_variables` is **on** (the opposite of `PhpRenderer`),
 `autoescape` is on with markup-returning functions declared `is_safe: html`, and the
@@ -1644,10 +1656,14 @@ Three things to carry forward:
   something again** — a route it cannot decide is listed as uncomparable rather than
   skipped, and that list is asserted empty by
   `test/Integration/AclShadowCompletenessTest`.
-- **`association-delete` looks like a tenth case and is not.** It answers the show page on
-  *both* front controllers, because its own constraint asks for four digits where an
-  identifier has five. Recorded in BACKLOG; the fix makes a delete confirmation reachable
-  for the first time and does not belong in a routing fix.
+- **`association-delete` looked like a tenth case and was not.** It answered the show page
+  on *both* front controllers, because its own constraint asked for four digits where an
+  identifier has six. Repaired separately on 2026-08-14 — a delete confirmation reachable
+  for the first time wanted the delete path exercised, not a digit changed, so
+  `test/Smoke/AssociationDeleteSmokeTest` covers the guard, the CSRF token, a real delete
+  and what it orphans. It is now an ordinary member of the reserved-verb list, and staying
+  reserved matters more than before: a show route swallowing `/{sw_id}/delete` would now
+  hide a destructive page rather than an edit form.
 
 **A note on the fetch/display ratio, for whoever tunes this next.** With
 `changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows
