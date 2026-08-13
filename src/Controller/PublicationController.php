@@ -9,6 +9,7 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ViewHelpers;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
+use App\View\PreferredUrls;
 use App\Sion\SiteWideIdentifier;
 use Books\Model\LibraryTable;
 use Books\Service\DriveGateway;
@@ -71,7 +72,8 @@ final class PublicationController
         private readonly EntityShow $show,
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
-        private readonly ViewHelpers $helpers
+        private readonly ViewHelpers $helpers,
+        private readonly PreferredUrls $preferredUrls
     ) {
     }
 
@@ -120,6 +122,17 @@ final class PublicationController
         $publicationId = $entity['publicationId'] ?? $id;
 
         return new Response($this->twig->render('books/publication.html.twig', [
+            /*
+             * The five URLs this record should be indexed under, for the layout's canonical
+             * and hreflang links. A publication has a single `Slug` column, so the five differ
+             * only in the locale prefix — but this is still needed, because a request that
+             * omits the slug would otherwise declare the slugless URL canonical while the
+             * sitemap and every menu link advertise the slugged one. See App\View\PreferredUrls.
+             */
+            'locale_paths'         => $this->preferredUrls->forRecord(
+                self::ENTITY,
+                ['sw_id' => $swId, 'slug' => $entity['slug'] ?? null]
+            ),
             //headTitle()->setTranslatorEnabled(false) then the title: a bibliographic
             //title is data, and translating it files a phrase per publication
             'page_title'           => (string) ($entity['title'] ?? ''),

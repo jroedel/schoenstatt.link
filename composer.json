@@ -44,7 +44,6 @@
         "jmikola/geojson": "1.0",
         "scottconnerly/timezone": "^0.2.0",
         "nicolaswurtz/chordpro-php": "dev-master",
-        "samdark/sitemap": "^2.2",
         "lib-icu": ">=4.4",
         "ext-intl": "*",
         "ext-pdo": "*",

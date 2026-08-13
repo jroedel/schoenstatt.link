@@ -91,23 +91,27 @@ class ApplicationSmokeTest extends SmokeTestCase
     }
 
     /**
-     * Requires the data/sitemap directory to exist (tracked via .gitkeep);
-     * without it the samdark/sitemap writer throws and the route 500s.
+     * The locale-prefixed sitemap URL still answers, because robots.txt named it for years.
      *
-     * `<sitemapindex>`, not `<urlset>`, since the route was ported on 2026-08-13: the URLs
-     * live in the parts the index names, because one file only ever carried 3,022 of the
-     * site's pages. The coverage this asserted nothing about is
-     * test/Smoke/SitemapSmokeTest's subject; what stays here is that the route answers XML
-     * at all, which is what the .gitkeep sentence is really about.
+     * `/en/sitemap.xml` is no longer what robots.txt points at — the files moved to the
+     * docroot root on 2026-08-13, because a sitemap may only list URLs at or below its own
+     * directory and one under `/en/` could not legally list the `/de/` half of the site. The
+     * prefixed form is kept working anyway: it is what Search Console and every crawler have
+     * on file, and $ported() declares both paths.
+     *
+     * `<sitemapindex>`, not `<urlset>`: the URLs live in the four files the index names.
+     * Coverage is test/Smoke/SitemapSmokeTest's subject; this asserts only that the old URL
+     * answers XML.
      */
-    public function testSitemapRenders(): void
+    public function testThePrefixedSitemapUrlStillAnswers(): void
     {
         $response = $this->get('/en/sitemap.xml');
 
-        $this->assertSame(200, $response['status'], 'GET /en/sitemap.xml should render');
+        $this->assertSame(200, $response['status'], 'GET /en/sitemap.xml should still answer');
         $this->assertStringContainsString('xml', $response['contentType']);
-        //the file is written gzipped, but whether these bytes arrive compressed depends on
-        //the client's Accept-Encoding, so the magic number decides rather than the header
+        //Nothing gzips these at rest any more — Apache compresses on the fly — but whether
+        //*these* bytes arrive compressed still depends on the client, so the magic number
+        //decides rather than the header.
         $body = str_starts_with($response['body'], "\x1f\x8b")
             ? (string) gzdecode($response['body'])
             : $response['body'];

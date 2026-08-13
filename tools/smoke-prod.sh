@@ -197,12 +197,12 @@ for V in v1 v2; do
     fi
 done
 
-# `<sitemapindex>`, not `<urlset>`, since /sitemap.xml was ported on 2026-08-13: the
-# page URLs live in the parts the index names. This check greped for `<urlset>` and so
-# failed on the first deploy after that, twice over — once here and once as "no
-# sampleable URLs", which also silently dropped the cold-page sampling below, the part
-# that actually catches fatal-200s.
-fetch "$BASE/en/sitemap.xml"
+# The sitemap is a static file at the docroot ROOT since 2026-08-13, and the root is the
+# point: a sitemap may only list URLs at or below its own directory, so the previous
+# layout — parts under /sitemap/, index advertised as /en/sitemap.xml — put all 36,730
+# URLs out of scope and Google discarded the lot. That is invisible in a response, which
+# is why the path shape is asserted here and not just the status.
+fetch "$BASE/sitemap.xml"
 if [ "$STATUS" = "200" ] && grep -q '<sitemapindex' "$BODY"; then
     pass "sitemap index renders"
     mapfile -t SITEMAP_PARTS < <(grep -oE '<loc>[^<]+</loc>' "$BODY" \
@@ -212,10 +212,33 @@ else
     SITEMAP_PARTS=()
 fi
 
-# One part per deploy, chosen at random. Each is ~10 MB uncompressed, and sampling from
-# one of them is what the old single-file version effectively did — except that this one
-# can land anywhere in the catalogue, where the old file only ever held the first 3,022
-# pages. Downloading all of them on every deploy would cost 30 MB for five sampled URLs.
+# Every listed file must be one path segment deep. A part that reappears under a
+# subdirectory is the original bug returning, and it fails no other check.
+OUT_OF_SCOPE=()
+for part in ${SITEMAP_PARTS[@]+"${SITEMAP_PARTS[@]}"}; do
+    case "${part#"$BASE"}" in
+        /sitemap-*.xml) ;;
+        *) OUT_OF_SCOPE+=("$part") ;;
+    esac
+done
+if [ "${#SITEMAP_PARTS[@]}" -gt 0 ] && [ "${#OUT_OF_SCOPE[@]}" -eq 0 ]; then
+    pass "every sitemap file is at the docroot root"
+elif [ "${#OUT_OF_SCOPE[@]}" -gt 0 ]; then
+    fail "sitemap files outside the docroot root — Google ignores every URL in them: ${OUT_OF_SCOPE[*]}"
+fi
+
+# Apache serves these, not PHP. Losing that is silent: the sitemap keeps working and the
+# 0.6s navigation walk comes back into the request path. A static file gets an ETag.
+if [ -n "$(header etag)" ]; then
+    pass "sitemap is served statically by Apache"
+else
+    fail "sitemap has no ETag, so PHP is serving it — has bin/console sitemap:build run?"
+fi
+
+# One part per deploy, chosen at random. Publications alone is ~24 MB, so downloading all
+# of them on every deploy would cost 26 MB for five sampled URLs. Sampling one at random
+# can land anywhere in the catalogue, where the old single-file version only ever held the
+# first 3,022 pages.
 COLD_URLS=()
 if [ "${#SITEMAP_PARTS[@]}" -gt 0 ]; then
     part=$(printf '%s\n' "${SITEMAP_PARTS[@]}" | shuf -n1)
@@ -477,29 +500,40 @@ if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
         fi
     done
 
-    # Gzip integrity on /en/sitemap.xml. **This no longer tests
-    # App\Http\LaminasResponseConverter**, which is what it was written for: the route was
-    # ported on 2026-08-13, so the response is Symfony's now, and what it proves today is
-    # that App\Http\GzipListener leaves an already-gzipped body alone instead of encoding
-    # it twice — the failure that would make the file unreadable to every crawler while
-    # still answering 200. The converter's own behaviour needs another vehicle; no
-    # remaining bridged route gzips unconditionally, which is the property this one was
-    # borrowing.
+    # The sitemap is plain XML at rest as of 2026-08-13, and this check inverted with it.
+    #
+    # It used to assert the opposite — that the body was *real gzip under a gzip header* —
+    # because the generator wrote gzip bytes into a .xml file and the controller declared
+    # the encoding by hand. That is what forced App\Http\GzipListener to honour a
+    # response's own Content-Encoding, and it is the reason Apache could not serve the
+    # file itself. Now the file is plain XML, Apache serves it, and mod_deflate compresses
+    # it on the way out, so the property worth pinning is that the bytes on disk are XML:
+    # a gzip magic number here again would mean something has started double-encoding.
+    #
     # `--no-compressed` matters, and a request header alone will not do it: CURL_OPTS
     # carries --compressed, which makes curl decode any Content-Encoding it understands
-    # whatever Accept-Encoding says — so the magic-byte check below would compare against
-    # plaintext no matter what the server actually sent. The generator writes the file
-    # gzipped, so identity encoding still yields gzip.
+    # whatever Accept-Encoding says.
     EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"} --no-compressed
         -H 'Accept-Encoding: identity')
-    fetch "$BASE/en/sitemap.xml"
+    fetch "$BASE/sitemap.xml"
+    if [ "$STATUS" = "200" ] && [ -z "$(header content-encoding)" ] \
+        && head -c6 "$BODY" | grep -q '<?xml'; then
+        pass "sitemap.xml is plain XML under identity encoding"
+    else
+        fail "sitemap.xml should be uncompressed XML for an identity request (got $STATUS, '$(header content-encoding)')"
+    fi
+    EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"})
+
+    # …and that Apache still compresses it when asked. 24 MB of XML uncompressed is the
+    # reason this is worth a check of its own rather than trusting the .htaccess rule.
+    EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"} --no-compressed
+        -H 'Accept-Encoding: gzip')
+    fetch "$BASE/sitemap-associations.xml"
     if [ "$STATUS" = "200" ] && [ "$(header content-encoding)" = "gzip" ] \
         && [ "$(head -c2 "$BODY" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then
-        pass "sitemap.xml is still real gzip under its Content-Encoding"
+        pass "Apache compresses the sitemap parts"
     else
-        # a body that is not gzip under a gzip header is either double-encoded on the way
-        # out or de-gzipped with the header left on — unreadable to a crawler either way
-        fail "sitemap.xml should be gzip-encoded gzip (got $STATUS, '$(header content-encoding)')"
+        fail "sitemap parts should be gzipped by Apache (got $STATUS, '$(header content-encoding)')"
     fi
     EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"})
 

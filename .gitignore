@@ -36,3 +36,11 @@ node_modules
 .idea/
 .env
 tools/*.phar
+
+# The generated sitemap. `bin/console sitemap:build` writes these into the docroot so
+# Apache can serve them directly (public/.htaccess passes any existing file through before
+# the rewrite to index.php); they are build output, rebuilt from the database, and the set
+# of filenames grows with the catalogue. Never commit them — a committed sitemap.xml would
+# be deployed over the live one and freeze it at whatever the last committer's data said.
+/public/sitemap.xml
+/public/sitemap-*.xml

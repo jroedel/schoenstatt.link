@@ -350,6 +350,17 @@ final class PageBuilder
                     'sw_id' => $object['identifier'],
                     'slug'  => $object['slugByLocale'][$locale],
                 ],
+                /*
+                 * Added 2026-08-13 for the sitemap, which is the only consumer: it needs to
+                 * know which record a page is in order to drop the 248 associations an
+                 * anonymous visitor cannot see and to date the rest from the change log.
+                 * Every other branch here has always set an id; this one was the exception,
+                 * so App\Sitemap could tell a publication from a composition but could not
+                 * recognise an association at all. Deriving it from the URL instead was the
+                 * alternative and is worse — the URL is a routing detail that has already
+                 * changed once.
+                 */
+                'id'     => 'assoc_' . $object['associationId'],
             ];
 
             if ('sch-shrine' !== $object['kind'] && 'sch-wayside-shrine' !== $object['kind']) {

@@ -9,6 +9,7 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
+use App\View\PreferredUrls;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Laminas\Authentication\AuthenticationService;
@@ -63,8 +64,16 @@ final class AssociationController
 {
     private const ENTITY = 'association';
 
-    /** The two kinds an anonymous visitor may see — AssociationsController::showAction(). */
-    private const PUBLIC_KINDS = ['sch-shrine', 'sch-wayside-shrine'];
+    /**
+     * The two kinds an anonymous visitor may see — AssociationsController::showAction().
+     *
+     * Public because App\Sitemap\GuestAccess reads it: this rule is the reason 1,240 sitemap
+     * entries used to point at a redirect to the home page, and the sitemap has to enforce
+     * the same list rather than a copy of it. Nothing else may write to it.
+     *
+     * @var list<string>
+     */
+    public const PUBLIC_KINDS = ['sch-shrine', 'sch-wayside-shrine'];
 
     /** The zoom level the .phtml hardcodes for its static map tile. */
     private const MAP_ZOOM = 13;
@@ -73,7 +82,8 @@ final class AssociationController
         private readonly ServiceBridge $laminas,
         private readonly EntityShow $show,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly PreferredUrls $preferredUrls
     ) {
     }
 
@@ -129,6 +139,19 @@ final class AssociationController
         $locale = Locale::getDefault();
 
         return new Response($this->twig->render('schoenstatt/association.html.twig', [
+            /*
+             * The five URLs this record should be indexed under, one per language, for the
+             * layout's canonical and hreflang links. Associations are the reason
+             * App\View\PreferredUrls exists: their slug is stored per locale and 428 of 498
+             * German slugs differ from the English one, so a canonical built by swapping
+             * the prefix of the current path would name a URL the German menus never link
+             * to. `slugByLocale` is what SchoenstattTable already built for this row.
+             */
+            'locale_paths'         => $this->preferredUrls->forRecord(
+                self::ENTITY,
+                ['sw_id' => $swId],
+                is_array($entity['slugByLocale'] ?? null) ? $entity['slugByLocale'] : null
+            ),
             //the name is data; translating it would file a phrase per association
             'page_title'           => $this->localized($entity, 'nameByLocale', $locale),
             'page_title_translate' => false,

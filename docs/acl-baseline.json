@@ -30,10 +30,10 @@
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 31,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 80,
+        "symfony_routes_acl_checked": 78,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 110,
+        "symfony_served_routes": 108,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -8577,27 +8577,7 @@
         },
         "sitemap": {
             "path": "/sitemap.xml",
-            "controller": "App\\Controller\\SitemapController::index",
-            "access": {
-                "kind": "acl",
-                "resource": "route/sitemap",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "sitemap-part": {
-            "path": "/sitemap/{filename}",
-            "controller": "App\\Controller\\SitemapController::part",
-            "access": {
-                "kind": "acl",
-                "resource": "route/sitemap",
-                "reason": null,
-                "denial_style": "html"
-            }
-        },
-        "sitemap-part.locale": {
-            "path": "/{_locale}/sitemap/{filename}",
-            "controller": "App\\Controller\\SitemapController::part",
+            "controller": "App\\Controller\\SitemapController",
             "access": {
                 "kind": "acl",
                 "resource": "route/sitemap",
@@ -8607,7 +8587,7 @@
         },
         "sitemap.locale": {
             "path": "/{_locale}/sitemap.xml",
-            "controller": "App\\Controller\\SitemapController::index",
+            "controller": "App\\Controller\\SitemapController",
             "access": {
                 "kind": "acl",
                 "resource": "route/sitemap",
