@@ -350,7 +350,7 @@ final class FormValidationContractTest extends TestCase
      * `database/*.sql` is the only source that travels with the repository.
      *
      * Known at the time of writing: `sch_roles.RoleTitle` is VARCHAR(100) per
-     * db0.2.sql and VARCHAR(50) in the 2021 production dump, and 45 columns across
+     * db0.2.sql and VARCHAR(50) in the production export, and 45 columns across
      * `lib_libraries`, `lib_checkouts`, `lib_books` and `sch_dictionary_*` exist
      * only in the dump.
      */

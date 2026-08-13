@@ -35,7 +35,7 @@ use PDO;
  * App\Authorization\RouteGuard instead.
  *
  * Fixtures: the test edits association 319 — `SL100319A`, the Original Schoenstatt
- * Shrine — and restores every column it touched in tearDown, so the 2021 dump is left
+ * Shrine — and restores every column it touched in tearDown, so the imported data is left
  * as it was found.
  */
 class AssociationEditSymfonySmokeTest extends SmokeTestCase

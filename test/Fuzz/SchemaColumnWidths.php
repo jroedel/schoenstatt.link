@@ -10,7 +10,7 @@ namespace SchoenstattTest\Fuzz;
  *
  * Why parse the migration scripts instead of asking the running database?
  *
- * The capsule's database is built from a 2021 production dump plus these
+ * The capsule's database is built from a current production export plus these
  * scripts, and the dump is gitignored — so information_schema is available on a
  * developer's machine and absent on a bare CI runner. The scripts are committed,
  * which makes them the only source of truth that travels with the repository.
