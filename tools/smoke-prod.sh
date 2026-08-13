@@ -197,14 +197,38 @@ for V in v1 v2; do
     fi
 done
 
+# `<sitemapindex>`, not `<urlset>`, since /sitemap.xml was ported on 2026-08-13: the
+# page URLs live in the parts the index names. This check greped for `<urlset>` and so
+# failed on the first deploy after that, twice over — once here and once as "no
+# sampleable URLs", which also silently dropped the cold-page sampling below, the part
+# that actually catches fatal-200s.
 fetch "$BASE/en/sitemap.xml"
-if [ "$STATUS" = "200" ] && grep -q '<urlset' "$BODY"; then
-    pass "sitemap renders"
-    mapfile -t COLD_URLS < <(grep -oE '<loc>[^<]+</loc>' "$BODY" \
-        | sed -e 's|</\?loc>||g' | grep -F "$BASE" | shuf -n "$COLD_SAMPLES")
+if [ "$STATUS" = "200" ] && grep -q '<sitemapindex' "$BODY"; then
+    pass "sitemap index renders"
+    mapfile -t SITEMAP_PARTS < <(grep -oE '<loc>[^<]+</loc>' "$BODY" \
+        | sed -e 's|</\?loc>||g' | grep -F "$BASE")
 else
-    fail "sitemap should render (got $STATUS)"
-    COLD_URLS=()
+    fail "sitemap index should render (got $STATUS)"
+    SITEMAP_PARTS=()
+fi
+
+# One part per deploy, chosen at random. Each is ~10 MB uncompressed, and sampling from
+# one of them is what the old single-file version effectively did — except that this one
+# can land anywhere in the catalogue, where the old file only ever held the first 3,022
+# pages. Downloading all of them on every deploy would cost 30 MB for five sampled URLs.
+COLD_URLS=()
+if [ "${#SITEMAP_PARTS[@]}" -gt 0 ]; then
+    part=$(printf '%s\n' "${SITEMAP_PARTS[@]}" | shuf -n1)
+    fetch "$part"
+    if [ "$STATUS" = "200" ]; then
+        pass "sitemap part fetches: ${part#"$BASE"}"
+        mapfile -t COLD_URLS < <(grep -oE '<loc>[^<]+</loc>' "$BODY" \
+            | sed -e 's|</\?loc>||g' | grep -F "$BASE" | shuf -n "$COLD_SAMPLES")
+    else
+        fail "sitemap part should fetch: ${part#"$BASE"} (got $STATUS)"
+    fi
+else
+    fail "sitemap index listed no parts on $BASE"
 fi
 
 if [ "$COLD_SAMPLES" -gt 0 ] && [ "${#COLD_URLS[@]}" -eq 0 ]; then
@@ -453,24 +477,29 @@ if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
         fi
     done
 
-    # Three things App\Http\LaminasResponseConverter exists to get right, checked on a
-    # *bridged* route because that is the path every unported page takes — i.e. the whole
-    # site once the flip lands, and the one thing the capsule cannot compare.
+    # Gzip integrity on /en/sitemap.xml. **This no longer tests
+    # App\Http\LaminasResponseConverter**, which is what it was written for: the route was
+    # ported on 2026-08-13, so the response is Symfony's now, and what it proves today is
+    # that App\Http\GzipListener leaves an already-gzipped body alone instead of encoding
+    # it twice — the failure that would make the file unreadable to every crawler while
+    # still answering 200. The converter's own behaviour needs another vehicle; no
+    # remaining bridged route gzips unconditionally, which is the property this one was
+    # borrowing.
     # `--no-compressed` matters, and a request header alone will not do it: CURL_OPTS
     # carries --compressed, which makes curl decode any Content-Encoding it understands
     # whatever Accept-Encoding says — so the magic-byte check below would compare against
-    # plaintext no matter what the server actually sent. sitemapAction() gzips
-    # unconditionally, so identity encoding still yields gzip: the app's own quirk, and
-    # convenient here.
+    # plaintext no matter what the server actually sent. The generator writes the file
+    # gzipped, so identity encoding still yields gzip.
     EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"} --no-compressed
         -H 'Accept-Encoding: identity')
     fetch "$BASE/en/sitemap.xml"
     if [ "$STATUS" = "200" ] && [ "$(header content-encoding)" = "gzip" ] \
         && [ "$(head -c2 "$BODY" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then
-        pass "bridged: sitemap.xml is still real gzip under its Content-Encoding"
+        pass "sitemap.xml is still real gzip under its Content-Encoding"
     else
-        # getBody() instead of getContent() de-gzips the payload and leaves the header on
-        fail "bridged: sitemap.xml should be gzip-encoded gzip (got $STATUS, '$(header content-encoding)')"
+        # a body that is not gzip under a gzip header is either double-encoded on the way
+        # out or de-gzipped with the header left on — unreadable to a crawler either way
+        fail "sitemap.xml should be gzip-encoded gzip (got $STATUS, '$(header content-encoding)')"
     fi
     EXTRA_HEADERS=(${SYMFONY_HEADERS[@]+"${SYMFONY_HEADERS[@]}"})
 
