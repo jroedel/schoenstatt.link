@@ -1,0 +1,52 @@
+{#
+  The library-collection configuration form — the Twig counterpart of
+  module/Books/view/books/collections/edit.phtml and its fields-partial.phtml.
+
+  Nineteen plain rows in the partial's order, `submit` among them: unlike the role form
+  below, this partial renders its own submit button, so the template does not add one.
+
+  **The stylesheet and script are reproduced with the original's broken path**, and that
+  is deliberate. fields-partial.phtml appends
+  `$this->basePath() . "/gen-selectize-markdown-$lang.js"` — with no `/js/` segment —
+  so the laminas page has been requesting a script that 404s. Every other partial in the
+  module writes `/js/…`. It is left wrong here because a porting batch has no business
+  silently changing which assets a page loads: fixing it would make the ported page load
+  a file the original never has, which is a behaviour change hiding inside a diff that
+  is supposed to prove there are none. Recorded in BACKLOG instead; the same rule the
+  batch-2 template nits were left alone under.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/gen-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('libraryId')) }}
+{{ form_row(form.get('name')) }}
+{{ form_row(form.get('abbreviation')) }}
+{{ form_row(form.get('description')) }}
+{{ form_row(form.get('callNumberRegex')) }}
+{{ form_row(form.get('callNumberHelpText')) }}
+{{ form_row(form.get('callNumberExplanation')) }}
+{{ form_row(form.get('mainShowDisplay')) }}
+{{ form_row(form.get('sortTextFormat')) }}
+{{ form_row(form.get('labelLine1')) }}
+{{ form_row(form.get('labelLine2')) }}
+{{ form_row(form.get('labelLine3')) }}
+{{ form_row(form.get('defaultCheckoutTimePeriodInDays')) }}
+{{ form_row(form.get('requireCallNumbers')) }}
+{{ form_row(form.get('enforceCallNumberRegex')) }}
+{{ form_row(form.get('isActive')) }}
+{{ form_row(form.get('adminNotes')) }}
+{{ form_row(form.get('security')) }}
+{{ form_row(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}

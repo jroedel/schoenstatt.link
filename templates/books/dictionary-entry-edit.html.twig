@@ -1,0 +1,49 @@
+{#
+  The dictionary-entry edit form — the Twig counterpart of
+  module/Books/view/books/dictionary/edit.phtml and its fields-partial.phtml.
+
+  The Markdown-help link sits *between* `directTranslation` and `entry`, which is where
+  the partial puts it, and it is a `pull-right` float — so its position in the source
+  order is what decides which row it floats beside. Moving it to the top or bottom would
+  render differently.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-validate-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('key')) }}
+{{ form_row(form.get('locale')) }}
+{{ form_row(form.get('directTranslation')) }}
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
+{{ form_row(form.get('entry')) }}
+{{ form_row(form.get('links')) }}
+{{ form_row(form.get('isActive')) }}
+{{ form_row(form.get('security')) }}
+{{ form_row(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  `links` is a multiple select, so its name carries `[]`. `create: false` here against the
+  text form's `create: true`: a dictionary entry may only link to entries that exist.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='links[]']").selectize({
+    create: false,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}

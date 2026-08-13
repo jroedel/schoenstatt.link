@@ -614,7 +614,7 @@ $edit = static function (
 // **No breadcrumbs and no index route.** Measured from the laminas rendering: the page
 // renders `<title>Edit text - Schoenstatt Link</title>`, an `<h1>` and no breadcrumb trail
 // at all, because `text-edit` is not in the navigation config. The entity spec declares no
-// `index_route` either, so REDIRECT_ROUTE names where a successful write goes —
+// `index_route` either, so REDIRECT_TARGET names where a successful write goes —
 // reproducing TextsController::redirectAfterEdit(), which sends the moderator to the text
 // itself rather than to a list.
 $edit(
@@ -627,9 +627,80 @@ $edit(
     'Books',
     [
         EntityEditController::ID_KIND        => SchoenstattLinkIdentifier::ENTITY_TEXT,
-        EntityEditController::REDIRECT_ROUTE => ['text', ['sw_id' => 'identifier', 'slug' => 'slug']],
+        EntityEditController::REDIRECT_TARGET => 'text',
     ],
     ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_TEXT)]
+);
+
+// A movement role, guarded `sch_moderator`. Two peculiarities of its .phtml are carried
+// over and documented in the template: the fields partial does not render its own submit
+// button, and its first two selects render with the translator off because an association
+// name and a role title are data rather than interface text.
+//
+// **`/roles/1/edit` is a 302, not a form**, and that is correct: `getRole()` answers null
+// for 142 of the 1,468 rows in `sch_roles` — role 1 hangs off an association the
+// projection filters — so `editAction()`'s not-found branch fires. Measured against
+// laminas for an account holding every role, and reproduced here: flash, then a redirect
+// to the `roles` index, which the entity spec names.
+$edit(
+    'roles/role/edit',
+    '/roles/{role_id}/edit',
+    'role',
+    'role_id',
+    'schoenstatt/role-edit.html.twig',
+    'Edit Role',
+    'Schoenstatt',
+    [],
+    //the laminas constraint exactly, which is also what keeps `/roles/create` out
+    ['role_id' => '[0-9]{1,5}']
+);
+
+// A library collection, and the first route in the batch with a *per-row* check on top of
+// its route guard: the `collection` spec declares `acl_resource_id_field => resourceId`
+// with `acl_edit_permission => administrate`, so App\Sion\EntityEdit asks the ACL about
+// `library_<id>` — the dynamic resource Books\Model\LibraryTable contributes — after the
+// guard has already said yes.
+//
+// **And the row check is substantially the whole of the protection here.** The guard admits
+// `lib_user`, which `user_role` marks `is_default = 1` — along with `pub_user`, `sch_user`
+// and `bib_user` — so registration grants it and every signed-in visitor holds it. Measured
+// 2026-08-13, by `grantRoles()` refusing to grant a role the fresh account already had. The
+// same surprise `association-edit` records for `sch_user`, one entity over: the route-level
+// guard means little more than "signed in", and what actually separates one library's
+// moderator from another's is the per-row check.
+// `test/Smoke/Batch7EditSurfaceSmokeTest` asserts that refusal explicitly, because a
+// route that lost it would look perfectly healthy.
+$edit(
+    'collections/collection/edit',
+    '/collections/{collection_id}/edit',
+    'collection',
+    'collection_id',
+    'books/collection-edit.html.twig',
+    'Configure Collection',
+    'Books',
+    [],
+    ['collection_id' => '[0-9]{1,5}']
+);
+
+// A dictionary entry, guarded `dict_administrator` — one role, no descendants, the
+// sharpest guard in the batch.
+//
+// Declared **after** `dictionary/inLanguage` (`/dictionary/{inLanguage}`), which it cannot
+// collide with anyway: that route's segment is constrained to two or three letters and
+// this path has three segments. The ordering is the file's convention.
+//
+// The entity spec declares no `index_route`, so REDIRECT_TARGET names where a successful
+// write goes — reproducing DictionaryController::redirectAfterEdit().
+$edit(
+    'dictionary/entry/edit',
+    '/dictionary/{entry_id}/edit',
+    'dictionary-entry',
+    'entry_id',
+    'books/dictionary-entry-edit.html.twig',
+    'Edit dictionary entry',
+    'Books',
+    [EntityEditController::REDIRECT_TARGET => 'dictionaryEntry'],
+    ['entry_id' => '[0-9]{1,6}']
 );
 
 // ---------------------------------------------------------------------------
