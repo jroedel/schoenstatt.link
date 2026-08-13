@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace SchoenstattTest\Unit;
 
 use Application\Module;
+use Application\Navigation\PageBuilder;
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/../../module/Application/src/Navigation/PageBuilder.php';
 require_once __DIR__ . '/../../module/Application/src/Module.php';
 
 /**
@@ -21,8 +23,12 @@ require_once __DIR__ . '/../../module/Application/src/Module.php';
  * `markDataLabels()` is the whole of that decision, and it is deliberately static and pure so
  * it can be checked here rather than only through a rendered page — the mistake it prevents
  * is not visible in the markup, only in a table nobody reads until an agent asks what is left
- * to translate. `Application\Module` is required directly: it touches no Laminas class at
- * class level, so this stays in the vendor-free unit suite.
+ * to translate. The rule lives in `Application\Navigation\PageBuilder` since the builders were
+ * extracted for the Symfony side to share; `Application\Module::markDataLabels()` delegates to
+ * it and is still the name the breadcrumb partial and this test use. Both files are required
+ * directly: neither touches a Laminas class at class level — the `use` statements resolve only
+ * when a method that needs one is called, and none of these do — so this stays in the
+ * vendor-free unit suite.
  */
 class NavigationDataLabelsTest extends TestCase
 {
@@ -103,6 +109,22 @@ class NavigationDataLabelsTest extends TestCase
      * onBootstrap() runs before anything can report an error, and a cache miss on one branch is
      * routine on a full APCu segment, so a missing key must not be an exception there.
      */
+    /**
+     * The delegation itself, because the alias is what every existing caller uses.
+     *
+     * partial/breadcrumbs.phtml reads `Application\Module::LABEL_IS_DATA` and the smoke test
+     * names `Module::markDataLabels()`; if the delegate were dropped the flag would silently
+     * stop being set and one row per record would start arriving again.
+     */
+    public function testModuleStillDelegatesToTheBuilder(): void
+    {
+        self::assertSame(PageBuilder::LABEL_IS_DATA, Module::LABEL_IS_DATA);
+        self::assertSame(
+            PageBuilder::markDataLabels($this->branches()),
+            Module::markDataLabels($this->branches())
+        );
+    }
+
     public function testAMissingOrEmptyBranchIsTolerated(): void
     {
         self::assertSame([], Module::markDataLabels([]));

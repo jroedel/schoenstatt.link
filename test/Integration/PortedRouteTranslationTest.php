@@ -332,10 +332,17 @@ class PortedRouteTranslationTest extends TestCase
         }
 
         //the two maintenance endpoints and /_health answer JSON; the GeoJSON pair does
-        //too. Enumerated because these are individual routes among HTML siblings, not
-        //a namespace.
+        //too, and the sitemap answers XML. Enumerated because these are individual routes
+        //among HTML siblings, not a namespace.
+        //
+        //The sitemap is the one that is worth a sentence: it is *full of* text a visitor
+        //reads — 7,000 page URLs — but not one localized string. Each entry already carries
+        //all five languages as xhtml:link alternates, so the file has no locale of its own,
+        //and giving these routes a text domain would attach a translator to an endpoint
+        //that never calls one.
         $jsonOnly = ['health', 'sm-cache-status', 'sm-clear-persistent-cache',
-                     'api-v1/shrines-json', 'api-v2/shrines-json'];
+                     'api-v1/shrines-json', 'api-v2/shrines-json',
+                     'sitemap', 'sitemap-part'];
         foreach ($jsonOnly as $json) {
             if ($name === $json || $name === $json . '.locale') {
                 return false;
