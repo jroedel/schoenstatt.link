@@ -1,5 +1,16 @@
 # Translation migration
 
+> **Superseded by [translation.md](translation.md) on 2026-08-13 for anything about
+> how translation works today.** That file describes the mechanism as it now
+> stands: the discovery loop, text domains across the two front controllers, and
+> the rules for writing a Twig template that shows text to a human.
+>
+> This file is kept for the argument it makes about JTranslate's *future scope* —
+> what 3.0 removes, what `symfony/translation` should eventually take over, and why
+> the precompiled-PHP-array format stays. That argument is still live. Its
+> descriptions of the current mechanism are not; where the two disagree,
+> `translation.md` is right and this file is a snapshot of 2026-08-09.
+
 What JTranslate is for now that its scope is being cut, and what Symfony takes over.
 
 **Revised 2026-08-09.** The first version of this document argued for retiring
