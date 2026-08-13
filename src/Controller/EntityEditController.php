@@ -89,6 +89,11 @@ final class EntityEditController
     public const REDIRECT_TARGET = '_edit_redirect_target';
     /** Names a private method below, e.g. `publicationValueOptions`. */
     public const EXTRA_VARIABLES = '_edit_extra_variables';
+    /**
+     * The laminas delete route the confirmation modal posts to, for the two entities whose
+     * templates render one. Absent everywhere else, and absent means no modal.
+     */
+    public const DELETE_ROUTE    = '_edit_delete_route';
 
     public function __construct(
         private readonly EntityEdit $edit,
@@ -160,6 +165,11 @@ final class EntityEditController
             'form_action' => $this->urls->path($laminasRoute, [$idParam => $rawId]),
             'entity'      => $object,
             'entity_id'   => $id,
+            //Every view model editAction() builds carries one; two of the ten templates
+            //render it, inside a modal gated on the delete route's own permission. Its
+            //action is the *laminas* delete route, which this batch does not port.
+            'delete_form'   => $this->edit->deleteForm(),
+            'delete_action' => $this->deleteAction($request, $idParam, $rawId),
         ] + $this->extraVariables($request, $entity, $object, $form)));
     }
 
@@ -218,6 +228,32 @@ final class EntityEditController
         }
 
         return $this->urls->path($target[0], $target[1]);
+    }
+
+    /**
+     * Where the delete-confirmation modal posts, for the two routes that render one.
+     *
+     * **Declared, not derived.** The first version of this took the edit route's name and
+     * swapped `/edit` for `/delete`, on the reasoning that both modal-rendering routes
+     * follow that shape. They do — and the other eight do not have a delete twin at all, so
+     * `App\Laminas\RouteUrl` threw assembling `books/book/delete`, *after* the response was
+     * assembled. That is the empty-200 wedge again, on three routes that had been working,
+     * caught by the smoke suite one commit after the same failure shape cost
+     * `collections/collection/edit`.
+     *
+     * The lesson is worth more than the fix: deriving a route name from another route name
+     * is a guess that fails silently, and this file now has two constants where it had one
+     * clever rule.
+     */
+    private function deleteAction(Request $request, string $idParam, string $rawId): string
+    {
+        /** @var mixed $route */
+        $route = $request->attributes->get(self::DELETE_ROUTE);
+        if (! is_string($route) || '' === $route) {
+            return '';
+        }
+
+        return $this->urls->path($route, [$idParam => $rawId]);
     }
 
     /**

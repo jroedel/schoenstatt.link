@@ -30,10 +30,10 @@
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 31,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 90,
+        "symfony_routes_acl_checked": 94,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 120,
+        "symfony_served_routes": 124,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -7945,6 +7945,26 @@
                 "denial_style": "html"
             }
         },
+        "assignments/assignment/edit": {
+            "path": "/assignments/{assignment_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/assignment/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "assignments/assignment/edit.locale": {
+            "path": "/{_locale}/assignments/{assignment_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/assignment/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "assignments/search": {
             "path": "/assignments/search",
             "controller": "App\\Controller\\AssignmentSearchController::search",
@@ -8291,6 +8311,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/libraries",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/edit": {
+            "path": "/libraries/{library_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/edit.locale": {
+            "path": "/{_locale}/libraries/{library_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/edit",
                 "reason": null,
                 "denial_style": "html"
             }

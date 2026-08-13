@@ -94,7 +94,62 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
         return [
             'collection' => ['/en/collections/1/edit', 'name="callNumberRegex"'],
             'book'       => ['/en/books/18370/edit', 'name="withinLibraryId"'],
+            'library'    => ['/en/libraries/1/edit', 'name="barcodeText"'],
         ];
+    }
+
+    /**
+     * The assignment page's delete-confirmation modal: a **second form** on the page, gated
+     * on a different permission from the one that let the visitor in
+     * (`sch_general_moderator` against `sch_moderator`), and posting to the *laminas* delete
+     * route this batch does not port.
+     *
+     * Both halves are asserted because half of it is the dangerous state: a trigger button
+     * whose modal is missing does nothing, and a modal whose trigger is missing is
+     * unreachable — but a modal rendered for someone who may not delete would offer an
+     * action that 403s, which is the one a reviewer would call a regression.
+     */
+    public function testTheAssignmentModalRendersOnlyForSomeoneWhoMayDelete(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $allowed = $this->get('/en/assignments/77/edit', false, $jar);
+
+        $this->assertSame(200, $allowed['status']);
+        $this->assertStringContainsString('name="startDate"', $allowed['body'], 'the form itself');
+        $this->assertStringContainsString(
+            'modal-dialog',
+            $allowed['body'],
+            'an account holding the delete permission gets the confirmation modal'
+        );
+        //The modal posts to the laminas delete route, bridged. Asserting the URL rather
+        //than just the markup is what catches DELETE_ROUTE naming the wrong route.
+        //
+        //**Escaped, and that is not this test being fussy.** `Laminas\Escaper`'s
+        //escapeHtmlAttr() turns `/` into `&#x2F;`, so a form action reads
+        //`&#x2F;en&#x2F;…` in the markup — on *both* front controllers, which is why
+        //tools/port-baseline.php has a rule that unescapes entities before comparing.
+        //Asserting the raw path here fails against correct output.
+        $this->assertStringContainsString(
+            '&#x2F;en&#x2F;assignments&#x2F;77&#x2F;delete',
+            $allowed['body'],
+            'the modal has to post to the entity\'s delete route'
+        );
+
+        $bare = $this->newCookieJar();
+        $this->signIn($bare, ['sch_moderator']);
+
+        $refused = $this->get('/en/assignments/77/edit', false, $bare);
+
+        $this->assertSame(200, $refused['status'], 'sch_moderator may still edit');
+        $this->assertStringNotContainsString(
+            'modal-dialog',
+            $refused['body'],
+            'sch_moderator alone may not delete, so neither the modal nor its trigger belongs '
+            . 'on the page — offering an action that 403s is worse than not offering it'
+        );
     }
 
     #[DataProvider('libraryScopedPaths')]

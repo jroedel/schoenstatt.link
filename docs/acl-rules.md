@@ -49,10 +49,10 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | routes declared twice | 2 |
 | routes shadowed by symfony | 31 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 90 |
+| symfony routes acl checked | 94 |
 | symfony routes open | 30 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 120 |
+| symfony served routes | 124 |
 | total routes | 188 |
 | unguarded routes | 24 |
 | unguarded routes matchable | 13 |
@@ -114,6 +114,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `api-v3/schema-method` | `/api/v3/schema` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `assignments/advanced-search` | `/assignments/advanced-search` | `route/assignments/advanced-search` | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssignmentSearchController::advancedSearch` |
 | `assignments/advanced-search.locale` | `/{_locale}/assignments/advanced-search` | `route/assignments/advanced-search` | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssignmentSearchController::advancedSearch` |
+| `assignments/assignment/edit` | `/assignments/{assignment_id}/edit` | `route/assignments/assignment/edit` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityEditController` |
+| `assignments/assignment/edit.locale` | `/{_locale}/assignments/{assignment_id}/edit` | `route/assignments/assignment/edit` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityEditController` |
 | `assignments/search` | `/assignments/search` | `route/assignments/search` | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssignmentSearchController::search` |
 | `assignments/search.locale` | `/{_locale}/assignments/search` | `route/assignments/search` | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\AssignmentSearchController::search` |
 | `association` | `/{sw_id}/{slug}` | `route/association` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\AssociationController` |
@@ -149,6 +151,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `health` | `/_health` | _open_ | everyone — reason below | n/a | `App\Controller\HealthController` |
 | `libraries` | `/libraries` | `route/libraries` | lib_administrator | html | `App\Controller\LibrariesController` |
 | `libraries.locale` | `/{_locale}/libraries` | `route/libraries` | lib_administrator | html | `App\Controller\LibrariesController` |
+| `libraries/library/edit` | `/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
+| `libraries/library/edit.locale` | `/{_locale}/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `music` | `/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
 | `music.locale` | `/{_locale}/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
 | `persons` | `/persons` | `route/persons` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonsController` |

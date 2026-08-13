@@ -9,6 +9,7 @@ use App\Laminas\ServiceBridge;
 use BjyAuthorize\View\Helper\IsAllowed;
 use Closure;
 use Laminas\Form\FormInterface;
+use SionModel\Form\DeleteEntityForm;
 use RuntimeException;
 
 use function count;
@@ -214,6 +215,27 @@ final class EntityEdit
 
         /** @var FormInterface<array<string, mixed>> $instance */
         return $instance;
+    }
+
+    /**
+     * The delete-confirmation form `editAction()` puts in every view model.
+     *
+     * `new DeleteEntityForm()` is what laminas does — literally, with no container lookup —
+     * so this is not a reproduction so much as the same line. Two of the batch's ten
+     * templates render it, `person` and `assignment`, each inside a Bootstrap modal gated on
+     * the visitor holding the entity's *delete* route permission. The other eight ignore it,
+     * exactly as their .phtml do.
+     *
+     * It posts to the laminas delete route, which stays on laminas: this batch ports the
+     * edit verb only. So the modal is a Symfony-rendered form whose action is a bridged
+     * URL — and the CSRF token it carries is accepted there because both front controllers
+     * read the same laminas session.
+     *
+     * @return FormInterface<array<string, mixed>>
+     */
+    public function deleteForm(): FormInterface
+    {
+        return new DeleteEntityForm();
     }
 
     /**
