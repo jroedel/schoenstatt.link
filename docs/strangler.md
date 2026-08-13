@@ -1108,6 +1108,40 @@ Batch 6's 43:
 | 5 | `936` vs `938` in a badge | `/admin` × 5 locales | the count of untranslated phrases, which grows as pages are rendered — so it moved between the two captures. Capture drift of the same kind rule 3 normalizes for visit counters, and a candidate for a rule 9 |
 | 4 | assignment rows in a different order | `/movement`, 4 locales of 5 | the same 62 assignments and the **same byte length**; `getAssignments()` orders by `AssociationId, IsActive DESC, IsMainRole DESC, Sort` and ties are broken arbitrarily, so two runs of *either* front controller disagree. That it was 5 locales on the previous run and 4 on this one, with no code change between them, is the demonstration |
 
+Batch 7's, after three defects the capture found were fixed (see below):
+
+| what | where | why |
+|---|---|---|
+| the navbar search box points at contacts, not at the library | `/books/{id}/edit`, `/libraries/{id}/edit` (12 responses) | **the one accepted regression of this batch**, and it is a real one — see the section below |
+| the `//<!-- -->` inline-script wrapper | every ported edit form with a selectize block | the batch-2 chrome nit below, now on more pages: `inlineScript()` wraps its content and `layout.html.twig` does not. Invisible in a browser |
+| delete-button attribute order, and a space around a `&nbsp;` | `/assignments/{id}/edit` | the button carries the same attributes in a different order, and the template puts `&nbsp;` on its own line. No rendered difference |
+
+**`/collections/{id}/edit` is byte-identical**, which is the useful control: it is the one
+library-scoped form whose route name is not in the search-box list below, so nothing else
+about the batch's shared machinery differs from laminas at all.
+
+##### The navbar search box on library-scoped pages — accepted, not fixed
+
+`module/Application/view/layout/layout.phtml` switches the navbar search from "Search
+contacts" to the *current library's* search whenever the route name contains
+`libraries/library/`, `books/`, `checkouts/` or `library-imports/`. It gets the name and
+the resource id from **`libraryInfo()`**, which is on the unavailable-helper list above —
+it needs an MvcEvent — so a Symfony-served route cannot call it, and
+`App\View\SiteChrome` falls through to the contacts search.
+
+So on the two ported pages under those prefixes a librarian gets a search box that searches
+contacts where laminas gives them one that searches their library. That is a functional
+regression, not a cosmetic one, and it is recorded here rather than fixed because
+reproducing it means teaching `SiteChrome` which library the current page belongs to — the
+row is already loaded, so it is the library's name plus an `isAllowed($resourceId, 'show')`
+check — which is chrome work rather than porting work and touches every ported page's
+layout path.
+
+**It is also a preview of the rest of the circulation surface.** Every remaining
+`libraries/library/*`, `books/*`, `checkouts/*` and `library-imports/*` route hits the same
+branch, so whoever ports those should expect to do the `SiteChrome` work first rather than
+accept it twenty more times.
+
 Carried over from earlier batches, unchanged:
 
 | what | where | why |
@@ -1184,6 +1218,23 @@ whole comparison against unmodified code — is what made them visible, and it c
 | `format.entity('person', …)` dropped its options, so `displayEditPencil: false` did nothing | batch 5 | an extra `…/persons/{id}/edit` anchor on **every assignment row of every ported association page**. Nothing failed; the page offered a link the original does not |
 | `show_active\|default(true)` turned an explicit `false` back into `true` — Twig's `default` fires on an *empty* value | batch 5 | the association page renders that partial twice with complementary filters, so both columns showed the same rows: "Past contacts" listed current contacts and vice versa. Visible on `/en/SL100001A`, whose six assignments have all ended — laminas leaves the first column empty and the ported page filled it |
 | `LocalePrefix::redirect()` rebuilt its target from the route name and dropped the query string | batch 4 | `/assignments/search?search=Walter` landed on `/en/assignments/search` with the search silently gone — and, since a blank query there returns everything, on a 595 KB page rather than an error. Invisible until a route whose input *is* the query string was ported |
+
+**Batch 7 found three, and one of them destroys data.** Every one passed the batch's own
+smoke suite — nineteen tests asserting three access outcomes per route and a field marker in
+the body — which is the sharpest statement yet of what this comparison is for:
+
+| what was wrong | how it looked |
+|---|---|
+| **a multiple select marked nothing `selected`** | `Select::getValue()` returns an *array*, the renderer compared it with `is_scalar()`, and the comparison fell back to `''`. The field renders, the page is a 200, the form validates and saves — and the browser posts no values for `tags[]`, so `getData()` contributes an empty array and `updateEntity()` **writes it over the stored tags**. `tags`, `composersAll`, `lyricistsAll`, `links`, `authors`, `inLanguage`, `keywords`, `adminTags` — one word of markup between working and silent data loss |
+| every checkbox in the wrong wrapper | `<div class="form-group ">` where TwbBundle emits `<div class="checkbox">`. Bootstrap 3 styles the two differently, so it was visible misalignment on every checkbox of all eight forms |
+| the wrong flash on an unloadable record | "Access to entity denied." where laminas says "Role not found." — telling a moderator they lack a permission when the record is simply unreachable. Only visible on the *next* page, since a flash is read one request later |
+
+Two of the three share a cause worth naming: **`AssociationForm` has no multiple select and
+renders its checkboxes outside a row**, so the only form ported before this batch exercised
+neither path. A renderer that has served one form well is not a renderer that has been
+tested. The multiple-select name suffix — the `[]` batch 5 found missing — was the third
+piece of the same element type, and all three were latent from the day the class was
+written.
 
 #### A Twig syntax error is an empty HTTP 200
 
