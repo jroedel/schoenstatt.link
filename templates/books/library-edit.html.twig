@@ -1,0 +1,101 @@
+{#
+  The library configuration form — the Twig counterpart of
+  module/Books/view/books/libraries/edit.phtml and its fields-partial.phtml.
+
+  **Its form is built by App\Books\LibraryScopedForms, not by the container**, because
+  LibraryFormFactory reads the route match to find the library. See that class.
+
+  The partial toggles the select translator four times, and the toggles are reproduced row
+  by row rather than approximated: `filiationId`, `contactPersonId` and `contactEmail`
+  untranslated, then `mainShowDisplay` through `checkoutPersonListKind` translated, then
+  `defaultCheckoutPersonId` through `enableCheckouts` untranslated, then the last six
+  translated again. A person's name and a call-number format are data; "Books may be
+  checked out by" is interface text.
+
+  The "Not in the list?" paragraph sits between `contactPersonId` and `contactEmail` and is
+  gated on two separate permissions, the second nested inside the first — so a moderator who
+  may add a person but not import one sees the first link only. Both are ACL checks against
+  laminas route resources, which `is_allowed()` asks the same way the .phtml does.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('name')) }}
+{{ form_row(form.get('description')) }}
+{{ form_row(form.get('filiationId'), false) }}
+{{ form_row(form.get('contactPersonId'), false) }}
+{% if is_allowed('route/persons/create') %}
+<p>{{ translate('Not in the list?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a>
+    {% if is_allowed('route/admin/import-father') %}
+    or <a target="_blank" href="{{ laminas_path('admin/import-father') }}">{{ translate('Import from Patres') }}</a>
+    {% endif %}
+</p>
+{% endif %}
+{{ form_row(form.get('contactEmail'), false) }}
+{{ form_row(form.get('mainShowDisplay')) }}
+{{ form_row(form.get('viewRole')) }}
+{{ form_row(form.get('defaultCheckoutTimePeriodInDays')) }}
+{{ form_row(form.get('checkoutPersonListKind')) }}
+{{ form_row(form.get('defaultCheckoutPersonId'), false) }}
+{{ form_row(form.get('mainCollectionId'), false) }}
+{{ form_row(form.get('callNumberRegex'), false) }}
+{{ form_row(form.get('callNumberPlaceholder'), false) }}
+{{ form_row(form.get('callNumberHelpText'), false) }}
+{{ form_row(form.get('callNumberExplanation'), false) }}
+{{ form_row(form.get('sortTextFormat'), false) }}
+{{ form_row(form.get('labelLine1'), false) }}
+{{ form_row(form.get('labelLine2'), false) }}
+{{ form_row(form.get('labelLine3'), false) }}
+{{ form_row(form.get('barcodeText'), false) }}
+{{ form_row(form.get('adminNotes'), false) }}
+{{ form_row(form.get('isActive'), false) }}
+{{ form_row(form.get('enableCheckouts'), false) }}
+{{ form_row(form.get('checkoutBooksRole')) }}
+{{ form_row(form.get('createCheckoutsIfCheckingInANonCheckedOutBook')) }}
+{{ form_row(form.get('useCollections')) }}
+{{ form_row(form.get('allowCollectionlessBooks')) }}
+{{ form_row(form.get('requireCallNumbers')) }}
+{{ form_row(form.get('enforceCallNumberRegex')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  All four `create: false`: every one of these selects names a row that has to exist — a
+  filiation, a person, a collection. None of them is a free-text label like the association
+  form's phone labels.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='filiationId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='contactPersonId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='mainCollectionId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='defaultCheckoutPersonId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}

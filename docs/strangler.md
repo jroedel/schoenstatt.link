@@ -1405,9 +1405,86 @@ button class rule (`btn` unless already present, then `btn-default` unless a kno
 is), and the row class, whose **double space** (`<div class="form-group  col-md-4">`) is
 real and was first misread because the extraction collapsed whitespace runs.
 
-Still on laminas: the user and translation forms (the static adapter) and every other
-create/edit/delete page. `/movement`, `/persons`, `/texts` and the two contact searches
-moved in batch 6; `/literature`'s search form is ported — see below.
+Still on laminas: the user and translation forms (the static adapter) and every
+create/delete page. `/movement`, `/persons`, `/texts` and the two contact searches
+moved in batch 6; `/literature`'s search form is ported — see below; and the **edit**
+verb moved in batch 7 — see the next section.
+
+#### A third obstacle, found in batch 7: a form factory that reads the route match
+
+The two obstacles above are about the form *layer*. This one is about the *factory*, it
+was not anticipated anywhere in this document, and it presents as a page that answers
+**HTTP 200 with zero bytes**.
+
+`Books\Service\BookFormFactory`, `CollectionFormFactory` and `LibraryFormFactory` each
+open with
+
+```php
+$routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
+$libraryId  = $routeMatch->getParam('library_id');
+```
+
+to discover which library the form belongs to. A Symfony-served route has no MvcEvent, so
+`getMvcEvent()` answers null, and the factory dies with `Call to a member function
+getRouteMatch() on null` — *after* the response has been assembled, which is the
+fatal-200 wedge this document already records for Twig syntax errors.
+
+**It shipped.** `collections/collection/edit` was merged in that state, because the smoke
+test covering it asserted only the anonymous 302 and never a successful render. That is
+the second independent demonstration of "assert something from the body, not just a
+status" in this file, and the first where the rule was quoted in the same commit that
+broke it.
+
+`App\Books\LibraryScopedForms` is the answer, and its shape is the part to copy: it
+constructs the **same form classes**, so elements, labels and
+`getInputFilterSpecification()` stay the application's own and cannot drift — only the
+factory's *wiring* is reproduced, each `setValueOptions()` reading the same table method
+its factory reads. What it costs is that the wiring now exists twice with no test able to
+compare the two, because the laminas factory cannot be built at all without an MvcEvent.
+The baseline capture is the guarantee.
+
+**Expect this again.** Any laminas factory may reach for the route match, and three of
+the ~40 in this application do. Before porting a route, ask what builds its form as well
+as what renders it — `grep -l 'getMvcEvent\|getRouteMatch' module/*/src/Service/*.php`
+answers it in one line, and `CheckoutFormFactory` is on that list for whoever ports the
+circulation surface.
+
+### The edit surface — batch 7, 2026-08-13
+
+Eight of the ten entity edit forms now run on `App\Sion\EntityEdit`, one reproduction of
+`SionController::editAction()` — the counterpart of what `App\Sion\EntityShow` is for the
+show pages — behind a single `App\Controller\EntityEditController` parameterized per route,
+the way `ContentPageController` serves the five static pages.
+
+| ported | still on laminas |
+|---|---|
+| `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit` | `publication-edit`, `persons/person/edit` |
+
+Five things worth knowing before touching any of it:
+
+- **`library-imports/library-import/edit` is not an edit form and is not in the batch.**
+  `LibraryImportsController::editAction()` reads a spreadsheet off disk and runs a full
+  import simulation on GET, then performs the real import when the POST carries `import`.
+  Porting it means porting the PhpSpreadsheet pipeline.
+- **`EntityEdit`'s `$loader` hook is needed by `association` alone.** `getObject()` already
+  dispatches to an entity's `get_object_function`, so `getPublication`, `getPerson`,
+  `getRole` and `getAssignment` are reached by the plain call; `association`'s is commented
+  out, which is what batch 5 found.
+- **`redirectAfterEdit()` has two asymmetries, both reproduced.** Its param-map branches
+  fall through on a missing field while its key/keyField branch throws, and it reads the
+  row as it was *loaded* rather than as updated, because laminas memoizes
+  `getEntityObject()`. Every key field here is derived from a primary key, so the two agree
+  today.
+- **Three of the ten declare a per-row ACL check** on top of their route guard, and for the
+  Books entities that check is substantially the whole of the protection: their guard names
+  `lib_user`, which `user_role` marks `is_default = 1`, so every registered account holds
+  it. Same shape as `sch_user` on `association-edit` and `composition-edit`.
+- **Two pages render a second form** — a delete-confirmation modal gated on the entity's
+  *delete* permission, which is a different one from the permission that let the visitor
+  reach the page. Its action is the laminas delete route, declared per route as
+  `DELETE_ROUTE` rather than derived: deriving `<route>/delete` broke three working pages,
+  because six of the eight have no delete twin and `RouteUrl` throws on an unknown route —
+  the empty-200 wedge again, one commit after the last one.
 
 ### The comment form — unblocked 2026-08-12, and it was blocking one entity more than this said
 

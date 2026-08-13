@@ -168,7 +168,8 @@ class ReservedVerbsTest extends TestCase
      *
      * **An entry moves from `legacy` to a route name when its verb route is ported**, and
      * that is the whole reason this list names the expectation instead of just asserting
-     * "not a show route". Batch 7 moved `text-edit`; the remaining eight `legacy` entries
+     * "not a show route". Batch 7 moved `text-edit` and `composition-edit`, each of which
+     * failed this test on the way through and was meant to; the remaining `legacy` entries
      * are the routes still on laminas, and each becomes a one-line edit here as it moves.
      * What must *never* appear in this column is `composition`, `text`, `publication` or
      * `association` — a show route claiming a verb path is the bug this file exists for.
@@ -178,8 +179,8 @@ class ReservedVerbsTest extends TestCase
     public static function verbUrls(): array
     {
         return [
-            //composition
-            'composition edit'            => ['/SL500001C/edit', 'legacy'],
+            //composition — `composition-edit` is ported (batch 7), `composition-delete` is not
+            'composition edit is ported'  => ['/SL500001C/edit', 'composition-edit'],
             'composition delete'          => ['/SL500001C/delete', 'legacy'],
             //text — `text-edit` is ported (batch 7), `text-delete` is not
             'text edit is ported'         => ['/SL400003T/edit', 'text-edit'],

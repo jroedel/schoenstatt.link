@@ -674,6 +674,45 @@ $edit(
     ['book_id' => '[0-9]{1,6}']
 );
 
+// A library's own configuration, the third of the library-scoped forms. Same per-row check
+// as the collection and book routes; its form likewise comes from
+// App\Books\LibraryScopedForms rather than the container.
+$edit(
+    'libraries/library/edit',
+    '/libraries/{library_id}/edit',
+    'library',
+    'library_id',
+    'books/library-edit.html.twig',
+    'Edit library configuration',
+    'Books',
+    [],
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// An assignment — who holds which role in which association, and between which dates.
+//
+// **The first ported page with a delete-confirmation modal**, i.e. a second form, gated on
+// `route/assignments/assignment/delete` (sch_general_moderator) rather than on the
+// permission that let the visitor reach the page (sch_moderator). Its action is the laminas
+// delete route, which this batch does not port; the CSRF token crosses because both front
+// controllers read the same session.
+//
+// The form's three identity selects arrive disabled — `EditAssignmentFormFactory` calls
+// `prepareforEdit()`, which also sets a validation group of the four date fields plus the
+// token. That matters for the POST: `getData()` returns only what the validation group
+// names, so the disabled selects cannot be smuggled past by a hand-built request.
+$edit(
+    'assignments/assignment/edit',
+    '/assignments/{assignment_id}/edit',
+    'assignment',
+    'assignment_id',
+    'schoenstatt/assignment-edit.html.twig',
+    'Edit Assignment',
+    'Schoenstatt',
+    [EntityEditController::DELETE_ROUTE => 'assignments/assignment/delete'],
+    ['assignment_id' => '[0-9]{1,6}']
+);
+
 // A movement role, guarded `sch_moderator`. Two peculiarities of its .phtml are carried
 // over and documented in the template: the fields partial does not render its own submit
 // button, and its first two selects render with the translator off because an association

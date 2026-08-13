@@ -1,0 +1,74 @@
+{#
+  The assignment edit form — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/assignments/edit.phtml and its fields-partial.phtml.
+
+  **The first ported page with a delete-confirmation modal**, which is a *second* form on
+  the page. Three things about it are load-bearing:
+
+  - It is gated on `route/assignments/assignment/delete`, a different permission from the
+    one that let the visitor reach this page — `sch_general_moderator` against
+    `sch_moderator`. Both the trigger button and the modal are inside that gate, and both
+    have to be, or a moderator gets a button that opens a modal that posts to a 403.
+  - Its action is the **laminas** delete route. This batch ports the edit verb only, so the
+    modal is a Symfony-rendered form posting to a bridged URL. Its CSRF token is accepted
+    there because both front controllers read the same laminas session.
+  - `EditAssignmentForm::prepareforEdit()` disables `associationId`, `roleId` and
+    `personId`, so the three selects render greyed out — an assignment's *who* and *where*
+    are fixed once created, and only its dates are editable. That happens in the form
+    factory, not here.
+
+  The "New person?" paragraph is gated the same way the library form's is, and is inside a
+  further condition: it only shows when `personId` is *not* disabled, which on this edit
+  page it always is. So the paragraph never renders here — reproduced anyway, because the
+  same partial serves the create page where it does.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('associationId'), false) }}
+{{ form_row(form.get('personId'), false) }}
+{% if not form.get('personId').getAttribute('disabled') and is_allowed('route/persons/create') %}
+<p>{{ translate('New person?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a>
+    {% if is_allowed('route/admin/import-father') %}
+    or <a target="_blank" href="{{ laminas_path('admin/import-father') }}">{{ translate('Import from Patres') }}</a>
+    {% endif %}
+{% endif %}
+{{ form_row(form.get('roleId')) }}
+{{ form_row(form.get('startDate')) }}
+{{ form_row(form.get('startDatePrecision')) }}
+{{ form_row(form.get('endDate')) }}
+{{ form_row(form.get('endDatePrecision')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{% if is_allowed('route/assignments/assignment/delete') %}
+&nbsp;{{ form_button(form.get('delete')) }}
+{% endif %}
+{{ form_close() }}
+
+{% if is_allowed('route/assignments/assignment/delete') %}
+<!-- Modal -->
+<div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">{{ translate('Careful') }}...</h4>
+      </div>
+      <div class="modal-body">
+        <p>{{ translate('Only delete an assignment if it was created by mistake!
+        		If you wish change the person in charge, simply set an "End Date" in the past
+        		and create a new assignment.') }}</p>
+{{ form_open(delete_form, delete_action) }}
+{{ form_row(delete_form.get('security')) }}
+{{ form_submit(delete_form.get('submit')) }}
+&nbsp;{{ form_button(delete_form.get('cancel')) }}
+{{ form_close() }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
