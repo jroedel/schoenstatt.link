@@ -359,17 +359,40 @@ readability — the destination is **Symfony**, reached gradually:
   form, the CSRF token, and what `deleteAction()` does to an association with
   children.
 
-- [ ] **`tools/acl-table.php` cannot see a parameterized route being shadowed.**
-  `shadowedBySymfony()` passes the *composed laminas pattern* to
+- [x] ~~**`tools/acl-table.php` cannot see a parameterized route being shadowed.**~~
+  **Fixed 2026-08-14.** `shadowedBySymfony()` passed the *composed laminas pattern* to
   `Symfony\...\UrlMatcher::match()` — the literal string `/:sw_id/edit`, placeholder and
-  all — so a laminas route with any route parameter can never be reported as shadowed.
-  Measured 2026-08-13: **0 of the 31** rows in the shadowed table have a parameterized
-  path, and all 90-odd parameterized laminas routes are invisible to the check. That is
+  all — so a laminas route with any route parameter could never be reported as shadowed.
+  Measured 2026-08-13: **0 of the 31** rows in the shadowed table had a parameterized
+  path, and all 90-odd parameterized laminas routes were invisible to the check. That is
   the exact blind spot the reserved-verb bug lived in, which is why nothing warned while
-  nine guarded routes were unreachable. Fixing it means substituting a sample value per
-  placeholder — the entity specs already carry usable ones — and treating "the sample
-  matched a ported route" as the shadow signal. Until then the tool's silence about a
-  parameterized route means nothing either way, and `docs/acl-rules.md` should say so.
+  nine guarded routes were unreachable.
+
+  The fix runs the check **both ways**, because neither direction is sufficient alone:
+
+  - *Forward*: each laminas pattern is instantiated into concrete URLs — one per
+    combination of its optional segments, each parameter replaced by a value from
+    `App\Routing\RegexSampler` — and those are matched. The sampler's guarantee is not
+    that it can sample everything but that **every value it returns is checked back
+    against the constraint it came from**, so a pattern it cannot model yields `null`
+    rather than a wrong URL.
+  - *Reverse*: for every URL Symfony **owns**, the real `TreeRouteStack` is asked which
+    laminas route would have served it. No sampling on the laminas side at all, and this
+    is the direction that catches a ported route claiming a narrow slice of a broad
+    laminas route — `/api/v3/associations` is claimed by Symfony while `/api/a` is not,
+    so the forward probe alone would have called `api-route-not-found` unshadowed.
+
+  Result: **31 → 52** shadowed rows, 19 of them parameterized, and every one of the
+  newly-visible routes checks the resource its laminas guard used to. A route neither
+  pass can decide is now reported as *uncomparable* instead of skipped, so the tool's
+  silence about a route finally means something; that list is currently empty and
+  `test/Integration/AclShadowCompletenessTest` fails if it stops being.
+
+  One warning-precision change came with it: a guard naming the configured
+  `default_role` (`guest`) is now treated as public, like a literal `null` already was.
+  Without it every ported `/api/v3/*` route reported that it had dropped the guard on
+  `api-route-not-found` — a 404 handler declared `['guest', 'user']`, i.e. reachable by
+  everyone, with no restriction for porting to lose.
 
 - [x] ~~**`TranslationsTable::flush()` cannot be called from a console process.**~~
   **Fixed 2026-08-10.** Three changes, because the session was only the trigger and
