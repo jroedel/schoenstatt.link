@@ -968,6 +968,23 @@ On production the same comparison is available without any file edit, through th
 canary above — and that is where it should be repeated, because production has
 translations, ICU 72.1 and five years more data than the capsule dump.
 
+**Flush the persistent cache before each capture when the change touches cached data**,
+or the diff proves less than it appears to. The navigation extraction on 2026-08-13
+compared 396 of 396 laminas responses identical — against a cache whose navigation
+branches had been *written by the code being replaced*. The new builder had not run at
+all on the paths that mattered. Flushing before each of the two captures re-ran it cold
+and gave the honest number, 394 of 396, the remaining two being a tie-broken row order in
+an assignments table that differs between any two runs. A warm cache does not make a diff
+wrong; it makes it a diff of the cache.
+
+**Trust the harness over an ad-hoc `curl`.** Twice in that same session a hand-rolled
+`curl … | grep` reported a regression the captures did not: a breadcrumb whose leaf had
+apparently vanished (the markup carries hundreds of spaces between tags, so `head -c 250`
+never reached it) and a navbar item that had apparently stopped being active. The
+captures — including two taken cold, minutes apart — disagreed both times, and they were
+right both times. Collapse whitespace *before* truncating, or better, use
+`port-baseline.php show` and diff.
+
 ### Known differences, and why each one stays
 
 Every remaining difference from the batch-4 run falls into one of five groups. None is a
