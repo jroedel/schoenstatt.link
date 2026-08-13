@@ -139,6 +139,29 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 6 — the contact/search surface. Every one of these is a GET whose input
+    // is the query string, so each is fetched **twice**: once empty and once with a
+    // term that matches rows in the capsule dump. The empty form is not the boring
+    // half — three of the four controllers only run their query when `isValid()`
+    // passes on the submitted data, so the empty fetch is the one that exercises the
+    // "no results yet" branch and the flash message that goes with it.
+    //
+    // `/assignments/search` is first because it is the destination of the navbar
+    // search box on every page of the site (App\View\SiteChrome::searchBox), so it is
+    // the highest-traffic path in this batch by a wide margin.
+    '/assignments/search',
+    '/assignments/search?search=Walter',
+    '/assignments/advanced-search',
+    //Assignment 77 hangs off role 259 of association 71 — the general presidium — so
+    //this row is also one of the rows /movement renders. One id therefore compares the
+    //show page and a table cell of another page in this batch.
+    '/assignments/77',
+    '/persons',
+    '/persons/search?search=Walter',
+    '/persons/494',
+    '/movement',
+    '/texts',
+    '/texts?search=Bund',
     // batch 5 — the reading surface: the four entity show pages, the literature
     // browse pages and the three sendToNewUrl redirects.
     //
