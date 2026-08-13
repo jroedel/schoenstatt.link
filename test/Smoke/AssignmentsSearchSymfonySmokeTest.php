@@ -32,7 +32,7 @@ class AssignmentsSearchSymfonySmokeTest extends SmokeTestCase
     /** Distinct from every other user of the trait, or one tearDown deletes another's accounts. */
     private const EMAIL_PREFIX = 'assignments-search-smoke-';
 
-    /** A surname with several assignments in the 2021 dump, so a search for it is not empty. */
+    /** A surname with several assignments in the capsule's data, so a search for it is not empty. */
     private const QUERY = 'Walter';
 
     protected function emailPrefix(): string
