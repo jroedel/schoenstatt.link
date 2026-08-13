@@ -38,9 +38,14 @@ parameters:
     #    batch's four.
     #
     # The real fix is to correct those annotations in the SionModel submodule, which
-    # is a cross-repo change and not this batch's. Scoped to the one file rather than
+    # is a cross-repo change and not this batch's. Scoped to the two files rather than
     # turned off globally via treatPhpDocTypesAsCertain, so the next wrong annotation
     # is still reported.
+    #
+    # EntityEdit briefly needed the same suppression and no longer does: its
+    # deniedMessage() asked existsEntity() to choose between "not found" and "access
+    # denied", which the batch-7 baseline showed was the wrong question — editAction()
+    # branches on getObject() being null — so the call went away and the ignore with it.
     ignoreErrors:
         -
             identifier: booleanNot.alwaysFalse

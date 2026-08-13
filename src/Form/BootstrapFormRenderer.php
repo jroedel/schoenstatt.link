@@ -16,6 +16,7 @@ use Laminas\Form\FormInterface;
 use function array_filter;
 use function array_flip;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_bool;
 use function is_object;
@@ -156,13 +157,38 @@ final class BootstrapFormRenderer
             return $this->element($element);
         }
 
-        $group = sprintf('<div class="form-group %s">', self::rowClass($element));
-
+        /**
+         * **A checkbox row is `<div class="checkbox">` and carries no form-group at all.**
+         *
+         * `TwbBundleFormRow::render()` has a `switch (true)` whose first case is
+         * `$type === 'checkbox' && $layout !== LAYOUT_HORIZONTAL && ! $element->getOption('form-group')`,
+         * and that case `return`s the element content *without* calling
+         * `renderElementFormGroup()`. The content itself has already been wrapped by
+         * `$checkboxFormat`, which is the literal `<div class="checkbox">%s</div>`.
+         *
+         * The layout test looks like it should exclude these forms — every one of them
+         * renders `class="form-horizontal"` — and it does not: `$layout` comes from the
+         * form's **`layout` option**, not from its CSS class, and none of these forms sets
+         * it. So `$layout` is null, `null !== LAYOUT_HORIZONTAL` holds, and every checkbox
+         * takes the first case.
+         *
+         * This method emitted `<div class="form-group ">` here until the batch-7 baseline,
+         * and it was wrong on every checkbox of all eight ported forms — `isDraft`,
+         * `isActive`, `requireCallNumbers`, the four on the role form, and so on. Bootstrap
+         * 3 styles `.checkbox` and `.form-group` differently, so it was a visible
+         * misalignment rather than a byte-level nicety. Nothing caught it earlier because
+         * `association-edit`, the only form ported before this batch, renders its checkboxes
+         * through `form_element` inside hand-built groups and never through a row.
+         *
+         * Help block and errors go *outside* the div, which is the order the `case null`
+         * branch appends them in.
+         */
         if ($element instanceof Checkbox) {
-            //A checkbox is its own label, so TwbBundle emits no separate one.
-            return $group . $this->element($element) . $this->errors($element)
-                . $this->rowHelpBlock($element) . '</div>';
+            return '<div class="checkbox">' . $this->element($element) . '</div>'
+                . $this->rowHelpBlock($element) . $this->errors($element);
         }
+
+        $group = sprintf('<div class="form-group %s">', self::rowClass($element));
 
         //**`for` only when the element has an id.** TwbBundleFormRow::render() picks
         //between the element and a bare attribute array on exactly that test —
@@ -479,11 +505,15 @@ final class BootstrapFormRenderer
      * belongs to number, range and date inputs, not text — and this class rendered
      * `min="3"`. Invisible in a browser, and a difference in the bytes.
      *
-     * Only the two types `input()` actually serves are listed. Adding an element type
-     * means adding its helper's list here; falling back to text's for an unknown type
-     * would silently drop `min`/`max`/`step` from a number input, which is the same
-     * class of bug from the other direction, so an unlisted type keeps everything and
-     * the next port has to look.
+     * Every type `input()` serves is listed. Adding an element type means adding its
+     * helper's list here; falling back to text's for an unknown type would silently drop
+     * `min`/`max`/`step` from a number input, which is the same class of bug from the
+     * other direction, so an unlisted type keeps everything and the next port has to look.
+     *
+     * Batch 7 is the port that had to look: `number`, `email`, `url` and `date` all appear
+     * in its ten forms and none of them was here. `test/Unit/BootstrapFormRendererTest`
+     * pins each list against the laminas helper it was transcribed from, so a wrong
+     * transcription fails rather than showing up as a handful of bytes in a diff.
      */
     private function input(ElementInterface $element, string $type, bool $withClass): string
     {
@@ -513,7 +543,40 @@ final class BootstrapFormRenderer
         /** FormHidden's is FormInput's, which is far wider; `value` and `name` are the whole of it in practice. */
         $hidden = $text;
 
-        $perType = ['text' => $text, 'hidden' => $hidden];
+        /**
+         * The four types batch 7's forms add, each transcribed from its own laminas
+         * helper's `$validTagAttributes` rather than adapted from text's — which is the
+         * whole point of this table. `number` differs from `text` in both directions: it
+         * gains `max`/`min`/`step` and *loses* `maxlength`, `minlength`, `pattern`,
+         * `size`, `dirname` and `inputmode`. Guessing would have kept `maxlength` on the
+         * seven number fields in this batch, which laminas drops.
+         */
+        $number = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'max',
+                   'min', 'step', 'placeholder', 'readonly', 'required', 'type', 'value'];
+        /** FormEmail: text's list plus `multiple`, minus `dirname` and `inputmode`. */
+        $email = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'maxlength',
+                  'minlength', 'multiple', 'pattern', 'placeholder', 'readonly', 'required',
+                  'size', 'type', 'value'];
+        /** FormUrl: FormEmail's without `multiple`. */
+        $url = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'maxlength',
+                'minlength', 'pattern', 'placeholder', 'readonly', 'required', 'size', 'type',
+                'value'];
+        /**
+         * FormDate declares none of its own — it extends AbstractFormDateTime, and this is
+         * that class's list. Note the absence of `placeholder`, which PersonForm declares
+         * on `birthDate`: laminas drops it and so must this.
+         */
+        $date = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'max',
+                 'min', 'readonly', 'required', 'step', 'type', 'value'];
+
+        $perType = [
+            'text'   => $text,
+            'hidden' => $hidden,
+            'number' => $number,
+            'email'  => $email,
+            'url'    => $url,
+            'date'   => $date,
+        ];
         if (! isset($perType[$type])) {
             return $attributes;
         }
@@ -637,7 +700,43 @@ final class BootstrapFormRenderer
             );
         }
 
-        $selected = $element->getValue();
+        /**
+         * **A multiple select's value is an array, and this compared it as a scalar.**
+         *
+         * `is_scalar($selected)` is false for an array, so the comparison fell back to `''`
+         * and *no option was ever marked selected on a multiple select*. Caught by the
+         * batch-7 baseline on a composition's `tags` and a dictionary entry's `links`,
+         * where laminas renders `<option value="Hinos-salmos" selected>` and this rendered
+         * the same option unselected.
+         *
+         * That is not a rendering nicety, it is **data loss on save**: the moderator opens
+         * the form, the multi-select shows nothing chosen, they change something else and
+         * submit — and the browser posts no values for `tags[]`, so `getData()` contributes
+         * an empty array and `updateEntity()` writes it over the stored tags. Every
+         * multiple select in the batch was affected: `tags` on text and composition,
+         * `composersAll`, `lyricistsAll`, `links`, and `authors`, `inLanguage`, `keywords`
+         * and `adminTags` on the book form.
+         *
+         * It survived the earlier form ports because `AssociationForm` has no multiple
+         * select — the same reason the missing `[]` on the name went unnoticed until batch
+         * 5, which is the *other* half of this element type being wrong.
+         *
+         * The scalar branch is unchanged, deliberately: it reproduces laminas' behaviour
+         * for a null value, where the cast to `''` is what an `empty_option` relies on.
+         */
+        /** @var mixed $selected */
+        $selected       = $element->getValue();
+        $selectedValues = [];
+        if (is_array($selected)) {
+            foreach ($selected as $one) {
+                if (is_scalar($one)) {
+                    $selectedValues[] = (string) $one;
+                }
+            }
+        } else {
+            $selectedValues[] = (string) (is_scalar($selected) ? $selected : '');
+        }
+
         foreach ($element->getValueOptions() as $value => $label) {
             if (is_array($label)) {
                 //Option groups: no association-form select uses one, and rendering it
@@ -648,7 +747,7 @@ final class BootstrapFormRenderer
             $options .= sprintf(
                 '<option value="%s"%s>%s</option>' . "\n",
                 $this->escaper->escapeHtmlAttr((string) $value),
-                (string) $value === (string) (is_scalar($selected) ? $selected : '') ? ' selected' : '',
+                in_array((string) $value, $selectedValues, true) ? ' selected' : '',
                 $this->escaper->escapeHtml($translateOptions ? ($this->translate)((string) $label) : (string) $label)
             );
         }

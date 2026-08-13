@@ -27,8 +27,14 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * `text-edit`/`text-delete` are the exception to the sharpness rather than to the rule:
  * the `text` show route is itself guarded `texts_user`, so those two answered 302 before
  * the fix as well. They are asserted anyway — a route that is right for the wrong reason
- * is still worth pinning, and the redirect *target* differs (`redirect=/en/SL400003T/edit`
- * either way, but reached from a different route).
+ * is still worth pinning.
+ *
+ * **`/en/SL400003T/edit` is now Symfony's own**, ported in batch 7, so its 302 comes from
+ * `App\Authorization\RouteGuard` rather than from `BjyAuthorize\Guard\Route` behind the
+ * bridge. The assertion is unchanged and still correct, which is the point: the visitor's
+ * experience of being refused does not depend on which front controller refuses them.
+ * `test/Smoke/Batch7EditSurfaceSmokeTest` is where that route's three access outcomes are
+ * checked properly.
  */
 class ReservedVerbRoutingSmokeTest extends SmokeTestCase
 {
