@@ -144,12 +144,31 @@ final class EntityEdit
      * its rough edge: the entity *key* is what gets capitalised, so `dictionary-entry`
      * flashes "Dictionary-entry not found." and `library-import` "Library-import not
      * found.". Ugly, untranslated, and what the page says today.
+     *
+     * ## The discriminator is `getObject()`, not `existsEntity()`
+     *
+     * This asked `existsEntity()` until the batch-7 baseline caught it, and the difference
+     * is not academic. **`editAction()` never calls `existsEntity()` at all**: it branches
+     * on `getEntityObject()` being null for "not found", and only then on
+     * `isActionAllowed()` for "denied". So a row that exists in the table but does not
+     * hydrate through its projection is *not found* on laminas — and there are 142 such
+     * roles of 1,468, `/roles/1/edit` among them.
+     *
+     * Asking `existsEntity()` made that page flash "Access to entity denied." where laminas
+     * flashes "Role not found.", which tells a moderator they lack a permission when the
+     * truth is the record is unreachable. The wrong discriminator came from
+     * `App\Sion\EntityShow::deniedMessage()`, where it is *correct* — `showAction()` really
+     * does call `existsEntity()` first — which is exactly why copying it looked safe.
+     *
+     * The cost is one extra `getObject()` on the denial path, which `load()` has already
+     * done. That is the same shape `EntityShow` accepts, and it is a redirect either way.
      */
     public function deniedMessage(string $entity, int $id): string
     {
-        $table = $this->entities->table($entity);
+        /** @var mixed $object */
+        $object = $this->entities->table($entity)->getObject($entity, $id, true);
 
-        return $table->existsEntity($entity, $id)
+        return is_array($object) && [] !== $object
             ? 'Access to entity denied.'
             : ucfirst($entity) . ' not found.';
     }

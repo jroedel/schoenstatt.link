@@ -42,11 +42,10 @@ parameters:
     # turned off globally via treatPhpDocTypesAsCertain, so the next wrong annotation
     # is still reported.
     #
-    # EntityEdit joined the list in batch 7 for the *same* `existsEntity()` call in the
-    # *same* shape — `deniedMessage()` asks whether the row exists to choose between
-    # "not found" and "access denied". Two files needing one suppression for one wrong
-    # vendor annotation is the argument for fixing the annotation; when that happens,
-    # both entries come out together.
+    # EntityEdit briefly needed the same suppression and no longer does: its
+    # deniedMessage() asked existsEntity() to choose between "not found" and "access
+    # denied", which the batch-7 baseline showed was the wrong question — editAction()
+    # branches on getObject() being null — so the call went away and the ignore with it.
     ignoreErrors:
         -
             identifier: booleanNot.alwaysFalse
@@ -57,6 +56,3 @@ parameters:
         -
             identifier: booleanAnd.alwaysTrue
             path: src/Sion/EntityShow.php
-        -
-            identifier: ternary.alwaysTrue
-            path: src/Sion/EntityEdit.php
