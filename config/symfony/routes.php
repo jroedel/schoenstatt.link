@@ -815,9 +815,10 @@ $edit(
 //     publication-edit    publication-delete   publication-upload-cover
 //     publication-create-new-edition           publication-copy-to-main-corpus
 //
-// `association-delete` looks like a tenth and is not: it answers the association show
-// page on *both* front controllers, because its own laminas constraint asks for four
-// digits where an identifier has five. See App\Sion\ReservedVerbs.
+// `association-delete` looked like a tenth and was not: its own laminas constraint asked
+// for four digits where an identifier has six, so it answered the association show page
+// on *both* front controllers. Repaired 2026-08-14, which makes it an ordinary member of
+// the list above rather than an exception to it. See App\Sion\ReservedVerbs.
 //
 // App\Sion\ReservedVerbs is the fix and carries the full account, including why laminas
 // resolves the same ambiguity the other way (its PriorityList yields the last-registered
