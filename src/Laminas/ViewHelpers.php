@@ -385,6 +385,33 @@ final class ViewHelpers
         }
     }
 
+    /**
+     * The same thing for the **flash messenger**, which is the one other helper on this
+     * bridge that translates strings of its own.
+     *
+     * `JTranslate\Module` sets a per-request text domain on twelve view helpers from a
+     * listener attached to `AbstractActionController::dispatch`. A Symfony-served request
+     * never dispatches a laminas controller, so that listener never runs, and every helper
+     * keeps the construction default — `default`. Ten of the twelve do not matter here
+     * because nothing on the Symfony side reaches them: Twig writes its own `<title>`,
+     * `templates/layout.html.twig` passes the navigation domain explicitly, and
+     * `App\Form\BootstrapFormRenderer` routes every form string through
+     * `LaminasExtension::translate()`. `translate` is handled above. This is the twelfth.
+     *
+     * Left unset it costs twice. A flash set by a laminas action and rendered on a ported
+     * page is looked up in `default` rather than in the module domain the laminas layout
+     * would have used, so it renders as its English source in every locale; and because a
+     * missing translation is exactly how JTranslate discovers a phrase, the miss also
+     * **files a duplicate row in `default`** — the leak database/db7.8.sql cleans up,
+     * arriving one string at a time through a second door after the first was shut.
+     * Measured: "Assignment not found." filed as `Schoenstatt` from the laminas capture
+     * and again as `default` from the Symfony one, 107 minutes apart on 2026-08-13.
+     */
+    public function useFlashMessengerTextDomain(string $domain): void
+    {
+        $this->flashMessenger()->setTranslatorTextDomain($domain);
+    }
+
     private function helpers(): HelperPluginManager
     {
         if (null !== $this->helpers) {

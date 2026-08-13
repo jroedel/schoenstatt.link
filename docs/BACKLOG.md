@@ -372,6 +372,28 @@ readability — the destination is **Symfony**, reached gradually:
   "Administración", and the Twig layout already documents that measurement.
   Fixing it properly means asking the translator whether a translation exists
   without firing `missingTranslation` for the probe.
+  **That probe now exists** (2026-08-12, `c5ef8f3`):
+  `App\Twig\LaminasExtension::catalogValue()` reads a domain's compiled catalog
+  through `Laminas\I18n\Translator\Translator::getAllMessages()`, which loads the
+  catalog through the same cache the translation itself uses and fires no event.
+  So the blocker is gone on the Twig side; what is left is doing the same in
+  `partial/breadcrumbs.phtml`, where the helper — not the extension — is what
+  looks the label up.
+
+- [ ] **`ucwords($entity) . ' not found.'` files one phrase per entity type.** Nine
+  call sites: `SionController` (×5, `ucfirst` and `ucwords` both),
+  `Schoenstatt\AssociationsController`, `Books\PublicationsController`, and the two
+  ported ones — `App\Sion\EntityShow` and `App\Controller\SendToNewUrlController`,
+  which reproduced it deliberately because the port's contract was identical output.
+  The same shape `db7.7.sql` cleaned up after, and bounded rather than unbounded:
+  the vocabulary is the entity list, ~30 strings, not user input. It is still wrong —
+  "Association not found." cannot be rendered into a language whose word order or
+  gender agreement differs, and the translator sees N near-identical rows. Fix is
+  `JTranslate\I18n\TranslatableMessage` with a `'%s not found.'` template, which
+  makes it one phrase; the catch is that `%s` is then an entity name needing its own
+  translation, so it wants the same decision as the navigation-label entry above.
+  Spans three repos (SionModel is a submodule), which is why it was not folded into
+  the db7.8 batch.
 - [ ] **Two navigation labels can never be translated, because they are built by
   concatenation.** `'German Schoenstatt Literature'` and
   `'German to Spanish Dictionary'` are composed in `Application\Module` from an

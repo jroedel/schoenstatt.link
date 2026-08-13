@@ -439,7 +439,7 @@ and the page still renders. Audited in full 2026-08-08 — four modules define o
 | | `GlobalAdapterFeature::setStaticAdapter()` | **nothing** — used only by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, and no ported route renders a form. **A prerequisite for the first form route ported**, which would otherwise get a null adapter from its `NoRecordExists` validator |
 | `JTranslate` | configures the translator: locale, fallback, the DB-report listener, and the file patterns that *are* the translations | `App\Laminas\TranslatorConfigurator` |
 | | `TranslationsTable::flush()` on `MvcEvent::FINISH`, which **writes the collected missing phrases to the database** | `App\Http\PhraseFlushListener` on `KernelEvents::TERMINATE` (2026-08-11), armed by `App\Laminas\TranslatorConfigurator` so a route that never translates pays nothing. `TERMINATE` and not `RESPONSE` on purpose — see the FINISH-listener note below |
-| | sets the `translate`/`formLabel`/… helper text domains per controller module | the `_text_domain` route default, read by `App\Twig\LaminasExtension::translate()` |
+| | sets the text domain on **twelve** view helpers per controller module, from a `dispatch` listener | the `_text_domain` route default, read by `App\Twig\LaminasExtension::translate()` and pushed onto the two helpers that need it — `App\Laminas\ViewHelpers::useTextDomain()` (`translate`) and `useFlashMessengerTextDomain()` (`flashMessenger`, 2026-08-13). The other ten are unreachable from Twig today; bridging one means setting its domain in the same commit |
 
 Two rows there are still "nothing", and both are deliberate rather than pending: the
 navigation branches, and the static adapter. Neither is reachable from a route ported so
@@ -752,11 +752,30 @@ which is why they survived batch 3:
   title — because translating those would put record content in the phrase table, one row
   per record.
 
-`translate()`'s two-domain lookup is a **superset** of laminas' behaviour, not a mirror
-of it — laminas has no cross-domain fallback. It cannot lose a translation laminas finds;
-in principle it could find one laminas misses, which would show as the ported page being
-*more* translated. Verified equal across all five locales; see the both-front-controllers
-procedure below.
+`translate()`'s two-domain lookup is a **superset** of laminas' behaviour for *rendering*,
+not a mirror of it — laminas has no cross-domain fallback. It cannot lose a translation
+laminas finds; in principle it could find one laminas misses, which would show as the
+ported page being *more* translated. Verified equal across all five locales; see the
+both-front-controllers procedure below.
+
+**Discovery, unlike rendering, is single-domain, and the difference is the whole point.**
+`Translator::translate()` fires `EVENT_MISSING_TRANSLATION` on a miss, and JTranslate's
+listener is the only path by which a row enters `trans_phrases` — so a second `translate()`
+call is not a second read, it is a second *write*. Until 2026-08-12 the fallback was one,
+and every string the page's domain could not translate was also filed in `default`: 232
+duplicate rows. The page's domain is still asked with `translate()`, because that call is
+what files an unknown phrase where it belongs; `default` is now read out of its compiled
+catalog by `LaminasExtension::catalogValue()`, which fires no event.
+
+**A bridged view helper that translates needs its domain set explicitly, in the commit that
+bridges it.** `JTranslate\Module` sets one on twelve helpers from a listener attached to
+`AbstractActionController::dispatch`, which a Symfony request never reaches. Two are
+reproduced — `App\Laminas\ViewHelpers::useTextDomain()` for `translate` and
+`useFlashMessengerTextDomain()` for the flash messenger. The other ten are unreachable from
+Twig *today*, which is a fact about today's templates rather than a guarantee. The flash
+messenger was the one that got missed, and the symptom was not an untranslated page — it
+was the phrase table growing one row per flash message. See
+[translation.md](translation.md) for the full mechanism.
 
 **Only the page's own domain discovers a phrase, and the second lookup is a read.** A
 `Translator::translate()` that misses fires `EVENT_MISSING_TRANSLATION`, and JTranslate's
