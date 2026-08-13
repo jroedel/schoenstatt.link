@@ -25,8 +25,11 @@ use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
+use App\Controller\MovementController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
+use App\Controller\PersonController;
+use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
 use App\Controller\RolesController;
@@ -35,6 +38,7 @@ use App\Controller\ShrinesController;
 use App\Controller\SitemapController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
+use App\Controller\TextsController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
@@ -413,6 +417,26 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     $this->twig(),
                     $this->routeUrl()
                 ),
+            MovementController::class => fn (): MovementController => new MovementController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            PersonsController::class => fn (): PersonsController => new PersonsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            PersonController::class => fn (): PersonController => new PersonController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            TextsController::class => fn (): TextsController => new TextsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
             LibrariesController::class => fn (): LibrariesController => new LibrariesController(
                 $this->laminas(),
                 $this->twig(),

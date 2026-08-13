@@ -9,6 +9,13 @@
   Expects:
     form            a Schoenstatt\Form\SearchForm
     center_on_page  adds `search-bar-center` (default false)
+    action          where the box submits (default the contact search)
+    advanced_link   show the "Advanced search" link (default true)
+
+  The last two exist for /persons, which is the one caller that is not the contact
+  search: it submits to `persons/search` and has no advanced form to link to. Both
+  default to the assignments behaviour, so the two callers that *are* the contact search
+  pass neither and cannot drift from the .phtml.
 
   Two pieces of the original are reproduced rather than tidied, because the baseline
   compares them:
@@ -27,7 +34,7 @@
 <div class="row search-bar {% if center_on_page|default(false) %}search-bar-center{% endif %}">
       <div class="col-md-6 col-md-offset-3 col-xs-12">
           <div id="custom-search-input">
-            {{ form_open(form, laminas_path('assignments/search')) }}
+            {{ form_open(form, action|default(laminas_path('assignments/search'))) }}
               <div class="input-group col-md-12">
                     {{ form_element(form.get('search')) }}
                   <span class="input-group-btn">
@@ -39,7 +46,7 @@
             <div class="row">
                 <div class="col-md-12">
                     <!-- <a data-toggle="collapse" data-target="#options" aria-expanded="false" aria-controls="options">{{ translate('Advanced options') }}</a> -->
-                    {% if is_allowed('route/assignments/advanced-search') %}
+                    {% if (advanced_link is not defined or advanced_link) and is_allowed('route/assignments/advanced-search') %}
                         &nbsp;&nbsp;<a href="{{ laminas_path('assignments/advanced-search') }}">{{ translate('Advanced search') }}</a>
                     {% endif %}
                 </div>

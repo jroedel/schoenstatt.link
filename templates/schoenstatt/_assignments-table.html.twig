@@ -6,7 +6,13 @@
     show_active    include active rows (default true)
     show_inactive  include inactive rows (default true)
     columns        default ['role', 'person']; also 'email', 'telephone', 'association'
-    header_text    optional; rendered above the table, **pre-translated by the caller**
+    header_text    optional; rendered above the table, **pre-translated and pre-escaped
+                   by the caller** — it is printed `|raw`, because /movement's first
+                   heading is an `<a>` linking the presidium's own association page.
+                   That is the .phtml's contract too, in its words "MUST be
+                   pre-escaped". A caller passing a plain label passes it through
+                   `translate()` and nothing else; a caller building markup escapes the
+                   data inside it, as movement.html.twig does around the name
     wrap_in_panel  optional; wraps the table in a panel (default false)
 
   The association show page renders it twice with complementary filters — active in the
@@ -53,11 +59,11 @@
     <div class="panel panel-default">
         <!-- Default panel contents -->
         {% if header_text is defined and header_text %}
-            <div class="panel-heading">{{ header_text }}</div>
+            <div class="panel-heading">{{ header_text|raw }}</div>
         {% endif %}
 {% endif %}
 {% if header_text is defined and header_text and not wrap_in_panel %}
-        <p class="text-center"><strong><u>{{ header_text }}</u></strong></p>
+        <p class="text-center"><strong><u>{{ header_text|raw }}</u></strong></p>
 {% endif %}
 <div id="assignments" class="table-responsive panel-body">
     <table class="table sortable">
