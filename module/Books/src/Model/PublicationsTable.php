@@ -562,6 +562,50 @@ ORDER BY `Publisher`";
         return $navigationData;
     }
 
+    /**
+     * The ids of every public publication that has been merged into another one.
+     *
+     * A merged publication is not a page: `PublicationsController::publicationAction()` and
+     * its ported twin both answer a **301** to the surviving edition, so the URL exists only
+     * to redirect. It is in the navigation anyway — getPublicationNavigationData() filters on
+     * ResourceId alone — which is harmless in a menu and wrong in a sitemap, where 3,627 of
+     * the 10,104 public publications here are permanent redirects offered to crawlers as
+     * canonical pages.
+     *
+     * Deliberately its own narrow query rather than a column added to the navigation
+     * projection: that projection's cached value is the largest single item in the
+     * persistent cache (2.24 MB) and is read on every cold-cache laminas request, whereas
+     * this list is read by the sitemap and nothing else.
+     *
+     * @return int[] publication ids, as a set keyed on the id
+     */
+    public function getMergedPublicationIds()
+    {
+        $cacheKey = 'merged-publication-ids';
+        if (null !== ($cache = $this->fetchCachedEntityObjects($cacheKey))) {
+            return $cache;
+        }
+
+        $select = new Select('sch_publications');
+        $select->columns(['PublicationId']);
+        $select->where([
+            new Operator('ResourceId', Operator::OPERATOR_EQUAL_TO, 'publication_public'),
+            new IsNotNull('MergedIntoPublicationId'),
+        ]);
+
+        $gateway = $this->getTableGateway('sch_publications');
+        $merged  = [];
+        foreach ($gateway->selectWith($select) as $row) {
+            $id = $this->filterDbId($row['PublicationId']);
+            if (isset($id)) {
+                $merged[$id] = $id;
+            }
+        }
+
+        $this->cacheEntityObjects($cacheKey, $merged, ['publication']);
+        return $merged;
+    }
+
     public function getPublications()
     {
         if (null !== ($cache = $this->fetchCachedEntityObjects('publications'))) {

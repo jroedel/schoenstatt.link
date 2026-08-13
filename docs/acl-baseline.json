@@ -28,12 +28,12 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 24,
+        "routes_shadowed_by_symfony": 25,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 62,
+        "symfony_routes_acl_checked": 66,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 92,
+        "symfony_served_routes": 96,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -6592,6 +6592,15 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "sitemap",
+            "path": "/sitemap.xml",
+            "symfony_route": "sitemap",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/sitemap",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "wayside-shrines",
             "path": "/wayside-shrines",
             "symfony_route": "wayside-shrines",
@@ -8388,6 +8397,46 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/sion-model/view-changes",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sitemap": {
+            "path": "/sitemap.xml",
+            "controller": "App\\Controller\\SitemapController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sitemap",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sitemap-part": {
+            "path": "/sitemap/{filename}",
+            "controller": "App\\Controller\\SitemapController::part",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sitemap",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sitemap-part.locale": {
+            "path": "/{_locale}/sitemap/{filename}",
+            "controller": "App\\Controller\\SitemapController::part",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sitemap",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "sitemap.locale": {
+            "path": "/{_locale}/sitemap.xml",
+            "controller": "App\\Controller\\SitemapController::index",
+            "access": {
+                "kind": "acl",
+                "resource": "route/sitemap",
                 "reason": null,
                 "denial_style": "html"
             }

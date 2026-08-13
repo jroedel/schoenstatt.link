@@ -51,6 +51,7 @@ use App\Controller\PublicationController;
 use App\Controller\RolesController;
 use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
+use App\Controller\SitemapController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
 use App\Controller\TimelineController;
@@ -177,6 +178,35 @@ $ported(
     '/sm/clear-persistent-cache',
     ClearPersistentCacheController::class,
     $maintenance
+);
+
+// The sitemap, ported 2026-08-13, and the reason App\View\NavigationTree exists: this is
+// the one route that genuinely needs the whole navigation container, all 10,974 pages of
+// it. `route/sitemap` is guarded ['guest', 'user'] rather than carrying a null role, so
+// unlike the maintenance pair above it is consulted rather than declared open.
+//
+// **`/sitemap.xml` is now the sitemap *index*** and the parts it lists are served by the
+// route below it. That is a fix, not a port artifact: the laminas action served only the
+// first of the four files samdark\sitemap wrote, so 3,022 of 10,974 pages were published
+// and no composition ever was. public/robots.txt names /en/sitemap.xml and keeps working,
+// which is exactly why the index took the old URL.
+//
+// One deliberate deviation. Both routes answer the bare path directly instead of taking
+// SlmLocale's hop to /en/…, which every ported *HTML* route reproduces through
+// LocalePrefix::redirect(). A sitemap has no locale: each file carries all five languages
+// as xhtml:link alternates, so the prefix names nothing about the content, and a 302 in
+// front of a crawler-facing file is cost without meaning. The prefixed form still answers,
+// because $ported() declares both.
+$ported('sitemap', '/sitemap.xml', [SitemapController::class, 'index'], RouteAccess::guardedBy('route/sitemap'));
+$ported(
+    'sitemap-part',
+    '/sitemap/{filename}',
+    [SitemapController::class, 'part'],
+    RouteAccess::guardedBy('route/sitemap'),
+    [],
+    //the generator refuses anything it did not write, but the route refuses it first:
+    //`filename` names a file to read, so it never reaches the filesystem as a free string
+    ['filename' => 'pages(_[1-9][0-9]{0,3})?\.xml']
 );
 
 // The first HTML route, ported 2026-08-05, and the reason templates/ and the Twig
