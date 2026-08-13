@@ -24,10 +24,21 @@
   simply dropped, as it already effectively is in the body.
 #}
 {% import 'schoenstatt/_entity-format.html.twig' as format %}
-{% set show_active = show_active|default(true) %}
-{% set show_inactive = show_inactive|default(true) %}
-{% set columns = columns|default(['role', 'person']) %}
-{% set wrap_in_panel = wrap_in_panel|default(false) %}
+{#
+  `is defined ?` and **not** `|default()`, for the two flags whose whole purpose is to be
+  passed false. Twig's default filter fires on an *empty* value, not just an undefined
+  one, and `false` is empty — so `show_active|default(true)` turned every explicit
+  `false` back into `true`. Both flags were therefore always on, whatever the caller
+  asked for, and the association show page rendered its two complementary columns as two
+  identical ones: "Past contacts" listed the current contacts, and the current column
+  listed the past ones. Measured on /en/SL100001A, whose six assignments have all ended —
+  laminas leaves the first column empty and the ported page filled it with the whole
+  table. Same trap as `columns` below, which is why that one is written the same way.
+#}
+{% set show_active = show_active is defined ? show_active : true %}
+{% set show_inactive = show_inactive is defined ? show_inactive : true %}
+{% set columns = columns is defined and columns ? columns : ['role', 'person'] %}
+{% set wrap_in_panel = wrap_in_panel is defined ? wrap_in_panel : false %}
 {% set headers = {
     'role':        'Role',
     'person':      'Contact person',
