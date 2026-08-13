@@ -1634,10 +1634,16 @@ Three things to carry forward:
   the parent's path shape is a candidate for being swallowed, in whichever direction the
   ported route is declared. This applies to any laminas parent/child pair a batch splits
   across front controllers, not just to these five verbs.
-- **`tools/acl-table.php` will not catch it.** `shadowedBySymfony()` passes the composed
-  laminas *pattern* to `UrlMatcher::match()` — the literal `/:sw_id/edit` — so no
-  parameterized laminas route can ever be reported as shadowed. 0 of its 31 shadowed rows
-  have a parameterized path. Its silence about such a route means nothing; see BACKLOG.
+- **`tools/acl-table.php` catches it now, and did not when this bug shipped.**
+  `shadowedBySymfony()` used to pass the composed laminas *pattern* to
+  `UrlMatcher::match()` — the literal `/:sw_id/edit` — so no parameterized laminas route
+  could ever be reported as shadowed, and 0 of its 31 shadowed rows had a parameterized
+  path. Fixed 2026-08-14: patterns are instantiated into concrete probe URLs, and the
+  check also runs in reverse, resolving every URL Symfony owns through the real
+  `TreeRouteStack`. 52 rows now, 19 parameterized. **Its silence about a route means
+  something again** — a route it cannot decide is listed as uncomparable rather than
+  skipped, and that list is asserted empty by
+  `test/Integration/AclShadowCompletenessTest`.
 - **`association-delete` looks like a tenth case and is not.** It answers the show page on
   *both* front controllers, because its own constraint asks for four digits where an
   identifier has five. Recorded in BACKLOG; the fix makes a delete confirmation reachable
