@@ -47,6 +47,15 @@ final class LocalePrefix
      * carry the prefix at all: App\Http\LocaleListener has already set
      * \Locale::setDefault() from the negotiation, and RouteUrl reads it.
      *
+     * **The query string is carried across.** SlmLocale redirects the *URI*, query
+     * included, and this rebuilt the target from the route name alone — so
+     * `/assignments/search?search=Walter` arrived at `/en/assignments/search` with the
+     * search silently gone. Latent since the helper was extracted in batch 4 and
+     * invisible until batch 6, because it takes a route whose input *is* the query
+     * string for a dropped query to change what the page shows: every earlier user of
+     * this helper reads its input from the path. Measured against laminas on
+     * `/texts?search=Bund` and `/assignments/search?search=Walter`.
+     *
      * @param array<string, mixed> $params route parameters the target needs, e.g. the
      *                                     dictionary's `inLanguage`. Without them a
      *                                     parameterised route assembles to the wrong
@@ -62,6 +71,12 @@ final class LocalePrefix
             return null;
         }
 
-        return new RedirectResponse($urls->path($route, $params), Response::HTTP_FOUND);
+        $options = [];
+        $query   = $request->query->all();
+        if ([] !== $query) {
+            $options['query'] = $query;
+        }
+
+        return new RedirectResponse($urls->path($route, $params, $options), Response::HTTP_FOUND);
     }
 }

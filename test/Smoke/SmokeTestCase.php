@@ -94,7 +94,106 @@ abstract class SmokeTestCase extends TestCase
             'contentType' => (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE),
             'headers' => $responseHeaders,
         ];
+        $this->assertNotWedged($method, $path, $result);
+
         return $result;
+    }
+
+    /**
+     * A truncated HTML 200 fails the request that made it, whatever the caller went on
+     * to assert.
+     *
+     * This is the **fatal-200 wedge**, and it is checked here rather than left to each
+     * test because its whole character is that nothing looks wrong. A throw after the
+     * response has been assembled — an unresolved view helper inside a laminas layout, a
+     * Twig error inside `render()` — leaves a 200 with `Content-Type: text/html` and a
+     * body that stops early, because `display_errors` is off in both environments. So
+     * every status assertion in this suite passes and only an assertion about the *body*
+     * notices.
+     *
+     * Both halves have been measured on this application:
+     *
+     * - **~800 bytes**, laminas side: the wedge docs/strangler.md records, where the
+     *   layout begins to render and dies partway.
+     * - **0 bytes**, Symfony side: measured 2026-08-13, a Twig comment inside a hash
+     *   literal in `movement.html.twig`. `testAModeratorReachesTheModeratorPages`
+     *   asserted `200` against it and passed; only the test asserting page content
+     *   caught it.
+     *
+     * The probe is `</html>`, not a length: a length threshold has to guess, and every
+     * legitimate HTML page on this site closes its document while neither wedge reaches
+     * the closing tag. It applies only to a 200 whose content type is HTML — a 302
+     * carries laminas' entire sign-in page in its body and is not a document anyone
+     * reads, JSON and the sitemap are not HTML, and a HEAD request has no body at all.
+     *
+     * A test that genuinely expects a fragment overrides `expectsWholeHtmlDocuments()`.
+     * Nothing does today; the hook exists so that adding such a test is a deliberate
+     * declaration rather than a reason to delete this check.
+     *
+     * **Endpoints already wedged when this check was written** are listed in
+     * `known-wedged-responses.php` and skipped, on the same "no new gaps" contract
+     * `test/Fuzz/known-form-gaps.php` uses: the check has to be un-skippable to be worth
+     * anything, and an inventory of one broken endpoint is better than a deleted check.
+     * Its first run found exactly one, present on `master` beforehand.
+     *
+     * @param array{status: int, body: string, contentType: string} $response
+     */
+    private function assertNotWedged(string $method, string $path, array $response): void
+    {
+        if (! $this->expectsWholeHtmlDocuments() || 'HEAD' === $method) {
+            return;
+        }
+        if (200 !== $response['status'] || false === strpos($response['contentType'], 'text/html')) {
+            return;
+        }
+        if (str_contains($response['body'], '</html>')) {
+            return;
+        }
+        if (self::isKnownWedged($path)) {
+            return;
+        }
+
+        $this->fail(sprintf(
+            "%s %s answered HTTP 200 text/html with %d bytes and no </html> — the response was "
+            . "truncated mid-render.\n"
+            . "This is the fatal-200 wedge: a throw after the response was assembled, with "
+            . "display_errors off.\n"
+            . "Look in data/exceptions and data/logs/ for what threw; a Twig syntax error and an "
+            . "unresolved laminas view helper both land here.\n"
+            . "Body was: %s",
+            $method,
+            $path,
+            strlen($response['body']),
+            '' === $response['body'] ? '(empty)' : substr($response['body'], 0, 400)
+        ));
+    }
+
+    /**
+     * Whether every HTML 200 this test makes should be a complete document. True for
+     * every test there is; override to false in one that fetches an HTML *fragment*.
+     */
+    protected function expectsWholeHtmlDocuments(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Is this path one of the already-broken ones?
+     *
+     * Matched **ignoring any locale prefix**, because the same endpoint is reached as
+     * `/api/v1/…` and as `/en/api/v1/…` — the suite fetches both, and following a
+     * redirect turns the first into the second.
+     */
+    private static function isKnownWedged(string $path): bool
+    {
+        /** @var list<string>|null $known */
+        static $known = null;
+        $known ??= require __DIR__ . '/known-wedged-responses.php';
+
+        $withoutQuery = strtok($path, '?');
+        $bare         = preg_replace('#^/(en|es|de|pt|it)(?=/)#', '', (string) $withoutQuery);
+
+        return in_array($withoutQuery, $known, true) || in_array($bare, $known, true);
     }
 
     protected function baseUrl(): string

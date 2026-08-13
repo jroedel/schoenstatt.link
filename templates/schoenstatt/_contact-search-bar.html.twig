@@ -1,0 +1,63 @@
+{#
+  module/Schoenstatt/view/schoenstatt/schoenstatt/search-bar.phtml, ported.
+
+  The one-field search box that sits above the contact search results, and the same
+  partial /movement puts above its two tables. **Not** the navbar's search box — that is
+  the layout's, from App\View\SiteChrome::searchBox() — though both post to the same
+  route, which is why the two are easy to confuse.
+
+  Expects:
+    form            a Schoenstatt\Form\SearchForm
+    center_on_page  adds `search-bar-center` (default false)
+    action          where the box submits (default the contact search)
+    advanced_link   show the "Advanced search" link (default true)
+
+  The last two exist for /persons, which is the one caller that is not the contact
+  search: it submits to `persons/search` and has no advanced form to link to. Both
+  default to the assignments behaviour, so the two callers that *are* the contact search
+  pass neither and cannot drift from the .phtml.
+
+  Two pieces of the original are reproduced rather than tidied, because the baseline
+  compares them:
+
+  - **`class="row search-bar "` keeps its trailing space** when center_on_page is false.
+    The .phtml interpolates an empty string there and the space in front of it stays.
+  - **The commented-out "Advanced options" link and the two empty checkbox divs stay
+    commented out.** They are the `showPhotos`/`exMembers` fields SearchForm still
+    defines and no page renders; deleting them here would be deleting shipped markup
+    from a template this file is supposed to mirror.
+
+  The `action` is assembled rather than taken from the form: the .phtml calls
+  `$form->setAttribute('action', $this->url('assignments/search'))` immediately before
+  `prepare()`, and form_open() takes the action as an argument.
+#}
+<div class="row search-bar {% if center_on_page|default(false) %}search-bar-center{% endif %}">
+      <div class="col-md-6 col-md-offset-3 col-xs-12">
+          <div id="custom-search-input">
+            {{ form_open(form, action|default(laminas_path('assignments/search'))) }}
+              <div class="input-group col-md-12">
+                    {{ form_element(form.get('search')) }}
+                  <span class="input-group-btn">
+                      <button class="btn btn-info btn-lg" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                      </button>
+                  </span>
+              </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <!-- <a data-toggle="collapse" data-target="#options" aria-expanded="false" aria-controls="options">{{ translate('Advanced options') }}</a> -->
+                    {% if (advanced_link is not defined or advanced_link) and is_allowed('route/assignments/advanced-search') %}
+                        &nbsp;&nbsp;<a href="{{ laminas_path('assignments/advanced-search') }}">{{ translate('Advanced search') }}</a>
+                    {% endif %}
+                </div>
+                <div id="options" class= "collapse row">
+                    <!-- <div class="checkbox col-md-4">
+                    </div>
+                    <div class="checkbox col-md-4">
+                    </div> -->
+                </div>
+            </div>
+            {{ form_close() }}
+          </div>
+      </div>
+</div>

@@ -142,7 +142,11 @@ final class RouteGuard
 
         return $authenticated
             ? Denial::forbiddenPage(($this->twig)(), $resource)
-            : Denial::signIn($this->urls->path(self::LOGIN_ROUTE), $this->returnPath($request));
+            : Denial::signIn(
+                $this->urls->path(self::LOGIN_ROUTE),
+                $this->returnPath($request),
+                $request->getQueryString()
+            );
     }
 
     /**
@@ -157,8 +161,15 @@ final class RouteGuard
      * reproduced — and the value is identical, locale prefix included, which is what
      * was measured on the laminas side (`?redirect=/en/admin`).
      *
-     * The query string is dropped, matching laminas: `assemble()` is given only the
-     * route parameters, so `/en/admin?simulate=0` comes back as `/en/admin`.
+     * **The path only.** The query string is added by `Denial::signIn()`, which has to
+     * encode it — see that method for why the two halves are treated differently and why
+     * carrying it at all is a deliberate improvement over laminas rather than a parity
+     * fix. This used to say the query "is dropped, matching laminas", which was true and
+     * is no longer what we want: batch 6 ported the routes whose input *is* the query.
+     *
+     * `getQueryString()` rather than a re-assembly of `$request->query`: it returns the
+     * raw string the client sent, normalised only in key order, so a value that arrived
+     * percent-encoded stays that way instead of being decoded and re-encoded here.
      */
     private function returnPath(Request $request): string
     {

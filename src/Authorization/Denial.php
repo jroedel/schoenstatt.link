@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
 
+use function rawurlencode;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -42,13 +43,53 @@ final class Denial
      * Anonymous visitor, HTML route: 302 to the sign-in page carrying the page they
      * wanted — `/en/user/login?redirect=/en/admin`, measured on the laminas side.
      *
+     * ## The query string is carried, and this is a deliberate improvement
+     *
+     * **Both front controllers used to drop it**, so this is not a parity fix.
+     * `JUser\View\RedirectionStrategy` assembles the return trip from
+     * `$routeMatch->getParams()` with only `name` in its options — there is no `query`
+     * option — so laminas loses it too. Verified on both sides: anonymous
+     * `/en/assignments/search?search=Walter` answers
+     * `?redirect=/en/assignments/search` on laminas and on Symfony alike.
+     *
+     * Carrying it matters now because batch 6 ported the routes whose *input is* the
+     * query string. A member who follows a bookmarked search, signs in, and lands on a
+     * blank contact search has lost their query — and on `/assignments/search` a blank
+     * query returns every entity, so they get a 595 KB page instead of their results.
+     *
+     * ## Why only the query is encoded
+     *
+     * The path is appended literally and the query percent-encoded, which is not
+     * squeamishness about aesthetics — it is what the receiving end accepts.
+     * `JUser\Controller\LoginController::validRedirect()` refuses anything that does not
+     * `$router->match()`, and it reads the value through `fromQuery('redirect')`, i.e.
+     * already percent-decoded. So:
+     *
+     * - encoding the query is **necessary**: an unencoded `&` would end the `redirect`
+     *   parameter and truncate the return trip at the first one.
+     * - encoding the path too would be harmless but would rewrite
+     *   `?redirect=/en/admin` into `?redirect=%2Fen%2Fadmin` on every guarded route on
+     *   the site, for no gain — and that exact string is pinned by several smoke tests
+     *   and by nine entries in the baseline diff.
+     *
+     * Measured against the real guard: with the router's base URL set the way
+     * `SlmLocale\Strategy\UriPathStrategy` sets it, `/en/texts?search=Bund` matches route
+     * `texts`, so `validRedirect()` returns it intact. A pre-encoded `%3F` does **not**
+     * match, which is why the encoding has to be the outer layer PHP strips rather than
+     * something baked into the value.
+     *
      * @param string $loginUrl assembled from the `zfcuser/login` laminas route, so it
      *        carries the locale prefix the way SlmLocale makes it
-     * @param string $returnTo the path to come back to, query string already dropped
-     *        the way laminas drops it (it re-assembles from route parameters)
+     * @param string $returnTo the path to come back to, with no query string
+     * @param string|null $query the request's raw query string, or null when there is
+     *        none. Appended to $returnTo, percent-encoded.
      */
-    public static function signIn(string $loginUrl, string $returnTo): RedirectResponse
+    public static function signIn(string $loginUrl, string $returnTo, ?string $query = null): RedirectResponse
     {
+        if (null !== $query && '' !== $query) {
+            $returnTo .= rawurlencode('?' . $query);
+        }
+
         return new RedirectResponse($loginUrl . '?redirect=' . $returnTo, Response::HTTP_FOUND);
     }
 

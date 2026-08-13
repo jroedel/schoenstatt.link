@@ -1,0 +1,53 @@
+{#
+  module/Schoenstatt/view/schoenstatt/persons/search.phtml, ported **and repaired**.
+
+  The .phtml's table is keyed on `$this->entities` while the controller passes `persons`,
+  so it has never rendered; and `$form` is passed and never used, so the search box has
+  never been drawn either. Both are fixed here — see App\Controller\PersonsController for
+  the measurement and docs/strangler.md for the twelve baseline non-matches it accounts
+  for.
+
+  What is *not* changed: the create link and its ACL resource, the four column headers,
+  the order of the columns, and the empty `<td>` under "Community" — that cell is empty in
+  the .phtml too, because the person projection carries no community field. Filling it
+  would be a second feature riding along with a bug fix.
+
+  The search box submits to `persons/search` rather than the contact search, and shows no
+  "Advanced search" link: the advanced form searches assignments, not people.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% include 'schoenstatt/_contact-search-bar.html.twig' with {
+    'form': form,
+    'center_on_page': persons is null or persons|length == 0,
+    'action': action,
+    'advanced_link': false,
+} only %}
+{% if is_allowed('route/persons/create') %}
+<a href="{{ laminas_path('persons/create') }}">{{ translate('Add person') }}</a>
+{% endif %}
+{% if persons is not null and persons|length > 0 %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+<table class="table">
+    <thead>
+    <tr>
+    <th>{{ translate('Name') }}</th>
+    <th>{{ translate('Community') }}</th>
+    <th>{{ translate('Email') }}</th>
+    <th>{{ translate('Cell phone') }}</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for entity in persons %}
+<tr>
+    <td>{{ format.entity('person', entity) }}</td>
+    <td></td>
+    <td>{{ entity.email }}</td>
+    <td>{{ entity.cellPhone }}</td>
+</tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endblock %}

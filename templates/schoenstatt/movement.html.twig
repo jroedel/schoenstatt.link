@@ -1,0 +1,47 @@
+{#
+  module/Schoenstatt/view/schoenstatt/schoenstatt/index.phtml, ported.
+
+  The contact search bar, then two panels over the shared assignments table.
+
+  **`header_text` is markup and is passed through unescaped**, exactly as the .phtml
+  does: the partial documents it as "MUST be pre-escaped" and echoes `$this->headerText`
+  raw, because the first heading is an `<a>`. So the two `|raw` filters here are the
+  original's contract rather than a shortcut — and the reason the association name is
+  escaped explicitly before being wrapped in the link.
+
+  The two headings differ in a way that looks like a mistake and is the original: the
+  first translates the association's name, the second passes the literal string
+  'National movements' with no translate() call at all, so it stays English in every
+  locale. See App\Controller\MovementController.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% include 'schoenstatt/_contact-search-bar.html.twig' with {
+    'form': form,
+    'center_on_page': false,
+} only %}
+{#
+  The first heading's href is **not** escaped and its name is, which is what the .phtml
+  does: it concatenates `$this->url(...)` straight into the attribute and wraps only the
+  name in `translate()`. Escaping the URL is the tidier-looking option and renders
+  `&#x2F;` for every slash — a visible difference from the laminas page.
+#}
+{% include 'schoenstatt/_assignments-table.html.twig' with {
+    'assignments': presidium.assignments,
+    'wrap_in_panel': true,
+    'show_active': true,
+    'show_inactive': false,
+    'header_text': '<a href="' ~ presidium_href ~ '">' ~ translate(presidium.name)|e ~ '</a>',
+    'columns': ['role', 'person', 'email', 'telephone'],
+} only %}
+{% include 'schoenstatt/_assignments-table.html.twig' with {
+    'assignments': national_leaders,
+    'wrap_in_panel': true,
+    'show_active': true,
+    'show_inactive': false,
+    'header_text': 'National movements',
+    'columns': ['association', 'person', 'email', 'telephone'],
+    'association_format_options': {'showLabel': false},
+} only %}
+{% endblock %}

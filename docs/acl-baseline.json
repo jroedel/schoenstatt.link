@@ -28,12 +28,12 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 25,
+        "routes_shadowed_by_symfony": 31,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 66,
+        "symfony_routes_acl_checked": 80,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 96,
+        "symfony_served_routes": 110,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -6430,6 +6430,24 @@
             "access_kind": "open"
         },
         {
+            "laminas_route": "assignments/advanced-search",
+            "path": "/assignments/advanced-search",
+            "symfony_route": "assignments/advanced-search",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/assignments/advanced-search",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "assignments/search",
+            "path": "/assignments/search",
+            "symfony_route": "assignments/search",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/assignments/search",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "associations",
             "path": "/associations",
             "symfony_route": "associations",
@@ -6484,6 +6502,24 @@
             "access_kind": "acl"
         },
         {
+            "laminas_route": "persons",
+            "path": "/persons",
+            "symfony_route": "persons",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/persons",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "persons/search",
+            "path": "/persons/search",
+            "symfony_route": "persons/search",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/persons/search",
+            "access_kind": "acl"
+        },
+        {
             "laminas_route": "privacy",
             "path": "/privacy",
             "symfony_route": "privacy",
@@ -6526,6 +6562,15 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/roles",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "schoenstatt",
+            "path": "/movement",
+            "symfony_route": "schoenstatt",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/schoenstatt",
             "access_kind": "acl"
         },
         {
@@ -6598,6 +6643,15 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/sitemap",
+            "access_kind": "acl"
+        },
+        {
+            "laminas_route": "texts",
+            "path": "/texts",
+            "symfony_route": "texts",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/texts",
             "access_kind": "acl"
         },
         {
@@ -7871,6 +7925,46 @@
                 "denial_style": "n/a"
             }
         },
+        "assignments/advanced-search": {
+            "path": "/assignments/advanced-search",
+            "controller": "App\\Controller\\AssignmentSearchController::advancedSearch",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/advanced-search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "assignments/advanced-search.locale": {
+            "path": "/{_locale}/assignments/advanced-search",
+            "controller": "App\\Controller\\AssignmentSearchController::advancedSearch",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/advanced-search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "assignments/search": {
+            "path": "/assignments/search",
+            "controller": "App\\Controller\\AssignmentSearchController::search",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "assignments/search.locale": {
+            "path": "/{_locale}/assignments/search",
+            "controller": "App\\Controller\\AssignmentSearchController::search",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "association": {
             "path": "/{sw_id}/{slug}",
             "controller": "App\\Controller\\AssociationController",
@@ -8141,6 +8235,66 @@
                 "denial_style": "html"
             }
         },
+        "persons": {
+            "path": "/persons",
+            "controller": "App\\Controller\\PersonsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons.locale": {
+            "path": "/{_locale}/persons",
+            "controller": "App\\Controller\\PersonsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/person": {
+            "path": "/persons/{person_id}",
+            "controller": "App\\Controller\\PersonController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/person",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/person.locale": {
+            "path": "/{_locale}/persons/{person_id}",
+            "controller": "App\\Controller\\PersonController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/person",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/search": {
+            "path": "/persons/search",
+            "controller": "App\\Controller\\PersonsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/search.locale": {
+            "path": "/{_locale}/persons/search",
+            "controller": "App\\Controller\\PersonsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/search",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "privacy": {
             "path": "/privacy",
             "controller": "App\\Controller\\ContentPageController",
@@ -8297,6 +8451,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/roles",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "schoenstatt": {
+            "path": "/movement",
+            "controller": "App\\Controller\\MovementController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/schoenstatt",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "schoenstatt.locale": {
+            "path": "/{_locale}/movement",
+            "controller": "App\\Controller\\MovementController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/schoenstatt",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8497,6 +8671,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/text",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "texts": {
+            "path": "/texts",
+            "controller": "App\\Controller\\TextsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/texts",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "texts.locale": {
+            "path": "/{_locale}/texts",
+            "controller": "App\\Controller\\TextsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/texts",
                 "reason": null,
                 "denial_style": "html"
             }

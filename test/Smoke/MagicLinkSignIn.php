@@ -67,11 +67,11 @@ trait MagicLinkSignIn
      *        sch_user and bib_user — measured, and the reason "signed in" and
      *        "privileged" are different questions in these tests).
      */
-    protected function signIn(string $jar, array $roles = []): string
+    protected function signIn(string $jar, array $roles = [], string $loginPath = '/en/user/login'): string
     {
         $email = $this->uniqueEmail();
 
-        $request = $this->requestSignInLink($jar, $email);
+        $request = $this->requestSignInLink($jar, $email, $loginPath);
         $this->assertSame(200, $request['status'], 'requesting a sign-in link');
 
         $verifyPath = $this->toLocalPath($this->extractVerifyUrl($this->awaitMessageFor($email)['Text']));
@@ -83,9 +83,19 @@ trait MagicLinkSignIn
 
         $verify = $this->get($verifyPath, false, $jar);
         $this->assertSame(302, $verify['status'], 'redeeming the sign-in link should authenticate and redirect');
+        $this->lastSignInRedirect = $verify['redirect'];
 
         return $email;
     }
+
+    /**
+     * Where redeeming the last sign-in link sent the visitor.
+     *
+     * Recorded rather than returned so that `signIn()` keeps handing back the address
+     * every caller uses. It is what the post-sign-in return trip is asserted on: pass
+     * `signIn()` the login URL a guard produced, and this is where the visitor lands.
+     */
+    protected ?string $lastSignInRedirect = null;
 
     /** Unique enough that parallel or repeated runs never collide. */
     protected function uniqueEmail(): string
@@ -107,10 +117,23 @@ trait MagicLinkSignIn
 
         return $this->request('POST', $path, [], false, $jar, [
             'email' => $email,
-            'redirect' => '',
+            //**the form's own hidden value, not a fixed empty string.** A browser posts
+            //back what the page rendered, and LoginController pre-fills that field from
+            //`?redirect=` — so hardcoding '' is what kept every test in this suite from
+            //ever exercising the return trip. It stays '' for a caller that reaches
+            ///en/user/login directly, which is all of them bar the round-trip test.
+            'redirect' => $this->extractRedirectField($form['body']),
             'security' => $this->extractCsrfToken($form['body']),
             'submit' => 'Send me a sign-in link',
         ]);
+    }
+
+    /** The sign-in form's hidden `redirect` value, or '' when it carries none. */
+    protected function extractRedirectField(string $body): string
+    {
+        return preg_match('/name="redirect"[^>]*value="([^"]*)"/', $body, $matches) === 1
+            ? html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8')
+            : '';
     }
 
     protected function extractCsrfToken(string $body): string

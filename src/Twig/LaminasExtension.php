@@ -101,6 +101,7 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('country_name', $this->countryName(...), $html),
             new TwigFunction('date_precision', $this->datePrecision(...)),
             new TwigFunction('long_date', $this->longDate(...)),
+            new TwigFunction('day_format', $this->dayFormat(...), $html),
             new TwigFunction('tooltip', $this->tooltip(...), $html),
             new TwigFunction('truncate', $this->truncate(...)),
             new TwigFunction('formats_entity_generally', $this->formatsEntityGenerally(...)),
@@ -571,6 +572,32 @@ final class LaminasExtension extends AbstractExtension
      * and passing an IntlDateFormatter constant through Twig means `constant()`, which
      * is worse than a documented default.
      */
+    /**
+     * SionModel's `dayFormat`: a month and day with no year, which is what a nameday is.
+     *
+     * `is_safe: html` because the helper escapes its own output — it runs the month name
+     * through `escapeHtml` before appending the English cardinal ending — exactly as the
+     * other formatter wrappers here do.
+     *
+     * A null date renders as nothing rather than raising, which is the guard the .phtml
+     * puts around it (`if ($object['nameDay'])`); the helper itself throws on a
+     * non-object, and 195 of the 325 people in the capsule have no nameday at all.
+     */
+    public function dayFormat(mixed $date): string
+    {
+        if (! $date instanceof DateTimeInterface) {
+            return '';
+        }
+
+        //the helper's signature is \DateTime and DateTimeImmutable is not one — the
+        //same conversion diffForHumans() above needs, for the same reason
+        if (! $date instanceof DateTime) {
+            $date = DateTime::createFromInterface($date);
+        }
+
+        return (string) $this->helpers->dayFormat()->__invoke($date);
+    }
+
     public function datePrecision(
         mixed $date,
         mixed $precision = null,
