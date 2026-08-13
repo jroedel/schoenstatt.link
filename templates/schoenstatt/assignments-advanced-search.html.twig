@@ -1,0 +1,53 @@
+{#
+  module/Schoenstatt/view/schoenstatt/assignments/advanced-search.phtml, ported.
+
+  Four fields over the same `searchEntities()` the simple search calls, plus the shared
+  assignments table.
+
+  **There is no `</form>`.** The .phtml opens the form and never closes it, so every
+  element below — the table included — is inside it, and the browser closes the tag at
+  `</body>`. Reproduced rather than repaired: this is a port, the rendering is identical
+  in every browser, and `form_close()` here would be a one-line change to shipped markup
+  that the baseline diff would then report on every locale.
+
+  **The option translator is off for three selects and on for the fourth.** The .phtml
+  calls `formSelect()->setTranslatorEnabled(false)`, renders search/associationKind/
+  associationCountry, turns it back on, then renders roleTitle — its comment says "we
+  want roleTitle translated". `form_row`'s second argument is that switch. Kind and
+  country labels are already-translated data (AssociationKindsService, the ISO country
+  list); role titles are source strings that live in the phrase table.
+
+  `personName` and `onlyMainRoles` are defined on the form and **not rendered** — the
+  .phtml lists four rows and stops. Left unrendered, since a field the original does not
+  show is a field nobody has ever submitted from this page.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/selectize.bootstrap3.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-schoenstatt-advanced-search.js"></script>
+{% endblock %}
+
+{% block content %}
+{%- set are_results = objects is not null and objects|length > 0 -%}
+{{ form_open(form, '') }}
+
+<div class="row">
+{{ form_row(form.get('search'), false) }}
+{{ form_row(form.get('associationKind'), false) }}
+{{ form_row(form.get('associationCountry'), false) }}
+{{ form_row(form.get('roleTitle')) }}
+</div>
+<div class="form-group ">
+{{ form_submit(form.get('submit')) }}&nbsp;{{ form_button(form.get('clear')) }}</div>
+
+{% if are_results %}
+{% include 'schoenstatt/_assignments-table.html.twig' with {
+    'assignments': objects,
+    'columns': ['association', 'role', 'person', 'email', 'telephone'],
+} only %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,52 @@
+{#
+  module/Schoenstatt/view/schoenstatt/assignments/search.phtml, ported.
+
+  The contact search: the search box, a row of "Add …" links each behind its own ACL
+  resource, and the shared assignments table when there is anything to show.
+
+  `center_on_page` is `not are_results`, which is the original's own expression: with no
+  results the box sits in the middle of the page, and once there are rows it moves to the
+  top. So the *empty* search — the one a member gets by clicking the button with nothing
+  typed — does **not** centre, because a blank query returns every entity rather than
+  none. See App\Controller\AssignmentSearchController.
+
+  The four create links are separated by `|&nbsp;` **before** each one but the first, and
+  which of them appear depends on the viewer: the separator therefore belongs to the link
+  rather than sitting between them, exactly as the .phtml has it. A viewer who may add a
+  person but not an assignment sees a leading `|&nbsp;` — that is the original's markup
+  and reproducing it is the point.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{%- set are_results = entities is not null and entities|length > 0 -%}
+{% include 'schoenstatt/_contact-search-bar.html.twig' with {
+    'form': form,
+    'center_on_page': not are_results,
+} only %}
+<div class="row">
+{% if is_allowed('route/assignments/create') %}
+<a href="{{ laminas_path('assignments/create') }}">{{ translate('Add assignment') }}</a>
+{% endif %}
+{% if is_allowed('route/persons/create') %}
+|&nbsp;<a href="{{ laminas_path('persons/create') }}">{{ translate('Add person') }}</a>
+{% endif %}
+{% if is_allowed('route/associations/create') %}
+|&nbsp;<a href="{{ laminas_path('associations/create') }}">{{ translate('Add association') }}</a>
+{% endif %}
+{% if is_allowed('route/roles/create') %}
+|&nbsp;<a href="{{ laminas_path('roles/create') }}">{{ translate('Add role') }}</a>
+{% endif %}
+</div>
+
+{% if are_results %}
+{% include 'schoenstatt/_assignments-table.html.twig' with {
+    'assignments': entities,
+    'wrap_in_panel': false,
+    'show_active': true,
+    'show_inactive': false,
+    'columns': ['association', 'role', 'person', 'email', 'telephone'],
+    'association_format_options': {'showLabel': false},
+} only %}
+{% endif %}
+{% endblock %}

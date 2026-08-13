@@ -11,6 +11,7 @@ use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\Api\PhrasesV3Controller;
+use App\Controller\AssignmentSearchController;
 use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
@@ -403,6 +404,15 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl()
             ),
+            // Batch 6, the contact/search surface. Same three dependencies throughout:
+            // every one of these reads the query string, asks SchoenstattTable, and
+            // renders Twig.
+            AssignmentSearchController::class
+                => fn (): AssignmentSearchController => new AssignmentSearchController(
+                    $this->laminas(),
+                    $this->twig(),
+                    $this->routeUrl()
+                ),
             LibrariesController::class => fn (): LibrariesController => new LibrariesController(
                 $this->laminas(),
                 $this->twig(),

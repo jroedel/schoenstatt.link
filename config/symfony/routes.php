@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
+use App\Controller\AssignmentSearchController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
@@ -731,6 +732,47 @@ $routes->add('comments/create.locale', new Route(
     [],
     ['POST']
 ));
+
+// ---------------------------------------------------------------------------
+// Batch 6, ported 2026-08-13: the contact/search surface. The pages the movement's
+// own members use to find each other, plus the Kentenich text search.
+// ---------------------------------------------------------------------------
+//
+// Every route here is a GET whose input is the query string, which is what let them
+// move ahead of the create/edit forms: the static-adapter obstacle docs/strangler.md
+// records belongs to `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and
+// `EditPhraseForm` through a `NoRecordExists` validator, and none of these four forms
+// has one. No CSRF token either — a GET form carries none on laminas.
+//
+// Three different guard shapes on purpose, which is most of why these belong in one
+// batch: `assignments/search` admits sch_basic and sch_user (most signed-in members),
+// `persons` admits sch_moderator, and `texts` admits texts_user — a role granted to
+// Schoenstatt fathers by email match and to nobody else.
+
+// The destination of the navbar search box on every page of the site, for anyone
+// holding sch_basic or sch_user — see App\View\SiteChrome::searchBox(). Until this
+// moved, every search a signed-in member ran from an already-ported page went
+// through LegacyBridge back into laminas, which makes it the highest-traffic route
+// in the batch by a wide margin.
+//
+// **Literal paths, and that is load-bearing.** `/assignments/{assignment_id}` is
+// *not* ported (see App\Controller\AssignmentSearchController for why it is not a
+// page at all), so it has to keep falling through to `legacy`. A segment route here
+// would swallow both of these and 404 them.
+$ported(
+    'assignments/search',
+    '/assignments/search',
+    [AssignmentSearchController::class, 'search'],
+    RouteAccess::guardedBy('route/assignments/search'),
+    $textDomain('Schoenstatt')
+);
+$ported(
+    'assignments/advanced-search',
+    '/assignments/advanced-search',
+    [AssignmentSearchController::class, 'advancedSearch'],
+    RouteAccess::guardedBy('route/assignments/advanced-search'),
+    $textDomain('Schoenstatt')
+);
 
 // ---------------------------------------------------------------------------
 // The v3 API, added 2026-08-09: the read/write surface automated agents use to

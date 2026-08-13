@@ -45,6 +45,7 @@ final class FormExtension extends AbstractExtension
             new TwigFunction('help_block', $this->renderer->helpBlock(...), $html),
             new TwigFunction('form_hidden', $this->renderer->hidden(...), $html),
             new TwigFunction('form_submit', $this->renderer->submit(...), $html),
+            new TwigFunction('form_button', $this->renderer->button(...), $html),
         ];
     }
 }
