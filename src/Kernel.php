@@ -22,6 +22,7 @@ use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
+use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
@@ -62,6 +63,8 @@ use App\Sion\CommentPredicates;
 use App\Sitemap\ChangeLog;
 use App\Sitemap\GuestAccess;
 use App\Sitemap\SitemapGenerator;
+use App\Sion\Entities;
+use App\Sion\EntityEdit;
 use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
 use App\View\NavigationTree;
@@ -130,6 +133,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
     private EntityShow $entityShow;
+    private EntityEdit $entityEdit;
+    private Entities $entities;
     private CommentPredicates $commentPredicates;
 
     /**
@@ -503,6 +508,14 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->viewHelpers(),
                 $this->preferredUrls()
             ),
+            // Batch 7, the edit surface. One controller for every entity edit form, over
+            // App\Sion\EntityEdit — see config/symfony/routes.php, where the entity, its
+            // id parameter, its template and its title are declared per route.
+            EntityEditController::class => fn (): EntityEditController => new EntityEditController(
+                $this->entityEdit(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.
             CommentCreateController::class => fn (): CommentCreateController => new CommentCreateController(
@@ -535,7 +548,34 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      */
     private function entityShow(): EntityShow
     {
-        return $this->entityShow ??= new EntityShow($this->laminas(), $this->commentPredicates());
+        return $this->entityShow ??= new EntityShow(
+            $this->laminas(),
+            $this->commentPredicates(),
+            $this->entities()
+        );
+    }
+
+    /**
+     * The shared reproduction of SionController::editAction(), batch 7's counterpart to
+     * entityShow(). Shared for the same reason and with the same practical effect: only
+     * one edit route can match a request, so the sharing is about the entity-spec map
+     * behind it being built once.
+     */
+    private function entityEdit(): EntityEdit
+    {
+        return $this->entityEdit ??= new EntityEdit($this->laminas(), $this->entities());
+    }
+
+    /**
+     * The entity specification and table lookups both reproductions need.
+     *
+     * One instance per request, and that is the point rather than a habit: it memoizes
+     * `EntitiesService::getEntities()`, which merges 24 specs out of the module
+     * configuration, and an edit request asks about its entity at least four times.
+     */
+    private function entities(): Entities
+    {
+        return $this->entities ??= new Entities($this->laminas());
     }
 
     private function commentPredicates(): CommentPredicates
