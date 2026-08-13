@@ -16,7 +16,6 @@ use Laminas\Navigation\Navigation;
 use Books\Model\PublicationsTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Books\Model\DictionaryTable;
-use samdark\sitemap\Sitemap;
 use Laminas\View\HelperPluginManager;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
@@ -249,50 +248,23 @@ class IndexController extends AbstractActionController
         return new ViewModel();
     }
 
+    /**
+     * Retired 2026-08-13: the sitemap is a static file at /sitemap.xml.
+     *
+     * This used to walk the navigation container and write `data/sitemap/sitemap.xml` on
+     * every request. It is unreachable in normal traffic — the Symfony route matches
+     * /sitemap.xml first, and both front controllers are SYMFONY_KERNEL=1 — but it stays
+     * because a visitor holding the `sl_symfony_canary=0` cookie still reaches this
+     * controller, and a 500 is a poor escape hatch.
+     *
+     * A permanent redirect rather than a re-implementation, because there is nothing left
+     * to implement: `bin/console sitemap:build` writes the files and Apache serves them.
+     * That is also why samdark/sitemap could be removed from composer.json — this action
+     * was its last caller.
+     */
     public function sitemapAction()
     {
-        $navigation = $this->navigation;
-        $plugins = $this->helperPluginManager;
-        /** @var \Laminas\View\Helper\Navigation\Sitemap $sitemapHelper */
-        $sitemapHelper = $plugins->get('navigation')->sitemap();
-        $sitemapFile = 'data/sitemap/sitemap.xml';
-        $sitemap = new Sitemap($sitemapFile, true);
-        $sitemap->setUseGzip(true);
-        $iterator = new \RecursiveIteratorIterator($navigation, \RecursiveIteratorIterator::SELF_FIRST);
-        $serverUrl = $sitemapHelper->getServerUrl();
-        $languageSiteBases = [];
-        $languages = array_keys($this->config['slm_locale']['aliases']);
-        foreach ($languages as $lang) {
-            $languageSiteBases[$lang] = $serverUrl . "/$lang/";
-        }
-        $firstCharToGrabFromUrl = strlen($languageSiteBases['en']);
-        // iterate container
-        foreach ($iterator as $page) {
-            $url = $sitemapHelper->url($page);
-            if (isset($url)) {
-                $urlLocales = [];
-                foreach ($languageSiteBases as $lang => $urlBase) {
-                    $urlLocales[$lang] = $urlBase . substr($url, $firstCharToGrabFromUrl);
-                }
-                $sitemap->addItem($urlLocales);
-            }
-        }
-        $sitemap->write();
-        // Explicitly set type to text/xml, otherwise it's text/html
-        $response = $this->getResponse();
-        $headers = $response->getHeaders();
-        $headers->addHeaderLine(
-            'Content-Type',
-            'text/xml'
-        )
-            ->addHeaderLine('Content-Encoding', 'gzip');
-        $response->setContent(file_get_contents($sitemapFile));
-        return $response;
-        // Only render the sitemap helper, without any layout
-//         $viewModel = new ViewModel();
-//         $viewModel->setVariable('navigation', $navigation);
-//         $viewModel->setTerminal(true);
-//         return $viewModel;
+        return $this->redirect()->toUrl('/sitemap.xml')->setStatusCode(301);
     }
 
     public function get6MonthsChanges()

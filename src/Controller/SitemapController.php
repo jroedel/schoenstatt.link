@@ -9,79 +9,77 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-use function is_string;
+use function file_exists;
 
 /**
- * `/sitemap.xml` — the sitemap index — and `/sitemap/pages*.xml`, the parts it lists.
+ * `/sitemap.xml` when — and only when — the file is not on disk.
  *
- * The laminas action this replaces served `data/sitemap/sitemap.xml` and nothing else,
- * which published 3,022 of the site's 10,974 pages; `App\Sitemap\SitemapGenerator`'s
- * docblock has the numbers and the reasoning. What matters here is the shape of the two
- * responses.
+ * ## This is a fallback now, and normally never runs
  *
- * ## Both are gzip, and that is a claim about the bytes rather than about the transfer
+ * The sitemap is a static file written by `bin/console sitemap:build`, and
+ * `public/.htaccess` passes any request whose `REQUEST_FILENAME` exists straight to Apache
+ * before the rewrite to `index.php`. So once `public/sitemap.xml` exists, this controller is
+ * unreachable for it: Apache serves the bytes, `mod_deflate` compresses them, and PHP is not
+ * involved. Confirm which is happening by looking for a `Vary: Accept-Encoding` on the
+ * response — Apache sends one, this does not.
  *
- * The files are written gzipped, so the response says `Content-Encoding: gzip` and hands
- * the file over untouched — the laminas action did the same. The important consequence is
- * that these responses must never be compressed *again* by anything downstream:
- * docs/strangler.md records that App\Http\GzipListener honours a response's own
- * `Content-Encoding`, and the sitemap is the route that made that necessary.
+ * What is left for it to do is the one case Apache cannot handle: the file is *missing*. That
+ * happens on a first deploy, before cron has run once, and if someone deletes the files. The
+ * old behaviour there was a 404 for the site's entire sitemap until the next scheduled build,
+ * so this builds them, and every request after it is served statically.
  *
- * ## No locale prefix, and no ACL
+ * ## Why it does not check staleness
  *
- * `/sitemap.xml` is answered where it is asked. The laminas route is a plain
- * `/sitemap.xml` with a `sitemap` guard entry for `guest` and `user`, and although the
- * router will also assemble `/en/sitemap.xml`, robots.txt has always named the prefixed
- * form and both keep working.
+ * Only existence. Rebuilding here whenever the data had moved would put a 0.6 s navigation
+ * walk inside an arbitrary crawler request, and — worse — it would do so on *every* request
+ * until something wrote the file, because a request that only reads cannot know another one
+ * is already building. Freshness is `sitemap:build`'s job, on a schedule, where a slow run
+ * costs nobody a response. This one's job is to make sure a URL a crawler already knows never
+ * answers 404.
  *
- * The laminas action walked the navigation container directly rather than through the
- * `accept()` the navigation view helper uses, so no page was ever ACL-filtered out of the
- * sitemap. That is reproduced, deliberately: filtering here would quietly change which
- * pages are published, and a sitemap is for a crawler, which is always anonymous anyway.
+ * ## No gzip, no locale prefix, no ACL check of its own
+ *
+ * The files are plain XML now; the `Content-Encoding: gzip` the previous version set by hand
+ * is gone, and with it the requirement that nothing downstream compress the response again.
+ * `/sitemap.xml` is still answered where it is asked rather than redirected to `/en/`, because
+ * a sitemap has no locale. The pages *inside* it are filtered to what a guest may reach — see
+ * App\Sitemap\GuestAccess — which is a change from the previous version, where nothing was.
  */
 final class SitemapController
 {
-    public function __construct(private readonly SitemapGenerator $generator)
-    {
+    public function __construct(
+        private readonly SitemapGenerator $generator,
+        private readonly string $docroot,
+        private readonly string $canonicalBaseUrl
+    ) {
     }
 
-    /** The index: a list of the parts, as `<sitemapindex>`. */
-    public function index(Request $request): Response
+    public function __invoke(Request $request): Response
     {
-        $path = $this->generator->ensure($request->getSchemeAndHttpHost());
+        $path = $this->docroot . '/' . SitemapGenerator::INDEX;
 
-        return $this->file($path);
-    }
+        if (! file_exists($path)) {
+            //A sitemap must list canonical URLs, so the configured host wins over the one
+            //this request happens to have arrived on; the request is only the fallback for a
+            //deployment that has not set it.
+            $baseUrl = '' !== $this->canonicalBaseUrl
+                ? $this->canonicalBaseUrl
+                : $request->getSchemeAndHttpHost();
 
-    /** One part, by the filename the index published. */
-    public function part(Request $request): Response
-    {
-        $filename = $request->attributes->get('filename');
-        if (! is_string($filename)) {
-            return new Response('Not found.', Response::HTTP_NOT_FOUND, ['Content-Type' => 'text/plain']);
+            $this->generator->build($baseUrl);
         }
 
-        //A part is only ever requested because the index named it, and the index is written
-        //at the same moment the parts are. Ensuring here as well covers the case that
-        //matters in practice: a crawler that read the index yesterday, a
-        //`cache:flush-persistent` since, and a request for part 3 arriving first.
-        $this->generator->ensure($request->getSchemeAndHttpHost());
-
-        $path = $this->generator->partPath($filename);
-        if (null === $path) {
-            return new Response('Not found.', Response::HTTP_NOT_FOUND, ['Content-Type' => 'text/plain']);
+        if (! file_exists($path)) {
+            return new Response(
+                "Sitemap unavailable.\n",
+                Response::HTTP_SERVICE_UNAVAILABLE,
+                ['Content-Type' => 'text/plain']
+            );
         }
 
-        return $this->file($path);
-    }
-
-    /** A written sitemap file, served as the gzip stream it already is. */
-    private function file(string $path): BinaryFileResponse
-    {
         $response = new BinaryFileResponse($path);
         $response->headers->set('Content-Type', 'text/xml');
-        $response->headers->set('Content-Encoding', 'gzip');
-        //BinaryFileResponse would otherwise offer the file as a download named `pages_2.xml`
+        //BinaryFileResponse would otherwise offer the file as a download
         $response->headers->remove('Content-Disposition');
 
         return $response;

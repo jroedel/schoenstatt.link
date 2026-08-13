@@ -125,7 +125,8 @@ final class NavigationTree
      * Every page in the tree, flattened depth-first with each parent before its children —
      * `RecursiveIteratorIterator::SELF_FIRST`, which is how the sitemap walks it.
      *
-     * @return list<array{id: string|null, label: string, href: string, labelIsData: bool}>
+     * @return list<array{id: string|null, label: string, href: string, route: string,
+     *     labelIsData: bool}>
      */
     public function flattened(): array
     {
@@ -162,6 +163,12 @@ final class NavigationTree
                 'id'          => is_string($page['id'] ?? null) ? $page['id'] : null,
                 'label'       => is_string($page['label'] ?? null) ? $page['label'] : '',
                 'href'        => $this->href($page),
+                //The laminas route name, carried for the same reason `id` is: it is the only
+                //thing that can be handed to the ACL. App\Sitemap\GuestAccess asks whether
+                //`guest` may reach `route/<this>`, which is how /admin, /movement and
+                ///libraries stopped being published to crawlers. Empty for a page with no
+                //route, which href() already treats as unlinkable.
+                'route'       => is_string($page['route'] ?? null) ? $page['route'] : '',
                 'labelIsData' => true === ($page[PageBuilder::LABEL_IS_DATA] ?? false),
                 'children'    => $this->convert($children, $branches, $pending),
             ];
@@ -224,7 +231,8 @@ final class NavigationTree
 
     /**
      * @param list<array<string, mixed>> $nodes
-     * @return list<array{id: string|null, label: string, href: string, labelIsData: bool}>
+     * @return list<array{id: string|null, label: string, href: string, route: string,
+     *     labelIsData: bool}>
      */
     private static function flatten(array $nodes): array
     {
@@ -236,10 +244,13 @@ final class NavigationTree
             $href = $node['href'];
             /** @var string|null $id */
             $id = $node['id'];
+            /** @var string $route */
+            $route = $node['route'];
             $flat[] = [
                 'id'          => $id,
                 'label'       => $label,
                 'href'        => $href,
+                'route'       => $route,
                 'labelIsData' => true === $node['labelIsData'],
             ];
             /** @var list<array<string, mixed>> $children */

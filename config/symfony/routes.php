@@ -185,34 +185,31 @@ $ported(
     $maintenance
 );
 
-// The sitemap, ported 2026-08-13, and the reason App\View\NavigationTree exists: this is
-// the one route that genuinely needs the whole navigation container, all 10,974 pages of
-// it. `route/sitemap` is guarded ['guest', 'user'] rather than carrying a null role, so
-// unlike the maintenance pair above it is consulted rather than declared open.
+// The sitemap. Ported 2026-08-13 and rewritten the same day, once it turned out that Google
+// had been discarding every URL in it.
 //
-// **`/sitemap.xml` is now the sitemap *index*** and the parts it lists are served by the
-// route below it. That is a fix, not a port artifact: the laminas action served only the
-// first of the four files samdark\sitemap wrote, so 3,022 of 10,974 pages were published
-// and no composition ever was. public/robots.txt names /en/sitemap.xml and keeps working,
-// which is exactly why the index took the old URL.
+// **The sitemap is a static file now.** `bin/console sitemap:build` writes
+// public/sitemap.xml plus one public/sitemap-<kind>.xml per entity kind, and the `-s` guard
+// near the top of public/.htaccess hands any request for an existing file to Apache before
+// the rewrite to index.php ever happens. So this route is a *fallback*: it is reached only
+// when the file is missing — a first deploy, or someone deleted it — builds the files, and is
+// then unreachable again. There is deliberately no route for the individual parts, because
+// nothing but Apache ever serves them.
 //
-// One deliberate deviation. Both routes answer the bare path directly instead of taking
+// Why the files sit at the docroot root rather than under /sitemap/, which is what the first
+// version of this port did: a sitemap may only list URLs at or below its own directory, so a
+// file at /sitemap/pages.xml cannot legally contain a single /en/… URL. Measured against
+// production on 2026-08-13 — all 36,730 URLs were out of scope, plus robots.txt named
+// /en/sitemap.xml, which put the index itself in the wrong directory for the parts it listed.
+// docs/sitemap.md has the quotations from the specification.
+//
+// One deliberate deviation, unchanged: this answers the bare path instead of taking
 // SlmLocale's hop to /en/…, which every ported *HTML* route reproduces through
-// LocalePrefix::redirect(). A sitemap has no locale: each file carries all five languages
-// as xhtml:link alternates, so the prefix names nothing about the content, and a 302 in
-// front of a crawler-facing file is cost without meaning. The prefixed form still answers,
-// because $ported() declares both.
-$ported('sitemap', '/sitemap.xml', [SitemapController::class, 'index'], RouteAccess::guardedBy('route/sitemap'));
-$ported(
-    'sitemap-part',
-    '/sitemap/{filename}',
-    [SitemapController::class, 'part'],
-    RouteAccess::guardedBy('route/sitemap'),
-    [],
-    //the generator refuses anything it did not write, but the route refuses it first:
-    //`filename` names a file to read, so it never reaches the filesystem as a free string
-    ['filename' => 'pages(_[1-9][0-9]{0,3})?\.xml']
-);
+// LocalePrefix::redirect(). A sitemap has no locale — each file carries all five languages as
+// xhtml:link alternates — so the prefix names nothing about the content, and a 302 in front of
+// a crawler-facing file is cost without meaning. The prefixed form still answers, because
+// $ported() declares both, and robots.txt now names the bare one.
+$ported('sitemap', '/sitemap.xml', SitemapController::class, RouteAccess::guardedBy('route/sitemap'));
 
 // The first HTML route, ported 2026-08-05, and the reason templates/ and the Twig
 // layer exist. Checked against its own laminas resource rather than declared open,

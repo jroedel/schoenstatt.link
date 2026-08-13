@@ -10,6 +10,8 @@
 
 namespace Application;
 
+use App\Console\Command\BuildSitemapCommand;
+use App\Console\Command\BuildSitemapCommandFactory;
 use Laminas\Router\Http\Literal;
 use Laminas\Navigation\Service\DefaultNavigationFactory;
 use Laminas\I18n\Translator\TranslatorServiceFactory;
@@ -126,10 +128,25 @@ return [
             //default persistent storage, configured in cache.local.php
             StorageInterface::class => Service\CacheFactory::class,
             GdprStrategy::class => \Application\Service\GdprStrategyServiceFactory::class,
+            //The sitemap builder. An App\ class registered from a laminas module config
+            //because bin/console resolves commands out of this container — see
+            //App\Console\Command\BuildSitemapCommandFactory for what it does and does not
+            //build.
+            BuildSitemapCommand::class => BuildSitemapCommandFactory::class,
         ],
         'aliases' => [
             //this helps clarify throughout the app which kind of Logger we should expect.
             LoggerInterface::class => 'SionModel\Logger',
+        ],
+    ],
+    /*
+     * `bin/console sitemap:build` writes public/sitemap*.xml, which Apache then serves
+     * directly. It exits without building anything when nothing has changed since the last
+     * build, so it is cheap to run often; docs/sitemap.md has the cron entry.
+     */
+    'console' => [
+        'commands' => [
+            'sitemap:build' => BuildSitemapCommand::class,
         ],
     ],
 //     'translator' => [

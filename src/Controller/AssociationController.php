@@ -63,8 +63,16 @@ final class AssociationController
 {
     private const ENTITY = 'association';
 
-    /** The two kinds an anonymous visitor may see — AssociationsController::showAction(). */
-    private const PUBLIC_KINDS = ['sch-shrine', 'sch-wayside-shrine'];
+    /**
+     * The two kinds an anonymous visitor may see — AssociationsController::showAction().
+     *
+     * Public because App\Sitemap\GuestAccess reads it: this rule is the reason 1,240 sitemap
+     * entries used to point at a redirect to the home page, and the sitemap has to enforce
+     * the same list rather than a copy of it. Nothing else may write to it.
+     *
+     * @var list<string>
+     */
+    public const PUBLIC_KINDS = ['sch-shrine', 'sch-wayside-shrine'];
 
     /** The zoom level the .phtml hardcodes for its static map tile. */
     private const MAP_ZOOM = 13;
