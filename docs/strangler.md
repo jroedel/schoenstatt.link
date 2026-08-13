@@ -1059,6 +1059,18 @@ and gave the honest number, 394 of 396, the remaining two being a tie-broken row
 an assignments table that differs between any two runs. A warm cache does not make a diff
 wrong; it makes it a diff of the cache.
 
+**Do not run `composer test` between two captures.** The translation suites rewrite the
+compiled `.lang.php` catalogs, so a phrase that was untranslated during the first capture
+can be translated during the second and the diff reports it as drift. Measured
+2026-08-13 on the reserved-verb fix: six responses differed by 3–6 bytes, all of them
+`placeholder="ex. …"` against `"z.B. …"` — the German for "ex." — on `de`, `es` and `pt`
+but not `en` or `it`. `language/Books/de_DE.lang.php` had been rewritten at 22:17:34,
+between the 20:18 capture and the 22:21 one, by the full-suite run in between. Nothing
+about the two front controllers differed at all; the catalogs did. Either capture both
+sides before running the suite, or re-capture both afterwards — and when a residual
+difference is a handful of bytes inside a translated string, check the catalog mtimes
+before looking for a defect.
+
 **Trust the harness over an ad-hoc `curl`.** Twice in that same session a hand-rolled
 `curl … | grep` reported a regression the captures did not: a breadcrumb whose leaf had
 apparently vanished (the markup carries hundreds of spaces between tags, so `head -c 250`
@@ -1436,6 +1448,64 @@ unlinked `SELECT`, because the entity spec's `get_object_function` is commented 
 `getObject()` renders an association page missing four panels and renders it happily.
 `load()` takes a loader hook for exactly this.
 
+#### Porting a route also claims its siblings' paths — the two routers disagree on ties
+
+**Found 2026-08-13, live in production for two days, and the most transferable lesson in
+this file.** These four routes are declared `/{sw_id}/{slug}` with the slug constrained
+`[a-z0-9-]{1,200}`, copied from the laminas route. That pattern matches `edit`. So
+`/en/SL500001C/edit` was answered by route `composition.locale` with the composition
+**show page**, and the laminas `composition-edit` route was unreachable — along with eight
+more:
+
+```
+composition-edit   composition-delete   text-edit   text-delete   publication-edit
+publication-delete   publication-upload-cover   publication-create-new-edition
+publication-copy-to-main-corpus
+```
+
+Nine guarded routes, and **none of their guards ran**. Nothing failed and nothing logged:
+the page answered 200 and rendered a real entity page, which is why neither the smoke
+suite nor `tools/port-baseline.php` flagged it — the baseline compares a *ported* path
+against its laminas twin, and these paths were nobody's idea of ported. It surfaced only
+because batch 7 added `/{sw_id}/edit` to `PATHS` and the pre-batch capture showed the
+Symfony body matching the *show* page's byte count.
+
+**The mechanism is a tie-break difference nobody had written down.** Both routers see the
+same ambiguity — the show pattern and the verb pattern both match — and they resolve it in
+opposite directions:
+
+| router | equal-priority tie goes to |
+|---|---|
+| `Laminas\Router\SimpleRouteStack` (a `Laminas\Stdlib\PriorityList`) | the **last**-registered route |
+| `Symfony\Component\Routing\Matcher\UrlMatcher` | the **first** declared route |
+
+Proved against the real config rather than read off the internals: `composition` is
+declared at `module/Books/config/module.config.php:1436` and `composition-edit` at 1453,
+both patterns match `/SL500001C/edit`, and the laminas router answers `composition-edit`.
+So laminas' *config order* protects the verb route and Symfony's protects the show route,
+and porting the parent without its children silently inverts which one answers.
+
+`App\Sion\ReservedVerbs` is the fix — the show routes' slug carries an anchored negative
+lookahead over the five verbs any laminas `/:sw_id/<verb>` route claims — and it is
+duplicated from the laminas config the way `App\Locale\Locales` duplicates the locale
+aliases, with `test/Integration/ReservedVerbsTest` as the drift guard.
+`test/Smoke/ReservedVerbRoutingSmokeTest` asserts the consequence over HTTP.
+
+Three things to carry forward:
+
+- **Before porting a route with a placeholder, enumerate its siblings.** Anything sharing
+  the parent's path shape is a candidate for being swallowed, in whichever direction the
+  ported route is declared. This applies to any laminas parent/child pair a batch splits
+  across front controllers, not just to these five verbs.
+- **`tools/acl-table.php` will not catch it.** `shadowedBySymfony()` passes the composed
+  laminas *pattern* to `UrlMatcher::match()` — the literal `/:sw_id/edit` — so no
+  parameterized laminas route can ever be reported as shadowed. 0 of its 31 shadowed rows
+  have a parameterized path. Its silence about such a route means nothing; see BACKLOG.
+- **`association-delete` looks like a tenth case and is not.** It answers the show page on
+  *both* front controllers, because its own constraint asks for four digits where an
+  identifier has five. Recorded in BACKLOG; the fix makes a delete confirmation reachable
+  for the first time and does not belong in a routing fix.
+
 **A note on the fetch/display ratio, for whoever tunes this next.** With
 `changes_show_all` on, the limit applies *per table* — 6 tables × 500 = 3,000 rows
 hydrated so the view can show the newest 500. That is correct rather than wasteful in
@@ -1445,7 +1515,15 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 
 ## Verifying
 
-- `php composer.phar test` — **1,222 tests** (measured 2026-08-13, after batch 6; 916
+- `php composer.phar test` — **1,323 tests, 77,565 assertions** (measured 2026-08-13 on the
+  reserved-verb fix, which adds 50 of them; 19 deprecations, all of them
+  `SplObjectStorage::contains()`/`detach()` inside `vendor/laminas/laminas-cache` under
+  PHP 8.5, and 14 skips. The count between here and the 1,222 below is the sitemap,
+  canonical/hreflang and flash-messenger work that followed batch 6; 1,222 was never
+  re-measured after those. Read the exit code, not the summary word: PHPUnit prints
+  "OK, but there were issues!" for a deprecation, and piping the run through `tail`
+  discards the summary *and* replaces the exit code with `tail`'s, which is how a
+  green-looking unverified run happened here first.) Earlier: 1,222 after batch 6; 916
   after the flip preparation on 2026-08-09; 791 after the eight routes of
   batch 4 and the removal of the blog; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
   631 after the wayside-shrine port, 618 after the authorization bridge, 551 before it,

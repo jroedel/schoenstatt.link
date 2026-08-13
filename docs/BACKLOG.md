@@ -345,6 +345,32 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **`association-delete` matches no association that exists.** Its route declares
+  `sw_id` as `SL1[0-9]{4,4}A` — the `1` plus **four** digits — where every valid
+  association identifier is `SL1[0-9]{5,5}A`
+  (`Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS`). So the route has
+  never matched, and `/SL100319A/delete` falls through to the `association` show route
+  on **both** front controllers. Measured 2026-08-13 against the laminas router
+  directly, while fixing the reserved-verb bug below; `test/Smoke/ReservedVerbRoutingSmokeTest`
+  pins the current behaviour so that repairing this is a deliberate, visible change.
+  Not fixed in that PR on purpose: the one-character fix makes a **delete confirmation
+  reachable for the first time**, on a live site, for `sch_general_moderator`. That
+  wants its own change with the delete path actually exercised — the confirmation
+  form, the CSRF token, and what `deleteAction()` does to an association with
+  children.
+
+- [ ] **`tools/acl-table.php` cannot see a parameterized route being shadowed.**
+  `shadowedBySymfony()` passes the *composed laminas pattern* to
+  `Symfony\...\UrlMatcher::match()` — the literal string `/:sw_id/edit`, placeholder and
+  all — so a laminas route with any route parameter can never be reported as shadowed.
+  Measured 2026-08-13: **0 of the 31** rows in the shadowed table have a parameterized
+  path, and all 90-odd parameterized laminas routes are invisible to the check. That is
+  the exact blind spot the reserved-verb bug lived in, which is why nothing warned while
+  nine guarded routes were unreachable. Fixing it means substituting a sample value per
+  placeholder — the entity specs already carry usable ones — and treating "the sample
+  matched a ported route" as the shadow signal. Until then the tool's silence about a
+  parameterized route means nothing either way, and `docs/acl-rules.md` should say so.
+
 - [x] ~~**`TranslationsTable::flush()` cannot be called from a console process.**~~
   **Fixed 2026-08-10.** Three changes, because the session was only the trigger and
   the partial write was the actual defect:
