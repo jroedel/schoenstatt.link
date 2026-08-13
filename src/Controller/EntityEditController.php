@@ -11,6 +11,7 @@ use App\Sion\SiteWideIdentifier;
 use Laminas\Form\Element\Select;
 use Laminas\Form\FormInterface;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
+use Locale;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -47,7 +48,7 @@ use function is_string;
  * 2. **The redirect after a successful write.** `EntityEdit::redirectTarget()` reproduces
  *    `redirectAfterEdit()`'s four-branch priority from the entity spec, which is right for
  *    eight of the ten. `text` and `dictionary-entry` override `redirectAfterEdit()` in
- *    their laminas controllers and so declare `REDIRECT_ROUTE` here instead.
+ *    their laminas controllers and so declare `REDIRECT_TARGET` here instead.
  * 3. **Extra view variables.** `publication` needs the selectize value options
  *    `PublicationsController::injectPublicationValueOptions()` adds, and `person` needs the
  *    name its template puts in the page title. `EXTRA_VARIABLES` names a method on this
@@ -74,8 +75,14 @@ final class EntityEditController
     public const TEMPLATE        = '_edit_template';
     public const PAGE_TITLE      = '_edit_page_title';
     public const BREADCRUMBS     = '_edit_breadcrumbs';
-    /** Overrides `EntityEdit::redirectTarget()` for the two entities whose controllers do. */
-    public const REDIRECT_ROUTE  = '_edit_redirect_route';
+    /**
+     * Names a private method below, for the two entities whose laminas controllers
+     * override `redirectAfterEdit()`. A method rather than a declarative field map,
+     * because one of the two is not a field map: `DictionaryController` redirects to
+     * `Locale::getPrimaryLanguage($data['locale'])`, so `es_ES` has to become `es`, and a
+     * map would have sent the moderator to `/dictionary/es_ES`.
+     */
+    public const REDIRECT_TARGET = '_edit_redirect_target';
     /** Names a private method below, e.g. `publicationValueOptions`. */
     public const EXTRA_VARIABLES = '_edit_extra_variables';
 
@@ -175,7 +182,7 @@ final class EntityEditController
     /**
      * Where a successful write sends the visitor.
      *
-     * `REDIRECT_ROUTE` first, for the two entities whose laminas controllers override
+     * `REDIRECT_TARGET` first, for the two entities whose laminas controllers override
      * `redirectAfterEdit()`; otherwise the spec-driven priority chain.
      *
      * @param array<string, mixed> $object  the row as it was loaded, pre-write
@@ -183,11 +190,16 @@ final class EntityEditController
      */
     private function successTarget(Request $request, string $entity, array $object, array $updated): string
     {
-        /** @var mixed $declared */
-        $declared = $request->attributes->get(self::REDIRECT_ROUTE);
-        if (is_array($declared)) {
-            /** @var array{0: string, 1: array<string, string>} $declared */
-            return $this->urls->path($declared[0], $this->fill($declared[1], $updated, $object));
+        /** @var mixed $named */
+        $named = $request->attributes->get(self::REDIRECT_TARGET);
+        if (is_string($named) && '' !== $named) {
+            return match ($named) {
+                'text'            => $this->redirectToText($updated, $object),
+                'dictionaryEntry' => $this->redirectToDictionaryLanguage($updated, $object),
+                default           => throw new RuntimeException(
+                    "Route declares unknown redirect target '$named' for entity '$entity'."
+                ),
+            };
         }
 
         $target = $this->edit->redirectTarget($entity, $object, $updated);
@@ -202,6 +214,54 @@ final class EntityEditController
         }
 
         return $this->urls->path($target[0], $target[1]);
+    }
+
+    /**
+     * `TextsController::redirectAfterEdit()`: straight to the text itself, identifier and
+     * slug both taken from the updated row rather than from the URL that was posted to —
+     * a retitled text gets a new slug, and the original redirects to the new one.
+     *
+     * @param array<string, mixed> $updated
+     * @param array<string, mixed> $loaded
+     */
+    private function redirectToText(array $updated, array $loaded): string
+    {
+        return $this->urls->path(
+            'text',
+            $this->fill(['sw_id' => 'identifier', 'slug' => 'slug'], $updated, $loaded)
+        );
+    }
+
+    /**
+     * `DictionaryController::redirectAfterEdit()`: to the dictionary of the entry's own
+     * language, by **primary language subtag** — `es_ES` becomes `es`, because
+     * `dictionary/inLanguage` is keyed by the subtag and not by the locale.
+     *
+     * Falls back to the undifferentiated `/dictionary` when the locale yields no subtag,
+     * which is the original's `if (isset($inLanguage))` branch — and that branch really is
+     * reachable: `Locale::getPrimaryLanguage()` answers null when it cannot parse the
+     * value, which `isset()` catches. It does *not* answer an empty string, so there is no
+     * `'' === $subtag` case to guard; PHPStan says so from the stub's return type and it
+     * is right.
+     *
+     * @param array<string, mixed> $updated
+     * @param array<string, mixed> $loaded
+     */
+    private function redirectToDictionaryLanguage(array $updated, array $loaded): string
+    {
+        /** @var mixed $locale */
+        $locale = $updated['locale'] ?? $loaded['locale'] ?? null;
+        if (! is_string($locale) || '' === $locale) {
+            return $this->urls->path('dictionary');
+        }
+
+        /** @var mixed $subtag */
+        $subtag = Locale::getPrimaryLanguage($locale);
+        if (! is_string($subtag)) {
+            return $this->urls->path('dictionary');
+        }
+
+        return $this->urls->path('dictionary/inLanguage', ['inLanguage' => $subtag]);
     }
 
     /**
@@ -425,7 +485,7 @@ final class EntityEditController
         if (null === $index) {
             //`text` and `dictionary-entry` declare no index_route, so laminas falls back
             //to sion_model.default_redirect_route. Both of them do have a sensible list
-            //page, and the route declaration names it — see REDIRECT_ROUTE.
+            //page, and the route declaration names it — see REDIRECT_TARGET.
             $index = 'welcome';
         }
 

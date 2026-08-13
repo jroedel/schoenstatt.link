@@ -479,11 +479,15 @@ final class BootstrapFormRenderer
      * belongs to number, range and date inputs, not text — and this class rendered
      * `min="3"`. Invisible in a browser, and a difference in the bytes.
      *
-     * Only the two types `input()` actually serves are listed. Adding an element type
-     * means adding its helper's list here; falling back to text's for an unknown type
-     * would silently drop `min`/`max`/`step` from a number input, which is the same
-     * class of bug from the other direction, so an unlisted type keeps everything and
-     * the next port has to look.
+     * Every type `input()` serves is listed. Adding an element type means adding its
+     * helper's list here; falling back to text's for an unknown type would silently drop
+     * `min`/`max`/`step` from a number input, which is the same class of bug from the
+     * other direction, so an unlisted type keeps everything and the next port has to look.
+     *
+     * Batch 7 is the port that had to look: `number`, `email`, `url` and `date` all appear
+     * in its ten forms and none of them was here. `test/Unit/BootstrapFormRendererTest`
+     * pins each list against the laminas helper it was transcribed from, so a wrong
+     * transcription fails rather than showing up as a handful of bytes in a diff.
      */
     private function input(ElementInterface $element, string $type, bool $withClass): string
     {
@@ -513,7 +517,40 @@ final class BootstrapFormRenderer
         /** FormHidden's is FormInput's, which is far wider; `value` and `name` are the whole of it in practice. */
         $hidden = $text;
 
-        $perType = ['text' => $text, 'hidden' => $hidden];
+        /**
+         * The four types batch 7's forms add, each transcribed from its own laminas
+         * helper's `$validTagAttributes` rather than adapted from text's — which is the
+         * whole point of this table. `number` differs from `text` in both directions: it
+         * gains `max`/`min`/`step` and *loses* `maxlength`, `minlength`, `pattern`,
+         * `size`, `dirname` and `inputmode`. Guessing would have kept `maxlength` on the
+         * seven number fields in this batch, which laminas drops.
+         */
+        $number = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'max',
+                   'min', 'step', 'placeholder', 'readonly', 'required', 'type', 'value'];
+        /** FormEmail: text's list plus `multiple`, minus `dirname` and `inputmode`. */
+        $email = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'maxlength',
+                  'minlength', 'multiple', 'pattern', 'placeholder', 'readonly', 'required',
+                  'size', 'type', 'value'];
+        /** FormUrl: FormEmail's without `multiple`. */
+        $url = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'maxlength',
+                'minlength', 'pattern', 'placeholder', 'readonly', 'required', 'size', 'type',
+                'value'];
+        /**
+         * FormDate declares none of its own — it extends AbstractFormDateTime, and this is
+         * that class's list. Note the absence of `placeholder`, which PersonForm declares
+         * on `birthDate`: laminas drops it and so must this.
+         */
+        $date = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'max',
+                 'min', 'readonly', 'required', 'step', 'type', 'value'];
+
+        $perType = [
+            'text'   => $text,
+            'hidden' => $hidden,
+            'number' => $number,
+            'email'  => $email,
+            'url'    => $url,
+            'date'   => $date,
+        ];
         if (! isset($perType[$type])) {
             return $attributes;
         }
