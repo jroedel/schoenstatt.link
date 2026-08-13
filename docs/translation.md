@@ -286,16 +286,54 @@ Two different verbs, and confusing them destroys work:
 - **Retire** (`trans_phrases.retired_on`) takes a phrase off the translator's
   worklist and keeps every translation. Rendering is untouched:
   `getTranslatedText()`, the query the catalogs are compiled from, filters on
-  `project` and nothing else, so a retired phrase still compiles into
-  `.lang.php`. It is reversible by clearing the column, and **discovery clears it
-  automatically** — a page that still looks the phrase up un-retires it on the next
-  miss.
+  `project` and nothing else, so a retired phrase still compiles into `.lang.php`.
+  Reversible by clearing the column.
 - **Retract** destroys a translation and keeps the phrase.
 
-That auto-un-retirement is why every cleanup migration since `db7.5` carries the
-same ordering note: **the code fix has to be live before the migration runs**, or
-the next render undoes it. It is also a free alarm — if a retired row comes back,
-the fix regressed.
+### Why retired phrases still compile into the catalogs
+
+The obvious-looking change — filter `retired_on IS NULL` in `getTranslatedText()`
+— is wrong, and the reason is written at the method (`TranslationsTable:1609`).
+Excluding them would mean retiring a phrase instantly reverts every page still
+rendering it to English, which is the irreversible damage `retired_on` exists to
+avoid, arriving by a different door.
+
+Measure the repair window before dismissing that. Discovery *would* clear
+`retired_on` on the first miss, but the request-path catalog rebuild at
+`TranslationsTable:2107` fires only when `$weFoundAPreviousMatch` — when a **newly
+inserted** row gets translations copied from a sibling domain. An un-retirement of
+an existing row sets nothing, so no rebuild happens, and the page goes on rendering
+English until the next deploy or admin edit. A wrong retirement would be a
+visitor-visible regression lasting days, on a column whose whole point is that it
+is safe to be wrong with.
+
+### What that costs, and it is not nothing
+
+Retiring cleans the worklist, not the rendering. The leaked rows `db7.8` retired
+are still in the compiled `default` catalog, and `translate()` reads `default` as a
+fallback (`catalogValue()`), so a ported page whose own domain lacks a translation
+can still render a value that exists only because of the leak — copied by
+`writeMissingPhrasesToDb()` from whichever sibling domain it found first.
+`catalogHas()` limits the blast radius to phrases the page's domain has nothing
+for, so the page renders *more* translated rather than wrong, but it is one
+module's word choice crossing a domain boundary.
+
+If that needs undoing, the lever is **deleting those specific rows** — a reviewable
+decision on a known set — not changing what the exporter emits for all 576 retired
+phrases at once.
+
+### Two consequences to hold on to
+
+**Ordering.** Every cleanup migration since `db7.5` carries the same note: the code
+fix has to be live before the migration runs. Discovery clears `retired_on`, so a
+render in the gap undoes the retirement.
+
+**Retirement is not self-monitoring.** A retired phrase that still has a
+translation never misses, so nothing ever un-retires it — the column stays set even
+if the page is still rendering the string every day. "If a retired row comes back,
+the fix regressed" holds only for phrases with a gap in the locale being rendered.
+Re-run the migration's verification query when you want to know; do not wait for an
+alarm that cannot fire.
 
 `php bin/console jtranslate:retire` does both directions from the CLI; the v3 API
 exposes `POST …/retire` with a mandatory `_note`.
