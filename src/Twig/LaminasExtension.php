@@ -721,12 +721,25 @@ final class LaminasExtension extends AbstractExtension
     }
 
     /**
-     * The four flash namespaces the layout renders, in its order and with its
-     * formats. Session-backed, so these are messages a *laminas* action set before
-     * redirecting here; nothing on a ported route can add one yet.
+     * The four flash namespaces the layout renders, in its order and with its formats.
+     *
+     * Session-backed, so a message here was set by whichever request redirected to this
+     * one. That used to be a laminas action by definition — this docblock said "nothing
+     * on a ported route can add one yet" — and it stopped being true with the batch-6
+     * ports: `App\Sion\EntityShow` and `App\Controller\SendToNewUrlController` both set
+     * one before redirecting.
+     *
+     * **The domain is set here and that is not cosmetic.** The helper translates each
+     * message against whatever text domain it holds, and on a Symfony request nothing
+     * else sets one — see App\Laminas\ViewHelpers::useFlashMessengerTextDomain() for what
+     * that cost. The page's own domain is what the laminas listener would have set:
+     * it uses the *rendering* controller's module namespace, not the one that set the
+     * message, and a ported route's `_text_domain` is exactly that module.
      */
     public function flashMessages(): string
     {
+        $this->helpers->useFlashMessengerTextDomain($this->textDomain() ?? self::DEFAULT_TEXT_DOMAIN);
+
         $flash = $this->helpers->flashMessenger();
         $flash->setMessageOpenFormat(
             '<div%s>

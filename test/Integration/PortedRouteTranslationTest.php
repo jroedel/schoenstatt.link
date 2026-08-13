@@ -259,6 +259,59 @@ class PortedRouteTranslationTest extends TestCase
     }
 
     /**
+     * The flash messenger renders in the page's text domain, not in `default`.
+     *
+     * The second door out of the same room as the test above. `JTranslate\Module` sets a
+     * per-request text domain on twelve view helpers from a listener attached to
+     * `AbstractActionController::dispatch`, and a Symfony-served request dispatches no
+     * laminas controller, so none of the twelve is set. Ten do not matter — Twig writes its
+     * own `<title>`, the layout passes the navigation domain explicitly, and
+     * App\Form\BootstrapFormRenderer routes every form string through
+     * LaminasExtension::translate(). `translate` is handled by ViewHelpers::useTextDomain().
+     * `flashMessenger` was the twelfth and was handled by nothing, so a flash set by a
+     * laminas action and rendered on a ported page was looked up in `default`: rendered as
+     * its English source in every locale, and **filed a duplicate phrase row on the way
+     * past**, which is what database/db7.8.sql cleans up.
+     *
+     * Asserted on the helper's domain rather than on a rendered message, because rendering
+     * one means a session, and an integration test that has no MVC request has no session
+     * either. The domain is the whole mechanism: the helper translates every message it is
+     * handed against whatever it holds when `render()` is called.
+     */
+    public function testTheFlashMessengerRendersInThePagesTextDomain(): void
+    {
+        $this->requireDatabase();
+
+        $helpers   = new ViewHelpers($this->bridge(), static fn (): string => '');
+        $extension = new LaminasExtension(
+            $this->bridge(),
+            $helpers,
+            new RouteUrl($this->bridge(), ''),
+            $this->requestsForTextDomain('Schoenstatt')
+        );
+
+        //the baseline is the defect: left alone, the helper holds laminas' construction
+        //default. If this ever starts failing because something else sets it, the
+        //assertion below is measuring that something else and should be re-read.
+        self::assertSame(
+            'default',
+            $helpers->flashMessenger()->getTranslatorTextDomain(),
+            'nothing on the Symfony side sets this before the page asks for it'
+        );
+
+        $extension->flashMessages();
+
+        self::assertSame(
+            'Schoenstatt',
+            $helpers->flashMessenger()->getTranslatorTextDomain(),
+            'a flash message must be looked up in the page\'s own text domain, as '
+            . 'JTranslate\Module\'s dispatch listener does for a laminas request. Left at '
+            . '`default` it renders in English in every locale and files a duplicate phrase '
+            . 'row for every message the module domain owns.'
+        );
+    }
+
+    /**
      * A RequestStack holding one request that declares a text domain, which is what a
      * ported route does through its `defaults`.
      */
