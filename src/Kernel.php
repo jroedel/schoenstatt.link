@@ -31,6 +31,7 @@ use App\Controller\PublicationController;
 use App\Controller\RolesController;
 use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
+use App\Controller\SitemapController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
 use App\Controller\TimelineController;
@@ -53,8 +54,10 @@ use App\Laminas\PhraseFlush;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Sion\CommentPredicates;
+use App\Sitemap\SitemapGenerator;
 use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
+use App\View\NavigationTree;
 use SionModel\Error\FatalErrorHandler;
 use SionModel\Error\RequestContext as ErrorRequestContext;
 use SionModel\Service\ErrorHandling;
@@ -258,6 +261,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 new LaminasResponseConverter()
             ),
             HealthController::class => static fn (): HealthController => new HealthController(),
+            // The sitemap. Its generator is the only thing on this side that walks the
+            // whole navigation tree — 10,974 pages, 0.60s cold — which is why nothing
+            // else is given a NavigationTree and why the files it writes are reused
+            // until the persistent cache is flushed.
+            SitemapController::class => fn (): SitemapController => new SitemapController(
+                new SitemapGenerator(
+                    $this->laminas(),
+                    new NavigationTree($this->laminas(), $this->routeUrl()),
+                    dirname(__DIR__)
+                )
+            ),
             // The ported maintenance endpoints. They share one ServiceBridge, so
             // a request that reaches either loads the laminas modules once — and
             // a request that reaches neither loads them not at all, because

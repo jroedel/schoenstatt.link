@@ -125,7 +125,7 @@ final class NavigationTree
      * Every page in the tree, flattened depth-first with each parent before its children —
      * `RecursiveIteratorIterator::SELF_FIRST`, which is how the sitemap walks it.
      *
-     * @return list<array{label: string, href: string, labelIsData: bool}>
+     * @return list<array{id: string|null, label: string, href: string, labelIsData: bool}>
      */
     public function flattened(): array
     {
@@ -155,6 +155,11 @@ final class NavigationTree
             }
 
             $nodes[] = [
+                //PageBuilder's own page id where it sets one — `pub_1234`, `lib_7`. Carried
+                //through because it is how a consumer tells *which record* a page is without
+                //parsing its URL, and the sitemap needs exactly that to drop the merged
+                //publications.
+                'id'          => is_string($page['id'] ?? null) ? $page['id'] : null,
                 'label'       => is_string($page['label'] ?? null) ? $page['label'] : '',
                 'href'        => $this->href($page),
                 'labelIsData' => true === ($page[PageBuilder::LABEL_IS_DATA] ?? false),
@@ -219,7 +224,7 @@ final class NavigationTree
 
     /**
      * @param list<array<string, mixed>> $nodes
-     * @return list<array{label: string, href: string, labelIsData: bool}>
+     * @return list<array{id: string|null, label: string, href: string, labelIsData: bool}>
      */
     private static function flatten(array $nodes): array
     {
@@ -229,7 +234,10 @@ final class NavigationTree
             $label = $node['label'];
             /** @var string $href */
             $href = $node['href'];
+            /** @var string|null $id */
+            $id = $node['id'];
             $flat[] = [
+                'id'          => $id,
                 'label'       => $label,
                 'href'        => $href,
                 'labelIsData' => true === $node['labelIsData'],
