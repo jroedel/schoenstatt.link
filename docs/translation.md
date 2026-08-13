@@ -392,4 +392,4 @@ should not be asking for, or asking for it twice."
 | route text domains | `config/symfony/routes.php` |
 | navigation data labels | `module/Application/src/Navigation/PageBuilder.php` |
 | commands | `jtranslate:export-catalogs`, `jtranslate:migrate`, `jtranslate:retire` |
-| cleanup migrations | `database/db7.0.sql` … `database/db7.8.sql` |
+| cleanup migrations | `database/db7.2.sql` … `database/db7.8.sql` (7.0 and 7.1 are charset work, not phrases) |
