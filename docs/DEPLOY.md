@@ -54,6 +54,30 @@ ssh -p 222 <admin>@dedi2934.your-server.de \
 on file. The prefixed URL still answers, so nothing breaks if this is forgotten —
 it just goes on reporting the old file's errors.
 
+**Expect the index to grow, slowly.** This deploy also stops every non-English
+page from declaring the English URL as its canonical, so the four other languages
+become indexable for the first time — up to ~28,000 URLs that Google has been
+told to ignore. Two things follow:
+
+- **It is gradual.** Google re-crawls and re-evaluates each page's canonical on
+  its own schedule; a jump in "Indexed" pages over weeks is the expected shape,
+  not days. The `<lastmod>` values now in the sitemap are what should make it
+  faster than it otherwise would be.
+- **Watch two Search Console reports** rather than the sitemap one. Under Pages,
+  "Alternate page with proper canonical tag" should *fall* sharply — that bucket
+  was holding the non-English copies. Under Experience → International
+  Targeting, hreflang errors should stay at zero; if "no return tags" appears,
+  the two layouts have drifted apart and `test/Smoke/CanonicalLinkSmokeTest` is
+  the thing that should have caught it.
+
+Spot-check after the deploy that a non-English page points at itself:
+
+```bash
+curl -sS https://schoenstatt.link/de/SL100319A | grep -oE '<link[^>]*canonical[^>]*>'
+```
+
+It must name a `/de/` URL. If it says `/en/`, the deploy did not take.
+
 Verify, once deployed:
 
 ```bash
