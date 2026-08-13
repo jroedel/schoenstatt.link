@@ -8,6 +8,7 @@ use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Sion\EntityEdit;
 use App\Sion\SiteWideIdentifier;
+use Books\Form\BookForm;
 use Laminas\Form\Element\Select;
 use Laminas\Form\FormInterface;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
@@ -20,7 +21,10 @@ use Twig\Environment;
 
 use function is_array;
 use function is_int;
+use function is_numeric;
+use function is_object;
 use function is_string;
+use function property_exists;
 
 /**
  * Every entity edit form on the Symfony side: ten routes of batch 7 behind one class.
@@ -121,7 +125,7 @@ final class EntityEditController
             return $this->notFound($entity, $id);
         }
 
-        $form = $this->edit->form($entity);
+        $form = $this->edit->form($entity, $object);
 
         if ($request->isMethod('POST')) {
             //->all() rather than the request object, to match
@@ -384,10 +388,45 @@ final class EntityEditController
         return match ($named) {
             'personName'              => ['person_name' => $this->recordName($object)],
             'publicationValueOptions' => $this->publicationValueOptions($object, $form),
+            'nextWithinLibraryId'     => $this->nextWithinLibraryId($form),
             default                   => throw new RuntimeException(
                 "Route declares unknown extra-variable provider '$named' for entity '$entity'."
             ),
         };
+    }
+
+    /**
+     * The library's next free within-library number, which the book form's "next" button
+     * writes into the call-number field from an inline script.
+     *
+     * `fields-partial.phtml` reads it as `$form->getLibraryOptions()->nextWithinLibraryId`
+     * — a method on `Books\Form\BookForm` rather than an element, which is why it needs a
+     * provider here at all rather than coming out of the form in the template.
+     *
+     * **Rendered into JavaScript as a bare literal**, exactly as the partial does. It is an
+     * integer from `lib_libraries.options`, not user input, and it is interpolated into a
+     * `$(...).val(…)` call — so a non-numeric value would be a script-injection hazard
+     * rather than a cosmetic bug. Coerced to an int here for that reason, and `0` when the
+     * form cannot answer, which renders a button that clears the field instead of one that
+     * breaks the page.
+     *
+     * @param FormInterface<array<string, mixed>> $form
+     * @return array<string, mixed>
+     */
+    private function nextWithinLibraryId(FormInterface $form): array
+    {
+        $next = 0;
+        if ($form instanceof BookForm) {
+            /** @var mixed $options */
+            $options = $form->getLibraryOptions();
+            /** @var mixed $value */
+            $value = is_object($options) && property_exists($options, 'nextWithinLibraryId')
+                ? $options->nextWithinLibraryId
+                : null;
+            $next = is_numeric($value) ? (int) $value : 0;
+        }
+
+        return ['next_within_library_id' => $next];
     }
 
     /**

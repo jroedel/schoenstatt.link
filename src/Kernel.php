@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use App\Authorization\RouteGuard;
+use App\Books\LibraryScopedForms;
 use App\Api\BotIdentity;
 use App\Controller\AdminController;
 use App\Controller\Api\ApiSchemaController;
@@ -563,7 +564,11 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      */
     private function entityEdit(): EntityEdit
     {
-        return $this->entityEdit ??= new EntityEdit($this->laminas(), $this->entities());
+        return $this->entityEdit ??= new EntityEdit(
+            $this->laminas(),
+            $this->entities(),
+            new LibraryScopedForms($this->laminas())
+        );
     }
 
     /**

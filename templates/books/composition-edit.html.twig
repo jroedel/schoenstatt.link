@@ -1,0 +1,110 @@
+{#
+  The song edit form — the Twig counterpart of
+  module/Books/view/books/compositions/edit.phtml and its fields-partial.phtml.
+
+  Like the role form, the partial stops at `security` and edit.phtml adds
+  `formSubmit($form->get('submit'))` after it, so the submit here is `form_submit`.
+
+  **The untranslated block runs from `inLanguage` to `lilyPondSpec`**, which is the
+  partial's `formSelect()->setTranslatorEnabled(false)` … `setTranslatorEnabled(true)`
+  pair. Everything inside it is data — a language name, a country, a composer's name, a
+  ChordPro spec — and running those through the catalogue would rewrite a composer called
+  "Anonymous" into whatever the German catalogue says for the English word. The six URL
+  rows after it are back to translated options, which is where "Alternate cell phone"
+  genuinely does become "Alternative cell phone" through the en catalogue.
+
+  Three of the partial's rows are commented out there (`slug`, `musicalKey`,
+  `alternateKey`, `alternateKeyLabel`) and are therefore absent here. They stay absent:
+  a porting batch does not decide to start rendering a field the original hides.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-validate-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('name')) }}
+{{ form_row(form.get('disambiguatingDescription')) }}
+{{ form_row(form.get('inLanguage'), false) }}
+{{ form_row(form.get('country'), false) }}
+{{ form_row(form.get('yearPublished'), false) }}
+{{ form_row(form.get('composersAll'), false) }}
+{{ form_row(form.get('lyricistsAll'), false) }}
+{{ form_row(form.get('openLicenseUrl'), false) }}
+{{ form_row(form.get('copyrightInfo'), false) }}
+{{ form_row(form.get('copyrightContactEmail'), false) }}
+{{ form_row(form.get('tags'), false) }}
+{{ form_row(form.get('derivedFromCompositionId'), false) }}
+{{ form_row(form.get('chordProSpec'), false) }}
+{{ form_row(form.get('lyrics'), false) }}
+{{ form_row(form.get('lilyPondSpec'), false) }}
+{{ form_row(form.get('url1')) }}
+{{ form_row(form.get('url1Label')) }}
+{{ form_row(form.get('url2')) }}
+{{ form_row(form.get('url2Label')) }}
+{{ form_row(form.get('url3')) }}
+{{ form_row(form.get('url3Label')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  Nine selectize calls, in the partial's order. The `[]` on three of the selectors is the
+  multiple-select suffix and is load-bearing — see the note in books/text-edit.html.twig.
+
+  `create: true` on the tag, country, composer, lyricist and URL-label selects is the UI
+  half of those fields having no InArray validator: a moderator is expected to type a value
+  the list does not have. `create: false` on `derivedFromCompositionId` and `inLanguage`,
+  because those must name a row and a configured language respectively.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='tags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='country']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='composersAll[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='lyricistsAll[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='derivedFromCompositionId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='inLanguage']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}
