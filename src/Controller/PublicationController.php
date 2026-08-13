@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
+use App\Laminas\ViewHelpers;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
@@ -69,7 +70,8 @@ final class PublicationController
         private readonly ServiceBridge $laminas,
         private readonly EntityShow $show,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly ViewHelpers $helpers
     ) {
     }
 
@@ -126,16 +128,7 @@ final class PublicationController
                 $this->translate('Bibliographical information about "%s".'),
                 (string) ($entity['title'] ?? '')
             ),
-            //[Literature, <title>]. The laminas trail has a third crumb between them —
-            //the language catalogue, e.g. "German Schoenstatt Literature" — which comes
-            //from a Navigation branch built per language in Application\Module and cannot
-            //be derived here; docs/BACKLOG.md already records those labels as
-            //untranslatable by construction. The leaf carries `translate: false` because
-            //it is a bibliographic title: see test/Smoke/BreadcrumbDataLabelsSmokeTest.
-            'breadcrumbs'    => [
-                ['label' => 'Literature', 'href' => $this->urls->path('publications')],
-                ['label' => (string) ($entity['title'] ?? ''), 'href' => $selfUrl, 'translate' => false],
-            ],
+            'breadcrumbs'    => $this->breadcrumbs($entity, $selfUrl),
             'entity'         => $entity,
             'sw_id'          => $swId,
             'other_editions' => array_merge(
@@ -333,6 +326,81 @@ final class PublicationController
         }
 
         return [$libraries, $books];
+    }
+
+    /**
+     * `Literature > <language catalogue> > <title>`.
+     *
+     * The middle crumb is the language catalogue this publication is filed under, and it
+     * is **stated from the record rather than derived from the navigation tree**. laminas
+     * builds it from a Navigation branch — one node per language, each holding its
+     * publications — and `App\View\NavigationTree` can now reproduce that container; but
+     * doing so here would unserialize the 2.24 MB `publication-pages` branch on every
+     * publication page to learn a language code the entity already carries. The tree is
+     * for `/sitemap.xml`, which needs all 10,974 pages at once.
+     *
+     * The label is `LiteratureController`'s own title for the page it links to, so the
+     * crumb and its destination agree. laminas says "French Schoenstatt Literature" here
+     * in every locale, because the navigation label is data-marked and never translated;
+     * this says "Schoenstatt Literature in French" and translates it. That is a deliberate
+     * improvement rather than an oversight: docs/BACKLOG.md records the laminas labels as
+     * untranslatable by construction, and this crumb costs no phrase — the pattern is one
+     * string and the language name comes from ext/intl.
+     *
+     * The leaf carries `translate: false` because it is a bibliographic title: see
+     * test/Smoke/BreadcrumbDataLabelsSmokeTest, which asserts against `trans_phrases`
+     * rather than the markup.
+     *
+     * @param array<string, mixed> $entity
+     * @return list<array{label: string, href: string, translate?: bool}>
+     */
+    private function breadcrumbs(array $entity, string $selfUrl): array
+    {
+        $trail = [['label' => 'Literature', 'href' => $this->urls->path('publications')]];
+
+        //`inLanguage` is a list and the navigation files a publication under its *first*
+        //language, which is the one the catalogue page it links to would list it on. A
+        //publication with none is filed under no catalogue at all and gets no crumb, the
+        //same as laminas.
+        $languages = $entity['inLanguage'] ?? null;
+        $language  = is_array($languages) && isset($languages[0]) && is_string($languages[0])
+            ? $languages[0]
+            : null;
+        if (null !== $language && '' !== $language) {
+            $trail[] = [
+                'label'     => $this->catalogueTitle($language),
+                'href'      => $this->urls->path('publications/index', ['inLanguage' => $language]),
+                //already translated, and translating it again would look it up as a
+                //composed sentence that exists in no catalog
+                'translate' => false,
+            ];
+        }
+
+        $trail[] = ['label' => (string) ($entity['title'] ?? ''), 'href' => $selfUrl, 'translate' => false];
+
+        return $trail;
+    }
+
+    /**
+     * The language catalogue's own page title, reproduced from
+     * `LiteratureController::indexTitle()`.
+     *
+     * Duplicated deliberately rather than shared: making one controller depend on another
+     * for a string is a heavier coupling than seven lines, and the pair is pinned by
+     * test/Smoke/ReadingSurfaceSmokeTest, which asserts the crumb equals the destination
+     * page's heading.
+     */
+    private function catalogueTitle(string $language): string
+    {
+        if ('xx' === $language) {
+            return $this->translate('Schoenstatt Literature without language');
+        }
+
+        $name = $this->helpers->languageName()->__invoke($language);
+
+        return '' === $name
+            ? 'Schoenstatt Literature'
+            : sprintf($this->translate('Schoenstatt Literature in %s'), $name);
     }
 
     /** @param array<string, mixed> $entity */
