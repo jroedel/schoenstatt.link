@@ -589,6 +589,12 @@ final class LaminasExtension extends AbstractExtension
             return '';
         }
 
+        //the helper's signature is \DateTime and DateTimeImmutable is not one — the
+        //same conversion diffForHumans() above needs, for the same reason
+        if (! $date instanceof DateTime) {
+            $date = DateTime::createFromInterface($date);
+        }
+
         return (string) $this->helpers->dayFormat()->__invoke($date);
     }
 
