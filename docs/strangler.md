@@ -1080,18 +1080,47 @@ either way — the merged config is cached there and an edit looks like it did n
 it was waiting for now exists (`src/Form/BootstrapFormRenderer`), so it is a candidate
 for the next batch rather than a blocked one.
 
-### `sitemap` (`/sitemap.xml`) — blocked on `Laminas\Navigation`
+### `sitemap` (`/sitemap.xml`) — ported 2026-08-13
 
-`IndexController::sitemapAction()` walks the **Navigation service** with a
-`RecursiveIteratorIterator` and asks the `navigation()->sitemap()` view helper for each
-page's URL. Both are on the unavailable list for the same reason: the service's factory
-calls `$application->getMvcEvent()->getRouteMatch()`, so it cannot be *built* on a
-Symfony-served route, let alone rendered.
+This section used to say the route was blocked on `Laminas\Navigation`. Half of that was
+right and the half that mattered was not.
 
-Porting it therefore means reproducing the navigation tree itself, including the six
-database-derived branches `Application\Module::onBootstrap()` builds and caches in APCu —
-which is the same work as replacing `SiteChrome`'s config-only navigation with a real
-one. Worth doing once, for both; not worth doing for one route.
+The **service** really cannot be built here, and it is worth stating as a measurement
+rather than a belief: `AbstractNavigationFactory::preparePages()` calls
+`$container->get('Application')->getMvcEvent()->getRouteMatch()`, and asking a
+ServiceBridge for `Laminas\Navigation\Navigation` answers `Error: Call to a member function
+getRouteMatch() on null`. What was wrong was the conclusion that the route therefore
+needed the service. A navigation container is three things and the Symfony side has all
+three by other means: the static tree is `navigation.default` in the merged config, the
+five database-derived branches are `Application\Navigation\PageBuilder`'s — the *same*
+builder `onBootstrap()` calls, extracted so the two front controllers cannot disagree —
+and a URL per page is `App\Laminas\RouteUrl`. `Page\Mvc` would add `isActive()`, which
+nothing wants: the Twig layout compares hrefs.
+
+`App\View\NavigationTree` is that composition, and it was verified against laminas rather
+than by inspection. `/sitemap.xml` *is* the laminas rendering of the same container, so its
+URL list is the answer key: **10,974 pages from the tree against 10,974 from the sitemap,
+identical set, identical order, zero diff.**
+
+**Who may walk it.** Cold, the branches are 0.48 s and 51 MiB of table rows; warm,
+`publication-pages` alone is 2.24 MB in APCu — the largest single entry in the persistent
+cache — and unserializing that costs 8-10 ms. So the tree is for the sitemap, which needs
+all of it at once. Everything else states what it needs: a show page's middle breadcrumb
+comes from the record (`PublicationController::breadcrumbs()`), and the navbar's active
+ancestor stays a `SiteChrome::NAV_ROUTE` route default. A page that renders on every
+request and reaches for `NavigationTree` is a mistake worth catching in review.
+
+**The port also fixed the endpoint.** `samdark\sitemap\Sitemap` splits at 10 MB and had
+written four files; the action served back only the first, nothing wrote an index, and
+`public/robots.txt` names `/en/sitemap.xml`. Crawlers saw 3,022 of 10,974 pages — every
+association, the first 2,500 publications, and not one of the 335 compositions. The library
+ships `Index` and `getSitemapUrls()` for exactly this and they were never called. So
+`/sitemap.xml` is now a sitemap index over `/sitemap/pages*.xml`, merged publications are
+excluded (3,627 of 10,104 public publications are 301s to a surviving edition), and the
+files are reused until `cache:flush-persistent` rather than rebuilt on every request —
+1.25 s down to 0.02 s. APCu holds only a generation stamp, deliberately: the parts are
+~38 MB uncompressed and `apc.ttl` is 0, so caching the payload there would let the sitemap
+expunge every other entry on the site.
 
 ### The form routes — one obstacle, not two, and the first one is gone
 

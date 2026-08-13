@@ -728,9 +728,19 @@ Background and measurements: [caching.md](caching.md).
 - [ ] `LibraryTable::getLibraryBooksStatuses()` hydrates every entity for a
   library (up to 12,394 books) then links checkouts — next projection
   candidate.
-- [ ] Navigation cache keys written in `Application\Module::onBootstrap()`
-  are never invalidated on data change (only `SionCacheTrait`-registered
-  keys are) — editors see "my change didn't appear" until the 5-day TTL.
+- [ ] Navigation cache keys written by `Application\Navigation\PageBuilder`
+  (extracted from `Application\Module::onBootstrap()` on 2026-08-13, and now
+  read by the Symfony side too) are never invalidated on data change — only
+  `SionCacheTrait`-registered keys are — so editors see "my change didn't
+  appear" until someone flushes. `/sitemap.xml` inherits this: its generation
+  stamp lives in the same segment, so it refreshes with the branches and
+  otherwise once a day.
+- [ ] A merged publication is still a page in the *navigation*, and therefore in
+  the laminas menus and breadcrumbs, though it only ever answers a 301 to the
+  edition it was merged into — 3,627 of 10,104 public publications. The sitemap
+  excludes them (`App\Sitemap\SitemapGenerator`); filtering them in
+  `PageBuilder` instead would fix both surfaces at once and change the laminas
+  rendering, which is why it was not done as part of a port.
 - [ ] `SionCacheTrait::getUnlinkedAssignments()` declares dependencies
   `['assignment', 'association']` but the honest list is
   `['assignment', 'role']` — harmless over-invalidation, still wrong.
