@@ -23,34 +23,65 @@ $routeName = $this->routeName();?>
             ->appendHttpEquiv('X-UA-Compatible', 'IE=edge')
         ?>
 
-        <?php //make a link to the canonical (en) page for search engines and alternative links to other languages
-        /** @var Uri $canonicalUrl */
+        <?php
+        /**
+         * Canonical and hreflang. Changed 2026-08-13; it used to name the **English** URL
+         * as canonical for all five languages and to leave the current language out of the
+         * alternate set. Between them those two told Google to index only the English copy
+         * of the site and discarded the annotations that would have kept the copies from
+         * competing:
+         *
+         *  - a canonical pointing at another language means "index that one instead", so
+         *    the German page was asking not to be indexed;
+         *  - an hreflang set has to list every version *including itself* or it is not
+         *    reciprocal, and Google ignores it.
+         *
+         * Now: each language is canonical for itself, the set is complete, and x-default
+         * names English for a searcher whose language we do not publish. The Twig layout
+         * does the same thing through App\View\SiteChrome::canonicalLinks() — the two
+         * layouts must agree, because production serves ported routes through one and
+         * bridged routes through the other.
+         *
+         * Unlike the Twig side this has no per-record override, and does not need one: the
+         * three entities whose slug makes the preferred URL ambiguous — associations
+         * (per-locale slugs), publications and compositions — are all ported, so their
+         * pages never render through this file.
+         *
+         * @var Uri $localeUri
+         */
         $languages = ['en' => 'en_US', 'es' => 'es_ES', 'de' => 'de_DE', 'pt' => 'pt_BR', 'it' => 'it_IT'];
         $currentLanguage = Locale::getPrimaryLanguage(Locale::getDefault());
         $requestUri = $this->requestUri();
         foreach ($languages as $languageId => $localeId) {
-            $canonicalUrl = $this->localeUrl($localeId);
-            $queryParams = $canonicalUrl->getQueryAsArray();
+            $localeUri = $this->localeUrl($localeId);
+            $queryParams = $localeUri->getQueryAsArray();
             if (array_key_exists('lang', $queryParams)) {
                 unset($queryParams['lang']);
-                $canonicalUrl->setQuery($queryParams);
+                $localeUri->setQuery($queryParams);
             }
-            $canonicalUrl->setScheme($requestUri->getScheme())
+            $localeUri->setScheme($requestUri->getScheme())
             ->setHost($requestUri->getHost())
             ->normalize();
-            if ($languageId == 'en') {
+            $href = $localeUri->toString();
+            if ($languageId === $currentLanguage) {
                 $this->headLink([
-                    'href' => $canonicalUrl->toString(),
+                    'href' => $href,
                     'rel' => 'canonical',
                 ], 'PREPEND');
             }
-            if ($languageId !== $currentLanguage) {
+            if ($languageId === 'en') {
                 $this->headLink([
-                    'href' => $canonicalUrl->toString(),
+                    'href' => $href,
                     'rel' => 'alternate',
-                    'hreflang' => $languageId,
+                    'hreflang' => 'x-default',
                 ], 'PREPEND');
             }
+            //every language, this one included: a set that omits its own page is discarded
+            $this->headLink([
+                'href' => $href,
+                'rel' => 'alternate',
+                'hreflang' => $languageId,
+            ], 'PREPEND');
         }
         echo $this->headLink()
         ->prependStylesheet($this->basePath() . '/css/gen-basic.css');?>

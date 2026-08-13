@@ -10,6 +10,7 @@ use App\Sitemap\ChangeLog;
 use App\Sitemap\GuestAccess;
 use App\Sitemap\SitemapGenerator;
 use App\View\NavigationTree;
+use App\View\PreferredUrls;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Psr\Container\ContainerInterface;
 
@@ -69,6 +70,7 @@ final class BuildSitemapCommandFactory implements FactoryInterface
         return new BuildSitemapCommand(
             static function () use ($appConfig, $root): SitemapGenerator {
                 $laminas = new ServiceBridge($appConfig);
+                $urls    = new RouteUrl($laminas, '');
 
                 return new SitemapGenerator(
                     $laminas,
@@ -76,9 +78,12 @@ final class BuildSitemapCommandFactory implements FactoryInterface
                     //writer prepends the host. RouteUrl needs no MVC bootstrap — the laminas
                     //router assembles happily out of a bare ServiceManager, which is the
                     //property the whole strangler rests on.
-                    new NavigationTree($laminas, new RouteUrl($laminas, '')),
+                    new NavigationTree($laminas, $urls),
                     new ChangeLog($laminas),
                     new GuestAccess($laminas),
+                    //the same builder the record pages use, so the URLs the sitemap
+                    //advertises are the ones those pages call canonical
+                    new PreferredUrls($urls),
                     $root . '/public'
                 );
             },

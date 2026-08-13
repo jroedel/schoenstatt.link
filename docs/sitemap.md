@@ -160,25 +160,58 @@ curl -sS https://schoenstatt.link/sitemap.xml | grep -o '<loc>[^<]*</loc>'
 Every `<loc>` in the index must be `https://schoenstatt.link/sitemap-*.xml`. If
 one ever appears under a subdirectory again, the sitemap is void.
 
-## Known, deliberate, and not fixed here
+## All five languages are meant to be indexed
 
-Three things were found while fixing the above and left alone, because each is
-an SEO policy decision rather than a defect in the file's validity:
+Decided 2026-08-13, and it took three changes outside the sitemap. Until then
+every page in every language declared the **English** URL as its canonical, which
+reads to Google as "do not index this page, index that one" — so four fifths of
+the site was being withdrawn from the index while the sitemap went on offering
+all of it. The hreflang set made it worse by omitting the page's own language,
+which makes a cluster non-reciprocal and Google discards it entirely.
 
-1. **The pages' canonical tag always points at the English URL.** `/de/SL100319A`
-   declares `<link rel="canonical" href=".../en/SL100319A">`. So Google is being
-   told to index only the English copy while the sitemap offers all five, and
-   the four non-English `<loc>` entries contradict the pages they point at.
-   Fixing it means deciding whether the other locales are meant to be indexed at
-   all — worth doing, and it is not a sitemap change.
-2. **hreflang is unconditional.** All five locales are declared for every page
-   whether a translation exists or not, and there is no `x-default`.
-3. **The alternates carry the default locale's slug.** `slugByLocale` is
-   per-locale in the database, but the tree is built once and each language's URL
-   is the same tail with a different prefix, so `/de/SL209835L/<english-slug>`
-   is what gets published. Those URLs answer 200 — the slug is decorative — but
-   they are not the canonical form.
+Now, in both layouts (`templates/layout.html.twig` for ported routes,
+`module/Application/view/layout/layout.phtml` for bridged ones — they must
+agree):
 
-Also left: the navigation menu still shows the "Other Schoenstatt Literature"
-link that 404s. Only the sitemap stops publishing it; fixing the menu means
-changing `PageBuilder`, which changes what every visitor sees.
+- each language is **canonical for itself**;
+- the hreflang set lists **all five plus `x-default`**, its own page included;
+- `x-default` names the English URL.
+
+`test/Smoke/CanonicalLinkSmokeTest` asserts all of it against both layouts. It
+used to assert the opposite, by name — a characterization test that recorded the
+bug faithfully and failed the moment the bug was fixed, which is what it was for.
+
+### The slug is decorative, so the canonical is the *preferred* URL
+
+`sw_id` selects a record; the slug does not, and the site does not redirect
+between forms. So `/en/SL100319A`, `/en/SL100319A/original-schoenstatt-shrine`
+and `/en/SL100319A/anything` all answer 200 with the same page. A canonical that
+echoed the request would make each of those an indexable page in its own right.
+
+Associations make it sharper: their slug is stored **per locale** (`SlugEn`,
+`SlugEs`, `SlugDe`, `SlugPt`, `SlugIt`), and 428 of 498 German slugs differ from
+the English one — the German menus link to `/de/SL100319A/urheiligtum`.
+Publications and compositions have a single `Slug` column, so their five URLs
+differ only in the prefix.
+
+`App\View\PreferredUrls` answers "the one URL this record should be indexed
+under, per language", assembled through the router. The three record controllers
+hand it to the layout as `locale_paths`; a page that sets none gets the current
+path with each prefix swapped in, which is right for a static page.
+
+**The sitemap uses the same builder**, via `SitemapEntry::tailFor()`. That is not
+tidiness: the tree is built for one locale, so without it the sitemap would
+advertise `/de/SL100319A/original-schoenstatt-shrine` while the German page calls
+`urheiligtum` canonical — legal, but a wasted crawl and a Search Console
+"Alternate page with proper canonical tag" on ~1,240 entries.
+`SitemapSmokeTest::testSitemapUrlsAreTheCanonicalOnes()` samples the two against
+each other, because nothing else would notice them drifting apart.
+
+### Still open
+
+- **hreflang is unconditional**: all five locales are declared whether a
+  translation of that page exists or not. Deliberate — the set has to match what
+  the pages themselves publish, and claiming fewer would break reciprocity.
+- The navigation menu still shows the "Other Schoenstatt Literature" link that
+  404s. Only the sitemap stops publishing it; fixing the menu means changing
+  `PageBuilder`, which changes what every visitor sees.

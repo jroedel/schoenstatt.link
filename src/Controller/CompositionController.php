@@ -8,6 +8,7 @@ use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
+use App\View\PreferredUrls;
 use App\Sion\SiteWideIdentifier;
 use Books\Model\MusicTable;
 use ChordPro\HtmlFormatter;
@@ -57,7 +58,8 @@ final class CompositionController
         private readonly ServiceBridge $laminas,
         private readonly EntityShow $show,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly PreferredUrls $preferredUrls
     ) {
     }
 
@@ -100,6 +102,17 @@ final class CompositionController
         $chordPro = $data->entity['chordProSpec'] ?? null;
 
         return new Response($this->twig->render('books/composition.html.twig', [
+            /*
+             * The five URLs this record should be indexed under, for the layout's canonical
+             * and hreflang links. A composition has a single `Slug` column, so the five differ
+             * only in the locale prefix — but this is still needed, because a request that
+             * omits the slug would otherwise declare the slugless URL canonical while the
+             * sitemap and every menu link advertise the slugged one. See App\View\PreferredUrls.
+             */
+            'locale_paths'         => $this->preferredUrls->forRecord(
+                self::ENTITY,
+                ['sw_id' => $swId, 'slug' => $data->entity['slug'] ?? null]
+            ),
             //showAction() sets no headTitle at all for a composition — the name is an
             //<h2> in the body and the <title> is the site name alone. Measured against
             //the laminas rendering of /en/SL500001C rather than assumed, because every

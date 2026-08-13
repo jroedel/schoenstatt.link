@@ -7,6 +7,7 @@ namespace App\Sitemap;
 use App\Laminas\ServiceBridge;
 use App\Locale\Locales;
 use App\View\NavigationTree;
+use App\View\PreferredUrls;
 use Books\Model\PublicationsTable;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -79,6 +80,7 @@ final class SitemapGenerator
         private readonly NavigationTree $tree,
         private readonly ChangeLog $changes,
         private readonly GuestAccess $access,
+        private readonly PreferredUrls $preferred,
         private readonly string $docroot
     ) {
     }
@@ -159,10 +161,11 @@ final class SitemapGenerator
             $buckets[$section->value] = [];
         }
 
-        $stamps    = $this->stampsBySection();
-        $excluded  = $this->excludedRecordIds();
-        $prefixLen = strlen('/' . Locales::aliasFor(Locales::DEFAULT_LOCALE) . '/');
-        $seen      = [];
+        $stamps           = $this->stampsBySection();
+        $excluded         = $this->excludedRecordIds();
+        $associationTails = $this->associationTailsByLanguage();
+        $prefixLen        = strlen('/' . Locales::aliasFor(Locales::DEFAULT_LOCALE) . '/');
+        $seen             = [];
 
         foreach ($this->tree->flattened() as $page) {
             $href = $page['href'];
@@ -191,7 +194,10 @@ final class SitemapGenerator
 
             $buckets[$section->value][] = new SitemapEntry(
                 $tail,
-                null !== $id ? ($stamps[$section->value][$id] ?? null) : null
+                null !== $id ? ($stamps[$section->value][$id] ?? null) : null,
+                SitemapSection::ASSOCIATIONS === $section && null !== $id
+                    ? ($associationTails[$id] ?? null)
+                    : null
             );
         }
 
@@ -346,6 +352,68 @@ final class SitemapGenerator
         }
 
         return $ids;
+    }
+
+    /**
+     * Per-language path tails for every association, keyed on association id.
+     *
+     * The navigation tree is built once, for one locale, so the tail it yields carries that
+     * locale's slug — and an association's slug is stored per locale, 428 of 498 German ones
+     * differing from the English. Publishing one tail for all five languages would advertise
+     * URLs no page calls canonical and no menu links to, so the five are assembled here.
+     *
+     * Through the router, not by string concatenation: the shape of an association URL is a
+     * route definition and has changed once already. The same `PreferredUrls` the record
+     * pages use, so the sitemap and the canonical cannot drift apart.
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function associationTailsByLanguage(): array
+    {
+        try {
+            /** @var SchoenstattTable $table */
+            $table   = $this->laminas->get(SchoenstattTable::class);
+            $objects = $table->getObjects('association');
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (! is_array($objects)) {
+            return [];
+        }
+
+        $tails = [];
+        foreach ($objects as $object) {
+            if (! is_array($object)) {
+                continue;
+            }
+            $id         = $object['associationId'] ?? null;
+            $identifier = $object['identifier'] ?? null;
+            if (! is_numeric($id) || ! is_string($identifier)) {
+                continue;
+            }
+
+            $paths = $this->preferred->forRecord(
+                'association',
+                ['sw_id' => $identifier],
+                is_array($object['slugByLocale'] ?? null) ? $object['slugByLocale'] : null
+            );
+
+            $byLanguage = [];
+            foreach ($paths as $language => $path) {
+                //strip `/<lang>/`, leaving the tail the writer puts each prefix back onto
+                $prefix = '/' . $language . '/';
+                if (str_starts_with($path, $prefix)) {
+                    $byLanguage[$language] = substr($path, strlen($prefix));
+                }
+            }
+
+            if ([] !== $byLanguage) {
+                $tails[(int) $id] = $byLanguage;
+            }
+        }
+
+        return $tails;
     }
 
     /**

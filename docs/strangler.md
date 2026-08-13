@@ -1333,8 +1333,13 @@ serves them through the `-s` guard in `public/.htaccess`, and `SitemapController
 only to build the files if they are missing. samdark/sitemap is gone from `composer.json`
 along with the gzip-header handling that made `App\Http\GzipListener` necessary for this
 route — the files are plain XML and `mod_deflate` compresses them. **[docs/sitemap.md](sitemap.md)
-is the reference**; it also records the three hreflang/canonical problems that were found
-at the same time and deliberately left alone.
+is the reference**; it also records the canonical/hreflang rework that followed, which is
+the one part of this that touches **both** layouts — every locale is now canonical for
+itself and the record pages canonicalise their preferred URL rather than the requested
+one, so `templates/layout.html.twig` and `module/Application/view/layout/layout.phtml`
+have to stay in step. A fix applied to one and not the other is invisible until a crawler
+reaches the wrong kind of page, which is why `test/Smoke/CanonicalLinkSmokeTest` runs its
+assertions against a Twig route and a bridged one.
 
 `App\View\NavigationTree` is unchanged and still the reason any of this works, but note
 that the walk now happens in a **console process**, so it is `BuildSitemapCommandFactory`

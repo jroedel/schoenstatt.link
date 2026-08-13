@@ -228,17 +228,22 @@ final class SitemapWriter
     /**
      * One `<url>` per language, each carrying the whole alternate set.
      *
-     * This reproduces what the site has always published, including the parts that are
-     * arguably wrong: every locale is declared for every page whether a translation exists
-     * or not, and the tail is the default locale's, so a Spanish URL can carry an English
-     * slug. Both predate this rewrite and neither makes the file invalid — changing them is
-     * an hreflang decision rather than a fix. docs/sitemap.md records why they were left.
+     * Every locale is declared for every page whether a translation of it exists or not.
+     * That is inherited behaviour and is deliberately kept: the alternate set here matches
+     * the one the pages themselves publish, and hreflang annotations only work when the two
+     * agree — an entry the page does not claim is worse than a redundant one.
+     *
+     * The per-locale slug *is* honoured, via `SitemapEntry::tailFor()`; it was not until
+     * 2026-08-13, when the canonical links stopped naming the English URL for every
+     * language and it started to matter which of the two forms was advertised.
      */
     private function writeUrl(XMLWriter $writer, SitemapEntry $entry, string $basename): void
     {
         $alternates = [];
         foreach ($this->languages as $language) {
-            $alternates[$language] = $this->baseUrl . '/' . $language . '/' . $entry->tail;
+            //tailFor(), not $entry->tail: an association's slug differs per locale, and the
+            //URL published here has to be the one that language's page calls canonical
+            $alternates[$language] = $this->baseUrl . '/' . $language . '/' . $entry->tailFor($language);
         }
 
         foreach ($alternates as $url) {

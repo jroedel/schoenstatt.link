@@ -492,23 +492,18 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Product decisions needed
 
-- [ ] **Every non-English page declares the English URL as its canonical.**
-  `/de/SL100319A` sends `<link rel="canonical" href=".../en/SL100319A">`, and the same
-  holds for every locale on every record page — the head block emits the default locale
-  as canonical and the other four as `hreflang` alternates. Google is therefore being
-  told to index only the English copy of all 7,062 records while the sitemap offers all
-  five, so the four non-English `<loc>` entries contradict the pages they point at.
-  Found 2026-08-13 while fixing the sitemap, and deliberately not changed there: the
-  sitemap is reporting this faithfully.
-  - The decision is whether the other four locales are meant to be indexed at all. If
-    yes, the canonical must be self-referential per locale — and then the sitemap's
-    35,440 entries are right as they stand. If no, the sitemap should publish one
-    `<loc>` per record with the other locales only as alternates, cutting it to ~7,100.
-  - Two smaller things travel with it: `hreflang` is declared unconditionally whether a
-    translation exists or not, and there is no `x-default`. Also the alternates carry the
-    *default* locale's slug (`/de/SL209835L/<english-slug>`) because the navigation tree
-    is built once; those URLs answer 200, the slug being decorative, but they are not the
-    canonical form. See docs/sitemap.md, "Known, deliberate, and not fixed here".
+- [x] **Every non-English page declared the English URL as its canonical.** Decided and
+  fixed 2026-08-13: all five languages are meant to be indexed, so each is now canonical
+  for itself, the hreflang set lists all five plus `x-default` including its own page
+  (a set that omits itself is non-reciprocal and Google discards it), and the record
+  pages canonicalise their *preferred* URL rather than whichever decorative slug was
+  requested — `App\View\PreferredUrls`, which the sitemap shares via
+  `SitemapEntry::tailFor()` so the two cannot drift. Both layouts changed, because
+  production serves ported routes through Twig and bridged ones through `.phtml`. See
+  docs/sitemap.md, "All five languages are meant to be indexed".
+  - Left open on purpose: `hreflang` is still declared for all five locales whether a
+    translation of that page exists or not. The set has to match what the pages publish
+    or reciprocity breaks, so narrowing it would mean narrowing both at once.
 
 - [ ] **The literature menu links to a 404.** `PageBuilder::publicationPages()` groups
   publications by language and files the ones with no language under `''`, then assembles
