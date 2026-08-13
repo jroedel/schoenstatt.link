@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Sion;
 
+use App\Books\LibraryScopedForms;
 use App\Laminas\ServiceBridge;
 use BjyAuthorize\View\Helper\IsAllowed;
 use Closure;
@@ -77,7 +78,8 @@ final class EntityEdit
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Entities $entities
+        private readonly Entities $entities,
+        private readonly LibraryScopedForms $scopedForms
     ) {
     }
 
@@ -173,10 +175,28 @@ final class EntityEdit
      * database and attach the input filter that *is* the validation. Constructing the
      * class directly yields a form that renders and accepts anything.
      *
+     * ## The three that cannot come out of the container
+     *
+     * `book`, `collection` and `library` name factories that read the route match to
+     * discover their library, which a Symfony-served route has no MvcEvent to answer — so
+     * asking the container for them dies with `Call to a member function getRouteMatch() on
+     * null`, *after* the response is assembled, i.e. as an empty HTTP 200.
+     * `App\Books\LibraryScopedForms` builds those three instead, from the row this method is
+     * handed, and its docblock carries the full account including what the arrangement
+     * costs.
+     *
+     * The dispatch is by name rather than by catching the Error, because catching it here
+     * would also swallow a genuine fault in one of the seven forms that do build.
+     *
+     * @param array<string, mixed> $object the row `load()` returned, for the three above
      * @return FormInterface<array<string, mixed>>
      */
-    public function form(string $entity): FormInterface
+    public function form(string $entity, array $object = []): FormInterface
     {
+        if (LibraryScopedForms::handles($entity)) {
+            return $this->scopedForms->form($entity, $object);
+        }
+
         $service = $this->entities->stringField($entity, 'editActionForm');
         if (null === $service) {
             //laminas throws InvalidArgumentException here, with this same reasoning: an

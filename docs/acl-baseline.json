@@ -30,10 +30,10 @@
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 31,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 86,
+        "symfony_routes_acl_checked": 90,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 116,
+        "symfony_served_routes": 120,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -8065,6 +8065,26 @@
                 "denial_style": "html"
             }
         },
+        "books/book/edit": {
+            "path": "/books/{book_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/books/book/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "books/book/edit.locale": {
+            "path": "/{_locale}/books/{book_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/books/book/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "collections/collection/edit": {
             "path": "/collections/{collection_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -8111,6 +8131,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/composition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "composition-edit": {
+            "path": "/{sw_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/composition-edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "composition-edit.locale": {
+            "path": "/{_locale}/{sw_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/composition-edit",
                 "reason": null,
                 "denial_style": "html"
             }

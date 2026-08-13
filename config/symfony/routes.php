@@ -632,6 +632,48 @@ $edit(
     ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_TEXT)]
 );
 
+// A song, guarded `sch_moderator, sch_user` — and sch_user is a default role, so this is
+// another route whose guard means "signed in". Unlike the Books entities, `composition`
+// declares no acl_resource_id_field, so there is no per-row check behind it either: any
+// signed-in visitor may edit any composition. That is the existing rule, unchanged by the
+// port and stated because it is surprising.
+//
+// Its laminas controller overrides `getEntityIdParam()` to translate the identifier, which
+// is what ID_KIND does here. The redirect needs no override: the spec's
+// `default_route_params` maps sw_id and slug, which is branch 3 of
+// App\Sion\EntityEdit::redirectTarget().
+$edit(
+    'composition-edit',
+    '/{sw_id}/edit',
+    'composition',
+    'sw_id',
+    'books/composition-edit.html.twig',
+    'Edit a composition',
+    'Books',
+    [EntityEditController::ID_KIND => SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_COMPOSITION)]
+);
+
+// A library book, and the largest form in the batch by field count. Two things it needs
+// that no earlier one did: a `<button type="button">` for the next-free-call-number helper,
+// and the value that button writes — `next_within_library_id`, read off
+// `BookForm::getLibraryOptions()` rather than out of an element, which is why
+// EXTRA_VARIABLES names a provider for it.
+//
+// Same per-row check as the collection route above, against the same `library_<id>`
+// resource with the same `administrate` privilege.
+$edit(
+    'books/book/edit',
+    '/books/{book_id}/edit',
+    'book',
+    'book_id',
+    'books/book-edit.html.twig',
+    'Edit book',
+    'Books',
+    [EntityEditController::EXTRA_VARIABLES => 'nextWithinLibraryId'],
+    ['book_id' => '[0-9]{1,6}']
+);
+
 // A movement role, guarded `sch_moderator`. Two peculiarities of its .phtml are carried
 // over and documented in the template: the fields partial does not render its own submit
 // button, and its first two selects render with the translator off because an association

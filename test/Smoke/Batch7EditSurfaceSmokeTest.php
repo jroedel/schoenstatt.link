@@ -63,7 +63,94 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
             //which is why their expectation is the not-found redirect rather than a 200.
             //See testAPerRowCheckRefusesALibraryTheAccountDoesNotAdministrate.
             'dictionary entry' => ['/en/dictionary/1/edit', 'dict_administrator', 'name="directTranslation"'],
+            //`composition` is guarded sch_moderator/sch_user. Its ChordPro field is
+            //distinctive and is inside the untranslated block, so it also proves the
+            //`false` argument on those rows did not stop them rendering.
+            'composition' => ['/en/SL500001C/edit', 'sch_moderator', 'name="chordProSpec"'],
         ];
+    }
+
+    /**
+     * The three library-scoped forms, and a field that only each *rendered* form contains.
+     *
+     * **These need their own test because the shared one cannot reach them.** Their guard
+     * admits `lib_user`, which every account holds, but the entity's `acl_resource_id_field`
+     * then demands `administrate` on `library_<id>` — so a single-role sign-in gets the
+     * row-level refusal, not the form. That is asserted separately above; this signs in with
+     * **every** role, which is how `tools/port-baseline.php` renders these pages too.
+     *
+     * ## Why this test exists at all
+     *
+     * `collections/collection/edit` shipped broken. Its form factory reads the route match,
+     * which a Symfony route has no MvcEvent to answer, so the page was an **empty HTTP 200**
+     * — and the only assertion covering it was the anonymous refusal, which passed happily.
+     * `App\Books\LibraryScopedForms` is the fix; this is the assertion that would have
+     * caught it, and the reason docs/strangler.md says to assert something from the body.
+     *
+     * @return array<string, array{string, string}>
+     */
+    public static function libraryScopedPaths(): array
+    {
+        return [
+            'collection' => ['/en/collections/1/edit', 'name="callNumberRegex"'],
+            'book'       => ['/en/books/18370/edit', 'name="withinLibraryId"'],
+        ];
+    }
+
+    #[DataProvider('libraryScopedPaths')]
+    public function testALibraryScopedFormRendersForAnAccountThatAdministratesIt(
+        string $path,
+        string $marker
+    ): void {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $response = $this->get($path, false, $jar);
+
+        $this->assertSame(200, $response['status'], "$path must render for an account with every role");
+        $this->assertStringContainsString(
+            $marker,
+            $response['body'],
+            'the form has to be in the body. A 200 alone passed against the empty-200 wedge that '
+            . 'App\\Books\\LibraryScopedForms exists to fix.'
+        );
+        $this->assertStringContainsString('name="security"', $response['body']);
+    }
+
+    /**
+     * The book form is the only one in the batch with a `<button type="button">` and an
+     * inline value read off the form object rather than an element, so both get their own
+     * assertions.
+     */
+    public function testTheBookFormRendersItsButtonAndTheNextCallNumber(): void
+    {
+        $jar = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $response = $this->get('/en/books/18370/edit', false, $jar);
+
+        $this->assertSame(200, $response['status']);
+        $this->assertStringContainsString(
+            'name="withinLibraryId"',
+            $response['body'],
+            'the call-number field the button writes into has to be there'
+        );
+        $this->assertStringContainsString(
+            '<button',
+            $response['body'],
+            'nextWithinLibraryId renders through form_button, not a row — a form_row here would '
+            . 'emit an <input type="button"> instead'
+        );
+        //The inline script interpolates this as a bare JavaScript literal, so a non-numeric
+        //value would be a script-injection hazard rather than a cosmetic bug. Asserting the
+        //shape is asserting that the coercion happened.
+        $this->assertMatchesRegularExpression(
+            '/\.val\(\d+\);/',
+            $response['body'],
+            'next_within_library_id must reach the inline script as a bare integer'
+        );
     }
 
     /**
@@ -145,12 +232,30 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
         );
     }
 
-    #[DataProvider('editPaths')]
+    /**
+     * **Only the routes that have such a visitor.** `composition-edit` is guarded
+     * `['sch_moderator', 'sch_user']` and `sch_user` is a default role, so there is no
+     * signed-in visitor who lacks it — every account gets the form. That is the existing
+     * rule, unchanged by the port, and the same one `association-edit` records; asserting a
+     * 403 there failed, correctly, and the route is excluded rather than the expectation
+     * bent.
+     *
+     * @return array<string, array{string, string, string}>
+     */
+    public static function pathsWithARoleNotEveryoneHas(): array
+    {
+        $paths = self::editPaths();
+        unset($paths['composition']);
+
+        return $paths;
+    }
+
+    #[DataProvider('pathsWithARoleNotEveryoneHas')]
     public function testAVisitorWithoutTheRoleIsForbidden(string $path, string $role, string $marker): void
     {
         $jar = $this->newCookieJar();
-        //A bare account: registration grants sch_user and nothing else, which is not any
-        //of the roles these routes name.
+        //A bare account holds the four default roles — lib_user, pub_user, sch_user,
+        //bib_user — and none of the roles these routes name.
         $this->signIn($jar);
 
         $response = $this->get($path, false, $jar);
@@ -160,6 +265,27 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
             $response['status'],
             "$path must answer 403 — not a redirect — to a signed-in visitor lacking $role"
         );
+    }
+
+    /**
+     * The other half of that: a bare account really does reach the composition form, which
+     * is worth pinning rather than leaving as an absence. If `sch_user` ever stops being a
+     * default role, this fails and says where to look.
+     */
+    public function testAnySignedInVisitorMayEditAComposition(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar);
+
+        $response = $this->get('/en/SL500001C/edit', false, $jar);
+
+        $this->assertSame(
+            200,
+            $response['status'],
+            'route/composition-edit names sch_user, which registration grants, so every signed-in '
+            . 'visitor may edit any composition — the existing rule, not something the port introduced'
+        );
+        $this->assertStringContainsString('name="chordProSpec"', $response['body']);
     }
 
     #[DataProvider('editPaths')]
