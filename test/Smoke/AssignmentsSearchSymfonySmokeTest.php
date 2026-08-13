@@ -148,6 +148,71 @@ class AssignmentsSearchSymfonySmokeTest extends SmokeTestCase
         $this->assertStringEndsWith('/en/assignments/search?search=' . self::QUERY, $response['redirect']);
     }
 
+    /**
+     * **The whole round trip**, and the only assertion that proves the query survives all
+     * of it: an anonymous visitor asks for a search, is sent to sign in, signs in, and
+     * lands back on *their search* rather than on a blank one.
+     *
+     * Four things have to hold at once and only this exercises them together —
+     * `App\Authorization\Denial::signIn()` percent-encoding the query so an `&` cannot
+     * end the `redirect` parameter, PHP decoding it back, the sign-in form carrying it
+     * through a POST as a hidden field, and
+     * `JUser\Controller\LoginController::validRedirect()` accepting it, which it does
+     * only because the router matches a URI whose path is a real route.
+     *
+     * Before 2026-08-13 the visitor landed on `/en/assignments/search` with no query —
+     * and since a blank query there returns every entity, on a 595 KB page rather than an
+     * error. Both front controllers did this; carrying the query is a deliberate
+     * improvement over laminas rather than a parity fix.
+     */
+    public function testAVisitorSignsInAndLandsBackOnTheirSearch(): void
+    {
+        $jar = $this->newCookieJar();
+
+        //1. the guard turns the search into a sign-in URL carrying the return trip
+        $denied = $this->get('/en/assignments/search?search=' . self::QUERY, false, $jar);
+        $this->assertSame(302, $denied['status']);
+        $this->assertStringContainsString(
+            'redirect=/en/assignments/search%3Fsearch%3D' . self::QUERY,
+            $denied['redirect'],
+            'the guard dropped the query, so nothing downstream can carry it'
+        );
+
+        //2. sign in *starting from that URL*, so the form is pre-filled with it
+        $loginPath = (string) parse_url($denied['redirect'], PHP_URL_PATH)
+            . '?' . (string) parse_url($denied['redirect'], PHP_URL_QUERY);
+        $this->signIn($jar, [], $loginPath);
+
+        //3. and the link lands on the search, query intact
+        $this->assertNotNull($this->lastSignInRedirect);
+        $this->assertStringEndsWith(
+            '/en/assignments/search?search=' . self::QUERY,
+            (string) $this->lastSignInRedirect,
+            'signed in, but landed somewhere other than the search that was asked for'
+        );
+    }
+
+    /**
+     * The form really is pre-filled — asserted separately, because it is the step a
+     * reader is most likely to assume rather than check, and the one that fails silently:
+     * an empty hidden field posts an empty redirect and the visitor lands on the home
+     * page looking as though they simply were not sent anywhere.
+     */
+    public function testTheSignInFormCarriesTheReturnTrip(): void
+    {
+        $jar = $this->newCookieJar();
+
+        $denied = $this->get('/en/assignments/search?search=' . self::QUERY, false, $jar);
+        $body   = $this->get((string) parse_url($denied['redirect'], PHP_URL_PATH)
+            . '?' . (string) parse_url($denied['redirect'], PHP_URL_QUERY), false, $jar)['body'];
+
+        $this->assertSame(
+            '/en/assignments/search?search=' . self::QUERY,
+            $this->extractRedirectField($body),
+            'the sign-in form did not carry the query, so validRedirect() refused it'
+        );
+    }
+
     // -------------------------------------------------------------- the page itself
 
     /**
