@@ -65,6 +65,7 @@ use App\Sitemap\SitemapGenerator;
 use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
 use App\View\NavigationTree;
+use App\View\PreferredUrls;
 use SionModel\Error\FatalErrorHandler;
 use SionModel\Error\RequestContext as ErrorRequestContext;
 use SionModel\Service\ErrorHandling;
@@ -126,6 +127,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private Environment $twig;
     private ViewHelpers $viewHelpers;
     private RouteUrl $routeUrl;
+    private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
     private EntityShow $entityShow;
     private CommentPredicates $commentPredicates;
@@ -283,6 +285,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                     new NavigationTree($this->laminas(), $this->routeUrl()),
                     new ChangeLog($this->laminas()),
                     new GuestAccess($this->laminas()),
+                    $this->preferredUrls(),
                     dirname(__DIR__) . '/public'
                 ),
                 dirname(__DIR__) . '/public',
@@ -471,13 +474,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->entityShow(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                //per-locale slugs make this record's canonical URL ambiguous — see
+                //App\View\PreferredUrls
+                $this->preferredUrls()
             ),
             CompositionController::class => fn (): CompositionController => new CompositionController(
                 $this->laminas(),
                 $this->entityShow(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                $this->preferredUrls()
             ),
             // The only one of the four needing no ServiceBridge of its own: a text page
             // is SionController::showAction() and nothing else, so everything it reads
@@ -493,7 +500,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl(),
                 //for `languageName`, which names the language catalogue in its breadcrumb
-                $this->viewHelpers()
+                $this->viewHelpers(),
+                $this->preferredUrls()
             ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.
@@ -607,6 +615,16 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
         $baseUrl   = is_array($sionModel) ? $sionModel['canonical_base_url'] ?? null : null;
 
         return is_string($baseUrl) ? rtrim($baseUrl, '/') : '';
+    }
+
+    /**
+     * The per-locale URL builder the three record pages hand to the layout, so their
+     * canonical names the record's preferred URL rather than the slug that was requested.
+     * Shared: it is stateless apart from the router it wraps.
+     */
+    private function preferredUrls(): PreferredUrls
+    {
+        return $this->preferredUrls ??= new PreferredUrls($this->routeUrl());
     }
 
     private function cspNonce(): CspNonce

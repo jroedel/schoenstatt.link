@@ -6,11 +6,14 @@ namespace SchoenstattTest\Smoke;
 
 use function array_slice;
 use function count;
+use function intdiv;
+use function max;
 use function explode;
 use function gzdecode;
 use function implode;
 use function preg_match;
 use function preg_match_all;
+use function str_contains;
 use function str_starts_with;
 
 /**
@@ -276,6 +279,63 @@ class SitemapSmokeTest extends SmokeTestCase
                 1,
                 preg_match('#^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$#', $stamp),
                 "$stamp is not a W3C datetime, which is Google's \"Invalid date\" error"
+            );
+        }
+    }
+
+    /**
+     * Every URL the sitemap advertises is the one its page calls canonical.
+     *
+     * This is the assertion that makes the whole thing work, and it can fail in both
+     * directions without anything else noticing:
+     *
+     *  - A canonical naming a *different language* asks Google not to index this page. That
+     *    is what every non-English page did until 2026-08-13 — all five locales declared
+     *    `/en/…` canonical — so four fifths of the site was being withdrawn from the index
+     *    while the sitemap went on offering it.
+     *  - A canonical naming a *different slug* wastes the crawl. An association's slug is
+     *    stored per locale, so `/de/SL100319A/urheiligtum` is the German page's own
+     *    preferred URL while the tail from the navigation tree would say
+     *    `original-schoenstatt-shrine`. Search Console reports the difference as "Alternate
+     *    page with proper canonical tag".
+     *
+     * Sampled rather than exhaustive: 35,440 page fetches is not a smoke test. The sample is
+     * drawn from the associations file and skewed away from English, because that is where
+     * both failure modes actually live.
+     */
+    public function testSitemapUrlsAreTheCanonicalOnes(): void
+    {
+        $urls = $this->locsIn($this->body('/sitemap-associations.xml'));
+        self::assertNotEmpty($urls);
+
+        $nonEnglish = [];
+        foreach ($urls as $url) {
+            if (! str_contains($url, '/en/')) {
+                $nonEnglish[] = $url;
+            }
+        }
+        self::assertNotEmpty($nonEnglish, 'the sitemap publishes no non-English association URLs');
+
+        //deterministic pick, so a failure is reproducible
+        $step   = max(1, intdiv(count($nonEnglish), 6));
+        $sample = [];
+        for ($i = 0; $i < count($nonEnglish) && count($sample) < 6; $i += $step) {
+            $sample[] = $nonEnglish[$i];
+        }
+
+        foreach ($sample as $url) {
+            $response = $this->get($this->pathOf($url));
+            self::assertSame(200, $response['status'], "$url did not answer 200");
+
+            self::assertSame(
+                1,
+                preg_match('#<link href="([^"]+)" rel="canonical">#', $response['body'], $found),
+                "$url declares no canonical"
+            );
+            self::assertSame(
+                $this->pathOf($url),
+                $this->pathOf($found[1]),
+                "the sitemap offers $url but the page calls {$found[1]} canonical"
             );
         }
     }

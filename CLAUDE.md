@@ -112,6 +112,17 @@ suites run from the superproject working tree.
   the shared chrome); the `.phtml` they replace stays, because production still
   serves it. Compiled templates go to `data/cache/twig`, which the factory falls
   back from when it is unwritable.
+- **All five languages are indexed, and that is a contract between four places.**
+  Each locale's page is canonical for itself and carries an hreflang set naming all
+  five plus `x-default`, *including its own page* — a set that omits itself is
+  non-reciprocal and Google discards it. Both layouts must agree
+  (`templates/layout.html.twig` for ported routes,
+  `module/Application/view/layout/layout.phtml` for bridged ones). A record's
+  canonical is its **preferred** URL, not the requested one: the slug selects
+  nothing, several forms answer 200, and an association's slug is per-locale, so
+  `App\View\PreferredUrls` answers it and the sitemap uses the same builder.
+  Changing any of the four without the others silently de-indexes languages or
+  advertises non-canonical URLs — see [docs/sitemap.md](docs/sitemap.md).
 - **The sitemap is not a route.** `bin/console sitemap:build` writes
   `public/sitemap.xml` plus one `public/sitemap-<kind>.xml` per entity kind and
   Apache serves them directly; PHP is reached only when a file is missing. The

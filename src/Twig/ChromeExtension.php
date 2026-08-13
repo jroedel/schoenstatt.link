@@ -188,10 +188,15 @@ final class ChromeExtension extends AbstractExtension
         return $this->chrome->languageOptions($this->path());
     }
 
-    /** @return array{canonical: string, alternates: array<string, string>} */
-    public function canonicalLinks(): array
+    /**
+     * @param array<string, string>|null $preferredPaths language code => path, which a
+     *        record page passes so the canonical names the record's preferred URL rather
+     *        than whichever decorative slug was requested. See App\View\PreferredUrls.
+     * @return array{canonical: string, alternates: array<string, string>, x_default: string}
+     */
+    public function canonicalLinks(?array $preferredPaths = null): array
     {
-        return $this->chrome->canonicalLinks($this->serverUrl(), $this->path());
+        return $this->chrome->canonicalLinks($this->serverUrl(), $this->path(), $preferredPaths);
     }
 
     /** @return array{action: string, placeholder: string}|null */

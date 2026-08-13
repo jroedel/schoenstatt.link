@@ -9,6 +9,7 @@ use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
+use App\View\PreferredUrls;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Laminas\Authentication\AuthenticationService;
@@ -81,7 +82,8 @@ final class AssociationController
         private readonly ServiceBridge $laminas,
         private readonly EntityShow $show,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly PreferredUrls $preferredUrls
     ) {
     }
 
@@ -137,6 +139,19 @@ final class AssociationController
         $locale = Locale::getDefault();
 
         return new Response($this->twig->render('schoenstatt/association.html.twig', [
+            /*
+             * The five URLs this record should be indexed under, one per language, for the
+             * layout's canonical and hreflang links. Associations are the reason
+             * App\View\PreferredUrls exists: their slug is stored per locale and 428 of 498
+             * German slugs differ from the English one, so a canonical built by swapping
+             * the prefix of the current path would name a URL the German menus never link
+             * to. `slugByLocale` is what SchoenstattTable already built for this row.
+             */
+            'locale_paths'         => $this->preferredUrls->forRecord(
+                self::ENTITY,
+                ['sw_id' => $swId],
+                is_array($entity['slugByLocale'] ?? null) ? $entity['slugByLocale'] : null
+            ),
             //the name is data; translating it would file a phrase per association
             'page_title'           => $this->localized($entity, 'nameByLocale', $locale),
             'page_title_translate' => false,
