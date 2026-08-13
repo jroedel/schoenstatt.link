@@ -228,11 +228,24 @@ elif [ "${#OUT_OF_SCOPE[@]}" -gt 0 ]; then
 fi
 
 # Apache serves these, not PHP. Losing that is silent: the sitemap keeps working and the
-# 0.6s navigation walk comes back into the request path. A static file gets an ETag.
-if [ -n "$(header etag)" ]; then
+# 0.6s navigation walk comes back into the request path.
+#
+# **Not by ETag.** This checked for one and failed against production on 2026-08-13 while
+# everything was in fact working: this hoster sends no ETag on *any* static file —
+# /css/gen-basic.css, /favicon.ico and /robots.txt are all without one — so the check was
+# asserting a capsule-only property. Apache in the capsule does send them, which is exactly
+# why it passed locally and failed live.
+#
+# What does hold in both places is the pair below. `Accept-Ranges: bytes` comes from
+# Apache's static file handler and Symfony's BinaryFileResponse does not set it; and PHP
+# cannot answer without starting a session, so the fallback always carries two Set-Cookie
+# headers and the no-store/Pragma trio while Apache carries none.
+if [ -n "$(header accept-ranges)" ] && [ -z "$(header set-cookie)" ]; then
     pass "sitemap is served statically by Apache"
+elif [ -n "$(header set-cookie)" ]; then
+    fail "sitemap set a session cookie, so PHP served it — did bin/console sitemap:build write public/sitemap.xml?"
 else
-    fail "sitemap has no ETag, so PHP is serving it — has bin/console sitemap:build run?"
+    fail "sitemap sent no Accept-Ranges, so Apache is not serving it as a static file"
 fi
 
 # One part per deploy, chosen at random. Publications alone is ~24 MB, so downloading all

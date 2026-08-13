@@ -20,8 +20,10 @@ use function file_exists;
  * `public/.htaccess` passes any request whose `REQUEST_FILENAME` exists straight to Apache
  * before the rewrite to `index.php`. So once `public/sitemap.xml` exists, this controller is
  * unreachable for it: Apache serves the bytes, `mod_deflate` compresses them, and PHP is not
- * involved. Confirm which is happening by looking for a `Vary: Accept-Encoding` on the
- * response — Apache sends one, this does not.
+ * involved. Confirm which is happening by looking for `Accept-Ranges: bytes` and the
+ * *absence* of `Set-Cookie` — Apache sends the first and never the second, while this
+ * cannot answer without starting a session. Not by `ETag`: production sends none on any
+ * static file, and a check that assumed otherwise failed a deploy that had worked.
  *
  * What is left for it to do is the one case Apache cannot handle: the file is *missing*. That
  * happens on a first deploy, before cron has run once, and if someone deletes the files. The

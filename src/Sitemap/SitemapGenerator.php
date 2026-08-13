@@ -173,7 +173,9 @@ final class SitemapGenerator
                 continue;
             }
 
-            $section = SitemapSection::forPageId($page['id']);
+            //by route, not by id: an id missing from a stale cached branch would otherwise
+            //file every association under `pages` and delete sitemap-associations.xml
+            $section = SitemapSection::forPage($page['id'], $page['route']);
             $prefix  = $section->idPrefix();
             $id      = null !== $prefix && is_string($page['id'])
                 ? SitemapSection::recordId($page['id'], $prefix)

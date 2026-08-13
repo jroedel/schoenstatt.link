@@ -72,6 +72,23 @@ enum SitemapSection: string
     }
 
     /**
+     * The laminas route a record of this kind is shown by.
+     *
+     * This is what actually decides the section — see `forPage()`. Route names are route
+     * *definitions*, so they are stable and, unlike PageBuilder's page ids, they cannot go
+     * missing from a navigation branch that was cached before a field was added to it.
+     */
+    public function route(): ?string
+    {
+        return match ($this) {
+            self::PAGES        => null,
+            self::ASSOCIATIONS => 'association',
+            self::PUBLICATIONS => 'publication',
+            self::COMPOSITIONS => 'composition',
+        };
+    }
+
+    /**
      * The file this section's first part is written as, relative to the docroot.
      *
      * Flat, at the docroot root, and that is the whole point of the 2026-08-13 rewrite: a
@@ -84,14 +101,51 @@ enum SitemapSection: string
     }
 
     /**
-     * Which section a navigation page belongs to.
+     * Which section a navigation page belongs to — **by route**, with the id as a fallback.
      *
-     * `pub_lang_es` and `pub_one_fifty_preguntas` are PageBuilder ids that *start with*
-     * `pub_` and are not publications — they are the literature index's language filters
-     * and one hand-written page. Both must land in PAGES, so a prefix match is not enough
-     * and the remainder has to be a bare record id. Getting this wrong is invisible: the
-     * page still appears in a sitemap, just in the wrong file with a `<lastmod>` read from
-     * whichever publication happens to share the trailing digits.
+     * ## Why the route decides and not the id
+     *
+     * Because the id can be missing, and when it is, the failure is severe and silent. The
+     * page ids come from `Application\Navigation\PageBuilder`, whose branches are cached in
+     * APCu per locale — and an APCu segment belongs to the SAPI that created it. So on
+     * 2026-08-13, with `assoc_<id>` freshly added to the association branch, the *console*
+     * built branches carrying it while the *web* SAPI still served a branch cached before the
+     * change. Classifying on the id alone, the web-side build put all 250 associations into
+     * `sitemap-pages.xml` — and then `SitemapWriter::removeOrphans()` deleted
+     * `sitemap-associations.xml`, because that run had not written it. A stale cache turned
+     * into a deleted file and a sitemap of the wrong shape, with nothing failing.
+     *
+     * A route name is a route *definition*. It cannot fall out of a cached branch, because
+     * `NavigationTree` reads it from the same page array the href is assembled from — if the
+     * route were missing there would be no URL to publish at all. So the route decides the
+     * file, and the id is needed only for the `<lastmod>` and the per-locale slug: lose it
+     * and those degrade to absent, which is a far better failure than the wrong file.
+     *
+     * ## The id fallback still matters
+     *
+     * `pub_lang_es` and `pub_one_fifty_preguntas` are ids that *start with* `pub_` and are
+     * not publications — the literature index's language filters and one hand-written page.
+     * They carry routes of their own (`publications/index`, `publications/one-fifty-preguntas`),
+     * so the route check already sends them to PAGES; the id check is what keeps them there
+     * if a route is ever renamed to something the match below catches.
+     */
+    public static function forPage(?string $pageId, string $route): self
+    {
+        foreach ([self::ASSOCIATIONS, self::PUBLICATIONS, self::COMPOSITIONS] as $section) {
+            if ('' !== $route && $route === $section->route()) {
+                return $section;
+            }
+        }
+
+        return self::forPageId($pageId);
+    }
+
+    /**
+     * Which section a page id names, for a page whose route did not decide it.
+     *
+     * A prefix match is not enough: the remainder has to be a bare record id, or
+     * `pub_lang_es` would be filed as a publication and dated from whichever record shares
+     * its trailing digits.
      */
     public static function forPageId(?string $pageId): self
     {

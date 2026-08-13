@@ -131,6 +131,33 @@ The base URL comes from `sion_model.canonical_base_url`, not from the request,
 because a sitemap must list canonical URLs — whichever hostname happens to reach
 the server is not necessarily the one the site is published under.
 
+### The two builders must not disagree, and once they did
+
+`bin/console sitemap:build` and the PHP fallback walk the same navigation tree, but
+`PageBuilder` caches its branches in **APCu, which is per-SAPI**. So the console
+and the web server can be looking at different navigation data, and on 2026-08-13
+they were: `assoc_<id>` had just been added to the association branch, the console
+built branches carrying it, and the web SAPI still served one cached before the
+change.
+
+The consequence was worse than a stale file. Section assignment read the page id,
+so the web-side build filed all 250 associations under `sitemap-pages.xml`, and
+`SitemapWriter::removeOrphans()` then **deleted `sitemap-associations.xml`**
+because that run had not written it. Nothing failed; the sitemap was simply the
+wrong shape and a file a crawler knew about was gone.
+
+Two things follow, and both are now in place:
+
+- **The route decides the file, not the id** (`SitemapSection::forPage()`). A route
+  name is a route definition and cannot fall out of a cached branch — if it were
+  missing there would be no URL to publish at all. The id is needed only for
+  `<lastmod>` and the per-locale slug, so losing it now degrades those to absent
+  instead of moving the record to the wrong file.
+  `SitemapWriterTest::testTheRouteDecidesTheSectionEvenWithNoId()` pins it.
+- **Adding a field to a `PageBuilder` branch still needs
+  `cache:flush-persistent`.** That is already a deploy hook, which is why
+  production was never affected; the capsule needed it by hand.
+
 ### The PHP fallback
 
 `SitemapController` answers `/sitemap.xml` **only when the file is missing** —
@@ -139,8 +166,18 @@ it is served by Apache. It deliberately does not check staleness: doing so would
 put a 0.6 s navigation walk inside an arbitrary crawler request, and would repeat
 it on every request until something wrote the file.
 
-Tell the two apart from the response: Apache sends `ETag` and
-`Accept-Ranges: bytes`; the PHP path sends neither and sets session cookies.
+Tell the two apart from the response: Apache sends `Accept-Ranges: bytes` and no
+cookies; the PHP path cannot answer without starting a session, so it always
+carries two `Set-Cookie` headers plus `Pragma: no-cache` and a `no-store`
+`Cache-Control`, and sets no `Accept-Ranges`.
+
+**Not by `ETag`.** That was the first check written for this and it was wrong:
+production sends no ETag on *any* static file — `/css/gen-basic.css`,
+`/favicon.ico` and `/robots.txt` are all without one, the hoster has them off —
+while Apache in the capsule does send them. The check passed locally, passed CI,
+and failed against the live site on 2026-08-13 with `sitemap has no ETag, so PHP
+is serving it` while the deploy had worked perfectly. Anything asserted about
+these responses has to be verified against production, not just the capsule.
 
 ## Checking it
 
@@ -153,10 +190,11 @@ php composer.phar unit -- --filter SitemapWriterTest   # writer + id classificat
 After a deploy, confirm production is serving statically and in scope:
 
 ```bash
-curl -sSI https://schoenstatt.link/sitemap.xml | grep -iE 'etag|accept-ranges'
+curl -sSI https://schoenstatt.link/sitemap.xml | grep -iE 'accept-ranges|set-cookie'
 curl -sS https://schoenstatt.link/sitemap.xml | grep -o '<loc>[^<]*</loc>'
 ```
 
+`Accept-Ranges: bytes` and **no** `Set-Cookie` means Apache is serving the file.
 Every `<loc>` in the index must be `https://schoenstatt.link/sitemap-*.xml`. If
 one ever appears under a subdirectory again, the sitemap is void.
 
