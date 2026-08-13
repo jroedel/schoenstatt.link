@@ -71,6 +71,44 @@ class Batch7EditSurfaceSmokeTest extends SmokeTestCase
     }
 
     /**
+     * A multiple select marks its stored values `selected`.
+     *
+     * **This one was data loss, not a rendering nicety.** `Select::getValue()` returns an
+     * *array* for a multiple select, and the renderer compared it with `is_scalar()`, so it
+     * fell back to `''` and marked nothing. The moderator would open the form, see the
+     * multi-select empty, change something else and submit — and the browser posts no
+     * values for `tags[]`, so `getData()` contributes an empty array and `updateEntity()`
+     * writes it over the stored tags.
+     *
+     * Every multiple select in the batch was affected: `tags` on text and composition,
+     * `composersAll`, `lyricistsAll`, `links`, and `authors`, `inLanguage`, `keywords` and
+     * `adminTags` on the book form. It survived the earlier ports because `AssociationForm`
+     * has no multiple select — the same reason the missing `[]` on the name went unnoticed
+     * until batch 5, which is the other half of this element type being wrong.
+     *
+     * Caught by the baseline: laminas rendered `<option value="Hinos-salmos" selected>` and
+     * this rendered the same option unselected. No status or field-presence assertion could
+     * see it, because the field *is* there — it is just empty.
+     */
+    public function testAMultipleSelectMarksItsStoredValuesSelected(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $body = $this->get('/en/SL500001C/edit', false, $jar)['body'];
+
+        //SL500001C is tagged `Hinos-salmos`, on the `tags[]` multiple select.
+        $this->assertStringContainsString(
+            '<option value="Hinos-salmos" selected>',
+            $body,
+            'a stored tag must come back selected, or saving the form erases it'
+        );
+        //and the single selects still work, which the scalar branch covers
+        $this->assertStringContainsString('<option value="pt" selected>', $body);
+    }
+
+    /**
      * A checkbox row is `<div class="checkbox">`, not a form-group.
      *
      * `TwbBundleFormRow` returns a checkbox *before* it reaches `renderElementFormGroup()`,
