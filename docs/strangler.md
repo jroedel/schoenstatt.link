@@ -1059,7 +1059,16 @@ and gave the honest number, 394 of 396, the remaining two being a tie-broken row
 an assignments table that differs between any two runs. A warm cache does not make a diff
 wrong; it makes it a diff of the cache.
 
-**Do not run `composer test` between two captures.** The translation suites rewrite the
+**Do not run `composer test` between two captures**, for two independent reasons.
+
+The second, added in batch 7: `test/Smoke/Batch7EditWriteSmokeTest` **saves forms**, and
+`SionTable::updateEntity()` files rows in `sch_changes` — about seventeen per run, which it
+deliberately does not clean up because a change log is an audit trail. `/sm/view-changes`
+renders the newest 500 changes and is one of the captured paths, so a suite run between the
+two captures shows up as drift on a page the batch never touched. The write tests restore
+every *row* they edit; the change log is the part that cannot be put back.
+
+The first: the translation suites rewrite the
 compiled `.lang.php` catalogs, so a phrase that was untranslated during the first capture
 can be translated during the second and the diff reports it as drift. Measured
 2026-08-13 on the reserved-verb fix: six responses differed by 3–6 bytes, all of them
