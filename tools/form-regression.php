@@ -33,7 +33,7 @@ const OUT_ROOT = __DIR__ . '/../data/form-regression';
  * Pages that render forms, or should refuse to. Non-200s are captured too:
  * a page that flips from 200 to 302 after the bjy-authorize bump is exactly
  * the kind of regression this exists to catch. IDs are the lowest existing
- * row of each entity in the 2021 dump; they never change between runs.
+ * row of each entity in the capsule's production data; they never change between runs.
  */
 /** Fetched with a consent-only jar, no identity: the login form 302s away from signed-in visitors. */
 const ANONYMOUS_URLS = [

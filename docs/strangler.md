@@ -1018,8 +1018,16 @@ body — and is whitespace-insensitive between tags. On that basis batch 4 came 
 are itemized under "Known differences" below.
 
 On production the same comparison is available without any file edit, through the cookie
-canary above — and that is where it should be repeated, because production has
-translations, ICU 72.1 and five years more data than the capsule dump.
+canary above — and that is where it should be repeated, because production has real
+translations and **ICU 72.1 against the capsule's 76.1**, which is what moves the 27
+`IntlDateFormatter` call sites.
+
+**It is not because production has more data.** This sentence used to end "and five years
+more data than the capsule dump", which was wrong: `database/dumps/` holds a *current*
+production export — 2026-08-01 as of this writing — and the 2021 dump it names was only the
+first import, on the day the repo was reopened. So capsule row counts and page sizes are
+representative, and a measurement taken here does not need discounting for scale. See
+CLAUDE.md, which is where the stale claim originated.
 
 **Flush the persistent cache before each capture when the change touches cached data**,
 or the diff proves less than it appears to. The navigation extraction on 2026-08-13

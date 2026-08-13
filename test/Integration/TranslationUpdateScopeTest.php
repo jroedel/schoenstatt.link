@@ -52,7 +52,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *
  * **The database is left exactly as it was found.** The whole write happens
  * inside a transaction on the shared Laminas DB adapter, rolled back in a
- * `finally` block, so the capsule's 2021 dump is unchanged whether this test
+ * `finally` block, so the capsule's imported production data is unchanged whether this test
  * passes, fails, or throws. The rollback is only a real guarantee if the
  * transaction is on the same connection the table writes through, so that
  * identity is asserted rather than assumed (see testTheRollbackCoversTheWrite).

@@ -24,7 +24,7 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  * that works fine for everyone whose roles happen to miss that branch. That is
  * exactly what shipped: `associations/show.phtml` fataled for any role holding
  * `user` but not `sch_user`/`sch_moderator`, which is why it went unnoticed
- * (one such account in the 2021 dump).
+ * (one such account in the capsule's data).
  *
  * Route names are also easy to get wrong silently, because they are *names*,
  * not paths, and nesting makes them `parent/child` — `libraries/checkouts` was
