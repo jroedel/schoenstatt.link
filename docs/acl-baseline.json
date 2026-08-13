@@ -30,10 +30,10 @@
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 31,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 78,
+        "symfony_routes_acl_checked": 80,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 108,
+        "symfony_served_routes": 110,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -8641,6 +8641,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/text",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "text-edit": {
+            "path": "/{sw_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/text-edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "text-edit.locale": {
+            "path": "/{_locale}/{sw_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/text-edit",
                 "reason": null,
                 "denial_style": "html"
             }

@@ -38,9 +38,15 @@ parameters:
     #    batch's four.
     #
     # The real fix is to correct those annotations in the SionModel submodule, which
-    # is a cross-repo change and not this batch's. Scoped to the one file rather than
+    # is a cross-repo change and not this batch's. Scoped to the two files rather than
     # turned off globally via treatPhpDocTypesAsCertain, so the next wrong annotation
     # is still reported.
+    #
+    # EntityEdit joined the list in batch 7 for the *same* `existsEntity()` call in the
+    # *same* shape — `deniedMessage()` asks whether the row exists to choose between
+    # "not found" and "access denied". Two files needing one suppression for one wrong
+    # vendor annotation is the argument for fixing the annotation; when that happens,
+    # both entries come out together.
     ignoreErrors:
         -
             identifier: booleanNot.alwaysFalse
@@ -51,3 +57,6 @@ parameters:
         -
             identifier: booleanAnd.alwaysTrue
             path: src/Sion/EntityShow.php
+        -
+            identifier: ternary.alwaysTrue
+            path: src/Sion/EntityEdit.php

@@ -42,6 +42,7 @@ use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
+use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
@@ -548,6 +549,88 @@ $ported(
     ], '/^$')]
 );
 
+// ---------------------------------------------------------------------------
+// Batch 7, ported 2026-08-13: the edit surface. The entity edit forms that share
+// SionModel\Controller\SionController::editAction().
+// ---------------------------------------------------------------------------
+//
+// One controller for all of them — App\Controller\EntityEditController — because on the
+// laminas side they are one *method*, reached through ten controllers that mostly add
+// nothing to it. What differs per page is declared here; what differs behaviourally is
+// the three hooks that class documents. App\Sion\EntityEdit is the shared action, the
+// counterpart of App\Sion\EntityShow for batch 5's show pages.
+//
+// **These are the first ported routes that write to the database on POST**, other than
+// `association-edit`, which this batch folds onto the same shared action. Everything that
+// makes that safe was already in place and is worth naming: the form comes out of the
+// laminas container so its validation is the application's own, CSRF works because
+// App\Http\SessionListener has already started the laminas session, and the write goes
+// through SionTable::updateEntity() exactly as SionController does it.
+//
+// `library-imports/library-import/edit` is deliberately **not** here. It is not an edit
+// form: LibraryImportsController::editAction() reads a spreadsheet off disk and runs a
+// full import simulation on GET, then performs the real import when the POST carries
+// `import`. See docs/strangler.md.
+/**
+ * @param array<string, mixed> $extra
+ * @param array<string, string> $requirements
+ */
+$edit = static function (
+    string $name,
+    string $path,
+    string $entity,
+    string $idParam,
+    string $template,
+    string $pageTitle,
+    string $domain,
+    array $extra = [],
+    array $requirements = []
+) use (
+    $ported,
+    $textDomain
+): void {
+    $ported(
+        $name,
+        $path,
+        EntityEditController::class,
+        RouteAccess::guardedBy('route/' . $name),
+        $textDomain($domain) + [
+            EntityEditController::ENTITY     => $entity,
+            EntityEditController::ID_PARAM   => $idParam,
+            EntityEditController::TEMPLATE   => $template,
+            EntityEditController::PAGE_TITLE => $pageTitle,
+        ] + $extra,
+        $requirements
+    );
+};
+
+// A document from the Kentenich corpus. First of the batch, and the simplest: every field
+// goes through a plain row, and TextForm declares only element types
+// App\Form\BootstrapFormRenderer already rendered for the association form.
+//
+// `sw_id` rather than a numeric id, so ID_KIND names the entity whose identifier regex to
+// translate — the same job TextsController::getEntityIdParam() does on laminas.
+//
+// **No breadcrumbs and no index route.** Measured from the laminas rendering: the page
+// renders `<title>Edit text - Schoenstatt Link</title>`, an `<h1>` and no breadcrumb trail
+// at all, because `text-edit` is not in the navigation config. The entity spec declares no
+// `index_route` either, so REDIRECT_ROUTE names where a successful write goes —
+// reproducing TextsController::redirectAfterEdit(), which sends the moderator to the text
+// itself rather than to a list.
+$edit(
+    'text-edit',
+    '/{sw_id}/edit',
+    'text',
+    'sw_id',
+    'books/text-edit.html.twig',
+    'Edit text',
+    'Books',
+    [
+        EntityEditController::ID_KIND        => SchoenstattLinkIdentifier::ENTITY_TEXT,
+        EntityEditController::REDIRECT_ROUTE => ['text', ['sw_id' => 'identifier', 'slug' => 'slug']],
+    ],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_TEXT)]
+);
 
 // ---------------------------------------------------------------------------
 // Batch 5, ported 2026-08-12: the reading surface. The four entity show pages

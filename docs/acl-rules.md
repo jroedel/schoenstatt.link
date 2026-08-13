@@ -49,10 +49,10 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | routes declared twice | 2 |
 | routes shadowed by symfony | 31 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 78 |
+| symfony routes acl checked | 80 |
 | symfony routes open | 30 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 108 |
+| symfony served routes | 110 |
 | total routes | 188 |
 | unguarded routes | 24 |
 | unguarded routes matchable | 13 |
@@ -184,6 +184,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `sm-clear-persistent-cache` | `/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
 | `sm-clear-persistent-cache.locale` | `/{_locale}/sm/clear-persistent-cache` | _open_ | everyone — reason below | n/a | `App\Controller\ClearPersistentCacheController` |
 | `text` | `/{sw_id}/{slug}` | `route/text` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextController` |
+| `text-edit` | `/{sw_id}/edit` | `route/text-edit` | texts_administrator, texts_moderator | html | `App\Controller\EntityEditController` |
+| `text-edit.locale` | `/{_locale}/{sw_id}/edit` | `route/text-edit` | texts_administrator, texts_moderator | html | `App\Controller\EntityEditController` |
 | `text.locale` | `/{_locale}/{sw_id}/{slug}` | `route/text` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextController` |
 | `texts` | `/texts` | `route/texts` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextsController` |
 | `texts.locale` | `/{_locale}/texts` | `route/texts` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextsController` |
