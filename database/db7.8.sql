@@ -87,10 +87,14 @@
 -- touches — the constraint db7.5 records. PR #76 was confirmed deployed on 2026-08-13; the
 -- flash-messenger fix ships in the same PR as this file and deploys with it.
 --
--- Reversible, as always: `retired_on` is a statement about the translator's worklist, the
--- site keeps rendering whatever is there, and a phrase the application still looks up
--- un-retires itself on the next miss. If any of these turns out to be live, that is how it
--- comes back — and on this set it would also be the alarm that the code fix regressed.
+-- Reversible, as always: `retired_on` is a statement about the translator's worklist and the
+-- site keeps rendering whatever is there.
+--
+-- **Do not expect it to un-retire itself.** Discovery clears `retired_on` on a miss, but a
+-- retired row that carries a translation in the locale being rendered never misses — the
+-- compiled catalog still holds it, per the next paragraph — so nothing fires. These rows
+-- have 977 translations between them and most will simply stay retired, correctly and
+-- silently. Statement 4 is a check to *run*, not an alarm that will find you.
 --
 -- "The site keeps rendering whatever is there" is worth checking rather than repeating,
 -- because this file retires rows in `default` and PR #76 made `default` a *read* fallback for
@@ -101,6 +105,18 @@
 -- own domain has no translation in some locale and the leaked `default` copy did.
 -- Confirmed after the fact: the same 215-request five-locale sweep run against the retired
 -- state renders identically and un-retires nothing.
+--
+-- The flip side, stated because it is the part that sounds like this file does more than it
+-- does: **the leaked values stay in the compiled `default` catalog.** PR #76 made `default` a
+-- read fallback for every ported page, so a page whose own domain has no translation in some
+-- locale can still render a value that exists only because of the leak — one copied by
+-- `writeMissingPhrasesToDb()` from whichever sibling domain it happened to find. `catalogHas()`
+-- keeps that to phrases the page's domain has nothing for, so the effect is "more translated"
+-- rather than "wrong", and it is the same superset behaviour docs/strangler.md already accepts.
+-- This file cleans the translator's worklist. Undoing the *rendering* effect would mean
+-- deleting these rows rather than retiring them, which is a separate decision on a set someone
+-- has looked at — not a filter added to the exporter, which would change all 576 retired
+-- phrases at once and is wrong for the reason TranslationsTable:1609 records.
 --
 -- Scoped to project 'Schoenstatt'. Three other projects share these tables.
 
