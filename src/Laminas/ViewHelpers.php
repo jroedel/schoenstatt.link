@@ -22,6 +22,7 @@ use Laminas\I18n\View\Helper\Translate;
 use Laminas\Mvc\Plugin\FlashMessenger\View\Helper\FlashMessenger;
 use Laminas\View\HelperPluginManager;
 use SionModel\I18n\View\Helper\DatePrecisionFormat;
+use SionModel\I18n\View\Helper\DayFormat;
 use SionModel\View\Helper\Address;
 use SionModel\View\Helper\DiffForHumans;
 use SionModel\View\Helper\Email;
@@ -286,6 +287,24 @@ final class ViewHelpers
     {
         /** @var DatePrecisionFormat $helper */
         $helper = $this->helpers()->get('datePrecisionFormat');
+
+        return $helper;
+    }
+
+    /**
+     * SionModel's `dayFormat` — a month-and-day with no year, for a person's nameday.
+     * On the allowlist because it needs nothing but `escapeHtml` and `translate`, both
+     * of which a plain PhpRenderer answers; there is no `url()` anywhere in it.
+     *
+     * Worth knowing before reading its output: it translates its month names in the
+     * **`Patres`** text domain, not the page's and not `default`, so a site with no
+     * Patres catalog renders them in English in every locale. That is the original's
+     * behaviour and this changes none of it.
+     */
+    public function dayFormat(): DayFormat
+    {
+        /** @var DayFormat $helper */
+        $helper = $this->helpers()->get('dayFormat');
 
         return $helper;
     }

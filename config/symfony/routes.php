@@ -45,8 +45,11 @@ use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
+use App\Controller\MovementController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
+use App\Controller\PersonController;
+use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
 use App\Controller\RolesController;
@@ -55,6 +58,7 @@ use App\Controller\ShrinesController;
 use App\Controller\SitemapController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
+use App\Controller\TextsController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
@@ -772,6 +776,69 @@ $ported(
     [AssignmentSearchController::class, 'advancedSearch'],
     RouteAccess::guardedBy('route/assignments/advanced-search'),
     $textDomain('Schoenstatt')
+);
+
+// The movement's leadership. Route name `schoenstatt`, path /movement — they disagree
+// on the laminas side too, and the *name* is what has to be kept: it is how the layout
+// recognises the current navigation item, and this route **is** in the navigation
+// config, unlike most of this batch.
+$ported(
+    'schoenstatt',
+    '/movement',
+    MovementController::class,
+    RouteAccess::guardedBy('route/schoenstatt'),
+    $textDomain('Schoenstatt')
+);
+
+// Finding a person, and one person's page. Both guarded `sch_moderator`.
+//
+// `persons` and `persons/search` are two laminas routes over one action, so one
+// controller serves both and reads which it is from the request — the unprefixed-form
+// redirect has to point back at the URL the visitor asked for.
+//
+// **The port repairs these two pages rather than reproducing them.** The laminas
+// rendering is an "Add person" link and nothing else, for every query: the template
+// reads `$this->entities` where the controller passes `persons`, and never renders the
+// form at all. See App\Controller\PersonsController.
+$ported(
+    'persons',
+    '/persons',
+    PersonsController::class,
+    RouteAccess::guardedBy('route/persons'),
+    $textDomain('Schoenstatt')
+);
+$ported(
+    'persons/search',
+    '/persons/search',
+    PersonsController::class,
+    RouteAccess::guardedBy('route/persons/search'),
+    $textDomain('Schoenstatt')
+);
+// Declared **after** `/persons/search`, which a numeric constraint could not swallow
+// anyway, but the ordering is this file's convention. `/persons/create` and
+// `/persons/{id}/edit` keep falling through to `legacy` because the id is digits only
+// and this route has exactly two segments.
+$ported(
+    'persons/person',
+    '/persons/{person_id}',
+    PersonController::class,
+    RouteAccess::guardedBy('route/persons/person'),
+    $textDomain('Schoenstatt'),
+    //the laminas constraint exactly
+    ['person_id' => '[0-9]{1,5}']
+);
+
+// The Kentenich corpus search. Guarded `texts_user`, the sharpest guard in this batch.
+//
+// The path is `/texts` and the laminas route's action is `searchAction` — its
+// `indexAction` is a different query no route reaches. `/texts/create` and
+// `/texts/import` keep falling through to `legacy`, since this is a literal path.
+$ported(
+    'texts',
+    '/texts',
+    TextsController::class,
+    RouteAccess::guardedBy('route/texts'),
+    $textDomain('Books')
 );
 
 // ---------------------------------------------------------------------------
