@@ -1,0 +1,56 @@
+{#
+  The movement-role edit form — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/roles/edit.phtml and its fields-partial.phtml.
+
+  Two things here differ from the other small forms in this batch:
+
+  - **The partial does not render `submit`.** It stops at `security`, and edit.phtml adds
+    `formSubmit($form->get('submit'))` after it. So the submit here is `form_submit`, not
+    `form_row` — a different wrapper, and the two produce different markup.
+  - **`associationId` and `roleTitle` render with the translator off**, which is the
+    partial's `formSelect()->setTranslatorEnabled(false)` around exactly those two rows.
+    An association's name and a role's title are data, not interface text: running them
+    through the catalogue turns a role called "Member" into whatever the German catalogue
+    says for the English word. The rows after them are back to translated options.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/_selectize.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('associationId'), false) }}
+{{ form_row(form.get('roleTitle'), false) }}
+{{ form_row(form.get('sort')) }}
+{{ form_row(form.get('isSinglePosition')) }}
+{{ form_row(form.get('isMainRole')) }}
+{{ form_row(form.get('isMainContact')) }}
+{{ form_row(form.get('isActive')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  `maxItems: 1` with `create: true`: a role title is a single free-text value chosen from
+  the titles already in use, so a moderator may type a new one but only one.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='roleTitle']").selectize({
+    create: true,
+    maxItems: 1,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}

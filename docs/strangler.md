@@ -1059,7 +1059,16 @@ and gave the honest number, 394 of 396, the remaining two being a tie-broken row
 an assignments table that differs between any two runs. A warm cache does not make a diff
 wrong; it makes it a diff of the cache.
 
-**Do not run `composer test` between two captures.** The translation suites rewrite the
+**Do not run `composer test` between two captures**, for two independent reasons.
+
+The second, added in batch 7: `test/Smoke/Batch7EditWriteSmokeTest` **saves forms**, and
+`SionTable::updateEntity()` files rows in `sch_changes` — about seventeen per run, which it
+deliberately does not clean up because a change log is an audit trail. `/sm/view-changes`
+renders the newest 500 changes and is one of the captured paths, so a suite run between the
+two captures shows up as drift on a page the batch never touched. The write tests restore
+every *row* they edit; the change log is the part that cannot be put back.
+
+The first: the translation suites rewrite the
 compiled `.lang.php` catalogs, so a phrase that was untranslated during the first capture
 can be translated during the second and the diff reports it as drift. Measured
 2026-08-13 on the reserved-verb fix: six responses differed by 3–6 bytes, all of them
@@ -1098,6 +1107,40 @@ Batch 6's 43:
 | 9 | the guard answers before the locale hop | the unprefixed form of each of the 9 new guarded paths | the redirect-order divergence documented above, now on nine more routes. laminas sends `/texts` → `/en/texts` and then denies; the Symfony guard runs first and sends `/en/user/login?redirect=/texts` |
 | 5 | `936` vs `938` in a badge | `/admin` × 5 locales | the count of untranslated phrases, which grows as pages are rendered — so it moved between the two captures. Capture drift of the same kind rule 3 normalizes for visit counters, and a candidate for a rule 9 |
 | 4 | assignment rows in a different order | `/movement`, 4 locales of 5 | the same 62 assignments and the **same byte length**; `getAssignments()` orders by `AssociationId, IsActive DESC, IsMainRole DESC, Sort` and ties are broken arbitrarily, so two runs of *either* front controller disagree. That it was 5 locales on the previous run and 4 on this one, with no code change between them, is the demonstration |
+
+Batch 7's, after three defects the capture found were fixed (see below):
+
+| what | where | why |
+|---|---|---|
+| the navbar search box points at contacts, not at the library | `/books/{id}/edit`, `/libraries/{id}/edit` (12 responses) | **the one accepted regression of this batch**, and it is a real one — see the section below |
+| the `//<!-- -->` inline-script wrapper | every ported edit form with a selectize block | the batch-2 chrome nit below, now on more pages: `inlineScript()` wraps its content and `layout.html.twig` does not. Invisible in a browser |
+| delete-button attribute order, and a space around a `&nbsp;` | `/assignments/{id}/edit` | the button carries the same attributes in a different order, and the template puts `&nbsp;` on its own line. No rendered difference |
+
+**`/collections/{id}/edit` is byte-identical**, which is the useful control: it is the one
+library-scoped form whose route name is not in the search-box list below, so nothing else
+about the batch's shared machinery differs from laminas at all.
+
+##### The navbar search box on library-scoped pages — accepted, not fixed
+
+`module/Application/view/layout/layout.phtml` switches the navbar search from "Search
+contacts" to the *current library's* search whenever the route name contains
+`libraries/library/`, `books/`, `checkouts/` or `library-imports/`. It gets the name and
+the resource id from **`libraryInfo()`**, which is on the unavailable-helper list above —
+it needs an MvcEvent — so a Symfony-served route cannot call it, and
+`App\View\SiteChrome` falls through to the contacts search.
+
+So on the two ported pages under those prefixes a librarian gets a search box that searches
+contacts where laminas gives them one that searches their library. That is a functional
+regression, not a cosmetic one, and it is recorded here rather than fixed because
+reproducing it means teaching `SiteChrome` which library the current page belongs to — the
+row is already loaded, so it is the library's name plus an `isAllowed($resourceId, 'show')`
+check — which is chrome work rather than porting work and touches every ported page's
+layout path.
+
+**It is also a preview of the rest of the circulation surface.** Every remaining
+`libraries/library/*`, `books/*`, `checkouts/*` and `library-imports/*` route hits the same
+branch, so whoever ports those should expect to do the `SiteChrome` work first rather than
+accept it twenty more times.
 
 Carried over from earlier batches, unchanged:
 
@@ -1175,6 +1218,23 @@ whole comparison against unmodified code — is what made them visible, and it c
 | `format.entity('person', …)` dropped its options, so `displayEditPencil: false` did nothing | batch 5 | an extra `…/persons/{id}/edit` anchor on **every assignment row of every ported association page**. Nothing failed; the page offered a link the original does not |
 | `show_active\|default(true)` turned an explicit `false` back into `true` — Twig's `default` fires on an *empty* value | batch 5 | the association page renders that partial twice with complementary filters, so both columns showed the same rows: "Past contacts" listed current contacts and vice versa. Visible on `/en/SL100001A`, whose six assignments have all ended — laminas leaves the first column empty and the ported page filled it |
 | `LocalePrefix::redirect()` rebuilt its target from the route name and dropped the query string | batch 4 | `/assignments/search?search=Walter` landed on `/en/assignments/search` with the search silently gone — and, since a blank query there returns everything, on a 595 KB page rather than an error. Invisible until a route whose input *is* the query string was ported |
+
+**Batch 7 found three, and one of them destroys data.** Every one passed the batch's own
+smoke suite — nineteen tests asserting three access outcomes per route and a field marker in
+the body — which is the sharpest statement yet of what this comparison is for:
+
+| what was wrong | how it looked |
+|---|---|
+| **a multiple select marked nothing `selected`** | `Select::getValue()` returns an *array*, the renderer compared it with `is_scalar()`, and the comparison fell back to `''`. The field renders, the page is a 200, the form validates and saves — and the browser posts no values for `tags[]`, so `getData()` contributes an empty array and `updateEntity()` **writes it over the stored tags**. `tags`, `composersAll`, `lyricistsAll`, `links`, `authors`, `inLanguage`, `keywords`, `adminTags` — one word of markup between working and silent data loss |
+| every checkbox in the wrong wrapper | `<div class="form-group ">` where TwbBundle emits `<div class="checkbox">`. Bootstrap 3 styles the two differently, so it was visible misalignment on every checkbox of all eight forms |
+| the wrong flash on an unloadable record | "Access to entity denied." where laminas says "Role not found." — telling a moderator they lack a permission when the record is simply unreachable. Only visible on the *next* page, since a flash is read one request later |
+
+Two of the three share a cause worth naming: **`AssociationForm` has no multiple select and
+renders its checkboxes outside a row**, so the only form ported before this batch exercised
+neither path. A renderer that has served one form well is not a renderer that has been
+tested. The multiple-select name suffix — the `[]` batch 5 found missing — was the third
+piece of the same element type, and all three were latent from the day the class was
+written.
 
 #### A Twig syntax error is an empty HTTP 200
 
@@ -1405,9 +1465,86 @@ button class rule (`btn` unless already present, then `btn-default` unless a kno
 is), and the row class, whose **double space** (`<div class="form-group  col-md-4">`) is
 real and was first misread because the extraction collapsed whitespace runs.
 
-Still on laminas: the user and translation forms (the static adapter) and every other
-create/edit/delete page. `/movement`, `/persons`, `/texts` and the two contact searches
-moved in batch 6; `/literature`'s search form is ported — see below.
+Still on laminas: the user and translation forms (the static adapter) and every
+create/delete page. `/movement`, `/persons`, `/texts` and the two contact searches
+moved in batch 6; `/literature`'s search form is ported — see below; and the **edit**
+verb moved in batch 7 — see the next section.
+
+#### A third obstacle, found in batch 7: a form factory that reads the route match
+
+The two obstacles above are about the form *layer*. This one is about the *factory*, it
+was not anticipated anywhere in this document, and it presents as a page that answers
+**HTTP 200 with zero bytes**.
+
+`Books\Service\BookFormFactory`, `CollectionFormFactory` and `LibraryFormFactory` each
+open with
+
+```php
+$routeMatch = $container->get('Application')->getMvcEvent()->getRouteMatch();
+$libraryId  = $routeMatch->getParam('library_id');
+```
+
+to discover which library the form belongs to. A Symfony-served route has no MvcEvent, so
+`getMvcEvent()` answers null, and the factory dies with `Call to a member function
+getRouteMatch() on null` — *after* the response has been assembled, which is the
+fatal-200 wedge this document already records for Twig syntax errors.
+
+**It shipped.** `collections/collection/edit` was merged in that state, because the smoke
+test covering it asserted only the anonymous 302 and never a successful render. That is
+the second independent demonstration of "assert something from the body, not just a
+status" in this file, and the first where the rule was quoted in the same commit that
+broke it.
+
+`App\Books\LibraryScopedForms` is the answer, and its shape is the part to copy: it
+constructs the **same form classes**, so elements, labels and
+`getInputFilterSpecification()` stay the application's own and cannot drift — only the
+factory's *wiring* is reproduced, each `setValueOptions()` reading the same table method
+its factory reads. What it costs is that the wiring now exists twice with no test able to
+compare the two, because the laminas factory cannot be built at all without an MvcEvent.
+The baseline capture is the guarantee.
+
+**Expect this again.** Any laminas factory may reach for the route match, and three of
+the ~40 in this application do. Before porting a route, ask what builds its form as well
+as what renders it — `grep -l 'getMvcEvent\|getRouteMatch' module/*/src/Service/*.php`
+answers it in one line, and `CheckoutFormFactory` is on that list for whoever ports the
+circulation surface.
+
+### The edit surface — batch 7, 2026-08-13
+
+Eight of the ten entity edit forms now run on `App\Sion\EntityEdit`, one reproduction of
+`SionController::editAction()` — the counterpart of what `App\Sion\EntityShow` is for the
+show pages — behind a single `App\Controller\EntityEditController` parameterized per route,
+the way `ContentPageController` serves the five static pages.
+
+| ported | still on laminas |
+|---|---|
+| `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit` | `publication-edit`, `persons/person/edit` |
+
+Five things worth knowing before touching any of it:
+
+- **`library-imports/library-import/edit` is not an edit form and is not in the batch.**
+  `LibraryImportsController::editAction()` reads a spreadsheet off disk and runs a full
+  import simulation on GET, then performs the real import when the POST carries `import`.
+  Porting it means porting the PhpSpreadsheet pipeline.
+- **`EntityEdit`'s `$loader` hook is needed by `association` alone.** `getObject()` already
+  dispatches to an entity's `get_object_function`, so `getPublication`, `getPerson`,
+  `getRole` and `getAssignment` are reached by the plain call; `association`'s is commented
+  out, which is what batch 5 found.
+- **`redirectAfterEdit()` has two asymmetries, both reproduced.** Its param-map branches
+  fall through on a missing field while its key/keyField branch throws, and it reads the
+  row as it was *loaded* rather than as updated, because laminas memoizes
+  `getEntityObject()`. Every key field here is derived from a primary key, so the two agree
+  today.
+- **Three of the ten declare a per-row ACL check** on top of their route guard, and for the
+  Books entities that check is substantially the whole of the protection: their guard names
+  `lib_user`, which `user_role` marks `is_default = 1`, so every registered account holds
+  it. Same shape as `sch_user` on `association-edit` and `composition-edit`.
+- **Two pages render a second form** — a delete-confirmation modal gated on the entity's
+  *delete* permission, which is a different one from the permission that let the visitor
+  reach the page. Its action is the laminas delete route, declared per route as
+  `DELETE_ROUTE` rather than derived: deriving `<route>/delete` broke three working pages,
+  because six of the eight have no delete twin and `RouteUrl` throws on an unknown route —
+  the empty-200 wedge again, one commit after the last one.
 
 ### The comment form — unblocked 2026-08-12, and it was blocking one entity more than this said
 

@@ -1,0 +1,64 @@
+{#
+  The Kentenich-text edit form — the Twig counterpart of
+  module/Books/view/books/texts/edit.phtml and its fields-partial.phtml, which still
+  render this page wherever laminas is the front controller.
+
+  Field order is that partial's, in its order, and should be changed in both or
+  neither: the two renderings are live at the same time on different front
+  controllers, and a moderator who edits a text through one and then the other should
+  not see the form rearrange itself.
+
+  Unlike the association form, every field here goes through a plain row — the partial
+  builds no groups by hand — so this template is the shape most of batch 7's ten take.
+  `security` (the CSRF token) and `kind` (a hidden input) are rendered through
+  `form_row` exactly as the partial does, and App\Form\BootstrapFormRenderer::row()
+  answers both by emitting the bare element with no form-group around it, which is what
+  TwbBundle does.
+#}
+{% extends 'layout.html.twig' %}
+
+{#
+  The two assets fields-partial.phtml appends through headLink()/headScript(). The
+  script filename carries the primary language because the bundle contains the
+  jQuery-validate locale strings.
+#}
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-validate-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('title')) }}
+{{ form_row(form.get('markdownText')) }}
+{{ form_row(form.get('inLanguage')) }}
+{{ form_row(form.get('tags')) }}
+{{ form_row(form.get('isDraft')) }}
+{{ form_row(form.get('kind')) }}
+{{ form_row(form.get('security')) }}
+{{ form_row(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  selectize on the tag list, and the `[]` in the selector is not a typo: `tags` is a
+  multiple select, so its name really is `tags[]` in the markup. Batch 5 found the
+  renderer dropping that suffix on a different form, which submitted one value where
+  the visitor had picked several — so this selector is also an assertion that it is
+  still there.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='tags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}

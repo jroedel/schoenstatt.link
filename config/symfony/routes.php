@@ -42,6 +42,7 @@ use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
+use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
@@ -548,6 +549,240 @@ $ported(
     ], '/^$')]
 );
 
+// ---------------------------------------------------------------------------
+// Batch 7, ported 2026-08-13: the edit surface. The entity edit forms that share
+// SionModel\Controller\SionController::editAction().
+// ---------------------------------------------------------------------------
+//
+// One controller for all of them — App\Controller\EntityEditController — because on the
+// laminas side they are one *method*, reached through ten controllers that mostly add
+// nothing to it. What differs per page is declared here; what differs behaviourally is
+// the three hooks that class documents. App\Sion\EntityEdit is the shared action, the
+// counterpart of App\Sion\EntityShow for batch 5's show pages.
+//
+// **These are the first ported routes that write to the database on POST**, other than
+// `association-edit`, which this batch folds onto the same shared action. Everything that
+// makes that safe was already in place and is worth naming: the form comes out of the
+// laminas container so its validation is the application's own, CSRF works because
+// App\Http\SessionListener has already started the laminas session, and the write goes
+// through SionTable::updateEntity() exactly as SionController does it.
+//
+// `library-imports/library-import/edit` is deliberately **not** here. It is not an edit
+// form: LibraryImportsController::editAction() reads a spreadsheet off disk and runs a
+// full import simulation on GET, then performs the real import when the POST carries
+// `import`. See docs/strangler.md.
+/**
+ * @param array<string, mixed> $extra
+ * @param array<string, string> $requirements
+ */
+$edit = static function (
+    string $name,
+    string $path,
+    string $entity,
+    string $idParam,
+    string $template,
+    string $pageTitle,
+    string $domain,
+    array $extra = [],
+    array $requirements = []
+) use (
+    $ported,
+    $textDomain
+): void {
+    $ported(
+        $name,
+        $path,
+        EntityEditController::class,
+        RouteAccess::guardedBy('route/' . $name),
+        $textDomain($domain) + [
+            EntityEditController::ENTITY     => $entity,
+            EntityEditController::ID_PARAM   => $idParam,
+            EntityEditController::TEMPLATE   => $template,
+            EntityEditController::PAGE_TITLE => $pageTitle,
+        ] + $extra,
+        $requirements
+    );
+};
+
+// A document from the Kentenich corpus. First of the batch, and the simplest: every field
+// goes through a plain row, and TextForm declares only element types
+// App\Form\BootstrapFormRenderer already rendered for the association form.
+//
+// `sw_id` rather than a numeric id, so ID_KIND names the entity whose identifier regex to
+// translate — the same job TextsController::getEntityIdParam() does on laminas.
+//
+// **No breadcrumbs and no index route.** Measured from the laminas rendering: the page
+// renders `<title>Edit text - Schoenstatt Link</title>`, an `<h1>` and no breadcrumb trail
+// at all, because `text-edit` is not in the navigation config. The entity spec declares no
+// `index_route` either, so REDIRECT_TARGET names where a successful write goes —
+// reproducing TextsController::redirectAfterEdit(), which sends the moderator to the text
+// itself rather than to a list.
+$edit(
+    'text-edit',
+    '/{sw_id}/edit',
+    'text',
+    'sw_id',
+    'books/text-edit.html.twig',
+    'Edit text',
+    'Books',
+    [
+        EntityEditController::ID_KIND        => SchoenstattLinkIdentifier::ENTITY_TEXT,
+        EntityEditController::REDIRECT_TARGET => 'text',
+    ],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_TEXT)]
+);
+
+// A song, guarded `sch_moderator, sch_user` — and sch_user is a default role, so this is
+// another route whose guard means "signed in". Unlike the Books entities, `composition`
+// declares no acl_resource_id_field, so there is no per-row check behind it either: any
+// signed-in visitor may edit any composition. That is the existing rule, unchanged by the
+// port and stated because it is surprising.
+//
+// Its laminas controller overrides `getEntityIdParam()` to translate the identifier, which
+// is what ID_KIND does here. The redirect needs no override: the spec's
+// `default_route_params` maps sw_id and slug, which is branch 3 of
+// App\Sion\EntityEdit::redirectTarget().
+$edit(
+    'composition-edit',
+    '/{sw_id}/edit',
+    'composition',
+    'sw_id',
+    'books/composition-edit.html.twig',
+    'Edit a composition',
+    'Books',
+    [EntityEditController::ID_KIND => SchoenstattLinkIdentifier::ENTITY_COMPOSITION],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_COMPOSITION)]
+);
+
+// A library book, and the largest form in the batch by field count. Two things it needs
+// that no earlier one did: a `<button type="button">` for the next-free-call-number helper,
+// and the value that button writes — `next_within_library_id`, read off
+// `BookForm::getLibraryOptions()` rather than out of an element, which is why
+// EXTRA_VARIABLES names a provider for it.
+//
+// Same per-row check as the collection route above, against the same `library_<id>`
+// resource with the same `administrate` privilege.
+$edit(
+    'books/book/edit',
+    '/books/{book_id}/edit',
+    'book',
+    'book_id',
+    'books/book-edit.html.twig',
+    'Edit book',
+    'Books',
+    [EntityEditController::EXTRA_VARIABLES => 'nextWithinLibraryId'],
+    ['book_id' => '[0-9]{1,6}']
+);
+
+// A library's own configuration, the third of the library-scoped forms. Same per-row check
+// as the collection and book routes; its form likewise comes from
+// App\Books\LibraryScopedForms rather than the container.
+$edit(
+    'libraries/library/edit',
+    '/libraries/{library_id}/edit',
+    'library',
+    'library_id',
+    'books/library-edit.html.twig',
+    'Edit library configuration',
+    'Books',
+    [],
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// An assignment — who holds which role in which association, and between which dates.
+//
+// **The first ported page with a delete-confirmation modal**, i.e. a second form, gated on
+// `route/assignments/assignment/delete` (sch_general_moderator) rather than on the
+// permission that let the visitor reach the page (sch_moderator). Its action is the laminas
+// delete route, which this batch does not port; the CSRF token crosses because both front
+// controllers read the same session.
+//
+// The form's three identity selects arrive disabled — `EditAssignmentFormFactory` calls
+// `prepareforEdit()`, which also sets a validation group of the four date fields plus the
+// token. That matters for the POST: `getData()` returns only what the validation group
+// names, so the disabled selects cannot be smuggled past by a hand-built request.
+$edit(
+    'assignments/assignment/edit',
+    '/assignments/{assignment_id}/edit',
+    'assignment',
+    'assignment_id',
+    'schoenstatt/assignment-edit.html.twig',
+    'Edit Assignment',
+    'Schoenstatt',
+    [EntityEditController::DELETE_ROUTE => 'assignments/assignment/delete'],
+    ['assignment_id' => '[0-9]{1,6}']
+);
+
+// A movement role, guarded `sch_moderator`. Two peculiarities of its .phtml are carried
+// over and documented in the template: the fields partial does not render its own submit
+// button, and its first two selects render with the translator off because an association
+// name and a role title are data rather than interface text.
+//
+// **`/roles/1/edit` is a 302, not a form**, and that is correct: `getRole()` answers null
+// for 142 of the 1,468 rows in `sch_roles` — role 1 hangs off an association the
+// projection filters — so `editAction()`'s not-found branch fires. Measured against
+// laminas for an account holding every role, and reproduced here: flash, then a redirect
+// to the `roles` index, which the entity spec names.
+$edit(
+    'roles/role/edit',
+    '/roles/{role_id}/edit',
+    'role',
+    'role_id',
+    'schoenstatt/role-edit.html.twig',
+    'Edit Role',
+    'Schoenstatt',
+    [],
+    //the laminas constraint exactly, which is also what keeps `/roles/create` out
+    ['role_id' => '[0-9]{1,5}']
+);
+
+// A library collection, and the first route in the batch with a *per-row* check on top of
+// its route guard: the `collection` spec declares `acl_resource_id_field => resourceId`
+// with `acl_edit_permission => administrate`, so App\Sion\EntityEdit asks the ACL about
+// `library_<id>` — the dynamic resource Books\Model\LibraryTable contributes — after the
+// guard has already said yes.
+//
+// **And the row check is substantially the whole of the protection here.** The guard admits
+// `lib_user`, which `user_role` marks `is_default = 1` — along with `pub_user`, `sch_user`
+// and `bib_user` — so registration grants it and every signed-in visitor holds it. Measured
+// 2026-08-13, by `grantRoles()` refusing to grant a role the fresh account already had. The
+// same surprise `association-edit` records for `sch_user`, one entity over: the route-level
+// guard means little more than "signed in", and what actually separates one library's
+// moderator from another's is the per-row check.
+// `test/Smoke/Batch7EditSurfaceSmokeTest` asserts that refusal explicitly, because a
+// route that lost it would look perfectly healthy.
+$edit(
+    'collections/collection/edit',
+    '/collections/{collection_id}/edit',
+    'collection',
+    'collection_id',
+    'books/collection-edit.html.twig',
+    'Configure Collection',
+    'Books',
+    [],
+    ['collection_id' => '[0-9]{1,5}']
+);
+
+// A dictionary entry, guarded `dict_administrator` — one role, no descendants, the
+// sharpest guard in the batch.
+//
+// Declared **after** `dictionary/inLanguage` (`/dictionary/{inLanguage}`), which it cannot
+// collide with anyway: that route's segment is constrained to two or three letters and
+// this path has three segments. The ordering is the file's convention.
+//
+// The entity spec declares no `index_route`, so REDIRECT_TARGET names where a successful
+// write goes — reproducing DictionaryController::redirectAfterEdit().
+$edit(
+    'dictionary/entry/edit',
+    '/dictionary/{entry_id}/edit',
+    'dictionary-entry',
+    'entry_id',
+    'books/dictionary-entry-edit.html.twig',
+    'Edit dictionary entry',
+    'Books',
+    [EntityEditController::REDIRECT_TARGET => 'dictionaryEntry'],
+    ['entry_id' => '[0-9]{1,6}']
+);
 
 // ---------------------------------------------------------------------------
 // Batch 5, ported 2026-08-12: the reading surface. The four entity show pages

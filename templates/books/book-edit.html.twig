@@ -1,0 +1,113 @@
+{#
+  The library-book edit form — the Twig counterpart of
+  module/Books/view/books/books/edit.phtml and its fields-partial.phtml.
+
+  Two things here that no earlier form in the batch has:
+
+  - **A `<button type="button">`**, `nextWithinLibraryId`, rendered through `form_button`
+    rather than a row. It fills the call-number field with the library's next free number
+    from the inline script below, so it needs `next_within_library_id` — read from
+    `$form->getLibraryOptions()->nextWithinLibraryId`, which is where the partial gets it.
+  - **A jQuery-validate block with an ISBN checker.** Copied verbatim, minified function
+    and all: it is shipped behaviour, and a porting batch has no business rewriting a
+    validator on the way past. The `ignore` selector matters — without it jQuery-validate
+    refuses to submit because selectize hides the original `<select>`s.
+
+  The untranslated block runs from `authors` to `keywords`, which is the partial's
+  `setTranslatorEnabled(false)` with no matching `true`: it never turns the translator back
+  on, so *every* row after `authors` renders with untranslated options, including the ones
+  below the Markdown-help link. Reproduced as the partial has it rather than as it probably
+  meant it — `inactivationReason` is a select whose options a reader might expect
+  translated, and on laminas they are not.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-validate-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('withinLibraryId')) }}
+{{ form_button(form.get('nextWithinLibraryId')) }}
+{{ form_row(form.get('title')) }}
+{{ form_row(form.get('authors'), false) }}
+{{ form_row(form.get('collectionId'), false) }}
+{{ form_row(form.get('callNumber'), false) }}
+{{ form_row(form.get('newCallNumber'), false) }}
+{{ form_row(form.get('inLanguage'), false) }}
+{{ form_row(form.get('category'), false) }}
+{{ form_row(form.get('isbn'), false) }}
+{{ form_row(form.get('bookEdition'), false) }}
+{{ form_row(form.get('numberOfPages'), false) }}
+{{ form_row(form.get('publishedYear'), false) }}
+{{ form_row(form.get('publisher'), false) }}
+{{ form_row(form.get('publishingPlace'), false) }}
+{{ form_row(form.get('publicationId'), false) }}
+{{ form_row(form.get('keywords'), false) }}
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
+{{ form_row(form.get('publicNotes'), false) }}
+{{ form_row(form.get('adminNotes'), false) }}
+{{ form_row(form.get('adminTags'), false) }}
+{{ form_row(form.get('isActive'), false) }}
+{{ form_row(form.get('inactivationReason'), false) }}
+{{ form_row(form.get('security'), false) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='authors[]']").selectize({
+    create: true,
+    sortField: 'text',
+    delimiter: ';'
+});
+$("select[name='inLanguage[]']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='category']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='publisher']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='publicationId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='keywords[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='adminTags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("#nextWithinLibraryId").click(function() {
+    $("input[name='withinLibraryId']").val({{ next_within_library_id }});
+});
+
+//use the following function with JqueryUI to validate the ISBN
+function validateIsbn(a){var b=i=r=0,t=10,l=a.length;if(l==t){for(i;i<9;i++)b+=a[i]*(t-i);r=(b+(a[9]=='X'?t:a[9]))%11==0}if(l==13){for(i;i<12;i++)b+=(i+1)%2?+a[i]:a[i]*3;r=b%t==t-(+a[12]||t)}return r?a:0}
+
+
+$("#book").validate({
+//   debug: true,
+  ignore: ':hidden:not([class~=selectized]),:hidden > .selectized, .selectize-control .selectize-input input'
+});
+$.validator.addMethod("isbn", function(value, element) {
+  return this.optional( element ) || validateIsbn( value );
+}, 'Please enter a valid ISBN number.');
+});
+</script>
+{% endblock %}

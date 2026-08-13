@@ -7,12 +7,10 @@ namespace App\Sion;
 use App\Laminas\ServiceBridge;
 use BjyAuthorize\View\Helper\IsAllowed;
 use Closure;
-use RuntimeException;
 use SionModel\Db\Model\PredicatesTable;
 use SionModel\Db\Model\SionTable;
 use SionModel\Entity\Entity;
 use SionModel\Form\CommentForm;
-use SionModel\Service\EntitiesService;
 
 use function is_array;
 use function is_string;
@@ -25,12 +23,22 @@ use function is_string;
  * ## Why a copy, and what pins it
  *
  * docs/strangler.md's rule: share where sharing does not mean *editing* a laminas
- * action, copy where it would, and pin the copy with a parity test that drives both.
- * `showAction()` is a 90-line method on a controller that reaches four plugins —
- * `flashMessenger`, `isAllowed`, `url`, `redirect` — none of which resolve without an
- * MvcEvent, and it is inherited by twelve controllers this batch does not touch. So it
- * is copied, and `test/Integration/EntityShowParityTest` drives both over the same rows.
- * When the last of the four laminas routes goes, `showAction()` and that test go with it.
+ * action, copy where it would, and pin the copy. `showAction()` is a 90-line method on a
+ * controller that reaches four plugins — `flashMessenger`, `isAllowed`, `url`, `redirect`
+ * — none of which resolve without an MvcEvent, and it is inherited by twelve controllers
+ * this batch does not touch. So it is copied.
+ *
+ * **What pins it is `tools/port-baseline.php`.** This paragraph claimed until 2026-08-13
+ * that `test/Integration/EntityShowParityTest` "drives both over the same rows", and no
+ * such file has ever existed — the only occurrence of that name in the repository was the
+ * claim itself. The claim was not merely useless, it was misleading in the direction that
+ * matters: it described a two-sided safety net over a shared reproduction of a *write*-
+ * adjacent action, which is exactly the reassurance someone editing this class would rely
+ * on. A parity test is not available at all here, for the same reason it is not available
+ * for `formatEntity`: the laminas action cannot be driven without an MvcEvent, so there is
+ * nothing to compare against in-process. The real guarantee is the baseline capture, which
+ * is what found six defects in this batch — see docs/strangler.md, "What the baseline diff
+ * catches that nothing else does".
  *
  * ## What it reproduces, in order
  *
@@ -73,7 +81,8 @@ final class EntityShow
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly CommentPredicates $predicates
+        private readonly CommentPredicates $predicates,
+        private readonly Entities $entities
     ) {
     }
 
@@ -258,33 +267,25 @@ final class EntityShow
         return (bool) $isAllowed->__invoke($object[$resource], $permission);
     }
 
+    /**
+     * Both of these used to be private methods here, with bodies identical to
+     * `App\Sion\Entities`'. They moved there in batch 7, when `App\Sion\EntityEdit` would
+     * otherwise have been a third copy — docs/strangler.md's rule is that the licence to
+     * copy stops at the laminas boundary, and two answers to "which table holds this
+     * entity" is the divergence that rule exists to prevent.
+     *
+     * Kept as one-line delegations rather than inlined at the eight call sites, because
+     * `specification()` returning null for an unknown entity is a contract this class
+     * relies on in three places and reading `$this->entities->specification(...)` inline
+     * says less about that than the local name does.
+     */
     private function specification(string $entity): ?Entity
     {
-        /** @var EntitiesService $entities */
-        $entities = $this->laminas->get(EntitiesService::class);
-        /** @var mixed $all */
-        $all = $entities->getEntities();
-        if (! is_array($all) || ! isset($all[$entity]) || ! $all[$entity] instanceof Entity) {
-            return null;
-        }
-
-        return $all[$entity];
+        return $this->entities->specification($entity);
     }
 
-    /**
-     * The entity's own table service, named by its `sion_model_class`.
-     */
     private function table(string $entity): SionTable
     {
-        $spec  = $this->specification($entity);
-        $class = null !== $spec && is_string($spec->sionModelClass) ? $spec->sionModelClass : null;
-        if (null === $class) {
-            throw new RuntimeException("Entity '$entity' declares no sion_model_class.");
-        }
-
-        /** @var SionTable $table */
-        $table = $this->laminas->get($class);
-
-        return $table;
+        return $this->entities->table($entity);
     }
 }
