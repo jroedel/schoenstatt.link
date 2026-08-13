@@ -16,6 +16,7 @@ use Laminas\Form\FormInterface;
 use function array_filter;
 use function array_flip;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_bool;
 use function is_object;
@@ -699,7 +700,43 @@ final class BootstrapFormRenderer
             );
         }
 
-        $selected = $element->getValue();
+        /**
+         * **A multiple select's value is an array, and this compared it as a scalar.**
+         *
+         * `is_scalar($selected)` is false for an array, so the comparison fell back to `''`
+         * and *no option was ever marked selected on a multiple select*. Caught by the
+         * batch-7 baseline on a composition's `tags` and a dictionary entry's `links`,
+         * where laminas renders `<option value="Hinos-salmos" selected>` and this rendered
+         * the same option unselected.
+         *
+         * That is not a rendering nicety, it is **data loss on save**: the moderator opens
+         * the form, the multi-select shows nothing chosen, they change something else and
+         * submit — and the browser posts no values for `tags[]`, so `getData()` contributes
+         * an empty array and `updateEntity()` writes it over the stored tags. Every
+         * multiple select in the batch was affected: `tags` on text and composition,
+         * `composersAll`, `lyricistsAll`, `links`, and `authors`, `inLanguage`, `keywords`
+         * and `adminTags` on the book form.
+         *
+         * It survived the earlier form ports because `AssociationForm` has no multiple
+         * select — the same reason the missing `[]` on the name went unnoticed until batch
+         * 5, which is the *other* half of this element type being wrong.
+         *
+         * The scalar branch is unchanged, deliberately: it reproduces laminas' behaviour
+         * for a null value, where the cast to `''` is what an `empty_option` relies on.
+         */
+        /** @var mixed $selected */
+        $selected       = $element->getValue();
+        $selectedValues = [];
+        if (is_array($selected)) {
+            foreach ($selected as $one) {
+                if (is_scalar($one)) {
+                    $selectedValues[] = (string) $one;
+                }
+            }
+        } else {
+            $selectedValues[] = (string) (is_scalar($selected) ? $selected : '');
+        }
+
         foreach ($element->getValueOptions() as $value => $label) {
             if (is_array($label)) {
                 //Option groups: no association-form select uses one, and rendering it
@@ -710,7 +747,7 @@ final class BootstrapFormRenderer
             $options .= sprintf(
                 '<option value="%s"%s>%s</option>' . "\n",
                 $this->escaper->escapeHtmlAttr((string) $value),
-                (string) $value === (string) (is_scalar($selected) ? $selected : '') ? ' selected' : '',
+                in_array((string) $value, $selectedValues, true) ? ' selected' : '',
                 $this->escaper->escapeHtml($translateOptions ? ($this->translate)((string) $label) : (string) $label)
             );
         }
