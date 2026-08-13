@@ -591,6 +591,45 @@ Both live in `App\Authorization\Denial`. Four things worth knowing:
    reaches the router's `explode()` as an int; reading `getBaseUrl() . getPathInfo()`
    cannot fail that way, so the fallback branch has nothing left to guard and is not
    reproduced. The value is the same string, locale prefix included.
+
+   **And since 2026-08-13 it carries the query string, which laminas does not.** This is
+   the one place the guard deliberately improves on the original rather than reproducing
+   it, and it was batch 6 that made it matter: before then no ported guarded route took
+   its input from the query, so losing it changed nothing anyone could see. Now a member
+   who follows a bookmarked search, signs in, and lands on `/en/assignments/search` with
+   no query gets **every entity in the database** — a 595 KB page — instead of their
+   results.
+
+   Both sides used to drop it, and the reason is worth knowing before "fixing" it
+   somewhere else too: `JUser\View\RedirectionStrategy` assembles the return trip from
+   `$routeMatch->getParams()` with only `name` in its options, and there is no `query`
+   option in that call. Verified on both front controllers before changing anything —
+   anonymous `/en/assignments/search?search=Walter` answered
+   `?redirect=/en/assignments/search` on each.
+
+   Two details, both measured rather than reasoned:
+
+   - **The path stays literal and only the query is percent-encoded.** Encoding is
+     *necessary* for the query, because an unencoded `&` ends the `redirect` parameter and
+     truncates the return trip at the first one. Encoding the path as well would be
+     harmless and would rewrite `?redirect=/en/admin` into `?redirect=%2Fen%2Fadmin` on
+     every guarded route on the site, for nothing.
+   - **The encoding has to be the outer layer PHP strips**, not something baked into the
+     value. `JUser\Controller\LoginController::validRedirect()` refuses anything
+     `$router->match()` rejects, and it reads the value already decoded — so
+     `/en/texts?search=Bund` matches route `texts` and is accepted, while a literal
+     `/en/texts%3Fsearch%3DBund` matches nothing and would be silently discarded.
+     (That router match is also why `/en/…` works at all: `UriPathStrategy` sets the
+     router's base URL to `/en` on a laminas-served request, so the login page — which is
+     unported — matches the prefixed path.)
+
+   The whole chain is only proved end to end by
+   `test/Smoke/AssignmentsSearchSymfonySmokeTest::testAVisitorSignsInAndLandsBackOnTheirSearch`,
+   because four separate things have to hold together: the guard encoding, PHP decoding,
+   the sign-in form carrying the value through a POST as a hidden field, and
+   `validRedirect()` accepting it. `MagicLinkSignIn::requestSignInLink()` posted a
+   hardcoded empty `redirect` until this change, which is why no earlier test could have
+   caught any of it.
 3. **`templates/error/403.html.twig` is a reproduction, not a reuse.** `error/403`
    resolves today to `vendor/kokspflanze/bjy-authorize/view/error/403.phtml` — inside
    the abandoned package this migration intends to retire. The wording and markup of
@@ -1006,17 +1045,18 @@ cannot be — `templates/layout.html.twig` is a *reproduction* of `layout.phtml`
 copy — so the useful measurement is not "how many differ" but "which paths differ, and did
 this batch add any". Batch 6 was run that way: the whole set was captured *before* the
 batch touched anything (126 of 516 differing, on 18 already-ported paths and **zero** on
-any path the batch would touch), and again after (155 of 516). Every one of the 29 new
+any path the batch would touch), and again after (169 of 516). Every one of the 43 new
 entries falls into a group below, and none of them is a defect.
 
-Batch 6's 29:
+Batch 6's 43:
 
-| what | where | why |
-|---|---|---|
-| the guard answers before the locale hop | the unprefixed form of each of the 9 new guarded paths | the redirect-order divergence documented above, now on nine more routes. laminas sends `/texts` → `/en/texts` and then denies; the Symfony guard runs first and sends `/en/user/login?redirect=/texts` |
-| a results table and a search box appear | `/persons`, `/persons/search` × 5 locales (10) | **the intentional repair.** The laminas pages render an "Add person" link and nothing else, for every query — see below |
-| assignment rows in a different order | `/movement` × 5 locales (5) | the same 62 assignments and the **same byte length** in every locale; `getAssignments()` orders by `AssociationId, IsActive DESC, IsMainRole DESC, Sort` and ties are broken arbitrarily, so two runs of *either* front controller disagree. Already recorded from the navigation extraction |
-| `936` vs `938` in a badge | `/admin` × 5 locales (5) | the count of untranslated phrases, which grows as pages are rendered — so it moved between the two captures. Capture drift of the same kind rule 3 normalizes for visit counters, and a candidate for a rule 9 |
+| n | what | where | why |
+|---|---|---|---|
+| 15 | `?redirect=` carries the query | the prefixed anonymous form of the 3 new *search* paths × 5 locales | **an intentional improvement over laminas**, which drops it — see "The two denial branches" above. This is the group to expect to grow: every future guarded route whose input is a query string joins it |
+| 10 | a results table and a search box appear | `/persons`, `/persons/search` × 5 locales | **the intentional repair.** The laminas pages render an "Add person" link and nothing else, for every query — see below |
+| 9 | the guard answers before the locale hop | the unprefixed form of each of the 9 new guarded paths | the redirect-order divergence documented above, now on nine more routes. laminas sends `/texts` → `/en/texts` and then denies; the Symfony guard runs first and sends `/en/user/login?redirect=/texts` |
+| 5 | `936` vs `938` in a badge | `/admin` × 5 locales | the count of untranslated phrases, which grows as pages are rendered — so it moved between the two captures. Capture drift of the same kind rule 3 normalizes for visit counters, and a candidate for a rule 9 |
+| 4 | assignment rows in a different order | `/movement`, 4 locales of 5 | the same 62 assignments and the **same byte length**; `getAssignments()` orders by `AssociationId, IsActive DESC, IsMainRole DESC, Sort` and ties are broken arbitrarily, so two runs of *either* front controller disagree. That it was 5 locales on the previous run and 4 on this one, with no code change between them, is the demonstration |
 
 Carried over from earlier batches, unchanged:
 
@@ -1107,6 +1147,30 @@ a Response exists, and `display_errors` is off.
 So a ported route's smoke test must assert something from the body. "Assert something that
 distinguishes the two front controllers, not just a 200" is already step 4 of "Adding a
 Symfony route"; this is the second, independent reason for it.
+
+**The suite now checks this for you, on every request.**
+`SmokeTestCase::assertNotWedged()` runs inside `request()`, so a truncated HTML 200 fails
+the request that made it whatever the caller went on to assert — the same reason
+`App\Http\AuthorizationListener` listens to the event rather than to a route. The probe is
+the absence of `</html>`, not a byte count: a threshold has to guess, and both measured
+wedges (~800 bytes on laminas, 0 on Symfony) stop well before the closing tag while every
+legitimate page on the site reaches it. It applies only to a 200 whose content type is
+HTML, since a 302 carries laminas' whole sign-in page in a body nobody reads and JSON and
+the sitemap are not documents.
+
+**Its first run found a pre-existing one.** `GET /api/v1/libraries/3/books` with a valid
+bearer token answers 200 `text/html` with **zero bytes**, and
+`ApiAuthSmokeTest::testGatedRouteAcceptsAValidToken` had been passing against it since it
+was written — it asserts `200` and the absence of the string 'Fatal error', and an empty
+body satisfies both. Confirmed present on `master` before batch 6, so not a regression:
+`BooksApiController::getList()` JSON-encodes its rows through php-jwt and library 3 holds a
+row that is not valid UTF-8, which the 2026-08-03 exception record for that exact route
+names as `DomainException: Malformed UTF-8 characters`.
+
+It is listed in `test/Smoke/known-wedged-responses.php` on the **"no new gaps"** contract
+`test/Fuzz/known-form-gaps.php` uses: the check has to be un-skippable to be worth
+anything, and an inventory of one broken endpoint beats a deleted check. Every line in that
+file is a bug; deleting one is how it gets guarded.
 
 **And it caught a deviation that was defensible and still wrong to make.** The three
 pre-2020 redirects were written to skip SlmLocale's locale hop — `/associations/1`
@@ -1334,7 +1398,7 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 
 ## Verifying
 
-- `php composer.phar test` — **1,216 tests** (measured 2026-08-13, after batch 6; 916
+- `php composer.phar test` — **1,222 tests** (measured 2026-08-13, after batch 6; 916
   after the flip preparation on 2026-08-09; 791 after the eight routes of
   batch 4 and the removal of the blog; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
   631 after the wayside-shrine port, 618 after the authorization bridge, 551 before it,
