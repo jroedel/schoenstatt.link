@@ -24,7 +24,7 @@ class Batch6SymfonySmokeTest extends SmokeTestCase
     /** Distinct from every other user of the trait, or one tearDown deletes another's accounts. */
     private const EMAIL_PREFIX = 'batch6-smoke-';
 
-    /** A person who exists in the 2021 dump and is the subject of the show-page cases. */
+    /** A person who exists in the capsule's production data, and the subject of the show-page cases. */
     private const PERSON_ID = 494;
 
     protected function emailPrefix(): string

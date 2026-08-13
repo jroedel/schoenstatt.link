@@ -100,7 +100,7 @@ class WaysideShrinesSymfonySmokeTest extends SmokeTestCase
 
     /**
      * A region heading and a table per region, and a row per association inside
-     * them — the numbers being the 2021 dump's, which is what the capsule serves.
+     * them — the numbers being the imported production data's, which is what the capsule serves.
      * Counted rather than merely "something rendered", because the failure mode of a
      * grouping loop is a region quietly going missing while the page still looks
      * fine.
