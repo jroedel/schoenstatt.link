@@ -345,20 +345,35 @@ class SitemapSmokeTest extends SmokeTestCase
      *
      * That is the whole point of writing them into the docroot, and it is worth an assertion
      * because the symptom of losing it is invisible: the sitemap keeps working, just through
-     * PHP, and the 0.6s navigation walk comes back into the request path. A static file gets
-     * an `ETag` and `Accept-Ranges` from Apache; the PHP fallback sets neither, and sets
-     * session cookies instead.
+     * PHP, and the 0.6s navigation walk comes back into the request path.
+     *
+     * **Deliberately not asserted by `ETag`.** The first version of this test did, and it
+     * was wrong in a way worth recording: production sends no ETag on *any* static file —
+     * `/css/gen-basic.css`, `/favicon.ico` and `/robots.txt` are all without one, the
+     * hoster has them off — while Apache in the capsule sends them. So the assertion passed
+     * locally, passed CI, and failed on the live site while the deploy had in fact worked
+     * perfectly. A test that only holds in the capsule is worse than no test, because it
+     * fails at the moment you most need to trust it.
+     *
+     * The two below hold in both places. `Accept-Ranges: bytes` comes from Apache's static
+     * file handler and Symfony's `BinaryFileResponse` does not set it; and PHP cannot answer
+     * this route without starting a session, so the fallback always carries `Set-Cookie`
+     * while Apache never does.
      */
     public function testTheFilesAreServedStatically(): void
     {
         $headers = $this->get('/sitemap.xml')['headers'];
 
-        self::assertArrayHasKey(
-            'etag',
+        self::assertArrayNotHasKey(
+            'set-cookie',
             $headers,
-            'no ETag, so PHP served this rather than Apache — check that public/sitemap.xml exists '
-            . 'and that bin/console sitemap:build has run'
+            'the sitemap set a session cookie, so PHP served it rather than Apache — check that '
+            . 'public/sitemap.xml exists and that bin/console sitemap:build has run'
         );
-        self::assertSame('bytes', $headers['accept-ranges'] ?? null);
+        self::assertSame(
+            'bytes',
+            $headers['accept-ranges'] ?? null,
+            'no Accept-Ranges, so Apache is not handling this as a static file'
+        );
     }
 }

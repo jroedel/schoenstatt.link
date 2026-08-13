@@ -269,6 +269,51 @@ final class SitemapWriterTest extends TestCase
         self::assertSame($expected, SitemapSection::forPageId($pageId));
     }
 
+    /**
+     * The **route** decides the file, so a missing id cannot misfile a record.
+     *
+     * This is the regression test for a live failure on 2026-08-13. PageBuilder's branches
+     * are cached in APCu, an APCu segment belongs to the SAPI that created it, and
+     * `assoc_<id>` had just been added to the association branch — so the console built
+     * branches carrying it while the web SAPI still served one cached before the change.
+     * Classifying on the id alone, that build filed all 250 associations under
+     * `sitemap-pages.xml` and `removeOrphans()` then **deleted**
+     * `sitemap-associations.xml`. A stale cache became a deleted file, silently.
+     *
+     * With the route deciding, the worst a missing id can now cost is the `<lastmod>` and
+     * the per-locale slug.
+     */
+    #[DataProvider('routedPages')]
+    public function testTheRouteDecidesTheSectionEvenWithNoId(
+        ?string $pageId,
+        string $route,
+        SitemapSection $expected
+    ): void {
+        self::assertSame($expected, SitemapSection::forPage($pageId, $route));
+    }
+
+    /** @return array<string, array{0: string|null, 1: string, 2: SitemapSection}> */
+    public static function routedPages(): array
+    {
+        return [
+            'an association with no id at all' => [null, 'association', SitemapSection::ASSOCIATIONS],
+            'an association with its id'       => ['assoc_319', 'association', SitemapSection::ASSOCIATIONS],
+            'a publication with no id'         => [null, 'publication', SitemapSection::PUBLICATIONS],
+            'a composition with no id'         => [null, 'composition', SitemapSection::COMPOSITIONS],
+            //the literature index's language filter: a `pub_`-prefixed id on its own route
+            'a language filter'                => ['pub_lang_es', 'publications/index', SitemapSection::PAGES],
+            'the hand-made page'               => [
+                'pub_one_fifty_preguntas',
+                'publications/one-fifty-preguntas',
+                SitemapSection::PAGES,
+            ],
+            'a static page'                    => [null, 'shrines', SitemapSection::PAGES],
+            //no route at all: the id decides, which is the pre-2026-08-13 behaviour
+            'no route, id decides'             => ['pub_1234', '', SitemapSection::PUBLICATIONS],
+            'no route and no id'               => [null, '', SitemapSection::PAGES],
+        ];
+    }
+
     /** @return array<string, array{0: string|null, 1: SitemapSection}> */
     public static function pageIds(): array
     {

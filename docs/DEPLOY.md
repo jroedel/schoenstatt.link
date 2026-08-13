@@ -81,11 +81,14 @@ It must name a `/de/` URL. If it says `/en/`, the deploy did not take.
 Verify, once deployed:
 
 ```bash
-curl -sSI https://schoenstatt.link/sitemap.xml | grep -iE 'etag|accept-ranges'
+curl -sSI https://schoenstatt.link/sitemap.xml | grep -iE 'accept-ranges|set-cookie'
 curl -sS https://schoenstatt.link/sitemap.xml | grep -o '<loc>[^<]*</loc>'
 ```
 
-An `ETag` means Apache is serving it rather than PHP. Every `<loc>` must be
+`Accept-Ranges: bytes` with **no** `Set-Cookie` means Apache is serving the file
+rather than PHP. Do not look for an `ETag`: this hoster sends none on any static
+file, which is what made the first version of this check fail on a deploy that
+had worked. Every `<loc>` must be
 `https://schoenstatt.link/sitemap-*.xml` — one under a subdirectory again means
 Google discards the whole sitemap.
 
