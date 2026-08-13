@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
+use App\Controller\AssignmentSearchController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
@@ -44,8 +45,11 @@ use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
+use App\Controller\MovementController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
+use App\Controller\PersonController;
+use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
 use App\Controller\RolesController;
@@ -54,6 +58,7 @@ use App\Controller\ShrinesController;
 use App\Controller\SitemapController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
+use App\Controller\TextsController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
@@ -731,6 +736,110 @@ $routes->add('comments/create.locale', new Route(
     [],
     ['POST']
 ));
+
+// ---------------------------------------------------------------------------
+// Batch 6, ported 2026-08-13: the contact/search surface. The pages the movement's
+// own members use to find each other, plus the Kentenich text search.
+// ---------------------------------------------------------------------------
+//
+// Every route here is a GET whose input is the query string, which is what let them
+// move ahead of the create/edit forms: the static-adapter obstacle docs/strangler.md
+// records belongs to `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and
+// `EditPhraseForm` through a `NoRecordExists` validator, and none of these four forms
+// has one. No CSRF token either — a GET form carries none on laminas.
+//
+// Three different guard shapes on purpose, which is most of why these belong in one
+// batch: `assignments/search` admits sch_basic and sch_user (most signed-in members),
+// `persons` admits sch_moderator, and `texts` admits texts_user — a role granted to
+// Schoenstatt fathers by email match and to nobody else.
+
+// The destination of the navbar search box on every page of the site, for anyone
+// holding sch_basic or sch_user — see App\View\SiteChrome::searchBox(). Until this
+// moved, every search a signed-in member ran from an already-ported page went
+// through LegacyBridge back into laminas, which makes it the highest-traffic route
+// in the batch by a wide margin.
+//
+// **Literal paths, and that is load-bearing.** `/assignments/{assignment_id}` is
+// *not* ported (see App\Controller\AssignmentSearchController for why it is not a
+// page at all), so it has to keep falling through to `legacy`. A segment route here
+// would swallow both of these and 404 them.
+$ported(
+    'assignments/search',
+    '/assignments/search',
+    [AssignmentSearchController::class, 'search'],
+    RouteAccess::guardedBy('route/assignments/search'),
+    $textDomain('Schoenstatt')
+);
+$ported(
+    'assignments/advanced-search',
+    '/assignments/advanced-search',
+    [AssignmentSearchController::class, 'advancedSearch'],
+    RouteAccess::guardedBy('route/assignments/advanced-search'),
+    $textDomain('Schoenstatt')
+);
+
+// The movement's leadership. Route name `schoenstatt`, path /movement — they disagree
+// on the laminas side too, and the *name* is what has to be kept: it is how the layout
+// recognises the current navigation item, and this route **is** in the navigation
+// config, unlike most of this batch.
+$ported(
+    'schoenstatt',
+    '/movement',
+    MovementController::class,
+    RouteAccess::guardedBy('route/schoenstatt'),
+    $textDomain('Schoenstatt')
+);
+
+// Finding a person, and one person's page. Both guarded `sch_moderator`.
+//
+// `persons` and `persons/search` are two laminas routes over one action, so one
+// controller serves both and reads which it is from the request — the unprefixed-form
+// redirect has to point back at the URL the visitor asked for.
+//
+// **The port repairs these two pages rather than reproducing them.** The laminas
+// rendering is an "Add person" link and nothing else, for every query: the template
+// reads `$this->entities` where the controller passes `persons`, and never renders the
+// form at all. See App\Controller\PersonsController.
+$ported(
+    'persons',
+    '/persons',
+    PersonsController::class,
+    RouteAccess::guardedBy('route/persons'),
+    $textDomain('Schoenstatt')
+);
+$ported(
+    'persons/search',
+    '/persons/search',
+    PersonsController::class,
+    RouteAccess::guardedBy('route/persons/search'),
+    $textDomain('Schoenstatt')
+);
+// Declared **after** `/persons/search`, which a numeric constraint could not swallow
+// anyway, but the ordering is this file's convention. `/persons/create` and
+// `/persons/{id}/edit` keep falling through to `legacy` because the id is digits only
+// and this route has exactly two segments.
+$ported(
+    'persons/person',
+    '/persons/{person_id}',
+    PersonController::class,
+    RouteAccess::guardedBy('route/persons/person'),
+    $textDomain('Schoenstatt'),
+    //the laminas constraint exactly
+    ['person_id' => '[0-9]{1,5}']
+);
+
+// The Kentenich corpus search. Guarded `texts_user`, the sharpest guard in this batch.
+//
+// The path is `/texts` and the laminas route's action is `searchAction` — its
+// `indexAction` is a different query no route reaches. `/texts/create` and
+// `/texts/import` keep falling through to `legacy`, since this is a literal path.
+$ported(
+    'texts',
+    '/texts',
+    TextsController::class,
+    RouteAccess::guardedBy('route/texts'),
+    $textDomain('Books')
+);
 
 // ---------------------------------------------------------------------------
 // The v3 API, added 2026-08-09: the read/write surface automated agents use to

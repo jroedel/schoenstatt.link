@@ -33,7 +33,9 @@ class RouteDenialShapeTest extends TestCase
 {
     /**
      * `/en/user/login?redirect=/en/admin` — measured on the laminas side before the
-     * route was ported, and reproduced exactly.
+     * route was ported, and reproduced exactly. **The path is not encoded**, which is
+     * what keeps this string byte-identical to laminas' on every guarded route that has
+     * no query.
      */
     public function testTheAnonymousHtmlRefusalRedirectsToSignInCarryingTheWantedPage(): void
     {
@@ -41,6 +43,58 @@ class RouteDenialShapeTest extends TestCase
 
         $this->assertSame(302, $response->getStatusCode());
         $this->assertSame('/en/user/login?redirect=/en/admin', $response->headers->get('Location'));
+    }
+
+    /**
+     * A query string is carried and **percent-encoded**, which is not decoration: an
+     * unencoded `&` would end the `redirect` parameter and truncate the return trip at
+     * the first one, so a two-parameter search would come back as a one-parameter search.
+     *
+     * The `?` is encoded for the same reason and no other: PHP decodes the value before
+     * `JUser\Controller\LoginController::validRedirect()` sees it, so what that method
+     * receives — and what the router has to match — is the plain `/en/texts?search=Bund`.
+     * The end-to-end proof is in AssignmentsSearchSymfonySmokeTest, which is the only
+     * place all four steps of the round trip meet.
+     */
+    public function testAQueryStringIsCarriedEncoded(): void
+    {
+        $response = Denial::signIn('/en/user/login', '/en/texts', 'search=Bund');
+
+        $this->assertSame(
+            '/en/user/login?redirect=/en/texts%3Fsearch%3DBund',
+            $response->headers->get('Location')
+        );
+    }
+
+    public function testAMultiParameterQueryEncodesItsSeparator(): void
+    {
+        $response = Denial::signIn('/en/user/login', '/en/assignments/search', 'search=Walter&country=DE');
+
+        $location = (string) $response->headers->get('Location');
+
+        $this->assertStringContainsString('%26', $location, 'an unencoded & would truncate the return trip');
+        $this->assertStringNotContainsString(
+            '&',
+            $location,
+            'the redirect parameter must be the last thing in this URL'
+        );
+    }
+
+    /**
+     * No query means no change: the two callers that pass null and '' must both produce
+     * the string laminas produces, since that is every guarded route on the site bar the
+     * searches.
+     */
+    public function testAnAbsentOrEmptyQueryAddsNothing(): void
+    {
+        $this->assertSame(
+            '/en/user/login?redirect=/en/admin',
+            Denial::signIn('/en/user/login', '/en/admin', null)->headers->get('Location')
+        );
+        $this->assertSame(
+            '/en/user/login?redirect=/en/admin',
+            Denial::signIn('/en/user/login', '/en/admin', '')->headers->get('Location')
+        );
     }
 
     /**

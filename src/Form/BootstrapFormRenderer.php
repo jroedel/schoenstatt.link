@@ -13,17 +13,20 @@ use Laminas\Form\Element\Textarea;
 use Laminas\Form\ElementInterface;
 use Laminas\Form\FormInterface;
 
+use function array_filter;
+use function array_flip;
 use function implode;
 use function is_array;
 use function is_bool;
-use function array_flip;
-use function array_intersect_key;
 use function is_object;
 use function is_scalar;
 use function is_string;
 use function method_exists;
-use function strip_tags;
+use function preg_match;
 use function sprintf;
+use function str_starts_with;
+use function strip_tags;
+use function trim;
 
 /**
  * The form layer a Symfony-served route did not have.
@@ -102,10 +105,33 @@ final class BootstrapFormRenderer
     {
         $name = (string) $form->getName();
 
+        /**
+         * **The method comes from the form, not from here.** It was hardcoded `POST`
+         * while the only ported form was an edit form. Both contact-search forms are
+         * `method="GET"` — their data is the query string — and a hardcoded POST would
+         * have turned the navbar search box into a form that posts to a route with no
+         * POST handling. `Laminas\Form\Form` defaults the attribute to POST, so the
+         * edit forms are unaffected.
+         */
+        $method = $form->getAttribute('method');
+        $method = is_scalar($method) && '' !== (string) $method ? (string) $method : 'POST';
+
+        /**
+         * **An empty action emits no attribute at all**, which is what laminas does with
+         * a form nobody called `setAttribute('action', …)` on: `openTag()` renders the
+         * attributes the form actually has. The advanced search is that case — it posts
+         * to its own URL — and `action=""` is not the same thing to a browser resolving
+         * a relative reference.
+         */
+        $actionAttribute = '' === $action
+            ? ''
+            : sprintf(' action="%s"', $this->escaper->escapeHtmlAttr($action));
+
         return sprintf(
-            '<form method="POST" name="%s" action="%s" class="%s" id="%s">',
+            '<form method="%s" name="%s"%s class="%s" id="%s">',
+            $this->escaper->escapeHtmlAttr($method),
             $this->escaper->escapeHtmlAttr($name),
-            $this->escaper->escapeHtmlAttr($action),
+            $actionAttribute,
             $this->escaper->escapeHtmlAttr($class),
             $this->escaper->escapeHtmlAttr($name)
         );
@@ -130,18 +156,59 @@ final class BootstrapFormRenderer
             return $this->element($element);
         }
 
+        $group = sprintf('<div class="form-group %s">', self::rowClass($element));
+
         if ($element instanceof Checkbox) {
             //A checkbox is its own label, so TwbBundle emits no separate one.
-            return '<div class="form-group ">' . $this->element($element) . $this->errors($element)
+            return $group . $this->element($element) . $this->errors($element)
                 . $this->rowHelpBlock($element) . '</div>';
         }
 
-        return '<div class="form-group ">'
-            . $this->label($element, withFor: false)
+        //**`for` only when the element has an id.** TwbBundleFormRow::render() picks
+        //between the element and a bare attribute array on exactly that test —
+        //`$labelHelper->openTag($element->getAttribute('id') ? $element : $attributes)`
+        //— so a field with no id gets `<label>` and one with an id gets
+        //`<label for="…">`. Every element on the association form was in the first
+        //group, which is why this looked like "a row label never carries for".
+        return $group
+            . $this->label($element, withFor: null !== $element->getAttribute('id'))
             . $this->element($element, $translateOptions)
             . $this->errors($element)
             . $this->rowHelpBlock($element)
             . '</div>';
+    }
+
+    /**
+     * `TwbBundleFormRow::getRowClassFromElement()`, restricted to the one branch any
+     * form here uses: `column-size`, a string or a list, each entry prefixed `col-`.
+     *
+     * **The leading space is the original's and is kept.** The row class is
+     * concatenated as `' col-' . $item` onto an empty string and then interpolated into
+     * `'<div class="form-group %s">'`, so a sized row really does carry two spaces:
+     * `<div class="form-group  col-md-4">`. Verified against the raw capture rather than
+     * a whitespace-collapsed reading of it — the first reading of this markup collapsed
+     * the runs and made it look like one space.
+     *
+     * The other four branches (`twb-form-group-size`, `validation-state`, the
+     * `has-error` from messages, `feedback`, `twb-row-class`) are absent because no form
+     * on this side sets any of them. `has-error` is the one to add first when a ported
+     * form starts re-rendering itself after a failed validation.
+     */
+    private static function rowClass(ElementInterface $element): string
+    {
+        $size = $element->getOption('column-size');
+        if (null === $size || '' === $size) {
+            return '';
+        }
+
+        $class = '';
+        foreach (is_array($size) ? $size : [$size] as $item) {
+            if (is_scalar($item)) {
+                $class .= ' col-' . (string) $item;
+            }
+        }
+
+        return $class;
     }
 
     /**
@@ -189,9 +256,15 @@ final class BootstrapFormRenderer
             return '<label>' . $text . '</label>';
         }
 
+        //`FormLabel::openTag()` reads the **id** and falls back to the name — which is
+        //why this used to be the name alone and looked right: no element on the
+        //association form declares an id. `roleTitleSelect` is the first that does.
+        $id  = $element->getAttribute('id');
+        $for = is_scalar($id) && '' !== (string) $id ? (string) $id : (string) $element->getName();
+
         return sprintf(
             '<label for="%s">%s</label>',
-            $this->escaper->escapeHtmlAttr((string) $element->getName()),
+            $this->escaper->escapeHtmlAttr($for),
             $text
         );
     }
@@ -236,35 +309,93 @@ final class BootstrapFormRenderer
         return $this->input($element, 'hidden', withClass: false);
     }
 
-    /**
-     * `<button type="submit">`, keeping the element's own classes.
-     *
-     * A submit button is the one control that must *not* get `form-control` — it is a
-     * `btn`, and TwbBundle appends that to whatever the element declares rather than
-     * replacing it. `value` renders last, as it does on every other input.
-     */
+    /** `<button type="submit">`. See button(), which does the work for both types. */
     public function submit(ElementInterface $element): string
     {
+        return $this->button($element, 'submit');
+    }
+
+    /**
+     * `<button type="button">` — `formButton()` rather than `formSubmit()`. The advanced
+     * contact search has one (`clear`), and it is the first ported form that does.
+     */
+    public function button(ElementInterface $element, string $type = 'button'): string
+    {
+        /**
+         * **The label first, the value second** — `TwbBundleFormButton::render()` is
+         * `$content = $element->getLabel() ?: $element->getValue()`. This method used to
+         * read `value` out of `getAttributes()` and fall back to the literal 'Submit',
+         * which produced the right bytes for exactly one form by coincidence:
+         * `Laminas\Form\Element::setAttribute()` diverts the `value` key to `setValue()`
+         * and keeps it *out* of the attribute list, so that lookup never found anything.
+         * AssociationForm declares `'value' => 'Submit'` and no label, so 'Submit' was
+         * both the fallback and the correct answer. AdvancedSearchForm declares a label
+         * of 'Search' and no value, and would have rendered a button reading "Submit"
+         * with `value="Submit"` where laminas emits "Search" with `value=""`.
+         */
+        $label   = $element->getLabel();
+        $value   = self::asString($element->getValue());
+        $content = null !== $label && '' !== $label ? $label : $value;
+
         $declared = $this->declaredAttributes($element);
-        $value    = (string) ($declared['value'] ?? 'Submit');
         $class    = isset($declared['class']) ? (string) $declared['class'] : '';
-        unset($declared['value'], $declared['class'], $declared['type'], $declared['name']);
+        unset($declared['class'], $declared['type'], $declared['name']);
 
         /** @var array<string, scalar> $attributes */
-        $attributes = ['type' => 'submit', 'name' => (string) $element->getName()];
+        $attributes = ['type' => $type, 'name' => (string) $element->getName()];
         foreach ($declared as $key => $declaredValue) {
             if (is_scalar($declaredValue)) {
                 $attributes[(string) $key] = $declaredValue;
             }
         }
-        $attributes['class'] = '' === $class ? 'btn' : $class . ' btn';
-        $attributes['value'] = '' === $value ? 'Submit' : $value;
+        $attributes['class'] = self::buttonClass($class);
+        //rendered even when empty: FormButton::openTag() always sets it from
+        //getValue(), so the baseline carries `value=""` on both buttons of the
+        //advanced search
+        $attributes['value'] = $value;
 
         return sprintf(
             '<button %s>%s</button>',
             $this->attributeString($attributes),
-            $this->escaper->escapeHtml(($this->translate)($attributes['value']))
+            $this->escaper->escapeHtml(($this->translate)($content))
         );
+    }
+
+    /**
+     * TwbBundleFormButton's class rule, transcribed from its `render()` rather than
+     * guessed: append `btn` unless the class already carries it as a whole word, then
+     * append `btn-default` unless it already carries some `btn-<known option>`. An empty
+     * class becomes `btn btn-default` outright.
+     *
+     * Both halves are measured on the advanced search, which has one button of each
+     * shape: `btn-primary` renders as `btn-primary btn` (bare `btn` missing, option
+     * present), and `btn btn-default` renders unchanged. A plain `$class . ' btn'` — what
+     * this class did before — gets the first right and turns the second into
+     * `btn btn-default btn`.
+     */
+    private static function buttonClass(string $class): string
+    {
+        if ('' === $class) {
+            return 'btn btn-default';
+        }
+
+        if (! preg_match('/(\s|^)btn(\s|$)/', $class)) {
+            $class .= ' btn';
+        }
+
+        $known = ['default', 'primary', 'success', 'info', 'warning', 'danger', 'link'];
+        $hasOption = false;
+        foreach ($known as $option) {
+            if (preg_match('/(\s|^)btn-' . $option . '.*(\s|$)/', $class)) {
+                $hasOption = true;
+                break;
+            }
+        }
+        if (! $hasOption) {
+            $class .= ' btn-default';
+        }
+
+        return trim($class);
     }
 
     /**
@@ -338,6 +469,22 @@ final class BootstrapFormRenderer
 
     // --------------------------------------------------------------- controls
 
+    /**
+     * **Attributes are filtered by input type**, the way laminas filters them.
+     *
+     * `Laminas\Form\View\Helper\FormText` declares its own `$validTagAttributes` and
+     * `AbstractHelper::createAttributesString()` drops anything outside it, the globals,
+     * and a `data-` prefix. `min` is the case that found this: `AdvancedSearchForm`
+     * declares `'min' => 3` on both its text fields, laminas silently drops it — `min`
+     * belongs to number, range and date inputs, not text — and this class rendered
+     * `min="3"`. Invisible in a browser, and a difference in the bytes.
+     *
+     * Only the two types `input()` actually serves are listed. Adding an element type
+     * means adding its helper's list here; falling back to text's for an unknown type
+     * would silently drop `min`/`max`/`step` from a number input, which is the same
+     * class of bug from the other direction, so an unlisted type keeps everything and
+     * the next port has to look.
+     */
     private function input(ElementInterface $element, string $type, bool $withClass): string
     {
         $attributes = $this->attributes(
@@ -346,9 +493,44 @@ final class BootstrapFormRenderer
             $withClass
         );
 
+        $attributes = self::filteredByInputType($attributes, $type);
+
         $attributes['value'] = self::asString($element->getValue());
 
         return '<input ' . $this->attributeString($attributes) . '>';
+    }
+
+    /**
+     * @param array<string, scalar> $attributes
+     * @return array<string, scalar>
+     */
+    private static function filteredByInputType(array $attributes, string $type): array
+    {
+        /** FormText::$validTagAttributes, verbatim. */
+        $text = ['name', 'autocomplete', 'autofocus', 'dirname', 'disabled', 'form', 'inputmode',
+                 'list', 'maxlength', 'minlength', 'pattern', 'placeholder', 'readonly',
+                 'required', 'size', 'type', 'value'];
+        /** FormHidden's is FormInput's, which is far wider; `value` and `name` are the whole of it in practice. */
+        $hidden = $text;
+
+        $perType = ['text' => $text, 'hidden' => $hidden];
+        if (! isset($perType[$type])) {
+            return $attributes;
+        }
+
+        //the presentational globals, as in select() above — the `on*` handlers are left
+        //out because no element declares one and the CSP forbids them anyway
+        $allowed = array_flip([
+            ...$perType[$type],
+            'accesskey', 'class', 'contenteditable', 'dir', 'draggable', 'hidden', 'id',
+            'lang', 'spellcheck', 'style', 'tabindex', 'title',
+        ]);
+
+        return array_filter(
+            $attributes,
+            static fn (string $key): bool => isset($allowed[$key]) || str_starts_with($key, 'data-'),
+            ARRAY_FILTER_USE_KEY
+        );
     }
 
     private function textarea(ElementInterface $element): string
@@ -417,13 +599,33 @@ final class BootstrapFormRenderer
         }
 
         $attributes = $this->attributes($element, ['name' => $name], $withClass);
-        //Laminas\Form\View\Helper\FormSelect renders only these; `maxlength`, which
-        //three of this form's selects declare, is silently dropped there and must be
-        //dropped here too.
-        $attributes = array_intersect_key(
+        /**
+         * What `Laminas\Form\View\Helper\FormSelect` will actually render: its own
+         * `$validTagAttributes`, **plus** `AbstractHelper::$validGlobalAttributes`. Both
+         * halves are load-bearing and the second was missing — `maxlength`, which twenty
+         * select definitions in this application declare, is in neither list and is
+         * correctly dropped, but `id` is a *global* attribute and was being dropped with
+         * it. That cost the advanced search its `id="roleTitleSelect"`, and with it the
+         * `for` on its label and the hook `gen-schoenstatt-advanced-search.js` uses to
+         * turn the select into a selectize widget — so the field would have rendered as
+         * a bare multi-select where every other environment shows tag chips.
+         *
+         * The global list is transcribed selectively: the presentational and structural
+         * attributes, not the sixty-odd `on*` event handlers, because a form element in
+         * this codebase declares none and the CSP forbids inline handlers anyway. `data-*`
+         * is allowed by prefix in the original and reproduced the same way below.
+         */
+        $allowed = array_flip([
+            //FormSelect::$validTagAttributes
+            'name', 'autocomplete', 'autofocus', 'disabled', 'form', 'multiple', 'required', 'size',
+            //the globals a form here can declare
+            'accesskey', 'class', 'contenteditable', 'dir', 'draggable', 'hidden', 'id',
+            'lang', 'spellcheck', 'style', 'tabindex', 'title',
+        ]);
+        $attributes = array_filter(
             $attributes,
-            array_flip(['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'multiple',
-                        'required', 'size', 'class'])
+            static fn (string $key): bool => isset($allowed[$key]) || str_starts_with($key, 'data-'),
+            ARRAY_FILTER_USE_KEY
         );
 
         $options = '';

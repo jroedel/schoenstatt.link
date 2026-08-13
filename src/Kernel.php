@@ -11,6 +11,7 @@ use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
 use App\Controller\Api\PhrasesV3Controller;
+use App\Controller\AssignmentSearchController;
 use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
@@ -24,8 +25,11 @@ use App\Controller\DictionaryController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LiteratureController;
+use App\Controller\MovementController;
 use App\Controller\MusicController;
 use App\Controller\OneFiftyPreguntasController;
+use App\Controller\PersonController;
+use App\Controller\PersonsController;
 use App\Controller\PhpInfoController;
 use App\Controller\PublicationController;
 use App\Controller\RolesController;
@@ -34,6 +38,7 @@ use App\Controller\ShrinesController;
 use App\Controller\SitemapController;
 use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
+use App\Controller\TextsController;
 use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
@@ -399,6 +404,35 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->routeUrl()
             ),
             RolesController::class => fn (): RolesController => new RolesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            // Batch 6, the contact/search surface. Same three dependencies throughout:
+            // every one of these reads the query string, asks SchoenstattTable, and
+            // renders Twig.
+            AssignmentSearchController::class
+                => fn (): AssignmentSearchController => new AssignmentSearchController(
+                    $this->laminas(),
+                    $this->twig(),
+                    $this->routeUrl()
+                ),
+            MovementController::class => fn (): MovementController => new MovementController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            PersonsController::class => fn (): PersonsController => new PersonsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            PersonController::class => fn (): PersonController => new PersonController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            TextsController::class => fn (): TextsController => new TextsController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl()

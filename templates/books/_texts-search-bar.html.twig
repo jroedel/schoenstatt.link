@@ -1,0 +1,35 @@
+{#
+  module/Books/view/books/texts/search-bar.phtml, ported.
+
+  A near-twin of schoenstatt/_contact-search-bar.html.twig and deliberately a separate
+  file, because the two differ in three ways that would each need a flag: this one has no
+  "Advanced search" link and no `#options` block at all, its default action is `texts`,
+  and its `class="row search-bar "` concatenates the centre class **with a leading space**
+  (`" search-bar-center"`) where the contact bar's has none. That last one is a one-byte
+  difference in the original, and merging the two files would mean either losing it or
+  carrying a flag for it.
+
+  The `inLanguage` select the form defines is not rendered here — the .phtml renders only
+  the `search` field — and neither is the submit element; the button is hand-written
+  markup.
+
+  The commented-out inlineScript block at the foot of the .phtml is not carried over: it
+  is commented out, it is JavaScript rather than markup, and an HTML comment is the only
+  thing a `.phtml` comment could become. Nothing renders from it on either side.
+#}
+<div class="row search-bar {% if center_on_page|default(false) %} search-bar-center{% endif %}">
+      <div class="col-md-6 col-md-offset-3 col-xs-12">
+          <div id="custom-search-input">
+            {{ form_open(form, action|default(laminas_path('texts'))) }}
+              <div class="input-group col-md-12">
+                    {{ form_element(form.get('search')) }}
+                  <span class="input-group-btn">
+                      <button class="btn btn-info btn-lg" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                      </button>
+                  </span>
+              </div>
+            {{ form_close() }}
+          </div>
+      </div>
+</div>

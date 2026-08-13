@@ -1,0 +1,236 @@
+{#
+  module/Schoenstatt/view/schoenstatt/persons/show.phtml, ported.
+
+  Four panels, each behind its own condition: contact info (living people only), personal
+  info (always), private info (`patres_details`), and notes (a non-empty publicNotes).
+
+  **The fifth panel of the original — assignments — is deliberately absent.** Its
+  condition can never be true: `SchoenstattTable::getPersons()` initialises the
+  `assignments` key and the line that would fill it is commented out, measured empty on
+  all 325 rows. That is also why nobody has noticed that the helper it calls,
+  `formatPersonAssignment()`, reaches an unregistered `formatScope()` in every branch but
+  one. See App\Controller\PersonController.
+
+  Two `<h1>` details that look like noise and are the original: the dagger for a deceased
+  person, and `class="text-center"` plus a `col-md-offset-5` on the photo column, which
+  together centre the page for someone with no contact panel.
+
+  The `<h1>` uses `fullName` while the `<title>` uses `fullFriendlyName`; they differ and
+  the controller assembles the second.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1{% if not person.isLiving %} class="text-center"{% endif %}>
+{%- if not person.isLiving %}✝{% endif -%}
+{%- if person.title %}{{ translate(person.title) }} {% endif -%}
+{{- person.fullName -}}
+</h1>
+<div class="row">
+<div class="col-md-2{% if not person.isLiving %} col-md-offset-5{% endif %}">
+{% if photo %}
+    <img src="{{ photo }}"
+    height="200px" alt="{{ person.firstName ~ ' ' ~ person.lastName }}">
+{% endif %}
+</div>
+{% if person.isLiving %}
+<div class="col-md-10">
+<div class="panel panel-default" id="contactInfoPanel">
+    <div class="panel-heading">
+        <div class="row">
+        <div class="col-xs-4">
+            <h3 class="panel-title">{{ translate('Contact Info') }}
+        </h3>
+        </div>
+        <div class="col-xs-5">
+            {% if person.contactInfoUpdatedOn is not null %}
+                <span class="pull-right"><small>{{
+                    translate('Updated %s')|format(diff_for_humans(person.contactInfoUpdatedOn))|raw
+                }}</small></span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="row">
+        {#- the two column widths depend on whether there is a postal address, because
+            the address column only exists then. Same arithmetic as the .phtml. -#}
+        {%- set chrome_has_address = person.postStreet1 is not null -%}
+        {%- set chrome_email_cols = chrome_has_address ? 5 : 7 -%}
+        {%- set chrome_phone_cols = chrome_has_address ? 4 : 5 -%}
+        <div class="col-md-{{ chrome_email_cols }}">
+            <p><strong>{{ translate('Email') }}:</strong> {% if person.email is not null %}{{
+                email_link(person.email) }}{% if person.email2 is not null %}, {{ email_link(person.email2) }}{% endif %}
+            {%- endif %}</p>
+            <div class="row">
+            <div class="col-md-12">
+                <div class="row"><div class="col-md-12">
+                {% for url_row in person.urls %}
+                    <a target="_blank" href="{{ url_row.url }}">
+                        <img src="../{{ url_row.logo is defined ? url_row.logo : 'img/www.png' }}" alt="{{ url_row.label }}" class="img-circle" height="70px">
+                    </a>&nbsp;
+                {% endfor %}
+                </div></div> <!-- Websites row and column -->
+            </div> <!-- Links column -->
+            </div> <!-- Links row -->
+        </div>
+        {% if chrome_has_address %}
+        <div class="col-md-3">
+            <p><strong>{{ translate('Postal address') }}:</strong></p>
+            {{ address({
+                'street1':   person.postStreet1,
+                'street2':   person.postStreet2,
+                'cityState': person.postCityState,
+                'zip':       person.postZip,
+                'country':   person.postCountry,
+            }) }}
+        </div>
+        {% endif %}
+        <div class="col-md-{{ chrome_phone_cols }}">
+            {% for phone_row in person.phones %}
+                <p><strong>{{ translate(phone_row.label) }}:</strong>
+                <span>{{ telephone_link(
+                    phone_row.number,
+                    phone_row.whatsApp is defined ? phone_row.whatsApp : false,
+                    is_allowed('route/persons/person/edit-contact-info')
+                ) }}</span></p>
+            {% endfor %}
+            {#- the .phtml builds this one with Carbon directly instead of the
+                diffForHumans helper, and hardcodes the updater's name as 'jeff'. Both
+                reproduced: it is a visible string on a moderator's page, and changing it
+                is a fix rather than a port. -#}
+            {% if person.phonesUpdatedOn is not null %}
+                <p class="text-right">{{ tooltip(
+                    '✓ Up-to-date',
+                    translate('Updated by %s %s')|format('jeff', diff_for_humans(person.phonesUpdatedOn))
+                ) }}</p>
+            {% endif %}
+            <!--
+            Phone numbers should be updated or confirmed every 2 years to ensure up-to-date information.
+            Please help in confirming and/or updating out-dated information.
+             -->
+        </div> <!-- phones column -->
+        </div>
+    </div> <!-- contact info panel body -->
+</div> <!-- contact info panel -->
+</div> <!-- col-md-9 -->
+{% endif %}
+</div> <!-- row -->
+
+<div class="row"> <!-- personal info row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="personalInfoPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Personal Info') }}</h3>
+    </div>
+    <div class="panel-body">
+
+<div class="row"> <!-- personal info panel row -->
+<div class="col-md-6"> <!-- community info column (free and official) -->
+<p><strong>{{ translate('Home country') }}:</strong> {{ country_name(person.country, true, 'official') }}</p>
+{% if person.spousePerson is not null %}
+    <p><strong>{{ translate('Spouse') }}:</strong> {% import 'schoenstatt/_entity-format.html.twig' as format %}{{ format.entity('person', person.spousePerson) }}</p>
+{% endif %}
+</div> <!-- community info column -->
+
+<div class="col-md-6"> <!-- dates column -->
+    {% if person.deathDate is not null %}
+        <p><strong>{{ translate('Passed away on') }}:</strong> {{ date_precision(person.deathDate, person.deathDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}</p>
+    {% endif %}
+    {% if person.nameDay %}
+    <p><strong>{{ translate('Nameday') }}: </strong>
+        {{ day_format(person.nameDay) }}
+    </p>
+    {% endif %}
+    {% if person.priestDate is not null %}
+        <p><strong>{{ translate('Priestly ordination') }}:</strong> {{ date_precision(person.priestDate, person.priestDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}</p>
+    {% endif %}
+    {% if person.bishopDate is not null %}
+        <p><strong>{{ translate('Bishop ordination') }}:</strong> {{ date_precision(person.bishopDate, person.bishopDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}</p>
+    {% endif %}
+</div> <!-- dates column -->
+</div> <!-- personal info panel row -->
+
+</div> <!-- personal info panel body -->
+</div> <!-- personal info panel -->
+</div> <!-- personal info column 12 -->
+</div> <!-- personal info row -->
+
+{% if is_allowed('patres_details') %}
+<div class="row"> <!-- private info row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="privateInfoPanel">
+    <div class="panel-heading">
+
+        <div class="row">
+        <div class="col-xs-8">
+            <h3 class="panel-title">{{ translate('Private Info') }}</h3>
+        </div>
+        <div class="col-xs-4">
+            {% if is_allowed('route/persons/person/edit-private-info') %}
+               <span class="pull-right"><a class="btn btn-default btn-sm"
+                href="{{ laminas_path('persons/person/edit-private-info', {'person_id': person.personId}) }}">{{
+                translate('Edit information') }}</a></span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body">
+
+<div class="row"> <!-- private info panel row -->
+<div class="col-md-6"> <!-- private facts column -->
+    <p><strong>{{ translate('Birthday') }}: </strong> {% if person.birthDate is not null %}{{
+        date_precision(person.birthDate, person.birthDatePrecision, constant('IntlDateFormatter::MEDIUM')) }}{% endif %}</p>
+    {% if person.adminTags is not empty %}
+<p><strong>{{ translate('Admin tags') }}:</strong> {% for value in person.adminTags %}{% if not loop.first %} {% endif %}<span class="label label-default">{{ value }}</span>{% endfor %}
+    {% endif %}
+</div> <!-- private facts column -->
+
+    {#- the .phtml asks `patres_details` a second time here, inside a block already
+        gated on it. Kept, because dropping it is a change to a permission check and
+        those are reviewed by diffing docs/acl-rules.md, not by reading a template. -#}
+    {% if person.adminNotes is not null and is_allowed('patres_details') %}
+<div class="col-md-12">
+    <p><strong>{{ translate('Admin Notes') }}:</strong></p>
+    <div>{{ markdown(person.adminNotes) }}
+    </div>
+</div> <!-- admin notes column -->
+    {% endif %}
+
+</div> <!-- private info panel row -->
+
+</div> <!-- private info panel body -->
+</div> <!-- private info panel -->
+</div> <!-- private info column 12 -->
+</div> <!-- private info row -->
+{% endif %}
+
+{% if person.publicNotes is not null and person.publicNotes|length != 0 %}
+<div class="row"> <!-- notes row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="notesPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Notes') }}</h3>
+    </div>
+    <div class="panel-body">
+    <div>{{ markdown(person.publicNotes) }}
+    </div>
+    </div> <!-- notes panel body -->
+</div> <!-- notes panel -->
+</div> <!-- notes column 12 -->
+</div> <!-- notes row -->
+{% endif %}
+
+<div class="row"><div class="col-md-12">
+{% if is_allowed('route/persons/person/edit') %}
+      <a target="_blank" class="btn btn-primary"
+    href="{{ laminas_path('persons/person/edit', {'person_id': person.personId}) }}">{{
+    translate('Edit details') }}</a>
+{% endif %}
+{% if is_allowed('route/assignments/create') %}
+      <a target="_blank" class="btn btn-default"
+    href="{{ laminas_path('assignments/create', {}, {'query': {'personId': person.personId}}) }}">{{
+    translate('Add assignment') }}</a>
+{% endif %}
+</div></div>
+{% endblock %}

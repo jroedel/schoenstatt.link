@@ -66,8 +66,22 @@ public/index.php
                                        │                 → App\Controller\RolesController
                                        ├─ [/{_locale}]/libraries
                                        │                 → App\Controller\LibrariesController
+                                       ├─ [/{_locale}]/assignments/search          ⎫ App\Controller\
+                                       ├─ [/{_locale}]/assignments/advanced-search ⎭ AssignmentSearchController
+                                       │                       (the navbar search box's destination)
+                                       ├─ [/{_locale}]/movement
+                                       │                 → App\Controller\MovementController
+                                       ├─ [/{_locale}]/persons          ⎫ App\Controller\
+                                       ├─ [/{_locale}]/persons/search   ⎭ PersonsController
+                                       ├─ [/{_locale}]/persons/{person_id}
+                                       │                 → App\Controller\PersonController
+                                       ├─ [/{_locale}]/texts
+                                       │                 → App\Controller\TextsController
                                        └─ /{path} .*     → App\Http\LegacyBridge
                                                               └─ Laminas\Mvc\Application
+
+(the four entity show pages, the literature surface, the sitemap and the v3 API are
+omitted from this sketch — `config/symfony/routes.php` is the authoritative list)
 ```
 
 Six kernel listeners run on a Symfony-served route and on **no** bridged one,
@@ -84,9 +98,9 @@ by asking whether `_route` is anything other than `legacy`:
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
-As of batch 4, **47 of the 187 laminas routes are served by Symfony** (21 distinct paths,
-each declared twice for its locale prefix); `docs/acl-rules.md` carries the count and the
-guard each one is checked against.
+As of batch 6, **110 of the 188 laminas routes are served by Symfony** (55 distinct paths,
+each declared twice for its locale prefix), of which 80 are ACL-checked and 30 declared
+open; `docs/acl-rules.md` carries the count and the guard each one is checked against.
 
 `config/symfony/routes.php` **is** the migration status of the site, read top to
 bottom: `UrlMatcher` takes the first route that matches, so everything declared
@@ -577,6 +591,45 @@ Both live in `App\Authorization\Denial`. Four things worth knowing:
    reaches the router's `explode()` as an int; reading `getBaseUrl() . getPathInfo()`
    cannot fail that way, so the fallback branch has nothing left to guard and is not
    reproduced. The value is the same string, locale prefix included.
+
+   **And since 2026-08-13 it carries the query string, which laminas does not.** This is
+   the one place the guard deliberately improves on the original rather than reproducing
+   it, and it was batch 6 that made it matter: before then no ported guarded route took
+   its input from the query, so losing it changed nothing anyone could see. Now a member
+   who follows a bookmarked search, signs in, and lands on `/en/assignments/search` with
+   no query gets **every entity in the database** — a 595 KB page — instead of their
+   results.
+
+   Both sides used to drop it, and the reason is worth knowing before "fixing" it
+   somewhere else too: `JUser\View\RedirectionStrategy` assembles the return trip from
+   `$routeMatch->getParams()` with only `name` in its options, and there is no `query`
+   option in that call. Verified on both front controllers before changing anything —
+   anonymous `/en/assignments/search?search=Walter` answered
+   `?redirect=/en/assignments/search` on each.
+
+   Two details, both measured rather than reasoned:
+
+   - **The path stays literal and only the query is percent-encoded.** Encoding is
+     *necessary* for the query, because an unencoded `&` ends the `redirect` parameter and
+     truncates the return trip at the first one. Encoding the path as well would be
+     harmless and would rewrite `?redirect=/en/admin` into `?redirect=%2Fen%2Fadmin` on
+     every guarded route on the site, for nothing.
+   - **The encoding has to be the outer layer PHP strips**, not something baked into the
+     value. `JUser\Controller\LoginController::validRedirect()` refuses anything
+     `$router->match()` rejects, and it reads the value already decoded — so
+     `/en/texts?search=Bund` matches route `texts` and is accepted, while a literal
+     `/en/texts%3Fsearch%3DBund` matches nothing and would be silently discarded.
+     (That router match is also why `/en/…` works at all: `UriPathStrategy` sets the
+     router's base URL to `/en` on a laminas-served request, so the login page — which is
+     unported — matches the prefixed path.)
+
+   The whole chain is only proved end to end by
+   `test/Smoke/AssignmentsSearchSymfonySmokeTest::testAVisitorSignsInAndLandsBackOnTheirSearch`,
+   because four separate things have to hold together: the guard encoding, PHP decoding,
+   the sign-in form carrying the value through a POST as a hidden field, and
+   `validRedirect()` accepting it. `MagicLinkSignIn::requestSignInLink()` posted a
+   hardcoded empty `redirect` until this change, which is why no earlier test could have
+   caught any of it.
 3. **`templates/error/403.html.twig` is a reproduction, not a reuse.** `error/403`
    resolves today to `vendor/kokspflanze/bjy-authorize/view/error/403.phtml` — inside
    the abandoned package this migration intends to retire. The wording and markup of
@@ -987,14 +1040,54 @@ right both times. Collapse whitespace *before* truncating, or better, use
 
 ### Known differences, and why each one stays
 
-Every remaining difference from the batch-4 run falls into one of five groups. None is a
-defect in a page ported by this batch; three are improvements and two are older.
+**Read the number the right way.** A cross-front-controller run has never been at zero and
+cannot be — `templates/layout.html.twig` is a *reproduction* of `layout.phtml`, not a byte
+copy — so the useful measurement is not "how many differ" but "which paths differ, and did
+this batch add any". Batch 6 was run that way: the whole set was captured *before* the
+batch touched anything (126 of 516 differing, on 18 already-ported paths and **zero** on
+any path the batch would touch), and again after (169 of 516). Every one of the 43 new
+entries falls into a group below, and none of them is a defect.
+
+Batch 6's 43:
+
+| n | what | where | why |
+|---|---|---|---|
+| 15 | `?redirect=` carries the query | the prefixed anonymous form of the 3 new *search* paths × 5 locales | **an intentional improvement over laminas**, which drops it — see "The two denial branches" above. This is the group to expect to grow: every future guarded route whose input is a query string joins it |
+| 10 | a results table and a search box appear | `/persons`, `/persons/search` × 5 locales | **the intentional repair.** The laminas pages render an "Add person" link and nothing else, for every query — see below |
+| 9 | the guard answers before the locale hop | the unprefixed form of each of the 9 new guarded paths | the redirect-order divergence documented above, now on nine more routes. laminas sends `/texts` → `/en/texts` and then denies; the Symfony guard runs first and sends `/en/user/login?redirect=/texts` |
+| 5 | `936` vs `938` in a badge | `/admin` × 5 locales | the count of untranslated phrases, which grows as pages are rendered — so it moved between the two captures. Capture drift of the same kind rule 3 normalizes for visit counters, and a candidate for a rule 9 |
+| 4 | assignment rows in a different order | `/movement`, 4 locales of 5 | the same 62 assignments and the **same byte length**; `getAssignments()` orders by `AssociationId, IsActive DESC, IsMainRole DESC, Sort` and ties are broken arbitrarily, so two runs of *either* front controller disagree. That it was 5 locales on the previous run and 4 on this one, with no code change between them, is the demonstration |
+
+Carried over from earlier batches, unchanged:
 
 | what | where | why |
 |---|---|---|
-| a commented-out `<td>`, a stray space before a `<p>`, and a missing `//<!-- -->` script wrapper | `/shrines`, `/wayside-shrines` (20 responses) | batch-2 template nits, invisible in a browser. Left alone: they are shipped code and this batch has no business editing it |
-| `?redirect=/roles` vs `?redirect=/en/roles` | unprefixed form of a guarded path (5) | the redirect-order divergence already documented above, now visible on five routes |
-| — | | |
+| a commented-out `<td>`, a stray space before a `<p>`, and a missing `//<!-- -->` script wrapper | `/shrines`, `/wayside-shrines` (20 responses) | batch-2 template nits, invisible in a browser. Left alone: they are shipped code and a porting batch has no business editing it |
+| a breadcrumb where laminas renders none, and other layout reproductions | the entity show pages, `/literature`, `/dictionary`, `/sm/view-changes` (~90) | the layout is a reproduction; see "Why rules 6 and 7, and what they cost" above |
+
+#### What porting `/persons` fixed, and why that is in the diff
+
+`PersonsController::searchAction()` builds a `SearchForm`, runs `searchPersons()` and
+passes the rows to the view as `persons`. `persons/search.phtml` opens with
+`$areResults = isset($this->entities) && …` and never mentions `$form` at all. Under
+`PhpRenderer` an unset variable is a silent null, so the condition is always false, the
+`<table>` below it is dead markup and the search box is never drawn. Measured before
+porting, signed in as an account holding every role:
+
+```
+/en/persons                       200   9,327 bytes   0 tables
+/en/persons/search?search=Walter  200   9,237 bytes   0 tables
+```
+
+— the entire body between the navbar and the JSON-LD being
+`<a href="/en/persons/create">Add person</a>`. There is not even a "No results found."
+message, which is how you can tell the query ran and matched: the rows were fetched and
+thrown away. `AssignmentsController::searchAction()` passes `entities` and its template
+reads `entities`, so this looks like a copy whose controller variable was renamed and
+whose template was not.
+
+The ported pages render both. That is a deliberate deviation from "a port changes nothing",
+taken as a decision rather than by accident, and it is what those ten diff entries are.
 
 #### A note on that FINISH listener
 
@@ -1031,6 +1124,53 @@ from batch 3, and one is the fatal-200 wedge. The tool grew a rule in the proces
 **CSRF token** is per-run by construction and had never been normalized, because no ported
 page carried a form until `association-edit` and no ported page carried one a *signed-in*
 visitor sees until this batch.
+
+**Batch 6 found three more, and two of them were in code already shipped**, which is the
+argument for running this before a batch as well as after. Capturing the "before" set — the
+whole comparison against unmodified code — is what made them visible, and it costs one run:
+
+| what was wrong | since | how it looked |
+|---|---|---|
+| `format.entity('person', …)` dropped its options, so `displayEditPencil: false` did nothing | batch 5 | an extra `…/persons/{id}/edit` anchor on **every assignment row of every ported association page**. Nothing failed; the page offered a link the original does not |
+| `show_active\|default(true)` turned an explicit `false` back into `true` — Twig's `default` fires on an *empty* value | batch 5 | the association page renders that partial twice with complementary filters, so both columns showed the same rows: "Past contacts" listed current contacts and vice versa. Visible on `/en/SL100001A`, whose six assignments have all ended — laminas leaves the first column empty and the ported page filled it |
+| `LocalePrefix::redirect()` rebuilt its target from the route name and dropped the query string | batch 4 | `/assignments/search?search=Walter` landed on `/en/assignments/search` with the search silently gone — and, since a blank query there returns everything, on a 595 KB page rather than an error. Invisible until a route whose input *is* the query string was ported |
+
+#### A Twig syntax error is an empty HTTP 200
+
+Worth knowing before trusting a status assertion on a ported route. While
+`movement.html.twig` had a Twig comment inside a hash literal, `/en/movement` answered
+**200 with a zero-length body** — the smoke test asserting `200` passed, and only the test
+asserting page *content* caught it. That is the fatal-200 wedge this document records for
+laminas, reproduced on the Symfony side: the throw happens inside `twig->render()`, before
+a Response exists, and `display_errors` is off.
+
+So a ported route's smoke test must assert something from the body. "Assert something that
+distinguishes the two front controllers, not just a 200" is already step 4 of "Adding a
+Symfony route"; this is the second, independent reason for it.
+
+**The suite now checks this for you, on every request.**
+`SmokeTestCase::assertNotWedged()` runs inside `request()`, so a truncated HTML 200 fails
+the request that made it whatever the caller went on to assert — the same reason
+`App\Http\AuthorizationListener` listens to the event rather than to a route. The probe is
+the absence of `</html>`, not a byte count: a threshold has to guess, and both measured
+wedges (~800 bytes on laminas, 0 on Symfony) stop well before the closing tag while every
+legitimate page on the site reaches it. It applies only to a 200 whose content type is
+HTML, since a 302 carries laminas' whole sign-in page in a body nobody reads and JSON and
+the sitemap are not documents.
+
+**Its first run found a pre-existing one.** `GET /api/v1/libraries/3/books` with a valid
+bearer token answers 200 `text/html` with **zero bytes**, and
+`ApiAuthSmokeTest::testGatedRouteAcceptsAValidToken` had been passing against it since it
+was written — it asserts `200` and the absence of the string 'Fatal error', and an empty
+body satisfies both. Confirmed present on `master` before batch 6, so not a regression:
+`BooksApiController::getList()` JSON-encodes its rows through php-jwt and library 3 holds a
+row that is not valid UTF-8, which the 2026-08-03 exception record for that exact route
+names as `DomainException: Malformed UTF-8 characters`.
+
+It is listed in `test/Smoke/known-wedged-responses.php` on the **"no new gaps"** contract
+`test/Fuzz/known-form-gaps.php` uses: the check has to be un-skippable to be worth
+anything, and an inventory of one broken endpoint beats a deleted check. Every line in that
+file is a bug; deleting one is how it gets guarded.
 
 **And it caught a deviation that was defensible and still wrong to make.** The three
 pre-2020 redirects were written to skip SlmLocale's locale hop — `/associations/1`
@@ -1096,6 +1236,25 @@ either way — the merged config is cached there and an edit looks like it did n
 `sion-model/auto-fix-data-problems` remains unported: it is POST-and-CSRF. The form layer
 it was waiting for now exists (`src/Form/BootstrapFormRenderer`), so it is a candidate
 for the next batch rather than a blocked one.
+
+### `assignments/assignment` (`/assignments/{id}`) — not a page at all
+
+It looks like the missing third route of batch 6 and it is dead by configuration. The
+`assignment` entity spec sets `show_route => 'association'` with
+`show_route_key => 'sw_id'`, because an assignment is meant to be read inside its
+association's page — but `SionController::getEntityIdParam('show')` resolves the id by
+reading `showRouteKey` **off the current route**, and `/assignments/{assignment_id}` has
+no `sw_id`. So it always gets null, and `showAction()` takes its first branch: flash
+"Assignment not found." and 302 back to `assignments/search`.
+
+Measured for an account holding every role, on assignment 77 — a row `getAssignment()`
+returns perfectly well, checked directly through a `ServiceBridge`. The route survives as
+the parent of `/edit` and `/delete`, which do work; porting it would mean porting an
+unconditional redirect.
+
+Fixing it is a change to `SionModel`, not to the strangler: either the spec stops pointing
+`show_route_key` at another route's parameter, or `getEntityIdParam()` falls back to
+`default_route_key` when the named one is absent. Neither belongs inside a porting batch.
 
 ### `sitemap` (`/sitemap.xml`) — ported 2026-08-13
 
@@ -1167,9 +1326,29 @@ options and its validation are the application's, not a copy), CSRF works becaus
 either front controller is accepted by the other — and the write goes through
 `SionTable::updateEntity()` exactly as `SionController` does it.
 
-Still on laminas: `/movement`, `/persons`, `/texts`, the user and translation forms (the
-static adapter), and every other create/edit/delete page. `/literature`'s search form is
-ported — see below.
+**A GET form is a form too, and batch 6 is what proved the renderer only knew edit forms.**
+`/assignments/advanced-search` is the first ported form that is not an edit form, and it
+found five gaps in `App\Form\BootstrapFormRenderer` — every one invisible until a form
+declared the thing that triggers it, and every one a difference in the bytes rather than a
+failure:
+
+| what was wrong | why nobody had seen it |
+|---|---|
+| `open()` hardcoded `method="POST"` | the only ported form was an edit form. A GET search form would have posted to a route with no POST handling |
+| `open()` always emitted `action` | laminas emits none for a form nobody called `setAttribute('action', …)` on, and `action=""` is not the same thing to a browser resolving a relative reference |
+| `submit()` read `value` out of `getAttributes()` | `Laminas\Form\Element::setAttribute()` **diverts** the `value` key to `setValue()` and keeps it out of the attribute list, so that lookup never found anything and always fell back to the literal `'Submit'` — which is exactly what `AssociationForm` declares, so it was right by coincidence |
+| the `<select>` whitelist held `FormSelect`'s own valid tag attributes and not `AbstractHelper`'s globals | so `id` was dropped along with `maxlength`. That cost the role field its id, its label's `for`, and the selectize widget `gen-schoenstatt-advanced-search.js` hooks to it |
+| `<input>` attributes were not filtered by input type | `FormText` has no `min`, so laminas drops the `'min' => 3` the form declares and this rendered it |
+| `column-size` never reached the row class, and a row label never carried `for` | no association-form element declares either |
+
+Two of TwbBundle's rules are now transcribed from its source rather than inferred — the
+button class rule (`btn` unless already present, then `btn-default` unless a known option
+is), and the row class, whose **double space** (`<div class="form-group  col-md-4">`) is
+real and was first misread because the extraction collapsed whitespace runs.
+
+Still on laminas: the user and translation forms (the static adapter) and every other
+create/edit/delete page. `/movement`, `/persons`, `/texts` and the two contact searches
+moved in batch 6; `/literature`'s search form is ported — see below.
 
 ### The comment form — unblocked 2026-08-12, and it was blocking one entity more than this said
 
@@ -1219,8 +1398,8 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 
 ## Verifying
 
-- `php composer.phar test` — **916 tests** (measured 2026-08-09, after the flip
-  preparation; 791 after the eight routes of
+- `php composer.phar test` — **1,222 tests** (measured 2026-08-13, after batch 6; 916
+  after the flip preparation on 2026-08-09; 791 after the eight routes of
   batch 4 and the removal of the blog; 746 after the translator fix, 729 after batch 3 plus the view-changes repair,
   631 after the wayside-shrine port, 618 after the authorization bridge, 551 before it,
   527 before the shrines port).
@@ -1285,6 +1464,17 @@ it by ~6×. Not done: 214 MB is comfortable, and the refactor touches `SionTable
 - `test/Smoke/Batch4SymfonySmokeTest.php` covers the seven public routes of batch 4 —
   each one served by Symfony rather than bridged, each unprefixed form redirecting, and
   the dictionary's two edge cases.
+- `test/Smoke/AssignmentsSearchSymfonySmokeTest.php` and
+  `test/Smoke/Batch6SymfonySmokeTest.php` cover batch 6. The first is the larger because
+  the form renderer grew five things for the advanced search, and it holds the two-sided
+  pencil assertion: **`edit_pencil()` renders nothing without a session identity**, so
+  headlessly every pencil is absent and "no person pencil here" would pass against a macro
+  that had lost the ability to render one. Only a real `sch_moderator` session tells the
+  two apart.
+- `test/Integration/AssignmentsTableTest.php` covers the half of that partial which needs
+  no identity — the five column branches, the active/inactive partition, and the
+  empty-table gate. The partition assertion is the one that catches
+  `show_active|default(true)`.
 - `test/Smoke/RestrictedIndexAuthorizationSmokeTest.php` covers the three restricted
   indexes, and is the first authorization test in the suite with a *positive* case for an
   ordinary account: registration grants `sch_user`, which `route/associations` names, so

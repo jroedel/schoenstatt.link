@@ -1,0 +1,58 @@
+{#
+  module/Books/view/books/texts/index.phtml plus its own search-bar.phtml, ported.
+
+  Two states, and the second is most of the page. With results: the search box and one
+  `<p>` per text — a bold `format_entity` link, then an excerpt with the search term
+  wrapped in `<mark>`. With none: the search box and a markdown block explaining what the
+  corpus is and who may read it.
+
+  The two are `{% if objects is defined %}` in the .phtml rather than a check on their
+  contents, which matters: a search that matches nothing sets `$objects = []`, and `[]`
+  *is* set, so the empty state renders the box, the "No results found." message from the
+  controller, and **no explanatory text**. Reproduced with `is not null`, which is the
+  same test — the action initialises `$objects = null` and only assigns on a valid query.
+
+  The prose below is copied from the .phtml's heredoc, wording and line breaks included —
+  it renders through the markdown helper, so a reflow would change the rendered
+  paragraphs. Two of its lines end in a space in the original and **only one of them
+  survives**: CommonMark strips a single trailing space inside a paragraph but keeps one
+  at the end of it, so laminas emits `...Once we have that\ninformation...` and
+  `...a little nicer format. </p>`. Measured, not assumed. The surviving space is written
+  literally on the "format." line and is the kind of thing an editor set to trim trailing
+  whitespace will silently eat, so Batch6SymfonySmokeTest asserts the exact closing bytes.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% include 'books/_texts-search-bar.html.twig' with {'form': form, 'center_on_page': false} only %}
+{% if objects is not null %}
+    {% import 'schoenstatt/_entity-format.html.twig' as format %}
+    {% for object in objects %}
+<p><strong>{{ format.entity('text', object) }}</strong>&nbsp;{% if search is not null %}{{
+    excerpts[object.textId]|default('')|raw }}{% endif %}</p>
+    {% endfor %}
+{% else %}
+{{ markdown(
+"## To whomever may stumble across this page...
+
+This is a work in progress to make Fr. Kentenich available to anyone
+who is interested.
+
+So far we have only imported the texts, but not yet parsed the metadata
+describing the day on which each conference took place and the publication
+from which it was extracted. Once we have that
+information, we can make present this information in a little nicer format. 
+
+In any case, the texts are already searchable.
+
+In the near future we hope to apply some artificial intelligence to abstract
+brief summaries of each text, translate them to various language, and extract
+keywords, concepts and person/place references from each.
+
+The page should be accessible to any father who makes an account on this site
+using the same email address as is recorded on schoenstatt-fathers.link. This
+provides some simple, but precise access control until we decide as a movement
+to open up Fr. Kentenich's writings to everyone."
+) }}
+{% endif %}
+{% endblock %}
