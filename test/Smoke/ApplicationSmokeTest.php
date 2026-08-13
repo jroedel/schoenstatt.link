@@ -93,6 +93,12 @@ class ApplicationSmokeTest extends SmokeTestCase
     /**
      * Requires the data/sitemap directory to exist (tracked via .gitkeep);
      * without it the samdark/sitemap writer throws and the route 500s.
+     *
+     * `<sitemapindex>`, not `<urlset>`, since the route was ported on 2026-08-13: the URLs
+     * live in the parts the index names, because one file only ever carried 3,022 of the
+     * site's pages. The coverage this asserted nothing about is
+     * test/Smoke/SitemapSmokeTest's subject; what stays here is that the route answers XML
+     * at all, which is what the .gitkeep sentence is really about.
      */
     public function testSitemapRenders(): void
     {
@@ -100,7 +106,12 @@ class ApplicationSmokeTest extends SmokeTestCase
 
         $this->assertSame(200, $response['status'], 'GET /en/sitemap.xml should render');
         $this->assertStringContainsString('xml', $response['contentType']);
-        $this->assertStringContainsString('<urlset', $response['body']);
+        //the file is written gzipped, but whether these bytes arrive compressed depends on
+        //the client's Accept-Encoding, so the magic number decides rather than the header
+        $body = str_starts_with($response['body'], "\x1f\x8b")
+            ? (string) gzdecode($response['body'])
+            : $response['body'];
+        $this->assertStringContainsString('<sitemapindex', $body);
     }
 
     /**
