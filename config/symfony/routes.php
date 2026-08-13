@@ -63,6 +63,7 @@ use App\Controller\TimelineController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
+use App\Sion\ReservedVerbs;
 use App\Sion\SiteWideIdentifier;
 use App\Twig\LaminasExtension;
 use App\View\SiteChrome;
@@ -560,17 +561,35 @@ $ported(
 // would eventually disagree with Schoenstatt\Validator\SchoenstattLinkIdentifier, and
 // the failure would be one entity type falling through to `legacy` while three do not.
 //
-// The `slug` is optional and unconstrained beyond the laminas route's own
-// `[a-z0-9-]{1,200}`. It is decoration: every one of these controllers resolves the row
-// from `sw_id` and ignores the slug, exactly as the laminas actions do, so a stale slug
-// still reaches the right page.
+// The `slug` is optional. It is decoration as far as these four controllers go: every
+// one of them resolves the row from `sw_id` and ignores the slug, exactly as the laminas
+// actions do, so a stale slug still reaches the right page.
 //
-// Ordering against `association-edit` above: that route's path is `/{sw_id}/edit`, which
-// a two-segment `/{sw_id}/{slug}` would swallow if it came first. It does not — `edit`
-// is declared above this block — and the slug constraint would refuse `edit` anyway
-// since the laminas pattern excludes nothing of the sort. Both facts are load-bearing
-// together, which is why neither is relied on alone.
-$slug = ['slug' => '[a-z0-9-]{1,200}'];
+// **It is not decoration as far as routing goes, and this file got that wrong.** Until
+// 2026-08-13 the constraint was the laminas route's own `[a-z0-9-]{1,200}` and the
+// paragraph here read: "`edit` is declared above this block — and the slug constraint
+// would refuse `edit` anyway since the laminas pattern excludes nothing of the sort."
+// The two halves of that sentence contradict each other and the second is false —
+// `[a-z0-9-]{1,200}` matches `edit` — so the *only* thing protecting `association-edit`
+// was its declaration order. Everything else of that shape was swallowed: measured on
+// production's front controller, `/en/SL500001C/edit` answered 200 with the composition
+// **show page** from route `composition.locale`, and the nine laminas routes below were
+// unreachable with their guards never running.
+//
+//     composition-edit    composition-delete   text-edit             text-delete
+//     publication-edit    publication-delete   publication-upload-cover
+//     publication-create-new-edition           publication-copy-to-main-corpus
+//
+// `association-delete` looks like a tenth and is not: it answers the association show
+// page on *both* front controllers, because its own laminas constraint asks for four
+// digits where an identifier has five. See App\Sion\ReservedVerbs.
+//
+// App\Sion\ReservedVerbs is the fix and carries the full account, including why laminas
+// resolves the same ambiguity the other way (its PriorityList yields the last-registered
+// route first; Symfony's UrlMatcher takes the first). Declaration order still matters
+// and is still relied on — `association-edit` is still above this block — but it is no
+// longer the only thing standing between a moderator and the edit form.
+$slug = ['slug' => ReservedVerbs::slugPattern()];
 
 // The literature browse surface. Declared **above** the entity show routes because
 // `/literature/search` and `/literature/{inLanguage}` are two-segment paths that the

@@ -139,6 +139,51 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 7 — the edit surface: the ten entity edit forms that share
+    // SionModel\Controller\SionController::editAction().
+    //
+    // **Every one of these is fetched by GET only**, which is what makes them safe to
+    // put in this list at all: the capture harness never POSTs anything but the sign-in
+    // form (see httpRequest below), so no row is written and no `sch_changes` entry is
+    // filed. A batch of *edit* paths is the first time that property has mattered, and
+    // it is a property of the harness rather than of these paths — a future POST
+    // capture needs its own answer for the writes.
+    //
+    // Anonymously every one of them is a 302 to the sign-in page, so the signed-in
+    // half of each pair is the only one that compares a rendered form. That is the
+    // reverse of batch 5, where most paths rendered for everyone.
+    //
+    // The three `/{sw_id}/edit` paths are the interesting ordering case: they share one
+    // path shape with the already-ported `association-edit` and are told apart by the
+    // identifier regex alone, exactly as the four show pages are.
+    '/SL400003T/edit',
+    '/SL500001C/edit',
+    '/SL202186L/edit',
+    //Person 494 and assignment 77 are the same rows batch 6 compares on their show
+    //pages, so one id covers a show page and its edit form.
+    '/persons/494/edit',
+    '/assignments/77/edit',
+    //**Both role ids on purpose.** `getRole()` answers null for 142 of the 1,468 rows in
+    //`sch_roles` — role 1 hangs off association 2, which the projection filters — so
+    ///roles/1/edit is the *not-found* branch: a 302 to /en/roles with a flash, even for
+    //an account holding every role. Measured, not assumed. Role 255 (a Sisters of Mary
+    //role on the general presidium) renders the form. One of them alone would compare
+    //only half of editAction()'s opening.
+    '/roles/1/edit',
+    '/roles/255/edit',
+    //The four Books entities. `library`, `book` and `collection` all declare
+    //`acl_resource_id_field => resourceId` with `acl_edit_permission => administrate`,
+    //so each carries a *per-row* check against the dynamic `library_<id>` resource
+    //Books\Model\LibraryTable contributes — the same shape as `publication`'s per-row
+    //show gating that App\Sion\EntityShow already reproduces.
+    '/libraries/1/edit',
+    '/books/18370/edit',
+    '/collections/1/edit',
+    '/dictionary/1/edit',
+    //The already-ported edit form, re-compared because this batch folds it onto the
+    //shared reproduction and the whole point of that refactor is that its rendering
+    //does not move.
+    '/SL100319A/edit',
     // batch 6 — the contact/search surface. Every one of these is a GET whose input
     // is the query string, so each is fetched **twice**: once empty and once with a
     // term that matches rows in the capsule dump. The empty form is not the boring
