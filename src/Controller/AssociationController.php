@@ -173,12 +173,23 @@ final class AssociationController
     }
 
     /**
-     * The breadcrumb trail: the index this association belongs to, then its own name.
+     * The breadcrumb trail: the index this association belongs to, its region, then its
+     * own name.
      *
-     * The laminas trail has a third crumb between them — a *region*, e.g. "Africa" on
-     * `/it/SL100458A/…` — which the Navigation service builds from a database-derived
-     * branch that cannot be reproduced on this side. That is the same limitation the
-     * publication trail records; what matters and is reproduced is the leaf.
+     * **The region crumb is stated, not derived**, and that is the decision worth reading.
+     * laminas gets it from the Navigation service, which hangs a region node under
+     * `Shrines` and every shrine under its region; `App\View\NavigationTree` can now
+     * reproduce that whole container, so deriving it here is *possible* — and it would
+     * cost every association page an 8-10 ms unserialize of the 2.24 MB
+     * `publication-pages` branch and its siblings, to learn one string this controller is
+     * already holding in `$entity['countryRegion']`. The tree is for `/sitemap.xml`, which
+     * needs all 10,974 pages; a page that needs one crumb states it.
+     *
+     * The href matches the navigation node's: `shrines` with the region as a URL fragment,
+     * which is what `Application\Navigation\PageBuilder` builds and what the shrine index
+     * anchors. The label **is** translated, unlike the leaf — region and country names are
+     * the one part of that branch `markDataLabels()` deliberately leaves translatable,
+     * because "Europe" is language and a shrine's name is not.
      *
      * **`translate: false` on the leaf is load-bearing.** An association name run through
      * the translator is a miss, and a miss files a phrase — one per association,
@@ -198,14 +209,27 @@ final class AssociationController
             default              => ['Associations', 'associations'],
         };
 
-        return [
-            ['label' => $label, 'href' => $this->urls->path($route)],
-            [
-                'label'     => $this->localized($entity, 'nameByLocale', $locale),
-                'href'      => $selfUrl,
-                'translate' => false,
-            ],
+        $trail = [['label' => $label, 'href' => $this->urls->path($route)]];
+
+        //Only shrines hang under a region. The `movement` branch — every non-shrine
+        //association — attaches straight to `Movement` with no intermediate node, and a
+        //shrine with no `countryRegion` is filed under `World`, which laminas renders as
+        //no extra crumb at all rather than as a "World" one.
+        $region = $entity['countryRegion'] ?? null;
+        if ('sch-shrine' === $kind && is_string($region) && '' !== $region) {
+            $trail[] = [
+                'label' => $region,
+                'href'  => $this->urls->path('shrines', [], ['fragment' => $region]),
+            ];
+        }
+
+        $trail[] = [
+            'label'     => $this->localized($entity, 'nameByLocale', $locale),
+            'href'      => $selfUrl,
+            'translate' => false,
         ];
+
+        return $trail;
     }
 
     /**

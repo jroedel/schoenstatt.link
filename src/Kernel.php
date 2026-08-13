@@ -446,7 +446,9 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->entityShow(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                //for `languageName`, which names the language catalogue in its breadcrumb
+                $this->viewHelpers()
             ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.

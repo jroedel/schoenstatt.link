@@ -273,6 +273,74 @@ class ReadingSurfaceSmokeTest extends SmokeTestCase
     }
 
     /**
+     * The middle crumb, restored 2026-08-13 — the one thing the ported show pages were
+     * still missing against laminas.
+     *
+     * A publication sits under its language catalogue and a shrine under its region;
+     * laminas gets both from the Navigation service, and these pages state them from the
+     * record instead. Deriving them would mean unserializing the 2.24 MB `publication-pages`
+     * branch on every show page to learn a string the entity already holds — see
+     * App\View\NavigationTree's docblock on who may walk the tree.
+     *
+     * Asserted as an ordered trail rather than as "contains the label", because the whole
+     * point is the crumb's *position*: a label appearing anywhere on the page would pass a
+     * substring test while the trail stayed two crumbs long.
+     *
+     * @return iterable<string, array{0: string, 1: string}>
+     */
+    public static function trailsWithAMiddleCrumb(): iterable
+    {
+        yield 'publication under its language catalogue' => [
+            '/en/SL202154L/les-annees-cachees-pere-joseph-kentenich-enfance-e',
+            '#<ol class="breadcrumb">.*?>\s*Literature\s*<.*?>\s*Schoenstatt Literature in French\s*<'
+                //the leaf's own text, matched on its ASCII head: Twig escapes markup, not
+                //accented letters, so the body carries "Les années cachées" verbatim
+                . '.*?Les ann.*?es cach.*?es.*?</ol>#s',
+        ];
+        yield 'shrine under its region' => [
+            '/en/SL100319A/original-schoenstatt-shrine',
+            '#<ol class="breadcrumb">.*?>\s*Shrines\s*<.*?>\s*Europe\s*<'
+                . '.*?>\s*Original Schoenstatt Shrine\s*<.*?</ol>#s',
+        ];
+    }
+
+    #[DataProvider('trailsWithAMiddleCrumb')]
+    public function testTheTrailNamesTheIndexTheRecordBelongsTo(string $path, string $pattern): void
+    {
+        self::assertSame(
+            1,
+            preg_match($pattern, $this->get($path)['body']),
+            "$path is missing its middle breadcrumb, or has it in the wrong place"
+        );
+    }
+
+    /**
+     * The language crumb links where it says, and says what the page it links to says.
+     *
+     * `PublicationController::catalogueTitle()` reproduces
+     * `LiteratureController::indexTitle()` rather than sharing it, so the two can drift —
+     * this is what would notice. The crumb reading "Schoenstatt Literature in French" while
+     * the catalogue heading reads something else is the exact failure it guards.
+     */
+    public function testTheLanguageCrumbAgreesWithTheCatalogueItLinksTo(): void
+    {
+        $body = $this->get('/en/SL202154L/les-annees-cachees-pere-joseph-kentenich-enfance-e')['body'];
+
+        self::assertSame(
+            1,
+            preg_match('#<a href="(/en/literature/fr)">\s*([^<]+?)\s*</a>#', $body, $crumb),
+            'the publication trail carries no link to a language catalogue'
+        );
+
+        $catalogue = $this->get($crumb[1])['body'];
+        self::assertStringContainsString(
+            '<h2>' . $crumb[2] . '</h2>',
+            $catalogue,
+            'the breadcrumb and the page it points at disagree about the catalogue\'s name'
+        );
+    }
+
+    /**
      * A composition's breadcrumb is `Music > <name>`, with the name **not** translated.
      *
      * The trail was absent entirely at first, which
