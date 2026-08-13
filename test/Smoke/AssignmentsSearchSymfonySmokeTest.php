@@ -127,6 +127,27 @@ class AssignmentsSearchSymfonySmokeTest extends SmokeTestCase
         $this->assertStringEndsWith($target, $response['redirect'], $path);
     }
 
+    /**
+     * The locale redirect keeps the query string, which is the whole input of this page.
+     *
+     * App\Http\LocalePrefix rebuilt its target from the route name alone until
+     * 2026-08-13, so `/assignments/search?search=Walter` landed on
+     * `/en/assignments/search` with the search silently dropped — and, because a blank
+     * query here returns everything, on a 595 KB page rather than an error. Latent since
+     * the helper was extracted in batch 4 and invisible until a route whose input *is*
+     * the query string was ported.
+     */
+    public function testTheLocaleRedirectKeepsTheQueryString(): void
+    {
+        $jar = $this->newCookieJar();
+        $this->signIn($jar);
+
+        $response = $this->get('/assignments/search?search=' . self::QUERY, false, $jar);
+
+        $this->assertSame(302, $response['status']);
+        $this->assertStringEndsWith('/en/assignments/search?search=' . self::QUERY, $response['redirect']);
+    }
+
     // -------------------------------------------------------------- the page itself
 
     /**

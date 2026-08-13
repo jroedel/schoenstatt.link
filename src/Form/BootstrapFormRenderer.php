@@ -469,6 +469,22 @@ final class BootstrapFormRenderer
 
     // --------------------------------------------------------------- controls
 
+    /**
+     * **Attributes are filtered by input type**, the way laminas filters them.
+     *
+     * `Laminas\Form\View\Helper\FormText` declares its own `$validTagAttributes` and
+     * `AbstractHelper::createAttributesString()` drops anything outside it, the globals,
+     * and a `data-` prefix. `min` is the case that found this: `AdvancedSearchForm`
+     * declares `'min' => 3` on both its text fields, laminas silently drops it — `min`
+     * belongs to number, range and date inputs, not text — and this class rendered
+     * `min="3"`. Invisible in a browser, and a difference in the bytes.
+     *
+     * Only the two types `input()` actually serves are listed. Adding an element type
+     * means adding its helper's list here; falling back to text's for an unknown type
+     * would silently drop `min`/`max`/`step` from a number input, which is the same
+     * class of bug from the other direction, so an unlisted type keeps everything and
+     * the next port has to look.
+     */
     private function input(ElementInterface $element, string $type, bool $withClass): string
     {
         $attributes = $this->attributes(
@@ -477,9 +493,44 @@ final class BootstrapFormRenderer
             $withClass
         );
 
+        $attributes = self::filteredByInputType($attributes, $type);
+
         $attributes['value'] = self::asString($element->getValue());
 
         return '<input ' . $this->attributeString($attributes) . '>';
+    }
+
+    /**
+     * @param array<string, scalar> $attributes
+     * @return array<string, scalar>
+     */
+    private static function filteredByInputType(array $attributes, string $type): array
+    {
+        /** FormText::$validTagAttributes, verbatim. */
+        $text = ['name', 'autocomplete', 'autofocus', 'dirname', 'disabled', 'form', 'inputmode',
+                 'list', 'maxlength', 'minlength', 'pattern', 'placeholder', 'readonly',
+                 'required', 'size', 'type', 'value'];
+        /** FormHidden's is FormInput's, which is far wider; `value` and `name` are the whole of it in practice. */
+        $hidden = $text;
+
+        $perType = ['text' => $text, 'hidden' => $hidden];
+        if (! isset($perType[$type])) {
+            return $attributes;
+        }
+
+        //the presentational globals, as in select() above — the `on*` handlers are left
+        //out because no element declares one and the CSP forbids them anyway
+        $allowed = array_flip([
+            ...$perType[$type],
+            'accesskey', 'class', 'contenteditable', 'dir', 'draggable', 'hidden', 'id',
+            'lang', 'spellcheck', 'style', 'tabindex', 'title',
+        ]);
+
+        return array_filter(
+            $attributes,
+            static fn (string $key): bool => isset($allowed[$key]) || str_starts_with($key, 'data-'),
+            ARRAY_FILTER_USE_KEY
+        );
     }
 
     private function textarea(ElementInterface $element): string

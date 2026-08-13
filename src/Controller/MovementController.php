@@ -17,7 +17,6 @@ use Twig\Environment;
 
 use function is_array;
 use function is_numeric;
-use function is_string;
 
 /**
  * GET /movement — the movement's leadership at a glance.
@@ -116,7 +115,9 @@ final class MovementController
         $config = $this->laminas->config();
         $id     = $config['schoenstatt']['general_presidium_id'] ?? null;
 
-        if (! is_numeric($id) || is_string($id) && '' === $id) {
+        //`is_numeric` alone is the laminas check — it already rejects null, '' and any
+        //non-numeric string, so the extra emptiness test this used to carry was dead
+        if (! is_numeric($id)) {
             throw new RuntimeException('Please set the "general_presidium_id" configuration.');
         }
 

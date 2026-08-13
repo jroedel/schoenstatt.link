@@ -61,6 +61,14 @@
         {% if header_text is defined and header_text %}
             <div class="panel-heading">{{ header_text|raw }}</div>
         {% endif %}
+        {#- the .phtml's second commented-out block, kept for the same reason as the
+            first: it is shipped markup in a file this one mirrors. It went missing
+            until 2026-08-13 because no ported page passed `wrap_in_panel` — the
+            association show page renders both its columns unwrapped — so /movement is
+            the first page where the branch runs at all. -#}
+        <!--<div class="panel-body">
+         <p>...</p>
+        </div>-->
 {% endif %}
 {% if header_text is defined and header_text and not wrap_in_panel %}
         <p class="text-center"><strong><u>{{ header_text|raw }}</u></strong></p>
