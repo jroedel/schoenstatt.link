@@ -78,12 +78,23 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
-        {# the canonical page is always the English one; every other language is an alternate #}
-        {% set chrome_locale_links = canonical_links() %}
+        {#
+          Each language is canonical for itself, and the hreflang set lists all five
+          *including this one* — a set that omits its own page is not reciprocal and
+          Google discards it. Until 2026-08-13 this named /en/ as canonical for every
+          locale, which asked Google not to index the other four at all.
+
+          `locale_paths` is set by a record page (App\View\PreferredUrls) so the canonical
+          is the record's preferred URL rather than whichever decorative slug was
+          requested; a page that does not set it gets the current path with each locale
+          prefix swapped in, which is right for a static page.
+        #}
+        {% set chrome_locale_links = canonical_links(locale_paths|default(null)) %}
         <link href="{{ chrome_locale_links.canonical }}" rel="canonical">
         {% for language, href in chrome_locale_links.alternates %}
         <link href="{{ href }}" hreflang="{{ language }}" rel="alternate">
         {% endfor %}
+        <link href="{{ chrome_locale_links.x_default }}" hreflang="x-default" rel="alternate">
 
         <link href="/css/gen-basic.css" media="screen" rel="stylesheet" type="text/css">
         {#

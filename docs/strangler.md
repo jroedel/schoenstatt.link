@@ -358,10 +358,12 @@ into a Symfony response. Four things that class exists to get right, each a live
 bug before it was a comment:
 
 1. **`getContent()`, never `getBody()`.** `getBody()` de-chunks and gunzips
-   according to the response's own `Content-Encoding`, so on the sitemap route —
-   which gzips its payload — it hands back plaintext still labelled
-   `Content-Encoding: gzip`. `getContent()` is also exactly what
-   `HttpResponseSender::sendContent()` echoes today.
+   according to the response's own `Content-Encoding`, handing back plaintext
+   still labelled `Content-Encoding: gzip`. The sitemap route was what found
+   this, by gzipping its own payload; it no longer does — the files are plain XML
+   now — but the distinction is a property of the two methods, not of that route,
+   and any laminas action that sets `Content-Encoding` hits it. `getContent()` is
+   also exactly what `HttpResponseSender::sendContent()` echoes today.
 2. **`Headers::toArray()`, not a `foreach` over `Headers`.** That reproduces what
    `PhpEnvironment\Response::sendHeaders()` does: append only
    `MultipleHeaderInterface` headers (`header($line, false)` — Set-Cookie and
@@ -1313,17 +1315,35 @@ comes from the record (`PublicationController::breadcrumbs()`), and the navbar's
 ancestor stays a `SiteChrome::NAV_ROUTE` route default. A page that renders on every
 request and reaches for `NavigationTree` is a mistake worth catching in review.
 
-**The port also fixed the endpoint.** `samdark\sitemap\Sitemap` splits at 10 MB and had
-written four files; the action served back only the first, nothing wrote an index, and
-`public/robots.txt` names `/en/sitemap.xml`. Crawlers saw 3,022 of 10,974 pages — every
-association, the first 2,500 publications, and not one of the 335 compositions. The library
-ships `Index` and `getSitemapUrls()` for exactly this and they were never called. So
-`/sitemap.xml` is now a sitemap index over `/sitemap/pages*.xml`, merged publications are
-excluded (3,627 of 10,104 public publications are 301s to a surviving edition), and the
-files are reused until `cache:flush-persistent` rather than rebuilt on every request —
-1.25 s down to 0.02 s. APCu holds only a generation stamp, deliberately: the parts are
-~38 MB uncompressed and `apc.ttl` is 0, so caching the payload there would let the sitemap
-expunge every other entry on the site.
+**The port fixed the endpoint, then the endpoint was rewritten the same day.** The port's
+own fix was real: `samdark\sitemap\Sitemap` splits at 10 MB and had written four files, the
+action served back only the first, and nothing wrote an index, so crawlers saw 3,022 of
+10,974 pages — every association, the first 2,500 publications, and not one of the 335
+compositions.
+
+What the port did *not* fix, because nobody had checked the sitemap against Google's rules,
+is that a sitemap may only list URLs at or below its own directory. Serving the parts from
+`/sitemap/` therefore put all 36,730 URLs out of scope, and `public/robots.txt` naming
+`/en/sitemap.xml` broke the same rule again for the index. A structurally perfect sitemap
+was being ignored end to end.
+
+So the sitemap is no longer a route in any meaningful sense. `bin/console sitemap:build`
+writes `public/sitemap.xml` plus one `public/sitemap-<kind>.xml` per entity kind, Apache
+serves them through the `-s` guard in `public/.htaccess`, and `SitemapController` survives
+only to build the files if they are missing. samdark/sitemap is gone from `composer.json`
+along with the gzip-header handling that made `App\Http\GzipListener` necessary for this
+route — the files are plain XML and `mod_deflate` compresses them. **[docs/sitemap.md](sitemap.md)
+is the reference**; it also records the canonical/hreflang rework that followed, which is
+the one part of this that touches **both** layouts — every locale is now canonical for
+itself and the record pages canonicalise their preferred URL rather than the requested
+one, so `templates/layout.html.twig` and `module/Application/view/layout/layout.phtml`
+have to stay in step. A fix applied to one and not the other is invisible until a crawler
+reaches the wrong kind of page, which is why `test/Smoke/CanonicalLinkSmokeTest` runs its
+assertions against a Twig route and a bridged one.
+
+`App\View\NavigationTree` is unchanged and still the reason any of this works, but note
+that the walk now happens in a **console process**, so it is `BuildSitemapCommandFactory`
+that has to keep the JTranslate flush disarmed.
 
 ### The form routes — one obstacle, not two, and the first one is gone
 

@@ -492,6 +492,29 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Product decisions needed
 
+- [x] **Every non-English page declared the English URL as its canonical.** Decided and
+  fixed 2026-08-13: all five languages are meant to be indexed, so each is now canonical
+  for itself, the hreflang set lists all five plus `x-default` including its own page
+  (a set that omits itself is non-reciprocal and Google discards it), and the record
+  pages canonicalise their *preferred* URL rather than whichever decorative slug was
+  requested — `App\View\PreferredUrls`, which the sitemap shares via
+  `SitemapEntry::tailFor()` so the two cannot drift. Both layouts changed, because
+  production serves ported routes through Twig and bridged ones through `.phtml`. See
+  docs/sitemap.md, "All five languages are meant to be indexed".
+  - Left open on purpose: `hreflang` is still declared for all five locales whether a
+    translation of that page exists or not. The set has to match what the pages publish
+    or reciprocity breaks, so narrowing it would mean narrowing both at once.
+
+- [ ] **The literature menu links to a 404.** `PageBuilder::publicationPages()` groups
+  publications by language and files the ones with no language under `''`, then assembles
+  `publications/index` with `inLanguage => ''` — which is `/en/literature/`, and that
+  answers 404 while `/en/literature` answers 200. The nav item renders as "Other
+  Schoenstatt Literature". The sitemap stopped publishing it on 2026-08-13; the menu was
+  left alone because the fix changes what every visitor sees, and the group's *children*
+  (the publications themselves) must keep being walked whatever happens to the parent.
+  - Options: give the group no route so it renders as an unlinked header, or give the
+    `publications/index` route a branch for the empty language. The first is smaller.
+
 - [ ] **Any signed-in account can edit any association.** `route/association-edit` is
   guarded `['sch_moderator', 'sch_user']` and registration grants `sch_user`, so
   "registered" and "may edit every shrine in the database" are the same thing today.

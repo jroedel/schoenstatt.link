@@ -143,25 +143,60 @@ final class SiteChrome
     }
 
     /**
-     * Absolute URLs for the canonical (English) page and every other language,
-     * which is what the laminas layout builds with SlmLocale's `localeUrl` helper.
+     * The canonical URL for this page and the hreflang set it belongs to.
      *
-     * @return array{canonical: string, alternates: array<string, string>}
+     * ## This used to name the English page as canonical for all five languages
+     *
+     * Every locale's rendering declared `<link rel="canonical">` pointing at `/en/…`,
+     * and the hreflang set omitted the page's own language. Both are changed here,
+     * 2026-08-13, because between them they told Google to index only the English copy
+     * of all 7,062 records and to ignore the language cluster while doing it:
+     *
+     * 1. **A canonical pointing at another language is an instruction to drop this
+     *    page.** Google treats the canonical as "index that one instead", so declaring
+     *    `/en/SL100319A` on the German page asks for the German page not to be indexed.
+     *    Whatever the intent, the effect was four fifths of the site withdrawn from the
+     *    index — while the sitemap went on offering all five, which is the contradiction
+     *    Search Console reports as "Alternate page with proper canonical tag".
+     * 2. **An hreflang set that omits itself is not a valid cluster.** Google requires
+     *    each version to list *all* versions including itself; a page missing its own
+     *    entry makes the annotations non-reciprocal and they are discarded. So the one
+     *    mechanism that would have kept the five copies from competing was inert.
+     *
+     * So: the canonical is this page's own language, the alternate set is complete, and
+     * `x_default` names the English URL for a visitor whose language we do not publish.
+     *
+     * ## `$preferredPaths` is how a record page avoids canonicalising a decorative slug
+     *
+     * Without it the five URLs are built by swapping the locale prefix of the current
+     * path, which is right for a static page and wrong for a record: the slug does not
+     * select anything, several URL forms answer 200, and an association's slug differs
+     * per locale. A page that knows its record passes `App\View\PreferredUrls::forRecord()`
+     * output here and the canonical becomes the *preferred* form rather than the
+     * requested one — which is exactly what a canonical is for.
+     *
+     * @param array<string, string>|null $preferredPaths language code => path
+     * @return array{canonical: string, alternates: array<string, string>, x_default: string}
      */
-    public function canonicalLinks(string $origin, string $currentPath): array
+    public function canonicalLinks(string $origin, string $currentPath, ?array $preferredPaths = null): array
     {
         $current    = Locale::getPrimaryLanguage(Locale::getDefault());
         $alternates = [];
         foreach (Locales::ALIASES as $alias => $locale) {
-            if ($alias === $current) {
-                continue;
-            }
-            $alternates[$alias] = $origin . $this->urls->localized($currentPath, $locale);
+            $path               = $preferredPaths[$alias] ?? $this->urls->localized($currentPath, $locale);
+            $alternates[$alias] = $origin . $path;
         }
 
+        $english = Locales::aliasFor('en_US');
+
         return [
-            'canonical'  => $origin . $this->urls->localized($currentPath, 'en_US'),
+            //this page's own language — and its own entry in the set it publishes, so the
+            //canonical and the hreflang annotation can never disagree
+            'canonical'  => $alternates[$current] ?? $alternates[$english],
             'alternates' => $alternates,
+            //"none of the above": the copy to serve a searcher whose language is not one
+            //of ours. English is the site's source language.
+            'x_default'  => $alternates[$english],
         ];
     }
 
