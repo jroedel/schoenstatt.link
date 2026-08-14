@@ -143,7 +143,7 @@ readability — the destination is **Symfony**, reached gradually:
 - [x] ~~Watch for 401 fallout from the API authorization fix (live since
   2026-08-03)~~ — **moot 2026-08-14: the whole of `/api/v1` and `/api/v2` was
   deleted.** Nothing can 401 there any more; every one of the 26 URLs answers a
-  JSON 404. The label-printing workflow is still the thing to watch if a report
+  JSON 410 Gone. The label-printing workflow is still the thing to watch if a report
   arrives, and it is now a 404 rather than a 401 that would arrive — but eight
   years of access logs say the last non-scanner caller of any of these endpoints
   was a Google Apps Script on 2022-11-05. See docs/strangler.md.

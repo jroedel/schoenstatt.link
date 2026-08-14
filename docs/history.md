@@ -798,10 +798,18 @@ use them" of these JWTs, and `config/symfony/routes.php` described shrines.json 
 endpoint the mobile apps poll". Neither was true, and both had been repeated as
 justification. A plausible sentence in a docblock is not evidence about traffic.
 
-**Verification.** 480 smoke tests green (473 before, and the delta is a new
-`ApplicationSmokeTest` provider asserting 11 retired paths answer a *JSON* 404 rather
-than the HTML error page), 715 integration (718 before, minus the three in the deleted
-`ShrineGeoJsonParityTest`), 286 unit, fuzz clean. Integration deprecations fell 19 → 14
-as geojson left the tree. The 404 body was measured byte-identical before and after,
-with a four-second wait on each side to clear the OPcache revalidate window. ACL
-snapshot: 181 routes → 155, guarded 159 → 135, exactly the 26 removed and no others.
+The retired URLs answer **410 Gone**, not 404, with a
+`Link: </api/v3>; rel="successor-version"` header — a 410 is what gets an indexed URL
+dropped rather than demoted, and two of these were an indexed schema.org `Dataset`
+distribution. The 410 is scoped to the two retired version prefixes; an unknown path in
+a live version keeps its 404, because "permanently gone" and "you misspelled it" are
+different answers and a caller acts on them differently.
+
+**Verification.** 482 smoke tests green (480 before this and 473 before the batch; the delta is two
+`ApplicationSmokeTest` providers: 11 retired paths that must answer a JSON 410 with a
+successor link, and 3 unknown ones that must still answer 404 with none), 715 integration
+(718 before, minus the three in the deleted `ShrineGeoJsonParityTest`), 286 unit, fuzz
+clean. Integration deprecations fell 19 → 14 as geojson left the tree. The 404 body was
+measured byte-identical before and after, with a four-second wait on each side to clear
+the OPcache revalidate window. ACL snapshot: 181 routes → 155, guarded 159 → 135, exactly
+the 26 removed and no others.

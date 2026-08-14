@@ -119,12 +119,19 @@ else
 fi
 
 # SlmLocale 302s /api/* to /<locale>/api/* first, so follow redirects.
-fetch "$BASE/api/there-is-no-such-endpoint" --follow
-if [ "$STATUS" = "404" ] && no_fatals; then
-    pass "unknown API path is a clean 404"
-else
-    fail "unknown API path should 404 cleanly (got $STATUS)"
-fi
+#
+# Checked on a live-v3 typo as well as a versionless path, because since the v1/v2
+# retirement the 404 has a neighbour: those two versions answer 410 Gone, and this is
+# what pins the 410 to them. An unknown path in a *live* API is a typo, and answering
+# "permanently gone" to a misspelling is a lie the caller would act on.
+for UNKNOWN in /api/there-is-no-such-endpoint /api/v3/phrasez /api/v9/associations; do
+    fetch "$BASE$UNKNOWN" --follow
+    if [ "$STATUS" = "404" ] && no_fatals; then
+        pass "$UNKNOWN is a clean 404"
+    else
+        fail "$UNKNOWN should 404 cleanly, not 410 (got $STATUS)"
+    fi
+done
 
 # --- The retired v1/v2 API stays retired ----------------------------------
 #
@@ -136,9 +143,11 @@ fi
 # show up here.
 #
 # The check is on the SHAPE of the refusal, not just the status. RestApi's
-# api-route-not-found catch-all must answer these as JSON: an HTML error page
+# api-route-not-found catch-all must answer these as a JSON 410: an HTML error page
 # would mean the catch-all stopped matching and the ordinary 404 page took over,
-# which is a regression for every remaining machine caller including /api/v3.
+# which is a regression for every remaining machine caller including /api/v3. A 404
+# here would mean the retired-version branch stopped firing, which costs the indexing
+# signal these URLs need.
 #
 # The locale-prefixed form is requested directly rather than relying on
 # --follow: SlmLocale's 302 does not carry the query string, so
@@ -167,11 +176,14 @@ json_ok() {
     pass "$what returns JSON ($(wc -c <"$BODY") bytes)"
 }
 
-# json_gone <what> — asserts the LAST fetch was refused as JSON, not as a page.
+# json_gone <what> — asserts the LAST fetch was refused as a JSON 410 Gone carrying a
+# successor-version Link. 410 rather than 404 on purpose: these resources existed and
+# are permanently removed, which is what gets an indexed URL dropped rather than merely
+# demoted, and two of them were published as a schema.org Dataset distribution.
 json_gone() {
     local what=$1
-    if [ "$STATUS" != "404" ]; then
-        fail "$what should be 404 now that the v1/v2 API is retired (got $STATUS, redirect '$REDIRECT')"
+    if [ "$STATUS" != "410" ]; then
+        fail "$what should be 410 Gone now that the v1/v2 API is retired (got $STATUS, redirect '$REDIRECT')"
         return
     fi
     if ! no_fatals; then
@@ -179,8 +191,12 @@ json_gone() {
         return
     fi
     case "$CTYPE" in
-        application/json*) pass "$what is a JSON 404" ;;
-        *) fail "$what should be refused as application/json (got '${CTYPE:-none}'): has api-route-not-found stopped matching?" ;;
+        application/json*) ;;
+        *) fail "$what should be refused as application/json (got '${CTYPE:-none}'): has api-route-not-found stopped matching?"; return ;;
+    esac
+    case "$(header link)" in
+        *successor-version*) pass "$what is a JSON 410 pointing at /api/v3" ;;
+        *) fail "$what should send 'Link: </api/v3>; rel=\"successor-version\"' (got '$(header link)')" ;;
     esac
 }
 

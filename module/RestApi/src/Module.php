@@ -13,14 +13,14 @@ namespace RestApi;
  *
  * The module stays for one reason, and it is not vestigial: the api-route-not-found
  * catch-all in config/module.config.php is what makes an unmatched /api/... path
- * answer a JSON 404 instead of an HTML error page. Every retired v1 and v2 URL now
- * lands there, which is the correct answer for a withdrawn API and the one a client
- * can parse. Removing this module would send those requests to the ordinary 404
+ * answer JSON instead of an HTML error page. Every retired v1 and v2 URL now lands
+ * there and is answered 410 Gone, with a successor-version Link to /api/v3; anything
+ * else keeps the plain 404. Removing this module would send both to the ordinary 404
  * page — see the comment on that route for the fatal-under-200 history behind it.
  */
 class Module
 {
-    const VERSION = '3.0.3-dev';
+    public const VERSION = '3.0.3-dev';
 
     public function getConfig()
     {
