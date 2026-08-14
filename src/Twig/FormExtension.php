@@ -42,6 +42,10 @@ final class FormExtension extends AbstractExtension
             new TwigFunction('form_label', $this->renderer->label(...), $html),
             new TwigFunction('form_element', $this->renderer->element(...), $html),
             new TwigFunction('form_errors', $this->renderer->errors(...), $html),
+            //`formSelectWithoutOptions` in the .phtml. Only the publication form's five
+            //selectize pickers use it; see the method's docblock for why they cannot
+            //render their options.
+            new TwigFunction('form_select_without_options', $this->renderer->selectWithoutOptions(...), $html),
             new TwigFunction('help_block', $this->renderer->helpBlock(...), $html),
             new TwigFunction('form_hidden', $this->renderer->hidden(...), $html),
             new TwigFunction('form_submit', $this->renderer->submit(...), $html),

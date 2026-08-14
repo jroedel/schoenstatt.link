@@ -2,6 +2,7 @@
 
 namespace SchoenstattTest\Integration;
 
+use App\Form\BootstrapFormRenderer;
 use Books\View\Helper\FormSelectWithoutOptions;
 use Laminas\Form\Element\Select;
 use Laminas\I18n\Translator\Loader\PhpMemoryArray;
@@ -144,5 +145,102 @@ class FormSelectWithoutOptionsContractTest extends TestCase
         $html = ($this->helper())($select);
 
         self::assertStringNotContainsString('Choose...', $html);
+    }
+
+    // -- the Symfony-side reproduction ---------------------------------------
+
+    /**
+     * `App\Form\BootstrapFormRenderer::selectWithoutOptions()` renders the same choices.
+     *
+     * The publication edit form is served by the Symfony kernel, where none of the
+     * laminas view helpers can be reached — each ends in `$this->view->…`, which wants an
+     * MvcEvent a ported route does not have. So the helper above is reproduced, and these
+     * assertions are what keep the two from drifting.
+     *
+     * **Not asserted byte-for-byte, and deliberately so.** The reproduction emits
+     * `multiple` and `selected` as bare boolean attributes where laminas emits
+     * `multiple="multiple"` and `selected="selected"`; that difference is systematic
+     * across every element this renderer produces, is already accounted for by
+     * `tools/port-baseline.php`'s normalization, and is not what this helper is for. What
+     * *is* specific to this helper — which options survive, and in what order — is
+     * asserted exactly.
+     */
+    public function testTheSymfonyReproductionSelectsTheSameOptions(): void
+    {
+        $html = $this->reproduction()->selectWithoutOptions($this->multiSelect(), false);
+
+        self::assertStringContainsString('>Kentenich<', $html);
+        self::assertStringContainsString('>Unused<', $html);
+        self::assertStringNotContainsString('>Schoenstatt<', $html);
+        self::assertSame(2, substr_count($html, ' selected'));
+        self::assertStringContainsString('name="authorsAll&#x5B;&#x5D;"', $html);
+    }
+
+    /**
+     * The narrowed list follows the *selected* order, not the option order.
+     *
+     * `onlySelected()` walks `$selectedOptions` and looks each one up, so a publication
+     * whose authors were chosen out of table order keeps the order they were chosen in.
+     * Reproducing the option order instead would silently reorder every author list on
+     * the page, which is the kind of difference nothing fails on.
+     */
+    public function testBothImplementationsFollowTheSelectedOrder(): void
+    {
+        $select = $this->multiSelect();
+        $select->setValue([3, 1]);
+
+        $laminas = ($this->helper())($select);
+        self::assertLessThan(
+            strpos($laminas, '>Kentenich<'),
+            strpos($laminas, '>Unused<'),
+            'precondition: the laminas helper orders by the selected values'
+        );
+
+        $ported = $this->reproduction()->selectWithoutOptions($select, false);
+        self::assertLessThan(strpos($ported, '>Kentenich<'), strpos($ported, '>Unused<'));
+    }
+
+    /**
+     * The unselected empty option is dropped on both sides.
+     *
+     * In laminas that falls out of where the old subclass filtered rather than from a
+     * decision, so it is exactly the sort of behaviour a reproduction written from the
+     * *description* of the helper would miss.
+     */
+    public function testTheSymfonyReproductionAlsoDropsAnUnselectedEmptyOption(): void
+    {
+        $select = $this->multiSelect();
+        $select->setEmptyOption('Choose...');
+
+        self::assertStringNotContainsString(
+            'Choose...',
+            $this->reproduction()->selectWithoutOptions($select, false)
+        );
+    }
+
+    /**
+     * A selected empty option survives, which is the branch that makes the rule a rule
+     * rather than "always drop it".
+     */
+    public function testASelectedEmptyOptionSurvivesOnBothSides(): void
+    {
+        $select = new Select('mainPublicationId');
+        $select->setValueOptions([1 => 'Kentenich']);
+        $select->setEmptyOption('Choose...');
+        $select->setValue('');
+
+        self::assertStringContainsString('Choose...', ($this->helper())($select));
+        self::assertStringContainsString(
+            'Choose...',
+            $this->reproduction()->selectWithoutOptions($select, false)
+        );
+    }
+
+    private function reproduction(): BootstrapFormRenderer
+    {
+        //The translator is the identity function: what these tests check is which options
+        //are rendered, and fields-partial.phtml disables translation on this helper
+        //anyway.
+        return new BootstrapFormRenderer(static fn (string $message): string => $message);
     }
 }
