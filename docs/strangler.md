@@ -1132,6 +1132,23 @@ Batch 7's, after three defects the capture found were fixed (see below):
 library-scoped form whose route name is not in the search-box list below, so nothing else
 about the batch's shared machinery differs from laminas at all.
 
+Batch 8's, and it is the cleanest of the three:
+
+| what | where | why |
+|---|---|---|
+| the guard answers before the locale hop | the **unprefixed** form of all 9 new delete paths | the same redirect-order divergence as batch 6's nine, and the only entry this batch added. laminas answers `/SL100319A/delete` with SlmLocale's `302 → /en/SL100319A/delete` and denies on the second hop; the Symfony guard runs first and answers `302 → /en/user/login?redirect=/SL100319A/delete` |
+
+**Every locale-prefixed delete response is identical**, signed in and anonymous — 45 rendered
+confirmations across five locales, plus both branch paths (`/roles/1/delete` at 200 on both,
+`/SL499999T/delete` redirecting to `/en/texts` on both). Nothing about the shared machinery
+differs, which is what one template for seven routes ought to buy.
+
+This batch is also where the **symfony-vs-symfony control** was first run, and it is worth
+adopting: capturing twice from the *same* front controller answered 768 of 768 identical,
+which is what makes "233 differ" readable as 36 bare-form entries plus 197 pre-existing
+divergences on paths the batch never touched, rather than as drift of unknown size. It costs
+one capture and it converts a scary number into a decided one.
+
 ##### The navbar search box on library-scoped pages — accepted, not fixed
 
 `module/Application/view/layout/layout.phtml` switches the navbar search from "Search
@@ -1617,6 +1634,78 @@ Five things worth knowing before touching any of it:
   `DELETE_ROUTE` rather than derived: deriving `<route>/delete` broke three working pages,
   because six of the eight have no delete twin and `RouteUrl` throws on an unknown route —
   the empty-200 wedge again, one commit after the last one.
+
+### The delete surface — batch 8, 2026-08-14
+
+The destructive twin of batch 7: seven delete confirmations on one
+`App\Sion\EntityDelete` — a reproduction of `SionController::deleteAction()` — behind one
+`App\Controller\EntityDeleteController`, with **one** Twig template for all seven, because
+the laminas page is one view script whose whole body is an `<h1>` and a three-element form.
+Three route defaults per route rather than the edit controller's nine.
+
+| ported | not ported |
+|---|---|
+| `association-delete`, `publication-delete`, `text-delete`, `composition-delete`, `persons/person/delete`, `assignments/assignment/delete`, `roles/role/delete` | `event-delete`, `libraries/library/delete`, `sion-model/delete-entity` (all unreachable), `juser/user/delete`, `jtranslate/phrase/delete` (own controllers) |
+
+**Twelve routes contain `delete` and only seven are portable, because three are reachable by
+nobody.** `event-delete`, `libraries/library/delete` and `sion-model/delete-entity` have no
+entry in the route guard, and BjyAuthorize's Route guard is default-deny — all three answer
+**403 to an account holding every role**, measured rather than deduced. Two are dead twice
+over: `library` declares no `enable_delete_action`, and `sion-model/delete-entity` names a
+`deleteEntity` action `SionModelController` does not define. **This is the shape to check
+first on any future batch**: an unguarded route is not an unprotected route here, it is an
+unreachable one, and porting it would be work with no user.
+
+#### The Cancel button deleted the record, on both front controllers
+
+The find that stopped this from being an ordinary port. `SionModel\Form\DeleteEntityForm`
+added its cancel element with the line `// 'type' => 'Submit',` commented out — which does
+not make the button inert, it makes it a plain `Laminas\Form\Element`, and
+`View\Helper\FormButton` renders an element with no `type` attribute as `type="submit"`. And
+`deleteAction()` validated the CSRF token without ever looking at *which* button was pressed.
+
+So clicking **Cancel** on a delete confirmation deleted the record. Measured against a
+fixture on 2026-08-14: POST with `cancel=Cancel` and no `submit` answered 302 to
+`/en/associations` with the row gone. Live for `sch_general_moderator`, `pub_moderator` and
+`texts_moderator`, on the confirmation pages and in the two delete modals batch 7 already
+ported. `JTranslate\Form\DeletePhraseForm` carried the identical bug on
+`jtranslate/phrase/delete`, where it is worse: deleting a phrase destroys every translation
+of it and rewrites the catalogs.
+
+Fixed in both libraries, with two locks: the element is a `Button` now, whose own
+`$attributes` carry `type="button"`, so no browser submits it; and both the laminas action
+and `EntityDeleteController` refuse a POST naming `cancel` before validating anything, for a
+hand-crafted request or a page cached from before the fix. `JUser\Form\DeleteUserForm`
+already did it the right way, which is the precedent rather than an invention.
+
+The consequence to know: **Cancel is now inert on the standalone confirmation page.** In a
+modal `data-dismiss` gives it its job back; outside one it needs a cancel URL the shared form
+has no way to know. Filed, and a better trade than the alternative.
+
+#### `text-delete` threw on every exit, and the throw came after the delete
+
+`text`'s spec set `delete_action_redirect_route` to `text-delete` — the delete route itself,
+a Segment route on `/:sw_id/delete` — so `redirectAfterDelete()` asked the router to assemble
+it with no parameters and got `Missing parameter "sw_id"`. Every branch of the action for a
+text therefore threw: not-found, both permission refusals, and the **successful** one, after
+the row was deleted and its `sch_changes` entry filed. A moderator who deleted a text saw an
+error page and would reasonably conclude it had failed. Corrected to `texts`, which fixes
+both front controllers at once; `/SL499999T/delete` is in the port baseline because it is the
+path that proves it.
+
+Two smaller things worth carrying forward:
+
+- **`deleteAction()` checks existence *last*, where `editAction()` checks it first**, and the
+  difference is observable twice over. A visitor without the per-row permission hears about
+  permission even for a record that does not exist; and `existsEntity()` is a direct `SELECT`
+  where `getObject()` goes through the projection, so a row that exists but cannot hydrate —
+  142 of the 1,468 rows in `sch_roles` — gets a **confirmation** from `/roles/1/delete` while
+  `/roles/1/edit` says "Role not found." Reproduced, and asserted so the two cannot drift.
+- **Two wrong status codes, one of them dead.** The not-found branch sets 401 and then
+  returns a redirect, which replaces it, so the observable answer is a plain 302 — that is
+  what the port reproduces, not the dead line. The 401 on a failed CSRF *is* observable
+  because that branch renders, and is reproduced verbatim. Both are filed rather than
+  corrected inside a port.
 
 ### The comment form — unblocked 2026-08-12, and it was blocking one entity more than this said
 

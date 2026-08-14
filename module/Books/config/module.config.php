@@ -2425,7 +2425,17 @@ return [
                 'enable_delete_action'                      => true,
 //                 'delete_action_acl_resource'                => 'event_:id',
 //                 'delete_action_acl_permission'              => 'delete',
-                'delete_action_redirect_route'              => 'text-delete',
+                //`texts`, not `text-delete`, which is where this pointed until 2026-08-14.
+                //`text-delete` is the delete route itself — a Segment route on `/:sw_id/delete`
+                //— so SionController::redirectAfterDelete() asked the router to assemble it
+                //with no parameters and got `Missing parameter "sw_id"`. Every exit from
+                //deleteAction() for a text therefore threw: the not-found branch, the two
+                //permission branches, and the success branch. The success branch is the one
+                //that mattered — the row was already deleted and the change log entry already
+                //filed, so a moderator who deleted a text saw an error page and reasonably
+                //concluded it had failed. `texts` is the entity's own index and what the four
+                //sibling delete routes redirect to.
+                'delete_action_redirect_route'              => 'texts',
                 'update_columns'                            => $textColumns
             ],
             'dictionary-entry' => [
