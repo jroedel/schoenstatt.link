@@ -1479,30 +1479,6 @@ ORDER BY `Publisher`";
         return $stack;
     }
 
-    /**
-     * Performs some data changes on the publications table:
-     * 1. Fill the 4 `NoAccents` columns
-     */
-    public function fillNoAccentsColumns()
-    {
-        $gateway = $this->getTableGateway('sch_publications');
-        $select = $this->getSelectPrototype('publication');
-        $select->where(['InLanguage' => 'es']);
-        $results = $gateway->selectWith($select);
-        $asciiFilter = new ToAscii();
-        $updates = [];
-        foreach ($results as $row) {
-            $id = $row['PublicationId'];
-            $updates[$id] = [
-                'TitleNoAccents' => $asciiFilter->filter($row['Title']),
-                'SubtitleNoAccents' => $asciiFilter->filter($row['Subtitle']),
-                'AuthorsNoAccents' => $asciiFilter->filter($row['Authors']),
-                'EditorNoAccents' => $asciiFilter->filter($row['Editor']),
-            ];
-        }
-        return $updates;
-    }
-
     public function getAuthors()
     {
         $publications = $this->getObjects('publication');
@@ -1521,23 +1497,6 @@ ORDER BY `Publisher`";
             }
         }
         return $authors;
-    }
-
-    public function importAuthors($simulate)
-    {
-        //1. get author list
-
-        //2. parse author names
-        //2a. Find Fr./Sr. prefixes
-
-        //2b. Find last name/first name
-
-//         $publicationUpdates = [];
-        //3. look for preexisting authors in person table, add them to the list of author links to insert
-
-        //4. Insert new authors
-
-        //5. Update publication records
     }
 
     protected function whichKentenichPeriod($date)

@@ -684,15 +684,6 @@ return [
                             ],
                         ],
                     ],
-                    'trim-titles' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/trim-titles',
-                            'defaults' => [
-                                'action'     => 'trimTitles',
-                            ],
-                        ],
-                    ],
                     'create' => [
                         'type'    => Literal::class,
                         'options' => [
@@ -2708,7 +2699,6 @@ return [
 
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
-                ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
