@@ -13,7 +13,28 @@
   editPencil are all on and showLabel is off.
 #}
 
+{#
+  The deleted branch is FormatAssociation's own first branch, and it has to come before
+  anything touches the record.
+
+  When a change log row names an entity that no longer exists, SionTable substitutes a
+  placeholder — `{isDeleted: true, associationId: N, associationName: 'Association Id: N'}`
+  and nothing else. `FormatAssociation::__invoke()` opens by testing `isDeleted` and, if
+  set, takes the name from `associationName` and turns the link, the label and the pencil
+  off; the flag never arises because it lives in the display-name branch it skipped.
+
+  Reproducing that is not optional here the way an unused option would be. Twig runs with
+  `strict_variables`, so `entity.country` on a three-key placeholder does not evaluate to
+  null as it would in PHP — it raises, after the response has been assembled, which is the
+  fatal-200 wedge: `/en/sm/view-changes` answered **200 with zero bytes**. Recorded 28
+  times from 2026-08-12 before anything connected it to a deleted record, because until
+  `association-delete` was repaired on 2026-08-14 nothing could delete an association
+  through the interface to produce such a row on purpose.
+#}
 {%- macro association(entity) -%}
+    {%- if entity.isDeleted ?? false -%}
+        {{- entity.associationName -}}
+    {%- else -%}
     {%- set locale = current_locale() -%}
     {%- if entity.country %}{{ flag(entity.country) }}&nbsp;{% endif -%}
     {%- set name = entity.nameByLocale[locale] -%}
@@ -23,6 +44,7 @@
         {{- name -}}
     {%- endif -%}
     {{- edit_pencil('association', entity.identifier) -}}
+    {%- endif -%}
 {%- endmacro -%}
 
 {#
@@ -57,8 +79,19 @@
   JUser is unported besides. Add a branch here the day a caller needs it, not before.
 #}
 {%- macro person(person, options = {}) -%}
-    {%- if person.personId and person.personId != '' and (person.firstName is not null or person.lastName is not null) -%}
-        {%- if person.country %}{{ flag(person.country) }}&nbsp;{% endif -%}
+    {#- `?? null` throughout the guard, for the deleted-record placeholder.
+
+        A change log row naming a person who no longer exists carries only
+        `{isDeleted, personId, <nameField>}`. FormatPerson has no isDeleted branch of its
+        own and does not need one: in PHP the absent `firstName`/`lastName` read as null,
+        the guard fails, and the helper renders nothing. That is the behaviour to match.
+
+        Twig runs with `strict_variables`, so reading an absent key raises instead of
+        answering null, and the guard that was supposed to reject the placeholder was the
+        thing that crashed on it. Same defect the association() macro above carries the
+        long note about. -#}
+    {%- if (person.personId ?? null) and person.personId != '' and ((person.firstName ?? null) is not null or (person.lastName ?? null) is not null) -%}
+        {%- if person.country ?? null %}{{ flag(person.country) }}&nbsp;{% endif -%}
         {%- set first = person.title ? translate(person.title) ~ ' ' ~ person.firstName : person.firstName -%}
         {%- set name = person.lastName ? person.lastName ~ ', ' ~ first : first -%}
         <a href="{{ laminas_path('persons/person', {'person_id': person.personId}) }}">{{ name }}</a>

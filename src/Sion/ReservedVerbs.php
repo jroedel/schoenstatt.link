@@ -47,17 +47,21 @@ use function preg_quote;
  * That is a property of the two routers rather than of these five verbs, so it applies
  * to any laminas parent/child pair a future batch splits across front controllers.
  *
- * ## `association-delete` is a tenth case and is *not* this bug
+ * ## `association-delete` was a tenth case and was *not* this bug
  *
- * `/SL100319A/delete` answers the association show page on both front controllers, so
- * this fix changes nothing there and deliberately does not try to. Its cause is a typo
- * in the laminas constraint: `association-delete` declares `sw_id` as `SL1[0-9]{4,4}A`
- * — the `1` plus **four** digits — where every valid association identifier is
- * `SL1[0-9]{5,5}A` per `Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS`.
- * The route therefore matches no association that exists and never has, so the show
- * route catches the path on laminas too. Repairing it is a change to live laminas
- * routing that would make a delete confirmation reachable for the first time, which is
- * not something to slip into a strangler fix; it is recorded in BACKLOG instead.
+ * `/SL100319A/delete` used to answer the association show page on both front
+ * controllers, and this fix deliberately changed nothing there. Its cause was different:
+ * a typo in the laminas constraint, which declared `sw_id` as `SL1[0-9]{4,4}A` — the `1`
+ * plus **four** digits — where every valid association identifier is `SL1[0-9]{5,5}A`
+ * per `Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS`. The route
+ * therefore matched no association that existed, so the show route caught the path on
+ * laminas too.
+ *
+ * Repaired separately on 2026-08-14, because it made a delete confirmation reachable for
+ * the first time on a live site and wanted the delete path exercised rather than a digit
+ * changed — see `test/Smoke/AssociationDeleteSmokeTest`. The verb is still reserved here
+ * and must stay so: now that the laminas route matches, the Symfony show route swallowing
+ * `/{sw_id}/delete` would be the *original* bug with a destructive page behind it.
  *
  * ## Why the list is duplicated here rather than read from the config
  *

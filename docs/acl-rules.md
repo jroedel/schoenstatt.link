@@ -47,7 +47,8 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 166 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 31 |
+| routes shadowed by symfony | 52 |
+| routes uncomparable | 0 |
 | rules from rule config | 34 |
 | symfony routes acl checked | 94 |
 | symfony routes open | 30 |
@@ -251,45 +252,86 @@ by comparing strings. Laminas paths carry no locale prefix here because there is
 config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the
 Symfony side declares both the bare and the prefixed form.
 
+A parameterized route is matched by *probe*: its pattern is instantiated into a concrete URL,
+each parameter replaced by a value generated from — and then checked against — its own
+constraint. The probe column is that URL, so any row here can be reproduced with `curl` rather
+than taken on trust. Before 2026-08-14 the pattern itself was handed to the matcher, which
+matches URLs and not patterns, so it threw and every parameterized route was skipped: 0 of the
+31 rows had a parameter in it and ~90 routes went unexamined. That is the blind spot that let
+nine guarded routes become unreachable without a word from this tool.
+
 The guard column is what bjyauthorize *would* have enforced here and no longer does; the last
 column is what the ported route checks in its place. Those two agreeing — `route/<the same
 route>` — is what "porting changed nothing about who gets in" now means. A restricted route whose
 shadow checks something else, or nothing, is a real change of authorization and is reported as a
 warning at the top of this file.
 
-| laminas route | path | shadowed by | its (now inert) guard | what the shadow checks |
-| --- | --- | --- | --- | --- |
-| `acknowledgements` | `/acknowledgements` | `acknowledgements` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/acknowledgements` — **the same resource** |
-| `admin` | `/admin` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
-| `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | `api-v1/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
-| `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | `api-v2/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
-| `assignments/advanced-search` | `/assignments/advanced-search` | `assignments/advanced-search` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/assignments/advanced-search` — **the same resource** |
-| `assignments/search` | `/assignments/search` | `assignments/search` | restricted to sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/assignments/search` — **the same resource** |
-| `associations` | `/associations` | `associations` | restricted to sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/associations` — **the same resource** |
-| `developers` | `/developers` | `developers` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/developers` — **the same resource** |
-| `dictionary` | `/dictionary` | `dictionary` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/dictionary` — **the same resource** |
-| `events` | `/timeline` | `events` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/events` — **the same resource** |
-| `libraries` | `/libraries` | `libraries` | restricted to lib_administrator | `route/libraries` — **the same resource** |
-| `music` | `/music` | `music` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/music` — **the same resource** |
-| `persons` | `/persons` | `persons` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons` — **the same resource** |
-| `persons/search` | `/persons/search` | `persons/search` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/search` — **the same resource** |
-| `privacy` | `/privacy` | `privacy` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/privacy` — **the same resource** |
-| `publications` | `/literature` | `publications` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/publications` — **the same resource** |
-| `publications/one-fifty-preguntas` | `/literature/150-preguntas-sobre-schoenstatt` | `publications/one-fifty-preguntas` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/publications/one-fifty-preguntas` — **the same resource** |
-| `publications/search` | `/literature/search` | `publications/search` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/publications/search` — **the same resource** |
-| `roles` | `/roles` | `roles` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/roles` — **the same resource** |
-| `schoenstatt` | `/movement` | `schoenstatt` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/schoenstatt` — **the same resource** |
-| `shrines` | `/shrines` | `shrines` | **public** (`null` in its roles) | `route/shrines` — **the same resource** |
-| `shrines/submitting-photos` | `/shrines/submitting-photos` | `shrines/submitting-photos` | **public** (`null` in its roles) | `route/shrines/submitting-photos` — **the same resource** |
-| `sion-model/cache-status` | `/sm/cache-status` | `sm-cache-status` | **public** (`null` in its roles) | _open, deliberately_ |
-| `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `sm-clear-persistent-cache` | **public** (`null` in its roles) | _open, deliberately_ |
-| `sion-model/data-problems` | `/sm/data-problems` | `sion-model/data-problems` | restricted to sch_administrator, sch_general_moderator | `route/sion-model/data-problems` — **the same resource** |
-| `sion-model/phpinfo` | `/sm/phpinfo` | `sion-model/phpinfo` | restricted to sch_administrator | `route/sion-model/phpinfo` — **the same resource** |
-| `sion-model/view-changes` | `/sm/view-changes` | `sion-model/view-changes` | restricted to sch_administrator, sch_general_moderator, view_changes | `route/sion-model/view-changes` — **the same resource** |
-| `sitemap` | `/sitemap.xml` | `sitemap` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/sitemap` — **the same resource** |
-| `texts` | `/texts` | `texts` | restricted to texts_administrator, texts_moderator, texts_user | `route/texts` — **the same resource** |
-| `wayside-shrines` | `/wayside-shrines` | `wayside-shrines` | **public** (`null` in its roles) | `route/wayside-shrines` — **the same resource** |
-| `welcome` | `/` | `welcome` | restricted to administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/welcome` — **the same resource** |
+| laminas route | path | probe | shadowed by | its (now inert) guard | what the shadow checks |
+| --- | --- | --- | --- | --- | --- |
+| `acknowledgements` | `/acknowledgements` | `—` | `acknowledgements` | **public** (names the default role `guest`) | `route/acknowledgements` — **the same resource** |
+| `admin` | `/admin` | `—` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
+| `api-route-not-found` | `/api/v3/schema` | `—` | `api-v3/schema` | **public** (names the default role `guest`) | _open, deliberately_ |
+| `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | `—` | `api-v1/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
+| `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | `—` | `api-v2/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
+| `assignments/advanced-search` | `/assignments/advanced-search` | `—` | `assignments/advanced-search` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/assignments/advanced-search` — **the same resource** |
+| `assignments/assignment/edit` | `/assignments/:assignment_id/edit` | `/assignments/0/edit` | `assignments/assignment/edit` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/assignments/assignment/edit` — **the same resource** |
+| `assignments/search` | `/assignments/search` | `—` | `assignments/search` | restricted to sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/assignments/search` — **the same resource** |
+| `association` | `/:sw_id[/:slug]` | `/SL100000A/a` | `association` | **public** (names the default role `guest`) | `route/association` — **the same resource** |
+| `association-edit` | `/:sw_id/edit` | `/SL100000A/edit` | `association-edit` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/association-edit` — **the same resource** |
+| `associations` | `/associations` | `—` | `associations` | restricted to sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/associations` — **the same resource** |
+| `associations/association` | `/associations/:sw_id` | `/associations/SL10000A` | `associations/association` | **public** (names the default role `guest`) | `route/associations/association` — **the same resource** |
+| `associations/old-association` | `/associations/:association_id` | `/associations/0` | `associations/old-association` | **public** (names the default role `guest`) | `route/associations/old-association` — **the same resource** |
+| `books/book/edit` | `/books/:book_id/edit` | `/books/0/edit` | `books/book/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/books/book/edit` — **the same resource** |
+| `collections/collection/edit` | `/collections/:collection_id/edit` | `/collections/0/edit` | `collections/collection/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/collections/collection/edit` — **the same resource** |
+| `comments/create` | `/comments/create/:entity/:entity_id[/:kind]` | `/comments/create/a/0/comment` | `comments/create` | restricted to administrator, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/comments/create` — **the same resource** |
+| `composition` | `/:sw_id[/:slug]` | `/SL500000C/a` | `composition` | **public** (names the default role `guest`) | `route/composition` — **the same resource** |
+| `composition-edit` | `/:sw_id/edit` | `/SL500000C/edit` | `composition-edit` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/composition-edit` — **the same resource** |
+| `developers` | `/developers` | `—` | `developers` | **public** (names the default role `guest`) | `route/developers` — **the same resource** |
+| `dictionary` | `/dictionary` | `—` | `dictionary` | **public** (names the default role `guest`) | `route/dictionary` — **the same resource** |
+| `dictionary/entry/edit` | `/dictionary/:entry_id/edit` | `/dictionary/0/edit` | `dictionary/entry/edit` | restricted to dict_administrator | `route/dictionary/entry/edit` — **the same resource** |
+| `dictionary/inLanguage` | `/dictionary/:inLanguage` | `/dictionary/aa` | `dictionary/inLanguage` | **public** (names the default role `guest`) | `route/dictionary/inLanguage` — **the same resource** |
+| `events` | `/timeline` | `—` | `events` | **public** (names the default role `guest`) | `route/events` — **the same resource** |
+| `libraries` | `/libraries` | `—` | `libraries` | restricted to lib_administrator | `route/libraries` — **the same resource** |
+| `libraries/library/edit` | `/libraries/:library_id/edit` | `/libraries/0/edit` | `libraries/library/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/edit` — **the same resource** |
+| `music` | `/music` | `—` | `music` | **public** (names the default role `guest`) | `route/music` — **the same resource** |
+| `persons` | `/persons` | `—` | `persons` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons` — **the same resource** |
+| `persons/person` | `/persons/:person_id` | `/persons/0` | `persons/person` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/person` — **the same resource** |
+| `persons/search` | `/persons/search` | `—` | `persons/search` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/search` — **the same resource** |
+| `privacy` | `/privacy` | `—` | `privacy` | **public** (names the default role `guest`) | `route/privacy` — **the same resource** |
+| `publication` | `/:sw_id[/:slug]` | `/SL200000L/a` | `publication` | **public** (names the default role `guest`) | `route/publication` — **the same resource** |
+| `publications` | `/literature` | `—` | `publications` | **public** (names the default role `guest`) | `route/publications` — **the same resource** |
+| `publications/index` | `/literature/:inLanguage` | `/literature/aa` | `publications/index` | **public** (names the default role `guest`) | `route/publications/index` — **the same resource** |
+| `publications/one-fifty-preguntas` | `/literature/150-preguntas-sobre-schoenstatt` | `—` | `publications/one-fifty-preguntas` | **public** (names the default role `guest`) | `route/publications/one-fifty-preguntas` — **the same resource** |
+| `publications/publication-old` | `/literature/:publication_id` | `/literature/0` | `publications/publication-old` | **public** (names the default role `guest`) | `route/publications/publication-old` — **the same resource** |
+| `publications/search` | `/literature/search` | `—` | `publications/search` | **public** (names the default role `guest`) | `route/publications/search` — **the same resource** |
+| `roles` | `/roles` | `—` | `roles` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/roles` — **the same resource** |
+| `roles/role/edit` | `/roles/:role_id/edit` | `/roles/0/edit` | `roles/role/edit` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/roles/role/edit` — **the same resource** |
+| `schoenstatt` | `/movement` | `—` | `schoenstatt` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/schoenstatt` — **the same resource** |
+| `shrines` | `/shrines` | `—` | `shrines` | **public** (`null` in its roles) | `route/shrines` — **the same resource** |
+| `shrines/submitting-photos` | `/shrines/submitting-photos` | `—` | `shrines/submitting-photos` | **public** (`null` in its roles) | `route/shrines/submitting-photos` — **the same resource** |
+| `sion-model/cache-status` | `/sm/cache-status` | `—` | `sm-cache-status` | **public** (`null` in its roles) | _open, deliberately_ |
+| `sion-model/clear-persistent-cache` | `/sm/clear-persistent-cache` | `—` | `sm-clear-persistent-cache` | **public** (`null` in its roles) | _open, deliberately_ |
+| `sion-model/data-problems` | `/sm/data-problems` | `—` | `sion-model/data-problems` | restricted to sch_administrator, sch_general_moderator | `route/sion-model/data-problems` — **the same resource** |
+| `sion-model/phpinfo` | `/sm/phpinfo` | `—` | `sion-model/phpinfo` | restricted to sch_administrator | `route/sion-model/phpinfo` — **the same resource** |
+| `sion-model/view-changes` | `/sm/view-changes` | `—` | `sion-model/view-changes` | restricted to sch_administrator, sch_general_moderator, view_changes | `route/sion-model/view-changes` — **the same resource** |
+| `sitemap` | `/sitemap.xml` | `—` | `sitemap` | **public** (names the default role `guest`) | `route/sitemap` — **the same resource** |
+| `text` | `/:sw_id[/:slug]` | `/SL400000T/a` | `text` | restricted to texts_administrator, texts_moderator, texts_user | `route/text` — **the same resource** |
+| `text-edit` | `/:sw_id/edit` | `/SL400000T/edit` | `text-edit` | restricted to texts_administrator, texts_moderator | `route/text-edit` — **the same resource** |
+| `texts` | `/texts` | `—` | `texts` | restricted to texts_administrator, texts_moderator, texts_user | `route/texts` — **the same resource** |
+| `wayside-shrines` | `/wayside-shrines` | `—` | `wayside-shrines` | **public** (`null` in its roles) | `route/wayside-shrines` — **the same resource** |
+| `welcome` | `/` | `—` | `welcome` | **public** (names the default role `guest`) | `route/welcome` — **the same resource** |
+
+### Laminas routes the shadow check could not decide
+
+A matchable laminas route whose path could not be turned into a concrete URL, so neither
+"shadowed" nor "not shadowed" was established for it. This section exists so that this tool
+being quiet about a route is distinguishable from it having *checked* the route — the two were
+the same thing until 2026-08-14, and telling them apart is the whole point.
+
+Empty is the goal. A non-empty list is a known blind spot, and a route in it wants either a
+constraint this tool can sample or a note in `docs/BACKLOG.md` saying why it cannot have one.
+
+_None — every matchable laminas route was compared._
 
 ## Role hierarchy
 

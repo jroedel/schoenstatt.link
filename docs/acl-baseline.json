@@ -28,7 +28,8 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 31,
+        "routes_shadowed_by_symfony": 52,
+        "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
         "symfony_routes_acl_checked": 94,
         "symfony_routes_open": 30,
@@ -6400,7 +6401,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/acknowledgements",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/acknowledgements"
         },
         {
             "laminas_route": "admin",
@@ -6409,7 +6411,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/admin",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/admin"
+        },
+        {
+            "laminas_route": "api-route-not-found",
+            "path": "/api/v3/schema",
+            "symfony_route": "api-v3/schema",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": null,
+            "access_kind": "open",
+            "probe": "/api/v3/schema"
         },
         {
             "laminas_route": "api-v1/shrines-json",
@@ -6418,7 +6431,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": null,
-            "access_kind": "open"
+            "access_kind": "open",
+            "probe": "/api/v1/associations/shrines.json"
         },
         {
             "laminas_route": "api-v2/shrines-json",
@@ -6427,7 +6441,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": null,
-            "access_kind": "open"
+            "access_kind": "open",
+            "probe": "/api/v2/associations/shrines.json"
         },
         {
             "laminas_route": "assignments/advanced-search",
@@ -6436,7 +6451,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/assignments/advanced-search",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/assignments/advanced-search"
+        },
+        {
+            "laminas_route": "assignments/assignment/edit",
+            "path": "/assignments/:assignment_id/edit",
+            "symfony_route": "assignments/assignment/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/assignments/assignment/edit",
+            "access_kind": "acl",
+            "probe": "/assignments/0/edit"
         },
         {
             "laminas_route": "assignments/search",
@@ -6445,7 +6471,28 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/assignments/search",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/assignments/search"
+        },
+        {
+            "laminas_route": "association",
+            "path": "/:sw_id[/:slug]",
+            "symfony_route": "association",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/association",
+            "access_kind": "acl",
+            "probe": "/SL100000A/a"
+        },
+        {
+            "laminas_route": "association-edit",
+            "path": "/:sw_id/edit",
+            "symfony_route": "association-edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/association-edit",
+            "access_kind": "acl",
+            "probe": "/SL100000A/edit"
         },
         {
             "laminas_route": "associations",
@@ -6454,7 +6501,78 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/associations",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/associations"
+        },
+        {
+            "laminas_route": "associations/association",
+            "path": "/associations/:sw_id",
+            "symfony_route": "associations/association",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/associations/association",
+            "access_kind": "acl",
+            "probe": "/associations/SL10000A"
+        },
+        {
+            "laminas_route": "associations/old-association",
+            "path": "/associations/:association_id",
+            "symfony_route": "associations/old-association",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/associations/old-association",
+            "access_kind": "acl",
+            "probe": "/associations/0"
+        },
+        {
+            "laminas_route": "books/book/edit",
+            "path": "/books/:book_id/edit",
+            "symfony_route": "books/book/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/books/book/edit",
+            "access_kind": "acl",
+            "probe": "/books/0/edit"
+        },
+        {
+            "laminas_route": "collections/collection/edit",
+            "path": "/collections/:collection_id/edit",
+            "symfony_route": "collections/collection/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/collections/collection/edit",
+            "access_kind": "acl",
+            "probe": "/collections/0/edit"
+        },
+        {
+            "laminas_route": "comments/create",
+            "path": "/comments/create/:entity/:entity_id[/:kind]",
+            "symfony_route": "comments/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/comments/create",
+            "access_kind": "acl",
+            "probe": "/comments/create/a/0/comment"
+        },
+        {
+            "laminas_route": "composition",
+            "path": "/:sw_id[/:slug]",
+            "symfony_route": "composition",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/composition",
+            "access_kind": "acl",
+            "probe": "/SL500000C/a"
+        },
+        {
+            "laminas_route": "composition-edit",
+            "path": "/:sw_id/edit",
+            "symfony_route": "composition-edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/composition-edit",
+            "access_kind": "acl",
+            "probe": "/SL500000C/edit"
         },
         {
             "laminas_route": "developers",
@@ -6463,7 +6581,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/developers",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/developers"
         },
         {
             "laminas_route": "dictionary",
@@ -6472,7 +6591,28 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/dictionary",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/dictionary"
+        },
+        {
+            "laminas_route": "dictionary/entry/edit",
+            "path": "/dictionary/:entry_id/edit",
+            "symfony_route": "dictionary/entry/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/dictionary/entry/edit",
+            "access_kind": "acl",
+            "probe": "/dictionary/0/edit"
+        },
+        {
+            "laminas_route": "dictionary/inLanguage",
+            "path": "/dictionary/:inLanguage",
+            "symfony_route": "dictionary/inLanguage",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/dictionary/inLanguage",
+            "access_kind": "acl",
+            "probe": "/dictionary/aa"
         },
         {
             "laminas_route": "events",
@@ -6481,7 +6621,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/events",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/timeline"
         },
         {
             "laminas_route": "libraries",
@@ -6490,7 +6631,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/libraries",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/libraries"
+        },
+        {
+            "laminas_route": "libraries/library/edit",
+            "path": "/libraries/:library_id/edit",
+            "symfony_route": "libraries/library/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/edit",
+            "access_kind": "acl",
+            "probe": "/libraries/0/edit"
         },
         {
             "laminas_route": "music",
@@ -6499,7 +6651,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/music",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/music"
         },
         {
             "laminas_route": "persons",
@@ -6508,7 +6661,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/persons",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/persons"
+        },
+        {
+            "laminas_route": "persons/person",
+            "path": "/persons/:person_id",
+            "symfony_route": "persons/person",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/persons/person",
+            "access_kind": "acl",
+            "probe": "/persons/0"
         },
         {
             "laminas_route": "persons/search",
@@ -6517,7 +6681,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/persons/search",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/persons/search"
         },
         {
             "laminas_route": "privacy",
@@ -6526,7 +6691,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/privacy",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/privacy"
+        },
+        {
+            "laminas_route": "publication",
+            "path": "/:sw_id[/:slug]",
+            "symfony_route": "publication",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publication",
+            "access_kind": "acl",
+            "probe": "/SL200000L/a"
         },
         {
             "laminas_route": "publications",
@@ -6535,7 +6711,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/publications",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/literature"
+        },
+        {
+            "laminas_route": "publications/index",
+            "path": "/literature/:inLanguage",
+            "symfony_route": "publications/index",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/index",
+            "access_kind": "acl",
+            "probe": "/literature/aa"
         },
         {
             "laminas_route": "publications/one-fifty-preguntas",
@@ -6544,7 +6731,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/publications/one-fifty-preguntas",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/literature/150-preguntas-sobre-schoenstatt"
+        },
+        {
+            "laminas_route": "publications/publication-old",
+            "path": "/literature/:publication_id",
+            "symfony_route": "publications/publication-old",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/publication-old",
+            "access_kind": "acl",
+            "probe": "/literature/0"
         },
         {
             "laminas_route": "publications/search",
@@ -6553,7 +6751,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/publications/search",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/literature/search"
         },
         {
             "laminas_route": "roles",
@@ -6562,7 +6761,18 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/roles",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/roles"
+        },
+        {
+            "laminas_route": "roles/role/edit",
+            "path": "/roles/:role_id/edit",
+            "symfony_route": "roles/role/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/roles/role/edit",
+            "access_kind": "acl",
+            "probe": "/roles/0/edit"
         },
         {
             "laminas_route": "schoenstatt",
@@ -6571,7 +6781,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/schoenstatt",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/movement"
         },
         {
             "laminas_route": "shrines",
@@ -6580,7 +6791,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": "route/shrines",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/shrines"
         },
         {
             "laminas_route": "shrines/submitting-photos",
@@ -6589,7 +6801,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": "route/shrines/submitting-photos",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/shrines/submitting-photos"
         },
         {
             "laminas_route": "sion-model/cache-status",
@@ -6598,7 +6811,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": null,
-            "access_kind": "open"
+            "access_kind": "open",
+            "probe": "/sm/cache-status"
         },
         {
             "laminas_route": "sion-model/clear-persistent-cache",
@@ -6607,7 +6821,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": null,
-            "access_kind": "open"
+            "access_kind": "open",
+            "probe": "/sm/clear-persistent-cache"
         },
         {
             "laminas_route": "sion-model/data-problems",
@@ -6616,7 +6831,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/sion-model/data-problems",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/sm/data-problems"
         },
         {
             "laminas_route": "sion-model/phpinfo",
@@ -6625,7 +6841,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/sion-model/phpinfo",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/sm/phpinfo"
         },
         {
             "laminas_route": "sion-model/view-changes",
@@ -6634,7 +6851,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/sion-model/view-changes",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/sm/view-changes"
         },
         {
             "laminas_route": "sitemap",
@@ -6643,7 +6861,28 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/sitemap",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/sitemap.xml"
+        },
+        {
+            "laminas_route": "text",
+            "path": "/:sw_id[/:slug]",
+            "symfony_route": "text",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/text",
+            "access_kind": "acl",
+            "probe": "/SL400000T/a"
+        },
+        {
+            "laminas_route": "text-edit",
+            "path": "/:sw_id/edit",
+            "symfony_route": "text-edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/text-edit",
+            "access_kind": "acl",
+            "probe": "/SL400000T/edit"
         },
         {
             "laminas_route": "texts",
@@ -6652,7 +6891,8 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/texts",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/texts"
         },
         {
             "laminas_route": "wayside-shrines",
@@ -6661,7 +6901,8 @@
             "was_guarded": true,
             "was_public": true,
             "now_checks": "route/wayside-shrines",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/wayside-shrines"
         },
         {
             "laminas_route": "welcome",
@@ -6670,9 +6911,11 @@
             "was_guarded": true,
             "was_public": false,
             "now_checks": "route/welcome",
-            "access_kind": "acl"
+            "access_kind": "acl",
+            "probe": "/"
         }
     ],
+    "laminas_routes_uncomparable": [],
     "non_route_resources": {
         "book": null,
         "book_sch": null,

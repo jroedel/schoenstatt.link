@@ -123,29 +123,41 @@ function routeNames(array $config): array
 }
 
 /**
- * Compose each laminas route name's URL path, so it can be compared with the
- * Symfony router's.
+ * Compose each laminas route name's URL *pattern*, with the constraints that
+ * govern its parameters, so it can be compared with the Symfony router's.
  *
  * Only needed because of the strangler migration, and only approximate on
  * purpose: `Literal` and `Segment` both carry their piece of the path in
  * `options.route`, a `Method` child constrains the verb and contributes nothing,
  * and `Regex` has no literal path at all — those get null. A null simply means
- * "cannot be compared", which is the safe answer: it can never claim a route is
- * shadowed when it is not.
+ * "cannot be compared", which is reported rather than skipped (see
+ * shadowedBySymfony), because a route nobody could compare is exactly the kind of
+ * thing this tool used to be silent about.
  *
- * The composed path has no locale prefix, because there is none in the config:
+ * Constraints accumulate down the tree: a child's `:sw_id` may well be constrained
+ * by an ancestor's `constraints` array rather than its own, and a probe URL needs
+ * every parameter in the composed pattern, not just the ones this node named. A
+ * child that re-declares a name wins, which is what laminas does too.
+ *
+ * The composed pattern has no locale prefix, because there is none in the config:
  * SlmLocale\Strategy\UriPathStrategy strips `/en` before the router ever sees the
  * request. The Symfony side declares both forms for exactly that reason, so
  * matching the unprefixed path is the right comparison.
  *
  * @param array<string, mixed> $config
- * @return array<string, string|null> route name => composed path
+ * @return array<string, array{pattern: string|null, constraints: array<string, string>}>
  */
 function laminasRoutePaths(array $config): array
 {
     $paths = [];
 
-    $walk = static function (array $definitions, ?string $prefix, string $parentName) use (&$walk, &$paths): void {
+    /** @var callable(array<string, mixed>, string|null, string, array<string, string>): void $walk */
+    $walk = static function (
+        array $definitions,
+        ?string $prefix,
+        string $parentName,
+        array $inherited
+    ) use (&$walk, &$paths): void {
         foreach ($definitions as $name => $definition) {
             $full = $parentName === '' ? (string) $name : $parentName . '/' . $name;
 
@@ -162,17 +174,145 @@ function laminasRoutePaths(array $config): array
                 $path = str_contains($type, 'Method') ? $prefix : null;
             }
 
-            $paths[$full] = $path;
+            $own = [];
+            foreach ((array) ($definition['options']['constraints'] ?? []) as $param => $regex) {
+                if (is_string($regex)) {
+                    $own[(string) $param] = $regex;
+                }
+            }
+            $constraints = $own + $inherited;
+
+            $paths[$full] = ['pattern' => $path, 'constraints' => $constraints];
 
             if (isset($definition['child_routes']) && is_array($definition['child_routes'])) {
-                $walk($definition['child_routes'], $path, $full);
+                $walk($definition['child_routes'], $path, $full, $constraints);
             }
         }
     };
 
-    $walk($config['router']['routes'] ?? [], '', '');
+    $walk($config['router']['routes'] ?? [], '', '', []);
 
     return $paths;
+}
+
+/**
+ * Every concrete path a laminas pattern can produce, once its optional groups are
+ * taken and left.
+ *
+ * `/associations/:sw_id[/:slug]` is two different URLs, and they need not resolve
+ * to the same Symfony route — the slug form is precisely what batch 5's show
+ * routes swallowed. Expanding innermost-first means a nested group is resolved
+ * before the group containing it, and the bracket-free results feed straight into
+ * parameter substitution.
+ *
+ * Capped at 16 variants. Nothing in this config comes close (the most any route
+ * has is two optional groups), and an uncapped 2^n on a malformed pattern is not
+ * a failure mode worth having.
+ *
+ * @return list<string> empty if the pattern is malformed or too branchy
+ */
+function expandOptionalSegments(string $pattern): array
+{
+    $variants = [$pattern];
+
+    while (true) {
+        $next     = [];
+        $expanded = false;
+
+        foreach ($variants as $variant) {
+            $close = strpos($variant, ']');
+            if ($close === false) {
+                if (str_contains($variant, '[')) {
+                    return [];
+                }
+                $next[] = $variant;
+                continue;
+            }
+            $head = substr($variant, 0, $close);
+            $open = strrpos($head, '[');
+            if ($open === false) {
+                return [];
+            }
+            $inner    = substr($variant, $open + 1, $close - $open - 1);
+            $tail     = substr($variant, $close + 1);
+            $next[]   = substr($variant, 0, $open) . $inner . $tail;
+            $next[]   = substr($variant, 0, $open) . $tail;
+            $expanded = true;
+        }
+
+        $variants = $next;
+        if (! $expanded) {
+            return array_values(array_unique($variants));
+        }
+        if (count($variants) > 16) {
+            return [];
+        }
+    }
+}
+
+/**
+ * Concrete URLs a laminas route pattern can produce, for feeding to the Symfony
+ * matcher.
+ *
+ * @param array<string, string> $constraints
+ * @return array{urls: list<string>, reason: string|null}
+ */
+function probeUrls(?string $pattern, array $constraints): array
+{
+    if ($pattern === null) {
+        return ['urls' => [], 'reason' => 'its path could not be composed from the config'];
+    }
+    if ($pattern === '') {
+        return ['urls' => [], 'reason' => 'it contributes no path of its own'];
+    }
+
+    $variants = expandOptionalSegments($pattern);
+    if ($variants === []) {
+        return ['urls' => [], 'reason' => 'its optional segments could not be expanded'];
+    }
+
+    $urls    = [];
+    $unnamed = [];
+    foreach ($variants as $variant) {
+        $failed = null;
+        $url    = preg_replace_callback(
+            '/:([a-zA-Z_][a-zA-Z0-9_]*)/',
+            static function (array $m) use ($constraints, &$failed): string {
+                // Laminas' default constraint for an unconstrained segment
+                // parameter is "anything but a slash".
+                $constraint = $constraints[$m[1]] ?? '[^/]+';
+                $sample     = App\Routing\RegexSampler::sample($constraint);
+                if ($sample === null) {
+                    $failed = $m[1];
+                    return $m[0];
+                }
+                return $sample;
+            },
+            $variant
+        );
+
+        if ($failed !== null) {
+            $unnamed[$failed] = $constraints[$failed] ?? '[^/]+';
+            continue;
+        }
+        if ($url === null || preg_match('#[\[\]:*{}]#', $url) === 1) {
+            return ['urls' => [], 'reason' => 'its pattern uses syntax this tool does not model'];
+        }
+        $urls[] = $url;
+    }
+
+    if ($urls === []) {
+        $described = [];
+        foreach ($unnamed as $param => $constraint) {
+            $described[] = sprintf('`:%s` (`%s`)', $param, $constraint);
+        }
+        return [
+            'urls'   => [],
+            'reason' => 'no value could be generated for ' . implode(', ', $described),
+        ];
+    }
+
+    return ['urls' => array_values(array_unique($urls)), 'reason' => null];
 }
 
 /**
@@ -205,6 +345,7 @@ function laminasRoutePaths(array $config): array
  *         access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
  *     }>,
  *     matcher: Symfony\Component\Routing\Matcher\UrlMatcher|null,
+ *     collection: Symfony\Component\Routing\RouteCollection|null,
  *     available: bool
  * }
  */
@@ -219,7 +360,7 @@ function symfonyRoutes(): array
 
     $file = __DIR__ . '/../config/symfony/routes.php';
     if (! is_file($file)) {
-        return $result = ['routes' => [], 'matcher' => null, 'available' => false];
+        return $result = ['routes' => [], 'matcher' => null, 'collection' => null, 'available' => false];
     }
 
     /** @var Symfony\Component\Routing\RouteCollection $collection */
@@ -256,6 +397,9 @@ function symfonyRoutes(): array
             $ported,
             new Symfony\Component\Routing\RequestContext()
         ),
+        // The collection itself, so the shadow check can walk the URLs Symfony
+        // owns and ask the laminas router which guard each one bypasses.
+        'collection' => $ported,
         'available' => true,
     ];
 }
@@ -295,51 +439,215 @@ function describeRouteAccess(mixed $access): array
 }
 
 /**
+ * The real laminas router, built from the merged config with no application
+ * around it.
+ *
+ * `TreeRouteStack::factory()` needs no ServiceManager for the four route types
+ * this config uses, and no bootstrap, so the tool stays a config reader. Note it
+ * comes back with a **null base URL**, where the running application's router has
+ * `/en`: SlmLocale sets the base URL to the negotiated locale at request time.
+ * Matching unprefixed paths against this one is therefore the correct comparison,
+ * and the same reason the Symfony side declares a bare twin for every route.
+ *
+ * @param array<string, mixed> $config
+ */
+function laminasRouter(array $config): ?Laminas\Router\Http\TreeRouteStack
+{
+    if (! is_array($config['router'] ?? null)) {
+        return null;
+    }
+
+    try {
+        return Laminas\Router\Http\TreeRouteStack::factory($config['router']);
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+/**
+ * A concrete URL a Symfony route answers, for asking the laminas router what used
+ * to serve it.
+ *
+ * The locale prefix is stripped rather than instantiated, because the laminas
+ * router built above has no base URL and its config carries no locale segment.
+ * That also collapses each `.locale` twin onto its bare form, which is what we
+ * want: they are the same page and would otherwise be counted twice.
+ */
+function symfonyProbeUrl(Symfony\Component\Routing\Route $route): ?string
+{
+    $path = $route->getPath();
+    if (str_starts_with($path, '/{_locale}')) {
+        $path = substr($path, strlen('/{_locale}'));
+        if ($path === '') {
+            $path = '/';
+        }
+    }
+
+    $failed = false;
+    $url    = preg_replace_callback(
+        '/\{(\w+)\}/',
+        static function (array $m) use ($route, &$failed): string {
+            $sample = App\Routing\RegexSampler::sample($route->getRequirement($m[1]) ?? '[^/]+');
+            if ($sample === null) {
+                $failed = true;
+                return $m[0];
+            }
+            return $sample;
+        },
+        $path
+    );
+
+    if ($failed || $url === null || str_contains($url, '{')) {
+        return null;
+    }
+
+    return $url;
+}
+
+/**
  * Which laminas routes a Symfony route now answers instead.
  *
  * Matched with the real UrlMatcher rather than by comparing strings, so the
  * answer accounts for defaults, requirements and route order exactly as a request
  * would.
  *
- * @param array<string, string|null> $laminasPaths
- * @return array<string, array{
- *     path: string,
- *     symfony_route: string,
- *     access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
- * }> laminas name => what shadows it, and what that shadow checks instead
+ * ## Why this takes probe URLs rather than patterns
+ *
+ * Until 2026-08-14 it passed the composed laminas *pattern* — `/:sw_id/edit` —
+ * straight to the matcher, which matches URLs and not patterns, so it threw and
+ * the route was skipped. Every laminas route with a parameter in it was therefore
+ * unshadowable by construction: **0 of the 31** rows the table reported had one,
+ * while ~90 parameterized routes went unexamined. That is the exact blindness
+ * that let batch 5 make nine guarded routes unreachable without this tool saying
+ * a word (see docs/BACKLOG.md and src/Sion/ReservedVerbs.php).
+ *
+ * Now each pattern is instantiated into concrete URLs — one per combination of
+ * its optional segments, each parameter replaced by a value *verified* against
+ * its own constraint — and those are matched. A route counts as shadowed if any
+ * of its probes resolves to a ported route.
+ *
+ * ## Both directions, because neither alone is enough
+ *
+ * A probe is one point in a route's URL space, so a forward match is conclusive
+ * and a forward non-match is merely evidence: a Symfony route claiming a narrow
+ * slice of a broad laminas route would be missed. `api-route-not-found`
+ * (`/api(/.*)?`) is not a hypothetical example of this — `/api/v3/associations`
+ * is claimed by Symfony while `/api/a` is not.
+ *
+ * So the check also runs the other way, and that direction is the one that maps
+ * to reality: for every URL Symfony *owns*, ask the **real laminas router** which
+ * route would have served it, and record that route's guard as bypassed. There is
+ * no sampling on the laminas side of that question at all — the router answers
+ * it — and the set of URLs Symfony owns is exactly the set where a laminas guard
+ * silently stops running.
+ *
+ * The two passes are unioned. A laminas route neither pass could decide is
+ * reported as *uncomparable* rather than quietly treated as unshadowed, so the
+ * tool's silence about a route now means something.
+ *
+ * @param array<string, mixed> $config
+ * @param array<string, array{pattern: string|null, constraints: array<string, string>}> $laminasPaths
+ * @param array<string, bool> $matchable route name => is a matchable endpoint
+ * @return array{
+ *     shadowed: array<string, array{
+ *         path: string,
+ *         probe: string,
+ *         symfony_route: string,
+ *         access: array{kind: string, resource: string|null, reason: string|null, denial_style: string}
+ *     }>,
+ *     uncomparable: array<string, array{path: string|null, reason: string}>
+ * }
  */
-function shadowedBySymfony(array $laminasPaths): array
+function shadowedBySymfony(array $config, array $laminasPaths, array $matchable): array
 {
     $symfony = symfonyRoutes();
     $matcher = $symfony['matcher'];
     if ($matcher === null) {
-        return [];
+        return ['shadowed' => [], 'uncomparable' => []];
     }
 
-    $shadowed = [];
-    foreach ($laminasPaths as $name => $path) {
-        if ($path === null || $path === '') {
+    $shadowed     = [];
+    $uncomparable = [];
+    foreach ($laminasPaths as $name => $route) {
+        $name  = (string) $name;
+        $probe = probeUrls($route['pattern'], $route['constraints']);
+
+        if ($probe['urls'] === []) {
+            // A Part route that only namespaces its children can never be matched
+            // by anything, so reporting that it could not be compared would be
+            // noise rather than a gap.
+            if (($matchable[$name] ?? false) && $probe['reason'] !== null) {
+                $uncomparable[$name] = ['path' => $route['pattern'], 'reason' => $probe['reason']];
+            }
             continue;
         }
-        try {
-            $match = $matcher->match($path);
-        } catch (Throwable) {
-            continue;
+
+        foreach ($probe['urls'] as $url) {
+            try {
+                $match = $matcher->match($url);
+            } catch (Throwable) {
+                continue;
+            }
+            $symfonyRoute    = (string) ($match['_route'] ?? '?');
+            $shadowed[$name] = [
+                'path'          => (string) $route['pattern'],
+                // The URL that actually matched, so a reviewer can reproduce the
+                // claim with curl instead of taking the tool's word for it.
+                'probe'         => $url,
+                'symfony_route' => $symfonyRoute,
+                // Carried along so the warning below can ask the question that actually
+                // matters: not "does the laminas guard still run" (it never does) but
+                // "does the ported route check the same resource it used to".
+                'access'        => $symfony['routes'][$symfonyRoute]['access']
+                    ?? ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'],
+            ];
+            break;
         }
-        $symfonyRoute = (string) ($match['_route'] ?? '?');
-        $shadowed[(string) $name] = [
-            'path'          => $path,
-            'symfony_route' => $symfonyRoute,
-            // Carried along so the warning below can ask the question that actually
-            // matters: not "does the laminas guard still run" (it never does) but
-            // "does the ported route check the same resource it used to".
-            'access'        => $symfony['routes'][$symfonyRoute]['access']
-                ?? ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'],
-        ];
     }
+
+    // Second pass, from the other end: every URL Symfony owns, resolved by the
+    // real laminas router. This is what catches a ported route that claims only
+    // part of a laminas route's URL space, which the forward probe cannot see.
+    $legacy = laminasRouter($config);
+    if ($legacy !== null) {
+        foreach ($symfony['collection']?->all() ?? [] as $name => $route) {
+            $url = symfonyProbeUrl($route);
+            if ($url === null) {
+                continue;
+            }
+            $request = new Laminas\Http\Request();
+            $request->setUri('http://localhost' . $url);
+            try {
+                $match = $legacy->match($request);
+            } catch (Throwable) {
+                continue;
+            }
+            if ($match === null) {
+                continue;
+            }
+            $laminasRoute = (string) $match->getMatchedRouteName();
+            // The forward pass already recorded a probe for this route; keep it,
+            // because its URL is derived from the laminas route's own pattern and
+            // so reads more naturally in the table.
+            if (isset($shadowed[$laminasRoute])) {
+                continue;
+            }
+            $symfonyName             = (string) $name;
+            $shadowed[$laminasRoute] = [
+                'path'          => (string) ($laminasPaths[$laminasRoute]['pattern'] ?? $url),
+                'probe'         => $url,
+                'symfony_route' => $symfonyName,
+                'access'        => $symfony['routes'][$symfonyName]['access']
+                    ?? ['kind' => 'undeclared', 'resource' => null, 'reason' => null, 'denial_style' => 'n/a'],
+            ];
+            unset($uncomparable[$laminasRoute]);
+        }
+    }
+
     ksort($shadowed);
+    ksort($uncomparable);
 
-    return $shadowed;
+    return ['shadowed' => $shadowed, 'uncomparable' => $uncomparable];
 }
 
 // ---------------------------------------------------------------------------
@@ -750,7 +1058,9 @@ $ctrlGuards   = controllerGuards($config);
 $resourceInfo = nonRouteResources($config);
 $ruleInfo     = configRules($config);
 $symfony      = symfonyRoutes();
-$shadowed     = shadowedBySymfony(laminasRoutePaths($config));
+$shadowInfo   = shadowedBySymfony($config, laminasRoutePaths($config), $routes);
+$shadowed     = $shadowInfo['shadowed'];
+$uncomparable = $shadowInfo['uncomparable'];
 
 sort($allRoles);
 
@@ -912,6 +1222,15 @@ foreach ($shadowed as $laminasRoute => $info) {
     if ($row === null || $row['public']) {
         continue;
     }
+    // A guard naming the default role is public by another spelling: bjyauthorize
+    // hands `guest` to every request without an identity, so an anonymous visitor
+    // already held it and there was no restriction for porting to lose. Only a
+    // literal `null` was treated as public before, which made every ported /api
+    // route look like it had dropped the guard on `api-route-not-found` — a
+    // 404 handler declared `['guest', 'user']`.
+    if ($defaultRole !== null && in_array($defaultRole, $row['effective_roles'], true)) {
+        continue;
+    }
     $expected = 'route/' . $laminasRoute;
     if ($info['access']['resource'] === $expected) {
         continue;
@@ -959,6 +1278,10 @@ $counts = [
     'route_guard_entries'      => array_sum(array_map('count', $guards['declarations'])),
     'routes_declared_twice'    => count($duplicates),
     'routes_shadowed_by_symfony' => count($shadowed),
+    // Matchable laminas routes the shadow check could not decide either way.
+    // Should be 0: every entry is a route about which this tool's silence means
+    // nothing, which is the state that let the batch-5 regression through.
+    'routes_uncomparable'      => count($uncomparable),
     'rules_from_rule_config'   => count($ruleInfo['rules']),
     'symfony_served_routes'    => count($symfony['routes']),
     'symfony_routes_acl_checked' => $symfonyByKind['acl'],
@@ -1080,9 +1403,23 @@ if ($format === 'json') {
                 // anything else on a non-public route is warned about above.
                 'now_checks'    => $info['access']['resource'],
                 'access_kind'   => $info['access']['kind'],
+                // The concrete URL that matched. Reproducible with curl, and the
+                // thing to look at first when a row here surprises you.
+                'probe'         => $info['probe'],
             ],
             array_keys($shadowed),
             array_values($shadowed)
+        ),
+        // Routes the shadow check could not decide either way. Empty is the goal;
+        // a non-empty list is a known blind spot rather than a clean bill of health.
+        'laminas_routes_uncomparable' => array_map(
+            static fn (string $name, array $info): array => [
+                'laminas_route' => $name,
+                'path'          => $info['path'],
+                'reason'        => $info['reason'],
+            ],
+            array_keys($uncomparable),
+            array_values($uncomparable)
         ),
         'non_route_resources' => $resourceInfo['resources'],
         'notes'             => [
@@ -1290,6 +1627,14 @@ $o('by comparing strings. Laminas paths carry no locale prefix here because ther
 $o('config — `SlmLocale\Strategy\UriPathStrategy` strips `/en` before routing — which is why the');
 $o('Symfony side declares both the bare and the prefixed form.');
 $o();
+$o('A parameterized route is matched by *probe*: its pattern is instantiated into a concrete URL,');
+$o('each parameter replaced by a value generated from — and then checked against — its own');
+$o('constraint. The probe column is that URL, so any row here can be reproduced with `curl` rather');
+$o('than taken on trust. Before 2026-08-14 the pattern itself was handed to the matcher, which');
+$o('matches URLs and not patterns, so it threw and every parameterized route was skipped: 0 of the');
+$o('31 rows had a parameter in it and ~90 routes went unexamined. That is the blind spot that let');
+$o('nine guarded routes become unreachable without a word from this tool.');
+$o();
 $o('The guard column is what bjyauthorize *would* have enforced here and no longer does; the last');
 $o('column is what the ported route checks in its place. Those two agreeing — `route/<the same');
 $o('route>` — is what "porting changed nothing about who gets in" now means. A restricted route whose');
@@ -1299,14 +1644,16 @@ $o();
 if ($shadowed === []) {
     $o('_None._');
 } else {
-    $o('| laminas route | path | shadowed by | its (now inert) guard | what the shadow checks |');
-    $o('| --- | --- | --- | --- | --- |');
+    $o('| laminas route | path | probe | shadowed by | its (now inert) guard | what the shadow checks |');
+    $o('| --- | --- | --- | --- | --- | --- |');
     foreach ($shadowed as $laminasRoute => $info) {
         $row = $rows[$laminasRoute] ?? null;
         if ($row === null) {
             $guard = 'no guard entry — was reachable by nobody';
         } elseif ($row['public']) {
             $guard = '**public** (`null` in its roles)';
+        } elseif ($defaultRole !== null && in_array($defaultRole, $row['effective_roles'], true)) {
+            $guard = sprintf('**public** (names the default role `%s`)', $defaultRole);
         } else {
             $guard = 'restricted to ' . (implode(', ', $row['effective_roles']) ?: '(nobody)');
         }
@@ -1319,12 +1666,41 @@ if ($shadowed === []) {
             $now = '`' . $resource . '` — a *different* resource';
         }
         $o(sprintf(
-            '| `%s` | `%s` | `%s` | %s | %s |',
+            '| `%s` | `%s` | `%s` | `%s` | %s | %s |',
             $laminasRoute,
             $info['path'],
+            // A route with no parameters is its own probe; saying so twice is
+            // noise in a table this wide.
+            $info['probe'] === $info['path'] ? '—' : $info['probe'],
             $info['symfony_route'],
             $guard,
             $now
+        ));
+    }
+}
+$o();
+
+$o('### Laminas routes the shadow check could not decide');
+$o();
+$o('A matchable laminas route whose path could not be turned into a concrete URL, so neither');
+$o('"shadowed" nor "not shadowed" was established for it. This section exists so that this tool');
+$o('being quiet about a route is distinguishable from it having *checked* the route — the two were');
+$o('the same thing until 2026-08-14, and telling them apart is the whole point.');
+$o();
+$o('Empty is the goal. A non-empty list is a known blind spot, and a route in it wants either a');
+$o('constraint this tool can sample or a note in `docs/BACKLOG.md` saying why it cannot have one.');
+$o();
+if ($uncomparable === []) {
+    $o('_None — every matchable laminas route was compared._');
+} else {
+    $o('| laminas route | path | why not |');
+    $o('| --- | --- | --- |');
+    foreach ($uncomparable as $laminasRoute => $info) {
+        $o(sprintf(
+            '| `%s` | %s | %s |',
+            $laminasRoute,
+            $info['path'] === null ? '_uncomposable_' : '`' . $info['path'] . '`',
+            $info['reason']
         ));
     }
 }

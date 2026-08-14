@@ -399,6 +399,59 @@ class EntityFormatterTest extends TestCase
     }
 
     /**
+     * The placeholder a change log row carries when its entity no longer exists.
+     *
+     * `SionTable` substitutes `{isDeleted, <keyField>, <nameField>}` and nothing else, so
+     * every other field the formatting reads is simply absent. Under laminas that is
+     * harmless — PHP reads a missing key as null and
+     * `FormatAssociation::__invoke()`/`FormatPerson::__invoke()` were written around it.
+     * Twig runs with `strict_variables`, where reading an absent key **raises**, and the
+     * raise happens after the response has been assembled: `/en/sm/view-changes` answered
+     * HTTP 200 with zero bytes, the fatal-200 wedge, 28 times from 2026-08-12.
+     *
+     * Nothing caught it because nothing could *make* such a row on purpose:
+     * `association-delete`'s constraint matched no association that existed until it was
+     * repaired on 2026-08-14, and repairing it is exactly what turns this from a
+     * historical curiosity into a page that breaks the next time a moderator deletes
+     * something.
+     *
+     * Asserted through the dispatcher rather than the macro directly, because the
+     * dispatcher is what `_changes-table.html.twig` calls.
+     */
+    public function testADeletedEntityPlaceholderRendersAsTheLaminasHelperRendersIt(): void
+    {
+        $twig = $this->twig();
+
+        $association = $twig->createTemplate(
+            "{% import 'schoenstatt/_entity-format.html.twig' as fmt %}"
+            . "{{ fmt.entity('association', data, {'displayEditPencil': false, 'failSilently': true}) }}"
+        )->render(['data' => [
+            'isDeleted'       => true,
+            'associationId'   => 99001,
+            'associationName' => 'Association Id: 99001',
+        ]]);
+
+        //FormatAssociation's isDeleted branch: the name, escaped, and nothing else. It
+        //turns the link, the label and the pencil off, and never reaches the flag because
+        //the flag lives in the display-name branch it skipped.
+        self::assertSame('Association Id: 99001', trim($association));
+
+        //FormatPerson has no isDeleted branch and needs none: with firstName and lastName
+        //absent its guard fails and it renders nothing. The reproduction must reach the
+        //same answer rather than raising on the way to it.
+        $person = $twig->createTemplate(
+            "{% import 'schoenstatt/_entity-format.html.twig' as fmt %}"
+            . "{{ fmt.entity('person', data, {'displayEditPencil': false, 'failSilently': true}) }}"
+        )->render(['data' => [
+            'isDeleted'  => true,
+            'personId'   => 99001,
+            'personName' => 'Person Id: 99001',
+        ]]);
+
+        self::assertSame('', trim($person));
+    }
+
+    /**
      * The ported page, rendered against the real problem rows. This is the closest thing
      * to an end-to-end check that survives the laminas route's deletion: it exercises
      * strict_variables, the ACL path inside isActionAllowed(), the link assembly and the
