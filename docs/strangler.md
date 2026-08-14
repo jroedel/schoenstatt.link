@@ -1745,9 +1745,20 @@ machine-readable download.
 
 **What answers those URLs now is a JSON 410 Gone**, from `RestApi`'s
 `api-route-not-found` catch-all at priority -1000, carrying
-`Link: </api/v3>; rel="successor-version"` (RFC 5829). That module was kept for exactly
-this: an HTML error page would be the wrong answer for a withdrawn API and for any
-unknown `/api/v3` path too.
+`Link: </api/v3/schema>; rel="successor-version"` (RFC 5829). That module was kept for
+exactly this: an HTML error page would be the wrong answer for a withdrawn API and for
+any unknown `/api/v3` path too.
+
+**The Link names the schema document because the first version named a 404.** It shipped
+as `</api/v3>`, which reads as the obvious successor and is not a route: `/api/v3` 302s
+to `/en/api/v3` and arrives at this same handler's 404 branch. The advertisement was
+therefore self-defeating in the one situation it exists for — a caller that followed it
+learned nothing, and a caller that could not follow it would conclude the API was gone
+entirely. `/api/v3/schema` is public, answers 200, and enumerates both resources with
+their endpoints and required roles. The lesson generalises past this header: **an
+assertion that a Link header is well-formed does not assert that it works**, so both
+`smoke-prod.sh` and `ApplicationSmokeTest::testRetiredApiPathIsAJsonGone` now parse the
+URL out and fetch it.
 
 **410 rather than 404, and scoped rather than global.** A 404 says "no such thing here";
 a 410 says the resource existed and is permanently removed, which is the signal that gets
