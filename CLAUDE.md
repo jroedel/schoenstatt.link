@@ -95,7 +95,7 @@ suites run from the superproject working tree.
   FrameworkBundle) with a catch-all route delegating every unported path back to
   the laminas application. **Both are now `1`:** the capsule through
   `docker/apache-vhost.conf`, and production through the site-wide default in
-  `public/.htaccess` — committed 2026-08-10, live from the next deploy. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
+  `public/.htaccess` — committed 2026-08-10 and **live since the 2026-08-11 deploy**, confirmed by `curl https://schoenstatt.link/_health`. Read [docs/strangler.md](docs/strangler.md) before touching `src/`,
   `public/index.php`, or anything about response headers — it records which of
   the two is live where, what the bridge preserves and why, and how to add a
   Symfony route. Symfony-side code lives in `src/` under namespace `App\`, holds
@@ -187,12 +187,17 @@ suites run from the superproject working tree.
   check than a green run on GitHub, not a weaker stand-in; say so in the PR body, because
   the reflex is to read local verification as second best. `--ci` limits it to the five
   CI jobs and skips the ~4-minute smoke suite.
-  - One check reports **`SKIP`, not `ok` or `FAIL`**: `composer audit --locked` needs
-    packagist.org and the capsule has **no DNS**, so advisories cannot be checked from
-    inside it. The script counts skips separately and they do not affect the exit status —
-    "everything passed" and "everything that could run passed" are different claims, and
-    the PR body should make the second one. Check advisories with `php composer.phar
-    audit --locked` on the **host**, which does have DNS.
+  - **Read the run's own output for `composer audit --locked` rather than assuming it
+    skipped.** This line used to say the check always reports `SKIP` because "the capsule
+    has no DNS" — measured wrong on 2026-08-14: the *running* container resolves through
+    Docker's embedded resolver at `127.0.0.11` (`docker compose exec -T app getent hosts
+    packagist.org` answers) and the audit completes, so the normal result is **`ok`** and
+    advisories genuinely are checked. Only `docker compose build` has no DNS here, which
+    is a different network path and is documented separately above. The script still has
+    a skip branch for a real outage, counts skips separately, and they do not affect the
+    exit status — so when it *does* skip, "everything passed" and "everything that could
+    run passed" are different claims and the PR body should make the second one. Fall
+    back to `php composer.phar audit --locked` on the **host** only then.
 - HTTP characterization tests live in `test/Smoke` (PHPUnit, `phpunit.xml.dist`). They run against a *running* capsule, not in isolation.
   - Run them with `php composer.phar smoke` — **one process at a time.** Never fan the suite out across parallel agents or background shells, and never run a second copy while one is in flight: concurrent runs against a wedged app are what exhausted the host on 2026-08-02.
 - Unit tests live in `test/Unit` (`php composer.phar unit`); `php composer.phar test` runs every suite. Unit tests talk to no HTTP and require the class under test directly — no vendor autoload, no running app — so they are safe to run freely and stay valid while `vendor/` is mid-migration. All three scripts shell into the capsule: the host PHP lacks the dom/mbstring/xmlwriter extensions PHPUnit needs.
