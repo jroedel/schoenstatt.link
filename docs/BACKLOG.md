@@ -140,6 +140,46 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Now
 
+- [ ] **Every deploy has a window in which visitors get fatals. This is the single
+  largest finding in production's exception store**, measured 2026-08-14 by pulling the
+  store down with `tools/fetch-exceptions.sh`.
+
+  Of 38 fingerprints, 21 are real failures (the rest are the deny-listed
+  `UnAuthorizedException` noise) — and **17 of those 21 are deploy artifacts**, not bugs.
+  They arrive in **nine tight bursts, each at a distinct deployed revision**, in five
+  recognisable shapes:
+
+  | shape | count | what the request saw |
+  | --- | --- | --- |
+  | `ParseError: Unclosed '[' / '('` | 2 | a `.php` file read while half-uploaded |
+  | `Class "App\Kernel" / "SionModel\Form\DatePrecision" / "…\AbstractPatternValidator" not found` | 7 | the referenced file not uploaded yet |
+  | `A plugin by the name "requestUri" was not found` | 4 | stale merged-config cache |
+  | `Too few arguments … 5 passed … 6 expected`; `routes(): … int returned` | 2 | new call site against old signature; truncated `routes.php`, so `require` returned `1` |
+  | `Module (Application) could not be initialized`; `addRuleProvider(): … EventTextTable given` | 2 | mid-upload module tree; config cache still naming a provider removed in `f19a5ca` |
+
+  **What makes this conclusive rather than inferred**: the 2026-08-04 22:09 burst spans
+  **two revisions in 22 seconds** (`c682f9135b31` and `0dbe2ae6513a`), so `.revision` was
+  being rewritten while requests were in flight. Real traffic was hit — a Chrome visitor
+  on `/pt/books/40860` got `Class "App\Kernel" not found`, Googlebot and PetalBot got
+  others.
+
+  **Cause**: phploy writes file-by-file over SFTP straight into the live docroot. Nothing
+  about it is atomic, and no amount of care in the code prevents it.
+
+  **This is a pipeline design decision, not a patch**, which is why it is recorded rather
+  than done. The shape of the fix is upload-to-a-release-directory then swap — which
+  phploy over SFTP cannot do by itself, so it needs the port-222 shell hooks — or a
+  maintenance flag that 503s for the duration, which trades fatals for downtime and is
+  much cheaper. Either touches `phploy.ini`, which holds credentials and must be edited
+  by the user.
+  - Of the remaining 4: two are a host wobble on 2026-08-07 ~00:28 (`MySQL server has
+    gone away`, and an SMTP `535` in the same minute — which is why one exception email
+    never arrived, and shows as `FAILED` in the summary table), and two are a
+    `laminas-session` FlashMessenger type mismatch from 08-03 on PHP 8.3 that has not
+    recurred in eleven days.
+  - **Zero steady-state code bugs.** Worth stating plainly, because it is the good news
+    and it is easy to lose behind 38 rows of table.
+
 - [x] ~~Watch for 401 fallout from the API authorization fix (live since
   2026-08-03)~~ — **moot 2026-08-14: the whole of `/api/v1` and `/api/v2` was
   deleted.** Nothing can 401 there any more; every one of the 26 URLs answers a

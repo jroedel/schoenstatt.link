@@ -117,7 +117,23 @@ endif;?>
                 <a href="<?=$this->escapeHtmlAttr($mergedIntoUrl)?>">
                     <?=$this->escapeHtml($object['mergedIntoPublicationId'])?></a>
             </p>
-        <?php elseif (isset($object['dataSource'])) :?>
+        <?php
+        /**
+         * Shown only to somebody the route would let through. Without the isAllowed()
+         * check this button went to every visitor on every data-sourced publication —
+         * ~4,165 rows × 5 locales — and crawlers following it filed **3,439**
+         * UnAuthorizedExceptions in eleven days, against 64 for the next-noisiest
+         * fingerprint in production's exception store. Note `Admin tags` a few lines
+         * above: the same page already guards a field with `displayOnlyWithPermission`,
+         * so this was an omission rather than a missing mechanism.
+         *
+         * Naming the route resource rather than the roles keeps the guard in
+         * module/Books/config/module.config.php the only place that decides.
+         * App\Controller\PublicationController::copyToCorpusUrl() carries the identical
+         * check for the ported page — both renderings must agree, and
+         * Batch7EditSurfaceSmokeTest asserts they do.
+         */
+        elseif (isset($object['dataSource']) && $this->isAllowed('route/publication-copy-to-main-corpus')) :?>
             <p><a href="<?=$this->url(
                 'publication-copy-to-main-corpus',
                 ['sw_id' => $object['identifier'], 'slug' => $object['slug'] ?? null]
