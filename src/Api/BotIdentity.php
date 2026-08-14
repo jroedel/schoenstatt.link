@@ -34,8 +34,13 @@ use function substr;
  *
  * ## The token is the site's own, not a new scheme
  *
- * `JUser\Controller\LoginV1ApiController` already issues JWTs — `{sub, exp, jti}`,
- * signed with `ApiRequest.jwtAuth.cypherKey` — and the mobile apps already use them.
+ * The site was already issuing JWTs of this shape — `{sub, exp, jti}`, signed with
+ * `ApiRequest.jwtAuth.cypherKey` — before v3 existed, so this is not a new scheme;
+ * `JUser\Service\ApiTokenService` is now the only signer, and the users screen the only
+ * way to obtain one. (This used to add "and the mobile apps already use them" of
+ * `JUser\Controller\LoginV1ApiController`, which issued them until /api/v1 was retired
+ * on 2026-08-14. The access log says no mobile client ever signed in there — see
+ * docs/strangler.md. The token *format* is what carried over, not a live caller.)
  * A bot gets one the same way any other account does, so there is no second
  * credential store to build, leak or forget to rotate. `sub` is a `user.user_id`,
  * which is what makes an agent's edits attributable: it goes straight into

@@ -37,10 +37,6 @@ public/index.php
                                        ├─ [/{_locale}]/privacy           ⎪ ContentPageController
                                        ├─ [/{_locale}]/shrines/submitting-photos
                                        │                                 ⎭ templates/content/
-                                       ├─ [/{_locale}]/api/v1/associations/shrines.json
-                                       ├─ [/{_locale}]/api/v2/associations/shrines.json
-                                       │                 → App\Controller\ShrinesGeoJsonController
-                                       │                       (one controller, both versions)
                                        ├─ [/{_locale}]/sm/phpinfo
                                        │                 → App\Controller\PhpInfoController
                                        ├─ [/{_locale}]/sm/data-problems
@@ -1706,6 +1702,97 @@ Two smaller things worth carrying forward:
   what the port reproduces, not the dead line. The 401 on a failed CSRF *is* observable
   because that branch renders, and is reproduced verbatim. Both are filed rather than
   corrected inside a port.
+
+### The v1 and v2 API — retired, not ported, 2026-08-14
+
+All 26 `/api/v1` and `/api/v2` routes were deleted. This is the first batch that removed
+a surface instead of moving it, so the interesting part is not how it was ported — it is
+how the decision was made, because "is anything still calling this?" is the question every
+remaining laminas route eventually poses.
+
+**The evidence was eight years of Apache access logs**, not reasoning about the code.
+`~/logs/access.log*` on the production host goes back to 2016-04-17, which is what makes
+absence of traffic mean something. Extracted with a `grep -F '/api/v'` over the whole
+rotated set — 10,449 lines — and read per client rather than per endpoint, because the
+volume is overwhelmingly scanner noise: Kubernetes secrets, GitLab `/api/v4`, GraphQL
+probes, `/api/v1/.env`. What survived that filter was the complete list of programmatic
+callers the API has ever had:
+
+| client | endpoints | last seen |
+|---|---|---|
+| Google Apps Script | `v1/dictionary` PUT+POST, `dictionary/slugify-terms`, `v1/libraries/{id}/books` GET+PATCH, `v1/books`, `v1/literature` | **2022-11-05** |
+| an Android app (`Dalvik/2.1.0 … SM-G9650`) | `v1/associations/findByKind` | **2019, that year only** |
+| Insomnia / Postman | `users/login` | last success 2022; a 401 on 2025-08-28 |
+| `curl/8.5.0`, one IP, 27 minutes | shrines.json + findByKind, 5 locales × 2 versions | 2026-08-08 — **ours**, a `tools/port-baseline.php` capture |
+| `tools/smoke-prod.sh` | the six endpoints it checked | ongoing — ours |
+| `aiohttp/3.14.x` | enumerated v1 paths *from our own published `v1.yaml`*, `%5C` variants included | July 2026 — a scanner |
+| crawlers (Thinkbot, Barkrowler, AhrefsBot, SEOkicks, YandexBot) | `findByKind` only | ongoing |
+
+Two of those rows are the lesson. **Our own tooling was the loudest "client" left**, which
+is how an endpoint keeps looking alive for years after everyone stopped using it — the
+smoke script was the only thing that had touched `findByKindMd5` or v2's `findByKind` in
+twelve months. And **the traffic that did keep arriving was crawlers following a link we
+published ourselves**: `findByKind` was advertised in a translated `api_note` paragraph on
+`/shrines` and `/wayside-shrines` *and* as a schema.org `Dataset` `contentUrl`, so ~270
+hits a year were the web reading our own advertisement back to us. Deleting the routes
+without the advertisement would have left both layouts pointing at a 404 and Google
+holding an indexed dataset distribution that no longer resolves. The advertisement went
+in the same commit: two Twig templates, two `.phtml` originals, and the `distribution()`
+call in both `App\Schoenstatt\ShrineDatasets` and
+`Schoenstatt\Controller\SchoenstattController::getShrineDatasets()`. The `Dataset` entries
+themselves stay — the pages they describe still exist — they simply no longer offer a
+machine-readable download.
+
+**What answers those URLs now is a JSON 410 Gone**, from `RestApi`'s
+`api-route-not-found` catch-all at priority -1000, carrying
+`Link: </api/v3>; rel="successor-version"` (RFC 5829). That module was kept for exactly
+this: an HTML error page would be the wrong answer for a withdrawn API and for any
+unknown `/api/v3` path too.
+
+**410 rather than 404, and scoped rather than global.** A 404 says "no such thing here";
+a 410 says the resource existed and is permanently removed, which is the signal that gets
+an indexed URL *dropped* rather than merely demoted — and two of these URLs were
+published as a schema.org `Dataset` distribution that Google holds today. But the 410
+matches `#^(/(en|de|es|pt|it))?/api/v[12]([/.]|$)#` and nothing else, because the
+alternative is worse than the problem: an unknown path in a *live* API is a typo, and
+telling a caller its endpoint is permanently gone when it has merely misspelled one is a
+lie the caller acts on. So `/api/v3/phrasez` and `/api/v9/associations` keep their 404,
+and `test/Smoke/ApplicationSmokeTest` asserts both halves — the 410 set *and* the 404 set
+— because the scoping is the part that can silently widen. The `[/.]` alternative is what
+catches `/api/v1.yaml`, the OpenAPI document, which was a static file rather than a route.
+
+The 404 body is byte-identical to what it was before the change, measured with a
+four-second wait on each side to clear the OPcache revalidate window — worth doing,
+because that window makes a stash/capture/pop A/B measure OPcache rather than the change.
+The 410 body is the same envelope with the error text swapped, so a caller that parsed
+the old shape still parses this one.
+
+Three things came out with the routes because nothing else used them, and each was
+verified orphaned rather than assumed:
+
+- **`RestApi\Controller\ApiController`**, the base class every v1 controller extended.
+  `RouteNotFoundController` extended it too, which is why it now has a factory: it used to
+  inherit the response format through `$this->getEvent()->getParam('config')`, populated by
+  ApiController's dispatch listener.
+- **`Application\Listener\CorsListener`** and `jmikola/geojson`. The listener added
+  `Access-Control-Allow-Origin` only to routes carrying a `'cors' => true` default, and
+  every one of those was in the Books `api-v1` tree — so its `onFinish()` half could never
+  fire again, while its preflight half would have answered a cheerful 204 to a browser
+  about to receive a 404. The library was reachable only from
+  `SchoenstattTable::getShrineGeoJson()`, whose two callers were the deleted shrines.json
+  actions.
+- **JUser's `LoginV1ApiController`** (its own PR) and the API-code half of
+  `LoginTokenService` — `issueApiCode()`, `redeemTokenForUser()`,
+  `getApiCodeExpirationMinutes()`. v3 token issuance is unaffected: it runs through
+  `ApiTokenService` from the users screen, and `UsersController` is that path. What is gone
+  is the password-for-token exchange.
+
+**One doc claim did not survive contact with the logs.** `App\Api\BotIdentity`'s docblock
+said "the mobile apps already use them" of these JWTs, and `config/symfony/routes.php`
+called shrines.json "an endpoint the mobile apps poll". Neither is true: no mobile user
+agent has ever posted to `/api/v1/users/login`, and the one mobile client in eight years of
+logs read `findByKind` in 2019 and never returned. A plausible sentence in a docblock is
+not evidence about traffic; the access log is.
 
 ### The comment form — unblocked 2026-08-12, and it was blocking one entity more than this said
 

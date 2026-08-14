@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Schoenstatt;
 
 use Spatie\SchemaOrg\ContactPoint;
-use Spatie\SchemaOrg\DataDownload;
 use Spatie\SchemaOrg\Dataset;
 use Spatie\SchemaOrg\Organization;
 
@@ -45,10 +44,7 @@ final class ShrineDatasets
                 'RELIGION > CATHOLIC CHURCH > MARIAN SHRINES',
                 'RELIGION > CATHOLIC CHURCH > MARY',
             ])
-            ->creator($creator)
-            ->distribution((new DataDownload())
-                ->encodingFormat('JSON')
-                ->contentUrl('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine'));
+            ->creator($creator);
 
         $datasetEs = new Dataset();
         $datasetEs->name('Base de datos de Santuarios de Schoenstatt en Español')
@@ -62,10 +58,7 @@ final class ShrineDatasets
                 'RELIGIÓN > IGLESIA CATÓLICA > SANTUARIOS MARIANOS',
                 'RELIGIÓN > IGLESIA CATÓLICA > MARÍA',
             ])
-            ->creator($creator)
-            ->distribution((new DataDownload())
-                ->encodingFormat('JSON')
-                ->contentUrl('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine'));
+            ->creator($creator);
 
         return [$datasetEn->toArray(), $datasetEs->toArray()];
     }

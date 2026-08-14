@@ -22,13 +22,11 @@
 {% extends 'schoenstatt/_shrine-index.html.twig' %}
 
 {% block shrine_header %}
-{% set api_note = "This data may be accessed directly by any apps or websites who which to receive up-to-date information via the %sREST API%s (application programming interface)." %}
-{% set photos_note = "Do you have shrine photos to submit? See our %sphoto submission process%s." %}
+{% set photos_note ="Do you have shrine photos to submit? See our %sphoto submission process%s." %}
 {% set columns_note = "Until 2019-10-18, this page will be oriented towards data-maintainers and therefore show the columns of pertinent information." %}
 {% set photos_url = laminas_path('shrines/submitting-photos') %}
 <h1>{{ translate('Schoenstatt Wayside Shrines') }}</h1>
 
-<p>{{ translate(api_note)|e|format('<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-wayside-shrine" target="_blank">', '</a>')|raw }}</p>
 <p>{{ translate(photos_note)|e|format('<a href="' ~ photos_url|e ~ '">', '</a>')|raw }}
 <p>{{ translate(columns_note) }}</p>
 {% endblock %}

@@ -19,9 +19,6 @@ use JTranslate\Model\CountriesInfo;
 use Spatie\SchemaOrg\Schema;
 use Laminas\Db\Sql\Predicate\PredicateSet;
 use Schoenstatt\Filter\SchoenstattLinkIdentifier;
-use GeoJson\Feature\Feature;
-use GeoJson\Geometry\Point;
-use GeoJson\Feature\FeatureCollection;
 use Spatie\SchemaOrg\PropertyValue;
 use Spatie\SchemaOrg\CatholicChurch;
 use Schoenstatt\Validator\OpeningHoursSpecificationJson;
@@ -375,29 +372,6 @@ class SchoenstattTable extends SionTable implements
             $select->columns($columns);
         }
         return $select;
-    }
-
-    public function getShrineGeoJson()
-    {
-        $objects = $this->getShrines();
-        $features = [];
-        $firstTime = true;
-        foreach ($objects as $object) {
-            /** @var GeoPoint $geoPoint */
-            $geoPoint = $object['geoPoint'];
-            if ($firstTime) {
-                $firstTime = false;
-            }
-            if (isset($geoPoint)) {
-                $geometry = new Point([(float)$geoPoint->longitude, (float)$geoPoint->latitude]);
-                $feature = new Feature($geometry, [
-                    'name' => $object['name'],
-                ]);
-                $features[] = $feature;
-            }
-        }
-        $geoJson = new FeatureCollection($features);
-        return $geoJson;
     }
 
     /**

@@ -41,7 +41,6 @@
         "erusev/parsedown-extra": "^0.8.1",
         "firebase/php-jwt": "^7.0",
         "spatie/opening-hours": "^2.0",
-        "jmikola/geojson": "1.0",
         "scottconnerly/timezone": "^0.2.0",
         "nicolaswurtz/chordpro-php": "dev-master",
         "lib-icu": ">=4.4",

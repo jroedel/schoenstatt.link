@@ -119,34 +119,39 @@ else
 fi
 
 # SlmLocale 302s /api/* to /<locale>/api/* first, so follow redirects.
-fetch "$BASE/api/there-is-no-such-endpoint" --follow
-if [ "$STATUS" = "404" ] && no_fatals; then
-    pass "unknown API path is a clean 404"
-else
-    fail "unknown API path should 404 cleanly (got $STATUS)"
-fi
+#
+# Checked on a live-v3 typo as well as a versionless path, because since the v1/v2
+# retirement the 404 has a neighbour: those two versions answer 410 Gone, and this is
+# what pins the 410 to them. An unknown path in a *live* API is a typo, and answering
+# "permanently gone" to a misspelling is a lie the caller would act on.
+for UNKNOWN in /api/there-is-no-such-endpoint /api/v3/phrasez /api/v9/associations; do
+    fetch "$BASE$UNKNOWN" --follow
+    if [ "$STATUS" = "404" ] && no_fatals; then
+        pass "$UNKNOWN is a clean 404"
+    else
+        fail "$UNKNOWN should 404 cleanly, not 410 (got $STATUS)"
+    fi
+done
 
-# --- Public JSON API, both versions ---------------------------------------
+# --- The retired v1/v2 API stays retired ----------------------------------
 #
-# The mobile apps read these, and until now the deploy checked no API endpoint
-# that actually returns data — only that an unknown one 404s. A JSON endpoint
-# fails differently from a page: the fatal-200 class shows up as valid HTTP 200
-# with an HTML fatal where JSON should be, which every check above would miss
-# because they look at pages.
+# All 26 /api/v1 and /api/v2 routes were withdrawn on 2026-08-14, after eight
+# years of access logs showed no client had used any of them since 2022. This
+# block used to prove they still worked; it now proves they are gone, which is
+# the same deploy risk read the other way round — a route tree resurrected by a
+# bad merge, or a public_html/api/ directory the deploy failed to delete, both
+# show up here.
 #
-# Both versions are exercised on purpose. v1 and v2 are separate controllers
-# with separate schema builders (getAssociationListSchemaV1/V2), so a deploy can
-# break one and leave the other working, and v1 is the one older app installs
-# are pinned to.
-#
-# Unauthenticated on purpose too: these guards carry a null role, i.e. public.
-# If one of them starts redirecting to the sign-in page, that is a guard
-# regression this will catch.
+# The check is on the SHAPE of the refusal, not just the status. RestApi's
+# api-route-not-found catch-all must answer these as a JSON 410: an HTML error page
+# would mean the catch-all stopped matching and the ordinary 404 page took over,
+# which is a regression for every remaining machine caller including /api/v3. A 404
+# here would mean the retired-version branch stopped firing, which costs the indexing
+# signal these URLs need.
 #
 # The locale-prefixed form is requested directly rather than relying on
 # --follow: SlmLocale's 302 does not carry the query string, so
-# `?kind=sch-shrine` would be lost on the way to /en/. The prefixed form is also
-# what stays stable if SYMFONY_KERNEL is ever set here.
+# `?kind=sch-shrine` would be lost on the way to /en/.
 
 # json_ok <what> <expect-substring> — asserts the LAST fetch returned parseable
 # JSON of the expected shape. No jq: this script is curl + coreutils only.
@@ -171,31 +176,50 @@ json_ok() {
     pass "$what returns JSON ($(wc -c <"$BODY") bytes)"
 }
 
+# json_gone <what> — asserts the LAST fetch was refused as a JSON 410 Gone carrying a
+# successor-version Link. 410 rather than 404 on purpose: these resources existed and
+# are permanently removed, which is what gets an indexed URL dropped rather than merely
+# demoted, and two of them were published as a schema.org Dataset distribution.
+json_gone() {
+    local what=$1
+    if [ "$STATUS" != "410" ]; then
+        fail "$what should be 410 Gone now that the v1/v2 API is retired (got $STATUS, redirect '$REDIRECT')"
+        return
+    fi
+    if ! no_fatals; then
+        fail "$what returned a PHP fatal in its body"
+        return
+    fi
+    case "$CTYPE" in
+        application/json*) ;;
+        *) fail "$what should be refused as application/json (got '${CTYPE:-none}'): has api-route-not-found stopped matching?"; return ;;
+    esac
+    case "$(header link)" in
+        *successor-version*) pass "$what is a JSON 410 pointing at /api/v3" ;;
+        *) fail "$what should send 'Link: </api/v3>; rel=\"successor-version\"' (got '$(header link)')" ;;
+    esac
+}
+
 for V in v1 v2; do
-    # findByKind is the endpoint the shrine index itself advertises to API
-    # consumers, and it takes a query parameter — so this also proves query
-    # handling survived the deploy, which a bare collection GET would not.
     fetch "$BASE/en/api/$V/associations/findByKind?kind=sch-shrine"
-    json_ok "api/$V findByKind?kind=sch-shrine" '"items"'
-    # md5 is what a client polls to decide whether to re-download; it returns
-    # the same envelope with items nulled, so an empty "items" here is correct.
+    json_gone "api/$V findByKind"
     fetch "$BASE/en/api/$V/associations/findByKindMd5?kind=sch-shrine"
-    json_ok "api/$V findByKindMd5" '"md5"'
+    json_gone "api/$V findByKindMd5"
+    fetch "$BASE/en/api/$V/associations/shrines.json"
+    json_gone "api/$V shrines.json"
 done
 
-# The GeoJSON feed is DEPRECATED (2026-08-07, docs/BACKLOG.md) but still served,
-# so the deploy still has to keep it working — and has to keep announcing it.
-# Checked on both versions because both are still live and byte-identical.
-for V in v1 v2; do
-    fetch "$BASE/en/api/$V/associations/shrines.json"
-    json_ok "api/$V shrines.json (deprecated)" '"FeatureCollection"'
-    DEPRECATION=$(header deprecation)
-    if [ "$DEPRECATION" = "true" ]; then
-        pass "api/$V shrines.json announces Deprecation: true"
-    else
-        fail "api/$V shrines.json should send 'Deprecation: true' (got '${DEPRECATION:-none}')"
-    fi
-done
+# The rest of the retired surface: one path per former controller, plus the two
+# documentation artefacts. v1.yaml and the Swagger UI bundle were STATIC FILES
+# under public/api/, so these two also verify the deploy removed files rather
+# than only shipping changed ones — a phploy run that skips deletions leaves the
+# OpenAPI document live, still advertising 26 endpoints that no longer exist.
+fetch "$BASE/en/api/v1/dictionary";        json_gone "api/v1 dictionary"
+fetch "$BASE/en/api/v1/literature";        json_gone "api/v1 literature"
+fetch "$BASE/en/api/v1/libraries/3";       json_gone "api/v1 library detail"
+fetch "$BASE/en/api/v1/users/login";       json_gone "api/v1 login"
+fetch "$BASE/en/api/v1";                   json_gone "api/v1 documentation shell"
+fetch "$BASE/api/v1.yaml" --follow;        json_gone "the OpenAPI document"
 
 # The sitemap is a static file at the docroot ROOT since 2026-08-13, and the root is the
 # point: a sitemap may only list URLs at or below its own directory, so the previous
@@ -474,17 +498,6 @@ if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
     else
         pass "symfony: ported pages keep the request's protocol version (HTTP/${HTTPVER:-?})"
     fi
-
-    # The ported JSON routes, including the deprecation header.
-    for V in v1 v2; do
-        fetch "$BASE/en/api/$V/associations/shrines.json"
-        json_ok "symfony: api/$V shrines.json" '"FeatureCollection"'
-        if [ "$(header deprecation)" = "true" ]; then
-            pass "symfony: api/$V shrines.json still announces its deprecation"
-        else
-            fail "symfony: api/$V shrines.json lost Deprecation: true under the Symfony kernel"
-        fi
-    done
 
     # The v3 API, which exists *only* on the Symfony kernel and is the reason the flip
     # matters to anything other than this migration: an automated agent sends no cookie,
