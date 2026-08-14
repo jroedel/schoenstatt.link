@@ -197,11 +197,12 @@ final class CommentCreateController
      * `sion-model/comments/create.phtml`, which builds one directly.
      *
      * Constructing it needs nothing: `SionForm::__construct()` adds the CSRF element
-     * and the phone filter specs, and none of that reaches
-     * `GlobalAdapterFeature::setStaticAdapter()` — the unreproduced JUser static
-     * adapter that still blocks the user and translation forms. `CommentForm` is the
-     * second form in this application, after `AssociationForm`, that turns out not to
-     * need it.
+     * and the phone filter specs, and none of that needs a db adapter. That mattered
+     * more when this was written than it does now — the four forms that *did* need one
+     * reached it through `GlobalAdapterFeature`'s static registry, which only
+     * `JUser\Module::onBootstrap()` populated, and which was the last obstacle to the
+     * `juser/*` and `jtranslate/*` routes. They take an `Adapter` as a constructor
+     * argument as of 2026-08-14 and the registry is gone.
      */
     private function form(): CommentForm
     {

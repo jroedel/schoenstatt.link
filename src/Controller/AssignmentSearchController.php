@@ -34,9 +34,10 @@ use function is_array;
  * Neither writes anything and neither has a CSRF token: `SearchForm` and
  * `AdvancedSearchForm` are `method="GET"` forms whose data is `?search=…`. That is why
  * this pair could move ahead of the create/edit forms — the static-adapter obstacle
- * docs/strangler.md records applies to `CreateRoleForm`, `EditUserForm`, `DeleteUserForm`
- * and `EditPhraseForm` through a `NoRecordExists` validator, and neither form here has
- * one.
+ * docs/strangler.md recorded applied to `CreateRoleForm`, `EditUserForm`,
+ * `DeleteUserForm` and `EditPhraseForm` through a `NoRecordExists` validator, and
+ * neither form here has one. (That obstacle was removed on 2026-08-14: the four take
+ * the adapter as a constructor argument now.)
  *
  * `SearchForm` is constructed directly rather than pulled from the container, because
  * that is what `AssignmentsController::searchAction()` does — it has no factory and no
