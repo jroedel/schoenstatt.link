@@ -1018,3 +1018,73 @@ deploy loop. The authoritative check is the capsule's set comparison; this is th
 - **The APCu entry behind `merged-publication-ids` cannot go stale for the built sitemap**,
   and not by luck: a segment belongs to the SAPI that created it, so the cron console process
   starts cold and reads the database every run.
+
+## The dead menu link that nothing rendered (2026-08-14)
+
+`PageBuilder::publicationPages()` grouped publications by language and filed the ones with
+no language under `null`, which PHP stores as the array key `''`. It then assembled
+`publications/index` — `/literature/:inLanguage`, constrained to `[a-z]{2,2}` — with
+`inLanguage => ''`, producing **`/en/literature/`, which answers 404** while
+`/en/literature` answers 200.
+
+The mechanism is worth knowing on its own: **`Segment::assemble()` does not enforce a
+route's own constraints.** They apply to `match()` only. So a value that could never have
+arrived in a request can still be built into a link, and nothing reports it.
+
+### The backlog said the menu showed it. The menu did not.
+
+That claim had sat in BACKLOG since 2026-08-13 and was inferred from the data structure
+rather than observed. Checked against production before changing anything:
+
+| surface | what it actually does |
+| --- | --- |
+| laminas navbar | `->setMinDepth(0)->setMaxDepth(0)` — top level only; the group sits at depth 2 |
+| Twig navbar | iterates `navigation_items()` — top level only |
+| Symfony breadcrumb | omits it: `/en/SL202208L` renders `Literature > title`, while `/en/SL201727L` renders `Literature > Schoenstatt Literature in English > title` |
+| laminas breadcrumb | publication pages have none at all (forced with `sl_symfony_canary=0`) |
+| literature home | twelve language links in both renderings, no languageless one |
+| sitemap | dropped since 2026-08-13, by the trailing-slash rule in `isPublishable()` |
+
+So the defect was latent, and the user-facing consequence was the **opposite** of a bad
+link: those **25 publications are in the sitemap with zero inbound internal links**. On a
+site whose traffic is overwhelmingly crawlers, orphans are the part that costs something.
+
+### What was done, and what was deliberately not
+
+The group is no longer built, and its 25 children are re-parented onto the literature root
+rather than dropped — they are real published publications, and losing them here would
+withdraw 125 URLs from the index. Verified after the change: all 25 still in the sitemap,
+no trailing-slash URL, and the literature home renders the same twelve links as production.
+
+Giving the orphans a real index page was the other option and was **not** taken: it needs a
+route branch meaning "no language" plus a predicate change, because **24 of the 25 store
+`NULL` and one stores `''`**, so the existing `In($field, [''])` would match one row of 25.
+
+The sitemap rule stays, downgraded from fix to net. It was never the right place: a
+malformed page belongs refused where it is built, and a rule in another component written
+for another reason was the only thing between a 404 and Google.
+`test/Integration/NavigationRouteParametersTest` now fails if any branch declares an empty
+route parameter — deliberately broader than the one instance, since the same `assemble()`
+behaviour applies to every segment route. Proven to fail before being trusted, by disabling
+the guard and watching it name the offending page.
+
+## Deploy atomicity, deferred indefinitely (2026-08-14)
+
+Not retracted — the evidence stands, and it is the largest finding in the exception store.
+Deferred by the user on the grounds that the audience is currently almost entirely bots.
+
+The reasoning inverts the usual one and is worth recording. A deploy-window fatal is paid
+for by whoever is mid-request, and today that is overwhelmingly crawlers: the `51c0cb27`
+fingerprint alone — one scraper replaying a URL list — produced **3,478 requests in eleven
+days** against a handful of identifiable human sessions. Fixing atomicity would mostly
+protect Googlebot's opinion of us, at the cost of a pipeline redesign and edits to a
+credentials file only the user can touch. Revisit when the ratio changes.
+
+### And the guard from PR #94 worked, while the count kept climbing
+
+Worth separating, because the two look the same from the count alone. `51c0cb27` went
+3,461 → 3,478 after the deploy, at roughly the pre-deploy rate, which reads as "the fix did
+not work". It did: a live data-sourced, unmerged publication fetched anonymously carries no
+button and no `copy-to-main-corpus` URL anywhere in the HTML. Removing a link stops
+*discovery*, not a queue a scraper already built — the requests arrive with no referer, a
+spoofed Chrome user agent and varying `sw_id`, and they drain on the scraper's schedule.

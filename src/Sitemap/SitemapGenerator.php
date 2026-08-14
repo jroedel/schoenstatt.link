@@ -216,12 +216,15 @@ final class SitemapGenerator
      *  - **A `#fragment`.** Google discards it, so `/en/shrines#Africa` is a duplicate entry
      *    for `/en/shrines`, which the tree also contains. 30 such entries; the old
      *    deduplication keyed on the whole URL, so the fragment defeated it.
-     *  - **A path ending in `/`.** `Application\Navigation\PageBuilder` groups publications
-     *    by language and files the ones with no language under `''`, so it assembles
-     *    `publications/index` with `inLanguage => ''` and produces `/en/literature/`, which
-     *    **404s** — while `/en/literature` is listed separately and answers 200. The
-     *    navigation menu still shows that dead "Other Schoenstatt Literature" link; fixing
-     *    that is a menu change and is deliberately not done here.
+     *  - **A path ending in `/`.** `Application\Navigation\PageBuilder` grouped publications
+     *    by language and filed the ones with no language under `''`, so it assembled
+     *    `publications/index` with `inLanguage => ''` and produced `/en/literature/`, which
+     *    **404s** — while `/en/literature` is listed separately and answers 200.
+     *    **Fixed at source 2026-08-14**: that group is no longer built, so this rule now
+     *    catches nothing and is kept as a net rather than as the fix. It was never a good
+     *    place for the fix — a malformed page belongs refused where it is built, and this
+     *    rule living in another component was the only thing between a 404 and Google.
+     *    `test/Integration/NavigationRouteParametersTest` is the guard now.
      *  - **A route `guest` may not reach** — `/admin`, `/movement`, `/libraries`, all 302 to
      *    the login page.
      *  - **A record `guest` may not see**, which is not the same question: `/libraries/1` and
