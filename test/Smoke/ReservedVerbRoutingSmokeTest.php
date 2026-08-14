@@ -51,6 +51,10 @@ class ReservedVerbRoutingSmokeTest extends SmokeTestCase
             'composition delete'         => ['/en/SL500001C/delete'],
             'text edit'                  => ['/en/SL400003T/edit'],
             'text delete'                => ['/en/SL400003T/delete'],
+            //Ported 2026-08-14, so like the two below its 302 now comes from
+            //App\Authorization\RouteGuard rather than from BjyAuthorize\Guard\Route behind
+            //the bridge. The assertion is unchanged and still correct, which is the point:
+            //being refused does not depend on which front controller refuses you.
             'publication edit'           => ['/en/SL202186L/edit'],
             'publication delete'         => ['/en/SL202186L/delete'],
             'publication upload cover'   => ['/en/SL202186L/upload-cover'],

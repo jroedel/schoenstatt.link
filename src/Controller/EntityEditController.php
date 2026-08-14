@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
+use App\Sion\Entities;
 use App\Sion\EntityEdit;
 use App\Sion\SiteWideIdentifier;
 use Books\Form\BookForm;
@@ -98,7 +99,8 @@ final class EntityEditController
     public function __construct(
         private readonly EntityEdit $edit,
         private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly Entities $entities
     ) {
     }
 
@@ -493,7 +495,35 @@ final class EntityEditController
         return [
             'publication_value_options' => $this->selectizeOptions($options),
             'author_persons'            => $this->selectizeOptions($this->valueOptions($form, 'translatorsAll')),
+            'author_associations'       => $this->selectizeOptions($this->authorAssociationOptions()),
         ];
+    }
+
+    /**
+     * `PublicationsTable::getAuthorAssociationValueOptions()` — the associations flagged
+     * `IsAuthor`, keyed `a<id>`.
+     *
+     * The one list of the three that does not come off the form, which is why it needs
+     * the table here. It is fetched even though **the page never uses it**: the partial's
+     * script says `authorPersons.concat(authorAssociations);` and throws the result away,
+     * so no picker is ever given these options. That is a bug in the original — `concat`
+     * does not mutate — and it is reproduced rather than fixed, because fixing it would
+     * add association authors to three pickers that have never offered them, which is a
+     * content change and not this port's to make. Filed in docs/BACKLOG.md.
+     *
+     * @return array<array-key, mixed>
+     */
+    private function authorAssociationOptions(): array
+    {
+        $table = $this->entities->table('publication');
+        if (! method_exists($table, 'getAuthorAssociationValueOptions')) {
+            return [];
+        }
+
+        /** @var mixed $options */
+        $options = $table->getAuthorAssociationValueOptions();
+
+        return is_array($options) ? $options : [];
     }
 
     /**
@@ -520,14 +550,22 @@ final class EntityEditController
      * objects. The one-letter keys are the original's and the JavaScript reads them, so
      * they are not shortenable here without changing `gen-*.js`.
      *
+     * **The key keeps its type.** PHP array keys are int for numeric strings, and
+     * `transformValueOptionsObject()` passes `$key` through untouched, so laminas emits
+     * `{"i":2154,…}` for a publication and `{"i":"a17",…}` for an author association.
+     * Casting everything to string produced `{"i":"2154",…}` — 7,801 bytes of quotation
+     * marks in the baseline diff, and a real hazard behind it: selectize matches a
+     * `valueField` against the `<option value>` it is given, so a type mismatch is the
+     * kind of thing that silently fails to preselect the current choice.
+     *
      * @param array<array-key, mixed> $options
-     * @return list<array{i: string, n: string}>
+     * @return list<array{i: int|string, n: string}>
      */
     private function selectizeOptions(array $options): array
     {
         $list = [];
         foreach ($options as $key => $value) {
-            $list[] = ['i' => (string) $key, 'n' => is_scalar($value) ? (string) $value : ''];
+            $list[] = ['i' => $key, 'n' => is_scalar($value) ? (string) $value : ''];
         }
 
         return $list;
