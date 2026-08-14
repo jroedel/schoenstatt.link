@@ -106,7 +106,10 @@ suites run from the superproject working tree.
   rendering apart from inter-tag whitespace). The **v3 API** for automated agents
   lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
   It is the *only* API the site serves: v1 and v2 were retired 2026-08-14 and their
-  26 URLs answer a JSON 404.
+  26 URLs answer a JSON **410 Gone** carrying `Link: </api/v3>; rel="successor-version"`.
+  An unknown path in a *live* version still answers 404 — the 410 is scoped to v1 and
+  v2 in `RestApi\Controller\RouteNotFoundController`, because "permanently gone" and
+  "you misspelled it" are different answers and a caller acts on them differently.
   It exposes two resources, associations and translation phrases, and **each is gated on
   its own role** (`sch_api_bot`, `sch_api_translator`); a new API resource needs a new
   role, an entry in `juser.api_token_roles`, and a `requiredRole()` on its controller.
@@ -138,7 +141,8 @@ suites run from the superproject working tree.
 - Application modules live in `module/` and are PSR-4 autoloaded via `composer.json`:
   `Application`, `Books`, `JTranslate`, `JUser`, `RestApi`, `Schoenstatt`, `SionModel`.
   (`Bible` was removed 2026-08-05 — the feature moved to another application.)
-  **`RestApi` is now a single route**: the JSON 404 for unmatched `/api/` paths. Its
+  **`RestApi` is now a single route**: the JSON refusal for unmatched `/api/` paths —
+  410 for the retired v1/v2 versions, 404 for anything else. Its
   `ApiController` base class and every v1/v2 controller across `Books`, `Schoenstatt`
   and `JUser` were deleted 2026-08-14 — see [docs/strangler.md](docs/strangler.md) for
   the access-log evidence. Do not add API code there; `/api/v3` lives in `src/`.

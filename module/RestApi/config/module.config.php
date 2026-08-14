@@ -7,11 +7,14 @@ use Laminas\Router\Http\Regex;
 return [
 
     /**
-     * JSON 404 for unknown API paths only — which, since /api/v1 and /api/v2 were
-     * retired, means every one of their 26 former URLs. A withdrawn API should
-     * answer a machine-readable 404 rather than the site's HTML error page, and
+     * The JSON refusal for unknown API paths — which, since /api/v1 and /api/v2 were
+     * retired, means every one of their 26 former URLs too. A withdrawn API should
+     * answer a machine-readable refusal rather than the site's HTML error page, and
      * this route is the whole mechanism: it matches at priority -1000, after every
      * real route has had its chance, so it never shadows /api/v3.
+     *
+     * The controller decides between 410 Gone for the two retired versions and 404 for
+     * anything else; see its docblock for why that distinction is load-bearing.
      *
      * The multidots original was a
      * global '/:*' catch-all named '404' (an INTEGER array key): it swallowed
@@ -49,8 +52,10 @@ return [
         ],
     ],
     'view_manager' => [
-        'strategies' => array(
+        //what turns RouteNotFoundController's JsonModel into a JSON body rather than a
+        //rendered .phtml — the refusals stop being machine-readable without it
+        'strategies' => [
             'ViewJsonStrategy',
-        ),
+        ],
     ],
 ];

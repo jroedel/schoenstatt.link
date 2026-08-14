@@ -1743,12 +1743,29 @@ call in both `App\Schoenstatt\ShrineDatasets` and
 themselves stay — the pages they describe still exist — they simply no longer offer a
 machine-readable download.
 
-**What answers those URLs now is a JSON 404**, from `RestApi`'s `api-route-not-found`
-catch-all at priority -1000. That module was kept for exactly this: an HTML error page
-would be the wrong answer for a withdrawn API and for any unknown `/api/v3` path too. The
-body was measured byte-identical before and after the change, with a four-second wait on
-each side to clear the OPcache revalidate window — worth doing, because that window makes
-a stash/capture/pop A/B measure OPcache rather than the change.
+**What answers those URLs now is a JSON 410 Gone**, from `RestApi`'s
+`api-route-not-found` catch-all at priority -1000, carrying
+`Link: </api/v3>; rel="successor-version"` (RFC 5829). That module was kept for exactly
+this: an HTML error page would be the wrong answer for a withdrawn API and for any
+unknown `/api/v3` path too.
+
+**410 rather than 404, and scoped rather than global.** A 404 says "no such thing here";
+a 410 says the resource existed and is permanently removed, which is the signal that gets
+an indexed URL *dropped* rather than merely demoted — and two of these URLs were
+published as a schema.org `Dataset` distribution that Google holds today. But the 410
+matches `#^(/(en|de|es|pt|it))?/api/v[12]([/.]|$)#` and nothing else, because the
+alternative is worse than the problem: an unknown path in a *live* API is a typo, and
+telling a caller its endpoint is permanently gone when it has merely misspelled one is a
+lie the caller acts on. So `/api/v3/phrasez` and `/api/v9/associations` keep their 404,
+and `test/Smoke/ApplicationSmokeTest` asserts both halves — the 410 set *and* the 404 set
+— because the scoping is the part that can silently widen. The `[/.]` alternative is what
+catches `/api/v1.yaml`, the OpenAPI document, which was a static file rather than a route.
+
+The 404 body is byte-identical to what it was before the change, measured with a
+four-second wait on each side to clear the OPcache revalidate window — worth doing,
+because that window makes a stash/capture/pop A/B measure OPcache rather than the change.
+The 410 body is the same envelope with the error text swapped, so a caller that parsed
+the old shape still parses this one.
 
 Three things came out with the routes because nothing else used them, and each was
 verified orphaned rather than assumed:

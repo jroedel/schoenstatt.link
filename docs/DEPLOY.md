@@ -121,7 +121,8 @@ Both endpoints, and the other 24 in `/api/v1` and `/api/v2`, were **deleted** on
 2026-08-14. The deploy note is kept rather than removed because it names the one
 workflow that would have noticed — label printing — and the same question applies to
 the deletion: nothing has called it since 2022, so nothing should break, but that is
-the thing to check if a report arrives. Every former v1/v2 URL now answers a JSON 404.
+the thing to check if a report arrives. Every former v1/v2 URL now answers a JSON
+**410 Gone** with a `Link: </api/v3>; rel="successor-version"` header.
 
 **This deploy also removes files, not only changes them.** `public/api/` — the
 OpenAPI document and the 2020 Swagger UI bundle, ~6.7 MB — was deleted, and a phploy

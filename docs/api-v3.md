@@ -20,7 +20,8 @@ would have been a re-issue for every agent in existence. See
 writable. **Both were retired on 2026-08-14** — all 26 routes deleted after eight years
 of access logs showed no caller since 2022, the "map and mobile consumers" this
 paragraph used to invoke among them. `/api/v3` is now the only API the site serves, and
-every former v1/v2 URL answers a JSON 404. The reasoning and the evidence are in
+every former v1/v2 URL answers a JSON **410 Gone** naming this version as its
+successor. The reasoning and the evidence are in
 [docs/strangler.md](strangler.md); the comparison below is kept because it is *why* v3
 looks the way it does, not because there is anything left to choose between.
 
