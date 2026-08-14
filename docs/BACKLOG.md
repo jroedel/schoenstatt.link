@@ -277,24 +277,51 @@ readability — the destination is **Symfony**, reached gradually:
   `prime-authors`. `data/import/` is gitignored, so the 12 MB JSON was never deployed and
   nothing needed removing from the server.
 
-- [ ] **`trim-titles` still changes data on a GET, just not on a bare one.** With
-  `?simulate=0` it rewrites publication titles, with no CSRF token and no confirmation — so a
-  link is enough, for anyone holding `pub_administrator`. Lower priority than it looked (the
-  default is a simulation, and the write is a `trim($title, '. ')` of at most two characters)
-  but the shape is still wrong: a state change belongs behind a POST. Same question for
-  `prime-authors`, which was not examined. Whoever fixes it should decide POST + CSRF versus
-  a `bin/console` command — the console is the better home for a one-off maintenance sweep,
-  and it is where the sitemap builder and the catalog exporter already live.
+- [x] ~~**`trim-titles` still changes data on a GET.**~~ **Retired 2026-08-14**, after
+  measuring where the titles it cleaned actually came from. The question asked was whether it
+  guards against a live ingress or is archaic, and the answer is unambiguous:
 
-- [ ] **`PublicationsTable::fillNoAccentsColumns()` is now unreferenced.** It is real,
-  working code — it fills `TitleNoAccents`/`SubtitleNoAccents` for Spanish rows — and its only
-  caller was a commented-out line inside the `adminTasksAction()` that was deleted on
-  2026-08-14. Deliberately kept rather than removed with the empty stubs beside it, because
-  deleting working maintenance code is a different decision from deleting code that never did
-  anything. It wants either a `bin/console` command or a deletion; leaving it unreferenced
-  indefinitely is the one option that helps nobody. `importAuthors($simulate)` in the same
-  file is the opposite case: a body of nothing but comments, unreferenced, never wired to a
-  route — that one can just go.
+  - **The live ingress is already validated.** `PublicationForm`'s `title` input carries
+    `StripTags`, `StripNewlines`, `StringTrim` and `ToNull` plus a 300-character
+    `StringLength`, so stray whitespace cannot reach the column through the form at all.
+  - **104 rows would have been touched, and 99 trace to imports.** 44 are
+    `forschungsbibliothek` (the importer retired in this same change), 17 `b_bibsek`, 1
+    `b_bibprim_edition` — and of the 42 with *no* DataSource, **37 have a byte-identical
+    twin that does have one**. That is `copyDataSourcedRowToFirstClassCitizen()`, which
+    unsets `dataSource` *and* `createdOn` when it duplicates an imported row, so an
+    import-descended record looks first-class and freshly created. Their dates say the same
+    thing: 39 of the 42 created in 2021, 3 in 2019, none since.
+  - **Titles have all but stopped being written**: 648 logged title writes in 2017, 71 in
+    2018, 28 in 2019, 5 in 2020, 6 in 2021, 1 in 2023, 2 in 2024, **none in 2025 or 2026**.
+  - **Of all 761 title writes ever logged, exactly two produced a value the sweep would
+    change — and both are legitimate titles it would have corrupted.** `The family at the
+    service of Life. [1953] Recollection days for couple.` ends in an ordinary sentence
+    period, which the sweep strips. `Welch ein September - P. Joseph Kentenich '85 = Qué
+    septiembre ...` ends in an ellipsis and survives only by accident, because the
+    `$howMany < 3` guard skips a four-character trim.
+
+  So it was a one-off cleanup for catalogue records from three ingresses, two defunct and one
+  deleted, and on today's data it is the only thing in this file that both writes and gets it
+  wrong. Action, route, guard entry and view removed.
+
+  **`prime-authors` was examined at the same time and is read-only** — `getAuthors()` builds a
+  report array and writes nothing — so it stays, and that is now checked rather than assumed.
+
+- [x] ~~**`PublicationsTable::fillNoAccentsColumns()` is now unreferenced.**~~ **Removed
+  2026-08-14, and the entry above it was wrong about what it did.** It does not fill anything:
+  it selects Spanish rows, computes an array of proposed `*NoAccents` values and **returns it
+  without ever writing**. The caller that would have consumed it was the commented-out line
+  in the deleted `adminTasksAction()`, so nothing has ever written those columns through this
+  path. `importAuthors($simulate)` — a body of nothing but comments — went with it.
+
+- [ ] **`TitleNoAccents`, `SubtitleNoAccents`, `AuthorsNoAccents` and `EditorNoAccents` are
+  dead columns.** All four exist in `sch_publications`; `titleNoAccents` and
+  `subtitleNoAccents` are mapped in the publication entity spec and read into the projection
+  row, and **nothing consumes either** — no query, no template, no search, verified across the
+  repository. The only code that ever computed values for them never wrote them (see above)
+  and is now gone. So they want dropping, which is DDL: the web application's database user
+  has no DDL rights, so this is a server-side migration with separate credentials, filed with
+  the other real-migrations work rather than done here.
 
 - [ ] **`route/publications/advanced-search` is not a resource this application defines.**
   `search-bar.phtml` asks `isAllowed()` about it and `docs/acl-rules.md` has no row for it

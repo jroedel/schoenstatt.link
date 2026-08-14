@@ -642,29 +642,6 @@ class PublicationsController extends SionController
         return $view;
     }
 
-    public function trimTitlesAction()
-    {
-        $simulate = '0' !== $this->params()->fromQuery('simulate', '1');
-        /** @var PublicationsTable $table */
-        $table = $this->getSionTable();
-        $publications = $table->getObjects('publication');
-        $changes = [];
-        foreach ($publications as $publicationId => $object) {
-            $trimmed = trim($object['title'], '. ');
-            $howMany = strlen($object['title']) - strlen($trimmed);
-            if ($howMany !== 0 && $howMany < 3) {
-                $changes[$object['title']] = $trimmed;
-                if (! $simulate) {
-                    $table->updateEntity('publication', $publicationId, ['title' => $trimmed], [], false);
-                }
-            }
-        }
-        return new ViewModel([
-            'changes' => $changes,
-            'simulate' => $simulate,
-        ]);
-    }
-
     /**
      * Makes sure this function returns the publicationId if passed a site-wide id
      *
