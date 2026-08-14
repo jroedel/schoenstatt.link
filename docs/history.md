@@ -881,3 +881,78 @@ came back), 715 integration, 286 unit, fuzz clean, PHPStan clean **with two fewe
 entries**. ACL snapshot: 155 routes → 153, guarded 135 → 133, and the diff is exactly the
 two removed guard entries and the counts — no rule quietly stopped matching, which is the
 failure mode that makes a page work for *more* people and breaks nothing.
+
+## What production had actually been doing (2026-08-14)
+
+`tools/fetch-exceptions.sh` had never been run against an accumulated store. Pulling it
+down produced 38 fingerprints and one conclusion worth more than the individual bugs:
+**there are no steady-state code failures.** 21 of the 38 are real (the rest are
+deny-listed authorization noise), and **17 of those are deploy-window artifacts** — the
+full account is the "Now" item in [BACKLOG.md](BACKLOG.md). The proof is not the shapes,
+plausible as they are; it is that one burst spans **two revisions in 22 seconds**, so
+`.revision` was being rewritten while requests were in flight.
+
+Two things came out of it that were acted on.
+
+### 3,439 exceptions because we advertised a moderator-only button to everybody
+
+One fingerprint had **3,439** occurrences against 64 for the next-noisiest, still climbing
+eleven days later: `publication-copy-to-main-corpus`, from varying `sw_id`s and locales, no
+referer, different countries, spoofed old Chrome user agents. Crawlers.
+
+They knew the URL because **both front controllers rendered the button to every visitor**
+on every data-sourced publication — ~4,165 rows × 5 locales, roughly twenty thousand public
+URLs each advertising a `pub_moderator`-only action. Every hit paid a full bootstrap and ACL
+load to answer with a redirect to a login form.
+
+The mechanism was not missing. `publication-info.phtml` guards `Admin tags` six lines above
+with `displayOnlyWithPermission`, and `publication.html.twig` already gates
+`publication-create-new-edition` with `is_allowed('route/…')`. This was an omission, and it
+is the same shape as the `findByKind` crawl traffic found during the v1 retirement: **a
+retired or restricted endpoint stays busy as long as something still points at it.**
+
+Both copies now ask the ACL for the **route resource**, so the guard in
+`module/Books/config/module.config.php` stays the only place that decides.
+
+### The action behind it copied a publication on a GET
+
+`copyToMainCorpusAction()` called `copyPublicationToMainCorpus()` — an INSERT — with no
+method check, no CSRF token and no confirmation. The guard kept it away from the public,
+but nine effective roles hold `pub_moderator` and browsers prefetch links a signed-in
+moderator has merely hovered over. Same class as the `publications/import` retired hours
+earlier, except this one is a feature still in use.
+
+GET now confirms and POST copies, following `SionController::deleteAction()` rather than
+inventing a pattern. `Books\Form\CopyToMainCorpusForm` deliberately has **no Cancel
+element** — `SionModel\Form\DeleteEntityForm`'s docblock records that its Cancel button
+rendered as `type="submit"` and therefore deleted records for years, so cancelling here is
+an ordinary `<a>`, which cannot be mistaken for a submission.
+
+### Three lessons that cost real time
+
+**A test that mutates its own fixture looks like a broken permission check.**
+`copyPublicationToMainCorpus()` does *two* writes — it inserts the duplicate and then
+points the source row's `mergedIntoPublicationId` at it. The first cleanup deleted only the
+insert, so each run left its fixture marked as merged (pointing at a row that no longer
+existed), and a merged publication takes the other template branch and offers the button to
+nobody. Symptom: `testAModeratorIsOfferedTheButton` passed once and failed every run after,
+which sent the investigation through the ACL, the view-helper plumbing and the Twig
+extension before anyone printed the entity array. Three publications (1, 1726, 1727) were
+damaged this way and repaired; the cleanup now clears the pointer as well, and a new
+assertion fails if any publication points at a merge target that does not exist.
+
+**"Not merged" is not a question for the database.** Only 2,331 of the ~4,165 data-sourced
+publications are unmerged, so a fixture chosen by data source alone is more likely wrong
+than right. The fixture test asks the rendered page and **fails** rather than skips.
+
+**`rg -c` exits 1 when it matches nothing**, which silently broke the scan written to find
+a good fixture: the "unmerged" branch could never be taken, and the loop reported no
+candidates when 2,331 existed. A scanner that finds nothing and a scanner that never ran
+look identical — the same lesson `fd`-not-installed taught during the dead-code sweep.
+
+### And `ci-local.sh` learned to distinguish "failed" from "could not run"
+
+`composer audit --locked` needs packagist.org, and the capsule has no DNS, so the audit
+printed `FAIL composer audit --locked` — which every reader of a PR body takes to mean an
+advisory was found. It reports `SKIP` now, is counted separately, does not affect the exit
+status, and prints how to check from the host (where the answer is: no advisories).

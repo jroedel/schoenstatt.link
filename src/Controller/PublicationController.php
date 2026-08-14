@@ -431,13 +431,31 @@ final class PublicationController
 
     /**
      * The "Copy into main corpus" button's URL — shown only for a data-sourced row that
-     * has *not* been merged, which is the original's `elseif`.
+     * has *not* been merged, which is the original's `elseif`, **and only to somebody the
+     * route would actually let through.**
+     *
+     * That last condition was missing on both front controllers until 2026-08-14, and
+     * production's exception store is how it surfaced: the route accumulated **3,439**
+     * `UnAuthorizedException`s in eleven days — the next-noisiest fingerprint had 64 —
+     * from crawlers walking every data-sourced publication and following the button.
+     * There are ~4,165 such rows and five locales, so the button was advertising a
+     * `pub_moderator`-only action across roughly twenty thousand public URLs. Every hit
+     * cost a full bootstrap and ACL load to answer with a redirect to a login form.
+     *
+     * The check names the **route resource**, not the role list, so it cannot drift from
+     * the guard in `module/Books/config/module.config.php`: one place decides, and this
+     * asks it. `mergedIntoUrl()` above needs no equivalent — that link goes to a page
+     * every visitor may read.
      *
      * @param array<string, mixed> $entity
      */
     private function copyToCorpusUrl(array $entity): ?string
     {
         if (isset($entity['mergedIntoPublicationId']) || ! isset($entity['dataSource'])) {
+            return null;
+        }
+
+        if (! $this->isAllowed('route/publication-copy-to-main-corpus')) {
             return null;
         }
 
