@@ -760,6 +760,47 @@ the running container: identical status, content type and **byte count** on `/`,
 byte-for-byte comparison is the actual evidence the bridge is transparent — the
 test suite asserts on markers, not on lengths.
 
+## The Symfony kernel turned on globally (2026-08-11, DEPLOYED)
+
+`SetEnvIf Request_URI ".*" SYMFONY_KERNEL=1` in `public/.htaccess`, above the two
+canary-cookie overrides so `sl_symfony_canary=0` still wins as an escape hatch. One
+line, and the site has served every request through `App\Kernel` since that deploy.
+`curl https://schoenstatt.link/_health` answering `{"status":"ok","kernel":"symfony"}`
+is the confirmation — cheaper than reading `.htaccess` on the server, and it reports
+what is *running* rather than what is configured.
+
+What made it a one-line change rather than an event: the `sl_symfony_canary=0` escape
+hatch was deployed ahead of the flip, so the way back was exercised before it was the
+only way back; the navbar toggle was rewritten to offer whichever kernel you are *not*
+on, so it needed no edit on the day; and the configured error-reporting pipeline was
+wired into `App\Kernel` first — without which every failure on a ported route would
+have been recorded and never notified, for all traffic instead of just the canary's.
+`tools/smoke-prod.sh` checks the three response-header hazards on every deploy, on a
+bridged page and therefore behind the TLS-terminating proxy the capsule lacks: doubled
+`Set-Cookie`, invented `Cache-Control`, and the sitemap's gzip.
+
+**Both "known and accepted" caveats the backlog carried for this item turned out to be
+wrong by the time it closed**, which is the part worth keeping:
+
+- "Ported pages stop contributing missing phrases to `/admin/translations`, because
+  nothing reproduces the `MvcEvent::FINISH` listener." Not true any more.
+  `LaminasExtension::translate()` *is* a write — a miss files the phrase in the page's
+  own domain — and `App\Laminas\TranslatorConfigurator` sets that domain per route.
+  `test/Integration/PortedRouteTranslationTest` asserts discovery happens in the page's
+  domain and nowhere else, and `testTheFallbackDomainReadsButNeverDiscovers` pins the
+  nuance that makes it correct rather than merely present: the `default` fallback is
+  read from its compiled catalog, firing no event, which is the whole of
+  `database/db7.8.sql` and the 232 duplicate rows it cleaned up. See
+  [translation.md](translation.md).
+- "The unprefixed form of a guarded path redirects with `?redirect=/roles` instead of
+  `?redirect=/en/roles`." Still true, still tidiness rather than a bug, and it has its
+  own backlog item — the `kernel.request` listener that would centralise the
+  unprefixed-to-prefixed redirect. It was never a consequence *of the flip*.
+
+The lesson is the ordinary one about caveats written in advance: both were accurate
+when written and neither was re-checked when the item finally closed. A "known and
+accepted" list is a claim with a shelf life.
+
 ## The v1 and v2 API, retired (2026-08-14)
 
 All 26 `/api/v1` and `/api/v2` routes deleted, along with the `RestApi` base class

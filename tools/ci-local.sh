@@ -85,10 +85,16 @@ if says "$OUT" 'No security vulnerability advisories found'; then
 elif says "$OUT" 'Could not resolve host'; then
     # NOT a failure, and reporting it as one is actively misleading: `bad` here prints
     # "FAIL composer audit --locked" into a PR body, which every reader takes to mean an
-    # advisory was found. The audit needs packagist.org, and this environment's containers
-    # have no DNS (same reason `docker compose build` cannot fetch — see CLAUDE.md). An
-    # unreachable advisory database means UNKNOWN, so say unknown and say what to do.
-    warn "advisories NOT checked — no DNS in the container, packagist.org unreachable"
+    # advisory was found. An unreachable advisory database means UNKNOWN, so say unknown
+    # and say what to do.
+    #
+    # This branch is defensive rather than expected. The comment here used to assert the
+    # container has no DNS at all, "same reason `docker compose build` cannot fetch" —
+    # measured wrong on 2026-08-14: the *running* container resolves packagist.org,
+    # github.com and example.com through Docker's embedded resolver at 127.0.0.11, and the
+    # audit completes. Only `docker compose build` lacks DNS in this environment, which is
+    # a different network path. So expect `ok` and treat this branch as a real outage.
+    warn "advisories NOT checked — packagist.org unreachable from the container"
     printf '        run `php composer.phar audit --locked` on the host, or from CI once its minutes reset\n'
 else
     bad "composer audit --locked"
