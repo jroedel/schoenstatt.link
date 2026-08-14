@@ -411,11 +411,17 @@ rediscovered.
     one template. Five of the twelve `delete` routes are *not* portable and it is worth
     knowing why before counting them: three are reachable by nobody and two have their own
     controllers. See [strangler.md](strangler.md).
-  - **Still blocked:** the user and translation forms (`CreateRoleForm`, `EditUserForm`,
-    `DeleteUserForm`, `EditPhraseForm`), which read JUser's unreproduced
-    `GlobalAdapterFeature::setStaticAdapter()` through a `NoRecordExists` validator.
-    That is the real remaining blocker, and it is narrower than docs/strangler.md used
-    to claim.
+  - **No longer blocked, and this was the last blocker:** the user and translation forms
+    (`CreateRoleForm`, `EditUserForm`, `DeleteUserForm`, `EditPhraseForm`). All four read
+    JUser's unreproduced `GlobalAdapterFeature` static registry through a
+    `NoRecordExists`/`RecordExists` validator; as of 2026-08-14 all four take a
+    `Laminas\Db\Adapter\Adapter` as a constructor argument and the registry is gone from
+    first-party code. **Nothing in the form layer blocks a route now** — the remaining
+    work is porting, not unblocking. Two findings from that change are recorded in
+    [strangler.md](strangler.md) and matter to whoever ports `juser/*`: `EditUserForm`
+    was *silently* dropping its two uniqueness validators off laminas rather than
+    throwing like its siblings, and `EditUserForm::class` is a **shared** service that
+    `setValidatorsForCreate()` mutates.
   - **No longer blocked:** the comment form (ported 2026-08-12), which turns out not to
     read the static adapter either — `CommentForm` is the second form after
     `AssociationForm` that does not.

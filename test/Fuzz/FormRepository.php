@@ -313,9 +313,18 @@ final class FormRepository
      * Constructor arguments are supplied by shape rather than by a per-class
      * lookup table, so a new plain form needs no harness change:
      *  - no required arguments        → `new Foo()`
+     *  - a class type the container has → the service (DeleteUserForm's `Adapter`)
      *  - one required `array`         → `new Foo([])` (SuggestForm's entity haystack)
      *  - one required argument        → `new Foo('fuzz')` (Fieldset's `$name`)
      * Anything else is a construction failure and gets reported as one.
+     *
+     * The service rule is what replaced `seedStaticDbAdapter()`. `DeleteUserForm`'s
+     * `RecordExists` validator used to reach its adapter through
+     * `GlobalAdapterFeature`'s static registry, which only `JUser\Module::onBootstrap()`
+     * populated — so the harness had to reproduce a bootstrap step to build the form at
+     * all. The forms take the adapter as a constructor argument now, and asking the
+     * container for a class-typed argument is both how they are really built and a rule
+     * the next such form gets for free.
      */
     private function constructDirectly(string $class): Fieldset
     {
@@ -327,19 +336,62 @@ final class FormRepository
             return new $class();
         }
 
-        if (1 === $required) {
-            $parameter = $constructor->getParameters()[0];
-            $type      = $parameter->getType();
-            $isArray   = $type instanceof \ReflectionNamedType && 'array' === $type->getName();
+        $arguments = [];
+        foreach ($constructor->getParameters() as $parameter) {
+            if ($parameter->isOptional()) {
+                break;
+            }
 
-            /** @var Fieldset */
-            return $isArray ? new $class([]) : new $class('fuzz');
+            $arguments[] = $this->argumentFor($parameter);
         }
 
-        throw new \RuntimeException(sprintf(
-            'constructor needs %d arguments and the class has no registered factory',
-            $required
-        ));
+        /** @var Fieldset */
+        return new $class(...$arguments);
+    }
+
+    /**
+     * One constructor argument, by the rules in constructDirectly()'s docblock.
+     *
+     * @throws \RuntimeException when the shape is not one this harness can supply,
+     *                           which build() records as a construction failure.
+     */
+    private function argumentFor(\ReflectionParameter $parameter): mixed
+    {
+        $type = $parameter->getType();
+
+        // Untyped, as `__construct($name)` is throughout laminas-form: the old
+        // one-argument rule applied and still does.
+        if (null === $type) {
+            return 'fuzz';
+        }
+
+        if (! $type instanceof \ReflectionNamedType) {
+            throw new \RuntimeException(sprintf(
+                'parameter $%s has a union or intersection type and the class has no'
+                . ' registered factory',
+                $parameter->getName()
+            ));
+        }
+
+        if ('array' === $type->getName()) {
+            return [];
+        }
+
+        if ($type->isBuiltin()) {
+            return 'fuzz';
+        }
+
+        $service = $type->getName();
+        if (! $this->container()->has($service)) {
+            throw new \RuntimeException(sprintf(
+                'parameter $%s wants %s, which is not a registered service, and the class'
+                . ' has no registered factory',
+                $parameter->getName(),
+                $service
+            ));
+        }
+
+        return $this->container()->get($service);
     }
 
     /**
@@ -416,44 +468,10 @@ final class FormRepository
             $container->setAllowOverride(false);
 
             $this->seedRouteMatch($container);
-            $this->seedStaticDbAdapter($container);
             $this->attachSqlRecorder($container);
         });
 
         return $this->container = $container;
-    }
-
-    /**
-     * Publish the global static table-gateway adapter, exactly as
-     * `JUser\Module::onBootstrap()` does.
-     *
-     * Three forms — `EditPhraseForm`, `CreateRoleForm`, `DeleteUserForm` — build
-     * `NoRecordExists`/`RecordExists` validators inside
-     * `getInputFilterSpecification()` using
-     * `GlobalAdapterFeature::getStaticAdapter()`, which reads a static registry
-     * populated during MVC bootstrap. Un-bootstrapped, that registry is empty and
-     * `isValid()` throws `RuntimeException: No database adapter was found in the
-     * static registry` for *every* input, benign included — which the first run of
-     * this harness duly reported as a finding. It is not one; it is the harness
-     * standing in the wrong place. Replicating the bootstrap step is what makes the
-     * three forms testable, and doing it here (rather than special-casing the
-     * exception) keeps a real regression in those validators visible.
-     */
-    private function seedStaticDbAdapter(ServiceManager $container): void
-    {
-        try {
-            $config  = (array) $container->get('config');
-            $service = $config['juser']['db_adapter'] ?? \Laminas\Db\Adapter\Adapter::class;
-
-            if ($container->has($service)) {
-                \Laminas\Db\TableGateway\Feature\GlobalAdapterFeature::setStaticAdapter(
-                    $container->get($service)
-                );
-            }
-        } catch (Throwable) {
-            // Leave it unset; the three affected forms then report their throw,
-            // which is the visible outcome rather than a silent gap.
-        }
     }
 
     /**

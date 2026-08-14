@@ -33,11 +33,13 @@ use function is_string;
  * - "There is no form layer on the Symfony side" was true, and
  *   App\Form\BootstrapFormRenderer is now it.
  * - "`JUser\Module::onBootstrap()`'s `GlobalAdapterFeature::setStaticAdapter()` has
- *   to be dealt with before the first form route moves" is true of *some* forms and
+ *   to be dealt with before the first form route moves" was true of *some* forms and
  *   not this one. Only `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and
- *   `EditPhraseForm` read the static adapter, through a `NoRecordExists` validator.
- *   `AssociationForm` and `SionForm` never touch it, so this route was portable and
- *   the user forms still are not.
+ *   `EditPhraseForm` read the static adapter, through a `NoRecordExists` validator;
+ *   `AssociationForm` and `SionForm` never touched it, so this route was portable
+ *   while the user forms were not. **Settled 2026-08-14**: all four take the adapter
+ *   as a constructor argument and the static registry no longer exists, so nothing
+ *   about JUser blocks a form route now.
  *
  * ## Why it is safe to serve this one
  *

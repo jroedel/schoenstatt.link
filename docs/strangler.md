@@ -1442,10 +1442,11 @@ assertions against a Twig route and a bridged one.
 that the walk now happens in a **console process**, so it is `BuildSitemapCommandFactory`
 that has to keep the JTranslate flush disarmed.
 
-### The form routes — one obstacle, not two, and the first one is gone
+### The form routes — both obstacles are gone
 
 This section used to say the form routes were blocked on two things. Both claims needed
-correcting when `association-edit` was ported on 2026-08-09.
+correcting when `association-edit` was ported on 2026-08-09, and both are now closed —
+the form layer on 2026-08-09, the static adapter on 2026-08-14.
 
 **The missing form layer was real, and is now `src/Form/BootstrapFormRenderer`.** It
 reproduces `SionModel\Form\View\Helper\SionFormRow` — i.e. TwbBundle's Bootstrap 3
@@ -1457,11 +1458,47 @@ class: attribute order, `FormSelect`'s attribute whitelist, TwbBundle's
 escape-only-if-no-tags help-block rule, per-select option translation, and the submit
 button's classes.
 
-**The static-adapter claim was too broad.** `GlobalAdapterFeature::setStaticAdapter()` is
-read by `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and `EditPhraseForm`, through a
-`NoRecordExists` validator — and by nothing else. `AssociationForm` and `SionForm` never
-touch it. So it blocks the **user and translation** forms and does not block the rest;
-`association-edit` moved without it being dealt with.
+**The static-adapter claim was too broad, and then it was removed — 2026-08-14.**
+`GlobalAdapterFeature::setStaticAdapter()` was read by `CreateRoleForm`, `EditUserForm`,
+`DeleteUserForm` and `EditPhraseForm`, through a `NoRecordExists`/`RecordExists`
+validator, and by nothing else — `AssociationForm` and `SionForm` never touched it, which
+is why `association-edit` moved without it being dealt with. All four now take a
+`Laminas\Db\Adapter\Adapter` as a constructor argument
+(`JUser\Service\DbAdapterResolver` resolves it in the factories), and the registry write
+is gone from `JUser\Module::onBootstrap()`, which had been its only source.
+
+Four things about that change are worth carrying forward:
+
+- **The registry had exactly one purpose.** One write, five reads, all five inside form
+  classes; no `TableGateway` in this application uses the feature. That is what made
+  deleting it safe rather than hopeful — there was no second consumer to regress.
+- **Three of the four forms threw; the fourth was worse.** `CreateRoleForm`,
+  `DeleteUserForm` and `EditPhraseForm` raised `RuntimeException: No database adapter was
+  found in the static registry` from `getInputFilterSpecification()` for *every* input,
+  benign included. `EditUserForm`'s two reads sat inside a
+  `try { … } catch (\Exception $e) {}`, so instead of failing it **silently dropped the
+  uniqueness checks on `username` and `display_name`** — a create-user POST carrying an
+  existing username would have validated clean on any Symfony-served route. Nothing had
+  measured that, because nothing had reached the un-seeded path: `JUser\Module` filled the
+  registry under laminas and `test/Fuzz/FormRepository` reproduced that step deliberately.
+- **`JTranslate\Form\PhraseValidator` had been papering over it** by writing its own
+  injected adapter into the registry before building the form, under a docblock section
+  headed "The static adapter, honestly" that said plainly this was the wrong answer. Both
+  the write and the section are gone.
+- **What guards it now**: `test/Unit/NoStaticDbAdapterTest` tokenizes all first-party PHP
+  and fails if `GlobalAdapterFeature` is referenced in code again — a source scan rather
+  than a behavioural test, because re-introducing the read would keep every other test
+  green (the forms are always built by a factory that has an adapter to hand, and
+  `onBootstrap()` would be there again under laminas). `test/Integration/UserFormUniquenessTest`
+  is the other half: it proves the validators actually run, against the real tables.
+
+One hazard found while writing that test, unrelated to the adapter but worth knowing
+before porting `juser/*`: **`EditUserForm::class` is registered in `service_manager`,
+which shares by default, and `setValidatorsForCreate()` mutates the instance** it is
+called on. Two `$container->get()` calls in one process hand back one form still carrying
+whatever the last caller did to it. Harmless today because a request dispatches one
+action, and `UsersController::editAction()` and `createAction()` are one dispatch apart —
+but a Symfony controller serving both verbs would not be.
 
 What a form route still needs, and what `association-edit` establishes the pattern for:
 the form comes from the laminas container through the `ServiceBridge` (so its value
@@ -1490,10 +1527,11 @@ button class rule (`btn` unless already present, then `btn-default` unless a kno
 is), and the row class, whose **double space** (`<div class="form-group  col-md-4">`) is
 real and was first misread because the extraction collapsed whitespace runs.
 
-Still on laminas: the user and translation forms (the static adapter) and every
-create/delete page. `/movement`, `/persons`, `/texts` and the two contact searches
-moved in batch 6; `/literature`'s search form is ported — see below; and the **edit**
-verb moved in batch 7 — see the next section.
+Still on laminas: every create page, and the user and translation forms — the latter no
+longer for any reason in the form layer, only because nobody has ported the routes yet.
+`/movement`, `/persons`, `/texts` and the two contact searches moved in batch 6;
+`/literature`'s search form is ported — see below; the **edit** verb moved in batch 7 and
+the **delete** verb in batch 8 — see the next two sections.
 
 #### A third obstacle, found in batch 7: a form factory that reads the route match
 
