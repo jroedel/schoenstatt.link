@@ -139,6 +139,41 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 8 — the delete surface: the seven entity delete confirmations that share
+    // SionModel\Controller\SionController::deleteAction().
+    //
+    // **GET only, and here that is a stronger claim than it was for batch 7.** These URLs
+    // delete records when they are POSTed to; the harness only ever POSTs the sign-in form
+    // (see httpRequest below), so every fetch here renders a confirmation and destroys
+    // nothing. The destructive half is tested in test/Smoke, against fixtures, never here.
+    //
+    // Twelve routes contain `delete` and only these seven are in the batch. The other five
+    // are unreachable rather than skipped: `event-delete`, `libraries/library/delete` and
+    // `sion-model/delete-entity` have no guard entry at all, and the Route guard is
+    // default-deny, so all three answer **403 to an account holding every role** — measured
+    // 2026-08-14, not inferred. `juser/user/delete` and `jtranslate/phrase/delete` have
+    // their own controllers and forms.
+    //
+    // Ids are deliberately the same records batch 7 edits, so one row covers a show page,
+    // an edit form and a delete confirmation.
+    '/SL100319A/delete',
+    '/SL202186L/delete',
+    '/SL400003T/delete',
+    '/SL500001C/delete',
+    '/persons/494/delete',
+    '/assignments/77/delete',
+    '/roles/255/delete',
+    //The not-found branch of two of them, which is `existsEntity()` answering false and
+    //`redirectAfterDelete()` sending the visitor to the entity index with a flash. Role 1
+    //is the same row that makes `/roles/1/edit` a not-found: it hangs off association 2,
+    //which the projection filters. SL499999T names nothing at all.
+    //
+    //`/SL499999T/delete` is here because it is the path the `text` spec's redirect fix
+    //repaired. Its `delete_action_redirect_route` was `text-delete` — the delete route
+    //itself, which needs an `sw_id` — so assembling it threw and *every* exit from this
+    //action for a text was a 500, the successful one included, after the row was gone.
+    '/roles/1/delete',
+    '/SL499999T/delete',
     // batch 7 — the edit surface: the ten entity edit forms that share
     // SionModel\Controller\SionController::editAction().
     //
