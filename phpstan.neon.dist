@@ -23,6 +23,25 @@ parameters:
         - module/SionModel/src
     bootstrapFiles:
         - vendor/autoload.php
+    # Stays false, and not out of laziness: `src/` and `config/symfony` hold themselves
+    # to level 8 while the committed level here is 0, so every suppression written for a
+    # level-8 finding — the three EntityShow entries below, the inline `@phpstan-ignore`
+    # in DictionaryController and LiteratureController — legitimately matches nothing at
+    # level 0. Turning this on reports all of them as unmatched, which is noise, not rot.
+    #
+    # The cost is that a baseline entry whose CODE gets deleted also goes unreported, and
+    # two had: `Function issett not found` in PublicationsTable outlived the importer that
+    # contained it, and the SionForm entry claimed `count: 3` where only 1 occurrence is
+    # left. Both fixed 2026-08-14. To audit for more, run deliberately with the flag on
+    # and read past the level-8 entries:
+    #
+    #   sed 's/reportUnmatchedIgnoredErrors: false/reportUnmatchedIgnoredErrors: true/' \
+    #     phpstan.neon.dist > phpstan-unmatched.neon
+    #   docker compose exec -T app php -d memory_limit=1G tools/phpstan.phar \
+    #     analyse -c phpstan-unmatched.neon --no-progress
+    #
+    # A "No error with identifier … is reported" line for a file under src/ is expected;
+    # an unmatched *baseline* pattern is a stale entry.
     reportUnmatchedIgnoredErrors: false
     # Runtime guards that PHPStan calls redundant because it believes a docblock in
     # the vendored SionModel library. They only surface at level 8 (the standard

@@ -122,13 +122,23 @@ Both endpoints, and the other 24 in `/api/v1` and `/api/v2`, were **deleted** on
 workflow that would have noticed — label printing — and the same question applies to
 the deletion: nothing has called it since 2022, so nothing should break, but that is
 the thing to check if a report arrives. Every former v1/v2 URL now answers a JSON
-**410 Gone** with a `Link: </api/v3>; rel="successor-version"` header.
+**410 Gone** with a `Link: </api/v3/schema>; rel="successor-version"` header.
 
-**This deploy also removes files, not only changes them.** `public/api/` — the
-OpenAPI document and the 2020 Swagger UI bundle, ~6.7 MB — was deleted, and a phploy
-run that skips deletions would leave `https://schoenstatt.link/api/v1.yaml` live,
-still advertising 26 endpoints that no longer exist. `tools/smoke-prod.sh` checks that
-URL specifically for this reason; if it passes after the deploy, the deletion landed.
+~~**This deploy also removes files, not only changes them.**~~ **Landed — verified
+against production 2026-08-14.** `public/api/` (the OpenAPI document and the 2020
+Swagger UI bundle, ~6.7 MB) is gone from the server: `/api/v1.yaml` and `/api/v2.yaml`
+now reach PHP and answer the 410, which they could not do while Apache was still
+serving the files. `tools/smoke-prod.sh` keeps checking those two URLs, because a
+future deploy that skips deletions is the same hazard.
+
+**Correction shipped the same day: the successor Link pointed at a 404.** The header
+said `</api/v3>`, and `/api/v3` is not a route — it 302s to `/en/api/v3` and lands on
+the very 404 handler that emits the 410. So a caller doing exactly the right thing with
+an RFC 5829 header arrived nowhere, and every string assertion on the header passed
+regardless. It now names `/api/v3/schema`, the public discovery document, and both
+`smoke-prod.sh` and `ApplicationSmokeTest` **fetch the advertised target** rather than
+pattern-matching the header — the only check that can tell a live successor from a dead
+one.
 
 ## Before the next deploy: phrase-table hygiene (schoenstatt.link#59)
 

@@ -88,12 +88,6 @@ class TextsController extends SionController
         return $view;
     }
 
-    public function importJkTextsAction()
-    {
-        $table = $this->getSionTable();
-        $table->importJkTexts(false);
-    }
-
     public function getEntityObject($id)
     {
         $object = $this->getSionTable()->getObject('text', $id);

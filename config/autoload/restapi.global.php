@@ -32,7 +32,10 @@ return [
             //indexed URL dropped rather than merely demoted. Scoped to v1 and v2 in
             //RouteNotFoundController — an unknown /api/v3 path is a typo, not a
             //withdrawal, and must stay a 404.
-            'retiredVersionKey' => 'This API version has been retired. Use /api/v3.',
+            //Names the schema document, matching the successor-version Link header. A
+            //bare /api/v3 is not a route and answers 404, so sending a caller there was
+            //sending it nowhere; /api/v3/schema is public and lists every endpoint.
+            'retiredVersionKey' => 'This API version has been retired. Use /api/v3; see /api/v3/schema.',
         ],
         'jwtAuth' => [
 //             'cypherKey' => 'xxxxxxxxxxxxxxxxxxxxxxxxxx',

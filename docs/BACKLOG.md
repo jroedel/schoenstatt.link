@@ -430,6 +430,45 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **`phpstan-baseline.neon` is hiding ~11 more call sites that cannot resolve at
+  runtime.** This is the finding from the 2026-08-14 archaic sweep worth acting on, and it
+  is a different kind of problem from the endpoints that sweep retired: PHPStan level 0
+  *did* catch `SchoenstattTable::getRoleTitleAliases()` and `SionTable::getEmailAddress()`,
+  and both were **baselined rather than fixed**, which converts a guaranteed fatal into a
+  green run. Two down, and reading what is left says the pattern repeats:
+
+  - `Books\Service\DriveGateway` — **five undefined methods across 8 call sites**
+    (`getSchoenstattTable` ×4, `complementSchoenstattTablePersonDataKeysWithOptions` ×2,
+    `getPersonInSchoenstattTable`, `getRemotePerson`), plus an undefined `$personInputFilter`
+    property ×2 and an `unset()` of an offset the array cannot have. That is not one bug, it
+    is a class that looks half-migrated. **Start here**, and start by asking whether anything
+    reaches it at all — the `getMailings()` finding says "unreachable" is a live hypothesis.
+  - `Books\Model\MusicTable:125` calls `$this->getAssociationSchemaV1()`, undefined. Note
+    the name: `getCompositionSchemaV1()` exists and is what the compositions page uses, so
+    this looks like a copy-paste from `SchoenstattTable`. Reachability unmeasured.
+  - `SionModel\View\Helper\Tooltip` calls `$this->escapeHtml()`. View helpers do not
+    inherit that; the idiom is `$this->getView()->plugin('escapeHtml')`.
+  - `SionModel\Controller\SionController` uses an undefined `$entity`.
+  - `Books\Model\LibraryOptions::$isPublicallyListed` is written or read and not declared,
+    and its `getArrayCopy()` has no `return`.
+  - Two `Array has 2 duplicate keys` (`Coins.php`, `SionTable.php`) — silent data loss,
+    since the second key wins and the first line is simply discarded.
+
+  **Method that found them:** PHPStan resolves `$this->foo()` but not
+  `$table = $this->getSionTable(); $table->bar()`, which is how `importJkTexts` hid from it.
+  The complementary scan is receiver-blind — every method **name** defined anywhere in the
+  tree versus every `$var->name(` call site — and a name defined nowhere cannot resolve
+  whatever the receiver turns out to be. 17,519 definitions against the call sites left 18
+  candidates, 3 real. The script is not committed; it is ~60 lines and rebuilding it is
+  faster than maintaining it. Watch two gotchas that cost a re-run: `function &foo()`
+  (reference-returning, so the regex needs `&?`) and scoping the definition search to a
+  hand-picked list of vendor packages rather than all of `vendor/` — the first pass reported
+  172 candidates, nearly all of them Carbon and Reflection.
+
+  **Do not fix these by raising the level or regenerating the baseline.** Each one needs the
+  same two questions the sweep asked: is it reachable, and if so from where. A regenerated
+  baseline answers neither and re-hides all of them.
+
 - [ ] **`$this->personName` is never set, so every person's edit page is titled "Edit ".**
   `module/Schoenstatt/view/schoenstatt/persons/edit.phtml` reads it for both the `<title>`
   and the lead paragraph under the heading, but `SionController::editAction()` sets only
@@ -980,6 +1019,23 @@ readability — the destination is **Symfony**, reached gradually:
   installed in this environment** — so both reported nothing, and "no findings" was
   indistinguishable from "the tool never ran". Check that a scanner exists before believing
   its silence; `rg` is present, `fd` is not.
+
+- [x] ~~**Archaic endpoint sweep, round 2**~~ — **done 2026-08-14.** Four endpoints and
+  three methods retired; full account in [history.md](history.md#archaic-endpoints-round-2-2026-08-14).
+  Kept here for the two corrections, because both were the *reason* an item was ranked
+  where it was:
+
+  - **`/en/music/import` was not a GET mutation.** It was ranked as one — same shape as the
+    `publications/import` retired hours earlier. Measured instead of read: every iteration
+    is gated on `disambiguatingDescription`, and **all 335 compositions have that column
+    empty**, because the 2019 import nulled the field it keyed on. Plus `data/musicas/` does
+    not exist. It wrote nothing and returned `0`. A dead page, not a hazard.
+  - **The successor-version Link the previous deploy shipped pointed at a 404.** `</api/v3>`
+    is not a route. Found by fetching the header's target against production after the
+    deploy, not by reading code — and no test would ever have caught it, because all of them
+    pattern-matched the header string. Both smoke suites now fetch the advertised URL.
+
+  Still open and deliberately not folded in: the ~11 remaining baseline entries above.
 
 - [ ] **Routes with no bjyauthorize guard entry**, so under default-deny they are
   unreachable for every role — not restricted, *inaccessible*. Re-measured
