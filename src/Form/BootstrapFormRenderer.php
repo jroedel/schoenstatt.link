@@ -576,6 +576,12 @@ final class BootstrapFormRenderer
             'email'  => $email,
             'url'    => $url,
             'date'   => $date,
+            //FormTel's list is byte-for-byte FormUrl's, so it shares the array rather
+            //than repeating it. `tel` is what SionModel\Form\Element\Phone declares —
+            //the custom element PersonForm uses four times — and without an entry here
+            //its attributes passed through unfiltered, which is the `maxlength` bug the
+            //select branch already carries a note about, in the other direction.
+            'tel'    => $url,
         ];
         if (! isset($perType[$type])) {
             return $attributes;

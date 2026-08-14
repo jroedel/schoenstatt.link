@@ -1523,14 +1523,48 @@ circulation surface.
 
 ### The edit surface — batch 7, 2026-08-13
 
-Nine of the ten entity edit forms now run on `App\Sion\EntityEdit`, one reproduction of
+**All ten** entity edit forms now run on `App\Sion\EntityEdit`, one reproduction of
 `SionController::editAction()` — the counterpart of what `App\Sion\EntityShow` is for the
 show pages — behind a single `App\Controller\EntityEditController` parameterized per route,
 the way `ContentPageController` serves the five static pages.
 
 | ported | still on laminas |
 |---|---|
-| `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit`, `publication-edit` | `persons/person/edit` |
+| all ten: `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit`, `publication-edit`, `persons/person/edit` | — |
+
+**`persons/person/edit` completed the surface on 2026-08-14**, and porting it found that
+**saving a person had been broken on every front controller** since db6.5. `priestDate`,
+`priestDatePrecision`, `bishopDate` and `bishopDatePrecision` are elements on `PersonForm`
+and columns in the person spec's `update_columns`, but no partial on this site renders them
+— they belong to the patres application, which shares the form. So `getData()` answers null
+for all four, `updateEntity()` writes those nulls, and the two `NOT NULL` precision columns
+reject the write: **laminas answers 500, Symfony wedges as a fatal-200.** Measured against
+both.
+
+The crash was the lucky half. It aborted before the same POST's `PriestDate => null` landed,
+which would have erased the ordination dates of the ten persons who have one. **The obvious
+fix is the dangerous one**: defaulting the precision columns to `'day'` lets the save through
+and turns a loud failure into a silent deletion. Fixed by round-tripping all four through
+hidden inputs, which is a no-op write.
+
+Two more things that generalise past this page:
+
+- **A field on the input filter but absent from the template is not "left alone".**
+  `getData()` returns a key for every input the filter knows, so an unrendered field
+  contributes `null` and `updateEntity()` writes it. That is the mechanism behind both the
+  patres crash above and `nameDay`, which is deliberately not rendered here (its column is
+  being retired) and therefore carried through three hidden inputs — 130 of 325 persons have
+  a name day and every one would have been erased on first save. **Before dropping a field
+  from a ported template, check whether its element is still on the form.**
+- **`recordName()` asked a guess-list instead of the entity spec.** Its docblock said
+  `name_field`; its body walked candidate keys in a fixed order, and for a person that order
+  reached `title` — the honorific — first. `/persons/494/edit` was headed "Sr.". It now reads
+  the spec, like `FormatEntity` does.
+
+The ported page also **fills in a title laminas leaves empty**: `edit.phtml` reads
+`$this->personName`, which no controller ever sets, so every person's page is titled
+`Edit ` with an empty lead paragraph. That is recorded in `docs/BACKLOG.md`; the port renders
+the name, which is what the template plainly intends.
 
 **`publication-edit` joined them on 2026-08-14** and is the one whose view is not a list of
 rows. `fields-partial.phtml` builds five `form-group`s by hand around

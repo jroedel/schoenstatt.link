@@ -219,7 +219,6 @@ return [
         'JUser\\Form\\EditUserForm: \'email\' (element) has no length bound',
         'JUser\\Form\\EditUserForm: \'userId\' (element) has no length bound',
         'JUser\\Form\\LoginForm: \'redirect\' (element) has no length bound',
-        'Schoenstatt\\Form\\AdvancedSearchForm: \'personName\' (text) has no length bound',
         'Schoenstatt\\Form\\AdvancedSearchForm: \'search\' (text) has no length bound',
         'Schoenstatt\\Form\\AssociationForm: \'associationId\' (hidden) has no length bound',
         'Schoenstatt\\Form\\AssociationForm: \'geoPoint\' (text) has no length bound',

@@ -345,6 +345,41 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **`$this->personName` is never set, so every person's edit page is titled "Edit ".**
+  `module/Schoenstatt/view/schoenstatt/persons/edit.phtml` reads it for both the `<title>`
+  and the lead paragraph under the heading, but `SionController::editAction()` sets only
+  `entity`, `entityId`, `form` and `deleteForm`, and `PersonsController` overrides neither
+  `editAction()` nor the view model. So `sprintf('Edit %s', null)` renders `Edit ` and
+  `escapeHtml(null)` renders an empty `<p class="lead"></p>` — for all 325 persons, on the
+  laminas front controller.
+
+  **The Symfony port does not reproduce this** (2026-08-14): it renders the person's name,
+  which is what the template plainly intends, and the difference is recorded as accepted in
+  [strangler.md](strangler.md). Left open here because the laminas view is still what serves
+  this page wherever the laminas front controller runs, and because the same shape may exist
+  on other `*/edit.phtml` views that read a name variable nothing provides — nobody has
+  swept for that.
+
+- [ ] **Four patres date fields ride on every person form and no partial renders them.**
+  `priestDate`, `priestDatePrecision`, `bishopDate`, `bishopDatePrecision` are elements on
+  `Schoenstatt\Form\PersonForm` and entries in the person spec's `update_columns`, because
+  the form is shared with the patres application. On schoenstatt.link nothing renders them,
+  so `getData()` answers null for all four and `updateEntity()` writes those nulls.
+
+  Since db6.5 made `PriestDatePrecision` and `BishopDatePrecision` `NOT NULL`, that write
+  **fails** — so saving a person was broken on both front controllers (laminas 500, Symfony
+  fatal-200), measured 2026-08-14. The ported template works around it by round-tripping all
+  four through hidden inputs, which is a no-op write and is what makes
+  `/persons/{id}/edit` saveable again on the Symfony side.
+
+  Still open because the *laminas* page remains broken, and because the workaround is in a
+  template rather than in the form. The proper fix is a **validation group** on `PersonForm`
+  naming only the fields the rendering application shows, so `getData()` cannot return keys
+  the page never offered — `EditAssignmentForm::prepareforEdit()` already does exactly this.
+  **Do not "fix" it by giving the precision columns a default**: that lets the save through
+  while the same POST's `PriestDate => null` silently erases the ordination dates of the ten
+  persons who have one. The crash is currently the only thing preventing that.
+
 - [ ] **The publication form fetches an author list no picker ever offers.**
   `fields-partial.phtml` builds `authorAssociations` from
   `PublicationsTable::getAuthorAssociationValueOptions()` — the associations flagged

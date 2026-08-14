@@ -162,7 +162,7 @@ final class EntityEditController
 
         return new Response($this->twig->render($this->attribute($request, self::TEMPLATE), [
             'page_title'  => $this->attribute($request, self::PAGE_TITLE),
-            'breadcrumbs' => $this->breadcrumbs($request, $object, $rawId),
+            'breadcrumbs' => $this->breadcrumbs($request, $entity, $object, $rawId),
             'form'        => $form,
             'form_action' => $this->urls->path($laminasRoute, [$idParam => $rawId]),
             'entity'      => $object,
@@ -338,7 +338,7 @@ final class EntityEditController
      * @param array<string, mixed> $object
      * @return list<array<string, mixed>>
      */
-    private function breadcrumbs(Request $request, array $object, string $rawId): array
+    private function breadcrumbs(Request $request, string $entity, array $object, string $rawId): array
     {
         /** @var mixed $declared */
         $declared = $request->attributes->get(self::BREADCRUMBS);
@@ -346,7 +346,7 @@ final class EntityEditController
             return [];
         }
 
-        $name = $this->recordName($object);
+        $name = $this->recordName($entity, $object);
         $trail = [];
         foreach ($declared as $crumb) {
             if (! is_array($crumb)) {
@@ -376,14 +376,30 @@ final class EntityEditController
     /**
      * The record's display name, for a breadcrumb or a page title.
      *
-     * `name_field` is what the entity spec calls it and every one of the ten declares it —
-     * `title` for a book, `fullName` for a person, `formattedRoleTitle` for a role.
+     * **Asked of the entity spec, not guessed.** `name_field` is what the spec calls it and
+     * every one of the ten declares it — `title` for a book, `fullName` for a person,
+     * `formattedRoleTitle` for a role — and it is what `SionModel\View\Helper\FormatEntity`
+     * reads. This method's docblock said so while its body walked a fixed list of candidate
+     * keys in a fixed order, which is the same thing only by coincidence: for `person` the
+     * list reached `title` first, and `title` on a person is the **honorific**. So the
+     * heading of `/persons/494/edit` read "Sr." rather than "M. Aleja Slaughter". Found by
+     * the port baseline, which is also how it became clear the field was never populated on
+     * the laminas side at all (see the note on `personName` in docs/BACKLOG.md).
+     *
+     * The list survives as a fallback for an entity whose spec declares no `name_field`.
+     * Ordered so that the more specific keys come first, since a spec-less entity has no
+     * authority to consult.
      *
      * @param array<string, mixed> $object
      */
-    private function recordName(array $object): string
+    private function recordName(string $entity, array $object): string
     {
-        foreach (['name', 'title', 'fullName', 'formattedRoleTitle', 'key', 'roleTitle'] as $field) {
+        $declared = $this->entities->stringField($entity, 'nameField');
+        if (null !== $declared && isset($object[$declared]) && is_string($object[$declared])) {
+            return $object[$declared];
+        }
+
+        foreach (['fullName', 'formattedRoleTitle', 'roleTitle', 'name', 'title', 'key'] as $field) {
             if (isset($object[$field]) && is_string($object[$field]) && '' !== $object[$field]) {
                 return $object[$field];
             }
@@ -424,7 +440,7 @@ final class EntityEditController
         }
 
         return match ($named) {
-            'personName'              => ['person_name' => $this->recordName($object)],
+            'personName'              => ['person_name' => $this->recordName($entity, $object)],
             'publicationValueOptions' => $this->publicationValueOptions($object, $form),
             'nextWithinLibraryId'     => $this->nextWithinLibraryId($form),
             default                   => throw new RuntimeException(
