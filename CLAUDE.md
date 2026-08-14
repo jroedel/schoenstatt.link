@@ -170,6 +170,19 @@ suites run from the superproject working tree.
 
 ## Verifying code
 
+- **CI cannot run until 2026-09-01.** The account's 2,000 GitHub Actions minutes/month
+  allowance was exhausted on 2026-08-14, so every workflow run fails in ~2 seconds with
+  **no runner assigned and zero steps executed** — a quota, not a build break. Do not
+  diagnose it as code and do not `gh run rerun`; it reproduces. Confirm the shape with
+  `gh api repos/jroedel/schoenstatt.link/actions/runs/<id>/jobs --jq '.jobs[] | "\(.name): \(.conclusion) steps=\(.steps|length) runner=\(.runner_name)"'`
+  (the annotation naming the reason needs `checks:read`, which a fine-grained PAT cannot
+  hold). **Verify with `./tools/ci-local.sh` instead** and paste its result into the PR.
+  It mirrors ci.yml's five jobs in order — lint, composer `--no-dev` rehearsal, PHPStan
+  level 0, unit, integration — and then runs **smoke and fuzz, which CI cannot run at
+  all** because they need a live Apache/MariaDB/APCu. So a green run there is a stricter
+  check than a green run on GitHub, not a weaker stand-in; say so in the PR body, because
+  the reflex is to read local verification as second best. `--ci` limits it to the five
+  CI jobs and skips the ~4-minute smoke suite.
 - HTTP characterization tests live in `test/Smoke` (PHPUnit, `phpunit.xml.dist`). They run against a *running* capsule, not in isolation.
   - Run them with `php composer.phar smoke` — **one process at a time.** Never fan the suite out across parallel agents or background shells, and never run a second copy while one is in flight: concurrent runs against a wedged app are what exhausted the host on 2026-08-02.
 - Unit tests live in `test/Unit` (`php composer.phar unit`); `php composer.phar test` runs every suite. Unit tests talk to no HTTP and require the class under test directly — no vendor autoload, no running app — so they are safe to run freely and stay valid while `vendor/` is mid-migration. All three scripts shell into the capsule: the host PHP lacks the dom/mbstring/xmlwriter extensions PHPUnit needs.
