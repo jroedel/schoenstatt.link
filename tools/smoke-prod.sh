@@ -36,9 +36,12 @@ fetch() {
     [ "${2:-}" = "--follow" ] && follow=(--location)
     meta=$(curl "${CURL_OPTS[@]}" ${follow[@]+"${follow[@]}"} \
         ${EXTRA_HEADERS[@]+"${EXTRA_HEADERS[@]}"} -o "$BODY" -D "$HDRS" \
-        -w "%{http_code}${US}%{redirect_url}${US}%{content_type}${US}%{http_version}" "$url") \
-        || meta="000${US}${US}${US}"
-    IFS="$US" read -r STATUS REDIRECT CTYPE HTTPVER <<<"$meta"
+        -w "%{http_code}${US}%{redirect_url}${US}%{content_type}${US}%{http_version}${US}%{num_redirects}${US}%{url_effective}" "$url") \
+        || meta="000${US}${US}${US}${US}0${US}"
+    # HOPS/EFFECTIVE are the pair that matters under --follow, where %{redirect_url} is empty
+    # (curl only reports a redirect it did NOT take) and %{http_code} is the destination's.
+    # Without them a URL that 301s is indistinguishable from one that answers 200.
+    IFS="$US" read -r STATUS REDIRECT CTYPE HTTPVER HOPS EFFECTIVE <<<"$meta"
 }
 
 # header <name> — value of <name> from the LAST response in $HDRS (--follow
@@ -324,8 +327,19 @@ if [ "$COLD_SAMPLES" -gt 0 ] && [ "${#COLD_URLS[@]}" -eq 0 ]; then
     fail "sitemap yielded no sampleable URLs on $BASE"
 fi
 
-# Follow redirects: superseded short links legitimately 301 to their
-# successor (e.g. SL206282L -> SL207792L) and the sitemap lags behind.
+# Redirects are followed so the fatal-200 check lands on a real page either way — but a
+# sitemap URL that redirects at all is a defect, and this loop used to say the opposite:
+# "superseded short links legitimately 301 to their successor and the sitemap lags behind".
+# They do 301, and it is not legitimate to publish them. A merged publication answers only
+# a permanent redirect to the edition it was merged into, 3,627 of the 10,104 public rows
+# are merged, and `SitemapGenerator::mergedPublicationIds()` excludes every one of them —
+# failing OPEN if it cannot, which publishes all 3,627 and breaks nothing else. Following
+# the redirect silently turned the one symptom of that into a pass.
+#
+# WARN rather than FAIL on purpose: the sitemap is rebuilt by cron, not by the deploy, so a
+# redirect in it is not evidence the deploy went wrong and should not end the deploy loop.
+# The authoritative check is SitemapSmokeTest::testMergedPublicationsAreExcluded(), which
+# compares the whole published set against the database rather than sampling.
 for url in ${COLD_URLS[@]+"${COLD_URLS[@]}"}; do
     fetch "$url" --follow
     # Fatal-200 pages were ~800 bytes; any real page with the layout is far
@@ -334,6 +348,11 @@ for url in ${COLD_URLS[@]+"${COLD_URLS[@]}"}; do
         pass "cold page renders: ${url#"$BASE"}"
     else
         fail "cold page broken: ${url#"$BASE"} (status $STATUS, $(wc -c <"$BODY") bytes)"
+    fi
+    if [ "${HOPS:-0}" -gt 0 ]; then
+        echo "WARN  the sitemap advertises ${url#"$BASE"}, which redirects (${HOPS} hop(s)) to" >&2
+        echo "      ${EFFECTIVE#"$BASE"} — a sitemap must list only URLs that answer 200. If" >&2
+        echo "      this is a merged publication, the exclusion in SitemapGenerator failed open." >&2
     fi
     sleep 1
 done

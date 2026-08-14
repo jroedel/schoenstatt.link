@@ -4,7 +4,14 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
+use PDO;
+
+use function array_diff;
+use function array_diff_key;
+use function array_intersect_key;
+use function array_keys;
 use function array_slice;
+use function array_values;
 use function count;
 use function intdiv;
 use function max;
@@ -235,27 +242,114 @@ class SitemapSmokeTest extends SmokeTestCase
     }
 
     /**
-     * A merged publication is not a page, so it is not in the sitemap.
+     * A merged publication is not a page, so it is not in the sitemap — checked against every
+     * row, not against a remembered example.
      *
-     * `/en/SL200417L` answers 301 to `/en/SL207340L`; 3,627 of the 10,104 public publications
-     * here are merged. Offering a crawler thousands of permanent redirects as canonical URLs
-     * is what this excludes.
+     * `/en/SL200417L` answers 301 to `/en/SL207340L`; 3,630 of 10,166 publications here are
+     * merged, 3,627 of them public. Offering a crawler thousands of permanent redirects as
+     * canonical URLs is what this excludes.
+     *
+     * **This used to assert that one hardcoded id was absent and its survivor present**, which
+     * only ever caught total failure. Two things it could not catch, both of them live risks:
+     *
+     *  - **A merge made after the test was written.** `copyPublicationToMainCorpus()` marks its
+     *    source row merged, so every use of "Copy into main corpus" creates a new redirect that
+     *    must leave the sitemap. That path was unreachable for years and works again as of
+     *    2026-08-14, so the set is no longer static.
+     *  - **A partial failure.** `SitemapGenerator::mergedPublicationIds()` catches `Throwable`
+     *    and excludes nothing — deliberately, because an over-broad sitemap is recoverable and
+     *    an empty one is a Google error in its own right. That policy is only safe if something
+     *    notices, and nothing else does: the file stays well-formed and the build stays silent.
+     *
+     * So the assertion is set equality against the database, in both directions. Over-broad
+     * fails too, because a missing edition is a page withdrawn from the index.
      */
     public function testMergedPublicationsAreExcluded(): void
     {
-        $urls = implode("\n", $this->publishedUrls());
+        $published = $this->publishedPublicationIds();
+        self::assertNotEmpty($published, 'the sitemap publishes no publication at all');
 
-        self::assertStringNotContainsString(
-            '/en/SL200417L',
-            $urls,
-            'a merged publication is in the sitemap; it only ever answers a 301 to the edition it '
-            . 'was merged into'
+        //`publication_public` is the only resourceId the navigation renders, so it is also the
+        //only one the sitemap can contain — getPublicationNavigationData() filters on the same
+        //value that getMergedPublicationIds() does. The other three merged rows are not
+        //candidates, and comparing against them would report false "missing" ids.
+        $statement = $this->pdo()->prepare(
+            'SELECT PublicationId, MergedIntoPublicationId IS NOT NULL AS merged
+               FROM sch_publications
+              WHERE ResourceId = ?'
         );
-        self::assertStringContainsString(
-            '/en/SL207340L',
-            $urls,
-            'the surviving edition of that merge is missing, so the exclusion is too broad'
+        $statement->execute(['publication_public']);
+        $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+
+        $shouldPublish = [];
+        $merged        = [];
+        foreach ($rows as $row) {
+            $id = (int) $row['PublicationId'];
+            if ((int) $row['merged'] === 1) {
+                $merged[$id] = true;
+                continue;
+            }
+            $shouldPublish[$id] = true;
+        }
+        self::assertNotEmpty($merged, 'no merged publication in the database, so this proves nothing');
+
+        //the mapping is arithmetic, so a wrong offset would silently compare two disjoint sets
+        //and pass. Every published id must be a real row.
+        $unknown = array_diff(array_keys($published), array_keys($shouldPublish), array_keys($merged));
+        self::assertSame(
+            [],
+            array_values(array_slice($unknown, 0, 10)),
+            'these sitemap URLs map to no public publication row — the SL<n>L offset is wrong, '
+            . 'and with a wrong offset the merged-id comparison below is meaningless'
         );
+
+        $leaked = array_intersect_key($published, $merged);
+        self::assertSame(
+            [],
+            array_slice($leaked, 0, 10, true),
+            count($leaked) . ' merged publication(s) are in the sitemap; each answers only a 301 '
+            . 'to the edition it was merged into (e.g. /en/SL200417L -> /en/SL207340L)'
+        );
+
+        $missing = array_diff_key($shouldPublish, $published);
+        self::assertSame(
+            [],
+            array_slice($missing, 0, 10, true),
+            count($missing) . ' unmerged public publication(s) are missing, so the exclusion is '
+            . 'too broad — those pages answer 200 and are no longer offered to a crawler'
+        );
+    }
+
+    /**
+     * Publication ids the sitemap publishes, keyed on the id.
+     *
+     * Read from *every* file the index names rather than from `sitemap-publications.xml`,
+     * because misfiling is a defect that has actually happened here: a per-SAPI navigation
+     * cache once put all 250 associations into `sitemap-pages.xml` and
+     * `SitemapWriter::removeOrphans()` then deleted the file they belonged in. A merged
+     * publication in the wrong file is still published.
+     *
+     * `200000` is `SchoenstattLinkIdentifier::ENTITY_STARTING_NUMBER['publication']`. It is
+     * copied rather than imported because this suite has no autoloader on purpose — see
+     * `test/bootstrap.php` — and the caller guards against it being wrong.
+     *
+     * @return array<int, true>
+     */
+    private function publishedPublicationIds(): array
+    {
+        //publishedUrls() hands back the <loc> contents, so these are bare URLs
+        preg_match_all(
+            '#/[a-z]{2}/SL(\d+)L(?:/\S*)?$#m',
+            implode("\n", $this->publishedUrls()),
+            $found
+        );
+
+        $ids = [];
+        foreach ($found[1] as $number) {
+            $ids[(int) $number - 200000] = true;
+        }
+
+        return $ids;
     }
 
     /**
@@ -374,6 +468,16 @@ class SitemapSmokeTest extends SmokeTestCase
             'bytes',
             $headers['accept-ranges'] ?? null,
             'no Accept-Ranges, so Apache is not handling this as a static file'
+        );
+    }
+
+    private function pdo(): PDO
+    {
+        return new PDO(
+            'mysql:host=db;dbname=ourlink_db1;charset=utf8mb4',
+            'schoenstatt',
+            'schoenstatt',
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
         );
     }
 }

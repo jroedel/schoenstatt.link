@@ -65,7 +65,7 @@ every crawler have it on file.
 | library 5 | `ViewRole = lib_user`; per-record ACL, same route as the public ones | 1 × 5 |
 | `#fragment` URLs | Google discards the fragment, so they duplicate pages already listed | 6 × 5 |
 | `/literature/` | assembled with an empty parameter; answers **404** | 1 × 5 |
-| merged publications | their URL is a 301 to the surviving edition | 3,627, pre-existing |
+| merged publications | their URL is a 301 to the surviving edition | 3,627 of 10,104 |
 
 Two of these need care because they are not one rule:
 
@@ -84,6 +84,33 @@ Every one of these filters **fails open**. An ACL we cannot build, a resource
 the ACL has never heard of, a table read that throws — all publish the page
 rather than dropping it. An over-broad sitemap is recoverable; an empty one is a
 Google error in its own right.
+
+### The merged-publication exclusion is checked against every row
+
+Fail-open is only a safe policy if something notices, and for the merged
+publications nothing else would: the file stays well-formed, the build stays
+silent, and Search Console reports "Page with redirect" weeks later.
+`SitemapSmokeTest::testMergedPublicationsAreExcluded()` therefore asserts **set
+equality against the database** — the published publication ids are exactly the
+`publication_public` rows with `MergedIntoPublicationId IS NULL` — and fails in
+both directions, because a missing edition is a page withdrawn from the index.
+Measured 2026-08-14: 6,477 published, 3,627 excluded, 0 leaked, 0 missing.
+
+Until then it asserted that one remembered id (`SL200417L`) was absent and its
+survivor (`SL207340L`) present, which only ever caught total failure. **The set
+is not static**: `copyPublicationToMainCorpus()` marks its source row merged, so
+every use of "Copy into main corpus" mints a new redirect that has to leave the
+sitemap — and that path, unreachable for years, works again as of 2026-08-14.
+
+`getMergedPublicationIds()` restricts itself to `ResourceId =
+'publication_public'`, which is not a narrowing bug: `getPublicationNavigationData()`
+filters on the same value, so no other resourceId reaches the sitemap in the
+first place. The three merged `publication_patres` / `publication_institute`
+rows are absent because they were never candidates.
+
+Its APCu entry cannot go stale for the built sitemap either, and not by luck: an
+APCu segment belongs to the SAPI that created it, so the cron console process
+starts with a cold cache and reads the database every run.
 
 ## `<lastmod>`, and why it does not come from `UpdatedOn`
 
@@ -183,7 +210,7 @@ these responses has to be verified against production, not just the capsule.
 
 ```bash
 docker compose exec -T app php bin/console sitemap:build --url http://localhost:8080 --force
-php composer.phar smoke -- --filter SitemapSmokeTest   # 9 tests, ~72k assertions
+php composer.phar smoke -- --filter SitemapSmokeTest   # 10 tests, ~72k assertions
 php composer.phar unit -- --filter SitemapWriterTest   # writer + id classification
 ```
 
