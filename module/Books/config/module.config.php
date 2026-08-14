@@ -903,15 +903,6 @@ return [
                                     ],
                                 ],
                             ],
-                            'import' => [
-                                'type' => Literal::class,
-                                'options' => [
-                                    'route'    => '/import',
-                                    'defaults' => [
-                                        'action'     => 'import',
-                                    ],
-                                ],
-                            ],
                             'book-list' => [
                                 'type' => Literal::class,
                                 'options' => [
@@ -991,15 +982,6 @@ return [
                             ],
                             'defaults' => [
                                 'action'     => 'show',
-                            ],
-                        ],
-                    ],
-                    'fix-person-id' => [ //We will never show all imports at once, just per-library
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/fix-person-id',
-                            'defaults' => [
-                                'action'     => 'fixPersonId',
                             ],
                         ],
                     ],
@@ -2750,7 +2732,6 @@ return [
                 ['route' => 'libraries/library/collections', 'roles' => ['lib_user']],
                 ['route' => 'borrowers', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
-                ['route' => 'borrowers/fix-person-id', 'roles' => ['lib_administrator']],
 
                 ['route' => 'collections/collection/edit', 'roles' => ['lib_user']],
                 ['route' => 'collections/create', 'roles' => ['lib_user']],
