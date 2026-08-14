@@ -301,6 +301,28 @@ final class PageBuilder
         $dictionaryTable = ($this->services)(DictionaryTable::class);
         $languageNames   = $dictionaryTable->getLanguageNames();
         foreach ($pagesByLanguage as $languageCode => $languagePages) {
+            //A publication with no language has nothing to group it under: `publications/index`
+            //is `/literature/:inLanguage` constrained to `[a-z]{2,2}`, and `Segment::assemble()`
+            //does not enforce a route's own constraints, so an empty parameter quietly produced
+            //`/en/literature/` — a URL that answers 404 while `/en/literature` answers 200.
+            //Nothing rendered it (measured 2026-08-14: both navbars stop at depth 0, the Symfony
+            //breadcrumb omits the group, the laminas one does not exist on publication pages, and
+            //the sitemap's trailing-slash rule dropped it) — but a node whose href 404s is a trap
+            //for whatever renders depth 1 next, and one heuristic in another component is not a
+            //guard. So the group is not built.
+            //
+            //Its children are re-parented onto the literature root rather than dropped: they are
+            //25 real published publications, they are what the sitemap walks, and losing them
+            //here would withdraw 125 URLs from the index. They stay orphaned in the sense that no
+            //page links to them — see BACKLOG, where giving them a real index page is the option
+            //that was not taken.
+            if ('' === (string) $languageCode) {
+                foreach ($languagePages as $languagePage) {
+                    $pages[] = $languagePage;
+                }
+                continue;
+            }
+
             $languageName = $languageNames[$languageCode] ?? 'Other';
             $pages[]      = [
                 'label'  => $languageName . ' Schoenstatt Literature',

@@ -64,7 +64,7 @@ every crawler have it on file.
 | `/admin`, `/movement`, `/libraries` | guarded routes, 302 to the login page | 3 × 5 |
 | library 5 | `ViewRole = lib_user`; per-record ACL, same route as the public ones | 1 × 5 |
 | `#fragment` URLs | Google discards the fragment, so they duplicate pages already listed | 6 × 5 |
-| `/literature/` | assembled with an empty parameter; answers **404** | 1 × 5 |
+| `/literature/` | assembled with an empty parameter; answered **404** | 1 × 5, **fixed at source 2026-08-14** |
 | merged publications | their URL is a 301 to the surviving edition | 3,627 of 10,104 |
 
 Two of these need care because they are not one rule:
@@ -277,6 +277,25 @@ each other, because nothing else would notice them drifting apart.
 - **hreflang is unconditional**: all five locales are declared whether a
   translation of that page exists or not. Deliberate — the set has to match what
   the pages themselves publish, and claiming fewer would break reciprocity.
-- The navigation menu still shows the "Other Schoenstatt Literature" link that
-  404s. Only the sitemap stops publishing it; fixing the menu means changing
-  `PageBuilder`, which changes what every visitor sees.
+- ~~The navigation menu still shows the "Other Schoenstatt Literature" link that
+  404s.~~ **Fixed at source 2026-08-14 — and the claim was wrong.** `PageBuilder`
+  no longer builds that group at all, so the sitemap's trailing-slash rule has
+  nothing left to catch here. Two things are worth keeping from it:
+  - **Nothing ever rendered the link.** Measured against production before
+    changing anything: both navbars stop at depth 0 (`setMaxDepth(0)` in the
+    laminas layout, `navigation_items()` in the Twig one) and the group sat at
+    depth 2; the Symfony breadcrumb omitted it; the laminas rendering of a
+    publication page carries no breadcrumb at all; and the literature home lists
+    twelve language links in both renderings and never a languageless one. So
+    "the menu shows a 404" was inferred from the data structure, not observed —
+    which is exactly the mistake this document exists to stop.
+  - **The sitemap was the only thing catching it**, through a rule written for a
+    different reason. That is not a guard. A page whose href 404s is now refused
+    where it is built, and `test/Integration/NavigationRouteParametersTest`
+    fails if any branch declares an empty route parameter again.
+
+  The group's 25 children are re-parented onto the literature root rather than
+  dropped, so they stay in the sitemap — verified, and `SitemapSmokeTest`'s set
+  comparison against the database would fail if they went missing. They remain
+  **orphans**: no page links to them. Giving them a real index page is the
+  option that was considered and not taken; see BACKLOG.
