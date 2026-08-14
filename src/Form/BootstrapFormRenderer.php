@@ -680,9 +680,17 @@ final class BootstrapFormRenderer
             return $this->element($element);
         }
 
-        /** @var mixed $raw */
-        $raw      = $element->getValue();
-        $selected = is_array($raw) ? $raw : [$raw];
+        /**
+         * `(array)`, exactly as the helper casts it, and the difference is not cosmetic.
+         * `(array) null` is the **empty array**, where `[$raw]` would be `[null]` — and
+         * `in_array('', [null])` is true under the loose comparison below, so a
+         * never-set picker would keep an empty option laminas drops. Caught by the
+         * baseline on `mainPublicationId` and `translatedFromPublicationId`, the two
+         * pickers of the five that declare one.
+         *
+         * @var array<array-key, mixed> $selected
+         */
+        $selected = (array) $element->getValue();
 
         $narrowed = [];
         foreach ($selected as $value) {
@@ -706,7 +714,15 @@ final class BootstrapFormRenderer
             $clone->setEmptyOption(null);
         }
 
-        return $this->select($clone, $translateOptions);
+        /**
+         * **No `form-control` class**, which is what `$withClass = false` buys.
+         *
+         * TwbBundle adds that class in `formRow`, and none of the five call sites is a
+         * row — `fields-partial.phtml` builds their `form-group` by hand and calls the
+         * helper directly, so laminas emits `<select name="authorsAll[]" multiple>` with
+         * no class at all. Defaulting to true put one on all five.
+         */
+        return $this->select($clone, $translateOptions, false);
     }
 
     private function select(Select $element, bool $translateOptions = true, bool $withClass = true): string

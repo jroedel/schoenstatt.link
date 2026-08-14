@@ -515,7 +515,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             EntityEditController::class => fn (): EntityEditController => new EntityEditController(
                 $this->entityEdit(),
                 $this->twig(),
-                $this->routeUrl()
+                $this->routeUrl(),
+                // Only the publication form needs it, for the author-association list that
+                // comes off PublicationsTable rather than out of the form.
+                $this->entities()
             ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.

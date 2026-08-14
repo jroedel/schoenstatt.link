@@ -236,6 +236,53 @@ class FormSelectWithoutOptionsContractTest extends TestCase
         );
     }
 
+    /**
+     * No `form-control` class, because none of the five call sites is a row.
+     *
+     * TwbBundle adds that class in `formRow`; `fields-partial.phtml` builds the
+     * `form-group` by hand and calls this helper directly, so laminas emits a bare
+     * `<select>`. The reproduction defaulted to adding it and put a class on all five
+     * pickers — a difference no assertion here saw, because every test above checks
+     * *which options* are rendered and none checked the element's own attributes. Found
+     * by `tools/port-baseline.php`, which is the answer to "why keep running that when
+     * the tests pass".
+     */
+    public function testTheSymfonyReproductionAddsNoBootstrapClass(): void
+    {
+        $laminas = ($this->helper())($this->multiSelect());
+        self::assertStringNotContainsString('form-control', $laminas, 'precondition: laminas adds no class');
+
+        self::assertStringNotContainsString(
+            'form-control',
+            $this->reproduction()->selectWithoutOptions($this->multiSelect(), false)
+        );
+    }
+
+    /**
+     * A picker that has never been set drops its empty option, on both sides.
+     *
+     * The distinction this pins is `(array) null` — the empty array — against `[null]`.
+     * The helper casts, so `in_array('', $selected)` is false and the empty option goes;
+     * building the array by hand as `[$raw]` makes it `[null]`, and `null == ''` under
+     * the loose comparison the original uses, so the option stayed. Both `mainPublicationId`
+     * and `translatedFromPublicationId` are exactly this case on a publication that names
+     * no main edition, which is most of them.
+     */
+    public function testAnUnsetPickerDropsItsEmptyOptionOnBothSides(): void
+    {
+        $select = new Select('mainPublicationId');
+        $select->setValueOptions([1 => 'Kentenich']);
+        $select->setEmptyOption('Choose...');
+        //no setValue() at all: getValue() answers null, as it does for a publication
+        //whose main edition has never been chosen
+
+        self::assertStringNotContainsString('Choose...', ($this->helper())($select));
+        self::assertStringNotContainsString(
+            'Choose...',
+            $this->reproduction()->selectWithoutOptions($select, false)
+        );
+    }
+
     private function reproduction(): BootstrapFormRenderer
     {
         //The translator is the identity function: what these tests check is which options

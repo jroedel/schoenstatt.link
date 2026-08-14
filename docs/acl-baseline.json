@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 52,
+        "routes_shadowed_by_symfony": 53,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 94,
+        "symfony_routes_acl_checked": 96,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 124,
+        "symfony_served_routes": 126,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -6705,6 +6705,16 @@
             "probe": "/SL200000L/a"
         },
         {
+            "laminas_route": "publication-edit",
+            "path": "/:sw_id/edit",
+            "symfony_route": "publication-edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publication-edit",
+            "access_kind": "acl",
+            "probe": "/SL200000L/edit"
+        },
+        {
             "laminas_route": "publications",
             "path": "/literature",
             "symfony_route": "publications",
@@ -8684,6 +8694,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/publication",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-edit": {
+            "path": "/{sw_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-edit.locale": {
+            "path": "/{_locale}/{sw_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-edit",
                 "reason": null,
                 "denial_style": "html"
             }
