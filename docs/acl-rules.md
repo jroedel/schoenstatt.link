@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 161 |
-| guarded routes total | 161 |
+| guarded routes existing | 159 |
+| guarded routes total | 159 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 163 |
+| route guard entries | 161 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 61 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 30 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 142 |
-| total routes | 185 |
-| unguarded routes | 24 |
-| unguarded routes matchable | 13 |
+| total routes | 181 |
+| unguarded routes | 22 |
+| unguarded routes matchable | 11 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (161 + 24 = 185). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (159 + 22 = 181). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -516,14 +516,12 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `associations/association` | yes | guest, sch_basic, sch_user, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `associations/create` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
 | `associations/do-work` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `associations/import` | yes | sch_administrator | sch_administrator (1) | no |  |
 | `associations/old-association` | yes | guest, sch_basic, sch_user, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `books/book` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `books/book/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `books/create` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `borrowers` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `borrowers/borrower` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
-| `borrowers/fix-person-id` | yes | lib_administrator | lib_administrator (1) | no |  |
 | `checkouts/library` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `checkouts/library/current` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `checkouts/library/overdue` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
@@ -642,7 +640,7 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-13 of the 24 are endpoints reachable by nobody.
+11 of the 22 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
@@ -664,12 +662,10 @@ the matched route name, so the missing guard costs nothing. The `yes` rows are t
 | `jtranslate/phrase` | no |
 | `juser/user` | no |
 | `libraries/library/delete` | **yes** |
-| `libraries/library/import` | **yes** |
 | `library-imports` | no |
 | `publication-upload-cover` | **yes** |
 | `sign-in-no-cookies` | **yes** |
 | `sion-model` | no |
-| `sion-model/delete-entity` | **yes** |
 
 ## Phantom guard entries (guard names a route the router does not have)
 

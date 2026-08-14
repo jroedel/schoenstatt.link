@@ -940,6 +940,36 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Config rot / small cleanups
 
+- [x] ~~**Dead-code sweep**~~ — **done 2026-08-14, ~1,000 lines.** Recorded here for the
+  method and the negative results, both of which are worth more than the line count.
+
+  Removed: `AssociationsController`'s four unreachable methods (908 → 234 lines, of which
+  `getChileInfo()` alone was 539 lines of hardcoded 2019 Chilean diocese data with **504 of
+  them already commented out**); `BorrowersController::fixPersonIdAction()`, a 2017 one-off
+  carrying the comment *"already fixed, we will disable to prevent problems"* above a
+  first-statement `return;`; three routes and their guard entries; five orphaned templates;
+  `Books\Filter\Printf`; three superseded mail templates and a route with no action in
+  SionModel; and the now-dead `PatresGateway` dependency `BorrowersController` still asked
+  its factory for.
+
+  **Two heuristics that earned their keep and should be reused:**
+  - **`return;` as the first statement of an action.** Two hits, both one-off migrations
+    disabled in place rather than deleted. Cheap to scan for and it finds intent, not just
+    dead code — someone wrote "do nothing" and meant it.
+  - **A method whose only caller is a commented-out line.** That is how
+    `fillNoAccentsColumns()` and `getChileInfo()` both survived: the call site was commented
+    out, so no reference-counting tool flagged the callee.
+
+  **The negative results, because a clean scan is easy to misread as a scan that did not
+  run:** exactly **1 unreferenced class out of 340** (`Printf`); no action other than the two
+  above starts with `return;`; and of 1,586 lines sitting in commented-out regions of ≥8
+  lines, all but the 504-line Chile block are explanatory prose rather than disabled code.
+
+  **A tooling caution.** The first pass of two of these scans used `fd`, which **is not
+  installed in this environment** — so both reported nothing, and "no findings" was
+  indistinguishable from "the tool never ran". Check that a scanner exists before believing
+  its silence; `rg` is present, `fd` is not.
+
 - [ ] **Routes with no bjyauthorize guard entry**, so under default-deny they are
   unreachable for every role — not restricted, *inaccessible*. Re-measured
   2026-08-05 by `tools/acl-table.php` after the Bible removal: **29 names, of
@@ -947,19 +977,21 @@ readability — the destination is **Symfony**, reached gradually:
   `may_terminate` false, which can never be the matched route name, so their
   missing guard costs nothing — an earlier count of 30 did not separate these
   and overstated the problem by more than half.
-  - **7 of the 18 are pure dead config**: the route names a controller action
-    that does not exist, so granting a role would only turn "reachable by
-    nobody" into a fatal. Delete route and guard together:
-    `admin/data-problems`, `admin/moderate`,
-    `assignments/assignment/suggest`, `assignments/assignment/moderate`,
-    ~~`jtranslate/clear-cache`~~, `libraries/library/import`,
-    `sion-model/delete-entity`. The four Schoenstatt ones belong to the
-    abandoned suggest/moderate feature; see the deletion clusters below.
-    **`jtranslate/clear-cache` was removed 2026-08-10** — it had no guard entry
-    to delete alongside it, so the whole change was dropping the route from
-    `module/JTranslate/config/module.config.php` and regenerating the ACL
-    snapshots, which lost it from `unguarded_routes` and
-    `unguarded_routes_matchable`. Six left.
+  - **The pure-dead-config half is now cleared.** Seven routes named a controller
+    action that does not exist, so granting a role would only have turned
+    "reachable by nobody" into a fatal. All seven are gone:
+    `jtranslate/clear-cache` (2026-08-10), `libraries/library/import` and
+    `sion-model/delete-entity` (2026-08-14), and — **four of them had already
+    been removed by other work before anyone came back to this list**:
+    `admin/data-problems`, `admin/moderate`, `assignments/assignment/suggest`
+    and `assignments/assignment/moderate` were absent from the router when
+    re-checked on 2026-08-14, so this entry spent some time naming four routes
+    that no longer existed. Worth recording as a caution about the list rather
+    than just deleting the names: a stale to-do reads exactly like a live one,
+    and the only way to tell was to ask the router.
+  - **Re-measured 2026-08-14 after the dead-code sweep: 22 names, 11 of them real
+    endpoints** — down from 29/18. The eleven left all need a *guard entry*
+    rather than deletion, and none of them is dead config.
   - **4 answer themselves from their siblings** and need no product decision —
     every neighbouring route in the same tree already agrees:
     `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` → `lib_user`
