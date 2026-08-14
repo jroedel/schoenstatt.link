@@ -36,6 +36,12 @@
   below the Markdown-help link. Reproduced as the partial has it rather than as it probably
   meant it — `inactivationReason` is a select whose options a reader might expect
   translated, and on laminas they are not.
+
+  **The field rows live in `books/_book-fields.html.twig` now**, shared with the create
+  form so that a field cannot be added to one surface and quietly forgotten on the
+  other. What stays in this file is what edit.phtml keeps outside its own partial —
+  which is not the same set for every entity, and is the detail worth checking before
+  moving anything across the boundary.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -51,30 +57,7 @@
 <h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, form_action) }}
-{{ form_row(form.get('withinLibraryId')) }}
-{{ form_button(form.get('nextWithinLibraryId')) }}
-{{ form_row(form.get('title')) }}
-{{ form_row(form.get('authors'), false) }}
-{{ form_row(form.get('collectionId'), false) }}
-{{ form_row(form.get('callNumber'), false) }}
-{{ form_row(form.get('newCallNumber'), false) }}
-{{ form_row(form.get('inLanguage'), false) }}
-{{ form_row(form.get('category'), false) }}
-{{ form_row(form.get('isbn'), false) }}
-{{ form_row(form.get('bookEdition'), false) }}
-{{ form_row(form.get('numberOfPages'), false) }}
-{{ form_row(form.get('publishedYear'), false) }}
-{{ form_row(form.get('publisher'), false) }}
-{{ form_row(form.get('publishingPlace'), false) }}
-{{ form_row(form.get('publicationId'), false) }}
-{{ form_row(form.get('keywords'), false) }}
-<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
-{{ form_row(form.get('publicNotes'), false) }}
-{{ form_row(form.get('adminNotes'), false) }}
-{{ form_row(form.get('adminTags'), false) }}
-{{ form_row(form.get('isActive'), false) }}
-{{ form_row(form.get('inactivationReason'), false) }}
-{{ form_row(form.get('security'), false) }}
+{{ include('books/_book-fields.html.twig') }}
 {{ form_submit(form.get('submit')) }}
 {{ form_close() }}
 {% endblock %}

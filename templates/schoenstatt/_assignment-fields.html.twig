@@ -1,0 +1,36 @@
+{#-
+  The assignment field list — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/assignments/fields-partial.phtml, shared by the edit form and (from batch 9) the
+  create form, exactly as that partial is shared by edit.phtml and create.phtml.
+
+  No submit row: assignments/edit.phtml renders it outside this partial, together with the
+  delete button and its confirmation modal — none of which a create page has.
+
+  The conditional "New person?" paragraph is part of the partial on laminas, and its
+  guard is two-part: the personId element must not be disabled *and* the visitor must be
+  allowed to create a person.
+
+  The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
+  a page puts around it stays in that page's template.
+
+  Its delimiters are whitespace-controlled so that a plain include standing where the rows
+  used to stand emits exactly the bytes the rows emitted — verified page by page, in two
+  locales, before and after. Do not spell the delimiter sequences out in prose here: Twig
+  has no escape for them inside a comment, so writing one ends the comment early and turns
+  the rest of this docblock into template code. That wedged the collection form during
+  this very refactor. See docs/strangler.md.
+-#}
+{{ form_row(form.get('associationId'), false) }}
+{{ form_row(form.get('personId'), false) }}
+{% if not form.get('personId').getAttribute('disabled') and is_allowed('route/persons/create') %}
+<p>{{ translate('New person?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a>
+    {% if is_allowed('route/admin/import-father') %}
+    or <a target="_blank" href="{{ laminas_path('admin/import-father') }}">{{ translate('Import from Patres') }}</a>
+    {% endif %}
+{% endif %}
+{{ form_row(form.get('roleId')) }}
+{{ form_row(form.get('startDate')) }}
+{{ form_row(form.get('startDatePrecision')) }}
+{{ form_row(form.get('endDate')) }}
+{{ form_row(form.get('endDatePrecision')) }}
+{{ form_row(form.get('security')) -}}
