@@ -23,6 +23,7 @@ use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
+use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
@@ -65,6 +66,7 @@ use App\Sitemap\ChangeLog;
 use App\Sitemap\GuestAccess;
 use App\Sitemap\SitemapGenerator;
 use App\Sion\Entities;
+use App\Sion\EntityDelete;
 use App\Sion\EntityEdit;
 use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
@@ -135,6 +137,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private RouteGuard $routeGuard;
     private EntityShow $entityShow;
     private EntityEdit $entityEdit;
+    private EntityDelete $entityDelete;
     private Entities $entities;
     private CommentPredicates $commentPredicates;
 
@@ -520,6 +523,20 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 // comes off PublicationsTable rather than out of the form.
                 $this->entities()
             ),
+            // Batch 8's seven delete confirmations, over App\Sion\EntityDelete. Three route
+            // defaults rather than the edit controller's nine, because the laminas page is
+            // one view script for every entity — see config/symfony/routes.php.
+            //
+            // The ServiceBridge is here for `nowMessenger`: the invalid-CSRF branch has to
+            // put its message on the response it is rendering, not on the next one, so it
+            // pushes into the shared ControllerPluginManager plugin the layout's helper
+            // reads from rather than into the flash messenger.
+            EntityDeleteController::class => fn (): EntityDeleteController => new EntityDeleteController(
+                $this->entityDelete(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->laminas()
+            ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.
             CommentCreateController::class => fn (): CommentCreateController => new CommentCreateController(
@@ -572,6 +589,16 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             $this->entities(),
             new LibraryScopedForms($this->laminas())
         );
+    }
+
+    /**
+     * The shared reproduction of SionController::deleteAction(), batch 8's counterpart to
+     * entityEdit(). No form factory of its own: the confirmation form is
+     * `new DeleteEntityForm()`, which is literally what the laminas action does.
+     */
+    private function entityDelete(): EntityDelete
+    {
+        return $this->entityDelete ??= new EntityDelete($this->laminas(), $this->entities());
     }
 
     /**

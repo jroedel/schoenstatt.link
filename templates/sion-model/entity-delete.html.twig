@@ -1,0 +1,54 @@
+{#
+  The delete confirmation — the Twig counterpart of
+  module/SionModel/view/sion-model/sion-model/delete.phtml, which still renders this page
+  wherever laminas is the front controller.
+
+  **One template for all seven routes**, where the edit surface needed ten. That is not a
+  simplification taken here; it is how the laminas page is built. `deleteAction()` renders
+  one view script for every entity, and the only thing that varies is the entity key in the
+  heading. There is no breadcrumb trail, no per-entity partial and no record name — the page
+  does not even tell the visitor *which* record they are about to destroy, which is a
+  usability problem filed in docs/BACKLOG.md rather than fixed in a port.
+
+  ## Three details worth stating, because each is load-bearing
+
+  - **`entityObject` is passed and ignored.** The laminas action fetches the row
+    (`getEntityObject($id)`) and puts it in the view model, and the view script never reads
+    it. This template reproduces the rendering, so the controller does not fetch a row it
+    would only discard.
+  - **The `&nbsp;` between the two buttons is content, not layout.** delete.phtml echoes the
+    submit, then `&nbsp;`, then the button, with nothing between them. tools/port-baseline.php
+    collapses ordinary whitespace but deliberately preserves U+00A0, so a newline here would
+    be forgiven and a stray space around the entity would not — hence the whitespace control.
+  - **The heading is translated, and the string is assembled.** `'Delete ' ~ entity` is the
+    literal laminas builds and passes through the translator, so the phrase rows already
+    exist — `Delete association` under the `Schoenstatt` domain, `Delete publication` under
+    `Books`, and five more. The controller hands the assembled string over as `page_title` so
+    that the `<h1>` here and the `<title>` in the layout resolve the *same* phrase in the
+    route's own text domain. Splitting them would file a second row under `default`.
+
+  ## Cancel does not delete any more
+
+  Until 2026-08-14 the Cancel button below rendered as `type="submit"`: SionModel's
+  `DeleteEntityForm` added it with no element type, and `FormButton` defaults a typeless
+  element to a submit. `deleteAction()` validated the CSRF token without looking at which
+  button was pressed, so **clicking Cancel deleted the record** — measured against a fixture,
+  302 to the entity index with the row gone. The form now declares `Button`, whose own
+  attributes carry `type="button"`, and both this route and the laminas action refuse a POST
+  naming `cancel`.
+
+  The consequence for this page is that Cancel no longer navigates anywhere: it is inert
+  outside a modal, where `data-dismiss` gives it its job back. An inert button is worse than
+  a useful one and much better than a destructive one; giving it somewhere to go needs a
+  cancel URL the shared form does not currently have, and is filed.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+{{ form_open(form, form_action) }}
+{{- form_row(form.get('security')) -}}
+{{- form_submit(form.get('submit')) -}}
+&nbsp;{{- form_button(form.get('cancel')) -}}
+{{ form_close() }}
+{% endblock %}

@@ -263,9 +263,16 @@ readability — the destination is **Symfony**, reached gradually:
   byte-for-byte. What that unblocks, roughly in order of ease:
   - `sion-model/auto-fix-data-problems` — POST + CSRF, no new element types, and its
     template is already ported for the read-only sibling.
-  - `associations/create`, `association-delete` — same form, same renderer; create needs
-    the query-parameter prefill `AssociationsController::createAction()` does.
+  - `associations/create` and the sixteen other `*/create` routes — same forms as the edit
+    surface, same renderer; `associations/create` needs the query-parameter prefill
+    `AssociationsController::createAction()` does. **This is the next batch of any size**:
+    seventeen routes, but each entity has its own template, so there is much less shared
+    leverage than the edit or delete surfaces gave.
   - `/persons`, `/movement`, `/literature` search forms — new element types likely.
+  - **Done:** the delete surface, batch 8 (2026-08-14) — seven routes on one controller and
+    one template. Five of the twelve `delete` routes are *not* portable and it is worth
+    knowing why before counting them: three are reachable by nobody and two have their own
+    controllers. See [strangler.md](strangler.md).
   - **Still blocked:** the user and translation forms (`CreateRoleForm`, `EditUserForm`,
     `DeleteUserForm`, `EditPhraseForm`), which read JUser's unreproduced
     `GlobalAdapterFeature::setStaticAdapter()` through a `NoRecordExists` validator.
@@ -445,6 +452,64 @@ readability — the destination is **Symfony**, reached gradually:
   `test/Smoke/AssociationDeleteSmokeTest::testDeletingAParentLeavesItsChildrenPointingAtNothing`,
   which is a characterization test: whoever takes this decision should expect it to fail
   and should update it deliberately.
+
+- [ ] **The delete confirmation does not say *which* record it is about to destroy.**
+  `sion-model/sion-model/delete.phtml` renders `Delete <entity>` and two buttons; the entity
+  *key* is in the heading, the record's name is nowhere. `deleteAction()` even fetches the row
+  (`$entityObject`) and puts it in the view model, where the template ignores it — the
+  `@todo See if we can discern the name of the entity to show it to the user.` above it is
+  the original author's note on exactly this.
+  So a moderator on `/en/persons/494/delete` is asked to confirm deleting "person". The
+  Symfony port (2026-08-14) reproduces this rather than improving it, since the two front
+  controllers serve the same page; fixing it means both `delete.phtml` and
+  `templates/sion-model/entity-delete.html.twig`, plus a `name_field` read that
+  `EntityEditController::recordName()` already does.
+
+- [ ] **Cancel on a standalone delete confirmation is now inert.** Fixing the button that
+  *deleted* the record (2026-08-14 — it rendered as `type="submit"`; see
+  [strangler.md](strangler.md)) made it a `type="button"`, which is correct inside the two
+  delete modals, where `data-dismiss` dismisses. Outside a modal it now does nothing at all.
+  A real fix is a cancel URL — the entity's index, or the record's show page — which the
+  shared `DeleteEntityForm` has no way to know, so it wants a view variable and a template
+  change on both renderings. An inert button is a fair trade for a destructive one; it is
+  still worth one commit.
+
+- [ ] **Three delete routes are reachable by nobody, and nobody decided that.**
+  `event-delete`, `libraries/library/delete` and `sion-model/delete-entity` have no entry in
+  `config/autoload/acl.global.php`'s route guard, and the guard is default-deny, so all three
+  answer **403 to an account holding every role** — measured 2026-08-14. Two are dead twice
+  over: `library` declares no `enable_delete_action`, so past the guard it would only reach
+  "This entity cannot be deleted"; and `sion-model/delete-entity` names a `deleteEntity`
+  action that `SionModelController` does not define, so it would 404 on dispatch.
+  Each needs a decision rather than accumulating: finish the feature and guard it, or delete
+  the route. They were deliberately left out of the batch-8 port because porting an
+  unreachable route is work with no user.
+
+- [ ] **Two wrong status codes in `deleteAction()`, one of them dead.** The not-found branch
+  sets **401** and then returns a redirect, whose 302 replaces it — so it never reaches the
+  client, and it is the same dead line `JTranslateController::deleteAction()` carries a
+  comment about. The **401 on a failed CSRF token** is not dead: that branch renders the form,
+  so a browser really does get 401 where 400 or 403 is right. Both are reproduced verbatim by
+  `App\Controller\EntityDeleteController` (2026-08-14) and asserted in
+  `test/Smoke/DeleteSurfaceSymfonySmokeTest`, because a port is the wrong place to change an
+  observable status. Correcting the live one means editing SionModel, the ported controller
+  and that assertion together.
+
+- [ ] **`EntityEditController` puts its form-error message in the flash, where laminas puts it
+  in the now-messenger.** So on a ported edit form that fails validation, "Error in form
+  submission, please review." is stored and rendered on the *next* page the visitor loads
+  rather than on the re-rendered form — the form comes back with no error on it, and an
+  unrelated page later carries the message. laminas uses `nowMessenger`, which renders into
+  the response being built. The bridge for it exists and three ported controllers use it
+  (`PersonsController::nowMessage()`); `EntityDeleteController` was written with it from the
+  start (2026-08-14). One-line fix in the edit controller, plus a smoke assertion that a
+  failed POST re-renders *with* the message.
+
+- [ ] **`assignments/assignment/edit` accepts a 6-digit id where laminas accepts 5.** The
+  Symfony route declares `[0-9]{1,6}` against the laminas route's `[0-9]{1,5}`, so
+  `/assignments/123456/edit` reaches the controller and is answered "Assignment not found."
+  where laminas would have 404'd. Harmless, and worth one character. Noticed while declaring
+  `assignments/assignment/delete`, which uses laminas' width.
 
 - [x] ~~**`tools/acl-table.php` cannot see a parameterized route being shadowed.**~~
   **Fixed 2026-08-14.** `shadowedBySymfony()` passed the *composed laminas pattern* to
