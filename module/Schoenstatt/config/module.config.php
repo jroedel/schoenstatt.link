@@ -1257,15 +1257,6 @@ return [
                             ],
                         ],
                     ],
-                    'import' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/import',
-                            'defaults' => [
-                                'action'     => 'import',
-                            ],
-                        ],
-                    ],
                 ],
             ],
             'api-v1' => [
@@ -1943,7 +1934,6 @@ return [
                 ['route' => 'association-delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'associations/create', 'roles' => ['sch_moderator']],
                 ['route' => 'associations/association', 'roles' => ['sch_user', 'sch_basic', 'guest', 'user']],
-                ['route' => 'associations/import', 'roles' => ['sch_administrator']],
                 ['route' => 'associations/do-work', 'roles' => ['guest', 'user', null]], //uses api key authorization
 
                 ['route' => 'roles', 'roles' => ['sch_moderator']],

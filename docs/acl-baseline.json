@@ -21,12 +21,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 161,
-        "guarded_routes_total": 161,
+        "guarded_routes_existing": 159,
+        "guarded_routes_total": 159,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 163,
+        "route_guard_entries": 161,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 61,
         "routes_uncomparable": 0,
@@ -35,9 +35,9 @@
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 142,
-        "total_routes": 185,
-        "unguarded_routes": 24,
-        "unguarded_routes_matchable": 13
+        "total_routes": 181,
+        "unguarded_routes": 22,
+        "unguarded_routes_matchable": 11
     },
     "dynamic_providers": {
         "resource": [
@@ -2378,29 +2378,6 @@
             "public": true,
             "route": "associations/do-work"
         },
-        "associations/import": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "sch_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "sch_administrator"
-            ],
-            "effective_roles": [
-                "sch_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "associations/import"
-        },
         "associations/old-association": {
             "anonymous_allowed": true,
             "assertion": null,
@@ -2595,29 +2572,6 @@
             "matchable": true,
             "public": false,
             "route": "borrowers/borrower"
-        },
-        "borrowers/fix-person-id": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "lib_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "lib_administrator"
-            ],
-            "effective_roles": [
-                "lib_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "borrowers/fix-person-id"
         },
         "checkouts/library": {
             "anonymous_allowed": false,
@@ -9339,12 +9293,10 @@
         "jtranslate/phrase",
         "juser/user",
         "libraries/library/delete",
-        "libraries/library/import",
         "library-imports",
         "publication-upload-cover",
         "sign-in-no-cookies",
-        "sion-model",
-        "sion-model/delete-entity"
+        "sion-model"
     ],
     "unguarded_routes_matchable": [
         "api-v1/libraries/books/patch-list",
@@ -9356,10 +9308,8 @@
         "event-edit",
         "events/create",
         "libraries/library/delete",
-        "libraries/library/import",
         "publication-upload-cover",
-        "sign-in-no-cookies",
-        "sion-model/delete-entity"
+        "sign-in-no-cookies"
     ],
     "unknown_roles_named_in_config": [],
     "warnings": []
