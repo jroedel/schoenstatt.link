@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace SchoenstattTest\Smoke;
 
+use PHPUnit\Framework\Attributes\DataProvider;
+
 /**
  * Application module: the site entry point, static informational pages, the
- * sitemap and the API documentation route.
+ * sitemap, and the refusal that replaced the retired v1/v2 API.
  */
 class ApplicationSmokeTest extends SmokeTestCase
 {
@@ -80,14 +82,43 @@ class ApplicationSmokeTest extends SmokeTestCase
     }
 
     /**
-     * The API route serves a Swagger UI shell that loads the OpenAPI document
-     * client side, so the spec URL is the only server-rendered marker.
+     * The whole of /api/v1 and /api/v2 is gone, and this asserts what replaced it.
+     *
+     * These 26 paths were retired on 2026-08-14 after eight years of access logs showed
+     * no client had used any of them since 2022. What they must answer now is a *JSON*
+     * 404 from RestApi's api-route-not-found catch-all — not the HTML error page, and
+     * not a 200 of any kind. A machine caller that still holds one of these URLs gets a
+     * parseable refusal, which is the one courtesy a withdrawn API can still extend.
+     *
+     * The paths below are one per former controller plus the documentation shell, so a
+     * route tree resurrected by a bad merge fails here rather than in production.
      */
-    public function testApiDocumentationPageRenders(): void
+    #[DataProvider('retiredApiPaths')]
+    public function testRetiredApiPathIsAJsonNotFound(string $path): void
     {
-        $response = $this->assertRendersOk('/en/api/v1');
+        $response = $this->get($path, true);
 
-        $this->assertStringContainsString('/api/v1.yaml', $response['body']);
+        $this->assertSame(404, $response['status'], $path . ' should 404 now that /api/v1 is retired');
+        $this->assertStringNotContainsString('Fatal error', $response['body']);
+        $this->assertStringNotContainsString('<html', strtolower($response['body']), $path . ' should answer JSON');
+    }
+
+    /** @return array<string, array{string}> */
+    public static function retiredApiPaths(): array
+    {
+        return [
+            'v1 documentation shell'  => ['/api/v1'],
+            'v1 findByKind'           => ['/api/v1/associations/findByKind?kind=sch-shrine'],
+            'v1 findByKindMd5'        => ['/api/v1/associations/findByKindMd5'],
+            'v1 shrines.json'         => ['/api/v1/associations/shrines.json'],
+            'v1 dictionary'           => ['/api/v1/dictionary'],
+            'v1 literature'           => ['/api/v1/literature'],
+            'v1 libraries'            => ['/api/v1/libraries/3'],
+            'v1 login'                => ['/api/v1/users/login'],
+            'v2 findByKind'           => ['/api/v2/associations/findByKind?kind=sch-shrine'],
+            'v2 shrines.json'         => ['/api/v2/associations/shrines.json'],
+            'the OpenAPI document'    => ['/api/v1.yaml'],
+        ];
     }
 
     /**

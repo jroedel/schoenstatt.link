@@ -4,12 +4,10 @@ $this->headTitle($headText); ?>
 <h1><?php echo $this->translate($headText);?></h1>
 <?php
 
-$str2 = "This data may be accessed directly by any apps or websites which wish to receive up-to-date information via the %sREST API%s (application programming interface).";
-$str4 = "Do you have shrine photos to submit? See our %sphoto submission process%s.";
+$str4 ="Do you have shrine photos to submit? See our %sphoto submission process%s.";
 $photosUrl = $this->url('shrines/submitting-photos');
 ?>
 
-<p><?= sprintf($this->escapeHtml($this->translate($str2)), '<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-wayside-shrine" target="_blank">', '</a>')?></p>
 <p><?= sprintf($this->escapeHtml($this->translate($str4)), "<a href=\"$photosUrl\">", "</a>");?>
 <?php
 $isModerator = $this->isAllowed('route/association-edit');

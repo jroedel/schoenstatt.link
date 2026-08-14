@@ -6,11 +6,6 @@ parameters:
 			path: module/Application/src/Controller/IndexController.php
 
 		-
-			message: "#^Access to an undefined property Books\\\\Controller\\\\BooksApiController\\:\\:\\$inputFilter\\.$#"
-			count: 1
-			path: module/Books/src/Controller/BooksApiController.php
-
-		-
 			message: "#^Result of method SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
 			count: 1
 			path: module/Books/src/Model/DictionaryTable.php

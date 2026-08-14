@@ -21,14 +21,12 @@
 
 {% block shrine_header %}
 {% set intro = "Welcome to the Schoenstatt Shrine collaborative database! This database is freely available under the %s Licence so that anyone may use it.  For now, anyone who registers for an account may help keep the information current. Please help us complete the information!" %}
-{% set api_note = "This data may be accessed directly by any apps or websites who which to receive up-to-date information via the %sREST API%s (application programming interface)." %}
-{% set photos_note = "Do you have shrine photos to submit? See our %sphoto submission process%s." %}
+{% set photos_note ="Do you have shrine photos to submit? See our %sphoto submission process%s." %}
 {% set columns_note = "Until 2019-10-18, this page will be oriented towards data-maintainers and therefore show the columns of pertinent information." %}
 {% set photos_url = laminas_path('shrines/submitting-photos') %}
 <h1>{{ translate('Schoenstatt Shrine') }}</h1>
 
 <p>{{ translate(intro)|e|format('<a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank">Creative Commons BY-SA</a>')|raw }}</p>
-<p>{{ translate(api_note)|e|format('<a href="https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine" target="_blank">', '</a>')|raw }}</p>
 <p>{{ translate(photos_note)|e|format('<a href="' ~ photos_url|e ~ '">', '</a>')|raw }}
 <p>{{ translate(columns_note) }}</p>
 <a href="{{ laminas_path('wayside-shrines') }}"><span class="pull-right btn btn-default">{{ translate('Wayside shrines') }}</span></a>

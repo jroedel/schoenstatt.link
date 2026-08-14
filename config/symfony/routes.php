@@ -58,7 +58,6 @@ use App\Controller\RolesController;
 use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
 use App\Controller\SitemapController;
-use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
 use App\Controller\TextsController;
 use App\Controller\TimelineController;
@@ -348,43 +347,6 @@ $ported(
         ['label' => 'Shrines', 'route' => 'shrines'],
         ['label' => 'Submitting photos', 'route' => 'shrines/submitting-photos'],
     ], 'Schoenstatt')
-);
-
-// The shrine GeoJSON endpoints, ported 2026-08-07 — the first ported routes that
-// answer JSON to a machine caller rather than HTML to a browser. Both versions are
-// served by one controller because the two laminas actions are byte-identical and the
-// two live responses were measured equal to the byte.
-//
-// Declared open rather than checked, and this is the maintenance-endpoint argument
-// rather than the `shrines` one. The guards they shadow
-// (`route/api-v1/shrines-json`, `route/api-v2/shrines-json`) both carry `null` in
-// their roles, so consulting them could only answer yes — and unlike the shrine
-// *index*, these endpoints render no permission-gated markup, so nothing else on the
-// page has already paid for the ACL. Checking anyway would put a session start and
-// the role/resource queries behind it on an endpoint the mobile apps poll.
-// tools/acl-table.php cross-checks the claim and warns if either guard stops being
-// public.
-//
-// Declaring them open is also what removes the contradictory cache headers the
-// laminas response sends — no session means no session cache limiter. See the
-// controller's docblock; ShrinesGeoJsonSmokeTest asserts it.
-$shrineGeoJson = RouteAccess::openToEveryone(
-    'the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index '
-    . 'this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking '
-    . 'would start a session and run the role/resource queries — some through Books\Model\LibraryTable — '
-    . 'on an endpoint the mobile apps poll, for a foregone answer'
-);
-$ported(
-    'api-v1/shrines-json',
-    '/api/v1/associations/shrines.json',
-    ShrinesGeoJsonController::class,
-    $shrineGeoJson
-);
-$ported(
-    'api-v2/shrines-json',
-    '/api/v2/associations/shrines.json',
-    ShrinesGeoJsonController::class,
-    $shrineGeoJson
 );
 
 // SionModel's phpinfo page, ported 2026-08-07. Checked against its own resource, and

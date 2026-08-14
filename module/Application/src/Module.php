@@ -69,8 +69,14 @@ class Module
         $navFixer = new FixNavigationPages();
         $navFixer->attach($app->getEventManager());
 
-        $corsListener = new Listener\CorsListener();
-        $corsListener->attach($app->getEventManager());
+        //Listener\CorsListener was attached here until 2026-08-14. It served the v1
+        //API alone: routes opted in with a `'cors' => true` default, and every route
+        //that carried one was in the Books api-v1 tree. With those gone no route can
+        //opt in, so its onFinish() half could never fire again, and its preflight half
+        //would have answered a cheerful 204 to a browser about to receive a 404. The
+        //v3 API has never sent CORS headers and does not want them — its callers are
+        //server-side agents — and if that ever changes it belongs on the Symfony side,
+        //where ported routes actually run, not in an MvcEvent listener they bypass.
     }
 
     /**

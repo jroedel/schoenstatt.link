@@ -759,3 +759,49 @@ the running container: identical status, content type and **byte count** on `/`,
 `/en/`, `/en/sitemap.xml` and a 404 path, with only `/_health` differing. That
 byte-for-byte comparison is the actual evidence the bridge is transparent — the
 test suite asserts on markers, not on lengths.
+
+## The v1 and v2 API, retired (2026-08-14)
+
+All 26 `/api/v1` and `/api/v2` routes deleted, along with the `RestApi` base class
+every v1 controller extended, four `*ApiController`s in `Books`, both
+`AssociationsApiV{1,2}Controller`s in `Schoenstatt`, JUser's `LoginV1ApiController`,
+the Symfony `ShrinesGeoJsonController` that had answered the two GeoJSON feeds since
+2026-08-07, and `public/api/` — the OpenAPI document plus a 2020 Swagger UI bundle,
+~6.7 MB of it.
+
+**The decision came from the access log, not from reading the code.** Production's
+`~/logs/access.log*` reaches back to 2016-04-17; `grep -F '/api/v'` over the rotated
+set yields 10,449 lines, and read per *client* rather than per endpoint the picture is
+unambiguous: the last non-scanner caller was a Google Apps Script on **2022-11-05**,
+the one mobile client in the file read `findByKind` in 2019 and never returned, and in
+the trailing twelve months `findByKindMd5` and v2's `findByKind` had been touched by
+nothing but `tools/smoke-prod.sh`. Our own tooling was the loudest remaining client,
+which is precisely how a dead endpoint keeps looking alive. Full table in
+[strangler.md](strangler.md).
+
+Two consequences worth carrying forward:
+
+- **We were advertising it to ourselves.** `findByKind` still drew ~270 hits a year
+  because `/shrines` and `/wayside-shrines` published a link to it *and* a schema.org
+  `Dataset` `contentUrl`. Crawlers following our own advertisement read as live
+  traffic. Retiring an endpoint means retiring what points at it — four templates and
+  two dataset builders here.
+- **Deletion cascades further than the routes.** `Application\Listener\CorsListener`
+  served only routes carrying `'cors' => true`, all of which were in the Books v1 tree;
+  `jmikola/geojson` was reachable only from `SchoenstattTable::getShrineGeoJson()`,
+  whose only callers were the deleted shrines.json actions; the API-code half of
+  JUser's `LoginTokenService` had no caller but `LoginV1ApiController`. Each was
+  verified orphaned by grep before removal, not assumed.
+
+Also corrected: `App\Api\BotIdentity`'s docblock had claimed "the mobile apps already
+use them" of these JWTs, and `config/symfony/routes.php` described shrines.json as "an
+endpoint the mobile apps poll". Neither was true, and both had been repeated as
+justification. A plausible sentence in a docblock is not evidence about traffic.
+
+**Verification.** 480 smoke tests green (473 before, and the delta is a new
+`ApplicationSmokeTest` provider asserting 11 retired paths answer a *JSON* 404 rather
+than the HTML error page), 715 integration (718 before, minus the three in the deleted
+`ShrineGeoJsonParityTest`), 286 unit, fuzz clean. Integration deprecations fell 19 → 14
+as geojson left the tree. The 404 body was measured byte-identical before and after,
+with a four-second wait on each side to clear the OPcache revalidate window. ACL
+snapshot: 181 routes → 155, guarded 159 → 135, exactly the 26 removed and no others.

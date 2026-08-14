@@ -16,13 +16,17 @@ v3 grew. Fixing it before the second resource shipped cost one migration; afterw
 would have been a re-issue for every agent in existence. See
 [database/db6.8.sql](../database/db6.8.sql).
 
-`/api/v3` exists because v1 and v2 cannot be written to and could not be made
-writable. Both are still served, unchanged, for the map and mobile consumers that
-read them.
+`/api/v3` exists because v1 and v2 could not be written to and could not be made
+writable. **Both were retired on 2026-08-14** — all 26 routes deleted after eight years
+of access logs showed no caller since 2022, the "map and mobile consumers" this
+paragraph used to invoke among them. `/api/v3` is now the only API the site serves, and
+every former v1/v2 URL answers a JSON 404. The reasoning and the evidence are in
+[docs/strangler.md](strangler.md); the comparison below is kept because it is *why* v3
+looks the way it does, not because there is anything left to choose between.
 
 ## Why not extend v1 or v2
 
-| | v1 / v2 | v3 |
+| | v1 / v2 (retired) | v3 |
 |---|---|---|
 | verbs | `GET` only — every write inherits `AbstractRestfulController`'s 405 | `GET`, `PATCH` |
 | authentication | none; `authenticateApiKey()` exists with every call site commented out, and the guards admit `null` | bearer JWT, account must hold `sch_api_bot` |
@@ -77,22 +81,25 @@ that table or marked revoked. **Fail closed, not fail open** — "we have no rec
 issuing this" and "this was revoked" are the same answer, which is what makes the
 registry worth having. Only the identifier is stored, never the token.
 
-### The email flow still works
+### The email flow is gone
 
-An agent that can read its own mailbox can sign itself in, and the mobile apps
-already do:
+There used to be a second way in: an agent that could read its own mailbox signed
+itself in by asking for a short code and redeeming it.
 
 ```
-POST /api/v1/users/request-verification-token   identity=<email>
+POST /api/v1/users/request-verification-token    identity=<email>
 POST /api/v1/users/login-with-verification-token identity=<email>&token=<code>
    → { "jwt": "...", "expiration": "2027-02-09T12:00:00Z" }
 ```
 
-Tokens issued this way are registered and revocable exactly like minted ones; they
-show as *(self, by email)* on the token screen. It is no longer the recommended path
-for a bot, because it forces you to run a real deliverable mailbox for an account
-that has nobody to read it — and that mailbox is then a permanent credential-recovery
-path into the bot account.
+Those two routes went with the rest of `/api/v1` on 2026-08-14, along with
+`POST /api/v1/users/login`, so **an administrator minting one from the users screen is
+now the only way a token is issued.** This section already advised against the email
+flow — it forces you to run a deliverable mailbox for an account with nobody to read
+it, and that mailbox is then a permanent credential-recovery path into the bot account
+— and the logs agreed: nothing had used it since 2022. Tokens already issued that way
+keep working; they are registered in `user_api_token` like any other and still show as
+*(self, by email)* on the token screen.
 
 ### The role is the security boundary
 

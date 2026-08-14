@@ -84,10 +84,10 @@ namespace and file path matching exactly:
 
 | module | what it is |
 | --- | --- |
-| `Application` | site chrome, routing, home page, CORS, GDPR strategy |
+| `Application` | site chrome, routing, home page, GDPR strategy |
 | `Schoenstatt` | shrines, the movement, associations, persons |
 | `Books` | literature, libraries, publications, music, dictionary |
-| `RestApi` | the JSON API and its JWT auth |
+| `RestApi` | the JSON 404 for unmatched `/api/` paths, and nothing else since v1/v2 were retired — the API itself is `/api/v3`, in `src/` |
 | `SionModel`, `JUser`, `JTranslate` | shared libraries, **git submodules** — changes here affect other sites, so commit in the submodule first, then move the pointer |
 
 Each follows the Laminas convention: `config/module.config.php`, `src/`, and
