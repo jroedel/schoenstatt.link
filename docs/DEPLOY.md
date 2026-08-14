@@ -111,16 +111,24 @@ Prints byte count only, never the key. If it is under 32, lengthen it *before*
 deploying — note that replacing the key invalidates every JWT already issued
 (they last six months), so API clients would have to sign in again.
 
-## Before the next deploy: two API endpoints start requiring a token
+## ~~Before the next deploy: two API endpoints start requiring a token~~ — moot 2026-08-14
 
-The authorization-bypass fix (2026-08-03) makes `GET /api/v1/libraries/:id` and
+~~The authorization-bypass fix (2026-08-03) makes `GET /api/v1/libraries/:id` and
 `GET /api/v1/libraries/:id/pending-labels` enforce the JWT their route config
-always asked for; until now they answered anyone. Any client that has been
-calling them without an `Authorization: Bearer` header will get 401 after this
-deploy — the label-printing workflow is the one to check. Tokens come from
-`POST /api/v1/login`. Nothing else changes: `/api/v1/literature`,
-`/api/v1/associations` and the public dictionary reads stay open, and
-`/api/v1/libraries/:id/books` was already gated.
+always asked for.~~
+
+Both endpoints, and the other 24 in `/api/v1` and `/api/v2`, were **deleted** on
+2026-08-14. The deploy note is kept rather than removed because it names the one
+workflow that would have noticed — label printing — and the same question applies to
+the deletion: nothing has called it since 2022, so nothing should break, but that is
+the thing to check if a report arrives. Every former v1/v2 URL now answers a JSON
+**410 Gone** with a `Link: </api/v3>; rel="successor-version"` header.
+
+**This deploy also removes files, not only changes them.** `public/api/` — the
+OpenAPI document and the 2020 Swagger UI bundle, ~6.7 MB — was deleted, and a phploy
+run that skips deletions would leave `https://schoenstatt.link/api/v1.yaml` live,
+still advertising 26 endpoints that no longer exist. `tools/smoke-prod.sh` checks that
+URL specifically for this reason; if it passes after the deploy, the deletion landed.
 
 ## Before the next deploy: phrase-table hygiene (schoenstatt.link#59)
 

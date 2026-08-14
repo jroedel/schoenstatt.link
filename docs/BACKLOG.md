@@ -140,10 +140,13 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Now
 
-- [ ] Watch for 401 fallout from the API authorization fix (live since
-  2026-08-03): clients of `GET /api/v1/libraries/:id` and
-  `…/pending-labels` that never sent a JWT now get 401s. The label-printing
-  workflow is the first candidate; tokens come from `POST /api/v1/login`.
+- [x] ~~Watch for 401 fallout from the API authorization fix (live since
+  2026-08-03)~~ — **moot 2026-08-14: the whole of `/api/v1` and `/api/v2` was
+  deleted.** Nothing can 401 there any more; every one of the 26 URLs answers a
+  JSON 410 Gone. The label-printing workflow is still the thing to watch if a report
+  arrives, and it is now a 404 rather than a 401 that would arrive — but eight
+  years of access logs say the last non-scanner caller of any of these endpoints
+  was a Google Apps Script on 2022-11-05. See docs/strangler.md.
 - [ ] Hetzner/konsoleH support ticket, **half landed**: `apc.shm_size` is now
   **256M** (verified 2026-08-11 from a live phpinfo, on the 8.5 build), so the
   size half of the ask is done and both historical offenders — 45.7 MiB and
@@ -702,24 +705,27 @@ readability — the destination is **Symfony**, reached gradually:
   kind were deleted, which is why it has never fired; fix the laminas copies
   together with it, or fix it when they are deleted. Note the wayside side is
   the likelier of the two to reach zero rows: 43 associations against 207.
-- [ ] `finish-pending-labels` is an unreachable route:
-  `Laminas\Router\Http\Part::match()` returns the parent match once the path
-  is consumed and the parent `may_terminate`s, so its `Method(delete)` child
-  is never consulted — a DELETE dispatches the parent's read action and
-  `finishPendingLabelsAction()` is dead code. The label workflow's "commit
-  these call numbers" step has never worked. Fix shape: `may_terminate =>
-  false` + one `Method` child per verb + bjyauthorize guard entries for the
-  renamed terminals. Before enabling, check what `SionTable::updateEntity()`
-  records as acting user under JWT (no session identity —
-  `setActingUserId()` from `tokenPayload->sub` is the channel).
-  `public/api/v1.yaml` documents it as NOT CURRENTLY REACHABLE. Note: this
-  route-tree bug class cannot be expressed in Symfony routing — fix now only
-  if the label workflow needs the commit step before the strangler reaches
-  the API.
-- [ ] `GET /api/v1/libraries/:id/books` answers 200 with a zero-byte
-  `text/html` body: `BooksApiController::getList()` builds a `JsonModel`
-  that never renders. The JWT gate on it works; it is the one gated route
-  whose payload no test asserts, for this reason. Cause not investigated.
+- [x] ~~`finish-pending-labels` is an unreachable route~~ — **deleted 2026-08-14
+  with the rest of `/api/v1`**, so the unreachable route and the dead
+  `finishPendingLabelsAction()` behind it are both gone. The label workflow's
+  "commit these call numbers" step never worked and now does not exist; the log
+  agrees nobody noticed — `pending-labels` was called **4 times ever, all in
+  December 2018**.
+  - **Keep the diagnosis, it is not about this route.**
+    `Laminas\Router\Http\Part::match()` returns the parent match once the path is
+    consumed and the parent `may_terminate`s, so a `Method` child is never
+    consulted: the endpoint looks like it works and silently runs the parent's
+    action. That trap still exists everywhere else the pattern is used, and it is
+    invisible in a response.
+  - If the label workflow is ever rebuilt, build it on `/api/v3`, where the shape
+    is a real route per verb and the acting user comes from `BotIdentity` rather
+    than from an unread `tokenPayload->sub`.
+- [x] ~~`GET /api/v1/libraries/:id/books` answers 200 with a zero-byte
+  `text/html` body~~ — **deleted 2026-08-14 with the rest of `/api/v1`.**
+  `BooksApiController` is gone, so the bug went with it uninvestigated. Recorded
+  because the *reason* nobody found the cause still applies to whatever replaces
+  it: this was the one gated route whose payload no test asserted, and a
+  zero-byte 200 is exactly the shape a JSON endpoint fails in.
 - [ ] **Three more arity mismatches, all silently tolerated** (PHPStan level 1,
   2026-08-05). PHP discards surplus arguments to userland functions, so none of
   these crash — each is a call that has quietly stopped doing what it reads as:
@@ -811,27 +817,29 @@ readability — the destination is **Symfony**, reached gradually:
   cannot. Revisit once there is real traffic and a sense of what agents actually
   propose. `required_columns_for_creation` for `association` is `['name', 'kind']`.
 
-- [ ] **Retire the shrine GeoJSON feed, or commit to it** — deprecated
-  2026-08-07 at the user's direction ("I'm not sure we'll use it going
-  forward"). `/api/v1/associations/shrines.json` and its v2 twin are byte-identical
-  and both now answer with `Deprecation: true` (IETF draft header). They are
-  **still served and still correct**: deprecation announces intent, it does not
-  break callers.
-  - **No `Sunset` header, deliberately.** RFC 8594 wants a date, and naming one
-    would commit to a removal nobody has decided on. The moment a date exists,
-    add it in both places — `App\Controller\ShrinesGeoJsonController` and
-    `Schoenstatt\Controller\AssociationsApiV{1,2}Controller::shrinesJsonAction()`.
-    The header is set in both because production still serves the laminas one.
-  - **The decision needs usage data, and there is currently none.** Nothing logs
-    calls to these endpoints, so "is anyone still using it?" can only be answered
-    from the hoster's access log. The feed exists because of Alberto León's
-    "Schoenstatt Shrines" app (see the submitting-photos page), so the honest
-    first step is asking whether that app still reads it.
-  - Retiring it is cheap when the answer arrives: two route declarations, one
-    Symfony controller, two laminas actions, `SchoenstattTable::getShrineGeoJson()`,
-    and `test/Integration/ShrineGeoJsonParityTest` +
-    `test/Smoke/ShrinesGeoJsonSmokeTest`. `getShrines()` stays — the shrine index
-    needs it.
+- [x] ~~**Retire the shrine GeoJSON feed, or commit to it**~~ — **retired
+  2026-08-14**, with the rest of `/api/v1` and `/api/v2`. Deprecated 2026-08-07 at
+  the user's direction ("I'm not sure we'll use it going forward"); removed once the
+  usage data this item asked for actually existed.
+  - **The access log answered it.** This item said "the decision needs usage data,
+    and there is currently none… can only be answered from the hoster's access
+    log" — correct, and that is exactly how it was settled. Production's
+    `~/logs/access.log*` goes back to **2016-04-17**, and across the whole file
+    `shrines.json` has **98 hits on v1 and 91 on v2, every one of them ours**:
+    `tools/smoke-prod.sh` plus a 27-minute `curl/8.5.0` port-baseline capture on
+    2026-08-08 from the same IP. Not one external caller in eight years.
+  - **The app this existed for stopped calling in 2019.** The item named Alberto
+    León's "Schoenstatt Shrines" app as the reason the feed exists. The only mobile
+    user agent in the log — `Dalvik/2.1.0 … SM-G9650` — appears **40 times, all in
+    2019**, and it read `findByKind`, never `shrines.json`. So the feed's stated
+    consumer never used the feed.
+  - **No `Sunset` header was ever added, and it turned out not to matter**: with no
+    caller to warn, the deprecation runway warned nobody. Worth remembering as the
+    limit of that mechanism — `Deprecation: true` is only useful if somebody is
+    reading your response headers.
+  - Removed as estimated, plus more than estimated: `jmikola/geojson` left
+    `composer.json` too, because `SchoenstattTable::getShrineGeoJson()` was its only
+    reachable caller. `getShrines()` stays — the shrine index needs it.
 
 
 - [ ] **Suggest and moderate: users propose corrections, moderators accept or
@@ -930,8 +938,11 @@ readability — the destination is **Symfony**, reached gradually:
     matters most, and the existing verification data is stale.
   - *Photo upload system* — user-uploaded photos, especially of course life,
     as the single biggest improvement for an average reader of the site.
-- [ ] API registration allow-list (old @todo in `LoginV1ApiController`): API
-  magic-code login does not auto-create accounts; the web flow does.
+- [x] ~~API registration allow-list (old @todo in `LoginV1ApiController`)~~ —
+  **moot 2026-08-14: `LoginV1ApiController` was deleted with `/api/v1`.** There is no
+  API login flow left to auto-create accounts, so there is nothing to allow-list. An
+  agent's account is created by an administrator like any other, which is what this
+  item wanted anyway.
 - [ ] Drop the now-unread `user.password` column once passwordless has
   soaked (deliberate migration).
 - [ ] Library import form takes a hand-typed *server* path (the 2021
@@ -1012,9 +1023,10 @@ readability — the destination is **Symfony**, reached gradually:
   - **`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
     `lib_user` its siblings carry: it is the destructive one in that tree and
     `lib_administrator` already exists for exactly this.
-  - **`api-v1/libraries/books/patch-list` → `guest, user`**, matching
-    `api-v1/libraries` and `api-v1/libraries/books`. The real gate on the write
-    APIs is the JWT check in the controller, not the route guard.
+  - ~~**`api-v1/libraries/books/patch-list` → `guest, user`**~~ — **moot
+    2026-08-14: the route was deleted with the rest of `/api/v1`.** It was one of
+    the two unguarded routes among the 26, which is why the ACL baseline's
+    `unguarded_routes` fell 22 → 20 and not 22 → 21.
   - **The events write routes genuinely need a decision**: `event-edit`,
     `event-delete`, `events/create` (and `event`, the show route). `events`, the
     list, is `guest, user`. There is no events moderator role in `user_role` —
@@ -1205,10 +1217,15 @@ Background and measurements: [caching.md](caching.md).
   security-relevant, so it is its own piece of work and not a drive-by:
   `Rand::getInteger()` → `random_int()` is trivial (ClipboardButton,
   `layout.phtml`), while `Rand::getString()` needs its charlist preserved
-  deliberately — `SionModel\Mailing\Mailer` (magic-link token),
-  `JUser\Model\User` (verification token) and `LoginV1ApiController` (JWT id)
-  all generate secrets with it. Check `Rand::getString()`'s default charlist
-  before touching the calls that omit one (`CspListener`, `LoginV1ApiController`).
+  deliberately — `SionModel\Mailing\Mailer` (magic-link token) and
+  `JUser\Model\User` (verification token) generate secrets with it. Check
+  `Rand::getString()`'s default charlist before touching the calls that omit one
+  (`CspListener`). Two of the call sites this item used to name were in
+  `LoginV1ApiController`, deleted 2026-08-14 — the "11 sites across 7 files" count
+  above predates that and was not re-derived here, so re-count before planning the
+  work. The JWT-id generator that survived is
+  `JUser\Service\ApiTokenService:122`, which mints every v3 credential, so that is
+  the security-relevant one to read first.
 - [ ] Drop the stale `laminas/laminas-crypt` require from JUser's
   `composer.json` — nothing in JUser uses it. Cosmetic for this app (the
   submodule's composer.json is not read; the root one governs installation),

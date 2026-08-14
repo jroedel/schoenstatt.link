@@ -16,7 +16,6 @@ use Laminas\View\Model\ViewModel;
 use Spatie\SchemaOrg\Dataset;
 use Spatie\SchemaOrg\Organization;
 use Spatie\SchemaOrg\ContactPoint;
-use Spatie\SchemaOrg\DataDownload;
 use JUser\Model\UserTable;
 
 class SchoenstattController extends AbstractActionController
@@ -56,11 +55,6 @@ class SchoenstattController extends AbstractActionController
             'generalPresidium'  => $generalPresidium,
             'nationalLeaders'   => $nationalLeaders,
         ]);
-    }
-
-    public function v1Action()
-    {
-        return [];
     }
 
     public function shrinesAction()
@@ -193,10 +187,7 @@ class SchoenstattController extends AbstractActionController
             'RELIGION > CATHOLIC CHURCH > MARIAN SHRINES',
             'RELIGION > CATHOLIC CHURCH > MARY',
         ])
-        ->creator($creator)
-        ->distribution((new DataDownload())
-            ->encodingFormat('JSON')
-            ->contentUrl('https://schoenstatt.link/en/api/v1/associations/findByKind?kind=sch-shrine'));
+        ->creator($creator);
         $datasetEs = new Dataset();
         $datasetEs->name('Base de datos de Santuarios de Schoenstatt en Español')
         ->description('La base de datos de los santuarios es una lista de capillas católicas perteneciente '
@@ -209,10 +200,7 @@ class SchoenstattController extends AbstractActionController
             'RELIGIÓN > IGLESIA CATÓLICA > SANTUARIOS MARIANOS',
             'RELIGIÓN > IGLESIA CATÓLICA > MARÍA',
         ])
-        ->creator($creator)
-        ->distribution((new DataDownload())
-            ->encodingFormat('JSON')
-            ->contentUrl('https://schoenstatt.link/es/api/v1/associations/findByKind?kind=sch-shrine'));
+        ->creator($creator);
         $datasets = [$datasetEn->toArray(), $datasetEs->toArray()];
         return $datasets;
     }

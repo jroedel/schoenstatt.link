@@ -1259,120 +1259,6 @@ return [
                     ],
                 ],
             ],
-            'api-v1' => [
-                'type'    => Literal::class,
-                'options' => [
-                    // Change this to something specific to your module
-                    'route'    => '/api/v1',
-                    'defaults' => [
-                        'controller'    => Controller\SchoenstattController::class,
-                        'action' => 'v1',
-                    ],
-                ],
-                'may_terminate' => true,
-                'child_routes' => [
-                    'associations' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/associations[/:sw_id]',
-                            'defaults' => [
-                                'action' => null,
-                                'controller' => Controller\AssociationsApiV1Controller::class,
-                            ],
-                            'constraints' => [
-                                'sw_id' => 'SL[12][0-9]{4,4}A',
-                            ],
-                        ],
-                    ],
-                    'find-by-kind' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/associations/findByKind',
-                            'defaults' => [
-                                'controller' => Controller\AssociationsApiV1Controller::class,
-                                'action'     => 'findByKind',
-                            ],
-                        ],
-                    ],
-                    'find-by-kind-md5' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/associations/findByKindMd5',
-                            'defaults' => [
-                                'controller' => Controller\AssociationsApiV1Controller::class,
-                                'action'     => 'findByKindMd5',
-                            ],
-                        ],
-                    ],
-                    'shrines-json' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/associations/shrines.json',
-                            'defaults' => [
-                                'controller' => Controller\AssociationsApiV1Controller::class,
-                                'action'     => 'shrinesJson',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-            'api-v2' => [
-                'type'    => Literal::class,
-                'options' => [
-                    // Change this to something specific to your module
-                    'route'    => '/api/v2',
-                    'defaults' => [
-                        'controller'    => Controller\SchoenstattController::class,
-                        'action' => 'v2',
-                    ],
-                ],
-                'may_terminate' => false,
-                'child_routes' => [
-                    'associations' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/associations[/:sw_id]',
-                            'defaults' => [
-                                'action' => null,
-                                'controller' => Controller\AssociationsApiV2Controller::class,
-                            ],
-                            'constraints' => [
-                                'sw_id' => 'SL1[0-9]{5,5}A',
-                            ],
-                        ],
-                    ],
-                    'find-by-kind' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/associations/findByKind',
-                            'defaults' => [
-                                'controller' => Controller\AssociationsApiV2Controller::class,
-                                'action'     => 'findByKind',
-                            ],
-                        ],
-                    ],
-                    'find-by-kind-md5' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/associations/findByKindMd5',
-                            'defaults' => [
-                                'controller' => Controller\AssociationsApiV2Controller::class,
-                                'action'     => 'findByKindMd5',
-                            ],
-                        ],
-                    ],
-                    'shrines-json' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/associations/shrines.json',
-                            'defaults' => [
-                                'controller' => Controller\AssociationsApiV2Controller::class,
-                                'action'     => 'shrinesJson',
-                            ],
-                        ],
-                    ],
-                ],
-            ],
         ],
     ],
     'sion_model' => [
@@ -1941,17 +1827,6 @@ return [
                 ['route' => 'roles/role', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/role/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'roles/role/delete', 'roles' => ['sch_general_moderator']],
-
-                ['route' => 'api-v1', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v1/associations', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v1/find-by-kind', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v1/find-by-kind-md5', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v1/shrines-json', 'roles' => ['guest', 'user', null]],
-
-                ['route' => 'api-v2/associations', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v2/find-by-kind', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v2/find-by-kind-md5', 'roles' => ['guest', 'user', null]],
-                ['route' => 'api-v2/shrines-json', 'roles' => ['guest', 'user', null]],
             ],
         ],
     ],
