@@ -21,12 +21,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 135,
-        "guarded_routes_total": 135,
+        "guarded_routes_existing": 133,
+        "guarded_routes_total": 133,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 137,
+        "route_guard_entries": 135,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 59,
         "routes_uncomparable": 0,
@@ -35,7 +35,7 @@
         "symfony_routes_open": 26,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 138,
-        "total_routes": 155,
+        "total_routes": 153,
         "unguarded_routes": 20,
         "unguarded_routes_matchable": 10
     },
@@ -2795,29 +2795,6 @@
             "public": false,
             "route": "music/create-composition"
         },
-        "music/import": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "administrator"
-            ],
-            "effective_roles": [
-                "administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "music/import"
-        },
         "persons": {
             "anonymous_allowed": false,
             "assertion": null,
@@ -4349,29 +4326,6 @@
             "matchable": true,
             "public": false,
             "route": "texts/create"
-        },
-        "texts/jk-import": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "administrator"
-            ],
-            "effective_roles": [
-                "administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "texts/jk-import"
         },
         "wayside-shrines": {
             "anonymous_allowed": true,

@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 135 |
-| guarded routes total | 135 |
+| guarded routes existing | 133 |
+| guarded routes total | 133 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 137 |
+| route guard entries | 135 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 59 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 26 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 138 |
-| total routes | 155 |
+| total routes | 153 |
 | unguarded routes | 20 |
 | unguarded routes matchable | 10 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (135 + 20 = 155). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (133 + 20 = 153). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -542,7 +542,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `library-imports/library/create` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `music` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `music/create-composition` | yes | sch_user | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (6) | no |  |
-| `music/import` | yes | administrator | administrator (1) | no |  |
 | `persons` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
 | `persons/create` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
 | `persons/person` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
@@ -584,7 +583,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `text-edit` | yes | texts_moderator | texts_administrator, texts_moderator (2) | no |  |
 | `texts` | yes | texts_user | texts_administrator, texts_moderator, texts_user (3) | no |  |
 | `texts/create` | yes | texts_moderator | texts_administrator, texts_moderator (2) | no |  |
-| `texts/jk-import` | yes | administrator | administrator (1) | no |  |
 | `wayside-shrines` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `welcome` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `zfcuser` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |

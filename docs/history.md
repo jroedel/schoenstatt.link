@@ -813,3 +813,71 @@ clean. Integration deprecations fell 19 → 14 as geojson left the tree. The 404
 measured byte-identical before and after, with a four-second wait on each side to clear
 the OPcache revalidate window. ACL snapshot: 181 routes → 155, guarded 159 → 135, exactly
 the 26 removed and no others.
+
+## Archaic endpoints, round 2 (2026-08-14)
+
+Four dead endpoints and three unreachable methods, retired after the v1/v2 deploy. What
+makes the round worth recording is not the deletions — it is that **two of the three
+fatal code paths were sitting in `phpstan-baseline.neon`**, so level 0 reported "No
+errors" over calls that could not resolve under any circumstances, and that the third was
+invisible to PHPStan for a structural reason worth knowing.
+
+**The scan.** PHPStan resolves `$this->foo()` and so had caught two of these — and they
+were baselined rather than fixed, which converts a guaranteed fatal into a clean run. It
+could not see the third: `$table = $this->getSionTable(); $table->importJkTexts(false);`
+has a receiver too loosely typed to check. Finding that class of bug needed a different
+question — *which method **names** are called in a controller or table and defined nowhere
+in the tree, whatever the receiver's real type turns out to be* — which is a crude grep
+over every `function` definition versus every `$var->name(` call site. 17,519 definitions
+against the call sites left 18 candidates; 15 were receivers PHP resolves at runtime
+(`ReflectionClass`, Carbon's `__call`-generated `addMonth`, laminas controller plugins),
+and 3 were real. A false-positive rate of 15/18 is fine for a one-off audit; the useful
+property is that a name defined nowhere cannot resolve, no matter what the receiver is.
+
+**What was retired:**
+
+- **`/en/texts/import`** (route name `texts/jk-import` — the path and the name disagree,
+  which is the same trap that misled the `publications/admin-tasks` reading) called
+  `$table->importJkTexts(false)`. No class in the application, SionModel, or any vendored
+  package defines that method. Administrator-guarded, live on production, and a guaranteed
+  `Error` for anyone who clicked it. It never worked: there is no
+  `import-jk-texts.phtml` either, so even a successful import had no view to render.
+- **`/en/music/import`** ran `importMusicasJuly2019()` — a hardcoded list of 335
+  composition ids, reading ChordPro files from `data/musicas/`. It looked like the same
+  GET-mutation shape as the `publications/import` retired hours earlier, and **it is not**:
+  every iteration is gated on `disambiguatingDescription`, and **all 335 compositions have
+  that column empty**, because the 2019 import consumed its own input by nulling the field
+  it keyed on. The directory does not exist either. It wrote nothing and returned `0`. This
+  correction is the point — "mutates on a GET" was the reason it was ranked where it was,
+  and measuring the data rather than reading the code is what settled it.
+- **`SionTable::getMailings()` / `getMailing()`** failed twice over: the SQL selected `FROM
+  a_data_mailing`, a table this database has never had, and the loop called
+  `$this->getEmailAddress()`, defined nowhere. The table name is the interesting half —
+  `database/db2.3.sql` creates the table as `mailings`, and only its phpMyAdmin *comment
+  headers* say `a_data_mailing`, because the migration was pasted in from another project's
+  export. The query came from the same paste and was never adapted. Unreachable: the
+  `mailing` entity's only use is `Mailer::sendMailingReport()`'s `createEntity(…)`, whose
+  read-back is gated on a `databaseBoundDataPostprocessor` the spec does not define.
+  Deleting the methods and the spec's `get_object_function` key leaves the entity **better
+  off**: `getObject('mailing', $id)` falls through to `tryGettingObject()`, which reads
+  `table_name` and `update_columns`, both correct. Reading a mailing works now, having
+  never worked.
+- **`SchoenstattTable::getPersonRoleTitles()`** called `getRoleTitleAliases()`, defined
+  nowhere, and had **no callers at all** — dead code wrapping a fatal.
+
+**And a bug the previous deploy created.** Every 410 carried
+`Link: </api/v3>; rel="successor-version"`, and `/api/v3` is not a route: it 302s to
+`/en/api/v3` and lands on the same 404 handler that emits the 410. The one affordance a
+withdrawn endpoint can offer pointed at nothing. It names `/api/v3/schema` now — public,
+200, and it enumerates both resources with their endpoints and roles. The generalisable
+lesson is about the test, not the header: **asserting a Link header is well-formed does
+not assert that it resolves**, and every check we had passed on the broken version. Both
+`smoke-prod.sh` and `ApplicationSmokeTest` now parse the URL out and fetch it.
+
+**Verification.** 486 smoke green (482 before — four new cases pinning the retired admin
+paths at 404, which is the status that carries information: while a *guarded* route
+exists, an anonymous request gets a 302 to the login form, so a 302 there means the route
+came back), 715 integration, 286 unit, fuzz clean, PHPStan clean **with two fewer baseline
+entries**. ACL snapshot: 155 routes → 153, guarded 135 → 133, and the diff is exactly the
+two removed guard entries and the counts — no rule quietly stopped matching, which is the
+failure mode that makes a page work for *more* people and breaks nothing.

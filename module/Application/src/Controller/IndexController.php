@@ -21,7 +21,6 @@ use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use App\Http\KernelCanary;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use function False\true;
 
 class IndexController extends AbstractActionController
 {

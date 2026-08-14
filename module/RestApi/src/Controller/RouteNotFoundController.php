@@ -28,8 +28,16 @@ use function preg_match;
  * 410 as a signal to drop a URL from the index, where a 404 is a softer "try again
  * later", and two of these URLs were published as a schema.org `Dataset` distribution
  * that is indexed today. The 410 also carries
- * `Link: </api/v3>; rel="successor-version"` (RFC 5829), which is the machine-readable
- * way to say where the API went.
+ * `Link: </api/v3/schema>; rel="successor-version"` (RFC 5829), which is the
+ * machine-readable way to say where the API went.
+ *
+ * **It names the schema document, not `/api/v3`.** The first deploy of this pointed at
+ * `/api/v3`, which is not a route — it 302s to `/en/api/v3` and then answers this very
+ * 404, so a caller that did the correct thing and followed the header arrived nowhere.
+ * `/api/v3/schema` is the discovery document: public, 200, and it lists both resources
+ * with their endpoints and required roles, which is exactly what a caller following a
+ * successor-version link is trying to find out. A Link header pointing at a 404 is worse
+ * than no Link header, because it looks like the API is gone entirely.
  *
  * Every *other* unmatched /api/ path keeps its **404** and its byte-identical body:
  *
@@ -65,10 +73,11 @@ class RouteNotFoundController extends AbstractActionController
 
         if ($this->isRetiredVersion()) {
             $response->setStatusCode(410);
-            $response->getHeaders()->addHeaderLine('Link', '</api/v3>; rel="successor-version"');
+            $response->getHeaders()->addHeaderLine('Link', '</api/v3/schema>; rel="successor-version"');
 
             return $this->envelope(
-                $this->responseFormat['retiredVersionKey'] ?? 'This API version has been retired. Use /api/v3.'
+                $this->responseFormat['retiredVersionKey']
+                    ?? 'This API version has been retired. Use /api/v3; see /api/v3/schema.'
             );
         }
 
