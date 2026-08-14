@@ -83,6 +83,56 @@ class ApplicationSmokeTest extends SmokeTestCase
         ];
     }
 
+    /**
+     * The retired one-off import and maintenance endpoints stay gone.
+     *
+     * All four were administrator-guarded routes reached by a plain GET, and all four are
+     * retired rather than fixed because what each one imported or cleaned no longer
+     * exists. `404` is the assertion that carries information: while a route exists, an
+     * anonymous request to a guarded path gets a **302** to the login form, so a 302 here
+     * would mean the route came back — which is exactly what a careless merge of an old
+     * branch would do to a route tree.
+     *
+     * - `/en/texts/import` (route name `texts/jk-import`, hence the path mismatch) called
+     *   `$table->importJkTexts(false)`, a method that exists in no class, so the action
+     *   was a guaranteed `Error: Call to undefined method`. PHPStan could not see it: the
+     *   receiver came from `getSionTable()`, whose return type is too loose to resolve.
+     * - `/en/music/import` ran a hardcoded 2019 list of 335 composition ids against files
+     *   in `data/musicas/`. It wrote nothing any more — every composition's
+     *   `DisambiguatingDescription` is empty, which is the field the loop skips on, so all
+     *   335 iterations `continue`d — and the directory does not exist.
+     * - `/en/literature/import` and `/en/literature/admin-tasks` went in the previous
+     *   sweep (the Forschungsbibliothek importer and a page calling two empty methods).
+     *   Untested until now, so they are pinned here alongside the rest.
+     *
+     * @param string $path
+     */
+    #[DataProvider('retiredAdminPaths')]
+    public function testRetiredAdminEndpointStaysGone(string $path): void
+    {
+        $response = $this->get($path);
+
+        $this->assertSame(
+            404,
+            $response['status'],
+            $path . ' should 404; a 302 would mean the route is back (redirect target was: "'
+                . $response['redirect'] . '")'
+        );
+        $this->assertStringNotContainsString('Fatal error', $response['body']);
+        $this->assertStringNotContainsString('Stack trace', $response['body']);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function retiredAdminPaths(): array
+    {
+        return [
+            'the JK texts import'      => ['/en/texts/import'],
+            'the 2019 musicas import'  => ['/en/music/import'],
+            'the Forschungs import'    => ['/en/literature/import'],
+            'the publication tasks'    => ['/en/literature/admin-tasks'],
+        ];
+    }
+
     public function testDevelopersPageRenders(): void
     {
         $response = $this->assertRendersOk('/en/developers');
@@ -118,8 +168,13 @@ class ApplicationSmokeTest extends SmokeTestCase
      * - **JSON, not the HTML error page.** RestApi's api-route-not-found catch-all is
      *   the whole mechanism; if it stops matching, the ordinary 404 page takes over and
      *   a machine caller gets markup it cannot read.
-     * - **A successor-version Link.** RFC 5829's machine-readable way to say the API
-     *   moved to /api/v3, which is the only forwarding a withdrawn endpoint can offer.
+     * - **A successor-version Link naming a URL that resolves.** RFC 5829's
+     *   machine-readable way to say the API moved, which is the only forwarding a
+     *   withdrawn endpoint can offer. It points at `/api/v3/schema`, not `/api/v3`: the
+     *   first deploy sent it to `/api/v3`, which is not a route and answers this same
+     *   404, so a caller following the header correctly arrived nowhere. The assertion
+     *   below fetches the advertised target rather than pattern-matching the header,
+     *   because a header naming a dead URL passes any string check.
      *
      * The paths are one per former controller plus both documentation artefacts, so a
      * route tree resurrected by a bad merge fails here rather than in production.
@@ -134,10 +189,31 @@ class ApplicationSmokeTest extends SmokeTestCase
         $this->assertSame(410, $response['status'], $path . ' should be 410 Gone now that /api/v1 is retired');
         $this->assertStringNotContainsString('Fatal error', $response['body']);
         $this->assertStringNotContainsString('<html', strtolower($response['body']), $path . ' should answer JSON');
+        $link = $response['headers']['link'] ?? '';
         $this->assertStringContainsString(
             'rel="successor-version"',
-            $response['headers']['link'] ?? '',
-            $path . ' should point a stranded caller at /api/v3'
+            $link,
+            $path . ' should point a stranded caller at the surviving API'
+        );
+
+        //Follow it. A Link header is only useful if its target answers, and the version
+        //that shipped first named /api/v3 — a path with no route, which 404s. Parsing the
+        //URL out and fetching it is the only assertion that can tell the difference.
+        $this->assertSame(
+            1,
+            preg_match('/<([^>]+)>\s*;\s*rel="successor-version"/', $link, $m),
+            $path . ' should send a well-formed RFC 5829 Link, got: ' . $link
+        );
+        $successor = $this->get($m[1], true);
+        $this->assertSame(
+            200,
+            $successor['status'],
+            $path . ' advertises ' . $m[1] . ' as its successor, which must actually answer'
+        );
+        $this->assertStringContainsString(
+            '"entities"',
+            $successor['body'],
+            $m[1] . ' should be the v3 discovery document listing the surviving resources'
         );
     }
 

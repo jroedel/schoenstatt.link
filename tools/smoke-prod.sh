@@ -195,8 +195,12 @@ json_gone() {
         *) fail "$what should be refused as application/json (got '${CTYPE:-none}'): has api-route-not-found stopped matching?"; return ;;
     esac
     case "$(header link)" in
-        *successor-version*) pass "$what is a JSON 410 pointing at /api/v3" ;;
-        *) fail "$what should send 'Link: </api/v3>; rel=\"successor-version\"' (got '$(header link)')" ;;
+        *"</api/v3/schema>"*successor-version*)
+            pass "$what is a JSON 410 pointing at /api/v3/schema" ;;
+        *successor-version*)
+            fail "$what advertises a successor, but not /api/v3/schema (got '$(header link)') — a bare /api/v3 has no route and 404s" ;;
+        *)
+            fail "$what should send 'Link: </api/v3/schema>; rel=\"successor-version\"' (got '$(header link)')" ;;
     esac
 }
 
@@ -220,6 +224,31 @@ fetch "$BASE/en/api/v1/libraries/3";       json_gone "api/v1 library detail"
 fetch "$BASE/en/api/v1/users/login";       json_gone "api/v1 login"
 fetch "$BASE/en/api/v1";                   json_gone "api/v1 documentation shell"
 fetch "$BASE/api/v1.yaml" --follow;        json_gone "the OpenAPI document"
+
+# Follow the successor-version Link the 410s send. A Link header naming a URL that does
+# not answer is worse than none — it reads as "the API is gone entirely" — and the first
+# deploy of the 410 pointed at /api/v3, which has no route and 404s. Only fetching the
+# advertised target catches that; every pattern check on the header passed.
+fetch "$BASE/api/v3/schema"
+if [ "$STATUS" = "200" ] && grep -q '"entities"' "$BODY"; then
+    pass "the advertised successor /api/v3/schema answers with the discovery document"
+else
+    fail "/api/v3/schema must answer 200 with the v3 discovery document (got $STATUS) — the 410s point callers here"
+fi
+
+# Retired administrator endpoints, all reached by a plain GET while they existed. 404 is
+# what carries the signal: a *guarded* route answers an anonymous request with a 302 to
+# the login form, so a 302 here means the route is back. /en/texts/import was a call to a
+# method that exists in no class; /en/music/import was a hardcoded 2019 id list whose
+# input files are gone; the two /en/literature/* went in the previous sweep.
+for path in /en/texts/import /en/music/import /en/literature/import /en/literature/admin-tasks; do
+    fetch "$BASE$path"
+    if [ "$STATUS" = "404" ] && no_fatals; then
+        pass "$path stays retired"
+    else
+        fail "$path should 404 (got $STATUS, redirect '$REDIRECT') — a 302 means the route came back"
+    fi
+done
 
 # The sitemap is a static file at the docroot ROOT since 2026-08-13, and the root is the
 # point: a sitemap may only list URLs at or below its own directory, so the previous

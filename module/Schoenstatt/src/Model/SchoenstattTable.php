@@ -3065,34 +3065,6 @@ WHERE (NOT ISNULL(g.Country)) GROUP BY g.Country ORDER BY Country";
     }
 
     /**
-     * Gets a list of role titles including the aliases for each of
-     * the titles he holds
-     * @todo this function could be optimized by using a binary tree or something
-     * @param int $personId
-     */
-    public function getPersonRoleTitles($personId)
-    {
-        $assignments = $this->getAssignments();
-        $return = [];
-        foreach ($assignments as $assignment) {
-            if ($assignment['personId'] == $personId) {
-                if (! in_array($assignment['roleTitle'], $return)) {
-                    $return[] = $assignment['roleTitle'];
-                }
-                $aliases = $this->getRoleTitleAliases($assignment['roleTitle']);
-                if ($aliases) {
-                    foreach ($aliases as $alias) {
-                        if (! in_array($alias['alias'], $return)) {
-                            $return[] = $alias['alias'];
-                        }
-                    }
-                }
-            }
-        }
-        return $return;
-    }
-
-    /**
      * Connect the corresponding roles and assignments to a given list of entities
      * @param string $entity
      * @param mixed[] $entities

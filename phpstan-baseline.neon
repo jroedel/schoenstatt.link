@@ -1,11 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Used function False\\\\true not found\\.$#"
-			count: 1
-			path: module/Application/src/Controller/IndexController.php
-
-		-
 			message: "#^Result of method SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:__construct\\(\\) \\(void\\) is used\\.$#"
 			count: 1
 			path: module/Books/src/Model/DictionaryTable.php
@@ -24,11 +19,6 @@ parameters:
 			message: "#^Call to an undefined method Books\\\\Model\\\\MusicTable\\:\\:getAssociationSchemaV1\\(\\)\\.$#"
 			count: 1
 			path: module/Books/src/Model/MusicTable.php
-
-		-
-			message: "#^Function issett not found\\.$#"
-			count: 1
-			path: module/Books/src/Model/PublicationsTable.php
 
 		-
 			message: "#^Access to an undefined property Books\\\\Service\\\\DriveGateway\\:\\:\\$personInputFilter\\.$#"
@@ -81,11 +71,6 @@ parameters:
 			path: module/JUser/src/View/RedirectionStrategy.php
 
 		-
-			message: "#^Call to an undefined method Schoenstatt\\\\Model\\\\SchoenstattTable\\:\\:getRoleTitleAliases\\(\\)\\.$#"
-			count: 1
-			path: module/Schoenstatt/src/Model/SchoenstattTable.php
-
-		-
 			message: "#^Method Schoenstatt\\\\Model\\\\SchoenstattTable\\:\\:associationPostprocessor\\(\\) should return float\\|int but return statement is missing\\.$#"
 			count: 1
 			path: module/Schoenstatt/src/Model/SchoenstattTable.php
@@ -106,13 +91,8 @@ parameters:
 			path: module/SionModel/src/Db/Model/SionTable.php
 
 		-
-			message: "#^Call to an undefined method SionModel\\\\Db\\\\Model\\\\SionTable\\:\\:getEmailAddress\\(\\)\\.$#"
-			count: 1
-			path: module/SionModel/src/Db/Model/SionTable.php
-
-		-
 			message: "#^Call to an undefined method SionModel\\\\Form\\\\SionForm\\:\\:getInputFilterSpecification\\(\\)\\.$#"
-			count: 3
+			count: 1
 			path: module/SionModel/src/Form/SionForm.php
 
 		-

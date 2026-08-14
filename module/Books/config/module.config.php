@@ -1080,16 +1080,6 @@ return [
                             ],
                         ],
                     ],
-                    'jk-import' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/import',
-                            'defaults' => [
-                                'controller' => Controller\TextsController::class,
-                                'action'     => 'importJkTexts',
-                            ],
-                        ],
-                    ],
                 ],
             ],
             'text' => [
@@ -1279,15 +1269,6 @@ return [
                             'route'    => '/create-composition',
                             'defaults' => [
                                 'action'     => 'create',
-                            ],
-                        ],
-                    ],
-                    'import' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/import',
-                            'defaults' => [
-                                'action'     => 'import',
                             ],
                         ],
                     ],
@@ -2510,7 +2491,6 @@ return [
                 ['route' => 'texts', 'roles' => ['texts_user']],
                 ['route' => 'text-edit', 'roles' => ['texts_moderator']],
                 ['route' => 'text-delete', 'roles' => ['texts_moderator']],
-                ['route' => 'texts/jk-import', 'roles' => ['administrator']],
                 ['route' => 'texts/create', 'roles' => ['texts_moderator']],
 
 
@@ -2562,7 +2542,6 @@ return [
                 ['route' => 'composition-edit', 'roles' => ['sch_moderator', 'sch_user']],
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'music/create-composition', 'roles' => ['sch_user']],
-                ['route' => 'music/import', 'roles' => ['administrator']],
 
                 ['route' => 'events', 'roles' => ['user', 'guest']],
             ],

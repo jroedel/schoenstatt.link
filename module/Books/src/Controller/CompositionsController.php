@@ -4,7 +4,6 @@ namespace Books\Controller;
 use SionModel\Controller\SionController;
 use Laminas\Stdlib\ResponseInterface;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
-use Laminas\View\Model\ViewModel;
 
 class CompositionsController extends SionController
 {
@@ -57,12 +56,5 @@ class CompositionsController extends SionController
         $schema = $table->getCompositionSchemaV1($object);
         $view->setVariable('schema', $schema);
         return $view;
-    }
-
-    public function importAction()
-    {
-        $table = $this->getSionTable();
-        $count = $table->importMusicasJuly2019();
-        return new ViewModel(['count' => $count]);
     }
 }

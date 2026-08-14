@@ -106,7 +106,11 @@ suites run from the superproject working tree.
   rendering apart from inter-tag whitespace). The **v3 API** for automated agents
   lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
   It is the *only* API the site serves: v1 and v2 were retired 2026-08-14 and their
-  26 URLs answer a JSON **410 Gone** carrying `Link: </api/v3>; rel="successor-version"`.
+  26 URLs answer a JSON **410 Gone** carrying
+  `Link: </api/v3/schema>; rel="successor-version"`. That header names the **schema
+  document, not a bare `/api/v3`** — `/api/v3` is not a route and answers 404, so the
+  first deploy of the 410 pointed every stranded caller at nothing. `/api/v3/schema` is
+  public, answers 200, and lists both resources with their endpoints and roles.
   An unknown path in a *live* version still answers 404 — the 410 is scoped to v1 and
   v2 in `RestApi\Controller\RouteNotFoundController`, because "permanently gone" and
   "you misspelled it" are different answers and a caller acts on them differently.
