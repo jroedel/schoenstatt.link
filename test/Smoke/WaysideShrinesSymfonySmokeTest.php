@@ -59,17 +59,15 @@ class WaysideShrinesSymfonySmokeTest extends SmokeTestCase
         $wayside = $this->assertRendersOk('/en/wayside-shrines')['body'];
         $shrines = $this->assertRendersOk('/en/shrines')['body'];
 
-        //the *link*, not merely the string: `kind=sch-shrine` also appears on this
-        //page inside the schema.org datasets, which are the shrine ones on both pages
-        //because waysideShrinesAction() publishes exactly those. See ShrineDatasets.
-        $this->assertStringContainsString(
-            'findByKind?kind=sch-wayside-shrine" target="_blank">REST API',
-            $wayside
-        );
+        //Until 2026-08-14 the sharpest marker here was each page's REST API link, whose
+        //`kind` parameter differed between them. Both links went with /api/v1, so the
+        //heading is now the per-page marker and the licence paragraph and the button —
+        //which /shrines has and this page never did — are the rest of the difference.
+        $this->assertStringContainsString('<h1>Schoenstatt Wayside Shrines</h1>', $wayside);
         $this->assertStringNotContainsString(
-            'findByKind?kind=sch-shrine" target="_blank">REST API',
+            '<h1>Schoenstatt Shrine</h1>',
             $wayside,
-            'the API link points at the shrine kind rather than the wayside one'
+            'the shrines heading rendered on the wayside page: the shared template leaked its header block'
         );
         $this->assertStringNotContainsString('Creative Commons BY-SA', $wayside, 'the shrines licence paragraph');
         $this->assertStringNotContainsString(
@@ -78,9 +76,10 @@ class WaysideShrinesSymfonySmokeTest extends SmokeTestCase
             'the button linking here belongs on /shrines, not on this page'
         );
 
+        $this->assertStringContainsString('<h1>Schoenstatt Shrine</h1>', $shrines);
+        $this->assertStringNotContainsString('<h1>Schoenstatt Wayside Shrines</h1>', $shrines);
         $this->assertStringContainsString('Creative Commons BY-SA', $shrines);
         $this->assertStringContainsString('href="/en/wayside-shrines"', $shrines);
-        $this->assertStringContainsString('findByKind?kind=sch-shrine" target="_blank">REST API', $shrines);
     }
 
     /**

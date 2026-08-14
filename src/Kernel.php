@@ -39,7 +39,6 @@ use App\Controller\RolesController;
 use App\Controller\SendToNewUrlController;
 use App\Controller\ShrinesController;
 use App\Controller\SitemapController;
-use App\Controller\ShrinesGeoJsonController;
 use App\Controller\TextController;
 use App\Controller\TextsController;
 use App\Controller\TimelineController;
@@ -336,13 +335,6 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             // is actually assembled.
             ContentPageController::class => fn (): ContentPageController => new ContentPageController(
                 $this->twig(),
-                $this->routeUrl()
-            ),
-            // Both shrine GeoJSON versions, one controller: the two laminas actions
-            // are byte-identical. No Twig — it answers JSON — so this is the only
-            // ported HTML-era route that builds no template environment.
-            ShrinesGeoJsonController::class => fn (): ShrinesGeoJsonController => new ShrinesGeoJsonController(
-                $this->laminas(),
                 $this->routeUrl()
             ),
             // The most tightly guarded page ported so far: sch_administrator only, a

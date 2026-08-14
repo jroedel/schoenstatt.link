@@ -10,8 +10,8 @@ schoenstatt.link — a database application for Schoenstatt-related topics, buil
 
 - The target is modern, current-best-practice PHP — not careful preservation of the legacy state. When choosing between patching the old way and migrating to the modern way, prefer the migration, but propose it to the user first.
 - **Zend Framework is dead.** It became Laminas in 2019; every `zendframework/*` package here is abandoned. The core framework migration (ZF3 → `laminas/*`, likely via `laminas/laminas-migration`) is the foundational step most other upgrades depend on.
-- **Assume every dependency is suspect.** `composer.lock` is 5+ years stale. Many deps are abandoned or superseded, e.g. `swiftmailer` → `symfony/mailer`, `phpoffice/phpexcel` → `phpoffice/phpspreadsheet`, `zfc-user`/`bjy-authorize` → their `lm-commons` (Lmc*) successors, `zfr-cors` → LmcCors. `roave/security-advisories` will likely refuse to resolve until vulnerable pins are lifted. Before building on any dependency, check whether it is still maintained.
-- The `repositories` section pins several personal VCS forks (`jroedel/*`, `boesing/zfr-cors`, etc.). Each fork needs a decision: still necessary, upstreamed since, or replaceable.
+- **Assume every dependency is suspect.** `composer.lock` is 5+ years stale. Many deps are abandoned or superseded, e.g. `swiftmailer` → `symfony/mailer`, `phpoffice/phpexcel` → `phpoffice/phpspreadsheet`, `zfc-user`/`bjy-authorize` → their `lm-commons` (Lmc*) successors. (`zfr-cors` → LmcCors is **no longer a migration to make**: zfr-cors was replaced by a local listener, and that listener was deleted 2026-08-14 with the v1 API it served — nothing on the site sends CORS headers now.) `roave/security-advisories` will likely refuse to resolve until vulnerable pins are lifted. Before building on any dependency, check whether it is still maintained.
+- The `repositories` section pins **three** personal VCS forks, all `jroedel/*`: `chordpro-php`, `laminas-twb-bundle` and `SlmLocale`. The latter two carry a `comment` key saying exactly which upstream PR would let the entry go away — keep that habit. (This line named `boesing/zfr-cors` until 2026-08-14; that entry was removed when zfr-cors was replaced, long before this was noticed. Read `composer.json` rather than trusting the list here.)
 - `composer.json` says PHP `^7.3`; the local CLI is PHP 8.5. The constraint should move to a modern PHP target as the migration proceeds — but don't silently bump it; sequencing (deps first vs. PHP first) is a real decision to make with the user.
 - **Modernize incrementally and keep the app bootable at every step.** This is a live production site with no test suite. Establishing a safety net early (PHPUnit, PHPStan/Psalm, CI) is itself part of the state-of-the-art goal and should come before or alongside risky migrations.
 - Don't trust docs over code; update them as part of the work. Prose documentation lives in `docs/` (`DEPLOY.md`, `exception-reporting.md`, `BACKLOG.md`, indexed by `docs/README.md`); `README.md` is the project entry point and `CLAUDE.md` holds the working conventions.
@@ -105,6 +105,8 @@ suites run from the superproject working tree.
   TwbBundle's markup and `association-edit` is ported (byte-identical to the laminas
   rendering apart from inter-tag whitespace). The **v3 API** for automated agents
   lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
+  It is the *only* API the site serves: v1 and v2 were retired 2026-08-14 and their
+  26 URLs answer a JSON 404.
   It exposes two resources, associations and translation phrases, and **each is gated on
   its own role** (`sch_api_bot`, `sch_api_translator`); a new API resource needs a new
   role, an entry in `juser.api_token_roles`, and a `requiredRole()` on its controller.
@@ -136,6 +138,10 @@ suites run from the superproject working tree.
 - Application modules live in `module/` and are PSR-4 autoloaded via `composer.json`:
   `Application`, `Books`, `JTranslate`, `JUser`, `RestApi`, `Schoenstatt`, `SionModel`.
   (`Bible` was removed 2026-08-05 — the feature moved to another application.)
+  **`RestApi` is now a single route**: the JSON 404 for unmatched `/api/` paths. Its
+  `ApiController` base class and every v1/v2 controller across `Books`, `Schoenstatt`
+  and `JUser` were deleted 2026-08-14 — see [docs/strangler.md](docs/strangler.md) for
+  the access-log evidence. Do not add API code there; `/api/v3` lives in `src/`.
   `SionModel` and the `J*` modules are shared libraries vendored into this repo — changes there may affect other projects.
 - Each module follows the ZF convention: `config/module.config.php`, `src/` (`Controller/`, `Form/`, `Model/`, `Service/`, `Validator/`, `Filter/`, `View/`), and `view/` for `.phtml` templates.
 - Enabled modules are listed in `config/modules.config.php`; environment-specific config lives in `config/autoload/` (`*.global.php` is committed, `*.local.php` is machine-specific and created from the `.dist` files by `config.sh`).

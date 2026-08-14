@@ -40,25 +40,25 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 159 |
-| guarded routes total | 159 |
+| guarded routes existing | 135 |
+| guarded routes total | 135 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 161 |
+| route guard entries | 137 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 61 |
+| routes shadowed by symfony | 59 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
 | symfony routes acl checked | 112 |
-| symfony routes open | 30 |
+| symfony routes open | 26 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 142 |
-| total routes | 181 |
-| unguarded routes | 22 |
-| unguarded routes matchable | 11 |
+| symfony served routes | 138 |
+| total routes | 155 |
+| unguarded routes | 20 |
+| unguarded routes matchable | 10 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (159 + 22 = 181). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (135 + 20 = 155). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -88,10 +88,6 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `acknowledgements.locale` | `/{_locale}/acknowledgements` | `route/acknowledgements` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
 | `admin` | `/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
 | `admin.locale` | `/{_locale}/admin` | `route/admin` | sch_administrator, sch_general_moderator, sch_moderator, translator | html | `App\Controller\AdminController` |
-| `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
-| `api-v1/shrines-json.locale` | `/{_locale}/api/v1/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
-| `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
-| `api-v2/shrines-json.locale` | `/{_locale}/api/v2/associations/shrines.json` | _open_ | everyone — reason below | n/a | `App\Controller\ShrinesGeoJsonController` |
 | `api-v3/association` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::show` |
 | `api-v3/association-method` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\MethodNotAllowedController` |
 | `api-v3/association-patch` | `/api/v3/associations/{sw_id}` | _open_ | everyone — reason below | n/a | `App\Controller\Api\AssociationsV3Controller::patch` |
@@ -232,10 +228,6 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 Each is the string passed to `RouteAccess::openToEveryone()`. Declaring openness is a statement,
 not a default, and this is where the statement is reviewed.
 
-- `api-v1/shrines-json` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
-- `api-v1/shrines-json.locale` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
-- `api-v2/shrines-json` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
-- `api-v2/shrines-json.locale` — the laminas guard it shadows is public (a null role admits everyone), and unlike the shrine index this endpoint renders no permission-gated markup, so nothing has already built the ACL. Checking would start a session and run the role/resource queries — some through Books\Model\LibraryTable — on an endpoint the mobile apps poll, for a foregone answer
 - `api-v3/association` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/association-method` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/association-patch` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
@@ -289,8 +281,6 @@ warning at the top of this file.
 | `acknowledgements` | `/acknowledgements` | `—` | `acknowledgements` | **public** (names the default role `guest`) | `route/acknowledgements` — **the same resource** |
 | `admin` | `/admin` | `—` | `admin` | restricted to sch_administrator, sch_general_moderator, sch_moderator, translator | `route/admin` — **the same resource** |
 | `api-route-not-found` | `/api/v3/schema` | `—` | `api-v3/schema` | **public** (names the default role `guest`) | _open, deliberately_ |
-| `api-v1/shrines-json` | `/api/v1/associations/shrines.json` | `—` | `api-v1/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
-| `api-v2/shrines-json` | `/api/v2/associations/shrines.json` | `—` | `api-v2/shrines-json` | **public** (`null` in its roles) | _open, deliberately_ |
 | `assignments/advanced-search` | `/assignments/advanced-search` | `—` | `assignments/advanced-search` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/assignments/advanced-search` — **the same resource** |
 | `assignments/assignment/delete` | `/assignments/:assignment_id/delete` | `/assignments/0/delete` | `assignments/assignment/delete` | restricted to sch_administrator, sch_general_moderator | `route/assignments/assignment/delete` — **the same resource** |
 | `assignments/assignment/edit` | `/assignments/:assignment_id/edit` | `/assignments/0/edit` | `assignments/assignment/edit` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/assignments/assignment/edit` — **the same resource** |
@@ -479,30 +469,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `admin/literature-maintenance/update-translated-from-publication-id` | yes | pub_administrator | pub_administrator (1) | no |  |
 | `admin/maintenance` | yes | administrator | administrator (1) | no |  |
 | `api-route-not-found` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v1-login` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1-login-with-verification-token` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1-request-verification-token` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/associations` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v1/dictionary` | yes, but not an endpoint | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/dictionary/create` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/dictionary/list` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/dictionary/list/entry` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/dictionary/update` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/dictionary/update/entry` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/find-by-kind` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v1/find-by-kind-md5` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v1/libraries` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/libraries/books` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/literature` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/pending-labels` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/pending-labels/finish-pending-labels` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v1/shrines-json` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v1/slugify-terms` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `api-v2/associations` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v2/find-by-kind` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v2/find-by-kind-md5` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
-| `api-v2/shrines-json` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `assignments/advanced-search` | yes | sch_user | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (6) | no |  |
 | `assignments/assignment` | yes | sch_basic, sch_user | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (7) | no |  |
 | `assignments/assignment/delete` | yes | sch_general_moderator | sch_administrator, sch_general_moderator (2) | no |  |
@@ -640,12 +606,10 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-11 of the 22 are endpoints reachable by nobody.
+10 of the 20 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
-| `api-v1/libraries/books/patch-list` | **yes** |
-| `api-v2` | no |
 | `assignments` | no |
 | `books` | no |
 | `checkouts` | **yes** |
