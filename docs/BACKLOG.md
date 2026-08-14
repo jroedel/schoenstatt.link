@@ -43,11 +43,14 @@ closed:
   phrase could rewrite any other. Pinned by
   `test/Integration/TranslationUpdateScopeTest`.
 
-**A Symfony kernel now sits in front of laminas-mvc in the capsule**, with a
-catch-all route delegating every unported path back to it — see
+**The Symfony kernel sits in front of laminas-mvc everywhere**, with a catch-all
+route delegating every unported path back to it — see
 [strangler.md](strangler.md) for the mechanism, the response-conversion rules and
-how to switch front controllers. Production still runs the laminas front
-controller until `SYMFONY_KERNEL=1` is added to its `.htaccess`.
+how to switch front controllers. **Production has served through it since the
+2026-08-11 deploy**; `curl https://schoenstatt.link/_health` answering
+`{"status":"ok","kernel":"symfony"}` is the cheapest way to confirm which one is
+live. The capsule and production no longer differ, so a local reproduction is
+once again a reproduction.
 
 **Six routes now answer from the Symfony kernel**, three of them HTML: `shrines`,
 `admin`, and as of 2026-08-07 `wayside-shrines`. That last one is the first port
@@ -218,28 +221,6 @@ rediscovered.
   konsoleH PHP version, which is the trap that makes tuned values silently
   revert on a flip.
 - [ ] Announce passwordless sign-in to users if confused-user replies arrive.
-- [ ] **Flip `SYMFONY_KERNEL=1` in production's `.htaccess`** — now one added line, and
-  everything around it is prepared (2026-08-09). The line, the ordering rule, the two
-  checklists and the three rollbacks are in
-  [DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally); do not write it as
-  `SetEnv`, and do not write it below the cookie overrides.
-  - The three things this item said to watch for are now **checked against production**
-    by `tools/smoke-prod.sh` on every deploy, on a bridged page and therefore behind the
-    TLS-terminating proxy the capsule lacks: doubled `Set-Cookie`, invented
-    `Cache-Control`, and the sitemap's gzip. All three passed on 2026-08-09.
-  - What prep added beyond that: the `sl_symfony_canary=0` escape hatch back to laminas
-    (deployed ahead of the flip so it is exercised before it is the only way out), the
-    navbar toggle rewritten to offer whichever kernel you are not on so it needs no edit
-    on flip day, and the configured error-reporting pipeline wired into `App\Kernel` —
-    without which every failure on a ported route would have been recorded and never
-    notified for all traffic rather than just the canary's.
-  - **Known and accepted at the flip:** ported pages stop contributing missing phrases to
-    `/admin/translations` (the `MvcEvent::FINISH` listener nothing reproduces — see the
-    bounding item below), and the unprefixed form of a guarded path redirects with
-    `?redirect=/roles` instead of `?redirect=/en/roles` (the listener item below).
-  - While the flag is off, **production and the capsule run different front
-    controllers**. That is deliberate, and it is also the one thing to remember
-    before concluding anything from a local reproduction.
 - [ ] **Remove the footer's serving note when the migration ends.** Every HTML page
   carries one muted line saying which front controller and which renderer produced it,
   because rows 1 and 3 of that table render identical markup and the deciding cookie is
@@ -286,13 +267,6 @@ rediscovered.
     exists to manage those files; it lands naturally with Twig.
 
 ## Next
-
-- [ ] **Flip `SYMFONY_KERNEL` globally** — now the gate on the v3 API being usable at
-  all, since agents will not send the canary cookie. v3 and `association-edit` are
-  deployed and verified through the canary (2026-08-09). Preparation landed the same day;
-  the remaining work is the one-line commit and the checklists, both under
-  [DEPLOY.md](DEPLOY.md#flipping-the-symfony-kernel-on-globally). Tracked as the "Now"
-  item of the same name — this entry is the *why*, that one is the *how*.
 
 - [ ] **The comment form's open redirect.** `SionModel\Controller\CommentController::
   redirectAfterCreate()` redirects to `$data['redirect']` — a hidden form field — under a
