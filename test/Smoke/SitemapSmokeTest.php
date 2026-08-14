@@ -225,9 +225,14 @@ class SitemapSmokeTest extends SmokeTestCase
      * No `#fragment` entries and no path that 404s on a trailing slash.
      *
      * Google discards a fragment, so `/en/shrines#Africa` was a duplicate of `/en/shrines`,
-     * which is listed anyway — 30 entries. `/en/literature/` is the other one: PageBuilder
-     * files publications with no language under `''` and assembles a URL that answers 404,
-     * while `/en/literature` answers 200 and is listed separately.
+     * which is listed anyway — 30 entries.
+     *
+     * `/en/literature/` was the trailing-slash one: PageBuilder filed publications with no
+     * language under `''` and assembled a URL that answers 404, while `/en/literature`
+     * answers 200 and is listed separately. **Fixed at source 2026-08-14** — the group is no
+     * longer built, so this half now guards against a class of defect rather than a live
+     * instance of it. Keep it: `Segment::assemble()` does not enforce a route's own
+     * constraints, so any null key reaching any segment route reproduces the shape.
      */
     public function testNoFragmentsAndNoTrailingSlashes(): void
     {
