@@ -138,11 +138,29 @@ readability — the destination is **Symfony**, reached gradually:
   + voters); JUser magic-link → Security's LoginLink authenticator;
   laminas-view/.phtml → Twig. None of these move before their rung.
 
-## Now
+## Deferred indefinitely
 
-- [ ] **Every deploy has a window in which visitors get fatals. This is the single
-  largest finding in production's exception store**, measured 2026-08-14 by pulling the
-  store down with `tools/fetch-exceptions.sh`.
+Not abandoned and not retracted — the evidence below stands as measured. What changed is
+the priority, and the reason is recorded so the decision can be re-examined rather than
+rediscovered.
+
+- [~] **Every deploy has a window in which visitors get fatals.** **Deferred
+  indefinitely 2026-08-14 by the user: the audience is currently almost entirely bots.**
+
+  The reasoning inverts the usual one, which is why it is worth stating. The cost of a
+  deploy-window fatal is paid by whoever happens to be mid-request, and today that is
+  overwhelmingly crawlers — the `51c0cb27` fingerprint alone, one scraper replaying a URL
+  list it built while a button was public, produced **3,478 requests in eleven days**
+  against a handful of identifiable human sessions. Fixing atomicity would mostly protect
+  Googlebot's opinion of us. That is real, but it is not urgent, and the fix costs a
+  pipeline redesign plus edits to a credentials file only the user can touch.
+
+  **Revisit when that ratio changes** — a launch, an announcement, or any sustained human
+  traffic. The measurement does not go stale; the priority does.
+
+  The evidence, kept intact:
+
+  Measured 2026-08-14 by pulling the store down with `tools/fetch-exceptions.sh`.
 
   Of 38 fingerprints, 21 are real failures (the rest are the deny-listed
   `UnAuthorizedException` noise) — and **17 of those 21 are deploy artifacts**, not bugs.
@@ -179,6 +197,8 @@ readability — the destination is **Symfony**, reached gradually:
     recurred in eleven days.
   - **Zero steady-state code bugs.** Worth stating plainly, because it is the good news
     and it is easy to lose behind 38 rows of table.
+
+## Now
 
 - [x] ~~Watch for 401 fallout from the API authorization fix (live since
   2026-08-03)~~ — **moot 2026-08-14: the whole of `/api/v1` and `/api/v2` was
@@ -866,15 +886,39 @@ readability — the destination is **Symfony**, reached gradually:
     translation of that page exists or not. The set has to match what the pages publish
     or reciprocity breaks, so narrowing it would mean narrowing both at once.
 
-- [ ] **The literature menu links to a 404.** `PageBuilder::publicationPages()` groups
-  publications by language and files the ones with no language under `''`, then assembles
-  `publications/index` with `inLanguage => ''` — which is `/en/literature/`, and that
-  answers 404 while `/en/literature` answers 200. The nav item renders as "Other
-  Schoenstatt Literature". The sitemap stopped publishing it on 2026-08-13; the menu was
-  left alone because the fix changes what every visitor sees, and the group's *children*
-  (the publications themselves) must keep being walked whatever happens to the parent.
-  - Options: give the group no route so it renders as an unlinked header, or give the
-    `publications/index` route a branch for the empty language. The first is smaller.
+- [ ] **25 publications have no browse path — and the "dead menu link" this item used to
+  describe is not rendered anywhere.** Both halves measured against production 2026-08-14.
+
+  The data defect is real and unchanged: `PageBuilder::publicationPages()` groups
+  publications by language and files the languageless ones under `null`, which becomes the
+  array key `''`, then assembles `publications/index` with `inLanguage => ''` — and that is
+  `/en/literature/`, which answers **404** while `/en/literature` answers 200. Laminas's
+  `Segment::assemble()` does not enforce the route's own `[a-z]{2,2}` constraint, which is
+  why an empty parameter produces a URL at all.
+
+  **But nothing renders it**, which this item previously asserted and which is worth
+  correcting rather than deleting, because "the menu shows a 404" is what made it look
+  urgent:
+  - Both navbars render **top level only** — the laminas layout calls
+    `->setMinDepth(0)->setMaxDepth(0)`, the Twig layout iterates `navigation_items()`. The
+    group sits at depth 2.
+  - The Symfony breadcrumb **omits the group**: `/en/SL202208L` (languageless) renders
+    `Literature > title`, while `/en/SL201727L` renders
+    `Literature > Schoenstatt Literature in English > title`.
+  - The laminas rendering of a publication page, forced with `sl_symfony_canary=0`, carries
+    **no breadcrumb at all**.
+  - The literature home offers twelve language links in both renderings — `cs de en es fr
+    hr hu it la pl pt` plus the 150-preguntas page — and no languageless one.
+  - The sitemap dropped it on 2026-08-13, via the trailing-slash rule in `isPublishable()`.
+
+  So the user-facing consequence is the opposite of a bad link: those **25 publications are
+  in the sitemap but have zero inbound internal links**. For a site whose traffic is
+  overwhelmingly crawlers, orphaned pages are the part of this worth fixing.
+  - Options: (a) give `publications/index` a branch that means "no language" and teach
+    `searchPublications()` to match it — note **24 of the 25 are `NULL` and one is `''`**,
+    so `In($field, [''])` matches one row, not 25; or (b) drop the broken node and
+    re-parent its children, which removes the latent trap and leaves the orphans orphaned.
+    (a) is the only one that delivers anything.
 
 - [ ] **Any signed-in account can edit any association.** `route/association-edit` is
   guarded `['sch_moderator', 'sch_user']` and registration grants `sch_user`, so

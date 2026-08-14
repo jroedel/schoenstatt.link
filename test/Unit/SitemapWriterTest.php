@@ -323,6 +323,10 @@ final class SitemapWriterTest extends TestCase
             'an association'       => ['assoc_319', SitemapSection::ASSOCIATIONS],
             'a composition'        => ['composition_88', SitemapSection::COMPOSITIONS],
             'a language filter'    => ['pub_lang_es', SitemapSection::PAGES],
+            //PageBuilder stopped emitting this one on 2026-08-14 — the languageless group it
+            //belonged to assembled `/en/literature/`, which 404s. Kept because the classifier
+            //must still refuse to read `pub_lang_` as publication id "lang_": that is the
+            //property under test, and it does not depend on anything still producing the id.
             'the empty language'   => ['pub_lang_', SitemapSection::PAGES],
             'the hand-made page'   => ['pub_one_fifty_preguntas', SitemapSection::PAGES],
             'a dictionary'         => ['dict_es', SitemapSection::PAGES],
