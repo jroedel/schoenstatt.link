@@ -143,6 +143,22 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
                     ['name' => 'StripNewlines'],
                     ['name' => 'StringTrim'],
                 ],
+                'validators' => [
+                    [
+                        //201 = the longest full name the database can hold: FirstName and
+                        //LastName are varchar(100) each, plus the space between them. So
+                        //this cannot reject a name that exists — the longest in the data
+                        //is 43 characters — while an unbounded text input reaches the
+                        //query builder with a megabyte in it. Same shape as
+                        //`associationCountry` above; the fuzz harness listed this field as
+                        //an accepted gap until 2026-08-14.
+                        'name' => 'StringLength',
+                        'options' => [
+                            'max' => 201,
+                            'encoding' => 'UTF-8',
+                        ],
+                    ],
+                ],
             ],
             'search' => [
                 'required' => false,

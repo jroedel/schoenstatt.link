@@ -713,6 +713,37 @@ $edit(
     ['assignment_id' => '[0-9]{1,6}']
 );
 
+// A person — the tenth and last of the edit surface, and the only one whose <title> is
+// built from the record rather than fixed. `Edit %s` is declared here so this file stays
+// the inventory of page titles; the template translates it and inserts the name, then sets
+// `page_title_translate = false` so the name itself is not run through the translator.
+//
+// EXTRA_VARIABLES supplies that name. DELETE_ROUTE points at the laminas delete route
+// behind the second delete-confirmation modal in the batch, gated on
+// `route/persons/person/delete` rather than on the `sch_moderator` that reached this page.
+//
+// No REDIRECT_TARGET: the spec declares `show_route`/`show_route_key`, branch 2 of
+// App\Sion\EntityEdit::redirectTarget(), and PersonsController overrides nothing.
+//
+// **`nameDay` is rendered as three hidden inputs rather than as the partial's two selects**,
+// by decision — the field is on its way out with its column. The hidden inputs are not
+// cosmetic: the element is on the input filter, so an absent field makes `getData()` answer
+// null and `updateEntity()` write it. See the template.
+$edit(
+    'persons/person/edit',
+    '/persons/{person_id}/edit',
+    'person',
+    'person_id',
+    'schoenstatt/person-edit.html.twig',
+    'Edit %s',
+    'Schoenstatt',
+    [
+        EntityEditController::EXTRA_VARIABLES => 'personName',
+        EntityEditController::DELETE_ROUTE    => 'persons/person/delete',
+    ],
+    ['person_id' => '[0-9]{1,5}']
+);
+
 // A movement role, guarded `sch_moderator`. Two peculiarities of its .phtml are carried
 // over and documented in the template: the fields partial does not render its own submit
 // button, and its first two selects render with the translator off because an association
