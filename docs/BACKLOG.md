@@ -345,6 +345,21 @@ readability — the destination is **Symfony**, reached gradually:
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **The publication form fetches an author list no picker ever offers.**
+  `fields-partial.phtml` builds `authorAssociations` from
+  `PublicationsTable::getAuthorAssociationValueOptions()` — the associations flagged
+  `IsAuthor` — and then says `authorPersons.concat(authorAssociations);`, discarding the
+  result, because `concat` returns a new array and does not mutate. So `authorsAll`,
+  `editorsAll` and `translatorsAll` have never offered an association as an author, on
+  either front controller, while the page pays to build and ship the list.
+
+  Reproduced verbatim by the Symfony port on 2026-08-14 rather than fixed: the one-word
+  fix (`authorPersons = authorPersons.concat(...)`) adds options to three fields that have
+  never had them, which is a content decision and not a porting one. Whoever takes it
+  should also decide whether *editors* and *translators* should offer associations at all
+  — the original hands the same combined list to all three, which may itself be the
+  accident rather than the intent.
+
 - [x] ~~**`association-delete` matches no association that exists.**~~ **Fixed
   2026-08-14.** Its route declared `sw_id` as `SL1[0-9]{4,4}A` — the `1` plus **four**
   digits — where every valid association identifier is `SL1[0-9]{5,5}A`

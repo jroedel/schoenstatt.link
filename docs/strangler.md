@@ -1523,14 +1523,40 @@ circulation surface.
 
 ### The edit surface — batch 7, 2026-08-13
 
-Eight of the ten entity edit forms now run on `App\Sion\EntityEdit`, one reproduction of
+Nine of the ten entity edit forms now run on `App\Sion\EntityEdit`, one reproduction of
 `SionController::editAction()` — the counterpart of what `App\Sion\EntityShow` is for the
 show pages — behind a single `App\Controller\EntityEditController` parameterized per route,
 the way `ContentPageController` serves the five static pages.
 
 | ported | still on laminas |
 |---|---|
-| `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit` | `publication-edit`, `persons/person/edit` |
+| `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit`, `publication-edit` | `persons/person/edit` |
+
+**`publication-edit` joined them on 2026-08-14** and is the one whose view is not a list of
+rows. `fields-partial.phtml` builds five `form-group`s by hand around
+`formSelectWithoutOptions`, a helper that renders a `<select>` containing **only the options
+already selected** — their full lists are the person and publication tables, and shipping
+them would take the page from 526 KB to megabytes. Selectize fetches the rest from three
+JSON blobs the controller provides. `App\Form\BootstrapFormRenderer::selectWithoutOptions()`
+reproduces it, and three of its four differences from the original were found by the
+baseline rather than by any test:
+
+- a `form-control` class on all five pickers, because the reproduction defaulted to adding
+  one and none of the call sites is a row;
+- an empty option that laminas drops, because `(array) null` is the empty array where
+  `[$raw]` is `[null]` — and `null == ''` under the loose `in_array` the original uses;
+- `{"i":"2154"}` for `{"i":2154}`, because the option key was cast to string. 7,801 bytes of
+  quotation marks, and a real hazard: selectize matches its `valueField` against the option
+  value, so a type mismatch is how a picker silently fails to preselect.
+
+`test/Integration/FormSelectWithoutOptionsContractTest` now asserts all of them against the
+real helper. **Every one passed the smoke suite first** — the recurring lesson of this
+migration, and the reason the capture is worth its forty minutes.
+
+One bug of the original is reproduced rather than fixed: the partial's script says
+`authorPersons.concat(authorAssociations);` and discards the result, so the author-association
+list is fetched, rendered into the page and offered by no picker. Fixing it would add options
+to three fields that have never had them, which is a content change; it is in `docs/BACKLOG.md`.
 
 Five things worth knowing before touching any of it:
 
