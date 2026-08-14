@@ -7,6 +7,13 @@ data/form-regression/
 data/port-baseline/
 data/import/
 data/golden/
+# Material pulled down from production for analysis. Both hold third-party
+# personal data — access logs carry client IP addresses, DMARC aggregate
+# reports carry the sending IPs of anyone who mailed the domain — so neither
+# may ever enter git history, where it could not be removed. Same reasoning as
+# data/exceptions-prod/, which tools/fetch-exceptions.sh writes.
+data/logs-prod/
+data/dmarc/
 phpunit.xml
 ubuntu-xenial-16.04-cloudimg-console.log
 /.buildpath
