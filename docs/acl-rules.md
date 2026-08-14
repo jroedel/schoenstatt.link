@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 164 |
-| guarded routes total | 164 |
+| guarded routes existing | 161 |
+| guarded routes total | 161 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 166 |
+| route guard entries | 163 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 61 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 30 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 142 |
-| total routes | 188 |
+| total routes | 185 |
 | unguarded routes | 24 |
 | unguarded routes matchable | 13 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (164 + 24 = 188). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (161 + 24 = 185). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -592,16 +592,13 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `publication-delete` | yes | pub_moderator | pub_administrator, pub_brothers_moderator, pub_families_moderator, pub_general_moderator, pub_institute_moderator, pub_ladies_moderator, pub_moderator, pub_patres_moderator, pub_sisters_moderator (9) | no |  |
 | `publication-edit` | yes | pub_moderator | pub_administrator, pub_brothers_moderator, pub_families_moderator, pub_general_moderator, pub_institute_moderator, pub_ladies_moderator, pub_moderator, pub_patres_moderator, pub_sisters_moderator (9) | no |  |
 | `publications` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `publications/admin-tasks` | yes | pub_administrator | pub_administrator (1) | no |  |
 | `publications/create` | yes | pub_moderator | pub_administrator, pub_brothers_moderator, pub_families_moderator, pub_general_moderator, pub_institute_moderator, pub_ladies_moderator, pub_moderator, pub_patres_moderator, pub_sisters_moderator (9) | no |  |
 | `publications/export` | yes | pub_moderator | pub_administrator, pub_brothers_moderator, pub_families_moderator, pub_general_moderator, pub_institute_moderator, pub_ladies_moderator, pub_moderator, pub_patres_moderator, pub_sisters_moderator (9) | no |  |
-| `publications/import` | yes | pub_administrator | pub_administrator (1) | no |  |
 | `publications/index` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `publications/one-fifty-preguntas` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `publications/prime-authors` | yes | pub_administrator | pub_administrator (1) | no |  |
 | `publications/publication-old` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `publications/search` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
-| `publications/trim-titles` | yes | pub_administrator | pub_administrator (1) | no |  |
 | `redirect-pre-april-2020-sl-id` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `roles` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
 | `roles/create` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |

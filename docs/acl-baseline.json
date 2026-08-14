@@ -21,12 +21,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 164,
-        "guarded_routes_total": 164,
+        "guarded_routes_existing": 161,
+        "guarded_routes_total": 161,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 166,
+        "route_guard_entries": 163,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 61,
         "routes_uncomparable": 0,
@@ -35,7 +35,7 @@
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 142,
-        "total_routes": 188,
+        "total_routes": 185,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
     },
@@ -4820,29 +4820,6 @@
             "public": false,
             "route": "publications"
         },
-        "publications/admin-tasks": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "publications/admin-tasks"
-        },
         "publications/create": {
             "anonymous_allowed": false,
             "assertion": null,
@@ -4904,29 +4881,6 @@
             "matchable": true,
             "public": false,
             "route": "publications/export"
-        },
-        "publications/import": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "publications/import"
         },
         "publications/index": {
             "anonymous_allowed": true,
@@ -5182,29 +5136,6 @@
             "matchable": true,
             "public": false,
             "route": "publications/search"
-        },
-        "publications/trim-titles": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "publications/trim-titles"
         },
         "redirect-pre-april-2020-sl-id": {
             "anonymous_allowed": true,

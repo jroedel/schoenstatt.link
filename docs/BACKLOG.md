@@ -241,12 +241,87 @@ readability — the destination is **Symfony**, reached gradually:
   path-absolute and same-origin is the obvious answer — and changing **both** front
   controllers at once.
 
-- [ ] **`publications/admin-tasks` and `publications/trim-titles` mutate on a GET.**
-  `adminTasksAction()` calls `fillDatePublished()` and `clearCopyrightYear()` with no
-  confirmation of any kind; `trimTitlesAction()` writes unless `?simulate=1` is present,
-  i.e. **a bare GET writes**. Both are `pub_administrator`. Deliberately left out of the
-  2026-08-12 batch: porting them faithfully means porting the defect, and they need a
-  decision (POST + CSRF, or a console command) rather than a port.
+- [x] ~~**`publications/admin-tasks` and `publications/trim-titles` mutate on a GET.**~~
+  **This item was wrong on both counts, and the correction is worth keeping** because it was
+  read and acted on as a security finding before anyone opened the code. Measured
+  2026-08-14:
+
+  - `adminTasksAction()` wrote **nothing**. `PublicationsTable::fillDatePublished()` and
+    `::clearCopyrightYear()` were **empty method bodies** — declared, documented, never
+    implemented, no other definition and no parent to inherit one. The action called both,
+    collected two nulls and `var_dump()`ed them into a view. A dead page, not an unconfirmed
+    mutation.
+  - `trimTitlesAction()` **simulates by default**. The line is
+    `'0' !== $this->params()->fromQuery('simulate', '1')`, so the default is *simulate*; it
+    writes only on an explicit `?simulate=0`. This item claimed the inverse.
+  - The route paths are under **`/literature`**, not `/publications` — the `publications`
+    route's own path is `/literature`, so the URLs were `/literature/admin-tasks` and
+    `/literature/import`. The route *names* here were right and would still have misled
+    anyone reaching for a browser.
+
+  **The real GET-mutation was `publications/import`, which this item never mentioned.**
+  `importAction()` was a plain GET calling `importForschungs()`, which ran
+  `createEntity('publication', …)` for every row of `data/import/forschungs.json` not already
+  stored — no POST check, no confirmation, despite its own docblock saying *"If the user
+  accepts, and POSTs the order to import, they will be imported."* Measured in the capsule:
+  4,176 books in the file against 4,165 distinct stored `DataSourceId`s, so one click
+  inserted about a dozen publications. It also `echo`ed raw `<pre>print_r()</pre>` into the
+  middle of the page when `?id=` matched a row.
+
+  **Retired rather than fixed, 2026-08-14**, on the decision that the Forschungsbibliothek
+  import is no longer needed: the two empty methods, `adminTasksAction()`, `importAction()`,
+  `importForschungs()` and its two private helpers, both routes, both guard entries and both
+  view templates are gone — 660 lines. `/literature/import` and `/literature/admin-tasks`
+  answer 404 on both front controllers. The **spreadsheet** import path
+  (`library-imports/*`, `libraries/library/import`) is untouched, as are `trim-titles` and
+  `prime-authors`. `data/import/` is gitignored, so the 12 MB JSON was never deployed and
+  nothing needed removing from the server.
+
+- [x] ~~**`trim-titles` still changes data on a GET.**~~ **Retired 2026-08-14**, after
+  measuring where the titles it cleaned actually came from. The question asked was whether it
+  guards against a live ingress or is archaic, and the answer is unambiguous:
+
+  - **The live ingress is already validated.** `PublicationForm`'s `title` input carries
+    `StripTags`, `StripNewlines`, `StringTrim` and `ToNull` plus a 300-character
+    `StringLength`, so stray whitespace cannot reach the column through the form at all.
+  - **104 rows would have been touched, and 99 trace to imports.** 44 are
+    `forschungsbibliothek` (the importer retired in this same change), 17 `b_bibsek`, 1
+    `b_bibprim_edition` — and of the 42 with *no* DataSource, **37 have a byte-identical
+    twin that does have one**. That is `copyDataSourcedRowToFirstClassCitizen()`, which
+    unsets `dataSource` *and* `createdOn` when it duplicates an imported row, so an
+    import-descended record looks first-class and freshly created. Their dates say the same
+    thing: 39 of the 42 created in 2021, 3 in 2019, none since.
+  - **Titles have all but stopped being written**: 648 logged title writes in 2017, 71 in
+    2018, 28 in 2019, 5 in 2020, 6 in 2021, 1 in 2023, 2 in 2024, **none in 2025 or 2026**.
+  - **Of all 761 title writes ever logged, exactly two produced a value the sweep would
+    change — and both are legitimate titles it would have corrupted.** `The family at the
+    service of Life. [1953] Recollection days for couple.` ends in an ordinary sentence
+    period, which the sweep strips. `Welch ein September - P. Joseph Kentenich '85 = Qué
+    septiembre ...` ends in an ellipsis and survives only by accident, because the
+    `$howMany < 3` guard skips a four-character trim.
+
+  So it was a one-off cleanup for catalogue records from three ingresses, two defunct and one
+  deleted, and on today's data it is the only thing in this file that both writes and gets it
+  wrong. Action, route, guard entry and view removed.
+
+  **`prime-authors` was examined at the same time and is read-only** — `getAuthors()` builds a
+  report array and writes nothing — so it stays, and that is now checked rather than assumed.
+
+- [x] ~~**`PublicationsTable::fillNoAccentsColumns()` is now unreferenced.**~~ **Removed
+  2026-08-14, and the entry above it was wrong about what it did.** It does not fill anything:
+  it selects Spanish rows, computes an array of proposed `*NoAccents` values and **returns it
+  without ever writing**. The caller that would have consumed it was the commented-out line
+  in the deleted `adminTasksAction()`, so nothing has ever written those columns through this
+  path. `importAuthors($simulate)` — a body of nothing but comments — went with it.
+
+- [ ] **`TitleNoAccents`, `SubtitleNoAccents`, `AuthorsNoAccents` and `EditorNoAccents` are
+  dead columns.** All four exist in `sch_publications`; `titleNoAccents` and
+  `subtitleNoAccents` are mapped in the publication entity spec and read into the projection
+  row, and **nothing consumes either** — no query, no template, no search, verified across the
+  repository. The only code that ever computed values for them never wrote them (see above)
+  and is now gone. So they want dropping, which is DDL: the web application's database user
+  has no DDL rights, so this is a server-side migration with separate credentials, filed with
+  the other real-migrations work rather than done here.
 
 - [ ] **`route/publications/advanced-search` is not a resource this application defines.**
   `search-bar.phtml` asks `isAllowed()` about it and `docs/acl-rules.md` has no row for it
