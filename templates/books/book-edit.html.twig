@@ -13,6 +13,23 @@
     validator on the way past. The `ignore` selector matters — without it jQuery-validate
     refuses to submit because selectize hides the original `<select>`s.
 
+  **The `form_submit` at the end was missing until 2026-08-15, and the page could not be
+  saved.** `edit.phtml` renders the submit *outside* `fields-partial.phtml` — `echo
+  $this->formSubmit($form->get('submit'));` between the partial and the closing tag — and
+  this template reproduced the partial and stopped. So a moderator could open
+  `/books/{id}/edit`, change anything, and find no way to write it back; the only
+  `type="submit"` on the page was the navbar's search button. Every other form in batch 7
+  was unaffected, because for nine of the ten the submit is a row *inside* the partial and
+  came across with it.
+
+  Worth knowing that `tools/port-baseline.php` had `/books/18370/edit` in `PATHS` the whole
+  time and did not stop this. Nothing in `normalize()` erases a submit button, so the
+  difference was in the diff; what it was not is *alone* in the diff — this page carries the
+  batch's one accepted regression (the navbar search box), and at 589 KB per response the
+  second difference went past a reviewer who had already decided the page was expected to
+  differ. An accepted difference on a page is a reason to read that page's diff more
+  closely, not less.
+
   The untranslated block runs from `authors` to `keywords`, which is the partial's
   `setTranslatorEnabled(false)` with no matching `true`: it never turns the translator back
   on, so *every* row after `authors` renders with untranslated options, including the ones
@@ -58,6 +75,7 @@
 {{ form_row(form.get('isActive'), false) }}
 {{ form_row(form.get('inactivationReason'), false) }}
 {{ form_row(form.get('security'), false) }}
+{{ form_submit(form.get('submit')) }}
 {{ form_close() }}
 {% endblock %}
 
