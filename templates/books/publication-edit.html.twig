@@ -1,0 +1,198 @@
+{#
+  The publication edit form — the Twig counterpart of
+  module/Books/view/books/publications/edit.phtml and its fields-partial.phtml, which
+  still render this page wherever laminas is the front controller.
+
+  Field order is that partial's, in its order, and should be changed in both or neither:
+  the two renderings are live at the same time on different front controllers, and a
+  moderator who edits a publication through one and then the other should not see the form
+  rearrange itself. The commented-out rows in the partial — `adminTags`, `containedIn`,
+  `containedInIsbn`, `isAccessibleForFree` — are left out here too rather than quietly
+  restored.
+
+  ## The five hand-built groups
+
+  `authorsAll`, `editorsAll`, `translatorsAll`, `mainPublicationId` and
+  `translatedFromPublicationId` are not rows. Each is a `form-group` assembled by hand
+  around `form_select_without_options`, because their full option lists are the entire
+  person and publication tables — rendering them as `<option>` elements is what the
+  original avoids, and it is the difference between a 526 KB page and several megabytes.
+  Selectize fetches the rest from the JSON below. The trailing space in
+  `class="form-group "` is the partial's and is kept: these are byte-compared.
+
+  ## The translator is toggled six times, and the toggles are not decorative
+
+  `fields-partial.phtml` turns option translation off and on around specific fields, so
+  `form_row`'s second argument here is that state, field by field. Getting it wrong is
+  invisible in English and wrong in the other four languages — the failure mode this whole
+  batch keeps meeting. Note `formSelectWithoutOptions` is disabled once, at the top, and
+  never re-enabled, so all five pickers above are untranslated regardless of where the
+  `formSelect` toggles fall.
+#}
+{% extends 'layout.html.twig' %}
+
+{#
+  The two assets fields-partial.phtml appends through headLink()/headScript(). Note this
+  page uses the *plain* selectize/markdown bundle, not the jquery-ui one the book and text
+  forms load — the publication form has no jQuery-validate block.
+#}
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-markdown.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-selectize-markdown-{{ current_language() }}.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate(page_title) }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('title')) }}
+<div class="form-group ">
+{{ form_label(form.get('authorsAll')) }}{{ form_select_without_options(form.get('authorsAll'), false) }}{{ form_errors(form.get('authorsAll')) }}
+</div>
+{{ form_row(form.get('bookEdition'), false) }}
+{{ form_row(form.get('hasNoExplictEditionNumber'), false) }}
+{{ form_row(form.get('inLanguage'), false) }}
+{{ form_row(form.get('categoryId')) }}
+<div class="form-group ">
+{{ form_label(form.get('editorsAll')) }}{{ form_select_without_options(form.get('editorsAll'), false) }}{{ form_errors(form.get('editorsAll')) }}
+</div>
+<div class="form-group ">
+{{ form_label(form.get('translatorsAll')) }}{{ form_select_without_options(form.get('translatorsAll'), false) }}{{ form_errors(form.get('translatorsAll')) }}
+</div>
+{{ form_row(form.get('description'), false) }}
+<div class="form-group ">
+{{ form_label(form.get('mainPublicationId')) }}{{ form_select_without_options(form.get('mainPublicationId'), false) }}{{ form_errors(form.get('mainPublicationId')) }}{{ help_block(form.get('mainPublicationId')) }}
+</div>
+<div class="form-group ">
+{{ form_label(form.get('translatedFromPublicationId')) }}{{ form_select_without_options(form.get('translatedFromPublicationId'), false) }}{{ form_errors(form.get('translatedFromPublicationId')) }}{{ help_block(form.get('translatedFromPublicationId')) }}
+</div>
+{{ form_row(form.get('isbn'), false) }}
+{{ form_row(form.get('hasNoISBN'), false) }}
+{{ form_row(form.get('datePublishedText'), false) }}
+{{ form_row(form.get('publisher'), false) }}
+{{ form_row(form.get('publishingPlace'), false) }}
+{{ form_row(form.get('bookFormatType')) }}
+{{ form_row(form.get('numberOfPages')) }}
+{{ form_row(form.get('keywords'), false) }}
+{{ form_row(form.get('resourceId')) }}
+{{ form_row(form.get('isFormallyPublished')) }}
+{{ form_row(form.get('isScientificWork')) }}
+{{ form_row(form.get('isRevisedWithBookInHand')) }}
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
+{{ form_row(form.get('editionNotes')) }}
+{{ form_row(form.get('publicNotes')) }}
+{{ form_row(form.get('copyrightYear')) }}
+{{ form_row(form.get('copyrightInfo')) }}
+{{ form_row(form.get('url1')) }}
+{{ form_row(form.get('url1Label')) }}
+{{ form_row(form.get('url2')) }}
+{{ form_row(form.get('url2Label')) }}
+{{ form_row(form.get('url3')) }}
+{{ form_row(form.get('url3Label')) }}
+{{ form_row(form.get('volumeNumber')) }}
+{{ form_row(form.get('adminNotes')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{#
+  A plain link, not a confirmation modal — unlike the assignment form. It is gated on the
+  ACL rather than on the route existing, exactly as edit.phtml gates it, so a moderator who
+  may edit a publication but not delete one is not shown a button that would refuse them.
+#}
+{% if delete_action is not empty and is_allowed('route/publication-delete') %}
+    &nbsp;<a class="btn btn-danger" href="{{ delete_action }}">{{ translate('Delete') }}</a>
+{% endif %}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  The three option lists, handed to selectize as JSON. `author_associations` is fetched and
+  declared and then *never used*: the original says `authorPersons.concat(authorAssociations);`
+  and throws the result away, because `concat` does not mutate. That is a bug in the
+  original — association authors are offered by no picker — and it is reproduced rather
+  than fixed, because fixing it would add options to three fields that have never had them.
+  Filed in docs/BACKLOG.md.
+
+  The `[]` suffixes in the selectors are not typos: those four are multiple selects, so
+  their names really do end in `[]` in the markup.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+var publicationOptions = {{ publication_value_options|json_encode|raw }};
+var authorPersons = {{ author_persons|json_encode|raw }};
+var authorAssociations = {{ author_associations|json_encode|raw }};
+
+$("select[name='translatorsAll[]']").selectize({
+    create: true,
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n',
+    delimiter: ';'
+});
+authorPersons.concat(authorAssociations);
+$("select[name='editorsAll[]']").selectize({
+    create: true,
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n',
+    delimiter: ';'
+});
+$("select[name='authorsAll[]']").selectize({
+    create: true,
+	options: authorPersons,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+    sortField: 'n',
+    delimiter: ';'
+});
+$("select[name='inLanguage']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='mainPublicationId']").selectize({
+    create: false,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+	options: publicationOptions,
+    sortField: 'n'
+});
+$("select[name='translatedFromPublicationId']").selectize({
+    create: false,
+	valueField: 'i',
+	labelField: 'n',
+	searchField: 'n',
+	options: publicationOptions,
+    sortField: 'n'
+});
+$("select[name='publisher']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='keywords[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+});
+</script>
+{% endblock %}

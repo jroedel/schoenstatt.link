@@ -648,6 +648,83 @@ final class BootstrapFormRenderer
         );
     }
 
+    /**
+     * A `<select>` carrying only the options that are currently selected.
+     *
+     * `Books\View\Helper\FormSelectWithoutOptions`, reproduced. The publication form has
+     * five pickers — `authorsAll`, `editorsAll`, `translatorsAll`, `mainPublicationId`
+     * and `translatedFromPublicationId` — whose full option lists are the entire person
+     * and publication tables. Shipping them as `<option>` elements would be enormous, so
+     * the markup carries only what is already chosen and selectize fetches the rest from
+     * the JSON blobs `App\Controller\EntityEditController::publicationValueOptions()`
+     * hands the template.
+     *
+     * Two details of the original that are easy to lose and both visible on the page:
+     *
+     * - **The result follows the order of the selected values, not of the options.** The
+     *   helper builds its narrowed list by walking `$selectedOptions`, so a publication
+     *   whose authors were chosen out of table order renders them in the order they were
+     *   chosen. Reproducing the option order instead would reorder author lists.
+     * - **The empty option is dropped unless `''` is itself selected.** In laminas that
+     *   falls out of *where* the old subclass filtered — `FormSelect::render()` prepends
+     *   the empty option after the narrowing had already happened — rather than from an
+     *   explicit decision, but it is the observable behaviour and the current helper
+     *   preserves it deliberately.
+     *
+     * Non-Select elements are passed to the ordinary element path, which raises the more
+     * informative error, exactly as the helper defers to a stock FormSelect for them.
+     */
+    public function selectWithoutOptions(ElementInterface $element, bool $translateOptions = true): string
+    {
+        if (! $element instanceof Select) {
+            return $this->element($element);
+        }
+
+        /**
+         * `(array)`, exactly as the helper casts it, and the difference is not cosmetic.
+         * `(array) null` is the **empty array**, where `[$raw]` would be `[null]` — and
+         * `in_array('', [null])` is true under the loose comparison below, so a
+         * never-set picker would keep an empty option laminas drops. Caught by the
+         * baseline on `mainPublicationId` and `translatedFromPublicationId`, the two
+         * pickers of the five that declare one.
+         *
+         * @var array<array-key, mixed> $selected
+         */
+        $selected = (array) $element->getValue();
+
+        $narrowed = [];
+        foreach ($selected as $value) {
+            if (! is_scalar($value)) {
+                continue;
+            }
+            foreach ($element->getValueOptions() as $optionValue => $label) {
+                if ((string) $optionValue === (string) $value) {
+                    $narrowed[$optionValue] = $label;
+                    break;
+                }
+            }
+        }
+
+        $clone = clone $element;
+        $clone->setValueOptions($narrowed);
+
+        // in_array loosely, as the original does: a selected `0` and an empty option are
+        // the case this distinguishes, and both arrive as strings from a POST.
+        if (null !== $clone->getEmptyOption() && ! in_array('', $selected)) {
+            $clone->setEmptyOption(null);
+        }
+
+        /**
+         * **No `form-control` class**, which is what `$withClass = false` buys.
+         *
+         * TwbBundle adds that class in `formRow`, and none of the five call sites is a
+         * row — `fields-partial.phtml` builds their `form-group` by hand and calls the
+         * helper directly, so laminas emits `<select name="authorsAll[]" multiple>` with
+         * no class at all. Defaulting to true put one on all five.
+         */
+        return $this->select($clone, $translateOptions, false);
+    }
+
     private function select(Select $element, bool $translateOptions = true, bool $withClass = true): string
     {
         //**`name="inLanguage[]"` when the select is multiple.**
@@ -691,12 +768,25 @@ final class BootstrapFormRenderer
             ARRAY_FILTER_USE_KEY
         );
 
+        /**
+         * `getEmptyOption()`, not `getOption('empty_option')`, because the two are not
+         * the same lookup and only the first is what `Laminas\Form\View\Helper\FormSelect`
+         * reads.
+         *
+         * `Select::setOptions(['empty_option' => …])` — how every form here declares it —
+         * populates both the options array *and* the dedicated property, so the two agreed
+         * for the whole of batches 4 through 7 and nothing showed the difference.
+         * `setEmptyOption()` called directly sets only the property, and that is the path
+         * `selectWithOutOptions()` uses when it hands a narrowed clone back: the empty
+         * option a visitor had actually selected vanished from the markup.
+         */
         $options = '';
-        $empty   = $element->getOption('empty_option');
+        /** @var array<array-key, mixed>|string|null $empty laminas annotates it this wide */
+        $empty = $element->getEmptyOption();
         if (null !== $empty) {
             $options .= sprintf(
                 '<option value="">%s</option>' . "\n",
-                $this->escaper->escapeHtml(is_scalar($empty) ? (string) $empty : '')
+                $this->escaper->escapeHtml(is_string($empty) ? $empty : '')
             );
         }
 

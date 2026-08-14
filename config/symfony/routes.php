@@ -784,6 +784,37 @@ $edit(
     ['entry_id' => '[0-9]{1,6}']
 );
 
+// A publication — the ninth of the edit surface and the one the batch left behind, because
+// its partial is the only one that builds `<select>`s by hand instead of rendering rows.
+// Three things it needs that none of the eight did:
+//
+//   - `form_select_without_options`, for five pickers whose option lists are the whole
+//     person and publication tables. See App\Form\BootstrapFormRenderer.
+//   - EXTRA_VARIABLES, for the JSON those pickers hand to selectize. The provider
+//     reproduces PublicationsController::injectPublicationValueOptions(), including its
+//     removal of the publication's own id from the "main edition" list.
+//   - DELETE_ROUTE, because edit.phtml offers a delete button. It is a plain link here,
+//     not a confirmation modal — `publication-delete` renders its own confirmation, and
+//     the template gates the link on the ACL exactly as the .phtml does.
+//
+// No REDIRECT_TARGET: the spec declares `show_route`/`show_route_key`, which is branch 2
+// of App\Sion\EntityEdit::redirectTarget(), and PublicationsController overrides nothing.
+$edit(
+    'publication-edit',
+    '/{sw_id}/edit',
+    'publication',
+    'sw_id',
+    'books/publication-edit.html.twig',
+    'Edit publication',
+    'Books',
+    [
+        EntityEditController::ID_KIND         => SchoenstattLinkIdentifier::ENTITY_PUBLICATION,
+        EntityEditController::EXTRA_VARIABLES => 'publicationValueOptions',
+        EntityEditController::DELETE_ROUTE    => 'publication-delete',
+    ],
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)]
+);
+
 // ---------------------------------------------------------------------------
 // Batch 5, ported 2026-08-12: the reading surface. The four entity show pages
 // plus the comment route three of them need.

@@ -185,8 +185,11 @@ class ReservedVerbsTest extends TestCase
             //text — `text-edit` is ported (batch 7), `text-delete` is not
             'text edit is ported'         => ['/SL400003T/edit', 'text-edit'],
             'text delete'                 => ['/SL400003T/delete', 'legacy'],
-            //publication, which has all five verbs
-            'publication edit'            => ['/SL202186L/edit', 'legacy'],
+            //publication, which has all five verbs — and is the only entity whose `edit`
+            //is ported while four other verbs on the same path shape still bridge, so it
+            //is the sharpest case in this file for the reserved-verb lookahead doing its
+            //job rather than the declaration order doing it by luck.
+            'publication edit is ported'  => ['/SL202186L/edit', 'publication-edit'],
             'publication delete'          => ['/SL202186L/delete', 'legacy'],
             'publication upload cover'    => ['/SL202186L/upload-cover', 'legacy'],
             'publication new edition'     => ['/SL202186L/create-new-edition', 'legacy'],
