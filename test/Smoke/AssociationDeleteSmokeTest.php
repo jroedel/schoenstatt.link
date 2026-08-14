@@ -210,6 +210,59 @@ class AssociationDeleteSmokeTest extends SmokeTestCase
     }
 
     /**
+     * A submission naming the **cancel** button deletes nothing.
+     *
+     * This is the regression test for a data-loss bug that was live on every delete
+     * confirmation and in the two delete modals, and it deserves its history stated.
+     *
+     * `DeleteEntityForm` added Cancel with its `'type' => 'Submit'` line commented out —
+     * which does not make it inert, it makes it a plain `Laminas\Form\Element`, and
+     * `View\Helper\FormButton` renders a typeless element as `type="submit"`. So Cancel
+     * submitted the delete form. `deleteAction()` validated the CSRF token and never looked
+     * at which button had been pressed. **Clicking Cancel deleted the record**: measured
+     * 2026-08-14 against a fixture, 302 to `/en/associations` with the row gone.
+     *
+     * Two locks now, and this test drives the *second* one, because the first cannot be
+     * reached over HTTP: the browser no longer submits Cancel at all, so a request shaped
+     * like this one can only come from a hand-crafted POST or a page cached from before the
+     * fix. Both are exactly what the server-side check exists for. The markup half is
+     * asserted in `DeleteSurfaceSymfonySmokeTest`.
+     *
+     * The token is deliberately **valid**. A refusal that only happened because the token
+     * was wrong would prove nothing about the cancel check.
+     */
+    public function testASubmissionNamingCancelDeletesNothing(): void
+    {
+        $this->createFixtures();
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $form = $this->get(self::REAL_PATH, false, $jar);
+        $this->assertSame(200, $form['status'], 'could not reach a confirmation page to mint a token from');
+
+        //Exactly what a browser used to send on a Cancel click: the token, the cancel
+        //button's own name and value, and no `submit`.
+        $fields = $this->fieldsFromForm($form['body']);
+        unset($fields['submit']);
+        $fields['cancel'] = 'Cancel';
+
+        $response = $this->request('POST', $this->fixturePath, [], false, $jar, $fields);
+
+        $this->assertTrue(
+            $this->exists($this->parentId),
+            'a submission naming the cancel button deleted the record — the check in '
+            . 'SionController::deleteAction() and App\Controller\EntityDeleteController is gone, '
+            . 'and every delete confirmation on the site destroys data when Cancel is clicked'
+        );
+        $this->assertSame(
+            302,
+            $response['status'],
+            'a cancellation must redirect the visitor away rather than render or error'
+        );
+    }
+
+    /**
      * What the delete leaves behind: dangling references, on purpose for now.
      *
      * See the class docblock. This characterizes behaviour shared by all five delete

@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 54,
+        "routes_shadowed_by_symfony": 61,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 98,
+        "symfony_routes_acl_checked": 112,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 128,
+        "symfony_served_routes": 142,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -6455,6 +6455,16 @@
             "probe": "/assignments/advanced-search"
         },
         {
+            "laminas_route": "assignments/assignment/delete",
+            "path": "/assignments/:assignment_id/delete",
+            "symfony_route": "assignments/assignment/delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/assignments/assignment/delete",
+            "access_kind": "acl",
+            "probe": "/assignments/0/delete"
+        },
+        {
             "laminas_route": "assignments/assignment/edit",
             "path": "/assignments/:assignment_id/edit",
             "symfony_route": "assignments/assignment/edit",
@@ -6483,6 +6493,16 @@
             "now_checks": "route/association",
             "access_kind": "acl",
             "probe": "/SL100000A/a"
+        },
+        {
+            "laminas_route": "association-delete",
+            "path": "/:sw_id/delete",
+            "symfony_route": "association-delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/association-delete",
+            "access_kind": "acl",
+            "probe": "/SL100000A/delete"
         },
         {
             "laminas_route": "association-edit",
@@ -6563,6 +6583,16 @@
             "now_checks": "route/composition",
             "access_kind": "acl",
             "probe": "/SL500000C/a"
+        },
+        {
+            "laminas_route": "composition-delete",
+            "path": "/:sw_id/delete",
+            "symfony_route": "composition-delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/composition-delete",
+            "access_kind": "acl",
+            "probe": "/SL500000C/delete"
         },
         {
             "laminas_route": "composition-edit",
@@ -6675,6 +6705,16 @@
             "probe": "/persons/0"
         },
         {
+            "laminas_route": "persons/person/delete",
+            "path": "/persons/:person_id/delete",
+            "symfony_route": "persons/person/delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/persons/person/delete",
+            "access_kind": "acl",
+            "probe": "/persons/0/delete"
+        },
+        {
             "laminas_route": "persons/person/edit",
             "path": "/persons/:person_id/edit",
             "symfony_route": "persons/person/edit",
@@ -6713,6 +6753,16 @@
             "now_checks": "route/publication",
             "access_kind": "acl",
             "probe": "/SL200000L/a"
+        },
+        {
+            "laminas_route": "publication-delete",
+            "path": "/:sw_id/delete",
+            "symfony_route": "publication-delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publication-delete",
+            "access_kind": "acl",
+            "probe": "/SL200000L/delete"
         },
         {
             "laminas_route": "publication-edit",
@@ -6783,6 +6833,16 @@
             "now_checks": "route/roles",
             "access_kind": "acl",
             "probe": "/roles"
+        },
+        {
+            "laminas_route": "roles/role/delete",
+            "path": "/roles/:role_id/delete",
+            "symfony_route": "roles/role/delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/roles/role/delete",
+            "access_kind": "acl",
+            "probe": "/roles/0/delete"
         },
         {
             "laminas_route": "roles/role/edit",
@@ -6893,6 +6953,16 @@
             "now_checks": "route/text",
             "access_kind": "acl",
             "probe": "/SL400000T/a"
+        },
+        {
+            "laminas_route": "text-delete",
+            "path": "/:sw_id/delete",
+            "symfony_route": "text-delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/text-delete",
+            "access_kind": "acl",
+            "probe": "/SL400000T/delete"
         },
         {
             "laminas_route": "text-edit",
@@ -8208,6 +8278,26 @@
                 "denial_style": "html"
             }
         },
+        "assignments/assignment/delete": {
+            "path": "/assignments/{assignment_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/assignment/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "assignments/assignment/delete.locale": {
+            "path": "/{_locale}/assignments/{assignment_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/assignment/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "assignments/assignment/edit": {
             "path": "/assignments/{assignment_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -8254,6 +8344,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/association",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "association-delete": {
+            "path": "/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association-delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "association-delete.locale": {
+            "path": "/{_locale}/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/association-delete",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8414,6 +8524,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/composition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "composition-delete": {
+            "path": "/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/composition-delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "composition-delete.locale": {
+            "path": "/{_locale}/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/composition-delete",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8658,6 +8788,26 @@
                 "denial_style": "html"
             }
         },
+        "persons/person/delete": {
+            "path": "/persons/{person_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/person/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/person/delete.locale": {
+            "path": "/{_locale}/persons/{person_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/person/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "persons/person/edit": {
             "path": "/persons/{person_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -8724,6 +8874,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/publication",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-delete": {
+            "path": "/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publication-delete.locale": {
+            "path": "/{_locale}/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publication-delete",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8874,6 +9044,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/roles",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "roles/role/delete": {
+            "path": "/roles/{role_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/roles/role/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "roles/role/delete.locale": {
+            "path": "/{_locale}/roles/{role_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/roles/role/delete",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -9084,6 +9274,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/text",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "text-delete": {
+            "path": "/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/text-delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "text-delete.locale": {
+            "path": "/{_locale}/{sw_id}/delete",
+            "controller": "App\\Controller\\EntityDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/text-delete",
                 "reason": null,
                 "denial_style": "html"
             }

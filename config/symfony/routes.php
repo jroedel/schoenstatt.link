@@ -42,6 +42,7 @@ use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
+use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
@@ -845,6 +846,147 @@ $edit(
     ],
     ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)]
 );
+
+// ---------------------------------------------------------------------------
+// Batch 8, ported 2026-08-14: the delete surface. The seven entity delete
+// confirmations that share SionController::deleteAction().
+// ---------------------------------------------------------------------------
+//
+// The destructive twin of the edit batch above, and every one of these is the target of a
+// button or a modal on a page that batch already ported. One controller,
+// App\Controller\EntityDeleteController, over one shared action, App\Sion\EntityDelete, and
+// **one template for all seven** — because the laminas page is one view script with an `<h1>`
+// and a three-element form in it, no breadcrumbs and no record name.
+//
+// **These are the first ported routes that destroy a record on POST.** What makes that safe
+// is what made the edit batch safe — the form is SionModel's own, with its CSRF element;
+// App\Http\SessionListener has started the laminas session before the guard runs; the write
+// goes through SionTable::deleteEntity() — plus one thing that had to be *fixed* first: the
+// Cancel button used to delete the record on both front controllers. See
+// SionModel\Form\DeleteEntityForm, which now declares it a `Button`.
+//
+// **Seven of twelve, and the five left out are not a backlog.** `event-delete`,
+// `libraries/library/delete` and `sion-model/delete-entity` have no route guard entry, and
+// BjyAuthorize's Route guard is default-deny, so all three answer 403 to an account holding
+// every role — measured, not deduced. `juser/user/delete` and `jtranslate/phrase/delete`
+// have their own controllers and forms. App\Sion\EntityDelete records the detail.
+//
+// Declared **above** the batch-5 show block, like the edit routes: `/{sw_id}/{slug}` would
+// otherwise swallow `/{sw_id}/delete`. `delete` is in App\Sion\ReservedVerbs so the slug
+// constraint refuses it too, which makes this belt and braces rather than the only defence —
+// and on a destructive page that is the right way round.
+/**
+ * @param array<string, string> $requirements
+ */
+$delete = static function (
+    string $name,
+    string $path,
+    string $entity,
+    string $idParam,
+    string $domain,
+    ?string $idKind = null,
+    array $requirements = []
+) use (
+    $ported,
+    $textDomain
+): void {
+    $ported(
+        $name,
+        $path,
+        EntityDeleteController::class,
+        RouteAccess::guardedBy('route/' . $name),
+        $textDomain($domain) + [
+            EntityDeleteController::ENTITY   => $entity,
+            EntityDeleteController::ID_PARAM => $idParam,
+        ] + (null === $idKind ? [] : [EntityDeleteController::ID_KIND => $idKind]),
+        $requirements
+    );
+};
+
+// The four identified by a site-wide identifier. Their text domain is the module the
+// laminas controller lives in, which is what decides where `Delete <entity>` is looked
+// up — `Delete association` is a `Schoenstatt` phrase, `Delete publication` a `Books` one,
+// and all seven rows already exist in trans_phrases from the laminas rendering.
+//
+// `association-delete` is first because it is the one that was unreachable until
+// 2026-08-14: its laminas constraint asked for four digits where an identifier has six, so
+// the show route answered it on both front controllers. Deriving the constraint from
+// SiteWideIdentifier::pattern() here is what stops that recurring.
+$delete(
+    'association-delete',
+    '/{sw_id}/delete',
+    'association',
+    'sw_id',
+    'Schoenstatt',
+    SchoenstattLinkIdentifier::ENTITY_ASSOCIATION,
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_ASSOCIATION)]
+);
+
+// The only one of the seven with a **per-row** check behind the route guard: `publication`
+// declares `acl_resource_id_field => resourceId` with `acl_delete_permission => delete`, so
+// `pub_moderator` reaching this page is necessary and not sufficient. The other six declare
+// no resource id field, and for them the guard is the whole gate.
+$delete(
+    'publication-delete',
+    '/{sw_id}/delete',
+    'publication',
+    'sw_id',
+    'Books',
+    SchoenstattLinkIdentifier::ENTITY_PUBLICATION,
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_PUBLICATION)]
+);
+
+// `text` is the entity whose delete was broken in a way no status code showed: its
+// `delete_action_redirect_route` was `text-delete` — this very route, which needs an `sw_id`
+// — so redirectAfterDelete() asked the router to assemble it with no parameters and got
+// `Missing parameter "sw_id"`. Every exit threw, the successful one included, *after* the
+// row was deleted. Corrected to `texts` in the same change as this port.
+$delete(
+    'text-delete',
+    '/{sw_id}/delete',
+    'text',
+    'sw_id',
+    'Books',
+    SchoenstattLinkIdentifier::ENTITY_TEXT,
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_TEXT)]
+);
+
+$delete(
+    'composition-delete',
+    '/{sw_id}/delete',
+    'composition',
+    'sw_id',
+    'Books',
+    SchoenstattLinkIdentifier::ENTITY_COMPOSITION,
+    ['sw_id' => SiteWideIdentifier::pattern(SchoenstattLinkIdentifier::ENTITY_COMPOSITION)]
+);
+
+// The three with a numeric id, each the target of a delete button or modal on the edit form
+// ported in batch 7. All three are guarded `sch_general_moderator`, a narrower permission
+// than the `sch_moderator` that reached the edit page — which is why those templates gate
+// the button on the delete route's own resource rather than on their own.
+//
+// The constraints are laminas': `[0-9]{1,5}` for all three. Note `assignments/assignment/edit`
+// declares `{1,6}`, one digit wider than its laminas twin — a pre-existing drift that is
+// harmless (a 6-digit id reaches the controller and is answered "not found" instead of 404)
+// and deliberately not copied here.
+$delete('persons/person/delete', '/persons/{person_id}/delete', 'person', 'person_id', 'Schoenstatt', null, [
+    'person_id' => '[0-9]{1,5}',
+]);
+
+$delete(
+    'assignments/assignment/delete',
+    '/assignments/{assignment_id}/delete',
+    'assignment',
+    'assignment_id',
+    'Schoenstatt',
+    null,
+    ['assignment_id' => '[0-9]{1,5}']
+);
+
+$delete('roles/role/delete', '/roles/{role_id}/delete', 'role', 'role_id', 'Schoenstatt', null, [
+    'role_id' => '[0-9]{1,5}',
+]);
 
 // ---------------------------------------------------------------------------
 // Batch 5, ported 2026-08-12: the reading surface. The four entity show pages

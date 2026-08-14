@@ -168,9 +168,10 @@ class ReservedVerbsTest extends TestCase
      *
      * **An entry moves from `legacy` to a route name when its verb route is ported**, and
      * that is the whole reason this list names the expectation instead of just asserting
-     * "not a show route". Batch 7 moved `text-edit` and `composition-edit`, each of which
-     * failed this test on the way through and was meant to; the remaining `legacy` entries
-     * are the routes still on laminas, and each becomes a one-line edit here as it moves.
+     * "not a show route". Batch 7 moved `text-edit` and `composition-edit` and batch 8 moved
+     * all four `delete` verbs, each of which failed this test on the way through and was
+     * meant to; the three `legacy` entries left are publication-only actions still on
+     * laminas, and each becomes a one-line edit here as it moves.
      * What must *never* appear in this column is `composition`, `text`, `publication` or
      * `association` — a show route claiming a verb path is the bug this file exists for.
      *
@@ -179,26 +180,27 @@ class ReservedVerbsTest extends TestCase
     public static function verbUrls(): array
     {
         return [
-            //composition — `composition-edit` is ported (batch 7), `composition-delete` is not
-            'composition edit is ported'  => ['/SL500001C/edit', 'composition-edit'],
-            'composition delete'          => ['/SL500001C/delete', 'legacy'],
-            //text — `text-edit` is ported (batch 7), `text-delete` is not
-            'text edit is ported'         => ['/SL400003T/edit', 'text-edit'],
-            'text delete'                 => ['/SL400003T/delete', 'legacy'],
-            //publication, which has all five verbs — and is the only entity whose `edit`
-            //is ported while four other verbs on the same path shape still bridge, so it
-            //is the sharpest case in this file for the reserved-verb lookahead doing its
-            //job rather than the declaration order doing it by luck.
-            'publication edit is ported'  => ['/SL202186L/edit', 'publication-edit'],
-            'publication delete'          => ['/SL202186L/delete', 'legacy'],
-            'publication upload cover'    => ['/SL202186L/upload-cover', 'legacy'],
-            'publication new edition'     => ['/SL202186L/create-new-edition', 'legacy'],
-            'publication to main corpus'  => ['/SL202186L/copy-to-main-corpus', 'legacy'],
-            //association: `edit` is ported and stays ported, `delete` bridges. Both were
-            //already correct before the fix and are asserted so that a future reordering
-            //of the routes file cannot quietly swap them.
-            'association edit is ported'  => ['/SL100319A/edit', 'association-edit'],
-            'association delete bridges'  => ['/SL100319A/delete', 'legacy'],
+            //composition — both verbs ported now: `edit` in batch 7, `delete` in batch 8
+            'composition edit is ported'   => ['/SL500001C/edit', 'composition-edit'],
+            'composition delete is ported' => ['/SL500001C/delete', 'composition-delete'],
+            //text — likewise
+            'text edit is ported'          => ['/SL400003T/edit', 'text-edit'],
+            'text delete is ported'        => ['/SL400003T/delete', 'text-delete'],
+            //publication, which has all five verbs — and is now the only entity with a
+            //*mixture*, two ported and three bridged on the same path shape. That makes it
+            //the sharpest case in this file for the reserved-verb lookahead doing its job
+            //rather than the declaration order doing it by luck.
+            'publication edit is ported'   => ['/SL202186L/edit', 'publication-edit'],
+            'publication delete is ported' => ['/SL202186L/delete', 'publication-delete'],
+            'publication upload cover'     => ['/SL202186L/upload-cover', 'legacy'],
+            'publication new edition'      => ['/SL202186L/create-new-edition', 'legacy'],
+            'publication to main corpus'   => ['/SL202186L/copy-to-main-corpus', 'legacy'],
+            //association: both ported. `delete` was `legacy` here until batch 8, and it is
+            //the one whose laminas route matched nothing at all until 2026-08-14 — so this
+            //row went from "bridges to a route that answers the show page" to "bridges
+            //correctly" to "ported", in three days.
+            'association edit is ported'   => ['/SL100319A/edit', 'association-edit'],
+            'association delete is ported' => ['/SL100319A/delete', 'association-delete'],
         ];
     }
 
