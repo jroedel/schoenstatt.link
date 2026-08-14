@@ -61,6 +61,11 @@ class ReservedVerbRoutingSmokeTest extends SmokeTestCase
             //instead of BjyAuthorize\Guard\Route. Included so that a reordering of the
             //routes file that lost it would fail here too.
             'association edit'           => ['/en/SL100319A/edit'],
+            //Reachable since 2026-08-14. Its constraint asked for a five-digit
+            //identifier where every real one has six, so until then this answered the
+            //*show* page — the one path in this file that legitimately did. It is an
+            //ordinary guarded verb route now and belongs with the rest.
+            'association delete'         => ['/en/SL100319A/delete'],
         ];
     }
 
@@ -103,25 +108,31 @@ class ReservedVerbRoutingSmokeTest extends SmokeTestCase
     }
 
     /**
-     * The one path that legitimately answers the show page on **both** front controllers.
+     * The identifier shape that made `association-delete` unreachable, pinned from the
+     * other side.
      *
-     * `association-delete` declares its `sw_id` as `SL1[0-9]{4,4}A` — the `1` plus four
-     * digits — where every real association identifier carries five
-     * (`Schoenstatt\Validator\SchoenstattLinkIdentifier::ENTITY_REGEXS`). So the laminas
-     * route matches nothing that exists, the show route catches the path there too, and
-     * this fix neither changes that nor should. Asserted so that the day somebody repairs
-     * the typo, this test says where the expectation lives.
+     * The route asked for `SL1[0-9]{4,4}A` — `SL1` plus four digits, five in total —
+     * where every association identifier has six (`SL100001A`–`SL100571A` in the
+     * capsule). So it matched nothing that exists and the show route answered instead.
+     * Corrected 2026-08-14 by deriving the constraint from
+     * `SchoenstattLinkIdentifier::ENTITY_REGEXS` the way its four sibling delete routes
+     * always have.
+     *
+     * A five-digit identifier is not a near miss to be tolerated, it is the *pre-April
+     * 2020* form, and laminas has a route dedicated to redirecting it. Asserting that is
+     * what distinguishes "the constraint is right" from "the constraint is merely
+     * longer": widening it to accept both lengths would silently take this path away
+     * from the redirect that owns it.
      */
-    public function testAssociationDeleteStillFallsThroughToTheShowPageOnBothSides(): void
+    public function testTheOldFiveDigitIdentifierBelongsToTheRedirectRouteInstead(): void
     {
-        $response = $this->get('/en/SL100319A/delete');
+        $response = $this->get('/en/SL10031A/delete');
 
-        $this->assertSame(200, $response['status']);
-        $this->assertStringContainsString(
-            'route association',
-            $response['body'],
-            'association-delete cannot match a five-digit identifier, so laminas resolves this path to '
-            . 'the association show action — the same thing it did before this fix'
+        $this->assertNotSame(
+            200,
+            $response['status'],
+            'a pre-2020 five-digit identifier must not be served a delete confirmation; '
+            . 'association-delete is for the six-digit form only'
         );
     }
 }
