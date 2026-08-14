@@ -28,6 +28,12 @@
   batch keeps meeting. Note `formSelectWithoutOptions` is disabled once, at the top, and
   never re-enabled, so all five pickers above are untranslated regardless of where the
   `formSelect` toggles fall.
+
+  **The field rows live in `books/_publication-fields.html.twig` now**, shared with the create
+  form so that a field cannot be added to one surface and quietly forgotten on the
+  other. What stays in this file is what edit.phtml keeps outside its own partial —
+  which is not the same set for every entity, and is the detail worth checking before
+  moving anything across the boundary.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -48,53 +54,7 @@
 <h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, form_action) }}
-{{ form_row(form.get('title')) }}
-<div class="form-group ">
-{{ form_label(form.get('authorsAll')) }}{{ form_select_without_options(form.get('authorsAll'), false) }}{{ form_errors(form.get('authorsAll')) }}
-</div>
-{{ form_row(form.get('bookEdition'), false) }}
-{{ form_row(form.get('hasNoExplictEditionNumber'), false) }}
-{{ form_row(form.get('inLanguage'), false) }}
-{{ form_row(form.get('categoryId')) }}
-<div class="form-group ">
-{{ form_label(form.get('editorsAll')) }}{{ form_select_without_options(form.get('editorsAll'), false) }}{{ form_errors(form.get('editorsAll')) }}
-</div>
-<div class="form-group ">
-{{ form_label(form.get('translatorsAll')) }}{{ form_select_without_options(form.get('translatorsAll'), false) }}{{ form_errors(form.get('translatorsAll')) }}
-</div>
-{{ form_row(form.get('description'), false) }}
-<div class="form-group ">
-{{ form_label(form.get('mainPublicationId')) }}{{ form_select_without_options(form.get('mainPublicationId'), false) }}{{ form_errors(form.get('mainPublicationId')) }}{{ help_block(form.get('mainPublicationId')) }}
-</div>
-<div class="form-group ">
-{{ form_label(form.get('translatedFromPublicationId')) }}{{ form_select_without_options(form.get('translatedFromPublicationId'), false) }}{{ form_errors(form.get('translatedFromPublicationId')) }}{{ help_block(form.get('translatedFromPublicationId')) }}
-</div>
-{{ form_row(form.get('isbn'), false) }}
-{{ form_row(form.get('hasNoISBN'), false) }}
-{{ form_row(form.get('datePublishedText'), false) }}
-{{ form_row(form.get('publisher'), false) }}
-{{ form_row(form.get('publishingPlace'), false) }}
-{{ form_row(form.get('bookFormatType')) }}
-{{ form_row(form.get('numberOfPages')) }}
-{{ form_row(form.get('keywords'), false) }}
-{{ form_row(form.get('resourceId')) }}
-{{ form_row(form.get('isFormallyPublished')) }}
-{{ form_row(form.get('isScientificWork')) }}
-{{ form_row(form.get('isRevisedWithBookInHand')) }}
-<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
-{{ form_row(form.get('editionNotes')) }}
-{{ form_row(form.get('publicNotes')) }}
-{{ form_row(form.get('copyrightYear')) }}
-{{ form_row(form.get('copyrightInfo')) }}
-{{ form_row(form.get('url1')) }}
-{{ form_row(form.get('url1Label')) }}
-{{ form_row(form.get('url2')) }}
-{{ form_row(form.get('url2Label')) }}
-{{ form_row(form.get('url3')) }}
-{{ form_row(form.get('url3Label')) }}
-{{ form_row(form.get('volumeNumber')) }}
-{{ form_row(form.get('adminNotes')) }}
-{{ form_row(form.get('security')) }}
+{{ include('books/_publication-fields.html.twig') }}
 {{ form_submit(form.get('submit')) }}
 {#
   A plain link, not a confirmation modal — unlike the assignment form. It is gated on the
