@@ -13,7 +13,6 @@ use Books\Model\DictionaryTable;
 use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
 use Schoenstatt\Validator\SchoenstattLinkIdentifier;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
-use Laminas\Json\Json;
 
 class PublicationsController extends SionController
 {
@@ -664,44 +663,6 @@ class PublicationsController extends SionController
             'changes' => $changes,
             'simulate' => $simulate,
         ]);
-    }
-
-    /**
-     * Import records from the old tables into the new publications table.
-     * First, the new records will be simulated and presented to the user
-     * If the user accepts, and POSTs the order to import, they will be
-     * imported.
-     *
-     */
-    public function importAction()
-    {
-        /** @var \Books\Model\PublicationsTable $table */
-        $table = $this->getSionTable();
-        $idToShow = $this->params()->fromQuery('id');
-        $forschungs = file_get_contents('data/import/forschungs.json');
-        $array = Json::decode($forschungs, Json::TYPE_ARRAY);
-        $objects = $table->importForschungs($array, $idToShow);//false);
-        $view = new ViewModel([
-            'objects' => $objects,
-        ]);
-        return $view;
-    }
-
-    public function adminTasksAction()
-    {
-        /** @var PublicationsTable $table */
-        $table = $this->getSionTable();
-//         $updates = $table->fillNoAccentsColumns();
-        $updates = [];
-        $updates[] = $table->fillDatePublished();
-        $updates[] = $table->clearCopyrightYear();
-
-        //after performing these updates, delete the DatePublished field in favor of the  DatePublishedText field
-
-        $view = new ViewModel([
-            'updates' => $updates,
-        ]);
-        return $view;
     }
 
     /**

@@ -693,30 +693,12 @@ return [
                             ],
                         ],
                     ],
-                    'admin-tasks' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/admin-tasks',
-                            'defaults' => [
-                                'action'     => 'adminTasks',
-                            ],
-                        ],
-                    ],
                     'create' => [
                         'type'    => Literal::class,
                         'options' => [
                             'route'    => '/create',
                             'defaults' => [
                                 'action'     => 'create',
-                            ],
-                        ],
-                    ],
-                    'import' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/import',
-                            'defaults' => [
-                                'action'     => 'import',
                             ],
                         ],
                     ],
@@ -2727,9 +2709,7 @@ return [
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/trim-titles', 'roles' => ['pub_administrator']],
-                ['route' => 'publications/admin-tasks', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
-                ['route' => 'publications/import', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/create', 'roles' => ['pub_moderator']],
                 ['route' => 'publications/index', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/export', 'roles' => ['pub_moderator']],
