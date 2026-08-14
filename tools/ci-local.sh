@@ -24,9 +24,14 @@ CI_ONLY=0
 [ "${1:-}" = "--ci" ] && CI_ONLY=1
 
 FAILURES=0
+WARNINGS=0
 step() { printf '\n\033[1m=== %s\033[0m\n' "$1"; }
 ok()   { printf '  \033[32mok\033[0m    %s\n' "$1"; }
 bad()  { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; FAILURES=$((FAILURES + 1)); }
+# A check that could not run, as distinct from one that ran and failed. Kept out of
+# FAILURES on purpose — the exit status must mean "something is wrong with the code", or
+# nobody will trust it — but counted and reprinted at the end so it cannot pass unnoticed.
+warn() { printf '  \033[33mSKIP\033[0m  %s\n' "$1"; WARNINGS=$((WARNINGS + 1)); }
 
 in_capsule() { docker compose exec -T app "$@"; }
 
@@ -77,6 +82,14 @@ fi
 OUT=$(in_capsule php composer.phar audit --locked 2>&1)
 if says "$OUT" 'No security vulnerability advisories found'; then
     ok "no advisories against locked versions"
+elif says "$OUT" 'Could not resolve host'; then
+    # NOT a failure, and reporting it as one is actively misleading: `bad` here prints
+    # "FAIL composer audit --locked" into a PR body, which every reader takes to mean an
+    # advisory was found. The audit needs packagist.org, and this environment's containers
+    # have no DNS (same reason `docker compose build` cannot fetch — see CLAUDE.md). An
+    # unreachable advisory database means UNKNOWN, so say unknown and say what to do.
+    warn "advisories NOT checked — no DNS in the container, packagist.org unreachable"
+    printf '        run `php composer.phar audit --locked` on the host, or from CI once its minutes reset\n'
 else
     bad "composer audit --locked"
 fi
@@ -146,8 +159,12 @@ if [ "$CI_ONLY" -eq 0 ]; then
 fi
 
 printf '\n'
+if [ "$WARNINGS" -gt 0 ]; then
+    printf '\033[33m%d check(s) could not run\033[0m — see SKIP above. Say so in the PR body rather than\n' "$WARNINGS"
+    printf 'omitting it: "everything passed" and "everything that could run passed" are different claims.\n\n'
+fi
 if [ "$FAILURES" -eq 0 ]; then
-    printf '\033[32mAll checks passed.\033[0m'
+    printf '\033[32mAll checks that ran passed.\033[0m'
     [ "$CI_ONLY" -eq 0 ] && printf ' This covers everything CI runs, plus smoke and fuzz, which it cannot.'
     printf '\n'
     exit 0

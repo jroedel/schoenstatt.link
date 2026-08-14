@@ -4,6 +4,7 @@ namespace Books\Controller;
 use Laminas\View\Model\ViewModel;
 use JTranslate\Controller\Plugin\NowMessenger;
 use SionModel\Controller\SionController;
+use Books\Form\CopyToMainCorpusForm;
 use Books\Form\PublicationsSearchForm;
 use SionModel\Db\Model\FilesTable;
 use Books\Form\UploadForm;
@@ -181,6 +182,22 @@ class PublicationsController extends SionController
         ]);
     }
 
+    /**
+     * Copy a data-sourced publication into the main corpus. **GET confirms, POST copies.**
+     *
+     * It used to copy on the GET — `copyPublicationToMainCorpus()` is an INSERT, and this
+     * action ran it with no method check, no CSRF token and no confirmation step. The
+     * route's `pub_moderator` guard kept that away from the public, but nine effective
+     * roles hold it and browsers prefetch links a signed-in moderator has only hovered
+     * over, so an accidental duplicate publication needed no mistake anybody could see.
+     * It is the same shape as the `publications/import` retired on 2026-08-14, except
+     * that this one is a feature still in use.
+     *
+     * Structure follows `SionController::deleteAction()` rather than inventing one: build
+     * the form, act only on a valid POST, otherwise render the confirmation. The `action`
+     * attribute is the current request URI, so the POST returns here whichever locale
+     * prefix the visitor arrived under.
+     */
     public function copyToMainCorpusAction()
     {
         $view = parent::showAction();
@@ -189,7 +206,10 @@ class PublicationsController extends SionController
         }
         $entityObject = $view->getVariable('entity');
 
-        if (! $entityObject['dataSource']) {
+        //`empty()` rather than `! $entityObject['dataSource']`, which warned on a row
+        //without the key at all. Same outcome, no diagnostic — and production narrows
+        //error_reporting to hide notices, so the warning was invisible rather than absent.
+        if (empty($entityObject['dataSource'])) {
             $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_ERROR)
                 ->addMessage('Only data-sourced publications can be copied.');
             return $this->redirect()->toRoute(
@@ -198,12 +218,40 @@ class PublicationsController extends SionController
             );
         }
 
-        $newId = $this->getSionTable()->copyPublicationToMainCorpus($entityObject['publicationId']);
-        $swFilter = new ToSchoenstattLinkIdentifier('publication');
-        $newSwId = $swFilter->filter($newId);
-        $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
-            ->addMessage('Publication copied into main literature corpus.');
-        return $this->redirect()->toRoute('publication', ['sw_id' => $newSwId]);
+        $request = $this->getRequest();
+        $form = new CopyToMainCorpusForm();
+
+        if ($request->isPost()) {
+            $form->setData($request->getPost());
+            if ($form->isValid()) {
+                $newId = $this->getSionTable()->copyPublicationToMainCorpus($entityObject['publicationId']);
+                $swFilter = new ToSchoenstattLinkIdentifier('publication');
+                $newSwId = $swFilter->filter($newId);
+                $this->flashMessenger()->setNamespace(FlashMessenger::NAMESPACE_SUCCESS)
+                    ->addMessage('Publication copied into main literature corpus.');
+                return $this->redirect()->toRoute('publication', ['sw_id' => $newSwId]);
+            }
+            //An expired or forged token re-renders the confirmation rather than copying.
+            //deleteAction() answers 401 here; 400 is the honest code — the visitor is
+            //authorized, their token is not valid — and nothing branches on it.
+            $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
+                ->addMessage('Your confirmation expired. Please try again.');
+            $this->getResponse()->setStatusCode(400);
+        }
+
+        $form->setAttribute('action', $request->getRequestUri());
+
+        $confirm = new ViewModel([
+            'form'         => $form,
+            'entityObject' => $entityObject,
+            'cancelUrl'    => $this->url()->fromRoute('publication', [
+                'sw_id' => $entityObject['identifier'],
+                'slug'  => $entityObject['slug'] ?? null,
+            ]),
+        ]);
+        $confirm->setTemplate('books/publications/copy-to-main-corpus');
+
+        return $confirm;
     }
 
     public function oneFiftyPreguntasAction()
