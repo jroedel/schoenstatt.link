@@ -7,7 +7,6 @@ namespace SchoenstattTest\Integration;
 use JTranslate\Form\EditPhraseForm;
 use JTranslate\Form\PhraseValidator;
 use Laminas\Db\Adapter\Adapter;
-use Laminas\Db\TableGateway\Feature\GlobalAdapterFeature;
 use Laminas\Mvc\Service\ServiceManagerConfig;
 use Laminas\ServiceManager\ServiceManager;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -47,12 +46,14 @@ require_once __DIR__ . '/../../vendor/autoload.php';
  *    short, and its value is in *pinning* that thinness — if someone adds a
  *    placeholder or markup rule to the form tomorrow, the API inherits it with no
  *    edit here, and if someone adds one to the API alone this test fails.
- * 2. **The CSRF seam is the same, and so is the static-adapter one.**
- *    `EditPhraseForm::getInputFilterSpecification()` reads
+ * 2. **The CSRF seam is the only wiring difference left.** There used to be a second:
+ *    `EditPhraseForm::getInputFilterSpecification()` read
  *    `GlobalAdapterFeature::getStaticAdapter()` while building its `RecordExists`
- *    validator, and nothing populates that registry on a Symfony-served route — see
- *    PhraseValidator. That is a wiring difference, not a rules difference, and
- *    testCsrfIsTheOnlyInputTheApiDoesNotEnforce is what says so.
+ *    validator, and nothing populated that registry on a Symfony-served route, so
+ *    PhraseValidator wrote to it before building the form and this test did the same.
+ *    The form takes an `Adapter` as of 2026-08-14 and both are gone.
+ *    testCsrfIsTheOnlyInputTheApiDoesNotEnforce carries the remaining one, and its
+ *    name is now literally true.
  *
  * ## It tests across a repository boundary, on purpose
  *
@@ -93,7 +94,6 @@ final class PhraseValidationParityTest extends TestCase
         $services = self::services();
         /** @var Adapter $adapter */
         $adapter = $services->get(Adapter::class);
-        GlobalAdapterFeature::setStaticAdapter($adapter);
 
         /** @var array<string, mixed> $config */
         $config     = $services->get('config');
@@ -107,7 +107,8 @@ final class PhraseValidationParityTest extends TestCase
         return new EditPhraseForm(
             $locales,
             $jtranslate['phrases_table_name'],
-            $jtranslate['translations_table_name']
+            $jtranslate['translations_table_name'],
+            $adapter
         );
     }
 
@@ -281,7 +282,7 @@ final class PhraseValidationParityTest extends TestCase
 
     /**
      * `phraseId` is checked against the table, which is the form's rule and the reason
-     * PhraseValidator has to populate the static adapter at all.
+     * the form needs a db adapter at all.
      */
     public function testAnUnknownPhraseIdIsRefused(): void
     {

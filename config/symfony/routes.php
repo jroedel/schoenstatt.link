@@ -483,10 +483,13 @@ $ported(
 //
 // docs/strangler.md called the form routes the largest single thing left, blocked on
 // two things: no form layer, and JUser's unreproduced static table adapter. The first
-// was true and App\Form\BootstrapFormRenderer answers it. The second turns out not to
+// was true and App\Form\BootstrapFormRenderer answers it. The second turned out not to
 // apply here — only CreateRoleForm, EditUserForm, DeleteUserForm and EditPhraseForm
 // read that adapter, through a NoRecordExists validator, and AssociationForm touches
-// neither. So this form could move while the user forms still cannot.
+// neither. So this form could move while the user forms could not. Both are settled
+// now: those four take an Adapter as a constructor argument as of 2026-08-14 and
+// GlobalAdapterFeature's static registry is gone from first-party code, which
+// test/Unit/NoStaticDbAdapterTest keeps true.
 //
 // GET renders, POST validates and writes. Both methods on one route because the
 // laminas route has no method constraint either, and adding one would turn a
@@ -1162,9 +1165,10 @@ $routes->add('comments/create.locale', new Route(
 //
 // Every route here is a GET whose input is the query string, which is what let them
 // move ahead of the create/edit forms: the static-adapter obstacle docs/strangler.md
-// records belongs to `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and
+// recorded belonged to `CreateRoleForm`, `EditUserForm`, `DeleteUserForm` and
 // `EditPhraseForm` through a `NoRecordExists` validator, and none of these four forms
-// has one. No CSRF token either — a GET form carries none on laminas.
+// has one. (Removed 2026-08-14; the four take the adapter as a constructor argument.)
+// No CSRF token either — a GET form carries none on laminas.
 //
 // Three different guard shapes on purpose, which is most of why these belong in one
 // batch: `assignments/search` admits sch_basic and sch_user (most signed-in members),
