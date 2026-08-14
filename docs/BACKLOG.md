@@ -241,12 +241,60 @@ readability — the destination is **Symfony**, reached gradually:
   path-absolute and same-origin is the obvious answer — and changing **both** front
   controllers at once.
 
-- [ ] **`publications/admin-tasks` and `publications/trim-titles` mutate on a GET.**
-  `adminTasksAction()` calls `fillDatePublished()` and `clearCopyrightYear()` with no
-  confirmation of any kind; `trimTitlesAction()` writes unless `?simulate=1` is present,
-  i.e. **a bare GET writes**. Both are `pub_administrator`. Deliberately left out of the
-  2026-08-12 batch: porting them faithfully means porting the defect, and they need a
-  decision (POST + CSRF, or a console command) rather than a port.
+- [x] ~~**`publications/admin-tasks` and `publications/trim-titles` mutate on a GET.**~~
+  **This item was wrong on both counts, and the correction is worth keeping** because it was
+  read and acted on as a security finding before anyone opened the code. Measured
+  2026-08-14:
+
+  - `adminTasksAction()` wrote **nothing**. `PublicationsTable::fillDatePublished()` and
+    `::clearCopyrightYear()` were **empty method bodies** — declared, documented, never
+    implemented, no other definition and no parent to inherit one. The action called both,
+    collected two nulls and `var_dump()`ed them into a view. A dead page, not an unconfirmed
+    mutation.
+  - `trimTitlesAction()` **simulates by default**. The line is
+    `'0' !== $this->params()->fromQuery('simulate', '1')`, so the default is *simulate*; it
+    writes only on an explicit `?simulate=0`. This item claimed the inverse.
+  - The route paths are under **`/literature`**, not `/publications` — the `publications`
+    route's own path is `/literature`, so the URLs were `/literature/admin-tasks` and
+    `/literature/import`. The route *names* here were right and would still have misled
+    anyone reaching for a browser.
+
+  **The real GET-mutation was `publications/import`, which this item never mentioned.**
+  `importAction()` was a plain GET calling `importForschungs()`, which ran
+  `createEntity('publication', …)` for every row of `data/import/forschungs.json` not already
+  stored — no POST check, no confirmation, despite its own docblock saying *"If the user
+  accepts, and POSTs the order to import, they will be imported."* Measured in the capsule:
+  4,176 books in the file against 4,165 distinct stored `DataSourceId`s, so one click
+  inserted about a dozen publications. It also `echo`ed raw `<pre>print_r()</pre>` into the
+  middle of the page when `?id=` matched a row.
+
+  **Retired rather than fixed, 2026-08-14**, on the decision that the Forschungsbibliothek
+  import is no longer needed: the two empty methods, `adminTasksAction()`, `importAction()`,
+  `importForschungs()` and its two private helpers, both routes, both guard entries and both
+  view templates are gone — 660 lines. `/literature/import` and `/literature/admin-tasks`
+  answer 404 on both front controllers. The **spreadsheet** import path
+  (`library-imports/*`, `libraries/library/import`) is untouched, as are `trim-titles` and
+  `prime-authors`. `data/import/` is gitignored, so the 12 MB JSON was never deployed and
+  nothing needed removing from the server.
+
+- [ ] **`trim-titles` still changes data on a GET, just not on a bare one.** With
+  `?simulate=0` it rewrites publication titles, with no CSRF token and no confirmation — so a
+  link is enough, for anyone holding `pub_administrator`. Lower priority than it looked (the
+  default is a simulation, and the write is a `trim($title, '. ')` of at most two characters)
+  but the shape is still wrong: a state change belongs behind a POST. Same question for
+  `prime-authors`, which was not examined. Whoever fixes it should decide POST + CSRF versus
+  a `bin/console` command — the console is the better home for a one-off maintenance sweep,
+  and it is where the sitemap builder and the catalog exporter already live.
+
+- [ ] **`PublicationsTable::fillNoAccentsColumns()` is now unreferenced.** It is real,
+  working code — it fills `TitleNoAccents`/`SubtitleNoAccents` for Spanish rows — and its only
+  caller was a commented-out line inside the `adminTasksAction()` that was deleted on
+  2026-08-14. Deliberately kept rather than removed with the empty stubs beside it, because
+  deleting working maintenance code is a different decision from deleting code that never did
+  anything. It wants either a `bin/console` command or a deletion; leaving it unreferenced
+  indefinitely is the one option that helps nobody. `importAuthors($simulate)` in the same
+  file is the opposite case: a body of nothing but comments, unreferenced, never wired to a
+  route — that one can just go.
 
 - [ ] **`route/publications/advanced-search` is not a resource this application defines.**
   `search-bar.phtml` asks `isAllowed()` about it and `docs/acl-rules.md` has no row for it
