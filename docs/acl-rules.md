@@ -47,13 +47,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 166 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 53 |
+| routes shadowed by symfony | 54 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 96 |
+| symfony routes acl checked | 98 |
 | symfony routes open | 30 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 126 |
+| symfony served routes | 128 |
 | total routes | 188 |
 | unguarded routes | 24 |
 | unguarded routes matchable | 13 |
@@ -160,6 +160,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `persons.locale` | `/{_locale}/persons` | `route/persons` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonsController` |
 | `persons/person` | `/persons/{person_id}` | `route/persons/person` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonController` |
 | `persons/person.locale` | `/{_locale}/persons/{person_id}` | `route/persons/person` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonController` |
+| `persons/person/edit` | `/persons/{person_id}/edit` | `route/persons/person/edit` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityEditController` |
+| `persons/person/edit.locale` | `/{_locale}/persons/{person_id}/edit` | `route/persons/person/edit` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityEditController` |
 | `persons/search` | `/persons/search` | `route/persons/search` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonsController` |
 | `persons/search.locale` | `/{_locale}/persons/search` | `route/persons/search` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonsController` |
 | `privacy` | `/privacy` | `route/privacy` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
@@ -298,6 +300,7 @@ warning at the top of this file.
 | `music` | `/music` | `—` | `music` | **public** (names the default role `guest`) | `route/music` — **the same resource** |
 | `persons` | `/persons` | `—` | `persons` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons` — **the same resource** |
 | `persons/person` | `/persons/:person_id` | `/persons/0` | `persons/person` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/person` — **the same resource** |
+| `persons/person/edit` | `/persons/:person_id/edit` | `/persons/0/edit` | `persons/person/edit` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/person/edit` — **the same resource** |
 | `persons/search` | `/persons/search` | `—` | `persons/search` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/search` — **the same resource** |
 | `privacy` | `/privacy` | `—` | `privacy` | **public** (names the default role `guest`) | `route/privacy` — **the same resource** |
 | `publication` | `/:sw_id[/:slug]` | `/SL200000L/a` | `publication` | **public** (names the default role `guest`) | `route/publication` — **the same resource** |

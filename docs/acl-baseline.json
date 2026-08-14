@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 166,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 53,
+        "routes_shadowed_by_symfony": 54,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 96,
+        "symfony_routes_acl_checked": 98,
         "symfony_routes_open": 30,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 126,
+        "symfony_served_routes": 128,
         "total_routes": 188,
         "unguarded_routes": 24,
         "unguarded_routes_matchable": 13
@@ -6675,6 +6675,16 @@
             "probe": "/persons/0"
         },
         {
+            "laminas_route": "persons/person/edit",
+            "path": "/persons/:person_id/edit",
+            "symfony_route": "persons/person/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/persons/person/edit",
+            "access_kind": "acl",
+            "probe": "/persons/0/edit"
+        },
+        {
             "laminas_route": "persons/search",
             "path": "/persons/search",
             "symfony_route": "persons/search",
@@ -8644,6 +8654,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/persons/person",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/person/edit": {
+            "path": "/persons/{person_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/person/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/person/edit.locale": {
+            "path": "/{_locale}/persons/{person_id}/edit",
+            "controller": "App\\Controller\\EntityEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/person/edit",
                 "reason": null,
                 "denial_style": "html"
             }

@@ -1,0 +1,252 @@
+{#
+  The person edit form — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/persons/edit.phtml and its fields-partial.phtml,
+  which still render this page wherever laminas is the front controller. The tenth and
+  last of the entity edit forms.
+
+  Field order is that partial's, in its order, and should be changed in both or neither:
+  the two renderings are live at the same time on different front controllers, and a
+  moderator who edits a person through one and then the other should not see the form
+  rearrange itself.
+
+  ## Four things no earlier form in the batch needed
+
+  - **`tel` inputs.** `cellPhone` and `phone1`–`phone3` are `SionModel\Form\Element\Phone`,
+    a plain element declaring `type="tel"`. `cellPhone` is also the one field paired with
+    another inside a hand-built `form-group`, so its WhatsApp checkbox sits beside it
+    rather than in a row of its own.
+  - **A collapse driven by a field's value.** `automaticTitle` is a checkbox whose state
+    decides whether the `manualTitle` group is expanded, and the partial sets
+    `aria-expanded` on the checkbox itself to match. `== 0` is the partial's comparison and
+    is reproduced exactly — under PHP 8 that is true for `0`, `'0'`, `false` and `null` and
+    false for `''`, and the .phtml runs on the same PHP.
+  - **A title built from the record.** `<title>` is `Edit <name>`, not a fixed string:
+    laminas disables the headTitle translator and inserts the person's name into a
+    translated `Edit %s`. `page_title_translate = false` is this layout's equivalent — the
+    name must not be run through the translator, or a person called "Home" would come out
+    as the navigation label.
+  - **A delete-confirmation modal**, the second in the batch after `assignment-edit`. It is
+    gated on `route/persons/person/delete`, a different permission from the one that let
+    the visitor reach this page, and both the trigger button and the modal sit inside that
+    gate — a button that opens a modal that posts to a 403 would be worse than no button.
+
+  ## `nameDay` is deliberately not rendered, and deliberately still posted
+
+  The name-day field is on its way out with its database column, so it is not reproduced
+  as the pair of selects the partial builds. **It is still round-tripped through three
+  hidden inputs, and that is not optional.** `nameDay` is on the form's input filter, so
+  omitting it entirely does not mean "leave it alone": `getData()` answers `nameDay => null`
+  for an absent field, and `updateEntity()` writes that null over the stored value. Measured
+  2026-08-14 — 130 of the capsule's 325 persons have a name day, and every one of them would
+  have been erased the first time a moderator saved their record.
+
+  The hidden values reproduce the stored date exactly (verified: `1900-03-19` in, the same
+  DateTime out) and `1900` is the year the partial hardcodes too. When the column goes, these
+  three lines and the form element go with it.
+#}
+{% extends 'layout.html.twig' %}
+
+{#
+  Set before any block, so the layout sees them: a child template's top-level code runs
+  before the parent renders.
+#}
+{#
+  Reassigning `page_title` onto itself: the route declares the translatable string
+  `Edit %s`, exactly as the other nine declare theirs, and this only translates it and
+  drops the name in. Keeping the literal in the route declaration rather than here is what
+  keeps `config/symfony/routes.php` readable as the inventory of page titles.
+#}
+{% set page_title = translate(page_title)|format(person_name) %}
+{% set page_title_translate = false %}
+
+{#
+  The two assets fields-partial.phtml appends. Note the script carries **no language
+  suffix**, unlike the book/text/publication bundles — `gen-schoenstatt-person-edit.js`
+  contains no jQuery-validate locale strings.
+#}
+{% block page_stylesheets %}
+        <link href="/css/gen-selectize-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-schoenstatt-person-edit.js"></script>
+{% endblock %}
+
+{% block content %}
+{#
+  `Edit Person Info` in the heading, not the `Edit %s` that goes in <title>. Two different
+  strings in the original, and the lead paragraph beneath carries the name.
+#}
+<h1>{{ translate('Edit Person Info') }}</h1>
+<p class="lead">{{ person_name }}</p>
+
+{{ form_open(form, form_action) }}
+{{ form_row(form.get('firstName')) }}
+{{ form_row(form.get('lastName')) }}
+{{ form_row(form.get('lifeCommunity'), false) }}
+{{ form_row(form.get('personTags')) }}
+{% set show_title = form.get('automaticTitle').getValue() == 0 %}
+{% do form.get('automaticTitle').setAttribute('aria-expanded', show_title ? 'true' : 'false') %}
+    <div class="form-group">
+        {{ form_row(form.get('automaticTitle')) }}
+    </div>
+    <div class="collapse {% if show_title %}in{% endif %}" id="titleGroup" aria-expanded="{{ show_title ? 'true' : 'false' }}">
+        {{ form_row(form.get('manualTitle')) }}
+    </div>
+{{ form_row(form.get('spousePersonId'), false) }}
+{{ form_row(form.get('country'), false) }}
+{{ form_row(form.get('isBorrower')) }}
+{{ form_row(form.get('isAuthor')) }}
+    <hr>
+    <h2>{{ translate('Contact Info') }}</h2>
+{{ form_row(form.get('email')) }}
+{{ form_row(form.get('email2')) }}
+<div class="form-group ">
+    {{ form_label(form.get('cellPhone')) }}{{ form_element(form.get('cellPhone')) }}{{ form_errors(form.get('cellPhone')) }}{{ form_element(form.get('cellPhoneHasWhatsApp')) }}{{ form_errors(form.get('cellPhoneHasWhatsApp')) }}
+</div>
+{{ form_row(form.get('phone1')) }}
+{{ form_row(form.get('phone1Label')) }}
+{{ form_row(form.get('phone2')) }}
+{{ form_row(form.get('phone2Label')) }}
+{{ form_row(form.get('phone3')) }}
+{{ form_row(form.get('phone3Label')) }}
+{{ form_row(form.get('twitterUser')) }}
+{{ form_row(form.get('instagramUser')) }}
+{{ form_row(form.get('facebookUrl')) }}
+{{ form_row(form.get('url1')) }}
+{{ form_row(form.get('url1Label')) }}
+{{ form_row(form.get('url2')) }}
+{{ form_row(form.get('url2Label')) }}
+{{ form_row(form.get('url3')) }}
+{{ form_row(form.get('url3Label')) }}
+{{ form_row(form.get('postStreet1')) }}
+{{ form_row(form.get('postStreet2')) }}
+{{ form_row(form.get('postCityState')) }}
+{{ form_row(form.get('postZip')) }}
+{{ form_row(form.get('postCountry'), false) }}
+{{ form_row(form.get('contactNotes')) }}
+    <hr>
+    <h2>{{ translate('Personal Info') }}</h2>
+{{ form_row(form.get('birthDate')) }}
+{{ form_row(form.get('birthDatePrecision')) }}
+{# nameDay: not editable, but round-tripped. See the note at the top of this file. #}
+<input type="hidden" name="nameDay[year]" value="1900">
+<input type="hidden" name="nameDay[month]" value="{{ form.get('nameDay').getMonthElement().getValue() }}">
+<input type="hidden" name="nameDay[day]" value="{{ form.get('nameDay').getDayElement().getValue() }}">
+{#
+  The four patres date fields, for the same reason and a sharper one: **without these the
+  form cannot save at all.**
+
+  `priestDate`, `priestDatePrecision`, `bishopDate` and `bishopDatePrecision` are elements
+  on `PersonForm` and columns in the person spec's `update_columns`, but no partial on this
+  site renders them — they belong to the patres application, which shares the form. So
+  `getData()` answers null for all four and `updateEntity()` writes those nulls.
+  `PriestDatePrecision` and `BishopDatePrecision` are `NOT NULL`, added by db6.5, so the
+  write fails: **every save of a person 500s under laminas and wedges as a fatal-200 under
+  Symfony.** Reproduced and measured 2026-08-14 against both front controllers.
+
+  And the crash is the *lucky* half. It aborts before the same POST's `PriestDate => null`
+  lands, which would silently erase the ordination dates of the ten persons who have one.
+  Anyone who "fixes" the crash by defaulting the precision columns instead of round-tripping
+  them turns a loud failure into a quiet deletion — which is why this is fixed here rather
+  than filed.
+#}
+<input type="hidden" name="priestDate" value="{{ form.get('priestDate').getValue() }}">
+<input type="hidden" name="priestDatePrecision" value="{{ form.get('priestDatePrecision').getValue() }}">
+<input type="hidden" name="bishopDate" value="{{ form.get('bishopDate').getValue() }}">
+<input type="hidden" name="bishopDatePrecision" value="{{ form.get('bishopDatePrecision').getValue() }}">
+{{ form_row(form.get('deathDate')) }}
+{{ form_row(form.get('deathDatePrecision')) }}
+{{ form_row(form.get('publicNotes')) }}
+    <hr>
+    <h2>{{ translate('Private Info') }}</h2>
+{{ form_row(form.get('adminNotes'), false) }}
+{{ form_row(form.get('adminTags'), false) }}
+{{ form_row(form.get('security'), false) }}
+{#
+  Whitespace-controlled on purpose. edit.phtml echoes the submit, then `&nbsp;`, then the
+  button with nothing between them; a newline here reaches the page as a second space
+  beside the entity, which is a byte difference for no reason.
+#}
+{{ form_submit(form.get('submit')) }}
+{%- if delete_action is not empty and is_allowed('route/persons/person/delete') -%}
+&nbsp;{{ form_button(form.get('delete')) }}
+{%- endif %}
+{{ form_close() }}
+{% if delete_action is not empty and is_allowed('route/persons/person/delete') %}
+<!-- Modal -->
+<div class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">{{ translate('Careful') }}...</h4>
+      </div>
+      <div class="modal-body">
+        <p>{{ translate("Only delete a person if he/she was created by mistake!
+        		If you wish change the person in charge, simply set an \"End Date\" in the past
+        		and create a new assignment.") }}</p>
+{{ form_open(delete_form, delete_action) }}
+{{ form_row(delete_form.get('security')) }}
+{{ form_submit(delete_form.get('submit')) -}}
+&nbsp;{{ form_button(delete_form.get('cancel')) }}
+{{ form_close() }}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block inline_scripts %}
+{#
+  The selectize calls, in the partial's order — it builds the script in two pieces, the
+  contact block's first and the tag pickers' after the Personal/Private sections, then
+  emits them as one `$(function () { … })`.
+#}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='country']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='spousePersonId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='phone1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='phone3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url1Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url2Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+$("select[name='url3Label']").selectize({
+    create: true,
+    sortField: 'text'
+});
+
+$("select[name='personTags[]']").selectize({
+    create: true
+});
+$("select[name='adminTags[]']").selectize({
+    create: true,
+    sortField: 'text'
+});
+
+});
+</script>
+{% endblock %}
