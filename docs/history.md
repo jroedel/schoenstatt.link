@@ -956,3 +956,65 @@ look identical — the same lesson `fd`-not-installed taught during the dead-cod
 printed `FAIL composer audit --locked` — which every reader of a PR body takes to mean an
 advisory was found. It reports `SKIP` now, is counted separately, does not affect the exit
 status, and prints how to check from the host (where the answer is: no advisories).
+
+## Merged publications, checked against every row (2026-08-14)
+
+They were already excluded, and the exclusion was already correct — verified rather than
+assumed, in both places. The capsule: 6,477 publication ids published, 3,630 merged rows in
+the database, **0 in common**, and the published set is *exactly* the `publication_public`
+rows with `MergedIntoPublicationId IS NULL`. Production: 46 sampled sitemap URLs, all 200,
+none redirecting, and `/en/SL200417L` still 301s to its surviving edition under both front
+controllers.
+
+What was worth changing is how that stays true.
+
+### A two-id characterization test could only catch total failure
+
+`SitemapSmokeTest::testMergedPublicationsAreExcluded()` asserted that `SL200417L` was absent
+and `SL207340L` present. That catches the whole exclusion falling over — including the
+fail-open path, which is the likely one — but not a partial failure, and not a merge made
+after the test was written. **The set is no longer static**: `copyPublicationToMainCorpus()`
+marks its source row merged, so every use of "Copy into main corpus" mints a redirect that
+has to leave the sitemap, and that path became reachable again the same day.
+
+It now compares the published ids against the database as a set, in both directions — a
+missing edition is a page withdrawn from the index, so over-broad fails too. Proven to fail
+in both directions before being trusted: injecting `SL200417L`'s five locale URLs into the
+published file reports `1 merged publication(s) are in the sitemap` and names id 417;
+deleting `SL200058L`'s five reports `1 unmerged public publication(s) are missing`.
+
+It reads **every** file the index names, not `sitemap-publications.xml`, because misfiling
+has actually happened here — a per-SAPI navigation cache once filed all 250 associations
+under `sitemap-pages.xml` and `removeOrphans()` then deleted the file they belonged in. A
+merged publication in the wrong file is still published.
+
+### The production sampler had the belief backwards, in a comment
+
+`tools/smoke-prod.sh` follows redirects on its cold-page sample, and said why:
+
+> Follow redirects: superseded short links legitimately 301 to their successor
+> (e.g. SL206282L -> SL207792L) and the sitemap lags behind.
+
+They do 301. Publishing them is not legitimate — it is precisely the defect — so the one
+symptom available to a production check was being followed and reported as a pass. Measured:
+a merged URL fetched with `--location` gives `STATUS=200 HOPS=1`, indistinguishable from a
+healthy page unless you look at the hop count.
+
+It still follows, so the fatal-200 size floor lands on a real page either way, and now warns
+when `%{num_redirects}` is non-zero. **WARN, not FAIL**: the sitemap is rebuilt by cron, not
+by the deploy, so a redirect in it is not evidence the deploy went wrong and must not end the
+deploy loop. The authoritative check is the capsule's set comparison; this is the tripwire.
+
+### Three things checked and found not to be problems
+
+- **`getMergedPublicationIds()` filters `ResourceId = 'publication_public'`**, which looks
+  like it could miss merged rows under another resourceId — there are three. It cannot:
+  `getPublicationNavigationData()` filters on the same value, so those rows were never
+  candidates for the sitemap in the first place.
+- **`sch_publications.HasBeenMerged` is a second, independent merge flag** and could disagree
+  with `MergedIntoPublicationId`. It is `0` on all 10,166 rows — dead — and the 301 is driven
+  by `MergedIntoPublicationId` alone, so the exclusion criterion and the redirect criterion
+  are the same question.
+- **The APCu entry behind `merged-publication-ids` cannot go stale for the built sitemap**,
+  and not by luck: a segment belongs to the SAPI that created it, so the cron console process
+  starts cold and reads the database every run.
