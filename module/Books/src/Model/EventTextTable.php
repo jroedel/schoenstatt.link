@@ -95,9 +95,21 @@ class EventTextTable extends SionTable implements ResourceProviderInterface
      */
     protected function processEventRow($row)
     {
+        static $swFilter;
         $id = $this->filterDbId($row['EventId']);
+
+        //Every other entity in this table carries its site-wide identifier and this one did
+        //not, which is why nothing could link to an event: the `event` route matches
+        //`/:sw_id[/:slug]`, so an event with no `identifier` cannot have its own URL built at
+        //all. `SchoenstattLinkIdentifier` has reserved the `E` suffix and the 600000 offset
+        //for events since April 2020; only the filter call was missing.
+        if (! isset($swFilter)) {
+            $swFilter = new ToSchoenstattLinkIdentifier('event');
+        }
+
         $processedRow = [
             'eventId'               => $id,
+            'identifier'            => $swFilter->filter($id),
             'titleEn'               => $row['TitleEn'],
             'titleEs'               => $row['TitleEs'],
             'titleDe'               => $row['TitleDe'],
@@ -138,12 +150,16 @@ class EventTextTable extends SionTable implements ResourceProviderInterface
             'abbreviationIt'        => $row['AbbreviationIt'],
             'abbreviationFr'        => $row['AbbreviationFr'],
             'aclResourceId'         => $row['AclResourceId'],
-            'url1' => 'Url1',
-            'url1Label' => 'Url1Label',
-            'url2' => 'Url2',
-            'url2Label' => 'Url2Label',
-            'url3' => 'Url3',
-            'url3Label' => 'Url3Label',
+            //These six assigned the *column name* as a literal string rather than reading the
+            //row — `'url1' => 'Url1'` — so every event reported its url as the word "Url1".
+            //Invisible since 2020 only because all six columns are empty in all 527 rows; it
+            //would have become a visible defect the moment anyone filled one in.
+            'url1'                  => $row['Url1'],
+            'url1Label'             => $row['Url1Label'],
+            'url2'                  => $row['Url2'],
+            'url2Label'             => $row['Url2Label'],
+            'url3'                  => $row['Url3'],
+            'url3Label'             => $row['Url3Label'],
             'publicNotes'           => $row['PublicNotes'],
             'publicNotesUpdatedOn'  => $this->filterDbDate($row['PublicNotesUpdatedOn']),
             'publicNotesUpdatedBy'  => $this->filterDbId($row['PublicNotesUpdatedBy']),
