@@ -1,0 +1,47 @@
+{#-
+  The library-book field list — the Twig counterpart of
+  module/Books/view/books/books/fields-partial.phtml, shared by the edit form and (from batch 9) the
+  create form, exactly as that partial is shared by edit.phtml and create.phtml.
+
+  **The submit row is deliberately absent.** books/edit.phtml renders it *outside* this
+  partial, and reproducing only the partial is exactly how the ported edit page shipped
+  with no save button at all — live for two days, fixed 2026-08-15. Both pages that
+  include this file must render their own.
+
+  The `form_button` row is the next-free-call-number helper. It needs
+  `next_within_library_id`, which the page supplies.
+
+  The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
+  a page puts around it stays in that page's template.
+
+  Its delimiters are whitespace-controlled so that a plain include standing where the rows
+  used to stand emits exactly the bytes the rows emitted — verified page by page, in two
+  locales, before and after. Do not spell the delimiter sequences out in prose here: Twig
+  has no escape for them inside a comment, so writing one ends the comment early and turns
+  the rest of this docblock into template code. That wedged the collection form during
+  this very refactor. See docs/strangler.md.
+-#}
+{{ form_row(form.get('withinLibraryId')) }}
+{{ form_button(form.get('nextWithinLibraryId')) }}
+{{ form_row(form.get('title')) }}
+{{ form_row(form.get('authors'), false) }}
+{{ form_row(form.get('collectionId'), false) }}
+{{ form_row(form.get('callNumber'), false) }}
+{{ form_row(form.get('newCallNumber'), false) }}
+{{ form_row(form.get('inLanguage'), false) }}
+{{ form_row(form.get('category'), false) }}
+{{ form_row(form.get('isbn'), false) }}
+{{ form_row(form.get('bookEdition'), false) }}
+{{ form_row(form.get('numberOfPages'), false) }}
+{{ form_row(form.get('publishedYear'), false) }}
+{{ form_row(form.get('publisher'), false) }}
+{{ form_row(form.get('publishingPlace'), false) }}
+{{ form_row(form.get('publicationId'), false) }}
+{{ form_row(form.get('keywords'), false) }}
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
+{{ form_row(form.get('publicNotes'), false) }}
+{{ form_row(form.get('adminNotes'), false) }}
+{{ form_row(form.get('adminTags'), false) }}
+{{ form_row(form.get('isActive'), false) }}
+{{ form_row(form.get('inactivationReason'), false) }}
+{{ form_row(form.get('security'), false) -}}

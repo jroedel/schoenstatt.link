@@ -21,6 +21,12 @@
   further condition: it only shows when `personId` is *not* disabled, which on this edit
   page it always is. So the paragraph never renders here — reproduced anyway, because the
   same partial serves the create page where it does.
+
+  **The field rows live in `schoenstatt/_assignment-fields.html.twig` now**, shared with the create
+  form so that a field cannot be added to one surface and quietly forgotten on the
+  other. What stays in this file is what edit.phtml keeps outside its own partial —
+  which is not the same set for every entity, and is the detail worth checking before
+  moving anything across the boundary.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -28,20 +34,7 @@
 <h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, form_action) }}
-{{ form_row(form.get('associationId'), false) }}
-{{ form_row(form.get('personId'), false) }}
-{% if not form.get('personId').getAttribute('disabled') and is_allowed('route/persons/create') %}
-<p>{{ translate('New person?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a>
-    {% if is_allowed('route/admin/import-father') %}
-    or <a target="_blank" href="{{ laminas_path('admin/import-father') }}">{{ translate('Import from Patres') }}</a>
-    {% endif %}
-{% endif %}
-{{ form_row(form.get('roleId')) }}
-{{ form_row(form.get('startDate')) }}
-{{ form_row(form.get('startDatePrecision')) }}
-{{ form_row(form.get('endDate')) }}
-{{ form_row(form.get('endDatePrecision')) }}
-{{ form_row(form.get('security')) }}
+{{ include('schoenstatt/_assignment-fields.html.twig') }}
 {{ form_submit(form.get('submit')) }}
 {% if is_allowed('route/assignments/assignment/delete') %}
 &nbsp;{{ form_button(form.get('delete')) }}

@@ -11,8 +11,10 @@ use function file_get_contents;
 use function implode;
 use function sprintf;
 use function str_contains;
-use function str_ends_with;
+use function is_readable;
+use function preg_match_all;
 use function preg_replace;
+use function str_ends_with;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -80,7 +82,7 @@ final class PortedFormsAreSubmittableTest extends TestCase
                 continue;
             }
 
-            if (self::isSubmittable($markup)) {
+            if (self::isSubmittable($markup) || self::anIncludedTemplateSubmits($markup)) {
                 continue;
             }
 
@@ -95,6 +97,38 @@ final class PortedFormsAreSubmittableTest extends TestCase
             . ' books/book-edit.html.twig shipped without one.',
             implode("\n", $offenders)
         ));
+    }
+
+    /**
+     * True when a template this one includes renders the submit.
+     *
+     * Needed from 2026-08-15, when the field rows moved into `_<entity>-fields.html.twig`
+     * partials shared with the create forms: three of those partials carry their own submit
+     * row, because the laminas partial they reproduce does. Reading one file at a time, this
+     * test flagged all three — right about the file, wrong about the page, which is the
+     * failure mode worth avoiding in a guard nobody will trust after the second false alarm.
+     *
+     * **One level deep, deliberately.** Every form in this project is a page template plus at
+     * most one field partial, so a recursive walk would be machinery for a case that does not
+     * exist and a cycle to guard against for no reason. If a second level ever appears, this
+     * failing is the correct outcome: it means the form layout grew a shape nobody has
+     * looked at.
+     */
+    private static function anIncludedTemplateSubmits(string $markup): bool
+    {
+        preg_match_all("/include\(\s*'([^']+)'/", $markup, $matches);
+
+        foreach ($matches[1] as $name) {
+            $path = dirname(__DIR__, 2) . '/templates/' . $name;
+
+            $source = is_readable($path) ? file_get_contents($path) : false;
+
+            if (false !== $source && self::isSubmittable(self::withoutComments($source))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

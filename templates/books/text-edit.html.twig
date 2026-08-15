@@ -14,6 +14,12 @@
   `form_row` exactly as the partial does, and App\Form\BootstrapFormRenderer::row()
   answers both by emitting the bare element with no form-group around it, which is what
   TwbBundle does.
+
+  **The field rows live in `books/_text-fields.html.twig` now**, shared with the create
+  form so that a field cannot be added to one surface and quietly forgotten on the
+  other. What stays in this file is what edit.phtml keeps outside its own partial —
+  which is not the same set for every entity, and is the detail worth checking before
+  moving anything across the boundary.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -34,14 +40,7 @@
 <h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, form_action) }}
-{{ form_row(form.get('title')) }}
-{{ form_row(form.get('markdownText')) }}
-{{ form_row(form.get('inLanguage')) }}
-{{ form_row(form.get('tags')) }}
-{{ form_row(form.get('isDraft')) }}
-{{ form_row(form.get('kind')) }}
-{{ form_row(form.get('security')) }}
-{{ form_row(form.get('submit')) }}
+{{ include('books/_text-fields.html.twig') }}
 {{ form_close() }}
 {% endblock %}
 
