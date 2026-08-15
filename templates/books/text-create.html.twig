@@ -1,0 +1,27 @@
+{#
+  The new-text form — the Twig counterpart of module/Books/view/books/texts/create.phtml.
+
+  **This template overrides nothing, and that is the finding rather than an omission.**
+  create.phtml and edit.phtml differ in exactly two things: the heading string and the form's
+  action. Both already come from outside the template here — `page_title` from the route,
+  `form_action` from the controller — and text-edit.html.twig renders the heading as
+  `translate(page_title)` rather than a literal, so pointing a second route at a template that
+  extends it and changes nothing produces the create page. The submit button needs no mention
+  either: the texts partial renders it, unlike most of the others, so both surfaces get it
+  from `books/_text-fields.html.twig`.
+
+  The file exists anyway, in preference to naming `books/text-edit.html.twig` in both routes.
+  A route table that says a create route renders an *edit* template reads as a mistake every
+  time anyone checks it, and the moment the two pages do diverge the override belongs here
+  rather than in a conditional inside the edit template.
+
+  ## What made this route unportable until now
+
+  Creating a text wrote the row and then lost the redirect, leaving a 154-byte blank page —
+  so the moderator had no reason to think it had saved and pressing submit again made a
+  second text. `EventTextTable::preprocessText()` read `$entityData['kind']` off the row that
+  does not exist yet, and the warning reached the page ahead of the `Location` header. Fixed
+  in that method, on both front controllers, and guarded by
+  `test/Integration/PreprocessorCreateSafetyTest`.
+#}
+{% extends 'books/text-edit.html.twig' %}

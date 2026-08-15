@@ -47,13 +47,13 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | roles | 45 |
 | route guard entries | 135 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 68 |
+| routes shadowed by symfony | 70 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 130 |
+| symfony routes acl checked | 134 |
 | symfony routes open | 26 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 156 |
+| symfony served routes | 160 |
 | total routes | 153 |
 | unguarded routes | 20 |
 | unguarded routes matchable | 10 |
@@ -174,6 +174,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `music/create-composition.locale` | `/{_locale}/music/create-composition` | `route/music/create-composition` | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\EntityCreateController` |
 | `persons` | `/persons` | `route/persons` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonsController` |
 | `persons.locale` | `/{_locale}/persons` | `route/persons` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonsController` |
+| `persons/create` | `/persons/create` | `route/persons/create` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityCreateController` |
+| `persons/create.locale` | `/{_locale}/persons/create` | `route/persons/create` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityCreateController` |
 | `persons/person` | `/persons/{person_id}` | `route/persons/person` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonController` |
 | `persons/person.locale` | `/{_locale}/persons/{person_id}` | `route/persons/person` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\PersonController` |
 | `persons/person/delete` | `/persons/{person_id}/delete` | `route/persons/person/delete` | sch_administrator, sch_general_moderator | html | `App\Controller\EntityDeleteController` |
@@ -236,6 +238,8 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `text.locale` | `/{_locale}/{sw_id}/{slug}` | `route/text` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextController` |
 | `texts` | `/texts` | `route/texts` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextsController` |
 | `texts.locale` | `/{_locale}/texts` | `route/texts` | texts_administrator, texts_moderator, texts_user | html | `App\Controller\TextsController` |
+| `texts/create` | `/texts/create` | `route/texts/create` | texts_administrator, texts_moderator | html | `App\Controller\EntityCreateController` |
+| `texts/create.locale` | `/{_locale}/texts/create` | `route/texts/create` | texts_administrator, texts_moderator | html | `App\Controller\EntityCreateController` |
 | `wayside-shrines` | `/wayside-shrines` | `route/wayside-shrines` | **public** (`null` in its roles) | html | `App\Controller\WaysideShrinesController` |
 | `wayside-shrines.locale` | `/{_locale}/wayside-shrines` | `route/wayside-shrines` | **public** (`null` in its roles) | html | `App\Controller\WaysideShrinesController` |
 | `welcome` | `/` | `route/welcome` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\ContentPageController` |
@@ -331,6 +335,7 @@ warning at the top of this file.
 | `music` | `/music` | `—` | `music` | **public** (names the default role `guest`) | `route/music` — **the same resource** |
 | `music/create-composition` | `/music/create-composition` | `—` | `music/create-composition` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/music/create-composition` — **the same resource** |
 | `persons` | `/persons` | `—` | `persons` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons` — **the same resource** |
+| `persons/create` | `/persons/create` | `—` | `persons/create` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/create` — **the same resource** |
 | `persons/person` | `/persons/:person_id` | `/persons/0` | `persons/person` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/person` — **the same resource** |
 | `persons/person/delete` | `/persons/:person_id/delete` | `/persons/0/delete` | `persons/person/delete` | restricted to sch_administrator, sch_general_moderator | `route/persons/person/delete` — **the same resource** |
 | `persons/person/edit` | `/persons/:person_id/edit` | `/persons/0/edit` | `persons/person/edit` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons/person/edit` — **the same resource** |
@@ -362,6 +367,7 @@ warning at the top of this file.
 | `text-delete` | `/:sw_id/delete` | `/SL400000T/delete` | `text-delete` | restricted to texts_administrator, texts_moderator | `route/text-delete` — **the same resource** |
 | `text-edit` | `/:sw_id/edit` | `/SL400000T/edit` | `text-edit` | restricted to texts_administrator, texts_moderator | `route/text-edit` — **the same resource** |
 | `texts` | `/texts` | `—` | `texts` | restricted to texts_administrator, texts_moderator, texts_user | `route/texts` — **the same resource** |
+| `texts/create` | `/texts/create` | `—` | `texts/create` | restricted to texts_administrator, texts_moderator | `route/texts/create` — **the same resource** |
 | `wayside-shrines` | `/wayside-shrines` | `—` | `wayside-shrines` | **public** (`null` in its roles) | `route/wayside-shrines` — **the same resource** |
 | `welcome` | `/` | `—` | `welcome` | **public** (names the default role `guest`) | `route/welcome` — **the same resource** |
 

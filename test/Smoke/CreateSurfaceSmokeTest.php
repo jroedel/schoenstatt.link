@@ -9,7 +9,7 @@ use PDO;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
- * Batch 9: the nine ported create forms, rendered and written.
+ * The ported create forms, rendered and written — nine from batch 9, two from batch 10.
  *
  * ## What it asserts, and why the write half is not optional
  *
@@ -21,11 +21,16 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * body.
  *
  * The write half exists because a create form that renders perfectly and writes nothing is
- * indistinguishable from a working one until somebody tries to save. It is also where this
- * batch's real risk lives: `SionTable::createEntity()` writes **every** column it is given,
- * where `updateEntity()` writes only the changed ones — which is exactly why
- * `/persons/create` is broken on laminas and its edit twin is not, and why that route is not
- * in this batch.
+ * indistinguishable from a working one until somebody tries to save. It is also where the
+ * real risk lives: `SionTable::createEntity()` writes **every** column it is given, where
+ * `updateEntity()` writes only the changed ones — which is exactly why `/persons/create`
+ * answered 500 for years while its edit twin did not.
+ *
+ * Batch 10 added `person` and `text` here after fixing what made them unportable, and their
+ * write tests are the ones worth reading: each pins a defect that a rendering assertion
+ * could not have seen. A person is created **without a spouse**, which is the submission
+ * MariaDB used to refuse; a text is created and then its stored HTML is inspected, because
+ * the text was always written — what was lost was the redirect, and after that the render.
  *
  * ## Every created row is deleted again
  *
@@ -48,7 +53,7 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
 
     protected function emailPrefix(): string
     {
-        return 'batch9-create-';
+        return 'create-surface-';
     }
 
     protected function tearDown(): void
@@ -60,7 +65,7 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
     }
 
     /**
-     * The nine routes, with the form id each renders and a field that must appear in it.
+     * The eleven routes, with the form id each renders and a field that must appear in it.
      *
      * The field is chosen to be one the *factory* populates rather than one the form class
      * declares statically, wherever the entity has such a field — a form whose value options
@@ -85,6 +90,14 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
             'composition' => ['/en/music/create-composition', 'composition', 'inLanguage'],
             'publication' => ['/en/literature/create', 'publication', 'categoryId'],
             'dictionary'  => ['/en/dictionary/create', 'dictionary-entry', 'locale'],
+            //Batch 10. `person` names `spousePersonId` deliberately: it is both a
+            //factory-populated select and the field whose missing `ToNull` made this route
+            //answer 500 for years.
+            'person'      => ['/en/persons/create', 'edit_person', 'spousePersonId'],
+            //`inLanguage` rather than the factory-populated `tags`: only one of the 2,756
+            //texts carries a tag, so that select legitimately renders a single option and
+            //would fail the assertion below without anything being wrong.
+            'text'        => ['/en/texts/create', 'text', 'inLanguage'],
         ];
     }
 
@@ -247,6 +260,140 @@ class CreateSurfaceSmokeTest extends SmokeTestCase
             '/associations/' . $association,
             $post['headers']['location'] ?? '',
             'a new role must send the moderator to its association, not to the role'
+        );
+    }
+
+    /**
+     * A person is created **without a spouse**, which is the submission that used to 500.
+     *
+     * Not an incidental choice of fixture: `spousePersonId` is a select with an empty option
+     * and, until batch 10, an input filter of `['required' => false]` and nothing else, so an
+     * unchosen spouse posted `''` into an integer column and MariaDB refused the insert. 243 of
+     * the 325 persons in this database have no spouse, so that was very nearly every create.
+     *
+     * The row is read back rather than only the redirect, and the two precision columns with
+     * it: the four patres date fields are not rendered by any page here, and their absence
+     * writes NULL to two `NOT NULL` columns unless the template round-trips them. Asserting
+     * `day` is asserting that the hidden inputs in `_person-fields.html.twig` are still there
+     * and still carry the element's default on a create.
+     */
+    public function testAModeratorCanCreateAPersonWithNoSpouse(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $surname = 'Smoketest' . time();
+
+        $post = $this->submit($jar, '/en/persons/create', 'edit_person', [
+            'firstName'      => 'Create',
+            'lastName'       => $surname,
+            'spousePersonId' => '',
+        ]);
+
+        $this->assertSame(
+            302,
+            $post['status'],
+            'a person with no spouse must save; a 500 here is the empty-string-into-an-integer bug'
+        );
+
+        $row = $this->pdo()->query(sprintf(
+            'SELECT PersonId, SpousePersonId, PriestDatePrecision, BishopDatePrecision'
+                . ' FROM sch_persons WHERE LastName = %s',
+            $this->pdo()->quote($surname)
+        ))->fetch(PDO::FETCH_ASSOC);
+
+        $this->assertNotFalse($row, 'the person was not written to sch_persons');
+        $this->created[] = ['sch_persons', 'PersonId', (int) $row['PersonId']];
+
+        $this->assertNull($row['SpousePersonId'], "an unchosen spouse must be NULL, not ''");
+        $this->assertSame('day', $row['PriestDatePrecision'], 'the patres precision round-trip is gone');
+        $this->assertSame('day', $row['BishopDatePrecision'], 'the patres precision round-trip is gone');
+
+        $this->assertStringContainsString(
+            '/persons/' . $row['PersonId'],
+            $post['headers']['location'] ?? '',
+            'a new person must send the moderator to the person'
+        );
+    }
+
+    /**
+     * Neither a first name nor a last name is refused, and nothing is written.
+     *
+     * The one rule in either batch that comes from a spec's `create_action_valid_data_handler`
+     * rather than from an input filter — `PersonsController::createPerson()` requires one of
+     * the two, and neither is required on its own, so no per-field rule can express it. The
+     * count assertion is the half that matters: the form re-rendering is easy to get right
+     * while still having written the row.
+     */
+    public function testAPersonWithNoNameIsRefused(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $before = (int) $this->pdo()->query('SELECT COUNT(*) FROM sch_persons')->fetchColumn();
+
+        $post = $this->submit($jar, '/en/persons/create', 'edit_person', [
+            'firstName' => '',
+            'lastName'  => '',
+        ]);
+
+        $this->assertSame(200, $post['status'], 'a nameless person must re-render the form, not redirect');
+        $this->assertSame(
+            $before,
+            (int) $this->pdo()->query('SELECT COUNT(*) FROM sch_persons')->fetchColumn(),
+            'a person with neither name was created'
+        );
+    }
+
+    /**
+     * A text is created, lands on its own page, and **has its HTML rendered**.
+     *
+     * The redirect assertion pins the bug this route waited on: the row was always written,
+     * and what failed was everything after it. `EventTextTable::preprocessText()` read
+     * `$entityData['kind']` off a row that does not exist on a create, and the warning reached
+     * the page ahead of the `Location` header — so the moderator saw a 154-byte blank page and
+     * had no reason to think the text had saved.
+     *
+     * The `htmlText` assertion pins the other half. The show page renders `htmlText` and
+     * nothing else, so a text created with markdown and no HTML is a permanently blank page —
+     * which is what guarding the array read alone would have shipped.
+     */
+    public function testAModeratorCanCreateAText(): void
+    {
+        $jar   = $this->newCookieJar();
+        $email = $this->signIn($jar);
+        $this->grantEveryRole($email);
+
+        $title = 'Smoke test text ' . time();
+
+        $post = $this->submit($jar, '/en/texts/create', 'text', [
+            'title'        => $title,
+            'markdownText' => "# Smoke heading\n\nA paragraph.",
+        ]);
+
+        $this->assertSame(302, $post['status'], 'a valid text submission must redirect, not answer a blank 200');
+
+        $row = $this->pdo()->query(sprintf(
+            'SELECT TextId, Slug, HtmlText, LegacyFile FROM texts WHERE Title = %s',
+            $this->pdo()->quote($title)
+        ))->fetch(PDO::FETCH_ASSOC);
+
+        $this->assertNotFalse($row, 'the text was not written to texts');
+        $this->created[] = ['texts', 'TextId', (int) $row['TextId']];
+
+        $this->assertNull($row['LegacyFile'], 'a text written through the form is not an import');
+        $this->assertStringContainsString(
+            '<h1>Smoke heading</h1>',
+            (string) $row['HtmlText'],
+            'the markdown was stored but never rendered, so the text will show as a blank page'
+        );
+
+        $this->assertStringContainsString(
+            '/' . $row['Slug'],
+            $post['headers']['location'] ?? '',
+            'a new text must send the moderator to the text itself'
         );
     }
 

@@ -135,10 +135,11 @@ fi
 # For `smoke` that is two 4½-minute runs back to back against the live app, doubling both
 # wall time and the load the capsule's ceilings exist to bound — and it pushed the full
 # run past the 600s tool timeout. Capture once into a file, then read both from it.
+# $3, when given, is passed to php ahead of phpunit — mirror ci.yml exactly.
 suite() {
-    local name=$1 lines=$2 log status
+    local name=$1 lines=$2 phpflag=${3:-} log status
     log=$(mktemp)
-    in_capsule php tools/phpunit.phar --testsuite "$name" > "$log" 2>&1
+    in_capsule php ${phpflag} tools/phpunit.phar --testsuite "$name" > "$log" 2>&1
     status=$?
     quiet < "$log" | tail -"$lines"
     [ "$status" -eq 0 ] && ok "$name" || bad "$name (phpunit exited $status; full output: $log)"
@@ -151,7 +152,7 @@ suite unit 3
 
 # --- ci.yml job 5: integration --------------------------------------------
 step "Integration suite  (ci.yml: integration)"
-suite integration 2
+suite integration 2 "-d memory_limit=1G"
 
 if [ "$CI_ONLY" -eq 0 ]; then
     # --- Beyond CI: the suites that need a live application ----------------
