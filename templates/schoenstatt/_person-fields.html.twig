@@ -92,11 +92,19 @@
   Anyone who "fixes" the crash by defaulting the precision columns instead of round-tripping
   them turns a loud failure into a quiet deletion — which is why this is fixed here rather
   than filed.
+
+  **The two precision fields fall back to the element's own `value` attribute**, which the
+  create form needs and the edit form never notices. On an edit `getValue()` answers the
+  stored precision and the fallback is dead code; on a create it answers null, the hidden
+  input would carry `''`, and `DatePrecision::filterSpec()` refuses that — deliberately, so
+  that an empty precision is a loud failure rather than a silent coercion to `day`. The
+  attribute is `DatePrecision::DEFAULT_PRECISION`, i.e. exactly what a *rendered* precision
+  select posts on a create page, so this hidden input now submits what the visible ones do.
 #}
 <input type="hidden" name="priestDate" value="{{ form.get('priestDate').getValue() }}">
-<input type="hidden" name="priestDatePrecision" value="{{ form.get('priestDatePrecision').getValue() }}">
+<input type="hidden" name="priestDatePrecision" value="{{ form.get('priestDatePrecision').getValue() ?: form.get('priestDatePrecision').getAttribute('value') }}">
 <input type="hidden" name="bishopDate" value="{{ form.get('bishopDate').getValue() }}">
-<input type="hidden" name="bishopDatePrecision" value="{{ form.get('bishopDatePrecision').getValue() }}">
+<input type="hidden" name="bishopDatePrecision" value="{{ form.get('bishopDatePrecision').getValue() ?: form.get('bishopDatePrecision').getAttribute('value') }}">
 {{ form_row(form.get('deathDate')) }}
 {{ form_row(form.get('deathDatePrecision')) }}
 {{ form_row(form.get('publicNotes')) }}

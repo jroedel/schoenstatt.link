@@ -1060,8 +1060,33 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            //`ToInt` then `ToNull`, the same pair AssociationInputFilterSpec uses for
+            //`parentId` and the pair every other nullable-id select in the application
+            //already carries. Without them this input was `['required' => false]` and
+            //nothing else, so an unchosen spouse posted `''` straight through to
+            //`sch_persons.SpousePersonId`, an integer column, and MariaDB refused it:
+            //
+            //    22007 - 1366 - Incorrect integer value: '' for column `SpousePersonId`
+            //
+            //On **create** that was every person without a spouse, i.e. nearly every
+            //person: createEntity() writes every column it is handed. On **edit** it was
+            //narrower and just as real — updateEntity() skips a column when
+            //`$value == $data[$field]`, and `494 == ''` is false in PHP 8, so *clearing* a
+            //spouse wrote `''` too. 82 of 325 persons have one.
+            //
+            //An audit of every create form against the database's own column types found
+            //this was the only `Select` in the application in that state; the other 73
+            //candidates are checkboxes, which post `0`/`1` and never `''`. See
+            //test/Integration/EmptyStringToTypedColumnTest, which is that audit.
             'spousePersonId' => [
                 'required' => false,
+                'filters'  => [
+                    ['name' => 'ToInt'],
+                    [
+                        'name'    => ToNull::class,
+                        'options' => ['type' => ToNull::TYPE_INTEGER],
+                    ],
+                ],
             ],
             'isAuthor' => [
                 'required' => false,

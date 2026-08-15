@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 135,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 68,
+        "routes_shadowed_by_symfony": 70,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 130,
+        "symfony_routes_acl_checked": 134,
         "symfony_routes_open": 26,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 156,
+        "symfony_served_routes": 160,
         "total_routes": 153,
         "unguarded_routes": 20,
         "unguarded_routes_matchable": 10
@@ -5075,6 +5075,16 @@
             "probe": "/persons"
         },
         {
+            "laminas_route": "persons/create",
+            "path": "/persons/create",
+            "symfony_route": "persons/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/persons/create",
+            "access_kind": "acl",
+            "probe": "/persons/create"
+        },
+        {
             "laminas_route": "persons/person",
             "path": "/persons/:person_id",
             "symfony_route": "persons/person",
@@ -5383,6 +5393,16 @@
             "now_checks": "route/texts",
             "access_kind": "acl",
             "probe": "/texts"
+        },
+        {
+            "laminas_route": "texts/create",
+            "path": "/texts/create",
+            "symfony_route": "texts/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/texts/create",
+            "access_kind": "acl",
+            "probe": "/texts/create"
         },
         {
             "laminas_route": "wayside-shrines",
@@ -7268,6 +7288,26 @@
                 "denial_style": "html"
             }
         },
+        "persons/create": {
+            "path": "/persons/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "persons/create.locale": {
+            "path": "/{_locale}/persons/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/persons/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "persons/person": {
             "path": "/persons/{person_id}",
             "controller": "App\\Controller\\PersonController",
@@ -7884,6 +7924,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/texts",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "texts/create": {
+            "path": "/texts/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/texts/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "texts/create.locale": {
+            "path": "/{_locale}/texts/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/texts/create",
                 "reason": null,
                 "denial_style": "html"
             }

@@ -255,8 +255,37 @@ class EventTextTable extends SionTable implements ResourceProviderInterface
             //@todo check here that the slug doesn't exist, if it does try adding different numbers until it works
         }
 
+        /*
+         * Render the markdown, unless this row's HTML came from somewhere better.
+         *
+         * Two clauses, and the second one used to read `$entityData['kind']` — the kind of
+         * the row being written. On a **create** there is no such row: createEntity() passes
+         * `[]`, so PHP emitted `Undefined array key "kind"`, and because a create happens
+         * before the redirect is sent, that warning reached the page ahead of the `Location`
+         * header. The text was written and the moderator saw a 154-byte blank page, so
+         * pressing submit again made a second text. Measured 2026-08-15.
+         *
+         * Keying on `legacyFile` instead of `kind` fixes that and one other thing.
+         *
+         * The clause exists because of `importJkTexts()` below, which reads paired `.md` and
+         * `.html` files and must not have its imported HTML overwritten by Parsedown's
+         * rendering of the same markdown — those are not the same document. Measured across
+         * the corpus: regenerating would change the visible text of **2,740 of 2,756** rows,
+         * some to twice the length. But `! isset($data['htmlText'])` already protects the
+         * importer, which passes both. What the kind clause protected in addition was the
+         * *edit* form, and there it did harm: every text is a jk-text now that the blog is
+         * gone, so editing a text's markdown never regenerated its HTML and the form's main
+         * field had no visible effect at all.
+         *
+         * `legacyFile` separates the two cases exactly, and the data says so rather than the
+         * naming: all 2,753 imported rows carry one and all 4 rows authored in the app carry
+         * none. So an imported text keeps the HTML it was imported with — byte-identical to
+         * the behaviour above for every row that exists — while a text written here renders
+         * its markdown, on create and on every later edit. `isset()` also means the missing
+         * key on create is no longer a read at all.
+         */
         if (isset($data['markdownText']) && ! isset($data['htmlText'])
-            && self::TEXT_KIND_JK_TEXT !== $entityData['kind']
+            && ! isset($entityData['legacyFile'])
         ) {
             //generate HTML
             if (! isset($parsedown)) {
