@@ -1583,6 +1583,50 @@ the way `ContentPageController` serves the five static pages.
 |---|---|
 | all ten: `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit`, `publication-edit`, `persons/person/edit` | — |
 
+#### `books/book/edit` shipped with no submit button (2026-08-13 → 2026-08-15)
+
+**The ported library-book edit form could not be saved for two days**, and it was live in
+production for the whole of it. A moderator could open `/books/{id}/edit`, change any field,
+and find no control to write it back: the only `type="submit"` in the 589 KB response was the
+navbar's search button.
+
+The cause is a boundary that only this entity has. Nine of the ten laminas templates in this
+batch render the submit as a **row inside `fields-partial.phtml`**, so it came across with the
+field list and nobody had to think about it. `books/edit.phtml` renders it **outside** the
+partial — `echo $this->formSubmit($form->get('submit'));` between the partial and the closing
+tag — and the port reproduced the partial and stopped.
+
+Three things generalise, and the third is the uncomfortable one:
+
+- **Ask what the laminas template does *around* its partial, not only inside it.** The field
+  list is the obvious half of a form port and the easy half to check. `books/edit.phtml` is
+  thirteen lines; the line that matters is not in the partial it includes.
+- **A 200 is not a rendered page, and this is a third distinct way to learn it.** The other
+  two in this file are the fatal-200 wedge (a Twig syntax error, and later
+  `CollectionFormFactory` reaching for the route match) and the batch-6 renderer gaps. Here
+  nothing failed at all: 589 KB of correct markup with one control absent. The smoke test
+  covering the route asserted the anonymous 302, so it could not have seen it either way.
+- **An accepted difference on a page is a reason to read that page's diff more closely, not
+  less.** `tools/port-baseline.php` had `/books/18370/edit` in `PATHS` throughout and nothing
+  in its `normalize()` erases a submit button — so the difference *was* in the diff. What it
+  was not is alone in it: this page carries the batch's one accepted regression, the navbar
+  search box pointing at contacts rather than the library (see the known-differences table
+  above). A page already expected to differ is where a second, unrelated difference hides,
+  and at 589 KB per response × five locales × two identities it did.
+
+`test/Unit/PortedFormsAreSubmittableTest` is the guard: every template that calls `form_open`
+must also render the submit, by any of the three spellings the ported templates legitimately
+use. It is a source scan for the same reason `NoStaticDbAdapterTest` is — an HTTP test that
+could see this needs a signed-in account holding a per-library `administrate` grant, which is
+worth the Mailpit magic-link dance for a rendering diff and disproportionate for "is there a
+button". Writing it also reproduced that test's own hazard in miniature: the first version
+passed with the fix deleted, because it was matching the word `form_submit` in the docblock
+that explains the bug. It strips `{# … #}` first now.
+
+An audit of all eleven ported edit templates against their laminas sources, element by
+element, found this and nothing else. The four extra elements on `person-edit` are the
+deliberate hidden-input round-trip described below, not an omission.
+
 **`persons/person/edit` completed the surface on 2026-08-14**, and porting it found that
 **saving a person had been broken on every front controller** since db6.5. `priestDate`,
 `priestDatePrecision`, `bishopDate` and `bishopDatePrecision` are elements on `PersonForm`

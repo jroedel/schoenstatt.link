@@ -1249,6 +1249,24 @@ Background and measurements: [caching.md](caching.md).
   patres inherits them.
 - [ ] Keep the form-regression baseline (`tools/form-regression.php`)
   rebased — it is the designated safety net for the Symfony form migration.
+- [ ] **The smoke suite asserts the anonymous 302 for every guarded ported route, and
+  that has now missed three defects.** A guarded route's smoke test signs nobody in, so
+  what it proves is that the guard denies — never that the page renders. The three it
+  could not see: the `collections/collection/edit` fatal-200 (batch 7), the batch-6
+  renderer gaps, and `books/book/edit` shipping with **no submit button** for two days
+  (fixed 2026-08-15, see [strangler.md](strangler.md)). Each was found by something
+  else, later, and the last one was live in production.
+  - What it would take: the smoke suite would need the Mailpit magic-link sign-in
+    `tools/port-baseline.php` already implements — `signInWithEveryRole()` plus
+    `grantEveryRole()` — lifted into a shared helper so a test can assert a *signed-in*
+    body. That is a real piece of work, not a tweak, and it is the thing standing
+    between "every ported route has a test" and "every ported route has a test that
+    could fail".
+  - Cheap partial cover meanwhile, and the pattern to copy:
+    `test/Unit/PortedFormsAreSubmittableTest` checks the one property that mattered here
+    by reading the templates. A source scan cannot know whether a page *renders*, but it
+    can know whether the markup is capable of the thing — and it runs in CI, where an
+    authenticated HTTP test never will.
 
 ## Deploy ops
 
