@@ -147,19 +147,21 @@ Not abandoned and not retracted — the evidence below stands as measured. What 
 the priority, and the reason is recorded so the decision can be re-examined rather than
 rediscovered.
 
-- [~] **Every deploy has a window in which visitors get fatals.** **Deferred
-  indefinitely 2026-08-14 by the user: the audience is currently almost entirely bots.**
+- [x] **Every deploy has a window in which visitors get fatals.** **Fixed
+  2026-08-15 by `tools/deploy.sh`** — deferred on 2026-08-14 as "mostly protects
+  Googlebot's opinion of us", then taken up the next day because the user wanted a
+  single-command deploy anyway and atomicity came with the redesign rather than
+  costing extra. Four of the five shapes below are now structurally impossible: the
+  tree is complete before anything points at it, and `data/config` is per-release so
+  a new tree can never meet an old merged-config cache.
 
-  The reasoning inverts the usual one, which is why it is worth stating. The cost of a
-  deploy-window fatal is paid by whoever happens to be mid-request, and today that is
-  overwhelmingly crawlers — the `51c0cb27` fingerprint alone, one scraper replaying a URL
-  list it built while a button was public, produced **3,478 requests in eleven days**
-  against a handful of identifiable human sessions. Fixing atomicity would mostly protect
-  Googlebot's opinion of us. That is real, but it is not urgent, and the fix costs a
-  pipeline redesign plus edits to a credentials file only the user can touch.
-
-  **Revisit when that ratio changes** — a launch, an announcement, or any sustained human
-  traffic. The measurement does not go stale; the priority does.
+  Worth keeping the deferral reasoning, because it was sound and the outcome does not
+  retroactively make it wrong: the cost of a deploy-window fatal is paid by whoever is
+  mid-request, and that was overwhelmingly crawlers — the `51c0cb27` fingerprint
+  alone, one scraper replaying a URL list it built while a button was public, produced
+  **3,478 requests in eleven days** against a handful of identifiable human sessions.
+  What changed was not the ratio but the price: bundled into work already being done,
+  the fix stopped needing its own justification.
 
   The evidence, kept intact:
 
@@ -187,12 +189,18 @@ rediscovered.
   **Cause**: phploy writes file-by-file over SFTP straight into the live docroot. Nothing
   about it is atomic, and no amount of care in the code prevents it.
 
-  **This is a pipeline design decision, not a patch**, which is why it is recorded rather
-  than done. The shape of the fix is upload-to-a-release-directory then swap — which
-  phploy over SFTP cannot do by itself, so it needs the port-222 shell hooks — or a
-  maintenance flag that 503s for the duration, which trades fatals for downtime and is
-  much cheaper. Either touches `phploy.ini`, which holds credentials and must be edited
-  by the user.
+  **This was a pipeline design decision, not a patch**, and it was taken:
+  upload-to-a-release-directory then swap, which phploy over SFTP could not do at all,
+  so phploy went with it. The cheaper alternative considered here — a maintenance flag
+  that 503s for the duration, trading fatals for downtime — was not needed.
+
+  One prediction in this item was wrong and is worth correcting rather than deleting:
+  the fix did **not** require the user to hand-edit a credentials file. The credential
+  file shrank instead (`phploy.ini` + `.phploy` → `.deploy.local`), and every hook that
+  used to live inside it is now ordinary code in `tools/deploy.sh`, under review like
+  anything else. The old arrangement — deploy logic in a gitignored file no commit
+  could reach — is why the `jtranslate:export-catalogs` and `sitemap:build` steps each
+  had to be documented as "mirror this into `phploy.ini` by hand".
   - Of the remaining 4: two are a host wobble on 2026-08-07 ~00:28 (`MySQL server has
     gone away`, and an SMTP `535` in the same minute — which is why one exception email
     never arrived, and shows as `FAILED` in the summary table), and two are a
@@ -1418,11 +1426,15 @@ Background and measurements: [caching.md](caching.md).
   `updateAssociationMd5s()` touch only the database. Needs an acting-user
   decision first — `ActingUserProviderInterface` has no session identity on
   CLI.
-- [ ] phploy upstream PRs (banago/PHPloy): the directory-purge bug (deletes
-  parent-directory chains recursively, took out module/JUser/src on deploy
-  day) and `--list` silently skipping submodules. Alternatively, if phploy
-  keeps chafing: evaluate Deployer (atomic release dirs + symlink switch
-  would also kill the mid-deploy broken window).
+- [x] ~~phploy upstream PRs (banago/PHPloy): the directory-purge bug… evaluate
+  Deployer…~~ **Moot 2026-08-15: phploy is retired.** `tools/deploy.sh` replaces
+  it with rsync into release directories and a symlink swap — so the purge bug,
+  the `--list` submodule gap and the mid-deploy broken window all go away
+  together, and neither upstream PR is worth writing. Deployer was weighed and
+  passed over: four private repos rule out its git-clone flow, the pre/post
+  migration phases would have been custom tasks anyway, and a purpose-built
+  script needs no PHP locally — which is what removes the `php8.0` requirement
+  phploy imposed. See docs/DEPLOY.md.
 - [ ] Production runs FastCGI — "what bounds concurrent PHP memory?" has
   never been asked of the Hetzner account (the capsule's ceilings don't
   apply there).

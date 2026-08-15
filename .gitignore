@@ -22,6 +22,14 @@ ubuntu-xenial-16.04-cloudimg-console.log
 phploy.ini
 phploy.log
 .phploy
+# Deploy configuration and credentials (tools/deploy.sh), seeded from
+# .deploy.local.dist by config.sh. Holds the SSH target, the maintenance API key
+# and the full-DDL database password — the last of which exists on developer
+# machines only and is never written to the server.
+.deploy.local
+# Table snapshots the migration runner takes before it touches production, and
+# the migration plan it writes. Real production data; never commit either.
+/data/deploy/
 # Compiled translation catalogs, both places JTranslate writes them:
 # `language/<TextDomain>/` for a domain that is not a module, and
 # `module/<Module>/language/` for one that is. See
