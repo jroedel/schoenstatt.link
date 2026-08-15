@@ -97,7 +97,6 @@ return [
     // total pass-through: no filter, no validator, no length bound.
     'elementsMissingFromSpec' => [
         'Books\\Form\\CheckoutForm: \'personId\' is not named in the input filter spec (element-provided validation only, no filters)',
-        'Books\\Form\\EventsSearchForm: \'category\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'Books\\Form\\PublicationsSearchForm: \'includeDataSources\' is not named in the input filter spec (element-provided validation only, no filters)',
         'Books\\Form\\SearchForm: \'category\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'JUser\\Form\\EditUserForm: \'rolesList\' is not named in the input filter spec (element-provided validation only, no filters)',
@@ -157,8 +156,6 @@ return [
         'Books\\Form\\CompositionForm: \'url1\' (url) has no length bound',
         'Books\\Form\\CompositionForm: \'url2\' (url) has no length bound',
         'Books\\Form\\CompositionForm: \'url3\' (url) has no length bound',
-        'Books\\Form\\EventsSearchForm: \'category\' (text) has no length bound',
-        'Books\\Form\\EventsSearchForm: \'libraryId\' (hidden) has no length bound',
         'Books\\Form\\ImportForm: \'libraryId\' (hidden) has no length bound',
         'Books\\Form\\InactivationForm: \'withinLibraryIds\' (textarea) has no length bound',
         'Books\\Form\\LibraryForm: \'adminNotes\' (textarea) has no length bound',
