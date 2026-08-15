@@ -474,6 +474,44 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
+- [ ] **26 choice fields still have no domain check, and each is blocked on something
+  specific.** Batch 11 (2026-08-15) closed 24 of the 88 and declared 38 more open by design in
+  `test/Fuzz/open-ended-choice-fields.php`; these are what is left. Grouped by what stands in
+  the way, because they are not one task:
+
+  - **The stored data does not fit the select's own options (4).** Constraining these would
+    refuse to save records that already exist.
+    - `BookForm::publicationId` and `PublicationForm::mainPublicationId` /
+      `translatedFromPublicationId` — `getEditionValueOptions()` filters `DataSource IS NULL`,
+      which excludes **5,963 of the 10,166** publications, and **386 books point at one of the
+      excluded ones**. Either the select should offer imported publications or those books
+      should not reference them; measure before choosing.
+    - `BookForm::inLanguage` — three stored values are outside the ISO list: `ceb`, `p`, and
+      `es;de;en`, which is three languages in a single-value column.
+  - **The element has no options server-side (16).** Their lists are built by JavaScript from
+    another field, or by a setter an admin screen calls later, so an `InArray` would reject
+    every submission rather than the wrong ones. `ChoiceDomain` declines to constrain these on
+    purpose. `AssignmentForm`/`EditAssignmentForm` `roleId` is the clearest: the role list is
+    narrowed in the browser from the chosen association, and all 170 assignments in the
+    database would fail. `EventForm`'s five are a special case of the same thing — the entity's
+    `create_action_form` is commented out, so nothing builds it.
+  - **Search forms (5).** `SearchForm`, `EventsSearchForm`, `TextSearchForm`,
+    `PublicationsSearchForm`, `AdvancedSearchForm`. Nothing is written, so the corruption risk
+    is nil; the value goes into a query. Worth doing eventually, worth nothing urgently.
+  - **`AssignmentForm::personId` (1)** — one stored assignment references person `660`, which
+    does not exist. A dangling foreign key, not a form problem.
+
+- [ ] **`country` means two different things on two forms.** `selectize({create: true})` on the
+  composition form and `create: false` on the person and association forms, so a moderator can
+  invent a country on one page and not on the others. `mus_compositions.Country` shows the
+  result: `pt` and `cl` in lowercase beside `US`, `BR` and `FR`, against an uppercase-keyed
+  option list — 301 of 308 rows carry a code the select does not offer.
+
+  Fixing it is `create: false` in `templates/books/composition-edit.html.twig` and its `.phtml`
+  twin, `StringToUpper` in `CompositionForm`'s spec entry (as `PersonForm` already has), a data
+  correction for the lowercase rows, and only then `ChoiceDomain::validators()`. **In that
+  order** — constraining first would make 301 compositions unsaveable.
+
 - [x] **`/persons/create` answered 500 for any person without a spouse** — fixed and ported,
   batch 10, 2026-08-15.
 

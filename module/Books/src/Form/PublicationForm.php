@@ -13,6 +13,7 @@ use Laminas\Filter\StripNewlines;
 use Laminas\Filter\StringTrim;
 use Laminas\Validator\Regex;
 use Laminas\Validator\NotEmpty;
+use SionModel\Form\ChoiceDomain;
 
 class PublicationForm extends SionForm implements InputFilterProviderInterface
 {
@@ -549,6 +550,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                             'type' => NotEmpty::STRING,
                         ]
                     ],
+                    ...ChoiceDomain::validators($this->get('inLanguage')),
                 ],
             ],
             'bookEdition' => [
@@ -742,6 +744,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('bookFormatType')),
             ],
             'copyrightYear' => [
                 'required' => false,
@@ -876,6 +879,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
             ],
             'resourceId' => [
                 'required' => true,
+                'validators' => ChoiceDomain::validators($this->get('resourceId')),
             ],
             'isAccessibleForFree' => [
                 'required' => false,
@@ -956,6 +960,7 @@ class PublicationForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('categoryId')),
             ],
             'adminNotes' => [
                 'required' => false,
