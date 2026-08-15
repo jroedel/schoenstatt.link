@@ -1158,6 +1158,26 @@ attribute, no ordering. That is the useful control for the batch: the text templ
 nothing at all, so anything else differing would have been the shared create machinery rather
 than the page.
 
+**`/timeline` differs on purpose, from 2026-08-15 — the first entry here that is not a
+side effect of porting.** Every previous row in this section is something the port did
+incidentally and the question was whether to accept it. This one is a change made
+deliberately *after* the port, to a page that was already transcribed byte-for-byte:
+
+| n | what | where | why |
+|---|---|---|---|
+| 4 | event titles are in the reader's language, not English | `/timeline` in `es`, `de`, `pt`, `it`, `fr`; `/en/timeline` is unchanged | `events` carries a title in all six languages — 527 rows for En/Es/De/Pt/It, 526 for Fr — and `index.phtml` renders `titleEn` in every locale, so four fifths of the audience read an English timeline off data that was already in the table. `TimelineController::titleField()` passes the locale's own column and the template reads it through `attribute()`. Asserted by `BooksSmokeTest::testTimelineTitlesFollowTheLocale()` rather than left to this table |
+
+The distinction matters for how you read a future `tools/port-baseline.php` run on this
+path: a difference here is now *expected*, and the .phtml is the stale copy rather than the
+reference. It stays only because production can still fall back to it. When the laminas
+`events` route goes, `index.phtml` goes with it and this row can be deleted.
+
+The introductory paragraph on that page is a **literal in both renderings**, so it is
+English in all five locales in Symfony and laminas alike — that is not a difference, and it
+is deliberately not fixed here. Making it translatable files a new phrase row per locale
+and belongs with the translation pass in
+[timeline-and-corpus.md](timeline-and-corpus.md).
+
 The capture is also what found batch 9's one real defect, which is fixed rather than
 listed: `/associations/create` rendered **two empty options** on its time-zone select where
 laminas renders one. `FormSelect::render()` merges the empty option into the value options

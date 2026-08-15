@@ -1327,6 +1327,19 @@ return [
              * For more information on entity config:
              * @see \SionModel\Entity\Entity
              */
+            /**
+             * The Fr. Kentenich timeline. **Only the index route is reachable** — `event`,
+             * `event-edit`, `event-delete` and `events/create` have no entry in
+             * acl.global.php and BjyAuthorize default-denies them. That is deliberate and
+             * documented in docs/timeline-and-corpus.md; do not add guard entries without
+             * reading it, because the write surface needs a form (there is none), a show
+             * template (there is none), and an ACL resource that exists (see below).
+             *
+             * Five keys below were corrected on 2026-08-15. They had described the April
+             * 2020 *draft* of this entity rather than the schema database/db6.1.sql actually
+             * shipped, and because every route that would exercise them is denied, nothing
+             * ever failed to reveal it. Each correction is annotated where it sits.
+             */
             'event' => [
                 'name'                                      => 'event',
                 'table_name'                                => 'events',
@@ -1339,10 +1352,12 @@ return [
 //                 'get_object_function'                       => 'getEvent',
 //                 'get_objects_function'                      => 'getEvents',
 //                 'format_view_helper'                        => 'formatEvent',
+                //CORRECTED: this named `durationInDays` and `accuracy`, neither of which is a
+                //field of this entity. db6.1 shipped `Duration` + `DurationUnit` and
+                //`StartDatePrecision` instead, and the last two are NOT NULL with defaults, so
+                //`startDate` is the only column a create genuinely has to be given.
                 'required_columns_for_creation'             => [
                     'startDate',
-                    'durationInDays',
-                    'accuracy'
                 ],
                 'name_field'                                => 'titleEn',
                 'name_field_is_translateable'               => false,
@@ -1355,21 +1370,33 @@ return [
                 'report_changes'                            => true,
                 'index_route'                               => 'events',
                 'index_template'                            => 'books/events/index',
-                'default_route_key'                         => 'association_id',
+                //CORRECTED: this said `association_id`, copy-pasted from the associations
+                //entity. Every route below takes a site-wide identifier on a `:sw_id` segment.
+                'default_route_key'                         => 'sw_id',
 //                 'show_action_template'                      => 'project/events/show',
-                'show_route'                                => 'events/event',
-                'show_route_key'                            => 'event_id',
-                'show_route_key_field'                      => 'eventId',
+                //CORRECTED (four keys): the routes are top-level `event` / `event-edit`, not
+                //children of `events` — that route has exactly one child, `create`. And the
+                //segment is `:sw_id` matching /^SL(6[0-9]{5,5})E$/, not a bare `event_id`, so
+                //the key field is `identifier`. `processEventRow()` did not emit one of those
+                //until 2026-08-15 either, which is why no event URL could be built at all.
+                //Mirrors the `publication` entity below, which is the working example.
+                'show_route'                                => 'event',
+                'show_route_key'                            => 'sw_id',
+                'show_route_key_field'                      => 'identifier',
 //                 'edit_action_form'                          => Form\EditEventForm::class,
 //                 'edit_action_template'                      => 'project/events/edit',
-                'edit_route'                                => 'events/event/edit',
-                'edit_route_key'                            => 'event_id',
-                'edit_route_key_field'                      => 'eventId',
+                'edit_route'                                => 'event-edit',
+                'edit_route_key'                            => 'sw_id',
+                'edit_route_key_field'                      => 'identifier',
                 //'create_action_form'                        => Form\CreateEventForm::class,
-                'create_action_valid_data_handler'          => 'createEvent',
-                'create_action_redirect_route'              => 'events/event',
-                'create_action_redirect_route_key'          => 'event_id',
-                'create_action_redirect_route_key_field'    => 'eventId',
+                //CORRECTED: `create_action_valid_data_handler => 'createEvent'` named a method
+                //that is defined nowhere in the repository — not on EventTextTable, not on
+                //SionTable, nowhere. Commented out rather than pointed at something, because
+                //there is nothing to point it at until Part 2 of docs/timeline-and-corpus.md.
+//                 'create_action_valid_data_handler'          => 'createEvent',
+                'create_action_redirect_route'              => 'event',
+                'create_action_redirect_route_key'          => 'sw_id',
+                'create_action_redirect_route_key_field'    => 'identifier',
 //                 'create_action_template'                    => 'project/events/create',
 //                 'database_bound_data_preprocessor'          => 'preprocessEvent',
 //                 'database_bound_data_postprocessor'         => 'postprocessEvent',
@@ -1377,10 +1404,22 @@ return [
 //                 'moderate_route_entity_key'                 => 'event_id',
 //                 'suggest_form'                              => Form\SuggestEventForm::class,
                 'enable_delete_action'                      => true,
-                'delete_route_key'                          => 'event_id',
+                'delete_route_key'                          => 'sw_id',
                 'delete_action_redirect_route'              => 'events',
 
-                'acl_resource_id_field'                     => 'aclResourcesId',
+                //CORRECTED: `aclResourcesId`, with an `s`. db6.1's last statement renamed the
+                //column `AclResourcesId` to `AclResourceId` and this key was not followed
+                //along, so the per-row permission lookup read a field `processEventRow()` has
+                //never emitted.
+                //
+                //**Fixing the name is not the same as the check working.** All 527 rows carry
+                //`evt_public`, and that resource is registered nowhere: the config provider in
+                //acl.global.php does not declare it, and `EventTextTable::getResources()` —
+                //which is a registered resource provider — only reads `SELECT DISTINCT
+                //AclResourceId FROM texts`, so it emits `txt_institute` and `txt_public` and
+                //no event resource at all. Harmless while the four routes are denied; a
+                //prerequisite the moment one is opened. Part 2 of docs/timeline-and-corpus.md.
+                'acl_resource_id_field'                     => 'aclResourceId',
 //                 'acl_show_permission'                       => 'show',
 //                 'acl_edit_permission'                       => 'edit',
 //                 'acl_suggest_permission'                    => 'suggest',
@@ -2543,6 +2582,30 @@ return [
                 ['route' => 'composition-delete', 'roles' => ['sch_general_moderator']],
                 ['route' => 'music/create-composition', 'roles' => ['sch_user']],
 
+                /*
+                 * `events` is the timeline index at /timeline, and it is the ONLY event
+                 * route with a guard entry. `event` (show), `event-edit`, `event-delete`
+                 * and `events/create` have none, so BjyAuthorize default-denies all four.
+                 *
+                 * That is a decision, not an oversight, and it is recorded here because an
+                 * absent guard entry and a forgotten one look identical in this file.
+                 * Three things are missing before any of the four could be opened, and
+                 * none of them is a guard:
+                 *
+                 *   - no form (EventForm was deleted in batch 12: it matched a pre-db6.1
+                 *     draft with fields the schema does not have);
+                 *   - no show, edit or create template;
+                 *   - no ACL resource — all 527 rows carry `evt_public` and nothing
+                 *     registers it, so the per-row check would test an unknown resource.
+                 *
+                 * There is also no events moderator role in `user_role` to name, and
+                 * picking one is a product call about who curates the timeline. Adding a
+                 * guard entry alone would turn a clean default-deny into a 500.
+                 *
+                 * The whole feature — and the two-part plan for finishing it — is in
+                 * docs/timeline-and-corpus.md. test/Integration/EventFeatureStateTest pins
+                 * this state so that opening one of the four is a deliberate act.
+                 */
                 ['route' => 'events', 'roles' => ['user', 'guest']],
             ],
         ],

@@ -41,6 +41,61 @@ class BooksSmokeTest extends SmokeTestCase
     }
 
     /**
+     * The timeline lists every event, under 7 of the 8 Kentenich periods.
+     *
+     * **7, not 8, and the reason is the assertion's point.**
+     * `KentenichPeriodFromDate` defines eight; the eighth, "After the Founder (1968-)",
+     * begins on 1969-01-01 and the latest event in the table is 1968-09-20, so it has
+     * never rendered. A test that asserted 8 would be asserting a bug, and a reader
+     * counting `PERIOD_NAMES` and finding 7 headings would reasonably suspect one.
+     *
+     * The count is a lower bound rather than an equality: this suite runs against a
+     * capsule loaded from a production export, and an event added on the live site
+     * should not fail a test about page structure. What it catches is the failure that
+     * matters — a grouping or template change that drops events, which is exactly what
+     * App\Books\EventTimeline's docblock warns is easy to do (events are keyed by
+     * `eventId` within a year, so a change that keyed them by anything less unique
+     * would silently collapse rows and still render a plausible page).
+     */
+    public function testTimelineListsEveryEventUnderItsPeriod(): void
+    {
+        $response = $this->assertRendersOk('/en/timeline');
+
+        $this->assertSame(
+            7,
+            substr_count($response['body'], '<h2>'),
+            'expected 7 period headings — the 8th period starts in 1969 and no event reaches it'
+        );
+
+        $this->assertGreaterThanOrEqual(
+            527,
+            substr_count($response['body'], '</span><br>'),
+            'the timeline lost events; see App\Books\EventTimeline on the keying that makes that silent'
+        );
+    }
+
+    /**
+     * The event title is rendered in the reader's language, not in English.
+     *
+     * Every event carries a title in all six languages and the page showed `titleEn` in
+     * all five locales until 2026-08-15 — data that was already in the table, unread.
+     * This is the one deliberate divergence between templates/books/timeline.html.twig
+     * and the index.phtml it was transcribed from, so it is asserted rather than left to
+     * tools/port-baseline.php, which correctly reports it as a difference.
+     */
+    public function testTimelineTitlesFollowTheLocale(): void
+    {
+        $german = $this->assertRendersOk('/de/timeline');
+        $this->assertStringContainsString('Geburt von Pater Kentenich', $german['body']);
+
+        $spanish = $this->assertRendersOk('/es/timeline');
+        $this->assertStringContainsString('Nace el Padre Kentenich', $spanish['body']);
+
+        $english = $this->assertRendersOk('/en/timeline');
+        $this->assertStringContainsString('Birth of Father Kentenich', $english['body']);
+    }
+
+    /**
      * Regression: /en/dictionary answered 404 for years. The route matched
      * fine — it declared a controller and no default action, and
      * AbstractActionController::onDispatch reads that parameter with a default
