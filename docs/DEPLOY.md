@@ -1,17 +1,30 @@
 # Deploying schoenstatt.link
 
-Deployment is phploy over **SFTP as a restricted deploy account**
-(port-22 jail, no exec — its port-222 shell was intentionally revoked
-2026-08-03, so a phploy vulnerability could move files but never run
-anything). Server-side commands still happen, but as explicit `ssh`
-invocations from `pre-deploy[]`/`post-deploy[]` hooks running under
-*your own* shell account (port 222). Everything is plain `post-deploy[]`
-(never `post-deploy-remote[]`) so the exact execution order is under our
-control — mixing the two makes the order unpredictable.
+```bash
+./tools/deploy.sh
+```
 
-**Never run `phploy --submodules`/`-m`** — its directory purge recursively
-deletes freshly-uploaded trees (it took out `module/JUser/src` on
-2026-08-02; see docs/BACKLOG.md "Deploy ops").
+That is the whole thing: preflight, build, migrate, warm, swap, verify. It runs
+`rsync` over your own shell account on port 222 and needs no PHP locally.
+
+**Deployment is atomic.** A release is built, composer-installed and warmed in a
+directory nothing is serving, and goes live when one symlink is replaced by a
+single `rename(2)`. There is no window in which a visitor meets a half-deployed
+tree — which there was, on every deploy, until 2026-08-15: 17 of the 21 real
+exception fingerprints measured on 2026-08-14 were deploy artifacts, arriving in
+nine bursts, one per deployed revision (see docs/BACKLOG.md "Deploy ops" for the
+evidence, kept because the measurement is what justified the redesign).
+
+**phploy is retired.** It wrote file-by-file over SFTP straight into the live
+docroot, which is what made the window unavoidable; nothing about that transport
+was atomic and no amount of care in the application prevented it. Its
+`--submodules` mode also had a directory-purge bug that recursively deleted
+freshly-uploaded trees (it took out `module/JUser/src` on 2026-08-02). The
+restricted SFTP account on port 22 that phploy used is now unused by anything.
+
+Configuration lives in **`.deploy.local`** (gitignored, mode 0600), seeded from
+`.deploy.local.dist` by `config.sh`. It replaces both `phploy.ini` and
+`.phploy`. Nothing in it is ever written to the server.
 
 ## Before the next deploy: the sitemap needs a cron entry
 
@@ -20,29 +33,27 @@ The sitemap became a set of static files in the docroot
 until they do the sitemap works but never refreshes on its own.
 
 1. **Add the cron entry** — in konsoleH, or `crontab -e` on the port-222 shell
-   account:
+   account. The path has to resolve *through* the `public/` symlink so the run
+   always lands in whichever release is live — hence `cd -P` and then `cd ..`,
+   rather than the tempting `public/..`, which the shell collapses logically
+   back to the application directory without ever following the link.
 
    ```cron
-   */15 * * * * cd ~/public_html/schoenstatt.link && php bin/console sitemap:build >/dev/null
+   */15 * * * * cd -P ~/public_html/schoenstatt.link/public && cd .. && php bin/console sitemap:build >/dev/null
    ```
 
    A run with nothing to do costs ~0.11 s: one `MAX()` over an indexed column,
    then it exits. Only a run that finds new data walks the navigation (~1.2 s).
 
-2. **Mirror the build into `phploy.ini`'s `post-deploy[]`** by hand, the same way
-   the `jtranslate:export-catalogs` hook had to be — the file is gitignored, so
-   nothing in the repo can do it for you:
+2. ~~**Mirror the build into `phploy.ini`'s `post-deploy[]`**~~ — **done, and no
+   longer a manual step.** `tools/deploy.sh` runs `sitemap:build --force` as part
+   of warming, *before* the swap, so a release goes live with a sitemap that
+   already matches it. `--force` because a deploy can change which pages exist
+   without changing a single database row — the ACL, a route, or the filtering
+   rules — and none of that moves `MAX(sch_changes.UpdatedOn)`.
 
-   ```ini
-   post-deploy[] = "ssh -p 222 <admin>@dedi2934.your-server.de 'cd public_html/schoenstatt.link && php bin/console sitemap:build --force'"
-   ```
-
-   `--force` because a deploy can change which pages exist without changing a
-   single database row — the ACL, a route, or the filtering rules — and none of
-   that moves `MAX(sch_changes.UpdatedOn)`.
-
-**Delete the old files after the first deploy.** They are outside the docroot and
-phploy will not remove them:
+**Delete the old files after the first deploy.** They are outside the docroot,
+and no deploy will remove them:
 
 ```bash
 ssh -p 222 <admin>@dedi2934.your-server.de \
@@ -697,12 +708,13 @@ two per-visitor overrides. It is deployed with the file — nothing to enable by
 Both overrides are deployed now, so the global flip is one *added* line rather than an
 edit; see "Flipping the Symfony kernel on globally" below.
 
-To have the post-deploy smoke run exercise it, add the cookie to the hook's environment
-in `phploy.ini` (beside `SMOKE_PROD_CACHE_KEY`):
+To have the post-deploy smoke run exercise it, set it in `.deploy.local`:
 
+```sh
+DEPLOY_CANARY_COOKIE=sl_symfony_canary=1
 ```
-post-deploy[] = "SMOKE_PROD_CACHE_KEY=… SMOKE_PROD_CANARY_COOKIE='sl_symfony_canary=1' bash tools/smoke-prod.sh"
-```
+
+`tools/deploy.sh` passes it through as `SMOKE_PROD_CANARY_COOKIE`.
 
 That adds ~35 checks. The variable is only a switch now — its *value* is not read, because
 there are two cookies and the script names both itself. What it asserts is the **pair**:
@@ -775,7 +787,7 @@ the "After" list below.
 
 ### Before
 
-- [ ] `SMOKE_PROD_CANARY_COOKIE` is wired into the `phploy.ini` smoke hook, and the last
+- [ ] `DEPLOY_CANARY_COOKIE` is set in `.deploy.local`, and the last
       deploy's run passed. That is the pre-flip evidence: it renders every public ported
       route through the Symfony kernel against production's own data, ICU and
       translations, and checks the three `LaminasResponseConverter` rules on a bridged
@@ -822,133 +834,227 @@ In order of how much they cost:
 ## The deploy
 
 ```bash
-git checkout master && git pull origin master
-git submodule update --init --recursive
-
-php8.0 phploy.phar
+./tools/deploy.sh
 ```
 
-The phploy run does, in order (`phploy.ini.dist` is the committed
-template: `config.sh` copies it to the gitignored `phploy.ini`, where the
-TODOs get real values):
+It pulls master itself, so there is nothing to do first. The run is nine steps;
+each prints, and any failure before the swap leaves production untouched.
 
-1. `pre-deploy[]`: ssh — back up the server's `public/.htaccess` to
-   `data/htaccess-backups/htaccess-<timestamp>`. The file is tracked and
-   clobbered on every deploy (since 2026-08-03); the backup is the escape
-   hatch, outside the docroot, ~2.6 KB per deploy.
-2. Diff-uploads the superproject against the server's `.revision` (SFTP).
-3. `purge[] = "data/config/"` — empties the merged-config/module-map cache
-   (production runs with config caching on; this is why config changes
-   take effect).
-4. `post-deploy[]` hooks:
-   1. `bash tools/deploy-submodules.sh` — rsync `--delete` of the three
-      submodule trees over the shell account (clean-tree guard built in;
-      no-ops fast when the pointers didn't move).
-   2. ssh — `php composer.phar install --no-dev --no-interaction
-      --optimize-autoloader && php bin/console cache:clear-config && php
-      bin/console cache:flush-persistent`. All three run server-side in one
-      session, in that order because `bin/console` needs symfony/console in
-      `vendor/`.
-      - `cache:clear-config` deletes the merged-config and module-map cache
-        files, re-clearing what a visitor may have re-cached from the
-        half-deployed tree since step 3. It derives the paths from the module
-        listener options, so a changed cache key cannot leave it deleting
-        nothing.
-      - `cache:flush-persistent` requests `/en/sm/clear-persistent-cache`
-        over HTTP, which flushes the APCu storage adapter
-        (`apcu_clear_cache()`) — the whole web APCu segment, no process kills
-        needed. **It has to be an HTTP request:** an APCu segment belongs to
-        the SAPI that created it, so a CLI process sees its own (or, with the
-        default `apc.enable_cli=0`, none) and could never flush the FastCGI
-        pool's. Verified 2026-08-04 — a CLI `apcu_clear_cache()` left all 21
-        web-segment entries in place. Running it on the server means the
-        maintenance key comes from the app's own config and never appears in
-        `phploy.ini`, a shell history or an access log.
-      - That URL, and `/en/sm/cache-status`, are the two routes ported to the
-        Symfony kernel (see [strangler.md](strangler.md)). Production still
-        serves them from laminas-mvc, because `SYMFONY_KERNEL` is unset there;
-        both implementations coexist and answer the same URL with the same
-        payload. What differs is the refusal: laminas answers `302` to the
-        sign-in page, the Symfony controller answers `401` with a JSON body.
-        `cache:flush-persistent` reports either as a rejected key, so flipping
-        the flag needs no change to the hook.
-   3. ssh — `php bin/console jtranslate:export-catalogs`. Rebuilds every
-      compiled `*.lang.php` from the database.
-      - **Why a deploy needs it at all.** The catalogs are gitignored build
-        output, so phploy never uploads them; the copies on the server are
-        whatever the application last wrote for itself, which happens only
-        when a translator saves a phrase or the discovery path finds one that
-        already had a translation in another text domain. Nothing else ever
-        rebuilt them, which is exactly how they drifted far enough from the
-        database to be worth untracking. A deploy that changes phrases, or a
-        migration that removes some, leaves them stale until this runs.
-      - **It cannot fail the deploy**, by design: the hook swallows the exit
-        status and prints a warning instead. A stale catalog only means some
-        strings render in English, and the translations themselves are safe in
-        the database. Aborting the deploy — or skipping the hooks after it —
-        would be the worse outcome, so re-run it by hand if you see the
-        warning.
-      - It writes as the **ssh** account, not as the web-server user. That is
-        safe because each catalog goes to a temporary file and is `rename()`d
-        into place, and `rename()` needs write permission on the *directory*,
-        not on the existing file — so the web server can still replace a
-        catalog this hook created. `TranslationsTable::writeCatalogAtomically()`
-        documents why; do not "simplify" that write.
-   4. wget `/en/associations/do-work` with an `X-Api-Key` header —
-      post-deploy data maintenance. Needs the fully-deployed site. Still a
-      wget because the work itself has not been ported to a command yet.
-   5. `git tag -f deploy/$(date +%Y%m%d-%H%M)` — local tag recording
-      exactly what went live (`git tag -l 'deploy/*'` answers "what's
-      deployed?"). Never pushed.
-   6. `SMOKE_PROD_CACHE_KEY=<api key> bash tools/smoke-prod.sh` — the
-      scripted smoke checks (next section). A failure ends the deploy
-      loudly with a non-zero exit. It runs after the server-side steps,
-      so a passing run means the *fully* deployed site is healthy — no
-      expected-failure window.
+| # | step | where | notes |
+|---|---|---|---|
+| 1 | **Preflight** | local | on `master`; working tree clean; `pull --ff-only`; the three submodules clean *and pushed*; local master not ahead of origin |
+| 2 | **Verification** | local | `tools/ci-local.sh --ci` — lint, `composer --no-dev` rehearsal, PHPStan 0, unit, integration. `--skip-tests` to skip |
+| 3 | **Build** | server | `rsync` into `releases/<ts>-<sha>/`, hardlinked against the previous release; `.revision` written |
+| 4 | **Link shared** | server | `shared/data`, `shared/public`, `shared/config-autoload` symlinked in; `data/config` and `data/cache` created empty, per-release |
+| 5 | **composer install** | server | `--no-dev --optimize-autoloader`, vendor seeded from the previous release |
+| 6 | **Warm** | server | `jtranslate:export-catalogs`, merged-config cache, `sitemap:build --force` — in a tree nothing is serving |
+| 7 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
+| 8 | **Post-swap** | server / local | `cache:flush-persistent` (APCu), then `/en/associations/do-work` |
+| 9 | **Verify** | local | `tools/smoke-prod.sh`; **a failure rolls back automatically** and exits non-zero |
+
+Then it tags `deploy/<ts>` locally (never pushed — `git tag -l 'deploy/*'`
+answers "what shipped?") and prunes to `DEPLOY_KEEP_RELEASES`, never removing
+the live release or the one a rollback would reach for.
+
+Three properties are worth stating because each replaces a hazard that used to
+be real:
+
+- **The release is exactly the committed tree.** The transfer list comes from
+  `git ls-files --recurse-submodules`, not from the working directory, so local
+  cruft — a stale `public/sitemap.xml`, a scratch dump, an editor backup —
+  cannot reach production, and the submodules are ordinary directories in that
+  list rather than a separate rsync pass. `tools/deploy-submodules.sh` is no
+  longer used by anything (it goes with phploy); its clean-tree guard moved into
+  preflight and gained the two checks it never had — that each submodule sits at
+  the commit the superproject pins, and that the commit is actually pushed.
+  The first of those is not pedantry: the release is built from the submodule
+  *working trees*, so a submodule at a different commit ships code no commit
+  describes.
+- **Warming happens before the swap.** `jtranslate:export-catalogs` and
+  `sitemap:build` used to run *after* the code went live, so every deploy had a
+  window in which strings rendered in English and the sitemap belonged to the
+  previous release. They now run against a tree no request can reach.
+- **`data/config` is per-release.** A new tree can no longer meet a merged-config
+  cache built from the old one — the pairing behind the `A plugin by the name
+  "requestUri" was not found` burst on every deploy, and behind the
+  `addRuleProvider(): … EventTextTable given` one. The `servingNote` guard in
+  `layout.phtml` is no longer load-bearing, though it costs nothing and stays.
+
+### What is not automatic
+
+- The APCu flush **must** stay an HTTP request. An APCu segment belongs to the
+  SAPI that created it, so a CLI `apcu_clear_cache()` flushes a segment nobody
+  reads — measured 2026-08-04, all 21 web-segment entries survived it.
+  `cache:flush-persistent` makes the request for us.
+- `/en/associations/do-work` is still a URL rather than a command
+  (`autoFillTimeZones()`, `updateAssociationMd5s()`); porting it is in
+  docs/BACKLOG.md.
+- A sign-in round trip with a real email.
+
+## The layout on the server
+
+```
+public_html/schoenstatt.link/
+  public -> releases/20260815-2207-956aabd/public   the swap; the only symlink
+  releases/<ts>-<sha>/                              five kept; vendor hardlinked
+  shared/data/{logs,exceptions,htaccess-backups,fonts,musicas,texts,scans,import}
+  shared/public/{covers,associations,dh, …server-only docroot files}
+  shared/config-autoload/{local.php,*.local.php}
+```
+
+`public/index.php` resolves `__DIR__/../vendor` through the symlink into **its
+own** release, so replacing that one link swaps the entire tree — code, vendor,
+config and compiled catalogs together. A request in flight when the swap happens
+keeps serving from the old release directory, which still exists; that is why
+old releases are pruned by count and not immediately.
+
+**Shared versus per-release is a real distinction, not a tidiness one.**
+
+| shared | per-release |
+|---|---|
+| `data/logs`, `data/exceptions`, `data/htaccess-backups` | `vendor/` |
+| `data/fonts`, `data/musicas`, `data/texts`, `data/scans`, `data/import` | `data/config` (merged config + module map) |
+| `public/covers`, `public/associations`, `public/dh` — 1.2 GB of uploads | `data/cache/twig` |
+| `config/autoload/local.php` and `*.local.php` | the compiled `*.lang.php` catalogs |
+| server-only docroot files (below) | `public/sitemap*.xml` |
+
+Two traps here, both silent:
+
+- **`data/publications` is tracked repo content**, not state — the
+  150-preguntas source. Listing it as shared would not error: `ln -sfn` onto an
+  existing directory creates the link *inside* it, so the release would get
+  `data/publications/publications` and go on using the real directory.
+  `tools/deploy.sh` refuses a shared entry that collides with tracked content
+  rather than linking it.
+- **`*.local.php` does not match `local.php`.** laminas' own autoload glob is
+  `{,*.}local.php`, and the file holding the database credentials is the one
+  without a prefix. A single-pattern loop skips it in silence and the swap takes
+  the site down. Both scripts use both patterns.
+
+### Server-only files in the docroot
+
+phploy left unknown files in `public/` alone. **A release swap deletes them**,
+because the new docroot is only what is in git. As of 2026-08-15 the server held
+six such files:
+
+| file | disposition |
+|---|---|
+| `BingSiteAuth.xml` | `shared/public/` — losing it de-verifies Bing Webmaster Tools |
+| `google0e1110cae0fbf177.html` | `shared/public/` — same for Search Console |
+| `pi-462149043bd9.php`, `pi-e0d4d959748e.php` | **inspect before deciding.** Two PHP files with random-hex names in the docroot is also what a webshell looks like |
+| `test.png`, `Y0wb7nkgZN5J9YM0n.jpg`, `eDBH8Kmf8DL8` | junk; let the swap remove them |
+
+Anything dropped into `shared/public/` is symlinked into every future release
+automatically, so keeping a new one takes no code change. `tools/deploy-bootstrap.sh
+--check` lists what is *not* claimed, which is exactly what the next swap would
+delete; read that list before the first swap and after any manual server work.
+
+## Cutover — converting the server to the release layout
+
+One time, ever. Staged so each step is independently verifiable, and so the
+risky part is last and reversible.
+
+```bash
+./tools/deploy-bootstrap.sh --check    # report only; nothing is modified
+```
+
+Read the "server-only docroot files NOT claimed" list. Add anything worth
+keeping to `SHARED_PUBLIC` at the top of the script and re-run `--check` until
+the list holds only things you are content to lose. Then:
+
+```bash
+./tools/deploy-bootstrap.sh --yes
+```
+
+This moves shared state into `shared/` and symlinks it back where it was. **The
+site is still served from the flat tree and should behave exactly as before** —
+verify that now, because every move is visible if it went wrong:
+
+```bash
+curl -sI https://schoenstatt.link/ | head -1
+curl -s -o /dev/null -w '%{http_code}\n' https://schoenstatt.link/covers/
+```
+
+Open an association page and confirm its images load. Then:
+
+```bash
+./tools/deploy.sh --bootstrap
+```
+
+which builds the first release and performs the initial swap. That swap is a
+`mv` plus a `ln`, not a `rename(2)` — a real directory cannot be atomically
+replaced by a symlink — so it has a sub-second window. It is the only one, and
+it never recurs. The old docroot is kept as `public.pre-atomic`; the way back is
+
+```bash
+cd ~/public_html/schoenstatt.link && rm public && mv public.pre-atomic public
+```
+
+Once a deploy has succeeded, `public.pre-atomic` and the old flat `vendor/` can
+be removed.
+
+**Why this works on this hoster, verified 2026-08-15.** Apache follows the
+symlinked docroot *and* honours `.htaccess` at the symlink target — probed with
+a symlink pointing outside the docroot, carrying an `.htaccess` that set a
+header, and the header came back. That is the whole feasibility question: had
+`<Directory>` been scoped to the literal docroot path, `.htaccess` would have
+stopped applying, mod_rewrite with it, and nothing in the response would have
+said so. The shell account is `ourlink:ourlink` (uid 1023) — **the same user web
+PHP runs as** — so a release tree it writes is writable by the web server and
+nothing needs to chmod anything.
 
 ## Running the server-side steps by hand
 
-If a hook fails mid-run (or you deploy from a machine without the shell
-key), finish in an interactive SSH session (port 222) in this order:
-sync submodules (`tools/deploy-submodules.sh <user@host> <port>`, or
-tar-over-SFTP + extract), then in the app dir
+If a step fails mid-run, the release directory is still there and finishing it
+by hand is safe — nothing is live until the swap. In an SSH session on port 222:
 
 ```bash
+cd ~/public_html/schoenstatt.link/releases/<the-release>
 php composer.phar install --no-dev --no-interaction --optimize-autoloader
-php bin/console cache:clear-config
-php bin/console cache:flush-persistent
 php bin/console jtranslate:export-catalogs
+php bin/console sitemap:build --force
+cd ~/public_html/schoenstatt.link && ln -sfn releases/<the-release>/public public.swap && mv -Tf public.swap public
+cd releases/<the-release> && php bin/console cache:flush-persistent
 ```
 
-then re-run the `do-work` wget and `bash tools/smoke-prod.sh` locally.
+then run `bash tools/smoke-prod.sh` locally. `bin/console list` shows everything
+available. `cache:flush-persistent` takes `--url` when the configured
+`sion_model.canonical_base_url` is not the host you mean, and reads the key from
+`SCH_MAINTENANCE_KEY` when the local config has none — prefer that over `--key`,
+which lands in shell history.
 
-`bin/console list` shows everything available. `cache:flush-persistent`
-takes `--url` when the configured `sion_model.canonical_base_url` is not
-the host you mean, and reads the key from `SCH_MAINTENANCE_KEY` when the
-local config has none — prefer that over `--key`, which lands in shell
-history.
+`cache:clear-config` is no longer part of a deploy: each release starts with an
+empty `data/config`, so there is nothing stale to clear. It remains useful after
+editing config *on* the server.
 
 ## Server facts worth remembering
 
-- SSH port **22 is a restricted SFTP jail** (no exec — rsync/scp fail with
-  "exec request failed on channel 0"). The deploy account's full shell on
-  port 222 was **revoked 2026-08-03**; phploy connects over 22, SFTP only.
-  Server commands run as `ssh` hooks (and `deploy-submodules.sh`) under
-  your own shell account on port 222 — two different identities by design.
-- phploy needs `php8.0` locally (newer CLIs lack mbstring).
-- `phploy.ini` + `.phploy` hold credentials — never committed. `config.sh`
-  seeds them from the committed templates (`phploy.ini.dist`,
-  `.phploy.dist`); the hooks above live in `phploy.ini` under
-  `[production]`.
+- SSH port **222** is the shell account and the only identity a deploy uses.
+  Port **22 is a restricted SFTP jail** (no exec — rsync/scp fail with "exec
+  request failed on channel 0"); it existed for phploy and nothing uses it now.
+  The two-identity split was there so a phploy compromise could move files but
+  never run anything; with phploy gone the threat it addressed is gone too, and
+  every server-side step already ran under the shell account anyway.
+- **The shell account is the web-server user** (`ourlink`, uid 1023, verified
+  2026-08-15). An earlier note here said catalog writes happen "as the ssh
+  account, not as the web-server user" — that was about the *SFTP deploy*
+  account. `TranslationsTable::writeCatalogAtomically()` writes to a temp file
+  and `rename()`s it anyway, which is correct for other reasons; do not
+  "simplify" it.
+- **No local PHP is needed.** phploy required `php8.0` because newer CLIs here
+  lack mbstring; `tools/deploy.sh` uses only git, rsync, ssh and curl. `php8.0`
+  is still needed for the migration runner, which uses pdo_mysql.
 - Web PHP is FastCGI with a per-account php.ini at
   `/home/httpd/php85-ini/ourlink/php.ini` (**per PHP version**: the 8.4-era file
   was under `php84-ini/`, the 8.3-era one under `php83-ini/`, the 7.4-era one
-  under `php74-ini/`). This is the
-  trap when flipping the konsoleH PHP version: the new version reads a *different*
-  file, so anything tuned in the old one silently reverts to defaults — copy it
-  across as part of the flip. php.ini changes are the ONE case that
-  needs `pkill -u ourlink -f php` (workers re-read ini on respawn);
-  deploys never do.
+  under `php74-ini/`). This is the trap when flipping the konsoleH PHP version:
+  the new version reads a *different* file, so anything tuned in the old one
+  silently reverts to defaults — copy it across as part of the flip. php.ini
+  changes are the ONE case that needs `pkill -u ourlink -f php` (workers re-read
+  ini on respawn); deploys never do.
+- Disk: 269 GB free as of 2026-08-15. A release costs ~36 MB of code plus
+  ~128 MB of vendor, and unchanged files hardlink to the previous release, so
+  five releases cost far less than five times that.
 
 ## Smoke checks after deploying
 
@@ -1011,11 +1117,35 @@ Two things about it that bear on deploying specifically:
 
 ## Rollback
 
-`php8.0 phploy.phar --rollback` reverts the superproject files (SFTP, so
-this still works unchanged) — but the hooks don't re-run, so follow the
-by-hand list above: check out the matching older superproject commit
-locally so the submodule pointers roll back too, re-sync the submodule
-trees, and run `php composer.phar install --no-dev` in your SSH session
-to reinstate the older lock. A clobbered `.htaccess` can be restored from
-`data/htaccess-backups/`. The DB migrations so far are
-backward-compatible.
+```bash
+./tools/deploy.sh --rollback              # the previous release
+./tools/deploy.sh --rollback --to <rel>   # a specific one
+./tools/deploy.sh --releases              # what is on the server, and what is live
+```
+
+One symlink, one `rename(2)`, then an APCu flush and a smoke run. It reinstates
+the previous release's code, `vendor/`, compiled catalogs and `.htaccess`
+together, because all four live inside the release directory — the by-hand
+checklist this section used to hold (re-check out the older superproject commit
+so the submodule pointers roll back too, re-sync the submodule trees, re-run
+`composer install --no-dev` to reinstate the older lock) is no longer needed.
+
+A failed smoke run **rolls back on its own**; the failed release is kept for
+inspection rather than pruned.
+
+Three things it does not do:
+
+- **It does not undo a database migration.** Code and schema roll back
+  independently, which is why migration phase matters: a `pre` migration is
+  designed to be compatible with the code that was live before it, so a rollback
+  of the code alone is safe. The table snapshots the runner takes before each
+  migration are in `data/deploy/backups/`.
+- **It does not survive the next deploy** if what you actually want is to undo a
+  commit. Revert it and deploy; that is the durable form.
+- **It cannot reach a pruned release.** `DEPLOY_KEEP_RELEASES` is five, and the
+  live release and its predecessor are never pruned regardless.
+
+A clobbered `.htaccess` can still be restored from
+`shared/data/htaccess-backups/` — the deploy copies the live one there before
+every release goes out, which matters because the file is tracked and therefore
+replaced by each swap.
