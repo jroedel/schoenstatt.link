@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 135,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 59,
+        "routes_shadowed_by_symfony": 68,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 112,
+        "symfony_routes_acl_checked": 130,
         "symfony_routes_open": 26,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 138,
+        "symfony_served_routes": 156,
         "total_routes": 153,
         "unguarded_routes": 20,
         "unguarded_routes_matchable": 10
@@ -4785,6 +4785,16 @@
             "probe": "/assignments/0/edit"
         },
         {
+            "laminas_route": "assignments/create",
+            "path": "/assignments/create",
+            "symfony_route": "assignments/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/assignments/create",
+            "access_kind": "acl",
+            "probe": "/assignments/create"
+        },
+        {
             "laminas_route": "assignments/search",
             "path": "/assignments/search",
             "symfony_route": "assignments/search",
@@ -4845,6 +4855,16 @@
             "probe": "/associations/SL10000A"
         },
         {
+            "laminas_route": "associations/create",
+            "path": "/associations/create",
+            "symfony_route": "associations/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/associations/create",
+            "access_kind": "acl",
+            "probe": "/associations/create"
+        },
+        {
             "laminas_route": "associations/old-association",
             "path": "/associations/:association_id",
             "symfony_route": "associations/old-association",
@@ -4865,6 +4885,16 @@
             "probe": "/books/0/edit"
         },
         {
+            "laminas_route": "books/create",
+            "path": "/books/create/:library_id",
+            "symfony_route": "books/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/books/create",
+            "access_kind": "acl",
+            "probe": "/books/create/0"
+        },
+        {
             "laminas_route": "collections/collection/edit",
             "path": "/collections/:collection_id/edit",
             "symfony_route": "collections/collection/edit",
@@ -4873,6 +4903,16 @@
             "now_checks": "route/collections/collection/edit",
             "access_kind": "acl",
             "probe": "/collections/0/edit"
+        },
+        {
+            "laminas_route": "collections/create",
+            "path": "/collections/create/:library_id",
+            "symfony_route": "collections/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/collections/create",
+            "access_kind": "acl",
+            "probe": "/collections/create/0"
         },
         {
             "laminas_route": "comments/create",
@@ -4935,6 +4975,16 @@
             "probe": "/dictionary"
         },
         {
+            "laminas_route": "dictionary/create",
+            "path": "/dictionary/create",
+            "symfony_route": "dictionary/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/dictionary/create",
+            "access_kind": "acl",
+            "probe": "/dictionary/create"
+        },
+        {
             "laminas_route": "dictionary/entry/edit",
             "path": "/dictionary/:entry_id/edit",
             "symfony_route": "dictionary/entry/edit",
@@ -4975,6 +5025,16 @@
             "probe": "/libraries"
         },
         {
+            "laminas_route": "libraries/create",
+            "path": "/libraries/create",
+            "symfony_route": "libraries/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/create",
+            "access_kind": "acl",
+            "probe": "/libraries/create"
+        },
+        {
             "laminas_route": "libraries/library/edit",
             "path": "/libraries/:library_id/edit",
             "symfony_route": "libraries/library/edit",
@@ -4993,6 +5053,16 @@
             "now_checks": "route/music",
             "access_kind": "acl",
             "probe": "/music"
+        },
+        {
+            "laminas_route": "music/create-composition",
+            "path": "/music/create-composition",
+            "symfony_route": "music/create-composition",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/music/create-composition",
+            "access_kind": "acl",
+            "probe": "/music/create-composition"
         },
         {
             "laminas_route": "persons",
@@ -5095,6 +5165,16 @@
             "probe": "/literature"
         },
         {
+            "laminas_route": "publications/create",
+            "path": "/literature/create",
+            "symfony_route": "publications/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/publications/create",
+            "access_kind": "acl",
+            "probe": "/literature/create"
+        },
+        {
             "laminas_route": "publications/index",
             "path": "/literature/:inLanguage",
             "symfony_route": "publications/index",
@@ -5143,6 +5223,16 @@
             "now_checks": "route/roles",
             "access_kind": "acl",
             "probe": "/roles"
+        },
+        {
+            "laminas_route": "roles/create",
+            "path": "/roles/create",
+            "symfony_route": "roles/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/roles/create",
+            "access_kind": "acl",
+            "probe": "/roles/create"
         },
         {
             "laminas_route": "roles/role/delete",
@@ -6588,6 +6678,26 @@
                 "denial_style": "html"
             }
         },
+        "assignments/create": {
+            "path": "/assignments/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "assignments/create.locale": {
+            "path": "/{_locale}/assignments/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/assignments/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "assignments/search": {
             "path": "/assignments/search",
             "controller": "App\\Controller\\AssignmentSearchController::search",
@@ -6708,6 +6818,26 @@
                 "denial_style": "html"
             }
         },
+        "associations/create": {
+            "path": "/associations/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "associations/create.locale": {
+            "path": "/{_locale}/associations/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/associations/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "associations/old-association": {
             "path": "/associations/{association_id}",
             "controller": "App\\Controller\\SendToNewUrlController::associationById",
@@ -6748,6 +6878,26 @@
                 "denial_style": "html"
             }
         },
+        "books/create": {
+            "path": "/books/create/{library_id}",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/books/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "books/create.locale": {
+            "path": "/{_locale}/books/create/{library_id}",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/books/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "collections/collection/edit": {
             "path": "/collections/{collection_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -6764,6 +6914,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/collections/collection/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "collections/create": {
+            "path": "/collections/create/{library_id}",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/collections/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "collections/create.locale": {
+            "path": "/{_locale}/collections/create/{library_id}",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/collections/create",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -6888,6 +7058,26 @@
                 "denial_style": "html"
             }
         },
+        "dictionary/create": {
+            "path": "/dictionary/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/dictionary/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "dictionary/create.locale": {
+            "path": "/{_locale}/dictionary/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/dictionary/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "dictionary/entry/edit": {
             "path": "/dictionary/{entry_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -6978,6 +7168,26 @@
                 "denial_style": "html"
             }
         },
+        "libraries/create": {
+            "path": "/libraries/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/create.locale": {
+            "path": "/{_locale}/libraries/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "libraries/library/edit": {
             "path": "/libraries/{library_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -7014,6 +7224,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/music",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "music/create-composition": {
+            "path": "/music/create-composition",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/music/create-composition",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "music/create-composition.locale": {
+            "path": "/{_locale}/music/create-composition",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/music/create-composition",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -7218,6 +7448,26 @@
                 "denial_style": "html"
             }
         },
+        "publications/create": {
+            "path": "/literature/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "publications/create.locale": {
+            "path": "/{_locale}/literature/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/publications/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "publications/index": {
             "path": "/literature/{inLanguage}",
             "controller": "App\\Controller\\LiteratureController::index",
@@ -7314,6 +7564,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/roles",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "roles/create": {
+            "path": "/roles/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/roles/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "roles/create.locale": {
+            "path": "/{_locale}/roles/create",
+            "controller": "App\\Controller\\EntityCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/roles/create",
                 "reason": null,
                 "denial_style": "html"
             }

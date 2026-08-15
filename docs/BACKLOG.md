@@ -375,11 +375,15 @@ rediscovered.
   byte-for-byte. What that unblocks, roughly in order of ease:
   - `sion-model/auto-fix-data-problems` — POST + CSRF, no new element types, and its
     template is already ported for the read-only sibling.
-  - `associations/create` and the sixteen other `*/create` routes — same forms as the edit
-    surface, same renderer; `associations/create` needs the query-parameter prefill
-    `AssociationsController::createAction()` does. **This is the next batch of any size**:
-    seventeen routes, but each entity has its own template, so there is much less shared
-    leverage than the edit or delete surfaces gave.
+  - **Done:** the create surface, batch 9 (2026-08-15) — **nine of the sixteen**
+    `*/create` routes. The sizing note this item used to carry was wrong in a way worth
+    keeping: it predicted "much less shared leverage than the edit or delete surfaces gave,
+    because each entity has its own template". In fact **13 of the 15 create routes use the
+    same form class as their already-ported edit route**, and both laminas view scripts
+    render the same `fields-partial.phtml` — so the leverage was the same, once the field
+    lists were extracted into shared partials first. Seven routes stay on laminas and two of
+    those are because they are **broken there**; see the two items at the top of "Bugs"
+    above and [strangler.md](strangler.md).
   - `/persons`, `/movement`, `/literature` search forms — new element types likely.
   - **Done:** the delete surface, batch 8 (2026-08-14) — seven routes on one controller and
     one template. Five of the twelve `delete` routes are *not* portable and it is worth
@@ -469,6 +473,44 @@ rediscovered.
   never in the repo.
 
 ## Bugs (characterized, fix pending)
+
+- [ ] **`/persons/create` answers 500 for any person without a spouse**, which is nearly
+  every person. Found while porting the create surface (batch 9, 2026-08-15) and measured by
+  posting a scraped, valid form to the capsule:
+
+      Statement could not be executed (22007 - 1366 - Incorrect integer value: ''
+      for column `ourlink_db1`.`sch_persons`.`SpousePersonId` at row 1)
+
+  `spousePersonId` is a select with an empty first option, so a form where no spouse was
+  chosen posts `''`, and `sch_persons.SpousePersonId` is an integer column.
+
+  **The edit form posts the identical value and saves**, which is the part that generalises:
+  `SionTable::updateEntity()` writes only the columns whose values changed, so an unchanged
+  `''` never reaches the database, while `createEntity()` writes every column it is handed.
+  Any create form with an empty-optioned select over an integer column has the same latent
+  fault; `person` is simply the one where a real moderator meets it.
+
+  Fixing it is a `ToNull` filter on the input — or the same in `createEntity()`, which is the
+  broader fix and the riskier one, since it is shared with patres. **Not fixed inside the
+  porting batch on purpose**: the route stays on laminas until the fix is chosen, so that
+  what ships is a port and not a behaviour change wearing one.
+
+- [ ] **`/texts/create` creates the text and then loses the redirect**, leaving a 154-byte
+  blank page. Same measurement session as the item above.
+
+  `Books\Model\EventTextTable` line 259 reads `$entityData['kind']` — the *existing* row's
+  kind — inside `processEntityData()`. On a create there is no existing row, so PHP emits
+  `Undefined array key "kind"`, and the warning reaches the output before
+  `redirectAfterCreate()` can send its `Location` header. The row **is** written.
+
+  The visible consequence is worse than a 500 would be: the moderator sees a blank page, has
+  no reason to think the text was saved, and pressing submit again makes a second one.
+
+  One guarded array read fixes it (`$entityData['kind'] ?? null`), but the guard has to
+  decide what `kind` *means* for a text that does not exist yet — the condition it feeds is
+  `self::TEXT_KIND_JK_TEXT !== $entityData['kind']`, which controls whether the Markdown is
+  rendered to HTML at all. That is a content decision, not a porting one.
+
 
 - [ ] **`phpstan-baseline.neon` is hiding ~11 more call sites that cannot resolve at
   runtime.** This is the finding from the 2026-08-14 archaic sweep worth acting on, and it

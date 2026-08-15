@@ -92,6 +92,42 @@ final class LibraryScopedForms
     }
 
     /**
+     * The form for one of the three, wired against a library named directly.
+     *
+     * The create surface's entry point, added in batch 9. An edit discovers the library
+     * from the row being edited; a create has no row, and the library comes from the route
+     * — `books/create/{library_id}` and `collections/create/{library_id}` carry it in the
+     * path.
+     *
+     * **Null is a legitimate argument, not a caller's mistake**, and that is the reason
+     * this is a second method rather than `form()` with a looser `libraryIdOf()`.
+     * `libraries/create` has no library at all: the row being created *is* the library. The
+     * laminas factory says the same thing in its own shape — `LibraryFormFactory` wraps its
+     * collection lookup in `if (isset($libraryId))` and leaves `mainCollectionId` with no
+     * options, because a library that does not exist yet has no collections. `book` and
+     * `collection` cannot answer null, because the value-option lists that make those forms
+     * mean anything are all scoped to one library; they throw, as their factories do.
+     *
+     * @return FormInterface<array<string, mixed>>
+     */
+    public function formForLibrary(string $entity, ?int $libraryId): FormInterface
+    {
+        if ('library' !== $entity && null === $libraryId) {
+            throw new RuntimeException(
+                "Cannot build the '$entity' create form: it can only be formed with reference to a "
+                . 'particular library, and the route supplied none.'
+            );
+        }
+
+        return match ($entity) {
+            'book'       => $this->bookForm((int) $libraryId),
+            'collection' => $this->collectionForm((int) $libraryId),
+            'library'    => $this->libraryForm($libraryId),
+            default      => throw new RuntimeException("LibraryScopedForms does not build '$entity'."),
+        };
+    }
+
+    /**
      * The form for one of the three, wired against the library the row belongs to.
      *
      * @param array<string, mixed> $object the row `EntityEdit::load()` returned
@@ -204,7 +240,15 @@ final class LibraryScopedForms
      *
      * @return FormInterface<array<string, mixed>>
      */
-    private function libraryForm(int $libraryId): FormInterface
+    /**
+     * `$libraryId` is nullable here alone, and only the create surface passes null: the
+     * laminas factory reads the route match and guards the collection lookup with
+     * `if (isset($libraryId))`, so `/libraries/create` renders `mainCollectionId` with no
+     * options. Reproduced by skipping the same call.
+     *
+     * @return FormInterface<array<string, mixed>>
+     */
+    private function libraryForm(?int $libraryId): FormInterface
     {
         /** @var SchoenstattTable $schoenstatt */
         $schoenstatt = $this->laminas->get(SchoenstattTable::class);
@@ -235,8 +279,10 @@ final class LibraryScopedForms
 
         $form = new LibraryForm();
 
-        $table = $this->libraryTable();
-        $this->setOptions($form, 'mainCollectionId', $table->getCollectionValueOptions($libraryId));
+        if (null !== $libraryId) {
+            $table = $this->libraryTable();
+            $this->setOptions($form, 'mainCollectionId', $table->getCollectionValueOptions($libraryId));
+        }
 
         /** @var mixed $filiations */
         $filiations = $booksConfig['library_filiation_options'] ?? [];

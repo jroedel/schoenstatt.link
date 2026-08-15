@@ -1,0 +1,26 @@
+{#
+  The association-role create form.
+
+  **The submit is a `form_row`, where the edit page uses `form_submit`**, and that is not a
+  slip: roles/create.phtml calls `formRow($form->get('submit'))` and roles/edit.phtml calls
+  `formSubmit(...)`. The difference is visible — a row wraps the button in a form-group div
+  and the bare helper does not — so the two pages really do render their button differently,
+  and reproducing that is the point of a porting batch.
+
+  The create page is the edit page with a different heading, a different action and no
+  record — which is exactly what laminas says too: create.phtml and edit.phtml are separate
+  view scripts that include the same fields-partial.phtml. So this template **extends its
+  edit twin** and overrides only what differs. What that inherits is the page's assets and
+  its inline scripts, which on laminas come from the shared partial rather than from either
+  view script, so inheriting them is the faithful arrangement rather than a shortcut.
+#}
+{% extends 'schoenstatt/role-edit.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Create New Role') }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ include('schoenstatt/_role-fields.html.twig') }}
+{{ form_row(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
