@@ -12,6 +12,7 @@ use Laminas\Filter\StripNewlines;
 use Laminas\Filter\StringToLower;
 use SionModel\Filter\SortArray;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 
 class CompositionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -399,6 +400,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             ],
             'inLanguage' => [
                 'required' => false,
+                'validators' => ChoiceDomain::validators($this->get('inLanguage')),
             ],
             'country' => [
                 'required' => false,
@@ -433,6 +435,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
             ],
             'openLicenseUrl' => [
                 'required' => false,
+                'validators' => ChoiceDomain::validators($this->get('openLicenseUrl')),
             ],
             'copyrightInfo' => [
                 'required' => false,
@@ -468,6 +471,7 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('derivedFromCompositionId')),
             ],
             'lyrics' => [
                 'required' => false,

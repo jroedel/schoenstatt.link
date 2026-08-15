@@ -3,6 +3,7 @@ namespace Books\Form;
 
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 
 class LibraryForm extends SionForm implements InputFilterProviderInterface
 {
@@ -506,6 +507,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('filiationId')),
             ],
             'contactPersonId' => [
                 'required' => false,
@@ -517,6 +519,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('contactPersonId')),
             ],
             'contactEmail' => [
                 'required' => false,
@@ -560,6 +563,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                             'max' => 50,
                         ],
                     ],
+                    ...ChoiceDomain::validators($this->get('mainShowDisplay')),
                 ],
             ],
             'sortTextFormat' => [
@@ -647,6 +651,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('checkoutBooksRole')),
             ],
             'viewRole' => [
                 'required' => true,
@@ -657,6 +662,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('viewRole')),
             ],
             'labelLine1' => [
                 'required' => false,
@@ -761,6 +767,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
                         ]
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('defaultCheckoutPersonId')),
             ],
             'defaultCheckoutTimePeriodInDays' => [
                 'required' => true,
@@ -798,6 +805,7 @@ class LibraryForm extends SionForm implements InputFilterProviderInterface
             ],
             'checkoutPersonListKind' => [
                 'required' => true,
+                'validators' => ChoiceDomain::validators($this->get('checkoutPersonListKind')),
             ],
         ];
     }

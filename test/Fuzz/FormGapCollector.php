@@ -8,6 +8,7 @@ use Laminas\Form\Element;
 use Laminas\Form\ElementInterface;
 use Laminas\Form\Fieldset;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use Laminas\Validator\Explode;
 use SionModel\Entity\Entity;
 use SionModel\Service\EntitiesService;
 use Throwable;
@@ -142,8 +143,22 @@ final class FormGapCollector
     /** @var array<string, list<string>>|null */
     private ?array $gaps = null;
 
+    /**
+     * `Form class::element` => true, from test/Fuzz/open-ended-choice-fields.php.
+     *
+     * @var array<string, true>
+     */
+    private array $openEnded;
+
+    /** @var array<string, true> declarations that matched a field this run */
+    private array $openEndedSeen = [];
+
     public function __construct(private readonly FormRepository $repository)
     {
+        /** @var list<string> $declared */
+        $declared = require __DIR__ . '/open-ended-choice-fields.php';
+
+        $this->openEnded = array_fill_keys($declared, true);
     }
 
     /**
@@ -167,6 +182,8 @@ final class FormGapCollector
             'deadElementKeys'            => $scanner->findings(),
             'unanalyzableAddCalls'       => $scanner->unanalyzableCalls(),
             'unconstructableForms'       => [],
+            'choiceFieldsOpenByDesign'   => [],
+            'openEndedDeclarationsStale' => [],
             'elementsMissingFromSpec'    => [],
             'specKeysWithoutElement'     => [],
             'unboundedTextFields'        => [],
@@ -182,6 +199,22 @@ final class FormGapCollector
 
         foreach ($this->repository->forms() as $class => $form) {
             $this->collectFor($class, $form, $gaps);
+        }
+
+        //A declaration that matched nothing this run. Either the field gained an InArray — in
+        //which case leaving it declared open would hide the next regression on it — or the
+        //entry names a form or element that no longer exists. Both are worth a failure: this
+        //file is the one place where "unvalidated on purpose" is asserted, and an entry nobody
+        //can trace back to a field is an assertion about nothing.
+        foreach (array_keys($this->openEnded) as $declaration) {
+            if (! isset($this->openEndedSeen[$declaration])) {
+                $gaps['openEndedDeclarationsStale'][] = sprintf(
+                    '%s is declared open-ended in %s but is not a choice field missing an InArray — '
+                    . 'either it is constrained now, or the entry is a typo',
+                    $declaration,
+                    'test/Fuzz/open-ended-choice-fields.php'
+                );
+            }
         }
 
         foreach ($gaps as &$list) {
@@ -259,9 +292,22 @@ final class FormGapCollector
             $isChoice   = self::isOneOf($element, self::CHOICE_ELEMENT_TYPES);
 
             if ($isChoice && $inSpec && ! in_array('inarray', $validators, true)) {
-                $gaps['choiceFieldsWithoutDomain'][] = sprintf(
-                    '%s: %s is a %s named in the spec without an InArray, so its option list no longer '
-                    . 'constrains anything',
+                //Two opposite fixes wear this one description, so they get two categories.
+                //A field the view lets a moderator type into has no domain to enforce, and
+                //adding an InArray to it removes a feature rather than closing a hole —
+                //test/Fuzz/open-ended-choice-fields.php is where that is decided and why.
+                $declaration = $class . '::' . $name;
+                $category    = isset($this->openEnded[$declaration])
+                    ? 'choiceFieldsOpenByDesign'
+                    : 'choiceFieldsWithoutDomain';
+
+                $this->openEndedSeen[$declaration] = true;
+
+                $gaps[$category][] = sprintf(
+                    'choiceFieldsOpenByDesign' === $category
+                        ? '%s: %s is a %s whose options are a suggestion, not a domain — declared open'
+                        : '%s: %s is a %s named in the spec without an InArray, so its option list no '
+                            . 'longer constrains anything',
                     $class,
                     self::q($name),
                     self::shortType($element)
@@ -374,7 +420,16 @@ final class FormGapCollector
         return $elements;
     }
 
-    /** @return list<string> lowercased short validator names in a spec entry */
+    /**
+     * @return list<string> lowercased short validator names in a spec entry
+     *
+     * A validator **wrapped in `Explode` counts as itself**, and that is not a convenience:
+     * `Explode` is how laminas applies a scalar validator to a multiple select's array, and
+     * `Laminas\Form\Element\Select::getInputSpecification()` wraps its own `InArray` in one for
+     * exactly that reason. Without this, a multiple select constrained correctly reads as
+     * unconstrained forever — measured 2026-08-15 on `DictionaryEntryForm::links` and
+     * `PublicationForm::inLanguage`, which stayed in the baseline after being fixed.
+     */
     public static function validatorNames(mixed $specEntry): array
     {
         if (! is_array($specEntry)) {
@@ -383,17 +438,54 @@ final class FormGapCollector
 
         $names = [];
         foreach ((array) ($specEntry['validators'] ?? []) as $validator) {
-            if (is_object($validator)) {
-                $names[] = self::shortName($validator::class);
-                continue;
+            foreach (self::namesOf($validator) as $name) {
+                $names[] = $name;
             }
-            if (is_string($validator)) {
-                $names[] = self::shortName($validator);
-                continue;
+        }
+
+        return $names;
+    }
+
+    /**
+     * One validator's name, plus the name of whatever it wraps.
+     *
+     * @return list<string>
+     */
+    private static function namesOf(mixed $validator): array
+    {
+        if (is_object($validator)) {
+            $names = [self::shortName($validator::class)];
+
+            //An Explode instance holds its inner validator, and that inner one is the domain
+            //check a reader is looking for.
+            if ($validator instanceof Explode) {
+                $inner = $validator->getValidator();
+                if (null !== $inner) {
+                    $names[] = self::shortName($inner::class);
+                }
             }
-            if (is_array($validator) && isset($validator['name']) && is_string($validator['name'])) {
-                $names[] = self::shortName($validator['name']);
-            }
+
+            return $names;
+        }
+
+        if (is_string($validator)) {
+            return [self::shortName($validator)];
+        }
+
+        if (! is_array($validator) || ! isset($validator['name']) || ! is_string($validator['name'])) {
+            return [];
+        }
+
+        $names = [self::shortName($validator['name'])];
+
+        /** @var mixed $inner */
+        $inner = $validator['options']['validator'] ?? null;
+        if (is_object($inner)) {
+            $names[] = self::shortName($inner::class);
+        } elseif (is_string($inner)) {
+            $names[] = self::shortName($inner);
+        } elseif (is_array($inner) && isset($inner['name']) && is_string($inner['name'])) {
+            $names[] = self::shortName($inner['name']);
         }
 
         return $names;

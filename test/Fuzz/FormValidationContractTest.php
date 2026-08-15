@@ -294,8 +294,33 @@ final class FormValidationContractTest extends TestCase
             self::gaps()['choiceFieldsWithoutDomain'],
             'Naming a Select/Radio/MultiCheckbox in the input filter spec destroys the InArray that '
             . 'laminas built from its value options, because the spec entry replaces the input rather '
-            . 'than merging with it. Re-declare an InArray in the spec entry (haystack '
-            . 'array_keys($element->getValueOptions())), or take the field out of the spec.'
+            . 'than merging with it. Restate it with SionModel\Form\ChoiceDomain::validators($this->'
+            . 'get($name)), which takes the haystack from the element itself — or, if the field is '
+            . 'meant to accept values its list does not offer, declare it in '
+            . 'test/Fuzz/open-ended-choice-fields.php with the reason.'
+        );
+    }
+
+    /**
+     * Fields declared open-ended really are open-ended.
+     *
+     * The declaration file is the one place in this suite where "unvalidated" is asserted to be
+     * *correct*, so an entry that has stopped corresponding to anything is worse than no entry:
+     * it reads as a considered decision while asserting nothing. Two ways that happens — the
+     * field gained an `InArray`, so the declaration now hides the next regression on it, or the
+     * entry names a form or element that no longer exists.
+     *
+     * Its own test method rather than a line in the one above, because a category with no
+     * assertion is invisible: `openEndedDeclarationsStale` was added to the collector and the
+     * baseline first, and a deliberately broken entry passed the whole suite until this existed.
+     */
+    public function testNoOpenEndedDeclarationIsStale(): void
+    {
+        $this->assertNoNewGaps(
+            'openEndedDeclarationsStale',
+            self::gaps()['openEndedDeclarationsStale'],
+            'An entry in test/Fuzz/open-ended-choice-fields.php matched no field. Remove it if the '
+            . 'field is constrained now, or correct it if the class or element name is wrong.'
         );
     }
 

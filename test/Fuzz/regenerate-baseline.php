@@ -37,6 +37,15 @@ const CATEGORY_DESCRIPTIONS = [
         . 'literal. Non-empty means the dead-key check above has blind spots.',
     'unconstructableForms'             =>
         'Forms no test in this suite can examine, because nothing can build them.',
+    'choiceFieldsOpenByDesign'         =>
+        'Choice fields declared in test/Fuzz/open-ended-choice-fields.php as having no domain to '
+        . 'enforce: the view lets a moderator type a value the list does not offer, so an InArray '
+        . 'would remove a feature rather than close a hole. Listed rather than hidden, because '
+        . '"unvalidated on purpose" is still unvalidated.',
+    'openEndedDeclarationsStale'       =>
+        'Entries in open-ended-choice-fields.php that matched no field this run. Either the field '
+        . 'is constrained now and the declaration hides the next regression on it, or the entry is '
+        . 'a typo asserting nothing. Expected to be empty.',
     'elementsMissingFromSpec'          =>
         'Data elements the input filter spec never names. A plain Text/Textarea/Hidden in this state '
         . 'is total pass-through: no filter, no validator, no length bound.',
