@@ -1583,6 +1583,56 @@ the way `ContentPageController` serves the five static pages.
 |---|---|
 | all ten: `text-edit`, `composition-edit`, `roles/role/edit`, `assignments/assignment/edit`, `books/book/edit`, `collections/collection/edit`, `libraries/library/edit`, `dictionary/entry/edit`, `publication-edit`, `persons/person/edit` | — |
 
+#### The field rows are shared partials now (2026-08-15)
+
+Each ported edit template used to carry its entity's field list inline. They are now
+`templates/{books,schoenstatt}/_<entity>-fields.html.twig`, included by the edit template
+and — from batch 9 — by the create template, which mirrors laminas exactly: `edit.phtml`
+and `create.phtml` have always shared one `fields-partial.phtml`.
+
+**The reason is not tidiness.** 13 of the 15 create routes use the *same form class* as
+their already-ported edit route, and both laminas templates render the same partial, so
+without this the create surface would have arrived as a second copy of every field list —
+and the copies would drift the first time a form gained an element. The batch-7 defect
+above is what that drift looks like in practice, one entity at a time.
+
+Three things worth carrying forward:
+
+- **The cut follows laminas, and it is not the same cut for every entity.** The partial
+  holds what `fields-partial.phtml` holds; whatever `edit.phtml` puts around it stays in
+  the page template. So `submit` is *inside* the partial for `collection`,
+  `dictionary-entry` and `text`, and *outside* it for the other eight — and
+  `publication`'s Delete link and the `assignment`/`person` delete modals stay outside
+  too, because a create page has none of them. Getting this boundary from the laminas
+  source rather than from a convention is what makes the create templates fall out
+  correctly in batch 9.
+- **Verified as byte-identical, not as equivalent.** All eleven pages were captured
+  signed-in, in all five locales — 55 responses — before and after, normalizing only the
+  four values that differ between any two requests (CSP nonce, CSRF token, the throwaway
+  account's address, the visit counters). Zero difference. That is a stronger claim than
+  `tools/port-baseline.php` makes, because its `normalize()` deliberately erases chrome
+  and collapses whitespace to compare *two front controllers*; here both sides are Symfony
+  and there is no reason to accept any difference at all. Note that `port-baseline.php`
+  does serve as a before/after harness — `capture before`, `capture after`,
+  `compare before after` — since the capture name is arbitrary; it just answers the
+  weaker question.
+- **The whitespace control on each partial is load-bearing.** The stripping comment
+  delimiters and the trailing dash on the final row make the partial render with no
+  leading or trailing newline, so a plain include emits exactly the bytes the inline rows
+  emitted. Without them every form gains a blank line inside it — invisible, harmless, and
+  enough to turn "identical" into "identical apart from whitespace", which is a claim that
+  has to be re-argued every time instead of checked once.
+
+And one hazard that cost a wedged page during the refactor itself: **do not spell a Twig
+delimiter out in a template docblock.** `_collection-fields.html.twig` was written with a
+docblock explaining its own whitespace control, containing the literal comment-closing
+sequence; Twig has no escape for it, so the comment ended mid-sentence and the rest became
+template code. The page went from 13,716 bytes to 0 — a fatal-200 with a healthy status
+line. `test/Integration/TemplatesCompileTest` was added in the same commit and is worth
+reading for what it does *not* catch: the leftover prose happened to compile (an ellipsis
+lexes as a variable name) and died at render under `strict_variables`. The before/after
+capture is what caught it.
+
 #### `books/book/edit` shipped with no submit button (2026-08-13 → 2026-08-15)
 
 **The ported library-book edit form could not be saved for two days**, and it was live in

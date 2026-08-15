@@ -1,0 +1,40 @@
+{#-
+  The musical composition field list — the Twig counterpart of
+  module/Books/view/books/compositions/fields-partial.phtml, shared by the edit form and (from batch 9) the
+  create form, exactly as that partial is shared by edit.phtml and create.phtml.
+
+  No submit row: compositions/edit.phtml renders it outside this partial, so the page
+  that includes this file renders its own.
+
+  The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
+  a page puts around it stays in that page's template.
+
+  Its delimiters are whitespace-controlled so that a plain include standing where the rows
+  used to stand emits exactly the bytes the rows emitted — verified page by page, in two
+  locales, before and after. Do not spell the delimiter sequences out in prose here: Twig
+  has no escape for them inside a comment, so writing one ends the comment early and turns
+  the rest of this docblock into template code. That wedged the collection form during
+  this very refactor. See docs/strangler.md.
+-#}
+{{ form_row(form.get('name')) }}
+{{ form_row(form.get('disambiguatingDescription')) }}
+{{ form_row(form.get('inLanguage'), false) }}
+{{ form_row(form.get('country'), false) }}
+{{ form_row(form.get('yearPublished'), false) }}
+{{ form_row(form.get('composersAll'), false) }}
+{{ form_row(form.get('lyricistsAll'), false) }}
+{{ form_row(form.get('openLicenseUrl'), false) }}
+{{ form_row(form.get('copyrightInfo'), false) }}
+{{ form_row(form.get('copyrightContactEmail'), false) }}
+{{ form_row(form.get('tags'), false) }}
+{{ form_row(form.get('derivedFromCompositionId'), false) }}
+{{ form_row(form.get('chordProSpec'), false) }}
+{{ form_row(form.get('lyrics'), false) }}
+{{ form_row(form.get('lilyPondSpec'), false) }}
+{{ form_row(form.get('url1')) }}
+{{ form_row(form.get('url1Label')) }}
+{{ form_row(form.get('url2')) }}
+{{ form_row(form.get('url2Label')) }}
+{{ form_row(form.get('url3')) }}
+{{ form_row(form.get('url3Label')) }}
+{{ form_row(form.get('security')) -}}

@@ -12,6 +12,12 @@
     An association's name and a role's title are data, not interface text: running them
     through the catalogue turns a role called "Member" into whatever the German catalogue
     says for the English word. The rows after them are back to translated options.
+
+  **The field rows live in `schoenstatt/_role-fields.html.twig` now**, shared with the create
+  form so that a field cannot be added to one surface and quietly forgotten on the
+  other. What stays in this file is what edit.phtml keeps outside its own partial —
+  which is not the same set for every entity, and is the detail worth checking before
+  moving anything across the boundary.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -27,14 +33,7 @@
 <h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, form_action) }}
-{{ form_row(form.get('associationId'), false) }}
-{{ form_row(form.get('roleTitle'), false) }}
-{{ form_row(form.get('sort')) }}
-{{ form_row(form.get('isSinglePosition')) }}
-{{ form_row(form.get('isMainRole')) }}
-{{ form_row(form.get('isMainContact')) }}
-{{ form_row(form.get('isActive')) }}
-{{ form_row(form.get('security')) }}
+{{ include('schoenstatt/_role-fields.html.twig') }}
 {{ form_submit(form.get('submit')) }}
 {{ form_close() }}
 {% endblock %}
