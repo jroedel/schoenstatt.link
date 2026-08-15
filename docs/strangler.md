@@ -1134,6 +1134,30 @@ Batch 8's, and it is the cleanest of the three:
 |---|---|---|
 | the guard answers before the locale hop | the **unprefixed** form of all 9 new delete paths | the same redirect-order divergence as batch 6's nine, and the only entry this batch added. laminas answers `/SL100319A/delete` with SlmLocale's `302 → /en/SL100319A/delete` and denies on the second hop; the Symfony guard runs first and answers `302 → /en/user/login?redirect=/SL100319A/delete` |
 
+Batch 9's, on the twelve new create paths (nine routes plus three query-string variants),
+signed in, across five locales — **176 differing responses and not one defect**. Every one
+falls into a group that already existed:
+
+| n | what | where | why |
+|---|---|---|---|
+| 101 | Symfony renders the translated help block, placeholder or option label where laminas renders English | the four non-English locales of every create page carrying one | **an intentional improvement, and pre-existing rather than new**: the same difference is already on `/es/SL100319A/edit`, which batch 5 ported. laminas leaves a form's help text in the source language; the ported page runs it through the same translator the rest of the page uses. It reaches more paths now because the create pages include the same field partials |
+| 65 | the `//<!-- -->` inline-script wrapper | every create page with a selectize block | the batch-2 chrome nit, unchanged and invisible in a browser |
+| 10 | the navbar search box points at contacts, not at the library | `/books/create/{library_id}` × 5 locales × 2 variants | **batch 7's one accepted regression**, now on the book create page for exactly the same reason — see the section below it |
+
+The capture is also what found this batch's one real defect, which is fixed rather than
+listed: `/associations/create` rendered **two empty options** on its time-zone select where
+laminas renders one. `FormSelect::render()` merges the empty option into the value options
+with `['' => $emptyOption] + $options` — a union, so an element declaring both an
+`empty_option` and a literal `''` value option gets exactly one — and
+`App\Form\BootstrapFormRenderer` emitted it as separate markup and then iterated the value
+options. `AssociationForm::timeZoneId` is the only element in the application that declares
+both, which is why four batches of edit forms went past without showing it, and it took a
+*create* page because the second half of the bug needs a null value:
+`FormSelect::validateMultiValue()` returns `[]` for null and the reproduction cast it to
+`''`. `test/Integration/SelectRenderingParityTest` now runs both renderers side by side —
+one of the few places in this port where a two-sided parity test is possible at all, because
+a view helper needs no MvcEvent.
+
 **Every locale-prefixed delete response is identical**, signed in and anonymous — 45 rendered
 confirmations across five locales, plus both branch paths (`/roles/1/delete` at 200 on both,
 `/SL499999T/delete` redirecting to `/en/texts` on both). Nothing about the shared machinery
@@ -1834,6 +1858,73 @@ Two smaller things worth carrying forward:
   what the port reproduces, not the dead line. The 401 on a failed CSRF *is* observable
   because that branch renders, and is reproduced verbatim. Both are filed rather than
   corrected inside a port.
+
+### The create surface — batch 9, 2026-08-15
+
+**Nine of the sixteen `*/create` routes**, on `App\Sion\EntityCreate` behind
+`App\Controller\EntityCreateController` — the third verb of the same shared action, after
+edit (batch 7) and delete (batch 8).
+
+| ported | left on laminas |
+|---|---|
+| `associations/create`, `assignments/create`, `roles/create`, `books/create`, `collections/create`, `libraries/create`, `music/create-composition`, `publications/create`, `dictionary/create` | `persons/create`, `texts/create`, `juser/create`, `juser/create-role`, `library-imports/library/create`, `publication-create-new-edition`, `events/create` |
+
+#### Two of the seven are left out because they are broken, not because they are hard
+
+Both measured against the capsule on 2026-08-15 by posting a scraped, valid form, and both
+filed in [BACKLOG.md](BACKLOG.md). Porting either would mean reproducing the breakage in new
+code, which is not what a porting batch is for.
+
+- **`/persons/create` answers 500.** `SpousePersonId` receives `''` from a form where no
+  spouse was chosen and MariaDB refuses the integer column. The *edit* form posts the
+  identical value and saves, which is the whole finding: `updateEntity()` writes only the
+  columns that changed, and `createEntity()` writes them all. So a person without a spouse —
+  most people — cannot be created at all, and the edit surface gives no hint of it.
+- **`/texts/create` creates the row and then loses the redirect.** `EventTextTable` reads
+  `$entityData['kind']` off the *existing* row, and on a create there is no existing row; the
+  resulting warning reaches the page before the `Location` header can, so the moderator sees
+  a 154-byte blank page and the text is silently saved. Two clicks make two texts.
+
+The other five are shape, not breakage: `juser/create` and `juser/create-role` never call
+`createAction()` at all, `library-imports/library/create` is an import simulation with two
+overridden hooks, `publication-create-new-edition` is its own action, and `events/create` is
+unreachable three times over — `create_action_form` commented out, a
+`create_action_valid_data_handler` naming a method that exists nowhere, no template, and no
+guard entry.
+
+#### What the create verb does that the other two do not
+
+- **There is no ACL check in `createAction()`.** `showAction()`, `editAction()` and
+  `deleteAction()` each open with `isActionAllowed(...)` against the row's own
+  `acl_resource_id_field`; the create action has no such call and `Entity::$isActionAllowedPermissionProperties`
+  has no `create` entry, because there is no row yet to carry a resource id. A create page is
+  guarded by its **route guard alone** — plus a hand-written `isAllowed('library_' . $id,
+  'administrate')` in `BooksController` and `CollectionsController`, which is declared per
+  route here as `LIBRARY_PERMISSION` rather than inferred from the presence of a
+  `library_id` parameter. `library-imports/library/create` has such a parameter too and is
+  not in this batch, which is exactly why inferring would have been wrong.
+- **`libraries/create` is library-scoped and carries no library.** The record being created
+  *is* the library, so `LibraryScopedForms::formForLibrary()` takes a nullable id and skips
+  the collection lookup — which is what `LibraryFormFactory` does with `if (isset($libraryId))`.
+  Its guard also admits `guest`, and `guest` is not one of the four default roles, so that
+  page really is reachable signed out. Unchanged by the port and asserted rather than assumed
+  in `test/Smoke/CreateSurfaceSmokeTest`.
+- **Three routes prefill from the query string**, which the edit surface has no analogue for.
+  `association` takes five hints, `assignment` two and `book` one; the interesting one is
+  `?roleId=`, which has to find the role's association first, set that, narrow the role
+  select's options to it and only then set the role — because in a browser that select is
+  populated by JavaScript from the association.
+- **The create templates `extends` their edit twins.** On laminas the two view scripts share
+  one `fields-partial.phtml` and take their assets from it, so inheriting the assets and the
+  inline scripts is the faithful arrangement rather than a shortcut; each create template
+  overrides only `content`. `assignment` is the exception and overrides three blocks, because
+  its create page really does load three assets its edit page does not and runs a different
+  script — minified, through `jshrink`, the only page in the application that does.
+  `App\Twig\ScriptExtension` reproduces that as `minify_js`.
+
+A consequence worth knowing: a broken `extends` target is a fatal-200 that **compiles
+perfectly**, because Twig resolves a parent at render time. `TemplatesCompileTest` grew a
+second assertion for it in the same commit.
 
 ### The v1 and v2 API — retired, not ported, 2026-08-14
 

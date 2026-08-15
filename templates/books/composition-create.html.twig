@@ -1,0 +1,20 @@
+{#
+  The song create form.
+
+  The create page is the edit page with a different heading, a different action and no
+  record — which is exactly what laminas says too: create.phtml and edit.phtml are separate
+  view scripts that include the same fields-partial.phtml. So this template **extends its
+  edit twin** and overrides only what differs. What that inherits is the page's assets and
+  its inline scripts, which on laminas come from the shared partial rather than from either
+  view script, so inheriting them is the faithful arrangement rather than a shortcut.
+#}
+{% extends 'books/composition-edit.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Add new composition') }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ include('books/_composition-fields.html.twig') }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
