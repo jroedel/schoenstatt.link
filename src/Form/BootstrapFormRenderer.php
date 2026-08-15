@@ -786,14 +786,28 @@ final class BootstrapFormRenderer
          * `selectWithOutOptions()` uses when it hands a narrowed clone back: the empty
          * option a visitor had actually selected vanished from the markup.
          */
-        $options = '';
-        /** @var array<array-key, mixed>|string|null $empty laminas annotates it this wide */
-        $empty = $element->getEmptyOption();
+        /**
+         * **Merged into the options array, not emitted beside it**, because that is what
+         * `FormSelect::render()` does:
+         *
+         *     $options = ['' => $emptyOption] + $options;
+         *
+         * The `+` is the whole point. It is a union, so when the value options *already*
+         * carry a `''` key the existing entry wins and the select ends up with exactly one
+         * empty option. Emitting the empty option separately and then iterating the value
+         * options — which is what this did until 2026-08-15 — renders **two**.
+         *
+         * Invisible for four batches because it needs a form that declares both, and only
+         * `AssociationForm::timeZoneId` does: `'empty_option' => ''` next to a
+         * `$timeZoneOptions` list whose first key is `''`. It surfaced on
+         * `/associations/create` rather than on the edit page for a second reason, below.
+         *
+         * @var array<array-key, mixed>|string|null $empty laminas annotates it this wide
+         */
+        $empty      = $element->getEmptyOption();
+        $allOptions = $element->getValueOptions();
         if (null !== $empty) {
-            $options .= sprintf(
-                '<option value="">%s</option>' . "\n",
-                $this->escaper->escapeHtml(is_string($empty) ? $empty : '')
-            );
+            $allOptions = ['' => is_string($empty) ? $empty : ''] + $allOptions;
         }
 
         /**
@@ -820,7 +834,20 @@ final class BootstrapFormRenderer
          * The scalar branch is unchanged, deliberately: it reproduces laminas' behaviour
          * for a null value, where the cast to `''` is what an `empty_option` relies on.
          */
-        /** @var mixed $selected */
+        /**
+         * **A null value selects nothing**, which is `FormSelect::validateMultiValue()`:
+         *
+         *     if (null === $value) { return []; }
+         *     if (! is_array($value)) { return [$value]; }
+         *
+         * This used to cast null to `''` and select on that. Harmless while the empty
+         * option was emitted separately — nothing else could match `''` — and wrong the
+         * moment the merge above put a real `''` option into the list, which is why the two
+         * fixes belong in one commit. It is also why the defect showed on a *create* page:
+         * an edit form's select has a value, and only an empty form leaves it null.
+         *
+         * @var mixed $selected
+         */
         $selected       = $element->getValue();
         $selectedValues = [];
         if (is_array($selected)) {
@@ -829,11 +856,12 @@ final class BootstrapFormRenderer
                     $selectedValues[] = (string) $one;
                 }
             }
-        } else {
+        } elseif (null !== $selected) {
             $selectedValues[] = (string) (is_scalar($selected) ? $selected : '');
         }
 
-        foreach ($element->getValueOptions() as $value => $label) {
+        $options = '';
+        foreach ($allOptions as $value => $label) {
             if (is_array($label)) {
                 //Option groups: no association-form select uses one, and rendering it
                 //wrongly would silently drop every option inside. Skipped loudly rather

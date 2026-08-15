@@ -287,6 +287,29 @@ const PATHS = [
     '/associations',
     '/roles',
     '/libraries',
+    // batch 9 — the create surface. Nine of the sixteen `*/create` routes; the seven left
+    // out are named in config/symfony/routes.php, and two of those are left out because
+    // they are broken on laminas rather than because they are hard.
+    //
+    // These are the first paths here that render a form with **no record behind it**, which
+    // is worth stating because it changes what a difference means: an edit page differing
+    // could be the row, and a create page differing can only be the page.
+    '/associations/create',
+    '/assignments/create',
+    '/roles/create',
+    '/books/create/1',
+    '/collections/create/1',
+    '/libraries/create',
+    '/music/create-composition',
+    '/literature/create',
+    '/dictionary/create',
+    // The prefills, which are query-string branches no other path here exercises. Each one
+    // is the link a moderator actually follows — from a role to add an assignment, from a
+    // book to copy it, from a shrine list to add one in the same country.
+    '/associations/create?country=CL&kind=shrine',
+    '/assignments/create?roleId=1&personId=494',
+    '/books/create/1?copyBook=18370',
+
     // earlier batches, re-compared because every port re-enters the same layout,
     // the same translator and the same authorization listener
     '/',

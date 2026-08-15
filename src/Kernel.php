@@ -23,6 +23,7 @@ use App\Controller\CompositionController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
+use App\Controller\EntityCreateController;
 use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
@@ -66,7 +67,9 @@ use App\Sitemap\GuestAccess;
 use App\Sitemap\SitemapGenerator;
 use App\Sion\Entities;
 use App\Sion\EntityDelete;
+use App\Sion\EntityCreate;
 use App\Sion\EntityEdit;
+use App\Sion\FormViewVariables;
 use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
 use App\View\NavigationTree;
@@ -136,6 +139,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private RouteGuard $routeGuard;
     private EntityShow $entityShow;
     private EntityEdit $entityEdit;
+    private EntityCreate $entityCreate;
+    private FormViewVariables $formViewVariables;
     private EntityDelete $entityDelete;
     private Entities $entities;
     private CommentPredicates $commentPredicates;
@@ -511,9 +516,22 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->entityEdit(),
                 $this->twig(),
                 $this->routeUrl(),
-                // Only the publication form needs it, for the author-association list that
-                // comes off PublicationsTable rather than out of the form.
-                $this->entities()
+                $this->entities(),
+                $this->formViewVariables()
+            ),
+            // Batch 9, the create surface. Nine routes over App\Sion\EntityCreate, the
+            // counterpart of entityEdit() — see config/symfony/routes.php.
+            //
+            // The ServiceBridge is here for two things the edit controller does not need:
+            // the `library_<id>` permission check that BooksController and
+            // CollectionsController do by hand before creating, and the same check again
+            // for the book form's cross-library ?copyBook= prefill.
+            EntityCreateController::class => fn (): EntityCreateController => new EntityCreateController(
+                $this->entityCreate(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->formViewVariables(),
+                $this->laminas()
             ),
             // Batch 8's seven delete confirmations, over App\Sion\EntityDelete. Three route
             // defaults rather than the edit controller's nine, because the laminas page is
@@ -600,6 +618,25 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
      * `EntitiesService::getEntities()`, which merges 24 specs out of the module
      * configuration, and an edit request asks about its entity at least four times.
      */
+    /**
+     * Batch 9's counterpart to entityEdit(). Shares LibraryScopedForms with it: the three
+     * library-scoped forms are the same three on both surfaces.
+     */
+    private function entityCreate(): EntityCreate
+    {
+        return $this->entityCreate ??= new EntityCreate(
+            $this->laminas(),
+            $this->entities(),
+            new LibraryScopedForms($this->laminas())
+        );
+    }
+
+    /** The view variables both form surfaces need and neither owns. */
+    private function formViewVariables(): FormViewVariables
+    {
+        return $this->formViewVariables ??= new FormViewVariables($this->entities());
+    }
+
     private function entities(): Entities
     {
         return $this->entities ??= new Entities($this->laminas());

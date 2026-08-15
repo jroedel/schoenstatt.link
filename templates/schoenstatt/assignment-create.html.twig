@@ -1,0 +1,85 @@
+{#
+  The assignment create form — the one page in this batch that is **not** simply its edit
+  twin with a new heading.
+
+  Three things differ, all of them in assignments/create.phtml rather than in the shared
+  partial:
+
+  - **Three assets the edit page does not load**: selectize's stylesheet, jQuery UI's, and
+    `gen-validate-selectize.js`. The edit page loads none of them, which is why its template
+    declares no asset blocks at all — the assignments partial appends nothing.
+  - **A cascade script.** `roleId` is populated from `associationId` in the browser:
+    `AssignmentForm::getRolesJson()` emits the whole association => roles map and the script
+    rebuilds the role `<option>` list whenever the association changes. Without it the role
+    select is empty until the page is reloaded, which is also why the controller's
+    `?roleId=` prefill has to set the options itself.
+  - **The script is minified**, through `jshrink` — the only page in the application that
+    does. `minify_js` is the Twig counterpart; see App\Twig\ScriptExtension for why
+    reproducing it matters to the baseline diff.
+
+  No delete button and no confirmation modal: the edit page has both, and a record that does
+  not exist yet cannot be deleted.
+
+  The create page is the edit page with a different heading, a different action and no
+  record — which is exactly what laminas says too: create.phtml and edit.phtml are separate
+  view scripts that include the same fields-partial.phtml. So this template **extends its
+  edit twin** and overrides only what differs. What that inherits is the page's assets and
+  its inline scripts, which on laminas come from the shared partial rather than from either
+  view script, so inheriting them is the faithful arrangement rather than a shortcut.
+#}
+{% extends 'schoenstatt/assignment-edit.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/selectize.bootstrap3.css" media="screen" rel="stylesheet" type="text/css">
+        <link href="/css/jquery-ui.min.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block page_scripts %}
+        <script src="/js/gen-validate-selectize.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Create New Assignment') }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ include('schoenstatt/_assignment-fields.html.twig') }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+{% apply minify_js %}
+$(function() {
+    var $associationId = $("select[name='associationId']");
+    var roles = {{ form.getRolesJson()|raw }};
+    var $roleSelect = $("select[name='roleId']");
+    $associationId.change(function() {
+        if ($associationId.val() !== '') {
+            newOptions = roles[$associationId.val()];
+            if($roleSelect.prop) {
+              var options = $roleSelect.prop('options');
+            }
+            else {
+              var options = $roleSelect.attr('options');
+            }
+            $('option', $roleSelect).remove();
+
+            $.each(newOptions, function(val, text) {
+                options[options.length] = new Option(text, val);
+            });
+        }
+    })
+});
+
+$("select[name='personId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+$("select[name='associationId']").selectize({
+    create: false,
+    sortField: 'text'
+});
+{% endapply %}
+</script>
+{% endblock %}

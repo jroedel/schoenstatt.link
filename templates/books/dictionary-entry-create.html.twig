@@ -1,0 +1,30 @@
+{#
+  The dictionary-entry create form.
+
+  **`locale` is enabled here and disabled on the edit page**, which is a real behavioural
+  difference and not a rendering one: `DictionaryEntryForm` declares the element
+  `'disabled' => false` with a `@todo how can I block this without disabling it?`, and
+  dictionary/create.phtml then re-enables it explicitly. A moderator picks the language when
+  creating an entry and cannot change it afterwards. Reproduced with `setAttribute`, in the
+  template, because that is where the original does it — the form class is shared with the
+  edit surface and must not be mutated for one of them from a factory.
+
+  No submit here: the field partial renders its own, on both surfaces.
+
+  The create page is the edit page with a different heading, a different action and no
+  record — which is exactly what laminas says too: create.phtml and edit.phtml are separate
+  view scripts that include the same fields-partial.phtml. So this template **extends its
+  edit twin** and overrides only what differs. What that inherits is the page's assets and
+  its inline scripts, which on laminas come from the shared partial rather than from either
+  view script, so inheriting them is the faithful arrangement rather than a shortcut.
+#}
+{% extends 'books/dictionary-entry-edit.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Create new dictionary entry') }}</h1>
+
+{% do form.get('locale').setAttribute('disabled', false) %}
+{{ form_open(form, form_action) }}
+{{ include('books/_dictionary-entry-fields.html.twig') }}
+{{ form_close() }}
+{% endblock %}

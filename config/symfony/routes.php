@@ -39,6 +39,7 @@ use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\CommentCreateController;
 use App\Controller\CompositionController;
+use App\Controller\EntityCreateController;
 use App\Controller\ContentPageController;
 use App\Controller\DataProblemsController;
 use App\Controller\DictionaryController;
@@ -813,6 +814,187 @@ $edit(
 );
 
 // ---------------------------------------------------------------------------
+// Batch 9, ported 2026-08-15: the create surface. Nine of the sixteen `*/create` routes,
+// behind App\Controller\EntityCreateController over App\Sion\EntityCreate — the third verb
+// of the same shared action, after edit (batch 7) and delete (batch 8).
+//
+// **Seven are left on laminas, and none of them is simply "not done yet."**
+//
+// - `persons/create` and `texts/create` are **broken on laminas today** and porting them
+//   would mean reproducing the breakage in new code. A person without a spouse cannot be
+//   created at all — `SpousePersonId` receives `''` and MariaDB refuses the integer column,
+//   where the *edit* form posts the identical value and saves, because updateEntity() writes
+//   only changed columns and createEntity() writes them all. A text **is** created and then
+//   the redirect never happens: `EventTextTable` reads `$entityData['kind']` off the row that
+//   does not exist yet, and the warning reaches the page before the Location header. Both
+//   measured against the capsule on 2026-08-15 and filed in docs/BACKLOG.md.
+// - `juser/create` and `juser/create-role` do not use `createAction()` at all —
+//   `UsersController::createAction()` is a standalone implementation — so they belong with
+//   the `juser/*` bloc, not here.
+// - `library-imports/library/create` is an import *simulation*, overriding
+//   `getPostDataForCreateAction()` and `createEntityPostFormValidation()`.
+// - `publication-create-new-edition` is its own action, not `createAction()`.
+// - `events/create` is **unportable**: its spec's `create_action_form` is commented out, its
+//   `create_action_valid_data_handler` names a method that exists nowhere in the repository,
+//   it has no template, and docs/acl-rules.md lists it under "no guard entry", i.e. default
+//   deny. Three independent reasons, same conclusion as batch 8's unreachable deletes.
+//
+// **Order does not matter for these nine**, unusually. Every route that could swallow a
+// `create` segment is already constrained away from it: `/dictionary/{inLanguage}` and
+// `/literature/{inLanguage}` take two letters, `/literature/{publication_id}` takes digits,
+// and `/associations/{sw_id}` takes a site-wide identifier. That is stated rather than
+// relied on silently — `test/Integration/CreateRouteShadowingTest` asserts each create path
+// matches its own route.
+/**
+ * @param array<string, mixed> $extra
+ * @param array<string, string> $requirements
+ */
+$create = static function (
+    string $name,
+    string $path,
+    string $entity,
+    string $template,
+    string $pageTitle,
+    string $domain,
+    array $extra = [],
+    array $requirements = []
+) use (
+    $ported,
+    $textDomain
+): void {
+    $ported(
+        $name,
+        $path,
+        EntityCreateController::class,
+        RouteAccess::guardedBy('route/' . $name),
+        $textDomain($domain) + [
+            EntityCreateController::ENTITY     => $entity,
+            EntityCreateController::TEMPLATE   => $template,
+            EntityCreateController::PAGE_TITLE => $pageTitle,
+        ] + $extra,
+        $requirements
+    );
+};
+
+// A new association or shrine. Five query parameters prefill it, and the two that name a
+// row are checked against the select's own options before being set — see the controller.
+$create(
+    'associations/create',
+    '/associations/create',
+    'association',
+    'schoenstatt/association-create.html.twig',
+    'Create New Association',
+    'Schoenstatt',
+    [EntityCreateController::PREFILL => 'association']
+);
+
+// A new assignment: who holds which role in which association. `?roleId=` and `?personId=`
+// prefill it, and the role hint has to discover its association first — the role select is
+// populated from the association in the browser.
+$create(
+    'assignments/create',
+    '/assignments/create',
+    'assignment',
+    'schoenstatt/assignment-create.html.twig',
+    'Create New Assignment',
+    'Schoenstatt',
+    [EntityCreateController::PREFILL => 'assignment']
+);
+
+// A new role on an association.
+$create(
+    'roles/create',
+    '/roles/create',
+    'role',
+    'schoenstatt/role-create.html.twig',
+    'Create New Role',
+    'Schoenstatt'
+);
+
+// A new library book. The first of the two routes carrying LIBRARY_PERMISSION: BooksController
+// checks `library_<id>` for `administrate` before it does anything else, and that check is the
+// only authorization this page has beyond its route guard.
+$create(
+    'books/create',
+    '/books/create/{library_id}',
+    'book',
+    'books/book-create.html.twig',
+    'Add new library book',
+    'Books',
+    [
+        EntityCreateController::LIBRARY_PARAM      => 'library_id',
+        EntityCreateController::LIBRARY_PERMISSION => 'administrate',
+        EntityCreateController::EXTRA_VARIABLES    => 'nextWithinLibraryId',
+        EntityCreateController::PREFILL            => 'book',
+    ],
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// A new collection inside a library. Same per-library check as the book route.
+$create(
+    'collections/create',
+    '/collections/create/{library_id}',
+    'collection',
+    'books/collection-create.html.twig',
+    'New collection',
+    'Books',
+    [
+        EntityCreateController::LIBRARY_PARAM      => 'library_id',
+        EntityCreateController::LIBRARY_PERMISSION => 'administrate',
+    ],
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// A new library. Library-scoped like the two above and yet carries **no** library — the
+// record being created is the library — so it declares neither LIBRARY_PARAM nor a
+// permission, and LibraryScopedForms::formForLibrary() takes null. Its laminas guard admits
+// `guest`, which docs/acl-rules.md flags: `guest` is not a default role, so this page really
+// is reachable signed-out. Unchanged by the port, and filed rather than fixed here.
+$create(
+    'libraries/create',
+    '/libraries/create',
+    'library',
+    'books/library-create.html.twig',
+    'Create new library',
+    'Books'
+);
+
+// A new song.
+$create(
+    'music/create-composition',
+    '/music/create-composition',
+    'composition',
+    'books/composition-create.html.twig',
+    'Add new composition',
+    'Books'
+);
+
+// A new publication. Needs the same three selectize lists the edit page does, minus the
+// "cannot be its own main edition" exclusion, which has no id to exclude yet.
+$create(
+    'publications/create',
+    '/literature/create',
+    'publication',
+    'books/publication-create.html.twig',
+    'Create new publication',
+    'Books',
+    [EntityCreateController::EXTRA_VARIABLES => 'publicationValueOptions']
+);
+
+// A new dictionary entry. REDIRECT_TARGET because DictionaryController::redirectAfterCreate()
+// delegates to its redirectAfterEdit(), which sends the moderator to the dictionary of the
+// entry's own language rather than to the entry — so the spec's `dictionary/entry` redirect
+// route is never used.
+$create(
+    'dictionary/create',
+    '/dictionary/create',
+    'dictionary-entry',
+    'books/dictionary-entry-create.html.twig',
+    'Create new dictionary entry',
+    'Books',
+    [EntityCreateController::REDIRECT_TARGET => 'dictionaryEntry']
+);
+
 // Batch 8, ported 2026-08-14: the delete surface. The seven entity delete
 // confirmations that share SionController::deleteAction().
 // ---------------------------------------------------------------------------
