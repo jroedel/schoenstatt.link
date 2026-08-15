@@ -47,10 +47,17 @@
   Nine selectize calls, in the partial's order. The `[]` on three of the selectors is the
   multiple-select suffix and is load-bearing — see the note in books/text-edit.html.twig.
 
-  `create: true` on the tag, country, composer, lyricist and URL-label selects is the UI
-  half of those fields having no InArray validator: a moderator is expected to type a value
-  the list does not have. `create: false` on `derivedFromCompositionId` and `inLanguage`,
+  `create: true` on the tag, composer, lyricist and URL-label selects is the UI half of
+  those fields having no InArray validator: a moderator is expected to type a value the
+  list does not have. `create: false` on `derivedFromCompositionId` and `inLanguage`,
   because those must name a row and a configured language respectively.
+
+  `country` was in the first group and is now in the second. It was the only one of the
+  three country selects in the application that let a moderator invent a value — the
+  person and association forms have always used `create: false` — and the database shows
+  what that cost: 292 of 308 non-empty `mus_compositions.Country` rows held a code the
+  option list does not offer. It is a fixed list of 249 ISO country codes; there is
+  nothing to invent.
 #}
 <script nonce="{{ csp_nonce() }}">
 $(function () {
@@ -59,7 +66,7 @@ $("select[name='tags[]']").selectize({
     sortField: 'text'
 });
 $("select[name='country']").selectize({
-    create: true,
+    create: false,
     sortField: 'text'
 });
 $("select[name='composersAll[]']").selectize({

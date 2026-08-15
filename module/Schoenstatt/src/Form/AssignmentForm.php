@@ -2,6 +2,7 @@
 namespace Schoenstatt\Form;
 
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
 use Laminas\Json\Json;
 
@@ -152,6 +153,12 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull'],
                 ],
+                //This field is never stored — sch_assignments has no association column, the
+                //association is reached through the role — so the only thing it does is pick
+                //which roles setData() offers below. Constraining it is what makes that
+                //narrowing meaningful: an associationId nobody offered used to leave the role
+                //list unnarrowed, and roleId's fallback wide open.
+                'validators' => ChoiceDomain::validators($this->get('associationId')),
             ],
             'roleId' => [
                 'required' => true,
@@ -159,6 +166,12 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull'],
                 ],
+                //setData() has already narrowed this element to the submitted association's
+                //roles by the time the specification is built, so in the normal case the
+                //haystack is per-association — tighter than any static list. The fallback
+                //covers the request where that did not happen; it is the union of the same
+                //map, so the two can never disagree about what a role is.
+                'validators' => ChoiceDomain::validators($this->get('roleId'), $this->allRoleIds()),
             ],
             'personId' => [
                 'required' => true,
@@ -166,6 +179,7 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'ToInt'],
                     ['name' => 'ToNull'],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('personId')),
             ],
             'startDate' => [
                 'required' => false,
@@ -233,6 +247,29 @@ class AssignmentForm extends SionForm implements InputFilterProviderInterface
             $this->get('roleId')->setValueOptions($this->roleTitlesValueOptions[$associationId]);
         }
         return parent::setData($data);
+    }
+
+    /**
+     * Every role id in the map, flattened across associations.
+     *
+     * The map is keyed by association because that is what the browser needs to narrow the
+     * role picker. This is the same data read the other way round: the widest set of role
+     * ids that is still a role, for a request where no narrowing happened.
+     *
+     * @return int[]
+     */
+    private function allRoleIds()
+    {
+        $ids = [];
+        foreach ($this->roleTitlesValueOptions as $associationRoles) {
+            if (! is_array($associationRoles)) {
+                continue;
+            }
+            foreach (array_keys($associationRoles) as $roleId) {
+                $ids[$roleId] = true;
+            }
+        }
+        return array_keys($ids);
     }
 
     /**

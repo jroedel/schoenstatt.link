@@ -1,6 +1,7 @@
 <?php
 namespace Books\Form;
 
+use SionModel\Form\ChoiceDomain;
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
@@ -494,8 +495,16 @@ class BookForm extends SionForm implements InputFilterProviderInterface
                     ],
                 ],
             ],
+            //Three of the 11,401 books held a language the list did not offer, and each was a
+            //different failure. Two were `es;de;en` — three languages semicolon-joined into a
+            //field that is `multiple` and stores its values pipe-joined, so the moderator's
+            //intent was expressible and the syntax was not. The third was `ceb`: Cebuano has
+            //no ISO 639-1 code, so a 184-entry two-letter list could not represent it at all.
+            //LanguageSupport now carries the 455 three-letter codes as well, which is why this
+            //InArray is safe to add; db7.9 corrects the two semicolon rows.
             'inLanguage' => [
                 'required' => false,
+                'validators' => ChoiceDomain::validators($this->get('inLanguage')),
             ],
             'collectionId' => [
                 'required' => false,
