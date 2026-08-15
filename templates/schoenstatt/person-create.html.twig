@@ -1,0 +1,51 @@
+{#
+  The new-person form — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/persons/create.phtml.
+
+  Like the nine create templates of batch 9 this **extends its edit twin** and overrides only
+  what differs, because laminas says the same thing: create.phtml and edit.phtml are separate
+  view scripts that include the same fields-partial.phtml. What that inheritance carries is
+  the page's inline scripts, which come from the shared partial rather than from either view
+  script, so inheriting them is the faithful arrangement rather than a shortcut.
+
+  Three things differ from the edit page, and the third is the reason this route waited a
+  batch.
+
+  - **The heading and the title are one string, not two.** edit.phtml puts `Edit Person Info`
+    in the `<h1>` and a formatted `Edit %s` in `<title>`, with the person's name in a lead
+    paragraph beneath. create.phtml has neither a record nor a name: `Create New Person` is
+    both, which is why the parent's `page_title` assignment is guarded on `person_name`.
+  - **An extra stylesheet, and it comes first.** create.phtml appends `jquery-ui.min.css`
+    itself before rendering the partial, which then appends `gen-selectize-jquery-ui.css`;
+    edit.phtml appends only the partial's. Order is the append order, so both are restated
+    here rather than the block being extended.
+  - **No delete button and no modal**, since there is nothing to delete yet. Overriding
+    `content` drops both, along with the `delete_action`/`delete_form` variables the create
+    controller does not pass.
+
+  ## Why the laminas page still 500s, and why that is left alone
+
+  `/persons/create` under laminas answers 500 for reasons this template fixes only on the
+  Symfony side. The first — `spousePersonId` posting `''` into an integer column — is fixed in
+  `PersonForm` and therefore on both front controllers. The second is not: the four patres
+  date fields are absent from the laminas partial, so a save writes NULL to two `NOT NULL`
+  columns, exactly as batch 7 found for the edit page. That was fixed then in
+  `_person-fields.html.twig` and left unfixed in `fields-partial.phtml`, on the grounds that
+  production serves Symfony and a laminas view script for a ported route is dead code. Porting
+  the route is what retires this one; the same precedent, applied a second time.
+#}
+{% extends 'schoenstatt/person-edit.html.twig' %}
+
+{% block page_stylesheets %}
+        <link href="/css/jquery-ui.min.css" media="screen" rel="stylesheet" type="text/css">
+        <link href="/css/gen-selectize-jquery-ui.css" media="screen" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Create New Person') }}</h1>
+
+{{ form_open(form, form_action) }}
+{{ include('schoenstatt/_person-fields.html.twig') }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}

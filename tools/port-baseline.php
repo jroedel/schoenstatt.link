@@ -288,8 +288,9 @@ const PATHS = [
     '/roles',
     '/libraries',
     // batch 9 — the create surface. Nine of the sixteen `*/create` routes; the seven left
-    // out are named in config/symfony/routes.php, and two of those are left out because
-    // they are broken on laminas rather than because they are hard.
+    // out are named in config/symfony/routes.php, and two of those were left out because
+    // they were broken on laminas rather than because they were hard. Batch 10 fixed those
+    // two and ported them; they are at the end of this block.
     //
     // These are the first paths here that render a form with **no record behind it**, which
     // is worth stating because it changes what a difference means: an edit page differing
@@ -309,6 +310,16 @@ const PATHS = [
     '/associations/create?country=CL&kind=shrine',
     '/assignments/create?roleId=1&personId=494',
     '/books/create/1?copyBook=18370',
+    // batch 10 — the two the create surface left behind.
+    //
+    // `/texts/create` differs only by the inline-script wrapper every ported page differs by.
+    // `/persons/create` differs by the same two things its already-ported edit twin does —
+    // the `nameDay` selects rendered as hidden inputs, and the four patres date fields that
+    // no laminas partial renders at all — and there **the Symfony side is the correct one**:
+    // without those hidden inputs a save writes NULL to two NOT NULL columns. Both are
+    // recorded in docs/strangler.md's known-differences table.
+    '/persons/create',
+    '/texts/create',
 
     // earlier batches, re-compared because every port re-enters the same layout,
     // the same translator and the same authorization listener

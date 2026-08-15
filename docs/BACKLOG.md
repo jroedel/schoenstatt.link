@@ -474,43 +474,46 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
-- [ ] **`/persons/create` answers 500 for any person without a spouse**, which is nearly
-  every person. Found while porting the create surface (batch 9, 2026-08-15) and measured by
-  posting a scraped, valid form to the capsule:
+- [x] **`/persons/create` answered 500 for any person without a spouse** — fixed and ported,
+  batch 10, 2026-08-15.
 
       Statement could not be executed (22007 - 1366 - Incorrect integer value: ''
       for column `ourlink_db1`.`sch_persons`.`SpousePersonId` at row 1)
 
-  `spousePersonId` is a select with an empty first option, so a form where no spouse was
-  chosen posts `''`, and `sch_persons.SpousePersonId` is an integer column.
+  `spousePersonId` was a select with an empty first option and an input filter of
+  `['required' => false]` and nothing else, so a form where no spouse was chosen posted `''`
+  into an integer column. `ToInt` then `ToNull` in `PersonForm` fixes it, on both front
+  controllers.
 
-  **The edit form posts the identical value and saves**, which is the part that generalises:
-  `SionTable::updateEntity()` writes only the columns whose values changed, so an unchanged
-  `''` never reaches the database, while `createEntity()` writes every column it is handed.
-  Any create form with an empty-optioned select over an integer column has the same latent
-  fault; `person` is simply the one where a real moderator meets it.
+  **The broad fix in `createEntity()` turned out to be unnecessary**, which is the part worth
+  keeping: an audit of every create form against the database's own column types found 74
+  elements that can put an empty string somewhere non-string and **exactly one** that let it
+  through. Thirty-eight of the rest are checkboxes, which never post `''` at all. The audit is
+  now `test/Integration/EmptyStringToTypedColumnTest`.
 
-  Fixing it is a `ToNull` filter on the input — or the same in `createEntity()`, which is the
-  broader fix and the riskier one, since it is shared with patres. **Not fixed inside the
-  porting batch on purpose**: the route stays on laminas until the fix is chosen, so that
-  what ships is a port and not a behaviour change wearing one.
+  The same fix closes an edit-form bug nobody had reported: `updateHelper()` skips a column
+  when `$value == $data[$field]`, and `494 == ''` is false in PHP 8, so *clearing* a spouse
+  wrote `''` too. 82 of 325 persons have one.
 
-- [ ] **`/texts/create` creates the text and then loses the redirect**, leaving a 154-byte
-  blank page. Same measurement session as the item above.
+- [x] **`/texts/create` created the text and then lost the redirect**, leaving a 154-byte blank
+  page — fixed and ported, batch 10, 2026-08-15.
 
-  `Books\Model\EventTextTable` line 259 reads `$entityData['kind']` — the *existing* row's
-  kind — inside `processEntityData()`. On a create there is no existing row, so PHP emits
-  `Undefined array key "kind"`, and the warning reaches the output before
-  `redirectAfterCreate()` can send its `Location` header. The row **is** written.
+  `EventTextTable::preprocessText()` read `$entityData['kind']`, the *existing* row's kind, and
+  on a create there is no existing row. The warning reached the output before
+  `redirectAfterCreate()` could send its `Location` header, so the moderator saw a blank page
+  over a text that had been written, and pressing submit again made a second one.
 
-  The visible consequence is worse than a 500 would be: the moderator sees a blank page, has
-  no reason to think the text was saved, and pressing submit again makes a second one.
+  **Guarding the array read would have been the wrong fix**, and this is the reason to keep the
+  entry. That clause also meant editing a text's markdown never regenerated its HTML — and the
+  show page renders `htmlText` and nothing else — so the form's main field had no visible
+  effect for 2,753 of the 2,757 rows. The fix keys on `legacyFile` instead: all 2,753 imported
+  rows carry one and all 4 rows authored in the application carry none, so the imported HTML is
+  preserved byte-for-byte while an app-authored text renders its markdown. Dropping the clause
+  outright was measured and rejected — it would have changed the visible text of 2,740 of the
+  2,756 rows that have markdown.
 
-  One guarded array read fixes it (`$entityData['kind'] ?? null`), but the guard has to
-  decide what `kind` *means* for a text that does not exist yet — the condition it feeds is
-  `self::TEXT_KIND_JK_TEXT !== $entityData['kind']`, which controls whether the Markdown is
-  rendered to HTML at all. That is a content decision, not a porting one.
-
+  Guarded by `test/Integration/PreprocessorCreateSafetyTest` and
+  `test/Integration/TextHtmlGenerationTest`.
 
 - [ ] **`phpstan-baseline.neon` is hiding ~11 more call sites that cannot resolve at
   runtime.** This is the finding from the 2026-08-14 archaic sweep worth acting on, and it

@@ -134,7 +134,7 @@
         "serve": "php -S 127.0.0.1:8080 -t public",
         "smoke": "docker compose exec -T app php tools/phpunit.phar --testsuite smoke",
         "unit": "docker compose exec -T app php tools/phpunit.phar --testsuite unit",
-        "integration": "docker compose exec -T app php tools/phpunit.phar --testsuite integration",
+        "integration": "docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite integration",
         "fuzz": "docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar --testsuite fuzz",
         "fuzz-baseline": "docker compose exec -T app php -d memory_limit=1G test/Fuzz/regenerate-baseline.php",
         "test": "docker compose exec -T app php -d memory_limit=1G tools/phpunit.phar",
@@ -145,6 +145,7 @@
         "stan": "Run PHPStan against the module sources. Contract is 'no new errors': pre-existing ones live in phpstan-baseline.neon.",
         "fuzz": "Run the form input-validation fuzz harness. No HTTP, read-only DB. Contract is 'no new gaps': pre-existing ones live in test/Fuzz/known-form-gaps.php.",
         "fuzz-baseline": "Regenerate test/Fuzz/known-form-gaps.php. Review the diff: every added line is a validation gap being accepted.",
+        "integration": "Run the integration suite. Needs memory_limit=1G for the same reason `fuzz` does, and since batch 10 for literally the same code: three of its tests build every form in the application through test/Fuzz/FormRepository, which is what costs the memory. Measured 2026-08-15 — at the default 512M it dies partway through TranslationWriteSemanticsTest, which is merely where the limit happens to land.",
         "test": "Run every suite in one process. Needs memory_limit=1G for the same reason `fuzz` does: Books\\Form\\Publication's factory calls getKeywordsValueOptions(), which loads every publication row, and at the default 512M it exhausts the limit once the earlier suites' memory is already held. Measured 2026-08-07 — it failed identically before this batch."
     }
 }
