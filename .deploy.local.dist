@@ -1,0 +1,59 @@
+# Deploy configuration — committed template. config.sh copies this to
+# .deploy.local (gitignored, mode 0600); replace every TODO there, never here.
+#
+# This one file replaces phploy.ini AND .phploy. It is sourced by
+# tools/deploy.sh, so it may contain nothing but shell assignments.
+#
+# Nothing in here is ever written to the server. The database credentials are
+# used only through an SSH tunnel opened for the duration of a migration, which
+# is the whole reason they can be full-DDL: a compromise of the web application
+# cannot reach a credential that only ever exists on this machine.
+
+# --- where -------------------------------------------------------------------
+
+# Your own shell account on port 222. Since phploy was retired there is only one
+# identity: the restricted SFTP account on port 22 is no longer used by anything.
+# This account is also the user web PHP runs as, so a release tree it writes is
+# writable by the web server — which is why nothing here chmods anything.
+DEPLOY_SSH_USER=userTODO
+DEPLOY_SSH_HOST=your-server.com
+DEPLOY_SSH_PORT=222
+
+# Application directory relative to the account's home, e.g.
+# public_html/schoenstatt.link. releases/ and shared/ are created inside it.
+DEPLOY_APP_PATH=public_html/TODO
+
+DEPLOY_BASE_URL=https://schoenstatt.link
+
+# --- keys --------------------------------------------------------------------
+
+# Any entry from the server's sion_model.api_keys. Used for the post-deploy
+# /associations/do-work call and for the cache-status smoke checks. It travels
+# in an X-Api-Key header, never a query string — a query string is written to
+# the server's access log on every deploy and kept in shell history.
+DEPLOY_API_KEY=xxxxTODOxxxx
+
+# --- behaviour ---------------------------------------------------------------
+
+# How many release directories to keep. The live one and the one a rollback
+# would reach for are never pruned regardless of this number.
+DEPLOY_KEEP_RELEASES=5
+
+# Optional. Set to 'sl_symfony_canary=1' (or =0) to have the post-deploy smoke
+# run exercise the front-controller override as well — about 35 extra checks.
+# The value is a switch, not data: smoke-prod.sh names both cookies itself and
+# probes which kernel is the site default, so the same setting keeps working
+# across a flip instead of failing loudly on the one day it must be believed.
+DEPLOY_CANARY_COOKIE=
+
+# --- database (migrations) ---------------------------------------------------
+
+# Full-DDL credentials for the production database, used by tools/deploy.sh
+# over an SSH tunnel to the server's own 127.0.0.1:3306. Leave blank until the
+# migration runner lands; the deploy then simply reports migrations as unmanaged.
+DEPLOY_DB_NAME=ourlink_db1
+DEPLOY_DB_USER=TODO
+DEPLOY_DB_PASS=TODO
+
+# Local port for the tunnel. Anything free; it never reaches the server.
+DEPLOY_DB_TUNNEL_PORT=13306

@@ -2,15 +2,22 @@
 
 # The idea of this file is to simplify development setup on a new machine
 
-# first check that the files don't already exist
-if [ ! -f phploy.ini ]; then
+# Deploy configuration and credentials — one file, replacing phploy.ini and
+# .phploy. It holds a full-DDL database password, so the mode is not optional.
+if [ ! -f .deploy.local ]; then
+  cp .deploy.local.dist .deploy.local
+fi
+chmod 600 .deploy.local
+
+# phploy is retired (see docs/DEPLOY.md); these two are seeded only while the
+# old pipeline is still on disk as the way back from the first atomic deploy.
+if [ ! -f phploy.ini ] && [ -f phploy.ini.dist ]; then
   cp phploy.ini.dist phploy.ini
 fi
-#this file is for storing ssh authentication
-if [ ! -f .phploy ]; then
+if [ ! -f .phploy ] && [ -f .phploy.dist ]; then
   cp .phploy.dist .phploy
+  chmod 740 .phploy
 fi
-chmod 740 .phploy
 
 # copy a sample local.php file
 if [ ! -f config/autoload/local.php ]; then
