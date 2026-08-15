@@ -225,8 +225,10 @@ suites run from the superproject working tree.
 
 ## Deployment
 
-- Deployment is via phploy (`phploy.ini`, `phploy.phar`) over SFTP straight to production. **Never run a deploy** — if asked, give the user the command to run instead.
-- `phploy.ini` and `.phploy` contain credentials/secrets; never commit, print, or copy their contents.
+- Deployment is `./tools/deploy.sh` — one command, rsync over the port-222 shell account, **atomic**: a release is built, composer-installed and warmed in a directory nothing is serving, and goes live when one symlink is replaced by a single `rename(2)`. **Never run a deploy** — if asked, give the user the command to run instead.
+- The server layout is `releases/<ts>-<sha>/` + `shared/` + a `public` symlink. Two distinctions there are load-bearing and both fail silently if got wrong: `data/config` and `data/cache` are **per-release** (a new tree meeting an old merged-config cache is what produced a fatal burst on every deploy), and `data/publications` is tracked repo content rather than shared state. Read [docs/DEPLOY.md](docs/DEPLOY.md) § The layout before adding anything to `shared/`.
+- **A release is exactly `git ls-files --recurse-submodules`.** Untracked files on the server inside `public/` are therefore deleted by a swap — search-engine verification files live in `shared/public/`, which is symlinked into every release. `tools/deploy-bootstrap.sh --check` lists what a swap would remove.
+- **phploy is retired** (its SFTP transport is what made the deploy window unavoidable, and `--submodules` had a tree-deleting purge bug). `phploy.phar`/`phploy.ini`/`.phploy` remain on disk only until the first atomic deploy has succeeded. `.deploy.local` replaces both credential files; it holds the SSH target, the maintenance API key and full-DDL database credentials, and like its predecessors must never be committed, printed or copied.
 
 ## Tools
 
