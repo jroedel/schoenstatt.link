@@ -198,6 +198,16 @@ suites run from the superproject working tree.
     exit status — so when it *does* skip, "everything passed" and "everything that could
     run passed" are different claims and the PR body should make the second one. Fall
     back to `php composer.phar audit --locked` on the **host** only then.
+  - **The skip branch classifies on what a real finding looks like, not on what a known
+    network error looks like**, and that inversion was bought the hard way: it used to
+    match only `Could not resolve host`, so on 2026-08-16 a packagist **HTTP 502** — a
+    different message entirely — was reported as `FAIL` and blocked a cutover while
+    reading, to every human, as "a vulnerability was found". Nothing was wrong with the
+    lock and the same run passed minutes later. A clean result and an advisory finding
+    each have a fixed shape; **anything else is UNKNOWN**, retried once and then printed
+    in full, because an unreadable database is a fact about the network and a reader who
+    cannot see the text cannot tell the two apart. Do not "tighten" this back into an
+    error-string allowlist.
 - HTTP characterization tests live in `test/Smoke` (PHPUnit, `phpunit.xml.dist`). They run against a *running* capsule, not in isolation.
   - Run them with `php composer.phar smoke` — **one process at a time.** Never fan the suite out across parallel agents or background shells, and never run a second copy while one is in flight: concurrent runs against a wedged app are what exhausted the host on 2026-08-02.
 - Unit tests live in `test/Unit` (`php composer.phar unit`); `php composer.phar test` runs every suite. Unit tests talk to no HTTP and require the class under test directly — no vendor autoload, no running app — so they are safe to run freely and stay valid while `vendor/` is mid-migration. All three scripts shell into the capsule: the host PHP lacks the dom/mbstring/xmlwriter extensions PHPUnit needs.
