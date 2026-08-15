@@ -103,6 +103,16 @@ esac
 : "${DEPLOY_API_KEY:=}"
 : "${DEPLOY_CANARY_COOKIE:=}"
 
+# An unreplaced placeholder is worse than a missing value here. A bogus
+# DEPLOY_API_KEY does not fail loudly: /en/sm/cache-status rejects it, the smoke
+# run fails, and a perfectly good release is rolled back automatically — with
+# the deploy reporting a site problem that does not exist.
+for v in DEPLOY_SSH_USER DEPLOY_SSH_HOST DEPLOY_APP_PATH DEPLOY_BASE_URL DEPLOY_API_KEY; do
+    case ${!v} in
+        *TODO*) fail "$v in .deploy.local is still the template placeholder (${!v}). Fill it in — a placeholder API key fails the post-deploy smoke run and triggers an automatic rollback of a release that was fine." ;;
+    esac
+done
+
 APP=$DEPLOY_APP_PATH
 RELEASES=$APP/releases
 SHARED=$APP/shared
