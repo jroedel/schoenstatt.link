@@ -3,6 +3,7 @@ namespace Books\Form;
 
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 
 class PublicationsSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -107,6 +108,9 @@ class PublicationsSearchForm extends Form implements InputFilterProviderInterfac
                     ['name' => 'StringToLower'],
                     ['name' => 'SionModel\Filter\SortArray'],
                 ],
+                //Filters run before validators, so StringToLower above is what lets an
+                //uppercase code through to a haystack of lowercase ones.
+                'validators' => ChoiceDomain::validators($this->get('inLanguage')),
             ],
         ];
     }

@@ -474,43 +474,37 @@ rediscovered.
 
 ## Bugs (characterized, fix pending)
 
-- [ ] **26 choice fields still have no domain check, and each is blocked on something
-  specific.** Batch 11 (2026-08-15) closed 24 of the 88 and declared 38 more open by design in
-  `test/Fuzz/open-ended-choice-fields.php`; these are what is left. Grouped by what stands in
-  the way, because they are not one task:
+- [ ] **Four selects refuse records that already exist**, because their option list is
+  narrower than the data. This is not a hypothetical: open one of these records, change
+  anything, press save, and the form rejects it over a field nobody touched. Each is accepted
+  in `ConstrainedChoiceFieldsFitTheirDataTest::ACCEPTED_MISMATCHES` with its row count, so the
+  numbers are checked and shrinking one requires editing that list.
 
-  - **The stored data does not fit the select's own options (4).** Constraining these would
-    refuse to save records that already exist.
-    - `BookForm::publicationId` and `PublicationForm::mainPublicationId` /
-      `translatedFromPublicationId` — `getEditionValueOptions()` filters `DataSource IS NULL`,
-      which excludes **5,963 of the 10,166** publications, and **386 books point at one of the
-      excluded ones**. Either the select should offer imported publications or those books
-      should not reference them; measure before choosing.
-    - `BookForm::inLanguage` — three stored values are outside the ISO list: `ceb`, `p`, and
-      `es;de;en`, which is three languages in a single-value column.
-  - **The element has no options server-side (16).** Their lists are built by JavaScript from
-    another field, or by a setter an admin screen calls later, so an `InArray` would reject
-    every submission rather than the wrong ones. `ChoiceDomain` declines to constrain these on
-    purpose. `AssignmentForm`/`EditAssignmentForm` `roleId` is the clearest: the role list is
-    narrowed in the browser from the chosen association, and all 170 assignments in the
-    database would fail. `EventForm`'s five are a special case of the same thing — the entity's
-    `create_action_form` is commented out, so nothing builds it.
-  - **Search forms (5).** `SearchForm`, `EventsSearchForm`, `TextSearchForm`,
-    `PublicationsSearchForm`, `AdvancedSearchForm`. Nothing is written, so the corruption risk
-    is nil; the value goes into a query. Worth doing eventually, worth nothing urgently.
-  - **`AssignmentForm::personId` (1)** — one stored assignment references person `660`, which
-    does not exist. A dangling foreign key, not a form problem.
+  - **`getEditionValueOptions()` filters `DataSource IS NULL`**, offering 4,203 of the 10,166
+    publications and excluding the 5,963 imported ones. **479 books** (`BookForm::publicationId`),
+    **46 publications** (`mainPublicationId`) and **165 publications**
+    (`translatedFromPublicationId`) point at an excluded row. Either the picker should offer
+    imported publications or those records should not reference them; nobody has recorded why
+    the filter is there, which is the thing to establish first.
+  - **`RoleForm::associationId`** offers active associations only, and `sch_roles` has no
+    foreign key: **145 roles name an association id that does not exist at all** (74 distinct
+    ids) and 4 more sit under the two inactive associations. The dangling 145 are a data
+    repair; the 4 are a question about whether an inactive association's roles stay editable.
 
-- [ ] **`country` means two different things on two forms.** `selectize({create: true})` on the
-  composition form and `create: false` on the person and association forms, so a moderator can
-  invent a country on one page and not on the others. `mus_compositions.Country` shows the
-  result: `pt` and `cl` in lowercase beside `US`, `BR` and `FR`, against an uppercase-keyed
-  option list — 301 of 308 rows carry a code the select does not offer.
+- [ ] **`EventsSearchForm` and `EventsController::searchAction()` are unreachable.** There is no
+  `search` child route under `/timeline`, the events entity's `controller_services` is `[]` so
+  `$this->services[EventsSearchForm::class]` is an undefined key, and `search.phtml` renders
+  nothing. `EventForm` was in the same state and was deleted in batch 12; this trio was left
+  because deleting an action and a template is a wider decision than deleting a form. Delete or
+  finish.
 
-  Fixing it is `create: false` in `templates/books/composition-edit.html.twig` and its `.phtml`
-  twin, `StringToUpper` in `CompositionForm`'s spec entry (as `PersonForm` already has), a data
-  correction for the lowercase rows, and only then `ChoiceDomain::validators()`. **In that
-  order** — constraining first would make 301 compositions unsaveable.
+- [ ] **`selectize({create: true})` on fields the server constrains.**
+  `AdvancedSearchForm::roleTitle` was declared open-by-design on the strength of that flag and
+  turned out to be enforced anyway — its element never disabled its own `InArray`, so a typed
+  role title is rejected today. The declaration is gone; the mismatch between what the view
+  offers and what the server accepts is not. Worth a sweep: the flag is the only place this
+  application states intent, and where it disagrees with the server the user sees a field
+  accept their typing and then refuse it.
 
 - [x] **`/persons/create` answered 500 for any person without a spouse** — fixed and ported,
   batch 10, 2026-08-15.

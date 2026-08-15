@@ -55,9 +55,11 @@ const CATEGORY_DESCRIPTIONS = [
     'unboundedTextFields'              =>
         'Free-text fields with no bound at all on their length.',
     'choiceFieldsWithoutDomain'        =>
-        'Select/Radio/MultiCheckbox fields named in the spec without an InArray, so the spec entry '
-        . 'replaced the element input and the option list no longer constrains anything. The quiet '
-        . 'corruption case: short wrong-domain values fit every column.',
+        'Select/Radio/MultiCheckbox fields that set disable_inarray_validator and get no InArray '
+        . 'back from the spec, so nothing constrains them to their own option list. That option, '
+        . 'not the spec, is what removes a domain: laminas merges the spec input into the '
+        . "element's rather than replacing it. The quiet corruption case: short wrong-domain "
+        . 'values fit every column.',
     'boundsLooserThanColumn'           =>
         'Fields allowed to be longer than the column they are written into. SQLSTATE 22001 under '
         . 'STRICT_TRANS_TABLES.',

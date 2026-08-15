@@ -3,13 +3,27 @@ namespace Books\Form;
 
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 
 class SearchForm extends Form implements InputFilterProviderInterface
 {
-    public function __construct($name = null)
+    /**
+     * Every collection id in the database, as a floor under `collectionId`.
+     *
+     * The element's own options are the *right* domain and they are narrower than this: the
+     * consuming action replaces them with the collections of the library being viewed, before
+     * validating. This list only answers the case where that did not happen, so that a
+     * `collectionId` reaching the search query is at least a collection.
+     * @see \Books\Service\SearchFormFactory
+     * @var int[]
+     */
+    protected $allCollectionIds;
+
+    public function __construct($name = null, array $allCollectionIds = [])
     {
         // we want to ignore the name passed
         parent::__construct('search');
+        $this->allCollectionIds = $allCollectionIds;
         $this->setAttribute('method', 'GET');
 
         $this->add([
@@ -133,6 +147,7 @@ class SearchForm extends Form implements InputFilterProviderInterface
                         ],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('collectionId'), $this->allCollectionIds),
             ],
         ];
     }

@@ -3,6 +3,8 @@ namespace Books\Form;
 
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
+use SionModel\I18n\LanguageSupport;
 
 class TextSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -25,11 +27,22 @@ class TextSearchForm extends Form implements InputFilterProviderInterface
                 'size' => 50,
             ],
         ]);
+        //Nothing had ever filled this select in — not this constructor, not a factory (it has
+        //none: both controllers do `new TextSearchForm()`), not the view. It rendered as a
+        //language chooser offering no languages, and because a spec entry discards an
+        //element's own InArray, `?inLanguage=` accepted any string at all on the way to the
+        //search query. LanguageSupport is a static table and needs nothing injected, so the
+        //form can answer this itself rather than acquiring a factory to be told.
+        $languageSupport = new LanguageSupport();
         $this->add([
             'name' => 'inLanguage',
             'type' => 'Select',
             'options' => [
                 'label' => 'Language',
+                'empty_option' => '',
+                'value_options' => $languageSupport->getLanguageNames(
+                    \Locale::getPrimaryLanguage(\Locale::getDefault())
+                ),
             ],
             'attributes' => [
                 'required' => false,
@@ -71,6 +84,7 @@ class TextSearchForm extends Form implements InputFilterProviderInterface
                 'filters' => [
                     ['name' => 'ToNull'],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('inLanguage')),
             ],
         ];
     }

@@ -3,6 +3,7 @@ namespace Schoenstatt\Form;
 
 use Laminas\Form\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 
 class AdvancedSearchForm extends Form implements InputFilterProviderInterface
 {
@@ -128,6 +129,11 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
                             'encoding' => 'UTF-8',
                         ],
                     ],
+                    //The StringLength above bounds the value; this bounds the *domain*. Both
+                    //belong: a two-character string is not a country code, and this form's
+                    //values reach a WHERE clause rather than a column, so the length check
+                    //alone left 675 nonsense codes that produce an empty result page.
+                    ...ChoiceDomain::validators($this->get('associationCountry')),
                 ],
             ],
             'roleTitle' => [
@@ -135,6 +141,7 @@ class AdvancedSearchForm extends Form implements InputFilterProviderInterface
             ],
             'associationKind' => [
                 'required' => false,
+                'validators' => ChoiceDomain::validators($this->get('associationKind')),
             ],
             'personName' => [
                 'required' => false,
