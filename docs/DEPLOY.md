@@ -977,6 +977,17 @@ curl -s -o /dev/null -w '%{http_code}\n' https://schoenstatt.link/covers/
 
 Open an association page and confirm its images load. Then:
 
+Before swapping, **inventory anything scheduled**, because a cron entry that
+`cd`s into the application directory will keep running the *old* flat tree after
+the swap — see below:
+
+```bash
+ssh -p 222 ourlink@dedi2934.your-server.de 'crontab -l'
+```
+
+Also check konsoleH's own scheduler; entries added there do not appear in
+`crontab -l`. Then:
+
 ```bash
 ./tools/deploy.sh --bootstrap
 ```
@@ -990,8 +1001,31 @@ it never recurs. The old docroot is kept as `public.pre-atomic`; the way back is
 cd ~/public_html/schoenstatt.link && rm public && mv public.pre-atomic public
 ```
 
-Once a deploy has succeeded, `public.pre-atomic` and the old flat `vendor/` can
-be removed.
+### After the first swap: two things the swap does not do
+
+**1. Re-point every scheduled job.** Only `public/` became a symlink. The
+application directory still holds a complete copy of the old flat tree — `bin/`,
+`config/`, `module/`, `src/`, `vendor/` — so anything that does
+`cd ~/public_html/schoenstatt.link && php bin/console …` still runs, and runs the
+**old code**, while writing through `public/` into the *live* release. That is a
+worse failure than an outright break, because it works. The sitemap cron is the
+known one; re-point it as in "Before the next deploy: the sitemap needs a cron
+entry" above, using the `cd -P` form.
+
+**2. Remove the old flat tree, once a deploy has succeeded.** Until it is gone
+every path that used to work still works, against stale code. Preview first —
+the four names to keep are the only four that matter:
+
+```bash
+ssh -p 222 ourlink@dedi2934.your-server.de \
+  'cd public_html/schoenstatt.link && ls -A | grep -vE "^(releases|shared|public|public\.pre-atomic)$"'
+```
+
+That list is what the old layout left behind. Delete it only after
+`./tools/deploy.sh` has run cleanly at least once and `public.pre-atomic` is no
+longer wanted as an escape hatch, and delete it by name rather than with a
+wildcard — `releases/` and `shared/` live in the same directory, and losing
+`shared/` means losing 1.2 GB of uploaded media and every `*.local.php`.
 
 **Why this works on this hoster, verified 2026-08-15.** Apache follows the
 symlinked docroot *and* honours `.htaccess` at the symlink target — probed with
