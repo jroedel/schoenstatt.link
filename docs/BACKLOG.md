@@ -491,12 +491,15 @@ rediscovered.
     ids) and 4 more sit under the two inactive associations. The dangling 145 are a data
     repair; the 4 are a question about whether an inactive association's roles stay editable.
 
-- [ ] **`EventsSearchForm` and `EventsController::searchAction()` are unreachable.** There is no
+- [x] ~~**`EventsSearchForm` and `EventsController::searchAction()` are unreachable.**~~ **Done
+  2026-08-15**, as item 1.4 of [timeline-and-corpus.md](timeline-and-corpus.md). There was no
   `search` child route under `/timeline`, the events entity's `controller_services` is `[]` so
-  `$this->services[EventsSearchForm::class]` is an undefined key, and `search.phtml` renders
-  nothing. `EventForm` was in the same state and was deleted in batch 12; this trio was left
-  because deleting an action and a template is a wider decision than deleting a form. Delete or
-  finish.
+  `$this->services[EventsSearchForm::class]` was an undefined key, and `search.phtml` rendered
+  nothing. The form settled it: it carried `libraryId` and `collectionId` and **no event field
+  at all** — a copy of a library search that had been sitting in `Books\Form` since 2020. All
+  three deleted, along with `books/events/event-list.phtml`, which is a copy of the *publication*
+  list living in the events directory and rendered by nothing. Three stale lines left the fuzz
+  baseline and none were added.
 
 - [ ] **`selectize({create: true})` on fields the server constrains.**
   `AdvancedSearchForm::roleTitle` was declared open-by-design on the strength of that flag and
@@ -1230,7 +1233,10 @@ rediscovered.
     the nearest analogues are `pub_moderator` for publications and
     `texts_moderator` for texts — so picking one is a product call about who
     curates the timeline, not something to infer. `event` (show) can safely
-    match `events`.
+    match `events` — but only once a show template exists, or the guard turns a
+    default-deny into a 500. The whole feature is planned in
+    [timeline-and-corpus.md](timeline-and-corpus.md); this decision is its item
+    1.6, and it also gates Part 2's form work.
   - **Not** related to the disabled `SchoenstattTable` provider below, despite
     an earlier note here saying so: that provider only ever emitted
     `person_*`/`association_*` resources, never `route/*` ones, so it could not

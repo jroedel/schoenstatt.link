@@ -10,6 +10,15 @@
   so it is English in all five locales. Reproduced, not fixed: this batch ports
   pages, and making a page newly translatable changes what four of the five locales
   show.
+
+  ONE DELIBERATE DIVERGENCE, added 2026-08-15. The event title is rendered from
+  `title_field`, the column for the reader's own locale, where index.phtml renders
+  `titleEn` in all five. The data was always there — 527 rows carry Es/De/Pt/It and
+  526 carry Fr — so this shows what the database already holds rather than adding
+  anything. `attribute()` is needed because the column name is dynamic; the
+  `|default` catches the one event with no French title. See TimelineController's
+  docblock and docs/strangler.md's known-differences table: port-baseline.php
+  reports this page as differing, and that report is correct.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -22,7 +31,7 @@
 <div class="row">
 <div class="col-4"><strong>{{ year }}</strong></div>
 <div class="col-8">{% for event in event_objects %}
-<span>{{ event.titleEn }}</span><br>
+<span>{{ attribute(event, title_field)|default(event.titleEn) }}</span><br>
 {% endfor %}
 </div>
 </div>
