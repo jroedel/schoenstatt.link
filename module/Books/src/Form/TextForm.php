@@ -5,6 +5,7 @@ use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\EventTextTable;
 use Laminas\Validator\Identical;
+use SionModel\Form\ChoiceDomain;
 
 class TextForm extends SionForm implements InputFilterProviderInterface
 {
@@ -138,6 +139,7 @@ class TextForm extends SionForm implements InputFilterProviderInterface
             ],
             'inLanguage' => [
                 'required' => true,
+                'validators' => ChoiceDomain::validators($this->get('inLanguage')),
             ],
             'kind' => [
                 'required' => true,
