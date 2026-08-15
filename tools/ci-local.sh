@@ -79,26 +79,41 @@ if in_capsule php composer.phar install --no-dev --no-interaction --no-progress 
 else
     bad "composer install --no-dev could not resolve"
 fi
+# Classify on what a REAL finding looks like, not on what a known network error looks
+# like. Matching error strings is a losing game — this branch used to test only for
+# 'Could not resolve host', so on 2026-08-16 a transient failure to fetch the advisory
+# database (a different message: the file "could not be downloaded") was reported as
+# FAIL, and it blocked a deploy while reading, to every human, as "a vulnerability was
+# found in your dependencies". Nothing was wrong with the lock; the same run passed
+# minutes later.
+#
+# An advisory finding has a fixed shape and so does a clean result. Anything else is
+# UNKNOWN, which is neither ok nor a failure — so retry once, then say unknown and show
+# the output, because an unreadable database is a fact about the network and a reader
+# who cannot see the text cannot tell the two apart.
+audit_verdict() {
+    case $1 in
+        *'No security vulnerability advisories found'*) echo clean ;;
+        *'security vulnerability advisor'*)             echo found ;;   # "Found N security vulnerability advisories"
+        *)                                              echo unknown ;;
+    esac
+}
 OUT=$(in_capsule php composer.phar audit --locked 2>&1)
-if says "$OUT" 'No security vulnerability advisories found'; then
-    ok "no advisories against locked versions"
-elif says "$OUT" 'Could not resolve host'; then
-    # NOT a failure, and reporting it as one is actively misleading: `bad` here prints
-    # "FAIL composer audit --locked" into a PR body, which every reader takes to mean an
-    # advisory was found. An unreachable advisory database means UNKNOWN, so say unknown
-    # and say what to do.
-    #
-    # This branch is defensive rather than expected. The comment here used to assert the
-    # container has no DNS at all, "same reason `docker compose build` cannot fetch" —
-    # measured wrong on 2026-08-14: the *running* container resolves packagist.org,
-    # github.com and example.com through Docker's embedded resolver at 127.0.0.11, and the
-    # audit completes. Only `docker compose build` lacks DNS in this environment, which is
-    # a different network path. So expect `ok` and treat this branch as a real outage.
-    warn "advisories NOT checked — packagist.org unreachable from the container"
-    printf '        run `php composer.phar audit --locked` on the host, or from CI once its minutes reset\n'
-else
-    bad "composer audit --locked"
+VERDICT=$(audit_verdict "$OUT")
+if [ "$VERDICT" = unknown ]; then
+    sleep 3
+    OUT=$(in_capsule php composer.phar audit --locked 2>&1)
+    VERDICT=$(audit_verdict "$OUT")
 fi
+case $VERDICT in
+    clean) ok "no advisories against locked versions" ;;
+    found) bad "composer audit --locked — advisories against locked versions" ;;
+    *)
+        warn "advisories NOT checked — the advisory database could not be read (twice)"
+        printf '%s\n' "$OUT" | sed 's/^/        /'
+        printf '        retry, or run `php composer.phar audit --locked` on the host\n'
+        ;;
+esac
 # The autoload sanity check, verbatim from ci.yml: five classes spanning the app and all
 # three submodules, so a PSR-4 break or an unpushed submodule pointer fails loudly.
 OUT=$(in_capsule php -r '
