@@ -1144,7 +1144,21 @@ falls into a group that already existed:
 | 65 | the `//<!-- -->` inline-script wrapper | every create page with a selectize block | the batch-2 chrome nit, unchanged and invisible in a browser |
 | 10 | the navbar search box points at contacts, not at the library | `/books/create/{library_id}` × 5 locales × 2 variants | **batch 7's one accepted regression**, now on the book create page for exactly the same reason — see the section below it |
 
-The capture is also what found this batch's one real defect, which is fixed rather than
+Batch 10's, on the two create paths batch 9 left behind, signed in, across five locales —
+**19 differing responses, no new group and no defect**:
+
+| n | what | where | why |
+|---|---|---|---|
+| 12 | Symfony renders the translated help block where laminas renders English | the four non-English locales of `/persons/create` | batch 9's group above, on one more page. The string is `Please begin with a '+' followed by the country code`, from the phone fields |
+| 10 | the `//<!-- -->` inline-script wrapper | both pages | the batch-2 chrome nit, unchanged |
+| 5 | the `nameDay` selects are hidden inputs, and four patres fields exist that laminas does not render at all | `/persons/create` × 5 locales | **the Symfony side is the correct one**, and this is the same difference `/persons/{id}/edit` has carried since batch 7 — see the person-form section below. Without those hidden inputs a save writes NULL to two `NOT NULL` columns and 500s |
+
+`/texts/create` differs *only* by the script wrapper, in all five locales — no field, no
+attribute, no ordering. That is the useful control for the batch: the text template overrides
+nothing at all, so anything else differing would have been the shared create machinery rather
+than the page.
+
+The capture is also what found batch 9's one real defect, which is fixed rather than
 listed: `/associations/create` rendered **two empty options** on its time-zone select where
 laminas renders one. `FormSelect::render()` merges the empty option into the value options
 with `['' => $emptyOption] + $options` — a union, so an element declaring both an
@@ -1867,13 +1881,17 @@ edit (batch 7) and delete (batch 8).
 
 | ported | left on laminas |
 |---|---|
-| `associations/create`, `assignments/create`, `roles/create`, `books/create`, `collections/create`, `libraries/create`, `music/create-composition`, `publications/create`, `dictionary/create` | `persons/create`, `texts/create`, `juser/create`, `juser/create-role`, `library-imports/library/create`, `publication-create-new-edition`, `events/create` |
+| `associations/create`, `assignments/create`, `roles/create`, `books/create`, `collections/create`, `libraries/create`, `music/create-composition`, `publications/create`, `dictionary/create` | ~~`persons/create`~~, ~~`texts/create`~~ (both ported by batch 10), `juser/create`, `juser/create-role`, `library-imports/library/create`, `publication-create-new-edition`, `events/create` |
 
 #### Two of the seven are left out because they are broken, not because they are hard
 
-Both measured against the capsule on 2026-08-15 by posting a scraped, valid form, and both
-filed in [BACKLOG.md](BACKLOG.md). Porting either would mean reproducing the breakage in new
-code, which is not what a porting batch is for.
+> **Both were fixed and ported the same day** — see "The last two create routes — batch 10"
+> below. What follows is how they were found and what they were, which is why the section
+> stays rather than being edited away.
+
+Both measured against the capsule on 2026-08-15 by posting a scraped, valid form. Porting
+either as they stood would have meant reproducing the breakage in new code, which is not what
+a porting batch is for.
 
 - **`/persons/create` answers 500.** `SpousePersonId` receives `''` from a form where no
   spouse was chosen and MariaDB refuses the integer column. The *edit* form posts the
@@ -1925,6 +1943,90 @@ guard entry.
 A consequence worth knowing: a broken `extends` target is a fatal-200 that **compiles
 perfectly**, because Twig resolves a parent at render time. `TemplatesCompileTest` grew a
 second assertion for it in the same commit.
+
+### The last two create routes — batch 10, 2026-08-15
+
+**`persons/create` and `texts/create`, the two batch 9 left behind because they were broken
+on laminas.** Eleven of the sixteen now. The port itself was the small half; what took the
+work was the three defects underneath, which are worth reading as three *shapes* rather than
+three bugs, because each has a guard now and each was a singleton in the application when
+the guard was written.
+
+| shape | the instance | what fixed it | what guards it |
+|---|---|---|---|
+| `''` into a column that cannot hold one | `person.spousePersonId` — a `Select` with an `empty_option` and an input filter of `['required' => false]` and nothing else | `ToInt` then `ToNull` in `PersonForm`, the pair every other nullable-id select already carried | `test/Integration/EmptyStringToTypedColumnTest` |
+| an unguarded `$entityData` read in a preprocessor | `EventTextTable::preprocessText()` reading `$entityData['kind']`, which does not exist on a create | keying the clause on `legacyFile` instead | `test/Integration/PreprocessorCreateSafetyTest` |
+| `null` into a `NOT NULL` column, because the template never renders the field | the four patres date fields on `PersonForm` | already fixed in batch 7, on the Symfony side only | `test/Integration/PortedTemplatesRenderEveryNotNullFieldTest` |
+
+#### Each fix was audited across the whole application before it was made
+
+That is the part worth repeating rather than the fixes. The first one looked like it might
+need a change inside `SionTable::createEntity()` — the broad fix, shared with patres — and
+the audit is what made that unnecessary: **74 elements in the application can put an empty
+string somewhere non-string, and `spousePersonId` was the only one that let it through.**
+Thirty-eight of the rest are checkboxes, which render a hidden companion input and post
+`'0'` or `'1'`, never `''`; every other select and every free input already carried `ToNull`,
+`ToInt`, `ToDateTime` or a validator that refuses. A one-line form fix, not a change to
+shared infrastructure.
+
+The second was audited the same way — `preprocessText()` is the only one of the nine
+registered preprocessors that read `$entityData` without a guard; the other two that read it
+at all use `isset()`.
+
+#### Why the text fix keys on `legacyFile` and not on `kind`
+
+Because guarding the array read would have fixed the blank page and left the worse half in
+place. The clause said "do not render markdown to HTML for a jk-text", and **every text is a
+jk-text now that the blog is gone** — so editing a text's markdown never regenerated its
+HTML, and the show page renders `htmlText` and nothing else. The form's main field had no
+visible effect at all, for 2,753 of the 2,757 rows.
+
+Dropping the clause was measured before it was rejected: regenerating from the stored
+markdown would change the visible text of **2,740 of the 2,756** rows that have any, several
+to twice the length. The imported HTML is a genuinely different document, which is the point
+of `importJkTexts()` reading paired `.md` and `.html` files.
+
+`legacyFile` separates the two cases exactly, and the data says so rather than the naming:
+**all 2,753 imported rows carry one and all 4 rows authored in the application carry none.**
+So an imported text keeps the HTML it was imported with — byte-identical behaviour for every
+row that exists — while a text written here renders its markdown, on create and on every
+later edit.
+
+#### The laminas person form is still broken, deliberately
+
+`fields-partial.phtml` does not render the four patres date fields and `_person-fields.html.twig`
+does. Batch 7 fixed the Twig side and left the `.phtml` alone on the grounds that production
+serves Symfony and a laminas view script for a ported route is dead code; porting
+`/persons/create` applies that same precedent a second time rather than inventing a new one.
+The `spousePersonId` fix is in the *form*, so that half is fixed on both front controllers —
+which matters, because the person edit page is reached through both in principle.
+
+#### Two things the port had to reproduce that no earlier create route needed
+
+- **A `create_action_valid_data_handler`.** `person` is the only entity that declares one.
+  On laminas such a handler *replaces* `createEntityPostFormValidation()` wholesale, but
+  `PersonsController::createPerson()` is a copy of the method it replaces plus one rule —
+  a first name or a last name is required, and neither field is required on its own — so
+  `EntityCreateController::VALID_DATA_RULE` declares the rule and keeps the shared write path.
+  Reading the original is instructive: it calls `redirectAfterCreate()` **without returning
+  it**, and `createAction()` discards the handler's return value on purpose. The redirect
+  works anyway because laminas's `redirect()` plugin mutates the shared response object, so
+  the create page renders its own body underneath a 302 nobody returned.
+- **A redirect built from the submitted data.** `TextsController::redirectAfterCreate()`
+  derives the identifier from the insert id and the slug from `$data['title']`, never loading
+  the row it just wrote — where its `redirectAfterEdit()` sibling reads the updated row. Both
+  are reproduced as separate branches.
+
+#### A capsule trap this batch hit, which costs an hour if you have not seen it
+
+`/persons/create` answered a **0-byte 200** after a template edit that was correct. The
+compiled Twig in `data/cache/twig/` was **owned by root** — left by an earlier
+`docker compose exec` without `-u` — and Apache runs as `www-data`, so `auto_reload` detected
+the change, tried to rewrite the compiled file, failed silently, and served the stale one.
+The reported error even named the *old* line number, which is the tell. `chown -R
+www-data:www-data data/cache/twig` inside the container. `TwigFactory` documents the case
+where the cache *directory* is unwritable and falls back cleanly; an unwritable individual
+file inside a writable directory is the case it does not cover.
 
 ### The v1 and v2 API — retired, not ported, 2026-08-14
 

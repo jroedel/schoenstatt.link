@@ -16,6 +16,8 @@ use Laminas\Form\FormInterface;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Locale;
 use RuntimeException;
+use Schoenstatt\Filter\ToSchoenstattLinkIdentifier;
+use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,11 +33,13 @@ use function str_ends_with;
 use function substr;
 
 /**
- * Every entity create form on the Symfony side: nine routes of batch 9 behind one class.
+ * Every entity create form on the Symfony side: eleven routes behind one class — nine from
+ * batch 9, and `persons/create` and `texts/create` from batch 10, which waited on the laminas
+ * bugs that made them unportable.
  *
  * The counterpart of `EntityEditController`, over `App\Sion\EntityCreate`, and the same
- * argument for one class rather than nine: on laminas these pages are *one* method,
- * `SionController::createAction()`, reached through nine controllers that mostly add
+ * argument for one class rather than eleven: on laminas these pages are *one* method,
+ * `SionController::createAction()`, reached through eleven controllers that mostly add
  * nothing to it. What differs per page is declared in `config/symfony/routes.php`.
  *
  * ## What differs from the edit surface
@@ -86,6 +90,12 @@ final class EntityCreateController
      * `redirectAfterCreate()`. Only `dictionary-entry` does, among this batch's nine.
      */
     public const REDIRECT_TARGET = '_create_redirect_target';
+    /**
+     * Names a private rule below that runs after the form validates and before anything is
+     * written, for the entities whose spec declares a `create_action_valid_data_handler`.
+     * Only `person` does.
+     */
+    public const VALID_DATA_RULE = '_create_valid_data_rule';
 
     public function __construct(
         private readonly EntityCreate $create,
@@ -134,7 +144,15 @@ final class EntityCreateController
 
             if ($form->isValid()) {
                 /** @var array<string, mixed> $data */
-                $data  = $form->getData();
+                $data = $form->getData();
+
+                $refusal = $this->validDataRule($request, $data);
+                if (null !== $refusal) {
+                    $this->flash(FlashMessenger::NAMESPACE_ERROR, $refusal);
+
+                    return $this->render($request, $entity, $form, $laminasRoute, $routeParams, $libraryId);
+                }
+
                 $newId = $this->create->create($entity, $data);
 
                 if (0 !== $newId) {
@@ -156,6 +174,23 @@ final class EntityCreateController
             $this->prefill($request, $form);
         }
 
+        return $this->render($request, $entity, $form, $laminasRoute, $routeParams, $libraryId);
+    }
+
+    /**
+     * The page itself. Every exit that is not a redirect comes through here.
+     *
+     * @param FormInterface<array<string, mixed>> $form
+     * @param array<string, string>               $routeParams
+     */
+    private function render(
+        Request $request,
+        string $entity,
+        FormInterface $form,
+        string $laminasRoute,
+        array $routeParams,
+        ?int $libraryId
+    ): Response {
         return new Response($this->twig->render($this->attribute($request, self::TEMPLATE), [
             'page_title'  => $this->attribute($request, self::PAGE_TITLE),
             'breadcrumbs' => $this->breadcrumbs($request, $routeParams),
@@ -163,6 +198,46 @@ final class EntityCreateController
             'form_action' => $this->urls->path($laminasRoute, $routeParams),
             'library_id'  => $libraryId,
         ] + $this->extraVariables($request, $entity, $form)));
+    }
+
+    /**
+     * The rule a spec's `create_action_valid_data_handler` adds beyond validation, or null
+     * when the route declares none or the data satisfies it.
+     *
+     * On laminas these handlers *replace* `createEntityPostFormValidation()` wholesale — the
+     * spec names a controller method and `createAction()` calls it instead of creating the
+     * record itself. Only one exists, `PersonsController::createPerson()`, and all it adds to
+     * the shared path is one rule; the rest is a copy of the method it replaced, down to the
+     * `ucwords($entity) . ' successfully created.'` message. So what is reproduced here is the
+     * rule, not the replacement — a route declares the rule and keeps the shared write path.
+     *
+     * Reading the original is worth doing before adding a second one. `createPerson()` calls
+     * `$this->redirectAfterCreate()` **without returning it**, and `createAction()` discards
+     * the handler's return value on purpose ("don't return here so that if the handler doesn't
+     * redirect, we send them back to the form"). The redirect works anyway, because laminas's
+     * `redirect()` plugin sets the status and `Location` on the shared response object rather
+     * than on one it hands back — so the create page renders its own body underneath a 302
+     * nobody returned. That is not a thing to reproduce.
+     *
+     * @param array<string, mixed> $data the validated form data
+     */
+    private function validDataRule(Request $request, array $data): ?string
+    {
+        $named = $this->optional($request, self::VALID_DATA_RULE);
+        if (null === $named) {
+            return null;
+        }
+
+        return match ($named) {
+            //"Either a first name or a last name is required." Neither field is required on
+            //its own — a person can be recorded with only a surname or only a given name —
+            //so the rule is a relation between two optional fields, which is why it lives in
+            //a handler and not in the input filter.
+            'person' => ($data['firstName'] ?? '') || ($data['lastName'] ?? '')
+                ? null
+                : 'Either a first name or a last name is required.',
+            default  => throw new RuntimeException("Route declares unknown valid-data rule '$named'."),
+        };
     }
 
     /**
@@ -219,6 +294,7 @@ final class EntityCreateController
         if (null !== $named) {
             return match ($named) {
                 'dictionaryEntry' => $this->redirectToDictionaryLanguage($row, $data),
+                'text'            => $this->redirectToText($newId, $row, $data),
                 default           => throw new RuntimeException(
                     "Route declares unknown redirect target '$named' for entity '$entity'."
                 ),
@@ -236,6 +312,33 @@ final class EntityCreateController
         }
 
         return $this->urls->path($target[0], $target[1]);
+    }
+
+    /**
+     * `TextsController::redirectAfterCreate()`: to the new text's own page.
+     *
+     * Built from the **submitted data**, not from the stored row, and that is the original's
+     * choice rather than a shortcut — it derives the identifier from the insert id and the
+     * slug from `$data['title']`, never loading what it just wrote. The two agree in practice
+     * because `EventTextTable::preprocessText()` slugs the same title through the same
+     * `SchoenstattTable::getSlug()`; the row is consulted here only as a fallback for a title
+     * the post did not carry, which the form's `required` rule makes unreachable.
+     *
+     * Its sibling `redirectAfterEdit()` reads the *updated row* instead, which is why the two
+     * are separate methods there and separate branches here.
+     *
+     * @param array<string, mixed> $row
+     * @param array<string, mixed> $data
+     */
+    private function redirectToText(int $newId, array $row, array $data): string
+    {
+        /** @var mixed $title */
+        $title = $data['title'] ?? $row['title'] ?? '';
+
+        return $this->urls->path('text', [
+            'sw_id' => (new ToSchoenstattLinkIdentifier('text'))->filter($newId),
+            'slug'  => SchoenstattTable::getSlug(is_string($title) ? $title : ''),
+        ]);
     }
 
     /**

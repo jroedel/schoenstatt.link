@@ -995,6 +995,54 @@ $create(
     [EntityCreateController::REDIRECT_TARGET => 'dictionaryEntry']
 );
 
+// Batch 10, ported 2026-08-15: the two create routes batch 9 left behind, once the laminas
+// bugs that made them unportable were fixed. **Eleven of the sixteen now.**
+//
+// A new person, guarded `sch_moderator`. The only route in either batch whose spec declares a
+// `create_action_valid_data_handler`, hence VALID_DATA_RULE — `PersonsController::createPerson()`
+// requires a first name or a last name before it writes anything, a relation between two
+// individually optional fields that no input filter can express.
+//
+// Three defects stood between this route and a port, and the third is the one to remember.
+// Two are fixed in code both front controllers share: `spousePersonId` posting `''` into an
+// integer column (PersonForm), and — from batch 7 — the four patres date fields no template on
+// this site renders, whose absence writes NULL to two NOT NULL columns. The third is that the
+// fix for the second exists **only on the Symfony side**: `_person-fields.html.twig` carries
+// the hidden inputs and `fields-partial.phtml` does not. Porting the route is what retires the
+// laminas page, which is the same precedent batch 7 set for the edit form and the reason
+// `/persons/create` answers 500 today while `/persons/{id}/edit` does not.
+$create(
+    'persons/create',
+    '/persons/create',
+    'person',
+    'schoenstatt/person-create.html.twig',
+    'Create New Person',
+    'Schoenstatt',
+    [EntityCreateController::VALID_DATA_RULE => 'person']
+);
+
+// A new Kentenich text, guarded `texts_moderator` — the sharpest guard of the eleven.
+//
+// REDIRECT_TARGET because `TextsController::redirectAfterCreate()` is an override, and an
+// unusual one: it builds the identifier and the slug from the submitted data rather than
+// re-reading the row, so the redirect lands on `/{sw_id}/{slug}` for a record it never loads.
+// See App\Sion\EntityCreate::textTarget().
+//
+// What made this unportable was not the form: creating a text worked and then showed a blank
+// page, because `EventTextTable::preprocessText()` read `$entityData['kind']` off a row that
+// does not exist on a create and the warning beat the `Location` header out. Fixed in that
+// method — see it for why the guard is on `legacyFile` and not on `kind` — and guarded by
+// test/Integration/PreprocessorCreateSafetyTest.
+$create(
+    'texts/create',
+    '/texts/create',
+    'text',
+    'books/text-create.html.twig',
+    'New text',
+    'Books',
+    [EntityCreateController::REDIRECT_TARGET => 'text']
+);
+
 // Batch 8, ported 2026-08-14: the delete surface. The seven entity delete
 // confirmations that share SionController::deleteAction().
 // ---------------------------------------------------------------------------

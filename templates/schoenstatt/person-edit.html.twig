@@ -61,8 +61,15 @@
   `Edit %s`, exactly as the other nine declare theirs, and this only translates it and
   drops the name in. Keeping the literal in the route declaration rather than here is what
   keeps `config/symfony/routes.php` readable as the inventory of page titles.
+
+  Guarded on `person_name` because `person-create.html.twig` extends this file, and a
+  child's top-level code runs *before* the parent's — so the create page cannot override
+  this by assigning first. There is no record on a create and therefore no name; its title
+  is the route's string, translated and used as it stands.
 #}
-{% set page_title = translate(page_title)|format(person_name) %}
+{% set page_title = person_name is defined
+    ? translate(page_title)|format(person_name)
+    : translate(page_title) %}
 {% set page_title_translate = false %}
 
 {#

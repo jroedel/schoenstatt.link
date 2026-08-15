@@ -145,7 +145,10 @@ jobs:
       - name: Fetch the pinned phpunit phar
         run: bash tools/get-phars.sh phpunit
       - name: Run the integration suite
-        run: php tools/phpunit.phar --testsuite integration
+        # memory_limit=1G for the same reason the fuzz job needs it, and since
+        # batch 10 for the same code: three of these tests build every form in
+        # the application through test/Fuzz/FormRepository. 512M dies partway.
+        run: php -d memory_limit=1G tools/phpunit.phar --testsuite integration
 
   composer-install:
     name: composer install --no-dev (deploy rehearsal)
