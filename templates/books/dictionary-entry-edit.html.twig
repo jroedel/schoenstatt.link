@@ -6,6 +6,12 @@
   the partial puts it, and it is a `pull-right` float — so its position in the source
   order is what decides which row it floats beside. Moving it to the top or bottom would
   render differently.
+
+  **The field rows live in `books/_dictionary-entry-fields.html.twig` now**, shared with the create
+  form so that a field cannot be added to one surface and quietly forgotten on the
+  other. What stays in this file is what edit.phtml keeps outside its own partial —
+  which is not the same set for every entity, and is the detail worth checking before
+  moving anything across the boundary.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -21,15 +27,7 @@
 <h1>{{ translate(page_title) }}</h1>
 
 {{ form_open(form, form_action) }}
-{{ form_row(form.get('key')) }}
-{{ form_row(form.get('locale')) }}
-{{ form_row(form.get('directTranslation')) }}
-<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
-{{ form_row(form.get('entry')) }}
-{{ form_row(form.get('links')) }}
-{{ form_row(form.get('isActive')) }}
-{{ form_row(form.get('security')) }}
-{{ form_row(form.get('submit')) }}
+{{ include('books/_dictionary-entry-fields.html.twig') }}
 {{ form_close() }}
 {% endblock %}
 

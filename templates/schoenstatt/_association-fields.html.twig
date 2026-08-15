@@ -1,0 +1,95 @@
+{#-
+  The association and shrine field list — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/associations/fields-partial.phtml, shared by the edit form and (from batch 9) the
+  create form, exactly as that partial is shared by edit.phtml and create.phtml.
+
+  No submit row: associations/edit.phtml renders it outside this partial.
+
+  The longest field list on the site. Its validation does not live here or in the form —
+  App\Schoenstatt\Association\AssociationInputFilterSpec holds it, so the v3 API and this
+  page enforce one set of rules.
+
+  The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
+  a page puts around it stays in that page's template.
+
+  Its delimiters are whitespace-controlled so that a plain include standing where the rows
+  used to stand emits exactly the bytes the rows emitted — verified page by page, in two
+  locales, before and after. Do not spell the delimiter sequences out in prose here: Twig
+  has no escape for them inside a comment, so writing one ends the comment early and turns
+  the rest of this docblock into template code. That wedged the collection form during
+  this very refactor. See docs/strangler.md.
+-#}
+{{ form_hidden(form.get('associationId')) }}
+<div class="form-group ">
+    {{- form_label(form.get('name')) }}
+    {{- form_element(form.get('name')) }}
+    {{- form_errors(form.get('name')) }}
+    {{- help_block(form.get('name')) }}
+    {{- form_element(form.get('overrideNameFormat')) }}
+    {{- form_errors(form.get('overrideNameFormat')) }}
+    {{- help_block(form.get('overrideNameFormat')) }}<br>
+    {{- form_element(form.get('isNameTranslateable')) }}
+    {{- form_errors(form.get('isNameTranslateable')) }}
+    {{- help_block(form.get('isNameTranslateable')) }}
+</div>
+<div class="form-group ">
+    {{- form_label(form.get('internalName')) }}
+    {{- form_element(form.get('internalName')) }}
+    {{- form_errors(form.get('internalName')) }}
+    {{- help_block(form.get('internalName')) }}
+    {{- form_element(form.get('isInternalNameTranslateable')) }}
+    {{- form_errors(form.get('isInternalNameTranslateable')) }}
+    {{- help_block(form.get('isInternalNameTranslateable')) }}<br>
+    {#- @todo only show this for associationKinds which could actually be life communities #}
+    {{- form_element(form.get('isLifeCommunity')) }}
+    {{- form_errors(form.get('isLifeCommunity')) }}
+    {{- help_block(form.get('isLifeCommunity')) }}<br>
+    {{- form_element(form.get('isActive')) }}
+    {{- form_errors(form.get('isActive')) }}
+    {{- help_block(form.get('isActive')) }}
+</div>
+{#
+  `false` is the partial's `$this->formSelect()->setTranslatorEnabled(false)`, which
+  wraps exactly these seven rows: an association name, a country name, an IANA zone
+  identifier and a kind label are data, not interface text, and running them through
+  the translator turns a shrine called "Office" into whatever the catalogue says.
+  The rows after this block are back to translated options — "Alternate cell phone"
+  really does render as "Alternative cell phone" through the en catalogue.
+#}
+{{ form_row(form.get('parentId'), false) }}
+{{ form_row(form.get('kind'), false) }}
+{{ form_row(form.get('country'), false) }}
+{{ form_row(form.get('timeZoneId'), false) }}
+{{ form_row(form.get('openingHoursHuman'), false) }}
+{{ form_row(form.get('openingHoursSpecificationJson'), false) }}
+{{ form_row(form.get('eventsHuman'), false) }}
+{{ form_row(form.get('foundationDate')) }}
+{{ form_row(form.get('foundationDatePrecision')) }}
+<div class="pull-right commonmark-help"><a href="http://commonmark.org/help/" class="btn btn-default"> {{ translate('Learn Markdown in 60 seconds') }}</a></div>
+{{ form_row(form.get('publicNotes')) }}
+{{ form_row(form.get('adminNotes')) }}
+    <hr>
+    <h2>{{ translate('Contact Info') }}</h2>
+{{ form_row(form.get('email')) }}
+{{ form_row(form.get('phone1')) }}
+{{ form_row(form.get('phone1Label')) }}
+{{ form_row(form.get('phone2')) }}
+{{ form_row(form.get('phone2Label')) }}
+{{ form_row(form.get('phone3')) }}
+{{ form_row(form.get('phone3Label')) }}
+{{ form_row(form.get('twitterUser')) }}
+{{ form_row(form.get('instagramUser')) }}
+{{ form_row(form.get('facebookUrl')) }}
+{{ form_row(form.get('url1')) }}
+{{ form_row(form.get('url1Label')) }}
+{{ form_row(form.get('url2')) }}
+{{ form_row(form.get('url2Label')) }}
+{{ form_row(form.get('url3')) }}
+{{ form_row(form.get('url3Label')) }}
+{{ form_row(form.get('geoPoint')) }}
+{{ form_row(form.get('street1')) }}
+{{ form_row(form.get('street2')) }}
+{{ form_row(form.get('cityState')) }}
+{{ form_row(form.get('zip')) }}
+{{ form_row(form.get('googlePlaceId')) }}
+{{ form_row(form.get('security')) -}}
