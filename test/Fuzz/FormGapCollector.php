@@ -29,14 +29,28 @@ use Throwable;
  * `InputProviderInterface::getInputSpecification()`, which is where `Select` gets its
  * `InArray`, `Email` its `EmailAddress`, `Url` its `Uri`, `Date` its `Date` and
  * `Number` its `Step`/`GreaterThan`/`LessThan`. It then walks the form's
- * `getInputFilterSpecification()` calling `$inputFilter->add($input, $name)`, which
- * **replaces by name**. Three consequences drive the checks:
+ * `getInputFilterSpecification()` calling `$inputFilter->add($input, $name)`.
  *
- *  - A field named in the spec keeps *only* the spec. Naming a `Select` in the spec
- *    without repeating an `InArray` destroys its domain check, and the field becomes
- *    free text pointed straight at an enum-ish varchar. That is the quiet corruption
- *    the brief cares about most, so it gets its own category rather than hiding
- *    inside "unbounded".
+ * **That call merges; it does not replace.** `BaseInputFilter::add()` ends with
+ *
+ *     // The element already exists, so merge the config. Please note
+ *     // that this merges the new input into the original.
+ *     $original = $this->inputs[$name];
+ *     $original->merge($input);
+ *
+ * so a field named in the spec keeps the element's validators *and* gains the spec's.
+ * This file asserted the opposite until 2026-08-15 and every choice-field finding it
+ * produced was computed from that, which is why `LibraryForm::mainCollectionId` sat in
+ * the baseline as an unconstrained gap while rejecting `999` end-to-end. Read the built
+ * `getInputFilter()` before believing anything here about what does or does not apply.
+ *
+ * Three consequences drive the checks:
+ *
+ *  - A `Select` keeps its own `InArray` unless the element sets
+ *    `disable_inarray_validator => true`. That option, not the spec, is what makes a
+ *    choice field's domain disappear — and 35 elements in this application set it. So
+ *    the choice-field category asks about the option, and treats a spec-side `InArray`
+ *    (`SionModel\Form\ChoiceDomain`) as the thing that puts the domain back.
  *  - An element *not* named in the spec keeps whatever it provides for itself — which
  *    for a plain `Text`, `Textarea` or `Hidden` (base `Laminas\Form\Element`, no
  *    `InputProviderInterface`) is `['name' => …, 'required' => false]`. No filter, no
@@ -45,6 +59,11 @@ use Throwable;
  *    returns `$filter->getValues()`) emits `null` for it. So the typo is silent in
  *    both directions: the field it was meant to protect is naked, and a phantom key
  *    appears in the data.
+ *
+ * The merge does *not* rescue a filter. `Input::merge()` takes the incoming input's
+ * filter chain too, so a spec that names a field adds to what the element does rather
+ * than overriding it — which is why the batch-10 `spousePersonId` defect (an empty
+ * string reaching an integer column) was real even though the element was untouched.
  *
  * ## Scope: one class, its own elements
  *
@@ -291,7 +310,12 @@ final class FormGapCollector
             $isTextish  = ! self::isOneOf($element, self::NON_TEXT_ELEMENT_TYPES);
             $isChoice   = self::isOneOf($element, self::CHOICE_ELEMENT_TYPES);
 
-            if ($isChoice && $inSpec && ! in_array('inarray', $validators, true)) {
+            //`disable_inarray_validator` is the question, not the spec — see the mechanics
+            //note at the top of this file. An element that has not disabled its own InArray
+            //keeps it through the merge, whatever the spec says.
+            $domainDisabled = $isChoice && (bool) $element->getOption('disable_inarray_validator');
+
+            if ($domainDisabled && ! in_array('inarray', $validators, true)) {
                 //Two opposite fixes wear this one description, so they get two categories.
                 //A field the view lets a moderator type into has no domain to enforce, and
                 //adding an InArray to it removes a feature rather than closing a hole —
@@ -306,8 +330,8 @@ final class FormGapCollector
                 $gaps[$category][] = sprintf(
                     'choiceFieldsOpenByDesign' === $category
                         ? '%s: %s is a %s whose options are a suggestion, not a domain — declared open'
-                        : '%s: %s is a %s named in the spec without an InArray, so its option list no '
-                            . 'longer constrains anything',
+                        : '%s: %s is a %s with disable_inarray_validator and no InArray in the spec, '
+                            . 'so nothing constrains it to its option list',
                     $class,
                     self::q($name),
                     self::shortType($element)

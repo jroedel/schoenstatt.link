@@ -54,8 +54,6 @@ return [
         'Books\\Form\\CompositionForm: \'url1Label\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\CompositionForm: \'url2Label\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\CompositionForm: \'url3Label\' is a select whose options are a suggestion, not a domain — declared open',
-        'Books\\Form\\EventForm: \'adminTags\' is a select whose options are a suggestion, not a domain — declared open',
-        'Books\\Form\\EventForm: \'tags\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\PublicationForm: \'authorsAll\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\PublicationForm: \'editorsAll\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\PublicationForm: \'keywords\' is a select whose options are a suggestion, not a domain — declared open',
@@ -65,7 +63,6 @@ return [
         'Books\\Form\\PublicationForm: \'url2Label\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\PublicationForm: \'url3Label\' is a select whose options are a suggestion, not a domain — declared open',
         'Books\\Form\\TextForm: \'tags\' is a select whose options are a suggestion, not a domain — declared open',
-        'Schoenstatt\\Form\\AdvancedSearchForm: \'roleTitle\' is a select whose options are a suggestion, not a domain — declared open',
         'Schoenstatt\\Form\\AssociationForm: \'phone1Label\' is a select whose options are a suggestion, not a domain — declared open',
         'Schoenstatt\\Form\\AssociationForm: \'phone2Label\' is a select whose options are a suggestion, not a domain — declared open',
         'Schoenstatt\\Form\\AssociationForm: \'phone3Label\' is a select whose options are a suggestion, not a domain — declared open',
@@ -83,42 +80,16 @@ return [
         'Schoenstatt\\Form\\RoleForm: \'roleTitle\' is a select whose options are a suggestion, not a domain — declared open',
     ],
 
-    // Select/Radio/MultiCheckbox fields named in the spec without an InArray, so the spec entry
-    // replaced the element input and the option list no longer constrains anything. The quiet
-    // corruption case: short wrong-domain values fit every column.
+    // Select/Radio/MultiCheckbox fields that set disable_inarray_validator and get no InArray back
+    // from the spec, so nothing constrains them to their own option list. That option, not the spec,
+    // is what removes a domain: laminas merges the spec input into the element's rather than replacing
+    // it. The quiet corruption case: short wrong-domain values fit every column.
     'choiceFieldsWithoutDomain' => [
-        'Books\\Form\\BookForm: \'collectionId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\BookForm: \'inLanguage\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\BookForm: \'publicationId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\CompositionForm: \'country\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\EventForm: \'accuracy\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\EventForm: \'aclResourceId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\EventForm: \'bestTextQuality\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\EventForm: \'country\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\EventForm: \'originalLanguage\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\EventsSearchForm: \'collectionId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\LibraryForm: \'mainCollectionId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\MassCheckoutFieldset: \'personId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\PublicationForm: \'mainPublicationId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\PublicationForm: \'translatedFromPublicationId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\PublicationsSearchForm: \'inLanguage\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\SearchForm: \'collectionId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Books\\Form\\TextSearchForm: \'inLanguage\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\AdvancedSearchForm: \'associationCountry\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\AdvancedSearchForm: \'associationKind\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\AssignmentForm: \'associationId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\AssignmentForm: \'personId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\AssignmentForm: \'roleId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\EditAssignmentForm: \'associationId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\EditAssignmentForm: \'personId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\EditAssignmentForm: \'roleId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
-        'Schoenstatt\\Form\\ImportFatherForm: \'personId\' is a select named in the spec without an InArray, so its option list no longer constrains anything',
     ],
 
     // filters/validators keys in an element definition, which Laminas\Form\Factory discards without a
     // word. The field looks protected in the source and is completely unvalidated.
     'deadElementKeys' => [
-        'module/Books/src/Form/EventForm.php:283 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
         'module/Schoenstatt/src/Form/PersonForm.php:472 element \'publicNotes\' carries a dead \'filters\' key in its element definition',
     ],
 
@@ -186,8 +157,6 @@ return [
         'Books\\Form\\CompositionForm: \'url1\' (url) has no length bound',
         'Books\\Form\\CompositionForm: \'url2\' (url) has no length bound',
         'Books\\Form\\CompositionForm: \'url3\' (url) has no length bound',
-        'Books\\Form\\EventForm: \'adminNotes\' (textarea) has no length bound',
-        'Books\\Form\\EventForm: \'publicNotes\' (textarea) has no length bound',
         'Books\\Form\\EventsSearchForm: \'category\' (text) has no length bound',
         'Books\\Form\\EventsSearchForm: \'libraryId\' (hidden) has no length bound',
         'Books\\Form\\ImportForm: \'libraryId\' (hidden) has no length bound',

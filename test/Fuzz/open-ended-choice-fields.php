@@ -7,12 +7,15 @@ declare(strict_types=1);
  *
  * ## Why this file exists
  *
- * `FormGapCollector` reports a `Select`, `Radio` or `MultiCheckbox` named in a form's
- * `getInputFilterSpecification()` without an `InArray` as a gap, because naming it there
- * discards the element's own input and the option list stops constraining anything. That was
- * true of 88 fields on 2026-08-15 — and **fixing all 88 the same way would have been a bug.**
+ * `FormGapCollector` reports a `Select`, `Radio` or `MultiCheckbox` that sets
+ * `disable_inarray_validator => true` and gets no `InArray` back from the form's
+ * `getInputFilterSpecification()`: nothing then constrains it to its option list. On 2026-08-15
+ * that was 88 fields by the collector's original reckoning — which counted every field named in
+ * a spec, on the belief that naming one discards the element's own input. It does not; laminas
+ * merges. 35 fields are in this state, and **fixing them all the same way would still have been
+ * a bug.**
  *
- * Roughly half of them are `selectize({create: true})` in the view: the moderator types a value
+ * Most of them are `selectize({create: true})` in the view: the moderator types a value
  * that is not in the list and the list grows. A tag is created by typing it; a book regularly
  * names an author the database has never seen; "Home" and "Work" are whatever anyone wrote
  * before. Adding an `InArray` to those does not close a hole, it removes a feature — cataloguing
@@ -20,7 +23,8 @@ declare(strict_types=1);
  *
  * So the two cases are opposite fixes wearing one description, and the baseline could not tell
  * them apart. Every entry here is a field where **no domain check is the correct answer**, and
- * the remaining `choiceFieldsWithoutDomain` entries are the ones still worth closing.
+ * the remaining `choiceFieldsWithoutDomain` entries are the ones still worth closing — as of
+ * batch 12 there are none.
  *
  * ## How each entry was decided
  *
@@ -29,11 +33,19 @@ declare(strict_types=1);
  * uncomfortable — the fact lives in JavaScript and is enforced (or not) in PHP — but it is
  * where this application states it, and inventing a second declaration would let the two drift.
  *
- * One inconsistency turned up in the reading and is *not* accepted here: `country` is
+ * It is not the last word, and one entry proved it. `AdvancedSearchForm::roleTitle` was
+ * declared here on that flag and taken out again on 2026-08-15: the element does not set
+ * `disable_inarray_validator`, so its own `InArray` is live and the field rejects a typed role
+ * title today, whatever the view offers. The server, not the template, decides whether a domain
+ * is enforced — the `create:` flag only says whether someone *meant* it to be. Where the two
+ * disagree the field belongs in docs/BACKLOG.md, not in this list.
+ *
+ * One inconsistency turned up in the reading and was *not* accepted here: `country` was
  * `create: true` on the composition form and `create: false` on the person and association
- * forms, so on one page a moderator can invent a country. `mus_compositions.Country` holds
- * `pt` and `cl` against an uppercase-keyed list, which is what that permission produced. It is
- * filed in docs/BACKLOG.md rather than declared open by design.
+ * forms, so on one page a moderator could invent a country. `mus_compositions.Country` held
+ * `pt` and `cl` against an uppercase-keyed list, which is what that permission produced. Both
+ * halves are fixed as of 2026-08-15 — the template says `create: false` and the form carries a
+ * ChoiceDomain InArray — which is why `CompositionForm::country` is not in the list below.
  *
  * ## Adding to this file
  *
@@ -50,8 +62,6 @@ return [
     'Books\Form\BookForm::adminTags',
     'Books\Form\BookForm::keywords',
     'Books\Form\CompositionForm::tags',
-    'Books\Form\EventForm::adminTags',
-    'Books\Form\EventForm::tags',
     'Books\Form\PublicationForm::keywords',
     'Books\Form\TextForm::tags',
     'Schoenstatt\Form\PersonForm::adminTags',
@@ -72,7 +82,6 @@ return [
     'Books\Form\BookForm::category',
     'Books\Form\BookForm::publisher',
     'Books\Form\PublicationForm::publisher',
-    'Schoenstatt\Form\AdvancedSearchForm::roleTitle',
     'Schoenstatt\Form\RoleForm::roleTitle',
 
     // Contact labels — "Home", "Work", "Mobile". The list is whatever other records use and

@@ -402,8 +402,27 @@ class CompositionForm extends SionForm implements InputFilterProviderInterface
                 'required' => false,
                 'validators' => ChoiceDomain::validators($this->get('inLanguage')),
             ],
+            //Three changes that only work in this order, and the order is the whole point.
+            //
+            //`mus_compositions.Country` held `pt` and `cl` in 292 of its 308 non-empty rows,
+            //against an option list keyed `PT` and `CL`. The cause was the view, not this
+            //form: the composition template alone passed `create: true` to selectize, so a
+            //moderator could type a country here that the person and association forms make
+            //them pick. That is now `create: false`, StringToUpper below folds anything that
+            //arrives in the old shape, and only then does the InArray become safe — added
+            //first, it would have refused to save 292 existing compositions over a field
+            //nobody had touched. db7.9 corrects the stored rows.
             'country' => [
                 'required' => false,
+                'filters' => [
+                    ['name' => 'StringToUpper'],
+                    ['name' => ToNull::class,
+                        'options' => [
+                            'type' => ToNull::TYPE_STRING,
+                        ]
+                    ],
+                ],
+                'validators' => ChoiceDomain::validators($this->get('country')),
             ],
             'yearPublished' => [
                 'required' => false,
