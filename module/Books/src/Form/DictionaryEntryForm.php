@@ -4,6 +4,7 @@ namespace Books\Form;
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Books\Model\LibraryOptions;
+use SionModel\Form\ChoiceDomain;
 
 class DictionaryEntryForm extends SionForm implements InputFilterProviderInterface
 {
@@ -149,6 +150,7 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
             ],
             'locale' => [
                 'required' => true,
+                'validators' => ChoiceDomain::validators($this->get('locale')),
             ],
             'directTranslation' => [
                 'required' => false,
@@ -172,11 +174,16 @@ class DictionaryEntryForm extends SionForm implements InputFilterProviderInterfa
                     ],
                 ],
             ],
-            'links' => [ //@todo add a validator
+            //The `@todo add a validator` that stood here is done: a multiple select's
+            //own InArray is discarded by this spec entry existing at all, so the 1,352
+            //entries it offers constrained nothing. ChoiceDomain wraps it in Explode,
+            //which is what the element's own input specification does for a multiple.
+            'links' => [
                 'required' => false,
                 'filters' => [
 //                     ['name' => 'SionModel\Filter\TrimStringArray'],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('links')),
             ],
             'entry' => [
                 'required' => true,

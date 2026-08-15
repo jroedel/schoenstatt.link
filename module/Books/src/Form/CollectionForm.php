@@ -4,6 +4,7 @@ namespace Books\Form;
 use Books\Model\LibraryTable;
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
+use SionModel\Form\ChoiceDomain;
 
 class CollectionForm extends SionForm implements InputFilterProviderInterface
 {
@@ -370,6 +371,7 @@ class CollectionForm extends SionForm implements InputFilterProviderInterface
                             'max' => 50,
                         ],
                     ],
+                    ...ChoiceDomain::validators($this->get('mainShowDisplay')),
                 ],
             ],
             'sortTextFormat' => [

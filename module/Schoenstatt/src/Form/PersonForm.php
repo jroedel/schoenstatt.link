@@ -4,6 +4,7 @@ namespace Schoenstatt\Form;
 use Laminas\InputFilter\InputFilterProviderInterface;
 use Laminas\Filter\ToNull;
 use SionModel\Form\SionForm;
+use SionModel\Form\ChoiceDomain;
 
 class PersonForm extends SionForm implements InputFilterProviderInterface
 {
@@ -966,6 +967,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                     ['name' => 'StringTrim'],
                     ['name' => 'ToNull'],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('postCountry')),
             ],
             'contactNotes' => [
                 'required' => false,
@@ -1087,6 +1089,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                         'options' => ['type' => ToNull::TYPE_INTEGER],
                     ],
                 ],
+                'validators' => ChoiceDomain::validators($this->get('spousePersonId')),
             ],
             'isAuthor' => [
                 'required' => false,
@@ -1153,6 +1156,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
                             'max' => 2,
                         ],
                     ],
+                    ...ChoiceDomain::validators($this->get('country')),
                 ],
             ],
             'publicNotes' => [
@@ -1246,6 +1250,7 @@ class PersonForm extends SionForm implements InputFilterProviderInterface
  */
             'lifeCommunity' => [
                 'required' => false,
+                'validators' => ChoiceDomain::validators($this->get('lifeCommunity')),
             ],
             'street1' => [
                 'required' => false,
