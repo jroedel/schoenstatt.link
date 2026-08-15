@@ -1,0 +1,58 @@
+{#-
+  The library configuration field list — the Twig counterpart of
+  module/Books/view/books/libraries/fields-partial.phtml, shared by the edit form and (from batch 9) the
+  create form, exactly as that partial is shared by edit.phtml and create.phtml.
+
+  No submit row: libraries/edit.phtml renders it outside this partial.
+
+  The conditional "Not in the list?" paragraph belongs to the partial on laminas too,
+  so both the edit and the create surface offer the same shortcut to a moderator who may
+  also create a person.
+
+  The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
+  a page puts around it stays in that page's template.
+
+  Its delimiters are whitespace-controlled so that a plain include standing where the rows
+  used to stand emits exactly the bytes the rows emitted — verified page by page, in two
+  locales, before and after. Do not spell the delimiter sequences out in prose here: Twig
+  has no escape for them inside a comment, so writing one ends the comment early and turns
+  the rest of this docblock into template code. That wedged the collection form during
+  this very refactor. See docs/strangler.md.
+-#}
+{{ form_row(form.get('name')) }}
+{{ form_row(form.get('description')) }}
+{{ form_row(form.get('filiationId'), false) }}
+{{ form_row(form.get('contactPersonId'), false) }}
+{% if is_allowed('route/persons/create') %}
+<p>{{ translate('Not in the list?') }} <a target="_blank" href="{{ laminas_path('persons/create') }}">{{ translate('Add new person') }}</a>
+    {% if is_allowed('route/admin/import-father') %}
+    or <a target="_blank" href="{{ laminas_path('admin/import-father') }}">{{ translate('Import from Patres') }}</a>
+    {% endif %}
+</p>
+{% endif %}
+{{ form_row(form.get('contactEmail'), false) }}
+{{ form_row(form.get('mainShowDisplay')) }}
+{{ form_row(form.get('viewRole')) }}
+{{ form_row(form.get('defaultCheckoutTimePeriodInDays')) }}
+{{ form_row(form.get('checkoutPersonListKind')) }}
+{{ form_row(form.get('defaultCheckoutPersonId'), false) }}
+{{ form_row(form.get('mainCollectionId'), false) }}
+{{ form_row(form.get('callNumberRegex'), false) }}
+{{ form_row(form.get('callNumberPlaceholder'), false) }}
+{{ form_row(form.get('callNumberHelpText'), false) }}
+{{ form_row(form.get('callNumberExplanation'), false) }}
+{{ form_row(form.get('sortTextFormat'), false) }}
+{{ form_row(form.get('labelLine1'), false) }}
+{{ form_row(form.get('labelLine2'), false) }}
+{{ form_row(form.get('labelLine3'), false) }}
+{{ form_row(form.get('barcodeText'), false) }}
+{{ form_row(form.get('adminNotes'), false) }}
+{{ form_row(form.get('isActive'), false) }}
+{{ form_row(form.get('enableCheckouts'), false) }}
+{{ form_row(form.get('checkoutBooksRole')) }}
+{{ form_row(form.get('createCheckoutsIfCheckingInANonCheckedOutBook')) }}
+{{ form_row(form.get('useCollections')) }}
+{{ form_row(form.get('allowCollectionlessBooks')) }}
+{{ form_row(form.get('requireCallNumbers')) }}
+{{ form_row(form.get('enforceCallNumberRegex')) }}
+{{ form_row(form.get('security')) -}}

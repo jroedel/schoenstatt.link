@@ -1,0 +1,25 @@
+{#-
+  The association role field list — the Twig counterpart of
+  module/Schoenstatt/view/schoenstatt/roles/fields-partial.phtml, shared by the edit form and (from batch 9) the
+  create form, exactly as that partial is shared by edit.phtml and create.phtml.
+
+  No submit row: roles/edit.phtml renders it outside this partial.
+
+  The cut follows laminas: this file holds what fields-partial.phtml holds, and whatever
+  a page puts around it stays in that page's template.
+
+  Its delimiters are whitespace-controlled so that a plain include standing where the rows
+  used to stand emits exactly the bytes the rows emitted — verified page by page, in two
+  locales, before and after. Do not spell the delimiter sequences out in prose here: Twig
+  has no escape for them inside a comment, so writing one ends the comment early and turns
+  the rest of this docblock into template code. That wedged the collection form during
+  this very refactor. See docs/strangler.md.
+-#}
+{{ form_row(form.get('associationId'), false) }}
+{{ form_row(form.get('roleTitle'), false) }}
+{{ form_row(form.get('sort')) }}
+{{ form_row(form.get('isSinglePosition')) }}
+{{ form_row(form.get('isMainRole')) }}
+{{ form_row(form.get('isMainContact')) }}
+{{ form_row(form.get('isActive')) }}
+{{ form_row(form.get('security')) -}}
