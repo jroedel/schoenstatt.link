@@ -8,9 +8,8 @@ use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Sion\Entities;
 use App\Sion\EntityEdit;
+use App\Sion\FormViewVariables;
 use App\Sion\SiteWideIdentifier;
-use Books\Form\BookForm;
-use Laminas\Form\Element\Select;
 use Laminas\Form\FormInterface;
 use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 use Locale;
@@ -88,7 +87,7 @@ final class EntityEditController
      * map would have sent the moderator to `/dictionary/es_ES`.
      */
     public const REDIRECT_TARGET = '_edit_redirect_target';
-    /** Names a private method below, e.g. `publicationValueOptions`. */
+    /** Names a provider on App\Sion\FormViewVariables, e.g. `publicationValueOptions`. */
     public const EXTRA_VARIABLES = '_edit_extra_variables';
     /**
      * The laminas delete route the confirmation modal posts to, for the two entities whose
@@ -100,7 +99,8 @@ final class EntityEditController
         private readonly EntityEdit $edit,
         private readonly Environment $twig,
         private readonly RouteUrl $urls,
-        private readonly Entities $entities
+        private readonly Entities $entities,
+        private readonly FormViewVariables $viewVariables
     ) {
     }
 
@@ -441,150 +441,12 @@ final class EntityEditController
 
         return match ($named) {
             'personName'              => ['person_name' => $this->recordName($entity, $object)],
-            'publicationValueOptions' => $this->publicationValueOptions($object, $form),
-            'nextWithinLibraryId'     => $this->nextWithinLibraryId($form),
+            'publicationValueOptions' => $this->viewVariables->publicationValueOptions($object, $form),
+            'nextWithinLibraryId'     => $this->viewVariables->nextWithinLibraryId($form),
             default                   => throw new RuntimeException(
                 "Route declares unknown extra-variable provider '$named' for entity '$entity'."
             ),
         };
-    }
-
-    /**
-     * The library's next free within-library number, which the book form's "next" button
-     * writes into the call-number field from an inline script.
-     *
-     * `fields-partial.phtml` reads it as `$form->getLibraryOptions()->nextWithinLibraryId`
-     * — a method on `Books\Form\BookForm` rather than an element, which is why it needs a
-     * provider here at all rather than coming out of the form in the template.
-     *
-     * **Rendered into JavaScript as a bare literal**, exactly as the partial does. It is an
-     * integer from `lib_libraries.options`, not user input, and it is interpolated into a
-     * `$(...).val(…)` call — so a non-numeric value would be a script-injection hazard
-     * rather than a cosmetic bug. Coerced to an int here for that reason, and `0` when the
-     * form cannot answer, which renders a button that clears the field instead of one that
-     * breaks the page.
-     *
-     * @param FormInterface<array<string, mixed>> $form
-     * @return array<string, mixed>
-     */
-    private function nextWithinLibraryId(FormInterface $form): array
-    {
-        $next = 0;
-        if ($form instanceof BookForm) {
-            /** @var mixed $options */
-            $options = $form->getLibraryOptions();
-            /** @var mixed $value */
-            $value = is_object($options) && property_exists($options, 'nextWithinLibraryId')
-                ? $options->nextWithinLibraryId
-                : null;
-            $next = is_numeric($value) ? (int) $value : 0;
-        }
-
-        return ['next_within_library_id' => $next];
-    }
-
-    /**
-     * `PublicationsController::injectPublicationValueOptions()`, which the laminas
-     * `editAction()` calls after `parent::editAction()`.
-     *
-     * Three lists, each handed to selectize as JSON rather than rendered as `<option>`s —
-     * that is what keeps the publication edit page to 526 KB instead of several megabytes.
-     * The publication's *own* id is removed from the "main publication" list, because a
-     * publication cannot be its own main edition.
-     *
-     * @param array<string, mixed> $object
-     * @param FormInterface<array<string, mixed>> $form
-     * @return array<string, mixed>
-     */
-    private function publicationValueOptions(array $object, FormInterface $form): array
-    {
-        $options = $this->valueOptions($form, 'mainPublicationId');
-
-        //A publication cannot be its own main edition, so its own id comes out of that
-        //list — `injectPublicationValueOptions()` does the same, guarded the same way.
-        /** @var mixed $ownId */
-        $ownId = $object['publicationId'] ?? null;
-        if (is_int($ownId) || is_string($ownId)) {
-            unset($options[$ownId]);
-        }
-
-        return [
-            'publication_value_options' => $this->selectizeOptions($options),
-            'author_persons'            => $this->selectizeOptions($this->valueOptions($form, 'translatorsAll')),
-            'author_associations'       => $this->selectizeOptions($this->authorAssociationOptions()),
-        ];
-    }
-
-    /**
-     * `PublicationsTable::getAuthorAssociationValueOptions()` — the associations flagged
-     * `IsAuthor`, keyed `a<id>`.
-     *
-     * The one list of the three that does not come off the form, which is why it needs
-     * the table here. It is fetched even though **the page never uses it**: the partial's
-     * script says `authorPersons.concat(authorAssociations);` and throws the result away,
-     * so no picker is ever given these options. That is a bug in the original — `concat`
-     * does not mutate — and it is reproduced rather than fixed, because fixing it would
-     * add association authors to three pickers that have never offered them, which is a
-     * content change and not this port's to make. Filed in docs/BACKLOG.md.
-     *
-     * @return array<array-key, mixed>
-     */
-    private function authorAssociationOptions(): array
-    {
-        $table = $this->entities->table('publication');
-        if (! method_exists($table, 'getAuthorAssociationValueOptions')) {
-            return [];
-        }
-
-        /** @var mixed $options */
-        $options = $table->getAuthorAssociationValueOptions();
-
-        return is_array($options) ? $options : [];
-    }
-
-    /**
-     * One select's value options, or an empty list when the element is absent or is not a
-     * select. Absent rather than fatal because a form's element set is data here — the
-     * factory builds it — and a missing element should not take the page down.
-     *
-     * @param FormInterface<array<string, mixed>> $form
-     * @return array<array-key, mixed>
-     */
-    private function valueOptions(FormInterface $form, string $element): array
-    {
-        if (! $form->has($element)) {
-            return [];
-        }
-
-        $select = $form->get($element);
-
-        return $select instanceof Select ? $select->getValueOptions() : [];
-    }
-
-    /**
-     * `transformValueOptionsObject()`: an associative map becomes a list of `{i, n}`
-     * objects. The one-letter keys are the original's and the JavaScript reads them, so
-     * they are not shortenable here without changing `gen-*.js`.
-     *
-     * **The key keeps its type.** PHP array keys are int for numeric strings, and
-     * `transformValueOptionsObject()` passes `$key` through untouched, so laminas emits
-     * `{"i":2154,…}` for a publication and `{"i":"a17",…}` for an author association.
-     * Casting everything to string produced `{"i":"2154",…}` — 7,801 bytes of quotation
-     * marks in the baseline diff, and a real hazard behind it: selectize matches a
-     * `valueField` against the `<option value>` it is given, so a type mismatch is the
-     * kind of thing that silently fails to preselect the current choice.
-     *
-     * @param array<array-key, mixed> $options
-     * @return list<array{i: int|string, n: string}>
-     */
-    private function selectizeOptions(array $options): array
-    {
-        $list = [];
-        foreach ($options as $key => $value) {
-            $list[] = ['i' => $key, 'n' => is_scalar($value) ? (string) $value : ''];
-        }
-
-        return $list;
     }
 
     /** A route default this controller cannot work without. */

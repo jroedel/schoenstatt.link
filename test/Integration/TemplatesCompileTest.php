@@ -16,6 +16,9 @@ use Throwable;
 use Twig\Environment;
 
 use function dirname;
+use function file_get_contents;
+use function preg_match_all;
+use function preg_replace;
 use function str_ends_with;
 use function str_starts_with;
 use function strlen;
@@ -98,6 +101,45 @@ final class TemplatesCompileTest extends TestCase
         $twig->load($name);
 
         $this->assertTrue(true, "$name compiles");
+    }
+
+    /**
+     * Every `extends` names a template that exists.
+     *
+     * Separate from the compile check because `load()` genuinely does not catch it — the
+     * table above is measured, not assumed: Twig resolves a parent when the template
+     * *renders*, so a broken `extends` is a fatal-200 that compiles perfectly.
+     *
+     * Cheap before batch 9 and load-bearing after it. The nine create templates each
+     * `extends` their edit twin — `books/book-create.html.twig` extends
+     * `books/book-edit.html.twig` — because on laminas the two view scripts share one
+     * fields-partial and take their assets from it, so inheriting is the faithful
+     * arrangement. It also means a rename of any edit template silently breaks a create
+     * page, and this is what makes that loud.
+     */
+    #[\PHPUnit\Framework\Attributes\DataProvider('templates')]
+    public function testEveryExtendsTargetExists(string $name): void
+    {
+        $path   = dirname(__DIR__, 2) . '/templates/' . $name;
+        $source = file_get_contents($path);
+        if (false === $source) {
+            self::markTestSkipped("cannot read $name");
+        }
+
+        //Comments first: this project's templates name other templates in prose constantly,
+        //and PortedFormsAreSubmittableTest already paid for forgetting that once.
+        $markup = (string) preg_replace('/\{#.*?#\}/s', '', $source);
+
+        preg_match_all("/\{%-?\s*extends\s+'([^']+)'/", $markup, $matches);
+
+        foreach ($matches[1] as $parent) {
+            $this->assertFileExists(
+                dirname(__DIR__, 2) . '/templates/' . $parent,
+                "$name extends '$parent', which does not exist — the page will render as an empty 200"
+            );
+        }
+
+        $this->assertTrue(true, "$name declares no unresolvable parent");
     }
 
     /**

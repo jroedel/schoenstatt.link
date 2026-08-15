@@ -110,6 +110,8 @@ final class TwigFactory
         ));
         $twig->addExtension(new ChromeExtension(new SiteChrome($laminas, $helpers, $urls), $requests, $nonce));
         $twig->addExtension(new MarkdownExtension());
+        //One page minifies its inline script on laminas; see the extension's docblock.
+        $twig->addExtension(new ScriptExtension());
 
         return $twig;
     }
