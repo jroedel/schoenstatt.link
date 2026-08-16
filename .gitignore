@@ -19,6 +19,10 @@ ubuntu-xenial-16.04-cloudimg-console.log
 /.buildpath
 /.settings/
 /.project
+# Retired 2026-08-16 with phploy itself; the .dist templates and the phar are
+# gone from the repository. These stay ignored on purpose — the real files may
+# still exist on a developer machine and they hold credentials, so a stale copy
+# must never become committable by accident.
 phploy.ini
 phploy.log
 .phploy

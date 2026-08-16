@@ -192,7 +192,7 @@ does not matter.
    re-insert its own row until that installation moves to this line. Two rows, one
    sentence each.
 
-3. **The code deploy.** `php phploy.phar` as usual. The `post-deploy[]` hooks already
+3. **The code deploy.** `php phploy.phar` as it then was (phploy was retired 2026-08-16). The `post-deploy[]` hooks already
    clear the config cache, flush APCu and run `jtranslate:export-catalogs`, so the
    catalogs rebuild without being asked.
 
@@ -284,7 +284,7 @@ the corpus was still capturing the catalogue as crawlers walked it, which is wha
 touching nothing is the expected result**, not a failure: the reporter had already corrected
 those three rows through the v3 API. They exist for every other environment.
 
-1. **The code deploy.** `php phploy.phar` as usual. The `post-deploy[]` hooks clear the
+1. **The code deploy.** `php phploy.phar` as it then was (phploy was retired 2026-08-16). The `post-deploy[]` hooks clear the
    config cache, flush APCu and rebuild the catalogs. **The APCu flush is load-bearing this
    time**: the navigation branches are cached there, `apc.ttl` is 0 so they never expire on
    their own, and the fix reads them back out of the cache before flagging — a stale branch
@@ -863,8 +863,8 @@ be real:
   `git ls-files --recurse-submodules`, not from the working directory, so local
   cruft — a stale `public/sitemap.xml`, a scratch dump, an editor backup —
   cannot reach production, and the submodules are ordinary directories in that
-  list rather than a separate rsync pass. `tools/deploy-submodules.sh` is no
-  longer used by anything (it goes with phploy); its clean-tree guard moved into
+  list rather than a separate rsync pass. `tools/deploy-submodules.sh` was deleted
+  with phploy on 2026-08-16; its clean-tree guard moved into
   preflight and gained the two checks it never had — that each submodule sits at
   the commit the superproject pins, and that the commit is actually pushed.
   The first of those is not pedantry: the release is built from the submodule
