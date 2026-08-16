@@ -1,5 +1,16 @@
 -- db7.9 — the three stored values that stood between four form fields and a domain check
 --
+-- @phase: post
+-- @kind: dml
+-- @tables: mus_compositions, lib_books, sch_assignments, sch_changes
+-- @verify: SELECT 'compositions' FROM `mus_compositions` WHERE `Country` IS NOT NULL AND `Country`<>'' AND BINARY `Country`<>BINARY UPPER(`Country`) UNION ALL SELECT 'semicolon' FROM `lib_books` WHERE `lang` LIKE '%;%' UNION ALL SELECT 'bare-p' FROM `lib_books` WHERE `lang` REGEXP '(^|[|])p([|]|$)' UNION ALL SELECT 'whitespace' FROM `lib_books` WHERE BINARY `lang`<>BINARY TRIM(`lang`) OR `lang` LIKE '% %' UNION ALL SELECT 'orphan-assignment' FROM `sch_assignments` WHERE `PersonId` NOT IN (SELECT `PersonId` FROM `sch_persons`)
+--
+-- Headers added 2026-08-16 when this file came under the migration ledger. The file's
+-- own closing statement is a UNION of five COUNT(*)s, which always returns five rows;
+-- @verify is the same five conditions rewritten to return the offending rows instead,
+-- so "no rows" is the pass. sch_changes is in @tables because of the audit row the
+-- last statement inserts — see the note there about why it is now guarded.
+--
 -- Batch 12 restated the `InArray` that a select's option list implies on 13 more fields (see
 -- SionModel\Form\ChoiceDomain for why naming a select in an input filter specification throws
 -- its own validator away). Restating it is only safe where the data already fits the list:
@@ -121,8 +132,24 @@ WHERE `PersonId` NOT IN (SELECT `PersonId` FROM `sch_persons`);
 
 --    Recorded the way the application records a deletion, so the row's disappearance is not a
 --    gap in the log. UpdatedBy is left NULL: no user did this, a migration did.
+-- Guarded 2026-08-16, when this file came under the migration ledger. Every other
+-- statement here is already re-runnable — each UPDATE and the DELETE match only rows
+-- they have not yet fixed — but this INSERT was unconditional, so each re-run added
+-- another audit row. The capsule had accumulated THREE copies by the time anyone
+-- looked, which is what a silent non-idempotent statement buys you.
+--
+-- It matters more than a stray duplicate normally would: sch_changes is the only
+-- accurate modification time this application keeps (entity UpdatedOn columns are not
+-- maintained) and it is what the sitemap reads for <lastmod>.
 INSERT INTO `sch_changes` (`ChangedEntity`, `ChangedField`, `ChangedIDValue`, `NewValue`, `OldValue`, `UpdatedOn`, `UpdatedBy`, `IpAddress`)
-VALUES ('assignment', 'entryDeleted', 206, NULL, NULL, UTC_TIMESTAMP(), NULL, NULL);
+SELECT 'assignment', 'entryDeleted', 206, NULL, NULL, UTC_TIMESTAMP(), NULL, NULL
+FROM DUAL
+WHERE NOT EXISTS (
+    SELECT 1 FROM (SELECT * FROM `sch_changes`) c
+    WHERE c.`ChangedEntity` = 'assignment'
+      AND c.`ChangedField`  = 'entryDeleted'
+      AND c.`ChangedIDValue` = 206
+);
 
 
 -- 4. Verification: all four columns now fit their form's option list.
