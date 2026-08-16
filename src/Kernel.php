@@ -16,6 +16,7 @@ use App\Controller\AssignmentSearchController;
 use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
+use App\Controller\BorrowerCheckoutsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\CommentCreateController;
@@ -549,6 +550,13 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             ),
             // No Twig: it writes and redirects, and the form it validates lives on
             // whichever show page rendered it.
+            // The borrower's own-books page. Twig plus the bridge and nothing else: its
+            // authorization is the emailed token, resolved inside the controller, so it
+            // needs no identity service and deliberately has access to none.
+            BorrowerCheckoutsController::class => fn (): BorrowerCheckoutsController => new BorrowerCheckoutsController(
+                $this->laminas(),
+                $this->twig()
+            ),
             CommentCreateController::class => fn (): CommentCreateController => new CommentCreateController(
                 $this->laminas(),
                 $this->commentPredicates()
