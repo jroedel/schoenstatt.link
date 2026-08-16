@@ -1434,6 +1434,10 @@ Background and measurements: [caching.md](caching.md).
   `updateAssociationMd5s()` touch only the database. Needs an acting-user
   decision first — `ActingUserProviderInterface` has no session identity on
   CLI.
+  - **There is now a worked precedent for exactly that**: `books:send-notices`
+    (2026-08-17) does the same job for overdue notices and settles the acting-user
+    question with `setActingUserId(null)` — the send is the system's, not a
+    person's. Copy that rather than re-deciding it.
 - [x] ~~phploy upstream PRs (banago/PHPloy): the directory-purge bug… evaluate
   Deployer…~~ **Moot 2026-08-15: phploy is retired.** `tools/deploy.sh` replaces
   it with rsync into release directories and a symlink swap — so the purge bug,

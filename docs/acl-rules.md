@@ -51,9 +51,9 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
 | symfony routes acl checked | 134 |
-| symfony routes open | 26 |
+| symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 160 |
+| symfony served routes | 161 |
 | total routes | 153 |
 | unguarded routes | 20 |
 | unguarded routes matchable | 10 |
@@ -168,6 +168,7 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `libraries/create.locale` | `/{_locale}/libraries/create` | `route/libraries/create` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
 | `libraries/library/edit` | `/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `libraries/library/edit.locale` | `/{_locale}/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
+| `library/my-books` | `/library/my-books` | _open_ | everyone — reason below | n/a | `App\Controller\BorrowerCheckoutsController` |
 | `music` | `/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
 | `music.locale` | `/{_locale}/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
 | `music/create-composition` | `/music/create-composition` | `route/music/create-composition` | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | html | `App\Controller\EntityCreateController` |
@@ -272,6 +273,7 @@ not a default, and this is where the statement is reviewed.
 - `api-v3/schema-entity-method` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `api-v3/schema-method` — shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT whose account holds the sch_api_bot role. /api/v3/schema is genuinely public — it describes the field contract and exposes no data
 - `health` — shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all
+- `library/my-books` — shadows no laminas route, and its reader has no session for BjyAuthorize to read an identity from. The gate is the emailed token resolved by Books\Model\BorrowerTokenTable, which authorises one person at one library and nothing else
 - `sm-cache-status` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
 - `sm-cache-status.locale` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
 - `sm-clear-persistent-cache` — the laminas guard it shadows is public (a null role admits everyone), and its real gate is the maintenance key App\Http\MaintenanceKey checks inside the controller. Consulting the ACL here would put a session and the role/resource queries behind it on an endpoint the deploy hooks call, for a foregone answer
