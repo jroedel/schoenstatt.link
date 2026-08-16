@@ -880,7 +880,7 @@ looks up.
    migrations must declare `@idempotent: yes`. That is a forcing function, not
    a proof — write the guards.
 3. **`@tables` are dumped before anything runs**, to `data/deploy/backups/` on
-   your machine (gitignored — it is production data).
+   your machine (gitignored — it is production data). See Retention below.
 4. **`mysql` aborts on the first error**; `--force` is never used.
 5. **Row counts are recorded per statement**, so the numbers this document used
    to carry by hand are recorded by the thing that did the work.
@@ -903,6 +903,31 @@ data is days old and representative, and read the counts.
 | no `@phase` | refuse, with the pre-vs-post explanation |
 | `dml` containing DDL | refuse — the implicit commit would break the wrapper |
 | `ddl` without `@idempotent: yes` | refuse |
+
+### Retention of the snapshots
+
+`data/deploy/backups/` grows fast — `db7.9` names `sch_changes` in `@tables` and
+that one dump is 74 MB. Pruning runs after a successful apply, for the
+environment that was applied to.
+
+```sh
+DEPLOY_KEEP_BACKUP_RUNS=2      # per environment
+DEPLOY_KEEP_BACKUP_DAYS=30
+```
+
+**Both are floors, and a snapshot survives if it clears either.** It is removed
+only when it is *both* outside the last N runs *and* older than the day limit.
+So a quiet month cannot leave you with nothing to restore from, and a busy
+afternoon of migrations cannot age out yesterday's. A run is one `apply`
+invocation: all its snapshots share one timestamp prefix and are kept or dropped
+together.
+
+**Runs are counted per environment.** Otherwise a couple of capsule rehearsals
+would push the last production snapshot out of the window — which is the one
+that actually matters.
+
+Every deletion is named on screen. A retention policy that prunes silently
+reads, a year later, as "we never had a backup of that".
 
 ### Credentials
 

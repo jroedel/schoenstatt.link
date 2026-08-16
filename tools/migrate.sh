@@ -415,6 +415,12 @@ if [ "$ASSUME_YES" != 1 ]; then
     read -r a; case $a in [yY]*) ;; *) fail "cancelled." ;; esac
 fi
 
+# One timestamp for the whole run, not one per file. It is what makes a "deploy"
+# a groupable thing in data/deploy/backups/ — with per-file stamps the two
+# snapshots of a single apply differed by seconds and nothing could tell which
+# run they belonged to.
+RUN_TS=$(date +%Y%m%d-%H%M%S)
+
 for f in "${TODO[@]}"; do
     FILE=$MIGRATION_DIR/$f
     KIND=$(header "$FILE" kind)
@@ -427,7 +433,7 @@ for f in "${TODO[@]}"; do
     # ---- snapshot ----------------------------------------------------------
     if [ "$TABLES" != none ]; then
         mkdir -p "$BACKUP_DIR"
-        SNAP=$BACKUP_DIR/$(date +%Y%m%d-%H%M%S)-$ENV_NAME-${f%.sql}.sql.gz
+        SNAP=$BACKUP_DIR/$RUN_TS-$ENV_NAME-${f%.sql}.sql.gz
         # shellcheck disable=SC2086
         mysqldump --defaults-extra-file="$DEFAULTS_FILE" --single-transaction --quick \
             "$DB_NAME" $(printf '%s' "$TABLES" | tr ',' ' ') 2>/dev/null | gzip > "$SNAP" \
@@ -501,3 +507,42 @@ done
 
 printf '\n'
 ok "all $PHASE-deploy migrations applied on $ENV_NAME"
+
+# ------------------------------------------------------------ retention ----
+
+# Two floors, and a snapshot survives if it clears EITHER. It is deleted only
+# when it is both older than the day limit and outside the last N runs — so a
+# quiet month cannot leave you with nothing, and a busy afternoon of migrations
+# cannot age out yesterday's.
+#
+# Runs are counted per environment. Otherwise a couple of capsule rehearsals
+# would push the last production snapshot out of the window, which is the one
+# that actually matters.
+#
+# Deletions are always named. A retention policy that prunes silently reads, a
+# year later, as "we never had a backup of that".
+prune_backups() {
+    [ -d "$BACKUP_DIR" ] || return 0
+    local keep_runs=${DEPLOY_KEEP_BACKUP_RUNS:-2}
+    local keep_days=${DEPLOY_KEEP_BACKUP_DAYS:-30}
+    local protected file run freed=0 deleted=0
+
+    protected=$(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" -printf '%f\n' 2>/dev/null \
+        | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p' | sort -ru | head -n "$keep_runs")
+
+    while IFS= read -r file; do
+        [ -n "$file" ] || continue
+        run=$(printf '%s' "$(basename "$file")" | sed -n 's/^\([0-9]\{8\}-[0-9]\{6\}\)-.*$/\1/p')
+        # floor 1: among the most recent runs for this environment
+        printf '%s\n' "$protected" | grep -qxF "$run" && continue
+        # floor 2: younger than the day limit
+        [ -n "$(find "$file" -maxdepth 0 -mtime "+$keep_days" 2>/dev/null)" ] || continue
+        freed=$((freed + $(stat -c '%s' "$file")))
+        rm -f "$file" && deleted=$((deleted + 1)) && info "pruned $(basename "$file")"
+    done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*-$ENV_NAME-*.sql.gz" 2>/dev/null | sort)
+
+    if [ "$deleted" -gt 0 ]; then
+        dim "$deleted snapshot(s) removed, $((freed / 1048576)) MiB freed (keeping the last $keep_runs runs and everything under $keep_days days)"
+    fi
+}
+prune_backups
