@@ -104,8 +104,14 @@ class BooksMailer extends Mailer
                 'contentParams' => [], //fill in with borrower name
             ],
             'message' => [ //message paragraph
+                //Says only what the reader can actually do. The previous wording
+                //asked them to "renew overdue books online", and there is no online
+                //renewal: LibraryTable::renewBook() exists but has no route, no
+                //action, no UI and no callers, and LibraryOptions::$maximumBookRenewals
+                //is unused. Replying reaches the library's contact address, which the
+                //message sets as Reply-To below, so that is the one channel that works.
                 'type' => 'content',
-                'content' => 'The following is the list of books checked out under your name for the <strong>%s</strong> library. Please take the time to renew overdue books online, or inform the librarian of any lost books.',
+                'content' => 'The following is the list of books checked out under your name for the <strong>%s</strong> library. Please return anything you have finished with, and simply reply to this message to arrange a renewal or to report a book as lost.',
                 'isContentParameterized' => true,
                 'shouldEscape' => false,
                 'contentParams' => [], //fill in with library name
@@ -116,14 +122,12 @@ class BooksMailer extends Mailer
                 'partial' => 'books/libraries/email-book-list',
                 'checkouts' => null,
             ],
-            'button' => [ //button
-                'type' => 'button',
-                'content' => 'View on website',
-                'urlArgs'   => [
-                    'borrowers/borrower',
-                    //fill in person_id param
-                ],
-            ],
+            //No "View on website" button. It pointed at borrowers/borrower, which is
+            //guarded by lib_user — and lib_user is is_default=1, so that means "any
+            //signed-in account", not "this borrower". A borrower without an account
+            //(the common case) met a sign-in page, and one with an account reached a
+            //librarian screen whose only control re-sends these notices. The book list
+            //above is the content that was worth linking to, and it is already here.
             'signature' => [
                 'type' => 'content',
                 'content' => '—The Schoenstatt Link Team',
@@ -158,8 +162,11 @@ class BooksMailer extends Mailer
             $paragraphs['salutation']['contentParams'] = [$salutation];
             $paragraphs['message']['contentParams'] = [$localizedLibraryName[$locale]];
             $paragraphs['list']['checkouts'] = $object['checkouts'];
-            $paragraphs['button']['urlArgs'][] = ['person_id' => $object['personId']]; //url person_id param
-            $paragraphs['button']['urlArgs'][] = ['query' => ['token' => $trackingToken]];
+            //$trackingToken is still generated and still recorded against the mailing
+            //report below. What it no longer has is a click to observe: it used to ride
+            //in the removed button's query string. Open/click analytics for these
+            //notices are therefore gone — deliberately, and worth knowing before anyone
+            //reads a run of zeroes as "nobody opened it".
             $html = self::inlineEmailStyles($this->renderTemplate($template, [
                 'locale'        => $locale,
                 'paragraphs'    => $paragraphs,
