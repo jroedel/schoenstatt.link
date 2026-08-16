@@ -9,14 +9,12 @@ if [ ! -f .deploy.local ]; then
 fi
 chmod 600 .deploy.local
 
-# phploy is retired (see docs/DEPLOY.md); these two are seeded only while the
-# old pipeline is still on disk as the way back from the first atomic deploy.
-if [ ! -f phploy.ini ] && [ -f phploy.ini.dist ]; then
-  cp phploy.ini.dist phploy.ini
-fi
-if [ ! -f .phploy ] && [ -f .phploy.dist ]; then
-  cp .phploy.dist .phploy
-  chmod 740 .phploy
+# phploy was retired 2026-08-16 (docs/DEPLOY.md). If this machine still has its
+# credential files lying about, say so once rather than deleting them: they hold
+# secrets, and whether they are worth keeping as a record is the operator's call.
+if [ -f phploy.ini ] || [ -f .phploy ]; then
+  echo "NOTE: phploy.ini/.phploy are left over from the retired phploy pipeline."
+  echo "      Nothing reads them now. They contain credentials — delete them when ready."
 fi
 
 # copy a sample local.php file
