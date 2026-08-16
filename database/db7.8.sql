@@ -1,5 +1,17 @@
 -- db7.8 — retire the `default` duplicates the Twig layer's two-domain lookup filed
 --
+-- @phase: post
+-- @kind: dml
+-- @tables: trans_phrases
+-- @verify: SELECT d.`translation_phrase_id` FROM `trans_phrases` d WHERE d.`project`='Schoenstatt' AND d.`text_domain`='default' AND d.`retired_on` IS NULL AND d.`origin_route` LIKE '%.locale' AND EXISTS (SELECT 1 FROM (SELECT * FROM `trans_phrases`) o WHERE o.`project`=d.`project` AND o.`phrase_hash`=d.`phrase_hash` AND o.`text_domain`<>'default' AND o.`retired_on` IS NULL)
+--
+-- Headers added 2026-08-16 when this file came under the migration ledger. `post`
+-- because the code fix must land first: phrase discovery un-retires whatever the site
+-- still looks up, so retiring ahead of the deploy is undone by the next page view.
+-- The @verify query is the standing check narrowed to "rows statement 2 should have
+-- retired and did not" — the file's own closing SELECT is broader and legitimately
+-- returns rows, so it cannot be the pass/fail test.
+--
 -- NOT A CODE DEFECT ANY MORE, which is the same shape as db7.7: both halves of the leak are
 -- fixed in the source and what is left is the rows they already wrote.
 --
