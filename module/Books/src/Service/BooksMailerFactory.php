@@ -4,6 +4,7 @@ namespace Books\Service;
 use Laminas\ServiceManager\Factory\FactoryInterface;
 use Interop\Container\ContainerInterface;
 use Books\Mailing\BooksMailer;
+use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
 use Schoenstatt\Model\SchoenstattTable;
 
@@ -31,7 +32,9 @@ class BooksMailerFactory implements FactoryInterface
         $renderer = $container->get('ViewRenderer');
         $config = $container->get('Config');
 
-        $mailer = new BooksMailer($transport, $renderer, $translator, $config, $table, $schTable);
+        $tokens = $container->get(BorrowerTokenTable::class);
+
+        $mailer = new BooksMailer($transport, $renderer, $translator, $config, $table, $schTable, $tokens);
         return $mailer;
     }
 }
