@@ -53,6 +53,14 @@ $textColumns = [
 ];
 
 return [
+    //Overdue notices as a console command, so the schedule needs no API key. The
+    //superproject's bin/console resolves these from the service manager lazily, so
+    //registering one costs nothing until it is the command being run.
+    'console' => [
+        'commands' => [
+            'books:send-notices' => \App\Console\Command\SendBookNoticesCommand::class,
+        ],
+    ],
     'books' => [
         'books_db_adapter' => Adapter::class,
         'book_format_type_value_options' => [
@@ -256,6 +264,8 @@ return [
             'Books\Config'                      => Service\ConfigServiceFactory::class,
             Model\PublicationsTable::class      => Service\PublicationsTableFactory::class,
             Model\LibraryTable::class           => Service\LibraryTableServiceFactory::class,
+            Model\BorrowerTokenTable::class     => Service\BorrowerTokenTableFactory::class,
+            \App\Console\Command\SendBookNoticesCommand::class => \App\Console\Command\SendBookNoticesCommandFactory::class,
             Model\EventTextTable::class         => Service\EventTextTableFactory::class,
             Model\DictionaryTable::class        => Service\DictionaryTableFactory::class,
             Form\SearchForm::class              => Service\SearchFormFactory::class,
@@ -1574,6 +1584,7 @@ return [
                     'createCheckoutsIfCheckingInANonCheckedOutBook' => 'CreateCheckoutsIfCheckingInANonCheckedOutBook',
                     'defaultCheckoutPersonId' => 'DefaultCheckoutPersonId',
                     'defaultCheckoutTimePeriodInDays' => 'DefaultCheckoutTimePeriodInDays',
+                    'maximumBookRenewals'   => 'MaximumBookRenewals',
                     'enableCheckouts'       => 'EnableCheckouts',
                     'checkoutPersonListKind' => 'CheckoutPersonListKind',
                     'checkoutBooksRole'     => 'CheckoutBooksRole',

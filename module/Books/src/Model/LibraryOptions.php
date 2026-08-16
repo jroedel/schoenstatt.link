@@ -177,6 +177,10 @@ class LibraryOptions implements ArraySerializableInterface
             ? $array['defaultCheckoutPersonId'] : null;
         $this->defaultCheckoutTimePeriodInDays = isset($array['defaultCheckoutTimePeriodInDays'])
             ? $array['defaultCheckoutTimePeriodInDays'] : LibraryTable::DEFAULT_CHECKOUT_TIME_PERIOD_IN_DAYS;
+        //Null in the column means "no opinion", which is not the same as 0 — 0 is a
+        //library saying renewal is off. isset() distinguishes them; a ?: would not.
+        $this->maximumBookRenewals = isset($array['maximumBookRenewals'])
+            ? (int) $array['maximumBookRenewals'] : LibraryTable::DEFAULT_MAXIMUM_RENEWALS;
         $this->enableCheckouts = isset($array['enableCheckouts']) ? (bool)$array['enableCheckouts'] : false;
         $this->isPublicallyListed = isset($array['isPublicallyListed'])
             ? (bool)$array['isPublicallyListed'] : false;

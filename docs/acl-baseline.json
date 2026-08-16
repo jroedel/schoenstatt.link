@@ -32,9 +32,9 @@
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
         "symfony_routes_acl_checked": 134,
-        "symfony_routes_open": 26,
+        "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 160,
+        "symfony_served_routes": 161,
         "total_routes": 153,
         "unguarded_routes": 20,
         "unguarded_routes_matchable": 10
@@ -7226,6 +7226,16 @@
                 "resource": "route/libraries/library/edit",
                 "reason": null,
                 "denial_style": "html"
+            }
+        },
+        "library/my-books": {
+            "path": "/library/my-books",
+            "controller": "App\\Controller\\BorrowerCheckoutsController",
+            "access": {
+                "kind": "open",
+                "resource": null,
+                "reason": "shadows no laminas route, and its reader has no session for BjyAuthorize to read an identity from. The gate is the emailed token resolved by Books\\Model\\BorrowerTokenTable, which authorises one person at one library and nothing else",
+                "denial_style": "n/a"
             }
         },
         "music": {

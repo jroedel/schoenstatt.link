@@ -3,6 +3,7 @@ namespace Books\Mailing;
 
 use SionModel\Filter\ToAscii;
 use SionModel\Mailing\Mailer;
+use Books\Model\BorrowerTokenTable;
 use Books\Model\LibraryTable;
 use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\Mime\Address;
@@ -24,11 +25,23 @@ class BooksMailer extends Mailer
     */
     protected $schoenstattTable;
 
-    public function __construct($transport, $renderer, $translator, $config, $libraryTable, $schoenstattTable)
+    /** @var BorrowerTokenTable|null mints the scoped link each notice carries */
+    protected $borrowerTokenTable;
+
+    public function __construct(
+        $transport,
+        $renderer,
+        $translator,
+        $config,
+        $libraryTable,
+        $schoenstattTable,
+        ?BorrowerTokenTable $borrowerTokenTable = null
+    )
     {
         parent::__construct($transport, $renderer, $translator, $config, $libraryTable);
         $this->libraryTable  = $libraryTable;
         $this->schoenstattTable = $schoenstattTable;
+        $this->borrowerTokenTable = $borrowerTokenTable;
     }
 
     /**
@@ -122,24 +135,42 @@ class BooksMailer extends Mailer
                 'partial' => 'books/libraries/email-book-list',
                 'checkouts' => null,
             ],
-            //No "View on website" button. It pointed at borrowers/borrower, which is
-            //guarded by lib_user — and lib_user is is_default=1, so that means "any
-            //signed-in account", not "this borrower". A borrower without an account
-            //(the common case) met a sign-in page, and one with an account reached a
-            //librarian screen whose only control re-sends these notices. The book list
-            //above is the content that was worth linking to, and it is already here.
+            //A link the reader can actually act on, without an account.
+            //
+            //The button this replaces pointed at borrowers/borrower, guarded by
+            //lib_user — and lib_user is is_default=1, so that meant "any signed-in
+            //account" rather than "this borrower". A borrower without an account, the
+            //common case, met a sign-in page; one with an account reached a librarian
+            //screen whose only control re-sent these notices.
+            //
+            //`target` rather than `urlArgs`: the destination is Symfony-served, so there
+            //is no laminas route to build from, and the URL must be absolute because an
+            //email has no request to take a host from — least of all on CLI.
+            'button' => [
+                'type' => 'button',
+                'content' => 'See and renew your books',
+                'target' => null, //per-borrower, filled in below
+            ],
             'signature' => [
                 'type' => 'content',
                 'content' => '—The Schoenstatt Link Team',
             ],
         ];
-        $footerParagraph = [ //footer paragraph
-            'type' => 'content',
-            'content' => 'Follow %s on Twitter',
-            'isContentParameterized' => true,
-            'shouldEscape' => false,
-            'contentParams' => ['<a href="https://twitter.com/SchoenstattData">@SchoenstattData</a>'],
-        ];
+        //No social footer. It read "Follow @SchoenstattData on Twitter" — a network
+        //renamed in 2023, advertised in a library overdue notice, where it was never
+        //relevant. An overdue notice asks a small favour of someone; it should ask for
+        //the one thing and stop.
+        $footerParagraph = null;
+
+        //Absolute, and from configuration rather than the request: these notices go out
+        //from a console command as readily as from a web request, and a CLI process has
+        //no host to infer one from.
+        $baseUrl = rtrim(
+            isset($this->config['sion_model']['canonical_base_url'])
+                ? (string) $this->config['sion_model']['canonical_base_url']
+                : '',
+            '/'
+        );
 
         $asciiFilter = new ToAscii();
 
@@ -162,11 +193,21 @@ class BooksMailer extends Mailer
             $paragraphs['salutation']['contentParams'] = [$salutation];
             $paragraphs['message']['contentParams'] = [$localizedLibraryName[$locale]];
             $paragraphs['list']['checkouts'] = $object['checkouts'];
-            //$trackingToken is still generated and still recorded against the mailing
-            //report below. What it no longer has is a click to observe: it used to ride
-            //in the removed button's query string. Open/click analytics for these
-            //notices are therefore gone — deliberately, and worth knowing before anyone
-            //reads a run of zeroes as "nobody opened it".
+            //One token per borrower per notice. It authorises this person's checkouts at
+            //this library and nothing else, so two recipients of the same run cannot see
+            //each other's books, and a forwarded mail hands on no more than the sender's
+            //own list.
+            if (isset($this->borrowerTokenTable)) {
+                $borrowerToken = $this->borrowerTokenTable->issue(
+                    (int) $object['personId'],
+                    (int) $library['libraryId']
+                );
+                $paragraphs['button']['target'] = $baseUrl . '/library/my-books?t=' . $borrowerToken;
+            } else {
+                //No token service (an older wiring, or a test double): send the notice
+                //without the link rather than not at all. The book list is the substance.
+                unset($paragraphs['button']);
+            }
             $html = self::inlineEmailStyles($this->renderTemplate($template, [
                 'locale'        => $locale,
                 'paragraphs'    => $paragraphs,
