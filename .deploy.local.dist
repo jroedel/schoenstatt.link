@@ -55,5 +55,17 @@ DEPLOY_DB_NAME=ourlink_db1
 DEPLOY_DB_USER=TODO
 DEPLOY_DB_PASS=TODO
 
-# Local port for the tunnel. Anything free; it never reaches the server.
+# Local port for the tunnel. Anything free; it never reaches the server. If it
+# is taken, the runner moves to the next free port and says so — it does not
+# quietly use whatever is already listening there, which on one machine was an
+# unrelated WordPress container's MariaDB.
 DEPLOY_DB_TUNNEL_PORT=13306
+
+# Retention for the table snapshots taken before each migration
+# (data/deploy/backups/, gitignored, this machine only). Both are floors: a
+# snapshot is deleted only when it is BOTH outside the last N runs for its
+# environment AND older than the day limit. So a quiet month cannot leave you
+# with nothing, and a busy afternoon cannot age out yesterday's. Every deletion
+# is named on screen.
+DEPLOY_KEEP_BACKUP_RUNS=2
+DEPLOY_KEEP_BACKUP_DAYS=30
