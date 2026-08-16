@@ -129,12 +129,41 @@ connect() {
         # server's own 127.0.0.1:3306 reachable from here, so a full-DDL account
         # can exist on this machine alone; a compromise of the web application
         # cannot reach a password it has never seen.
+        #
+        # Finding a free port is not tidiness. If the configured one is already
+        # taken — and on the first real run it was, by an unrelated WordPress
+        # container publishing 13306 — then the forward fails while `mysql`
+        # connects to 127.0.0.1:13306 perfectly happily, reaching WHATEVER IS
+        # ACTUALLY THERE. That run was saved only by the credentials not
+        # matching. Had they matched, production migrations would have been
+        # applied to a stranger's database and reported success.
+        port_free() {
+            if command -v ss >/dev/null 2>&1; then
+                ! ss -ltn "sport = :$1" 2>/dev/null | grep -q LISTEN
+            else
+                ! (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
+            fi
+        }
+        PORT=$DEPLOY_DB_TUNNEL_PORT
+        for _ in $(seq 1 20); do
+            port_free "$PORT" && break
+            PORT=$((PORT + 1))
+        done
+        port_free "$PORT" || fail "no free local port near $DEPLOY_DB_TUNNEL_PORT for the tunnel."
+        if [ "$PORT" != "$DEPLOY_DB_TUNNEL_PORT" ]; then
+            warn "local port $DEPLOY_DB_TUNNEL_PORT is in use by something else; tunnelling on $PORT instead."
+        fi
+
         CTRL_PATH=$(mktemp -u "${TMPDIR:-/tmp}/migrate-ssh-XXXXXX")
-        ssh -M -S "$CTRL_PATH" -f -N \
-            -L "127.0.0.1:${DEPLOY_DB_TUNNEL_PORT}:127.0.0.1:3306" \
+        # ExitOnForwardFailure is what makes the exit status truthful. Without
+        # it `ssh -f` forks before the bind is attempted, returns 0, and a failed
+        # forward is indistinguishable from a working one.
+        ssh -M -S "$CTRL_PATH" -f -N -o ExitOnForwardFailure=yes \
+            -L "127.0.0.1:${PORT}:127.0.0.1:3306" \
             -p "${DEPLOY_SSH_PORT:-222}" "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST" \
-            || fail "could not open the SSH tunnel to $DEPLOY_SSH_HOST."
+            || fail "could not open the SSH tunnel to $DEPLOY_SSH_HOST (local port $PORT)."
         TUNNEL_UP=1
+        DEPLOY_DB_TUNNEL_PORT=$PORT
         DB_HOST=127.0.0.1
         DB_PORT=$DEPLOY_DB_TUNNEL_PORT
         DB_NAME=$DEPLOY_DB_NAME
@@ -151,7 +180,29 @@ connect() {
     trap "rm -f '$DEFAULTS_FILE'; cleanup" EXIT
 
     mysql --defaults-extra-file="$DEFAULTS_FILE" "$DB_NAME" -N -B -e 'SELECT 1' >/dev/null 2>&1 \
-        || fail "cannot reach the $ENV_NAME database. Check credentials, and that the account is granted for 127.0.0.1."
+        || fail "cannot reach the $ENV_NAME database '$DB_NAME' on $DB_HOST:$DB_PORT.
+
+If this is production, the two likely causes are different and the message cannot tell
+them apart on its own:
+  - the account is not granted for 127.0.0.1. Through a tunnel that is where the
+    connection appears to come from, so a grant for 'localhost' alone may not match;
+  - the tunnel is not actually carrying traffic to the server."
+
+    # Assert we are talking to THIS application's database and not to whatever
+    # else answers on that port. A port collision plus a credential coincidence
+    # would otherwise apply schoenstatt's migrations to a stranger's schema and
+    # report success — see the note above about the WordPress container that was
+    # listening on 13306 the first time this ran.
+    local found
+    found=$(mysql --defaults-extra-file="$DEFAULTS_FILE" "$DB_NAME" -N -B -e \
+        "SELECT COUNT(*) FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('sch_changes','trans_phrases');" 2>/dev/null)
+    [ "$found" = 2 ] || fail "connected to '$DB_NAME' on $DB_HOST:$DB_PORT, but it does not look like
+schoenstatt's database — sch_changes and trans_phrases are not both there ($found of 2).
+
+Refusing to go further. Something else is almost certainly answering on that port: the
+tunnel may have failed to bind while another service happily accepted the connection.
+Check with:  ss -ltnp | grep $DB_PORT"
 }
 
 sql()  { mysql --defaults-extra-file="$DEFAULTS_FILE" "$DB_NAME" -N -B -e "$1"; }
