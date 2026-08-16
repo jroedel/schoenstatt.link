@@ -831,6 +831,113 @@ In order of how much they cost:
    that survives the next deploy, and the reason to keep the flip as its own commit that
    touches nothing else.
 
+## Database migrations
+
+`tools/deploy.sh` applies them; `tools/migrate.sh` is the same runner standalone.
+
+```bash
+./tools/deploy.sh --migrations                    # applied vs pending
+./tools/migrate.sh plan                           # just the pending, with headers
+./tools/migrate.sh apply --phase=post --env=capsule   # rehearse before production
+```
+
+**Every `database/*.sql` is tracked in a `sch_migration` ledger** — filename,
+sha256, phase, kind, when, by what, how long, and the rows each statement
+affected. Before this existed, "what is applied?" was answered by reading prose
+across four documents, and `db7.8`/`db7.9` could not be answered at all.
+
+### Headers a new migration must carry
+
+```sql
+-- @phase: post
+-- @kind: dml
+-- @tables: trans_phrases
+-- @verify: SELECT id FROM t WHERE <still wrong>
+```
+
+| header | required | meaning |
+|---|---|---|
+| `@phase` | yes | `pre` runs before the swap, `post` after. **No default** |
+| `@kind` | yes | `dml` is wrapped in a transaction; `ddl` cannot be |
+| `@tables` | yes | dumped to `data/deploy/backups/` before it runs; `none` is allowed and is a claim |
+| `@idempotent` | `ddl` only | `yes` — your assertion that re-running is a no-op |
+| `@verify` | no | must return **zero rows** afterwards, or the migration fails |
+
+**`@phase` has no default because both orders are real here and guessing wrong
+is silent.** JTranslate 003/004 were `pre`: the new code selects columns the old
+schema lacks, so deploying first breaks the site. Every `db7.x` retirement is
+`post`: run it before the code fix and the next page view re-files the rows and
+clears `retired_on`, because phrase discovery un-retires whatever the site still
+looks up.
+
+### What makes a migration safe, in the order the guarantees matter
+
+1. **For `dml`, the ledger row commits inside the same transaction as the
+   change.** Applied-but-unrecorded and recorded-but-unapplied are both
+   impossible, and a failure part-way rolls the whole file back. Every table
+   this application touches has been InnoDB since `db7.0`/`db7.1`.
+2. **`ddl` cannot have that.** MariaDB commits implicitly on DDL, so `ddl`
+   migrations must declare `@idempotent: yes`. That is a forcing function, not
+   a proof — write the guards.
+3. **`@tables` are dumped before anything runs**, to `data/deploy/backups/` on
+   your machine (gitignored — it is production data).
+4. **`mysql` aborts on the first error**; `--force` is never used.
+5. **Row counts are recorded per statement**, so the numbers this document used
+   to carry by hand are recorded by the thing that did the work.
+6. **`@verify` must return zero rows.** Write it as "select what is still
+   wrong". A migration that runs but does not achieve what it claimed fails.
+7. **An applied migration whose bytes changed aborts the deploy.** Editing one
+   makes the ledger a liar: the same filename then means two different things
+   across environments.
+
+None of that says a migration is *correct*. Rehearse against the capsule, whose
+data is days old and representative, and read the counts.
+
+### Refusals, all verified against throwaway migrations
+
+| situation | what happens |
+|---|---|
+| a statement fails half way through a `dml` file | transaction rolls back; **no** ledger row; earlier statements in the same file undone |
+| an applied file's bytes changed | abort before anything runs |
+| `@verify` still returns rows | fail, naming them; the change stays applied |
+| no `@phase` | refuse, with the pre-vs-post explanation |
+| `dml` containing DDL | refuse — the implicit commit would break the wrapper |
+| `ddl` without `@idempotent: yes` | refuse |
+
+### Credentials
+
+Full-DDL credentials live in `.deploy.local` on the developer machine and are
+used through an **SSH tunnel** to the server's own `127.0.0.1:3306`. They are
+never written to the server, never passed in `argv` (where `ps` would expose
+them on a shared host) — a `--defaults-extra-file` at mode 600 carries them —
+and a compromise of the web application cannot reach a password it has never
+seen. The account must be granted for `127.0.0.1`, because through a tunnel that
+is where the connection appears to come from.
+
+### The backfill, and the capsule
+
+The 75 files that predate the ledger are recorded as applied **without being
+run**:
+
+```bash
+./tools/migrate.sh backfill --through=db7.7
+```
+
+Everything after `--through` stays pending and *will be run* by the next apply.
+`db7.8` and `db7.9` were deliberately left pending rather than backfilled,
+because both are idempotent and running them settles the question of whether
+they were ever applied to production — a question no document could answer. If
+they were, every statement reports 0 rows and nothing changes.
+
+`db7.9` had one unguarded statement, an `INSERT` into `sch_changes`; the capsule
+had accumulated **three** copies of that audit row before anyone looked. It is
+now guarded, which matters more than a stray duplicate normally would:
+`sch_changes` is the only accurate modification time this application keeps, and
+the sitemap reads it for `<lastmod>`.
+
+Once production has the ledger, a fresh `database/dumps/` export carries it, and
+the capsule stops drifting.
+
 ## The deploy
 
 ```bash
@@ -847,10 +954,11 @@ each prints, and any failure before the swap leaves production untouched.
 | 3 | **Build** | server | `rsync` into `releases/<ts>-<sha>/`, hardlinked against the previous release; `.revision` written |
 | 4 | **Link shared** | server | `shared/data`, `shared/public`, `shared/config-autoload` symlinked in; `data/config` and `data/cache` created empty, per-release |
 | 5 | **composer install** | server | `--no-dev --optimize-autoloader`, vendor seeded from the previous release |
-| 6 | **Warm** | server | `jtranslate:export-catalogs`, merged-config cache, `sitemap:build --force` — in a tree nothing is serving |
-| 7 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
-| 8 | **Post-swap** | server / local | `cache:flush-persistent` (APCu), then `/en/associations/do-work` |
-| 9 | **Verify** | local | `tools/smoke-prod.sh`; **a failure rolls back automatically** and exits non-zero |
+| 6 | **Pre-migrations** | local→tunnel | `@phase: pre` against the live database while the OLD code still serves; a failure aborts before the swap |
+| 7 | **Warm** | server | `jtranslate:export-catalogs`, merged-config cache, `sitemap:build --force` — in a tree nothing is serving |
+| 8 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
+| 9 | **Post-swap** | server / local | `cache:flush-persistent` (APCu), `/en/associations/do-work`, then `@phase: post` migrations |
+| 10 | **Verify** | local | `tools/smoke-prod.sh`; **a failure rolls back automatically** and exits non-zero |
 
 Then it tags `deploy/<ts>` locally (never pushed — `git tag -l 'deploy/*'`
 answers "what shipped?") and prunes to `DEPLOY_KEEP_RELEASES`, never removing

@@ -12,6 +12,7 @@
 #   ./tools/deploy.sh --dry-run    # preflight + plan, server untouched
 #   ./tools/deploy.sh --rollback   # re-point the symlink at the previous release
 #   ./tools/deploy.sh --releases   # what is on the server, and what is live
+#   ./tools/deploy.sh --migrations # what is applied to the database, and what is pending
 #
 #   --stash        deploy HEAD with local changes stashed, restored afterwards
 #   --skip-tests   skip tools/ci-local.sh in the preflight
@@ -52,7 +53,7 @@ fail() { printf '\n%sABORT: %s%s\n' "$C_ERR" "$1" "$C_OFF" >&2; exit 1; }
 # ----------------------------------------------------------------- flags ----
 
 DRY_RUN=0 SKIP_TESTS=0 DO_STASH=0 ACTION=deploy ROLLBACK_TO='' GIT_REF='' ASSUME_YES=0
-BOOTSTRAP=0 INITIAL_SWAP=0
+BOOTSTRAP=0 INITIAL_SWAP=0 POST_MIGRATIONS_FAILED=0
 
 usage() {
     # The comment header above is the help text; it ends at the first non-comment line.
@@ -68,6 +69,7 @@ while [ $# -gt 0 ]; do
         --rollback)   ACTION=rollback ;;
         --bootstrap)  BOOTSTRAP=1 ;;
         --releases)   ACTION=releases ;;
+        --migrations) exec bash tools/migrate.sh status ;;
         --to)         ROLLBACK_TO=${2:-}; shift ;;
         --ref)        GIT_REF=${2:-}; shift ;;
         -y|--yes)     ASSUME_YES=1 ;;
@@ -486,6 +488,13 @@ rsh "cd $NEW_ABS && php composer.phar install --no-dev --no-interaction --optimi
     || fail "composer install failed in the new release. Nothing was swapped; the site is untouched."
 ok "dependencies installed"
 
+step "Pre-deploy migrations"
+# Against the live database while the OLD code is still serving, which is what
+# 'pre' means: the schema must be ready before the code that reads it arrives.
+# A failure here aborts before the swap, so production keeps running unchanged.
+bash tools/migrate.sh apply --phase=pre --yes \
+    || fail "a pre-deploy migration failed. Nothing was swapped; production is still on ${PREV:-the previous release} and its data is unchanged (a dml migration rolls back whole). Read the error above and data/deploy/backups/."
+
 step "Warming the release (still not serving)"
 # Every one of these used to run *after* the code went live, which is why a
 # deploy had a stale window: English strings until the catalogs rebuilt, a
@@ -533,6 +542,14 @@ else
     warn "DEPLOY_API_KEY is empty — skipped associations/do-work and the cache-status smoke checks."
 fi
 
+step "Post-deploy migrations"
+# The code is live, which is what 'post' is for: every db7.x retirement had to
+# run after its fix, because phrase discovery un-retires whatever the site still
+# looks up. A failure here does NOT roll the symlink back — the code is fine and
+# reverting it would not undo a data change either way.
+POST_MIGRATIONS_FAILED=0
+bash tools/migrate.sh apply --phase=post --yes || POST_MIGRATIONS_FAILED=1
+
 # ================================================================ verify ====
 
 step "Smoke checks against the live site"
@@ -579,3 +596,13 @@ ELAPSED=$((SECONDS - START_TS))
 printf '\n%s✓ %s live at %s — %ds total, swap at %ds%s\n' \
     "$C_OK" "$REL" "$DEPLOY_BASE_URL" "$ELAPSED" "$SWAP_TS" "$C_OFF"
 printf '  %srollback: ./tools/deploy.sh --rollback%s\n' "$C_DIM" "$C_OFF"
+
+if [ "$POST_MIGRATIONS_FAILED" = 1 ]; then
+    printf '\n'
+    warn "The code deployed and the site is healthy, but a POST-deploy migration failed."
+    warn "That is a data step, not a code one — rolling back the release would not undo it"
+    warn "and would not fix it. Read the error above, then:"
+    warn "  ./tools/migrate.sh status      what applied and what did not"
+    warn "  data/deploy/backups/           the snapshot taken before it ran"
+    exit 1
+fi
