@@ -1399,19 +1399,27 @@ Background and measurements: [caching.md](caching.md).
   exists on `sch_publications`. Left in place deliberately rather than cascading the
   deletion; decide whether that mapping is wanted before removing it.
 
-- [ ] **Drop the `?key=` fallback** now that every endpoint also accepts an
-  `X-Api-Key` header (`SionModel\Controller\MaintenanceKeyTrait`). The query
-  parameter still works only because the deploy config that sends it lives in
-  each machine's gitignored `phploy.ini`, which no commit here can update.
-  Sequence: land the header change, update `phploy.ini` on every deploying
-  machine from the new `phploy.ini.dist`, deploy once, then delete the
-  fallback from the trait. Until then the leak is still reachable — a caller
-  that keeps using `?key=` keeps writing the key to the access log.
-  - Since 2026-08-05 there are **two** places to delete it from: the trait, and
-    `App\Http\MaintenanceKey` for the two endpoints ported to the Symfony kernel
-    (docs/strangler.md). Both accept the same two channels on purpose, so that
-    flipping `SYMFONY_KERNEL` cannot break a deploy hook; the sequencing above is
-    unchanged, the final step just touches both files.
+- [ ] **Drop the `?key=` fallback.** Nearly unblocked — two of the three things
+  holding it up are gone as of 2026-08-16.
+  - ~~The deploy config that sends `?key=` lives in each machine's gitignored
+    `phploy.ini`, which no commit here can update.~~ **Gone**: phploy is retired
+    and `tools/deploy.sh` sends `X-Api-Key` as a header.
+  - ~~Not every endpoint accepts the header.~~ **Gone**:
+    `Books\Controller\LibrariesController::sendBookNoticesAction()` was the last
+    query-only check and now uses `MaintenanceKeyTrait`. It was invisible to the
+    plan recorded here, which named only the trait and `App\Http\MaintenanceKey`
+    — so carrying that plan out would have left one endpoint leaking with nobody
+    looking for it. `test/Unit/MaintenanceKeyChannelTest` now fails on any new
+    bespoke implementation, in either front controller's idiom.
+  - **What is left:** the overdue-book-notices cron, currently disabled pending a
+    progressive reinstatement for the Colegio Mayor library. Re-enable it with
+    `--header='X-Api-Key: …'` rather than `?key=`, confirm one run, then delete
+    the fallback from **both** `MaintenanceKeyTrait` and `App\Http\MaintenanceKey`
+    (two places since 2026-08-05 — both accept the same two channels so that
+    flipping `SYMFONY_KERNEL` cannot break a deploy hook).
+  - Worth knowing before trusting any audit of this: the key that endpoint checks
+    is `schoenstatt.api_keys`, **not** the `sion_model.api_keys` everything else
+    uses. Two config arrays, one of them easy to miss.
   - Established 2026-08-04, worth not re-deriving: **the flush cannot become
     a pure CLI command.** The persistent cache is the APCu adapter, and an
     APCu segment belongs to the SAPI that created it, so a CLI process gets
