@@ -1,0 +1,94 @@
+{#
+  A borrower's own books, reached from an overdue notice by an emailed link.
+
+  The reader is not signed in and has no account. Everything on this page is scoped by
+  the token in `?t=`, resolved once in App\Controller\BorrowerCheckoutsController — so
+  there is deliberately no person selector, no library selector, and no id anywhere in
+  a URL that the reader could edit into someone else's list.
+
+  The renew form posts back to this same path with the token, and the controller
+  re-checks that the checkout belongs to the token's person before it acts. Ownership
+  is not inferred from the fact that this template only rendered their own.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-9">
+
+    <h1>{{ translate('Your books') }}</h1>
+    <p class="lead">
+      {{ library.name }}{% if person.firstName is defined and person.firstName %} — {{ person.firstName }}{% endif %}
+    </p>
+
+    {% if notice %}
+      <div class="alert alert-{{ notice.level == 'success' ? 'success' : 'danger' }}" role="alert">
+        {{ notice.message }}
+      </div>
+    {% endif %}
+
+    {% if checkouts is empty %}
+      <div class="alert alert-info" role="alert">
+        {{ translate('You have no books out from this library. Thank you!') }}
+      </div>
+    {% else %}
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>{{ translate('Book') }}</th>
+            <th>{{ translate('Due on') }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for checkout in checkouts %}
+          <tr>
+            <td>
+              <strong>{{ checkout.book.title }}</strong>
+              {% if checkout.book.authorPrettyText is defined and checkout.book.authorPrettyText %}
+                <br><small class="text-muted">{{ checkout.book.authorPrettyText }}</small>
+              {% endif %}
+              {% if checkout.book.callNumber is defined and checkout.book.callNumber %}
+                <br><small class="text-muted">{{ translate('Call number') }}: {{ checkout.book.callNumber }}</small>
+              {% endif %}
+            </td>
+            <td>
+              {{ checkout.dueOn ? checkout.dueOn|date('j M Y') : '' }}
+              {% if checkout.status == 'overdue' %}
+                <br><span class="label label-danger">{{ translate('Overdue') }}</span>
+              {% endif %}
+              {% if checkout.timesRenewed %}
+                <br><small class="text-muted">
+                  {{ translate('Renewed') }} {{ checkout.timesRenewed }}/{{ maximum }}
+                </small>
+              {% endif %}
+            </td>
+            <td class="text-right">
+              {#
+                The button is absent, not merely disabled, once the limit is reached: a
+                disabled control invites a reader to wonder what they did wrong, whereas
+                the sentence says what to do instead. The server enforces the limit
+                regardless — this is presentation, not the check.
+              #}
+              {% if maximum > 0 and checkout.timesRenewed < maximum %}
+                <form method="post" action="/library/my-books?t={{ token|url_encode }}">
+                  <input type="hidden" name="checkoutId" value="{{ checkout.checkoutId }}">
+                  <button type="submit" class="btn btn-primary btn-sm">{{ translate('Renew') }}</button>
+                </form>
+              {% else %}
+                <small class="text-muted">{{ translate('Please reply to the notice to renew this one.') }}</small>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+
+    <p class="text-muted">
+      {{ translate('Finished with a book, or lost one? Simply reply to the notice you received and the librarian will sort it out.') }}
+    </p>
+
+  </div>
+</div>
+{% endblock %}

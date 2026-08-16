@@ -1,0 +1,22 @@
+{#
+  One page for every unusable link — unknown, expired, revoked or malformed.
+
+  Deliberately not four different pages. Telling an unauthenticated caller which of
+  those applies would say whether a token ever existed, and the borrower cannot act on
+  the difference anyway: in all four cases the thing to do is ask for a fresh link.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h1>{{ translate('This link is no longer valid') }}</h1>
+    <p>
+      {{ translate('Links in library notices stop working after a while, for your protection.') }}
+    </p>
+    <p>
+      {{ translate('Reply to the notice you received and the librarian will send you a new one — or simply tell them what you would like to renew.') }}
+    </p>
+  </div>
+</div>
+{% endblock %}
