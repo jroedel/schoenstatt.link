@@ -11,7 +11,7 @@
 # rsync dies with "exec request failed on channel 0"); the full shell
 # lives on port 222. Prefer rsync over 222; fall back to tar-over-SFTP
 # + local extract if rsync is unavailable on the server (same pattern as
-# deploy-submodules.sh, direction reversed: we tar remotely and pull).
+# the retired deploy-submodules.sh, direction reversed: we tar remotely and pull).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
