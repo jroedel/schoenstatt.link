@@ -1,6 +1,7 @@
 <?php
 namespace Books\Controller;
 
+use SionModel\Controller\MaintenanceKeyTrait;
 use SionModel\Controller\SionController;
 use Books\Form\SearchForm;
 use Laminas\View\Model\ViewModel;
@@ -18,6 +19,8 @@ use JTranslate\Model\TranslationsTable;
 
 class LibrariesController extends SionController
 {
+    use MaintenanceKeyTrait;
+
     public function sortDebuggingAction()
     {
         $libraryId = $this->params()->fromRoute('library_id');
@@ -316,7 +319,6 @@ class LibrariesController extends SionController
      */
     public function sendBookNoticesAction()
     {
-        $key = $this->params()->fromQuery('key', null);
         $config = $this->config;
         $apiKeys = [];
         if (isset($config['schoenstatt']) && isset($config['schoenstatt']['api_keys']) &&
@@ -324,9 +326,21 @@ class LibrariesController extends SionController
         ) {
             $apiKeys = $config['schoenstatt']['api_keys'];
         }
+        //Two ways in, and the OR is deliberate: an administrator of this library
+        //needs no key, an automated caller presents one. The route guard is
+        //['user', 'guest'] (module.config.php), so this check is the ONLY
+        //protection on the action — it sends real mail to real borrowers.
+        //
+        //assertApiKeyIn() rather than a local in_array(): it accepts the key in
+        //an X-Api-Key header, which a query string cannot be because ?key= is
+        //written verbatim to the access log on every call. It also compares with
+        //hash_equals and refuses a non-string, so ?key[]= cannot reach the
+        //comparison. This was the last query-only key check in the codebase;
+        //keeping it here would have left it behind when the ?key= fallback is
+        //dropped from the trait (docs/BACKLOG.md).
         $resourceId = 'library_' . $this->getLibraryId();
-        if (! $this->isAllowed($resourceId, 'administrate') && ! in_array($key, $apiKeys)) {
-            throw new UnAuthorizedException();
+        if (! $this->isAllowed($resourceId, 'administrate')) {
+            $this->assertApiKeyIn($apiKeys);
         }
         $libraryId = $this->getLibraryId();
         $simulate = (bool)$this->params()->fromQuery('simulate', true);
