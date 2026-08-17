@@ -3,8 +3,15 @@
 -- @phase: post
 -- @kind: ddl
 -- @idempotent: yes
+-- @destructive: yes
 -- @tables: sch_associations
 -- @verify: SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sch_associations' AND COLUMN_NAME IN ('SchemaOrgJsonMd5V1En','SchemaOrgJsonMd5V1Es','SchemaOrgJsonMd5V1Pt','SchemaOrgJsonMd5V1De','SchemaOrgJsonMd5V1It')
+--
+-- `@destructive: yes` means older code cannot run once this has been applied, so
+-- `tools/deploy.sh` refuses to roll back to a release that does not ship this file.
+-- Added 2026-08-17 *after* this migration took the site down in exactly that way:
+-- the deploy's automatic rollback restored the previous release, which went on
+-- SELECTing these five columns. See docs/incident-2026-08-17-stale-opcache.md.
 --
 -- `post`, and this one is not a coin flip. During a deploy the pre phase runs while
 -- the PREVIOUS release is still being served, and that release's

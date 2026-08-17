@@ -982,8 +982,43 @@ each prints, and any failure before the swap leaves production untouched.
 | 6 | **Pre-migrations** | local→tunnel | `@phase: pre` against the live database while the OLD code still serves; a failure aborts before the swap |
 | 7 | **Warm** | server | `jtranslate:export-catalogs`, merged-config cache, `sitemap:build --force` — in a tree nothing is serving |
 | 8 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
-| 9 | **Post-swap** | server / local | `cache:flush-persistent` (APCu), then `@phase: post` migrations |
-| 10 | **Verify** | local | `tools/smoke-prod.sh`; **a failure rolls back automatically** and exits non-zero |
+| 9 | **Post-swap** | server | `cache:flush-persistent` (APCu) |
+| 10 | **Make the swap visible** | server / local | reset every opcode cache — see below, this is not optional |
+| 11 | **Confirm the live release** | local | `/_health` polled 12×; a disagreement **aborts before any migration runs** |
+| 12 | **Post-migrations** | local→tunnel | `@phase: post`, now that the new code is provably the code running |
+| 13 | **Verify** | local | `tools/smoke-prod.sh`; a failure rolls back automatically *unless* a destructive migration makes that worse |
+
+### Steps 10 and 11: why a symlink swap is not enough
+
+**Repointing the release symlink does not change what PHP executes.**
+`opcache.revalidate_path` defaults to 0, so OPcache never re-resolves the symlink;
+`validate_timestamps` then checks the *old* target's mtime, which never changes.
+The previous release keeps serving, indefinitely, and nothing in any response says
+so. There is no timeout that rescues you.
+
+Worse, **this host runs at least three PHP pools, each with its own OPcache
+segment** — measured by polling `/en/sm/cache-status` and getting three different
+uptimes. A reset request only clears the segment that served it, so a partial reset
+looks like "some pages work and some don't".
+
+Step 10 therefore writes a single-use, randomly-named PHP file into the new release
+and requests it until several consecutive hits report an already-fresh segment. A
+new path has no cache entry anywhere, so it always compiles from disk. It cannot be
+an ordinary application endpoint: a pool serving the *previous* release resolves
+routes against that release's code, which need not have the endpoint at all. The
+file is deleted afterwards, including on failure, because a stray one is a
+publicly-reachable cache flush.
+
+Step 11 is the check that makes step 10 honest. `/_health` reports the release's
+`.revision` when given `DEPLOY_API_KEY`, and it is served by the Symfony kernel
+without booting laminas — so it answers even while the legacy bootstrap is
+fatalling, which is exactly the state worth detecting. Twelve probes, because one
+would only ever sample one pool.
+
+**Nothing irreversible happens before step 11 passes.** That ordering is the whole
+lesson of 2026-08-17: the old ordering ran the post-deploy migration first, against
+code that had already been replaced but was still executing.
+See [incident-2026-08-17-stale-opcache.md](incident-2026-08-17-stale-opcache.md).
 
 Then it tags `deploy/<ts>` locally (never pushed — `git tag -l 'deploy/*'`
 answers "what shipped?") and prunes to `DEPLOY_KEEP_RELEASES`, never removing
@@ -1316,16 +1351,26 @@ checklist this section used to hold (re-check out the older superproject commit
 so the submodule pointers roll back too, re-sync the submodule trees, re-run
 `composer install --no-dev` to reinstate the older lock) is no longer needed.
 
-A failed smoke run **rolls back on its own**; the failed release is kept for
-inspection rather than pruned.
+A failed smoke run **rolls back on its own** — unless rolling back would be worse
+than not, see below; the failed release is kept for inspection rather than pruned.
 
 Three things it does not do:
 
-- **It does not undo a database migration.** Code and schema roll back
-  independently, which is why migration phase matters: a `pre` migration is
-  designed to be compatible with the code that was live before it, so a rollback
-  of the code alone is safe. The table snapshots the runner takes before each
-  migration are in `data/deploy/backups/`.
+- **It does not undo a database migration**, and for a *destructive* one that is
+  not a caveat but a hard block. Code and schema roll back independently, which is
+  why migration phase matters: a `pre` migration is written to be compatible with
+  the code that was live before it, so rolling the code back alone is safe. A
+  migration that DROPS something is the opposite — the older release cannot run at
+  all once it has been applied. On 2026-08-17 the automatic rollback did exactly
+  that and turned a recoverable deploy into a 40-minute outage
+  ([incident-2026-08-17-stale-opcache.md](incident-2026-08-17-stale-opcache.md)).
+
+  Such a migration must declare `-- @destructive: yes`. Both rollback paths then
+  refuse a target release that does not ship the file, the automatic one declining
+  to roll back at all and leaving the site on the release that at least matches the
+  schema. `--allow-incompatible` overrides it if you have decided the breakage is
+  acceptable. The table snapshots the runner takes before each migration are in
+  `data/deploy/backups/`.
 - **It does not survive the next deploy** if what you actually want is to undo a
   commit. Revert it and deploy; that is the durable form.
 - **It cannot reach a pruned release.** `DEPLOY_KEEP_RELEASES` is five, and the
