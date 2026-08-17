@@ -201,7 +201,7 @@ build_smoke_env() {
 # endpoint at all.
 RESET_FILE=''
 reset_opcode_caches() {
-    local release_abs=$1 rel=$2 token src url i fresh=0 misses=0 body status
+    local release_abs=$1 rel=$2 want=${3:-} token src url i fresh=0 agreed=0 misses=0 body status live
 
     token=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
     # A glob, because the helper is written into EVERY release, not just this one.
@@ -296,8 +296,30 @@ PHPEOF
                 continue
                 ;;
         esac
-        # age is measured BEFORE the reset, so a small one means this segment was
-        # already reset by an earlier iteration of this same loop.
+        # Stop on the thing that actually matters: the live site reporting the
+        # release we just swapped in. The first version counted OPcache segment
+        # ages instead and, on the 15:03 deploy, never saw six consecutive fresh
+        # reads in forty hits — so it warned on a deploy that had in fact worked,
+        # while the revision check on the very next step passed 12/12. A warning
+        # that fires on success is worse than no warning: it teaches everyone to
+        # ignore the one mechanism standing between a bad swap and a destructive
+        # migration.
+        #
+        # Segment age was always a proxy anyway. The revision is the observable.
+        if [ -n "$want" ] && [ -n "$DEPLOY_API_KEY" ]; then
+            live=$(curl --silent --show-error --max-time 20 \
+                --header "X-Api-Key: $DEPLOY_API_KEY" "$DEPLOY_BASE_URL/_health" 2>/dev/null \
+                | sed -n 's/.*"revision" *: *"\([0-9a-f]*\)".*/\1/p')
+            if [ "$live" = "$want" ]; then
+                agreed=$((agreed + 1))
+                [ "$agreed" -ge 8 ] && break
+            else
+                agreed=0
+            fi
+            continue
+        fi
+        # No key, or no expected revision (a rollback): fall back to segment age,
+        # which is the best available signal when nothing can report a revision.
         if [ "$(printf '%s' "$body" | sed -n 's/^age=//p')" -lt 30 ] 2>/dev/null; then
             fresh=$((fresh + 1))
             [ "$fresh" -ge 6 ] && break
@@ -308,13 +330,15 @@ PHPEOF
 
     rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
     RESET_FILE=''
-    if [ "$fresh" -ge 6 ]; then
+    if [ "$agreed" -ge 8 ]; then
+        ok "8 consecutive probes report $rel; opcode caches are serving the new release"
+        return 0
+    fi
+    if { [ -z "$want" ] || [ -z "$DEPLOY_API_KEY" ]; } && [ "$fresh" -ge 6 ]; then
         ok "opcode caches reset on every pool that answered (release $rel)"
         return 0
     fi
-    # 40 hits without six consecutive fresh reads means pools are being created
-    # faster than they are reset, or something is serving from somewhere else.
-    warn "reset ran but never saw 6 consecutive already-fresh segments in 40 hits."
+    warn "40 reset hits without 8 consecutive probes agreeing on $rel."
     warn "The revision check that follows is what decides whether this mattered."
     return 1
 }
@@ -485,7 +509,13 @@ if [ "$ACTION" = rollback ]; then
     # same reason a deploy is. Without this the rollback appears to do nothing.
     # home-relative, like the rest of this block: HOME_ABS is not resolved until the
     # deploy path, well below here, and rsh lands in the home directory anyway.
-    reset_opcode_caches "$RELEASES/$TARGET" "$TARGET" || true
+    #
+    # The target's own .revision is what the reset verifies against. A rollback that
+    # silently does not take effect is exactly as dangerous as a deploy that does
+    # not — arguably worse, because it is reached for when something is already
+    # wrong and its whole value is being sure.
+    TARGET_SHA=$(rsh "cat $RELEASES/$TARGET/.revision 2>/dev/null" | tr -d '\r\n') || TARGET_SHA=''
+    reset_opcode_caches "$RELEASES/$TARGET" "$TARGET" "$TARGET_SHA" || true
 
     step "Smoke checks"
     build_smoke_env
@@ -799,7 +829,7 @@ step "Making the swap visible to PHP"
 # Deliberately not fatal. A failed reset is not itself a reason to stop — the
 # revision check on the next step is what knows whether it mattered, and it gives
 # a far better message than a bare non-zero exit under `set -e` would.
-reset_opcode_caches "$NEW_ABS" "$REL" || warn "continuing to the revision check, which is the real gate."
+reset_opcode_caches "$NEW_ABS" "$REL" "$SHA" || warn "continuing to the revision check, which is the real gate."
 
 step "Confirming the live site is running $REL"
 # One retry, and it is not belt-and-braces. On the first rollout of this check
@@ -809,7 +839,7 @@ step "Confirming the live site is running $REL"
 # harmless and idempotent, so try that before declaring the deploy stuck.
 if ! assert_live_revision "$SHA"; then
     warn "retrying the opcode-cache reset once, then re-checking."
-    reset_opcode_caches "$NEW_ABS" "$REL" || true
+    reset_opcode_caches "$NEW_ABS" "$REL" "$SHA" || true
     assert_live_revision "$SHA" \
     || fail "the live site is NOT running the release that was just swapped in, after two cache resets.
 
@@ -827,6 +857,60 @@ if ! assert_live_revision "$SHA"; then
   cache entry anywhere, so it always compiles from disk.
 
   Do NOT run migrations until /_health reports $SHA."
+fi
+
+# If a DESTRUCTIVE migration is about to run, the momentary agreement above is not
+# enough. Measured after the 15:03 deploy: the gate passed 12/12, then two minutes
+# later 6 of 6 probes reported the PREVIOUS release, then a mixed 9/11, and only
+# after ~4 minutes did it settle at 20/20 on the new one. Pools the reset loop
+# never reached kept serving old code until they recycled on their own.
+#
+# For an ordinary deploy that is harmless — both releases run against the same
+# schema. For a migration that DROPS something it is the 2026-08-17 outage with a
+# delay on it: the columns go while a pool is still executing code that selects
+# them. So when something irreversible is pending, wait for the agreement to hold
+# rather than merely to occur.
+#
+# Scoped to destructive migrations on purpose. Every deploy paying three minutes
+# for a hazard that applies to a handful of them would be a tax people route
+# around, and a check people route around protects nothing.
+PENDING_DESTRUCTIVE=''
+if PLAN=$(bash tools/migrate.sh plan 2>/dev/null); then
+    while read -r f; do
+        [ -n "$f" ] || continue
+        if grep -qE '^--[[:space:]]*@destructive:[[:space:]]*yes' "database/$f" 2>/dev/null; then
+            PENDING_DESTRUCTIVE="$PENDING_DESTRUCTIVE $f"
+        fi
+    done < <(printf '%s\n' "$PLAN" | awk '/PENDING/ {print $2}')
+else
+    # Could not read the plan. Assume the strict path: being slow is recoverable,
+    # dropping a column under running code is not.
+    warn "could not read the migration plan; treating this as destructive."
+    PENDING_DESTRUCTIVE=' (unknown)'
+fi
+
+if [ -n "$PENDING_DESTRUCTIVE" ]; then
+    step "Sustained revision check — destructive migration pending:$PENDING_DESTRUCTIVE"
+    info "Older code cannot survive this migration, so the live site must agree on"
+    info "$REL consistently, not once. Three rounds, 45s apart."
+    for round in 1 2 3; do
+        if ! assert_live_revision "$SHA"; then
+            fail "a pool is still serving an older release, and the pending migration(s)
+ ($PENDING_DESTRUCTIVE) would break whatever is still running that code.
+
+  Nothing irreversible has happened: the symlink points at $REL and no post-deploy
+  migration has run. This is drift, and it clears on its own as pools recycle —
+  measured at roughly four minutes on 2026-08-17. Wait a few minutes and run:
+
+      ./tools/deploy.sh --migrations     # confirm what is still pending
+      bash tools/migrate.sh apply --phase=post
+
+  Do not force it. Read docs/incident-2026-08-17-stale-opcache.md for what
+  happens when a DROP meets code that has not caught up."
+        fi
+        [ "$round" -lt 3 ] && sleep 45
+    done
+    ok "agreement held across three rounds; safe to migrate"
 fi
 
 step "Post-deploy migrations"
@@ -868,7 +952,8 @@ else
         printf '%srolling back automatically%s\n' "$C_ERR" "$C_OFF" >&2
         rsh "cd $HOME_ABS/$APP && ln -sfn releases/$PREV/public public.swap && mv -Tf public.swap public"
         rsh "cd $HOME_ABS/$RELEASES/$PREV && php bin/console cache:flush-persistent" || true
-        reset_opcode_caches "$HOME_ABS/$RELEASES/$PREV" "$PREV" || true
+        PREV_SHA=$(rsh "cat $RELEASES/$PREV/.revision 2>/dev/null" | tr -d '\r\n') || PREV_SHA=''
+        reset_opcode_caches "$HOME_ABS/$RELEASES/$PREV" "$PREV" "$PREV_SHA" || true
         warn "rolled back to $PREV. The failed release is kept at $RELEASES/$REL for inspection."
         warn "No database migration was undone by this rollback."
     elif [ "$INITIAL_SWAP" = 1 ]; then

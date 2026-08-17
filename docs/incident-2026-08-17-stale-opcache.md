@@ -206,6 +206,38 @@ the mtime on the shared inode, i.e. on every release at once). Whether OPcache h
 keys on the symlink path or the resolved one was never established; if it is the
 resolved path this changes nothing, and it costs one copy of a 3 KB file.
 
+## The deploy that worked, and the last thing it exposed
+
+`a8f9909` (15:03) completed: swap, reset, gate 12/12, no pending migrations, **all**
+production smoke checks, housekeeping, 202 s total. The hardlink change also did
+its job — the new release's `index.php` has one link and its own mtime, where the
+four older releases still share one inode dated 2026-08-07.
+
+Two things it exposed, both now fixed:
+
+**The reset loop warned on success.** It stopped on OPcache segment ages and never
+saw six consecutive fresh reads in forty hits, so it warned — on a deploy where the
+very next step passed 12/12. It now stops on eight consecutive probes reporting the
+expected revision instead. Segment age was always a proxy; the revision is the
+observable, and a warning that fires on success teaches people to ignore the one
+mechanism guarding the migration.
+
+**Agreement is momentary.** Sampling `/_health` after that deploy:
+
+| time | new release | previous release |
+|---|---|---|
+| during deploy | 12/12 | 0 |
+| ~2 min later | 0 | **6/6** |
+| ~3 min later | 11/20 | 9/20 |
+| 15:13 onward | 20/20 | 0 — held for 4 rounds |
+
+Pools the reset never reached kept serving old code for about four minutes, then
+recycled. Harmless there — both releases ran against the same schema — but for a
+destructive migration it is this incident again with a delay on it. So a pending
+`@destructive: yes` migration now requires the agreement to *hold*: three rounds,
+45 s apart. Ordinary deploys are unaffected, deliberately; a three-minute tax on
+every release is a check people would route around.
+
 ## What is still true and worth knowing
 
 - **The capsule cannot reproduce this.** It runs one PHP pool and serves from a
