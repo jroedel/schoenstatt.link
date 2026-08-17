@@ -17,14 +17,16 @@ use function is_string;
  * a session — the counterpart of SionModel\Controller\MaintenanceKeyTrait, which
  * does the same job for the laminas controllers.
  *
- * Two channels and hash_equals, exactly as the trait: these are long-lived
- * shared secrets, and a length-independent comparison is one less thing to
- * reason about. The X-Api-Key header is the supported channel, because a query
- * string is recorded verbatim in the web server's access log and kept in the
- * shell history of whatever invoked it. `?key=` still works on purpose: the
- * deploy configuration that sends it lives in the gitignored phploy.ini on each
- * machine, so it cannot be updated in the same commit as this code. Dropping the
- * fallback is its own sequenced task (docs/BACKLOG.md).
+ * One channel and hash_equals, exactly as the trait: these are long-lived shared
+ * secrets, and a length-independent comparison is one less thing to reason about.
+ * The key must arrive in the X-Api-Key header. A query string is recorded
+ * verbatim in the web server's access log and kept in the shell history of
+ * whatever invoked it, so `?key=` was a leak by default; it was accepted as a
+ * fallback until 2026-08-17 only because the deploy configuration that sent it
+ * lived in a gitignored phploy.ini no commit could reach. phploy is retired and
+ * every caller now sends the header, so the fallback is gone from here and from
+ * the trait together — they have to agree, or flipping SYMFONY_KERNEL would
+ * change what a deploy hook is allowed to send.
  *
  * The rejection is the one behaviour that deliberately differs from the laminas
  * path. There, a failed check throws BjyAuthorize\Exception\UnAuthorizedException
@@ -111,14 +113,7 @@ final class MaintenanceKey
     private static function presented(Request $request): ?string
     {
         $header = $request->headers->get(self::HEADER);
-        if (is_string($header) && '' !== $header) {
-            return $header;
-        }
 
-        //via all() rather than get(): InputBag::get() throws on ?key[]=… , and an
-        //array must not reach hash_equals either way
-        $fromQuery = $request->query->all()['key'] ?? null;
-
-        return is_string($fromQuery) ? $fromQuery : null;
+        return is_string($header) && '' !== $header ? $header : null;
     }
 }
