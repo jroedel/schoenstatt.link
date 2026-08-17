@@ -1259,8 +1259,10 @@ ORDER BY `Publisher`";
     // updateTranslatedFromPublicationIdReferences(), updateCoverImages() and
     // compileMapFromDataSourcedRecordsToFirstClassCitizens(), which built the old-id =>
     // new-id map the other three followed. Between them they had three database references
-    // and ten cover files left to fix; database/db8.2.sql and tools/fix-merged-covers.sh do
-    // that once, written against the same predicate rather than the ids measured that day.
+    // and ten cover files left to fix. database/db8.2.sql did the references, written
+    // against the same predicate rather than the ids measured that day; the covers were a
+    // one-off script, applied by hand on 2026-08-18 and deleted afterwards, because
+    // public/covers is gitignored and lives in shared/ where no deploy reaches it.
 
     public function getCategories()
     {
