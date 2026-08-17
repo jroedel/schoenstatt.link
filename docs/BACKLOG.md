@@ -353,10 +353,20 @@ rediscovered.
     while the file sits on disk under the pre-merge id. For 10203 and 10185 it would
     replace a cover that already exists with a **different image** (verified not a
     re-encoding: 1672-2000px.jpg is 484,373 bytes against 10185-2000px.jpg's 326,012).
-    `tools/fix-merged-covers.sh` does the first pair and refuses the second; deciding
-    between those two pairs wants someone who can look at them. **One-off — delete the
-    script once it has run against production.** Covers are gitignored and live in
-    `shared/public/covers`, so no deploy can carry this: it is `--apply` over SSH.
+    `tools/fix-merged-covers.sh` did the first pair and refused the second. **Applied to
+    production 2026-08-18** — all ten files moved, and `/en/SL210249L` and `/en/SL210186L`
+    now render `/covers/10249-400px.jpg` and `/covers/10186-400px.jpg`; the old ids answer
+    404. The script was deleted in the same change, having been written as one-off.
+    - Worth keeping, because it is the part that nearly went wrong: **covers are
+      gitignored and live in `shared/public/covers`, so no deploy carries this** — it was
+      `--apply` over SSH, a manual step. The script was very nearly deleted a day earlier
+      on the reasonable-sounding grounds that the work had been "merged and deployed".
+      Merging and deploying a repair that lives outside the repository does nothing at
+      all, and the only way to tell was to ask production for the file.
+    - **Still open, and it is a content decision:** publications **10203** and **10185**
+      each have a cover *and* a different pre-merge image (`1437*`, `1672*`) still sitting
+      in `shared/public/covers`. Somebody who can look at the four pairs should pick which
+      image is right; until then the existing covers stand and the orphans are harmless.
   - **`/admin/maintenance` was the dangerous one.** It stripped the `priest` tag from
     any person without a `PriestDate`, on a 2020 comment's premise that "so far, all
     priests should have priestDate". False today: of 15 people carrying the tag, **5
