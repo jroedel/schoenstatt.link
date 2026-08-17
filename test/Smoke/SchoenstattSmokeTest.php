@@ -48,7 +48,10 @@ class SchoenstattSmokeTest extends SmokeTestCase
             'associations'      => ['/en/associations'],
             'persons'           => ['/en/persons'],
             'admin'             => ['/en/admin'],
-            'admin maintenance' => ['/en/admin/maintenance'],
+            //'admin maintenance' => ['/en/admin/maintenance'] was here until 2026-08-17.
+            //The route is gone, so the path now 404s for everyone rather than redirecting
+            //an anonymous visitor to sign in, and this provider is about the redirect.
+            'admin import father' => ['/en/admin/import-father'],
         ];
     }
 }

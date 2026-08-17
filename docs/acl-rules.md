@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 132 |
-| guarded routes total | 132 |
+| guarded routes existing | 124 |
+| guarded routes total | 124 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 134 |
+| route guard entries | 126 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 70 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 161 |
-| total routes | 152 |
+| total routes | 144 |
 | unguarded routes | 20 |
 | unguarded routes matchable | 10 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (132 + 20 = 152). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (124 + 20 = 144). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -495,14 +495,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `acknowledgements` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `admin` | yes | sch_moderator, translator | sch_administrator, sch_general_moderator, sch_moderator, translator (4) | no |  |
 | `admin/import-father` | yes | sch_administrator | sch_administrator (1) | no |  |
-| `admin/literature-maintenance` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/literature-maintenance/copy-data-sourced-row-to-first-class-citizen` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/literature-maintenance/list-merged-publication-id-map` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/literature-maintenance/update-cover-images` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/literature-maintenance/update-library-book-publication-references` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/literature-maintenance/update-main-publication-ids` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/literature-maintenance/update-translated-from-publication-id` | yes | pub_administrator | pub_administrator (1) | no |  |
-| `admin/maintenance` | yes | administrator | administrator (1) | no |  |
 | `api-route-not-found` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `assignments/advanced-search` | yes | sch_user | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (6) | no |  |
 | `assignments/assignment` | yes | sch_basic, sch_user | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (7) | no |  |

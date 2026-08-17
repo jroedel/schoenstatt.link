@@ -1210,51 +1210,12 @@ ORDER BY `Publisher`";
         $gateway->update(['CategoryId' => $categoryId], $where);
     }
 
-    /**
-     * @throws \Exception
-     */
-    public function copyDataSourcedRowToFirstClassCitizen(?bool $isSimulation): array
-    {
-        $query = [
-            new IsNotNull('DataSource'),
-            new Operator('IsAwaitingMerge', Operator::OP_EQ, '0'),
-            new IsNull('MergedIntoPublicationId')
-        ];
-        $results = $this->queryObjects('publication', $query);
-
-        if (! $isSimulation) {
-            $maxProcessedRows = 200;
-            $i = 0;
-            foreach ($results as $result) {
-                if ($i >= $maxProcessedRows) {
-                    break;
-                }
-                //insert a duplicate row unsetting several fields
-                $cPublicationId = $result['publicationId'];
-                unset($result['publicationId']);
-                unset($result['dataSource']);
-                unset($result['dataSourceId']);
-                unset($result['dataSourceUpdatedOn']);
-                unset($result['createdBy']);
-                unset($result['createdOn']);
-                unset($result['updatedBy']);
-                unset($result['updatedOn']);
-//                var_dump($result);
-
-                $newId = $this->createEntity('publication', $result);
-//                var_dump("New id is $newId");
-                if (! is_numeric($newId)) {
-                    throw new \Exception('We were expecting a numeric result from the creation of a new publication');
-                }
-                //with the resulting PublicationId, update the old record
-                $this->updateEntity('publication', $cPublicationId, ['mergedIntoPublicationId' => $newId], [], false);
-                $results[$cPublicationId]['result'] = $newId;
-                $i++;
-            }
-        }
-
-        return $results;
-    }
+    // copyDataSourcedRowToFirstClassCitizen() lived here until 2026-08-17. It was the bulk
+    // half of the 2020 data-source migration, driven by
+    // /admin/literature-maintenance/copy-data-sourced-row-to-first-class-citizen. Measured
+    // before removal it matched 0 rows: the 2,333 publications still carrying a DataSource
+    // sit at IsAwaitingMerge = 1, which it skipped by design. They are merged one at a time
+    // by copyPublicationToMainCorpus() below, which stays.
 
     public function copyPublicationToMainCorpus($publicationId)
     {
@@ -1293,136 +1254,13 @@ ORDER BY `Publisher`";
         return $newId;
     }
 
-    public function updateMainPublicationIdReferences(bool $isSimulation): array
-    {
-        $oldIdToNewIdMap = $this->compileMapFromDataSourcedRecordsToFirstClassCitizens();
-//        var_dump($oldIdToNewIdMap);
-        //ex. 1862
-
-        $query = [
-            new IsNull('DataSource'),
-            new IsNotNull('MainPublicationId')
-        ];
-        $queryResults = $this->queryObjects('publication', $query);
-
-        $maxProcessedRows = 200;
-        $i = 0;
-        $results = [];
-        foreach ($queryResults as $result) {
-            if ($i >= $maxProcessedRows) {
-                break;
-            }
-            $cPublicationId = $result['publicationId'];
-            if (! isset($oldIdToNewIdMap[$result['mainPublicationId']])) {
-                continue;
-            }
-            $newMainPublicationId = $oldIdToNewIdMap[$result['mainPublicationId']];
-            $results[$cPublicationId] = $result;
-            $results[$cPublicationId]['result'] = $newMainPublicationId;
-            if (! $isSimulation) {
-                $this->updateEntity(
-                    'publication',
-                    $cPublicationId,
-                    ['mainPublicationId' => $newMainPublicationId],
-                    [],
-                    false
-                );
-                $i++;
-            }
-        }
-
-        return $results;
-    }
-
-    public function updateTranslatedFromPublicationIdReferences(bool $isSimulation): array
-    {
-        $oldIdToNewIdMap = $this->compileMapFromDataSourcedRecordsToFirstClassCitizens();
-//        var_dump($oldIdToNewIdMap);
-        //ex. 1862
-
-        $query = [
-            new IsNull('DataSource'),
-            new IsNotNull('TranslatedFromPublicationId')
-        ];
-        $queryResults = $this->queryObjects('publication', $query);
-
-        $maxProcessedRows = 200;
-        $i = 0;
-        $results = [];
-        foreach ($queryResults as $result) {
-            if ($i >= $maxProcessedRows) {
-                break;
-            }
-            $cPublicationId = $result['publicationId'];
-            if (! isset($oldIdToNewIdMap[$result['translatedFromPublicationId']])) {
-                continue;
-            }
-            $newId = $oldIdToNewIdMap[$result['translatedFromPublicationId']];
-            $results[$cPublicationId] = $result;
-            $results[$cPublicationId]['result'] = $newId;
-            if (! $isSimulation) {
-                $this->updateEntity(
-                    'publication',
-                    $cPublicationId,
-                    ['translatedFromPublicationId' => $newId],
-                    [],
-                    false
-                );
-                $i++;
-            }
-        }
-
-        return $results;
-    }
-
-    public function updateCoverImages(bool $isSimulation): array
-    {
-        $oldIdToNewIdMap = $this->compileMapFromDataSourcedRecordsToFirstClassCitizens();
-        $path    = 'public/covers';
-        $files = scandir($path);
-        $files = array_diff(scandir($path), array('.', '..'));
-
-        $re = '/^(\d{2,4})((?:-\d{2,4}px)?(?:\.jpg|\.png))$/';
-
-        $results = [];
-        foreach ($files as $file) {
-            preg_match($re, $file, $matches, PREG_OFFSET_CAPTURE, 0);
-            if (! $matches || ! $matches[1] || ! $matches[2]) {
-                continue;
-            }
-            $publicationId = $matches[1][0];
-            if (! isset($oldIdToNewIdMap[$publicationId])) {
-                continue;
-            }
-            $suffix = $matches[2][0];
-            $newFileName = $oldIdToNewIdMap[$publicationId] . $suffix;
-            $results[] = [
-                'fileName' => $file,
-                'publicationId' => $publicationId,
-                'result' => $newFileName,
-            ];
-            if (! $isSimulation) {
-                if (true !== rename('public/covers/' . $file, 'public/covers/' . $newFileName)) {
-                    throw new \Exception('Expected rename operation to return `true`');
-                }
-            }
-        }
-        return $results;
-    }
-
-    public function compileMapFromDataSourcedRecordsToFirstClassCitizens(): array
-    {
-        $query = [
-            new IsNotNull('DataSource'),
-            new IsNotNull('MergedIntoPublicationId')
-        ];
-        $results = $this->queryObjects('publication', $query);
-        $map = [];
-        foreach ($results as $result) {
-            $map[$result['publicationId']] = $result['mergedIntoPublicationId'];
-        }
-        return $map;
-    }
+    // Four more methods lived here until 2026-08-17, all reachable only from the retired
+    // /admin/literature-maintenance routes: updateMainPublicationIdReferences(),
+    // updateTranslatedFromPublicationIdReferences(), updateCoverImages() and
+    // compileMapFromDataSourcedRecordsToFirstClassCitizens(), which built the old-id =>
+    // new-id map the other three followed. Between them they had three database references
+    // and ten cover files left to fix; database/db8.2.sql and tools/fix-merged-covers.sh do
+    // that once, written against the same predicate rather than the ids measured that day.
 
     public function getCategories()
     {

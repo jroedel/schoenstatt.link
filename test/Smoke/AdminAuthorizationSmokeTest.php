@@ -29,7 +29,8 @@ use function preg_match_all;
  * probe): 302 to `/en/user/login?redirect=/en/admin`, then 403 with
  * "You are not authorized to access admin.", then 200 with the same ten links in the
  * same order. The assertions below are that measurement, not a design — with the
- * eleventh link, the kernel toggle, added in 2026-08-11 when it left the navbar.
+ * eleventh link, the kernel toggle, added in 2026-08-11 when it left the navbar, and
+ * 'Literature maintenance' removed 2026-08-17, which brings the count back to ten.
  *
  * The signed-in-but-unprivileged case is not contrived: registration assigns
  * lib_user, pub_user, sch_user and bib_user by itself, and none of them is beneath
@@ -68,7 +69,8 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         ['/en/users', 'User Management'],
         ['/en/admin/translations', 'Manage Translations'],
         ['/en/sm/data-problems', 'Data problems'],
-        ['/en/admin/literature-maintenance', 'Literature maintenance'],
+        //'Literature maintenance' was the eleventh entry until 2026-08-17, when the 2020
+        //data-source migration behind it was measured as finished and retired.
         //appended 2026-08-11, when the kernel toggle moved out of the navbar. It is
         //sch_administrator-only, so it appears in this list and in no other case below.
         ['/en/kernel-switch', 'Switch kernel'],
@@ -76,7 +78,7 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
 
     /**
      * What `sch_moderator` alone sees — the first four and nothing else, because the
-     * other seven name resources no descendant of sch_moderator is allowed
+     * other six name resources no descendant of sch_moderator is allowed
      * (`route/juser` wants `administrator`, `route/jtranslate` wants
      * `sch_general_moderator` or `translator`, `route/kernel-switch` wants
      * `sch_administrator`, and so on: docs/acl-rules.md).
@@ -129,7 +131,11 @@ class AdminAuthorizationSmokeTest extends SmokeTestCase
         $body = $this->get('/en/admin')['body'];
 
         $this->assertStringNotContainsString('Import Schoenstatt Father', $body);
-        $this->assertStringNotContainsString('/en/admin/literature-maintenance', $body);
+        //A label and an href, because a redirect that leaked only one of the two would
+        //still pass the other. This was '/en/admin/literature-maintenance' until
+        //2026-08-17; that link no longer exists on the page, so asserting its absence
+        //had stopped proving anything.
+        $this->assertStringNotContainsString('/en/admin/import-father', $body);
     }
 
     /**

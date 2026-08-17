@@ -21,12 +21,12 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 132,
-        "guarded_routes_total": 132,
+        "guarded_routes_existing": 124,
+        "guarded_routes_total": 124,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 134,
+        "route_guard_entries": 126,
         "routes_declared_twice": 2,
         "routes_shadowed_by_symfony": 70,
         "routes_uncomparable": 0,
@@ -35,7 +35,7 @@
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 161,
-        "total_routes": 152,
+        "total_routes": 144,
         "unguarded_routes": 20,
         "unguarded_routes_matchable": 10
     },
@@ -157,190 +157,6 @@
             "matchable": true,
             "public": false,
             "route": "admin/import-father"
-        },
-        "admin/literature-maintenance": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance"
-        },
-        "admin/literature-maintenance/copy-data-sourced-row-to-first-class-citizen": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance/copy-data-sourced-row-to-first-class-citizen"
-        },
-        "admin/literature-maintenance/list-merged-publication-id-map": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance/list-merged-publication-id-map"
-        },
-        "admin/literature-maintenance/update-cover-images": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance/update-cover-images"
-        },
-        "admin/literature-maintenance/update-library-book-publication-references": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance/update-library-book-publication-references"
-        },
-        "admin/literature-maintenance/update-main-publication-ids": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance/update-main-publication-ids"
-        },
-        "admin/literature-maintenance/update-translated-from-publication-id": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "pub_administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "pub_administrator"
-            ],
-            "effective_roles": [
-                "pub_administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/literature-maintenance/update-translated-from-publication-id"
-        },
-        "admin/maintenance": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "administrator"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "administrator"
-            ],
-            "effective_roles": [
-                "administrator"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "admin/maintenance"
         },
         "api-route-not-found": {
             "anonymous_allowed": true,
