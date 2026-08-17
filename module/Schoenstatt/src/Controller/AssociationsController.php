@@ -1,8 +1,6 @@
 <?php
 namespace Schoenstatt\Controller;
 
-use Laminas\View\Model\JsonModel;
-use SionModel\Controller\MaintenanceKeyTrait;
 use SionModel\Controller\SionController;
 use Laminas\Filter\StripTags;
 use Schoenstatt\Validator\TimeZone;
@@ -11,8 +9,6 @@ use Laminas\Mvc\Plugin\FlashMessenger\FlashMessenger;
 
 class AssociationsController extends SionController
 {
-    use MaintenanceKeyTrait;
-
     public function sendToNewUrlAction()
     {
         $id = $this->params()->fromRoute('association_id');

@@ -35,7 +35,15 @@ use PHPUnit\Framework\TestCase;
  */
 class MaintenanceKeyChannelTest extends TestCase
 {
-    /** The two sanctioned implementations, which naturally mention the query form. */
+    /**
+     * The two sanctioned implementations.
+     *
+     * Until 2026-08-17 these were *excluded* from the query-string sweep below,
+     * because both accepted `?key=` as a documented fallback. Neither does now, so
+     * the invariant tightened from "only these two may read the key from a query
+     * string" to "nothing may" — including them. The list survives only to guard
+     * against a rename (see the second test).
+     */
     private const SANCTIONED = [
         'module/SionModel/src/Controller/MaintenanceKeyTrait.php',
         'src/Http/MaintenanceKey.php',
@@ -69,35 +77,78 @@ class MaintenanceKeyChannelTest extends TestCase
         return ltrim(str_replace(dirname(__DIR__, 2), '', $absolute), '/');
     }
 
-    public function testNoControllerReadsTheKeyFromTheQueryStringItself(): void
+    /**
+     * The file's PHP with every comment removed.
+     *
+     * Both checks below have to reason about what the code *does*, and the two
+     * gates carry long docblocks explaining precisely why a query string is
+     * unsafe. Matching raw source would fail on the explanation and pass on a
+     * commented-out reintroduction — exactly backwards.
+     */
+    private function codeOnly(string $source): string
+    {
+        $code = '';
+        foreach (token_get_all($source) as $token) {
+            if (is_array($token)) {
+                if (T_COMMENT === $token[0] || T_DOC_COMMENT === $token[0]) {
+                    continue;
+                }
+                $code .= $token[1];
+                continue;
+            }
+            $code .= $token;
+        }
+
+        return $code;
+    }
+
+    public function testNothingReadsTheMaintenanceKeyFromTheQueryString(): void
     {
         $offenders = [];
         foreach ($this->phpFilesUnder('module', 'src') as $file) {
-            $relative = $this->relative($file);
-            if (in_array($relative, self::SANCTIONED, true)) {
-                continue;
-            }
-            $source = file_get_contents($file);
-            // The laminas form, `$this->params()->fromQuery('key')`, and the
-            // Symfony one, `$request->query->get('key')`. Both spellings, because
-            // the codebase has two front controllers and the hazard is identical.
+            // The laminas form, `$this->params()->fromQuery('key')`; the Symfony
+            // one, `$request->query->get('key')`; and `query->all()['key']`, which
+            // is how the Symfony gate itself used to read it — InputBag::get()
+            // throws on `?key[]=`, so all() was the deliberate spelling and a
+            // sweep that missed it would miss the most likely reintroduction.
+            $code = $this->codeOnly(file_get_contents($file));
             if (
-                preg_match('/fromQuery\(\s*[\'"]key[\'"]/', $source)
-                || preg_match('/query->get\(\s*[\'"]key[\'"]/', $source)
+                preg_match('/fromQuery\(\s*[\'"]key[\'"]/', $code)
+                || preg_match('/query->get\(\s*[\'"]key[\'"]/', $code)
+                || preg_match('/query->all\(\)\s*\[\s*[\'"]key[\'"]\s*\]/', $code)
             ) {
-                $offenders[] = $relative;
+                $offenders[] = $this->relative($file);
             }
         }
 
         $this->assertSame(
             [],
             $offenders,
-            "These read the maintenance key from the query string directly instead of using\n"
-            . "MaintenanceKeyTrait::assertApiKeyIn() / App\\Http\\MaintenanceKey:\n  "
+            "These read the maintenance key from the query string:\n  "
             . implode("\n  ", $offenders)
-            . "\n\nA query string is recorded in the access log, so it cannot be the only channel.\n"
-            . 'Use the shared gate, which accepts an X-Api-Key header and compares with hash_equals().'
+            . "\n\nA query string is written verbatim to the web server's access log and kept in\n"
+            . "the shell history of whatever invoked it, so for a secret that never rotates it\n"
+            . "is a leak by default. The X-Api-Key header is the only channel as of 2026-08-17.\n"
+            . 'Use MaintenanceKeyTrait::assertApiKeyIn() or App\Http\MaintenanceKey.'
         );
+    }
+
+    public function testNeitherGateStillAcceptsAQueryString(): void
+    {
+        // The sweep above would also catch this, but only for the exact spellings
+        // it knows. This asserts the positive property directly: whatever the two
+        // gates do to find the key, the request's query bag is not part of it.
+        foreach (self::SANCTIONED as $relative) {
+            $code = $this->codeOnly(file_get_contents(dirname(__DIR__, 2) . '/' . $relative));
+
+            $this->assertStringNotContainsString(
+                'query',
+                $code,
+                "$relative still reaches for the query string in code. The header is the only\n"
+                . "channel; accepting a secret in a URL cannot be made safe by merely preferring\n"
+                . 'the header, because the access-log entry is written either way.'
+            );
+        }
     }
 
     public function testTheSanctionedImplementationsStillExist(): void
