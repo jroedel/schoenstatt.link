@@ -219,18 +219,29 @@ class CacheStatusParityTest extends TestCase
     }
 
     /**
-     * Both channels the trait accepts must work on the Symfony side too, because
-     * the deploy configuration that still uses `?key=` lives in each machine's
-     * gitignored phploy.ini and cannot be changed in the same commit as this code.
+     * The inverse of what this asserted until 2026-08-17.
+     *
+     * It used to require that `?key=` still worked, because the deploy
+     * configuration that sent it lived in a gitignored phploy.ini no commit here
+     * could change. phploy is retired, every caller sends the header, and the
+     * fallback is gone from both gates — so a correct key in the query string must
+     * now be refused exactly as a missing one is. Keeping the case rather than
+     * deleting it is deliberate: this is the assertion that fails if anyone
+     * restores the fallback for convenience.
      */
-    public function testTheQueryStringFallbackStillWorks(): void
+    public function testAKeyInTheQueryStringIsRefused(): void
     {
         $key        = $this->apiKey();
         $controller = new CacheStatusController(new MaintenanceKey($this->bridge()));
 
         $response = $controller(Request::create('/en/sm/cache-status?key=' . urlencode($key)));
 
-        self::assertSame(200, $response->getStatusCode());
+        self::assertSame(
+            401,
+            $response->getStatusCode(),
+            'A valid key presented in the query string must still be refused: the access log '
+            . 'records it either way, so accepting it is the leak.'
+        );
     }
 
     /**

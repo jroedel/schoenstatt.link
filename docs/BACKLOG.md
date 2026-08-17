@@ -1399,8 +1399,24 @@ Background and measurements: [caching.md](caching.md).
   exists on `sch_publications`. Left in place deliberately rather than cascading the
   deletion; decide whether that mapping is wanted before removing it.
 
-- [ ] **Drop the `?key=` fallback.** Nearly unblocked — two of the three things
-  holding it up are gone as of 2026-08-16.
+- [x] ~~**Drop the `?key=` fallback.**~~ **Done 2026-08-17** (sion-model#26 +
+  the superproject PR that bumps its pointer). `MaintenanceKeyTrait` and
+  `App\Http\MaintenanceKey` now read the key from the `X-Api-Key` header and
+  nowhere else, and they changed together, because a disagreement between them
+  would mean flipping `SYMFONY_KERNEL` changes what a deploy hook may send.
+  - The last blocker below dissolved rather than being cleared: the notices cron
+    never got re-enabled with a header, because `books:send-notices` (PR #116/#117)
+    made it a console command that needs no key at all. The crontab was then
+    confirmed to hold no `?key=` caller — the only check that could not be made
+    from the repository.
+  - `test/Unit/MaintenanceKeyChannelTest` tightened with it: the sweep used to
+    *exclude* the two gates, since both legitimately read the query string. It now
+    covers them too, strips comments before matching (so the docblock explaining
+    why a query string is unsafe does not read as a violation, and a commented-out
+    reintroduction does), and adds a positive assertion that neither gate's code
+    mentions `query` at all. Verified by reintroducing the read and watching both
+    tests fail.
+  - The historical record, kept because it explains why this took three passes:
   - ~~The deploy config that sends `?key=` lives in each machine's gitignored
     `phploy.ini`, which no commit here can update.~~ **Gone**: phploy is retired
     and `tools/deploy.sh` sends `X-Api-Key` as a header.
@@ -1411,12 +1427,8 @@ Background and measurements: [caching.md](caching.md).
     — so carrying that plan out would have left one endpoint leaking with nobody
     looking for it. `test/Unit/MaintenanceKeyChannelTest` now fails on any new
     bespoke implementation, in either front controller's idiom.
-  - **What is left:** the overdue-book-notices cron, currently disabled pending a
-    progressive reinstatement for the Colegio Mayor library. Re-enable it with
-    `--header='X-Api-Key: …'` rather than `?key=`, confirm one run, then delete
-    the fallback from **both** `MaintenanceKeyTrait` and `App\Http\MaintenanceKey`
-    (two places since 2026-08-05 — both accept the same two channels so that
-    flipping `SYMFONY_KERNEL` cannot break a deploy hook).
+  - ~~**What is left:** the overdue-book-notices cron.~~ **Moot**: it became a
+    console command, so there was never a header-authenticated run to confirm.
   - Worth knowing before trusting any audit of this: the key that endpoint checks
     is `schoenstatt.api_keys`, **not** the `sion_model.api_keys` everything else
     uses. Two config arrays, one of them easy to miss.
