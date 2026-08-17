@@ -158,6 +158,54 @@ reset misses, the gate refuses, and re-running the deploy hits the same wall. Th
 gate now retries the reset once itself, and its failure message spells out the
 manual recovery rather than saying "re-run the deploy".
 
+## The second deploy, and the diagnosis that finally held
+
+`a707b3d` (14:33) also stopped at the gate — correctly, again, with nothing
+irreversible done. This time the improved reporting said what happened:
+
+```
+! reset helper answered HTTP 404 on attempt 1 (miss 1/3), not a reset:
+      No input file specified.|
+! giving up after 3 bad reads. The file on the server was:
+  -rw-r--r-- 1 ourlink ourlink 419 Aug 17 14:35 .../a707b3d/public/zz-opcache-….php
+```
+
+The file existed and the web could not find it. Six minutes later, by hand, the
+**identical file at the identical path** answered all 25 requests, every one
+reporting `from=…/a707b3d/public` — the new release.
+
+So: **the 404 was purely timing.** A freshly written file is not instantly visible
+to the web server here, and three retries spanning four seconds were far too eager.
+Apache resolves the docroot symlink correctly; there is no stale-docroot problem.
+`/_health` then went from `b317f7a` on 8/8 probes to `a707b3d` on 8/8, and the full
+production smoke suite passed.
+
+Four hypotheses died on the way to that, and they are listed because the pattern
+matters more than any one of them: `realpath_cache` (no persistent processes),
+heredoc corruption (the generated PHP lints clean), a memory limit (8 MiB peak),
+and a stale docroot resolution (`from=` disproved it). Each fit the symptom before
+there was data to separate it from the others. **The rule this earns: when a
+mechanism is proposed for a failure that costs an outage, get the datum that
+distinguishes it from its neighbours before acting on it.**
+
+### The one structural finding that survived
+
+`public/index.php` had **eight hard links and an mtime of 2026-08-07**. rsync
+`--link-dest` hardlinks every unchanged file to the previous release, and that file
+had not changed in ten days — so one inode, one mtime, shared by every release. It
+is also the only file reached through a path that never changes, since the docroot
+symlink is what moves underneath it. If OPcache caches it under that stable path,
+`validate_timestamps` compares an mtime that is identical in every release and can
+never fire.
+
+That does not explain the 404, but it is a coherent account of why the stale state
+*persists* rather than clearing on the next request. The deploy now breaks that
+hardlink after upload — `cp -p` then `mv -f`, giving a new inode and a current
+mtime, leaving the previous release's copy untouched (a plain `touch` would move
+the mtime on the shared inode, i.e. on every release at once). Whether OPcache here
+keys on the symlink path or the resolved one was never established; if it is the
+resolved path this changes nothing, and it costs one copy of a 3 KB file.
+
 ## What is still true and worth knowing
 
 - **The capsule cannot reproduce this.** It runs one PHP pool and serves from a
