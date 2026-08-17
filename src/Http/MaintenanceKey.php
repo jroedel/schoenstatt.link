@@ -74,6 +74,29 @@ final class MaintenanceKey
     }
 
     /**
+     * Whether the caller holds a configured key — without deciding what to do
+     * about it.
+     *
+     * refuse() answers the common case, where the endpoint is closed and a bad key
+     * ends the request. /_health is the other case: it is a liveness probe that
+     * must keep answering whoever asks, and a key only earns one extra field. A
+     * 401 there would break monitoring to protect a git sha.
+     */
+    public function grants(Request $request): bool
+    {
+        //the no-key case is answered before configuredKeys(), and the order is
+        //load-bearing rather than tidy: reading the keys builds the laminas
+        //ServiceManager, and /_health's whole value is that it reaches none of it.
+        //Evaluating both eagerly would make every anonymous liveness probe boot the
+        //legacy container.
+        if (null === self::presented($request)) {
+            return false;
+        }
+
+        return self::accepts($this->configuredKeys(), $request);
+    }
+
+    /**
      * The comparison itself, kept static and pure so it can be exercised without
      * a container or a laminas module tree.
      *

@@ -6,6 +6,7 @@
 #   ./tools/migrate.sh apply --phase=pre         run the pending pre-deploy migrations
 #   ./tools/migrate.sh apply --phase=post        …and the post-deploy ones
 #   ./tools/migrate.sh backfill --through=db7.7  mark historical files applied, run nothing
+#   ./tools/migrate.sh reseal db8.1.sql          re-record an applied file whose COMMENTS changed
 #
 #   --env=capsule      the local Docker database (default: production)
 #   --dry-run          print what would run; execute nothing
@@ -67,9 +68,9 @@ fail() { printf '\n%sABORT: %s%s\n' "$C_ERR" "$1" "$C_OFF" >&2; exit 1; }
 # ----------------------------------------------------------------- flags ----
 
 ACTION=${1:-status}
-case $ACTION in status|plan|apply|backfill) shift ;; *) ACTION=status ;; esac
+case $ACTION in status|plan|apply|backfill|reseal) shift ;; *) ACTION=status ;; esac
 
-ENV_NAME=production PHASE='' DRY_RUN=0 ASSUME_YES=0 THROUGH=''
+ENV_NAME=production PHASE='' DRY_RUN=0 ASSUME_YES=0 THROUGH='' TARGET_FILE=''
 while [ $# -gt 0 ]; do
     case $1 in
         --env=*)     ENV_NAME=${1#*=} ;;
@@ -78,7 +79,8 @@ while [ $# -gt 0 ]; do
         --dry-run)   DRY_RUN=1 ;;
         -y|--yes)    ASSUME_YES=1 ;;
         -h|--help)   sed -n '2,/^set -euo/p' "$0" | sed 's/^#\{1,\} \{0,1\}//; $d'; exit 0 ;;
-        *)           fail "unknown option: $1" ;;
+        -*)          fail "unknown option: $1" ;;
+        *)           TARGET_FILE=$1 ;;
     esac
     shift
 done
@@ -289,6 +291,19 @@ asserting you have written those guards. It is a forcing function, not a proof."
     [ -n "$tables" ] || fail "$base has no '-- @tables:' header. List the tables it changes so
 they can be dumped before it runs, or write '-- @tables: none' if it changes none
 (a report-only migration). Saying 'none' is a claim; make it a true one."
+
+    # Optional, and only meaningful as 'yes': it declares that code from before this
+    # migration cannot run after it. tools/deploy.sh reads it to refuse a rollback
+    # into a release that predates the file. Unset means "older code still works",
+    # which is the common case and the safe default to get wrong in that direction —
+    # an unmarked destructive migration costs an outage, a wrongly marked one costs
+    # a flag.
+    case $(header "$file" destructive) in
+        ''|yes|no) ;;
+        *) fail "$base has '-- @destructive: $(header "$file" destructive)'; it must be yes or no.
+A DROP COLUMN, DROP TABLE or NOT NULL tightening that older code cannot survive is
+'yes'. Anything additive is 'no' or absent." ;;
+    esac
 }
 
 # ------------------------------------------------------------- inventory ----
@@ -328,6 +343,83 @@ if [ "$ACTION" = status ] || [ "$ACTION" = plan ]; then
     done < <(migration_files)
     printf '\n'
     if [ "$PENDING" = 0 ]; then ok "nothing pending"; else info "$PENDING pending"; fi
+    exit 0
+fi
+
+# =============================================================== reseal =====
+#
+# An applied migration's bytes are frozen, and rightly so — guarantee 7 exists
+# because the same filename meaning two different things across environments is
+# how a ledger becomes fiction. But the ledger's real claim is about the
+# STATEMENTS that ran, and a `-- @header:` line is a comment. As written, a typo
+# in a header could never be fixed, and — the case that forced this — a header
+# invented later can never be applied to the migration that needs it. `db8.1` is
+# exactly that: it is destructive, `@destructive` did not exist when it ran, and
+# without the marker tools/deploy.sh cannot refuse the rollback that turned
+# 2026-08-17 into an outage.
+#
+# So: re-record the hash, but only after PROVING nothing executable changed. The
+# old bytes are not gone — they are in git, identified by the hash the ledger
+# still holds. Find that revision, strip comments and blank lines from both
+# versions, and require them to be identical. If the SQL moved by one character
+# this refuses, and the answer is a new migration.
+if [ "$ACTION" = reseal ]; then
+    [ -n "$TARGET_FILE" ] || fail "reseal needs a filename, e.g. ./tools/migrate.sh reseal db8.1.sql"
+    BASE=$(basename "$TARGET_FILE")
+    case $BASE in *.sql) ;; *) BASE=$BASE.sql ;; esac
+    [ -f "$MIGRATION_DIR/$BASE" ] || fail "$BASE does not exist in database/."
+
+    connect
+    ensure_ledger
+
+    RECORDED=$(sql "SELECT \`sha256\` FROM \`sch_migration\` WHERE \`filename\`='$(escape "$BASE")';")
+    [ -n "$RECORDED" ] || fail "$BASE is not recorded as applied on $ENV_NAME; there is nothing to reseal.
+An unapplied migration can simply be edited."
+    ACTUAL=$(sha256sum "$MIGRATION_DIR/$BASE" | cut -d' ' -f1)
+    if [ "$RECORDED" = "$ACTUAL" ]; then
+        ok "$BASE already matches the ledger on $ENV_NAME; nothing to do."
+        exit 0
+    fi
+
+    # statements only: no comment lines, no blank lines, leading/trailing space off
+    strip_comments() { sed 's/[[:space:]]*$//' | grep -vE '^[[:space:]]*(--.*)?$'; }
+
+    step "Looking for the applied bytes of $BASE in git history"
+    OLD_REV=''
+    for rev in $(git log --format=%H -- "database/$BASE"); do
+        if [ "$(git show "$rev:database/$BASE" 2>/dev/null | sha256sum | cut -d' ' -f1)" = "$RECORDED" ]; then
+            OLD_REV=$rev
+            break
+        fi
+    done
+    [ -n "$OLD_REV" ] || fail "no commit contains a version of database/$BASE hashing to $RECORDED.
+Without the applied bytes there is no way to prove only comments changed, so this
+refuses. If the file was applied from an uncommitted state, write a new migration."
+    ok "applied bytes are ${OLD_REV:0:12}"
+
+    if ! diff -q <(git show "$OLD_REV:database/$BASE" | strip_comments) \
+                 <(strip_comments < "$MIGRATION_DIR/$BASE") >/dev/null; then
+        printf '\n'
+        diff -u <(git show "$OLD_REV:database/$BASE" | strip_comments) \
+                <(strip_comments < "$MIGRATION_DIR/$BASE") | head -40
+        fail "the SQL changed, not just the comments. Resealing would make the ledger a liar.
+Write a new migration instead."
+    fi
+    ok "statements are byte-identical; only comments differ"
+
+    info "$BASE on $ENV_NAME: ${RECORDED:0:12} -> ${ACTUAL:0:12}"
+    if [ "$DRY_RUN" = 1 ]; then
+        dim "--dry-run: the ledger was not touched"
+        exit 0
+    fi
+    if [ "$ASSUME_YES" != 1 ]; then
+        [ -t 0 ] || fail "not a tty and --yes was not given."
+        printf '\n%s? reseal %s on %s [y/N] %s' "$C_WARN" "$BASE" "$ENV_NAME" "$C_OFF"
+        read -r answer
+        case $answer in [yY]*) ;; *) fail "cancelled." ;; esac
+    fi
+    sql "UPDATE \`sch_migration\` SET \`sha256\`='$(escape "$ACTUAL")' WHERE \`filename\`='$(escape "$BASE")';"
+    ok "resealed on $ENV_NAME"
     exit 0
 fi
 

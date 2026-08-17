@@ -18,6 +18,8 @@
 #   --skip-tests   skip tools/ci-local.sh in the preflight
 #   --ref REF      deploy something other than master (says so, loudly)
 #   --to RELEASE   with --rollback, a specific release rather than the previous
+#   --allow-incompatible   with --rollback, proceed even when the target predates
+#                  a destructive migration (it will almost certainly be broken)
 #   --bootstrap    first swap only, converting a flat tree to the release layout
 #   -y, --yes      no confirmation prompt
 #
@@ -53,6 +55,7 @@ fail() { printf '\n%sABORT: %s%s\n' "$C_ERR" "$1" "$C_OFF" >&2; exit 1; }
 # ----------------------------------------------------------------- flags ----
 
 DRY_RUN=0 SKIP_TESTS=0 DO_STASH=0 ACTION=deploy ROLLBACK_TO='' GIT_REF='' ASSUME_YES=0
+ALLOW_INCOMPATIBLE=0
 BOOTSTRAP=0 INITIAL_SWAP=0 POST_MIGRATIONS_FAILED=0
 
 usage() {
@@ -71,6 +74,7 @@ while [ $# -gt 0 ]; do
         --releases)   ACTION=releases ;;
         --migrations) exec bash tools/migrate.sh status ;;
         --to)         ROLLBACK_TO=${2:-}; shift ;;
+        --allow-incompatible) ALLOW_INCOMPATIBLE=1 ;;
         --ref)        GIT_REF=${2:-}; shift ;;
         -y|--yes)     ASSUME_YES=1 ;;
         -h|--help)    usage 0 ;;
@@ -141,6 +145,12 @@ ORIG_BRANCH=''
 on_exit() {
     local status=$?
     if [ -n "$FILE_LIST" ]; then rm -f "$FILE_LIST"; fi
+    # A reset helper left on the server is a publicly reachable cache flush, so it
+    # goes even if the deploy died mid-step. RESET_FILE is cleared by the happy
+    # path, so this only fires when something went wrong.
+    if [ -n "${RESET_FILE:-}" ]; then
+        rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
+    fi
     # --ref checks something else out; put the branch back rather than leaving
     # the user on a detached HEAD they did not ask to be on.
     if [ "$CHECKED_OUT_REF" = 1 ] && [ -n "$ORIG_BRANCH" ] && [ "$ORIG_BRANCH" != HEAD ]; then
@@ -166,6 +176,102 @@ build_smoke_env() {
     if [ -n "$DEPLOY_CANARY_COOKIE" ]; then
         SMOKE_ENV+=(SMOKE_PROD_CANARY_COOKIE="$DEPLOY_CANARY_COOKIE")
     fi
+}
+
+# ------------------------------------------------- making a swap visible ----
+#
+# Repointing the release symlink does not change what PHP executes. OPcache keys
+# its compiled scripts on the path it resolved when it first saw them, and
+# `opcache.revalidate_path` defaults to 0, so it never re-resolves the symlink;
+# `validate_timestamps` then checks the OLD target's mtime, which never changes.
+# The old release therefore keeps serving, indefinitely, with nothing in the
+# response to say so.
+#
+# Worse, there is more than one cache. Polling /en/sm/cache-status on 2026-08-17
+# returned three distinct uptimes, so this host runs at least three PHP pools,
+# each with its own OPcache segment, and a request resets only the segment that
+# served it. That is why this loops instead of firing once — and why "some pages
+# work and some don't" was the symptom rather than a clean outage.
+#
+# The reset itself is a single-use PHP file with a random name written into the
+# new release. A new path has no cache entry anywhere, so it always compiles from
+# disk whichever segment picks it up, and its opcache_reset() clears that segment.
+# An endpoint in the application cannot do this job: a pool serving the PREVIOUS
+# release resolves the route against that release's code, which need not have the
+# endpoint at all.
+RESET_FILE=''
+reset_opcode_caches() {
+    local release_abs=$1 rel=$2 token i fresh=0 out
+    token=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
+    RESET_FILE="$release_abs/public/zz-opcache-$token.php"
+
+    # The token is in the filename AND checked inside, so a guessed path is not
+    # enough. It lives for the length of this step; on_exit removes it even if the
+    # deploy dies in between, because a forgotten reset endpoint is a free
+    # cache-flush for anyone who finds it.
+    rsh "cat > $RESET_FILE" <<PHPEOF || { warn "could not write the opcache reset helper; skipping"; RESET_FILE=''; return 1; }
+<?php
+if (!hash_equals('$token', \$_GET['t'] ?? '')) { http_response_code(404); exit; }
+header('Content-Type: text/plain');
+\$s = function_exists('opcache_get_status') ? @opcache_get_status(false) : null;
+echo 'age=', is_array(\$s) ? time() - \$s['opcache_statistics']['start_time'] : -1, "\n";
+echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : null, true), "\n";
+PHPEOF
+
+    # Stop once several consecutive hits all land on a just-reset segment; that is
+    # the observable that every pool has been through this, without needing to know
+    # how many pools there are. Capped so a host that reports no age cannot spin.
+    for i in $(seq 1 40); do
+        out=$(curl --silent --show-error --max-time 30 \
+            "$DEPLOY_BASE_URL/zz-opcache-$token.php?t=$token" 2>/dev/null) || out=''
+        case $out in
+            *"age=-1"*) dim "OPcache is not enabled on this host; nothing to reset"; break ;;
+            *reset=true*) ;;
+            *) warn "opcache reset helper did not answer as expected on attempt $i"; break ;;
+        esac
+        # age is measured BEFORE the reset, so a small one means this segment was
+        # already reset by an earlier iteration of this same loop.
+        if [ "$(printf '%s' "$out" | sed -n 's/^age=//p')" -lt 30 ] 2>/dev/null; then
+            fresh=$((fresh + 1))
+            [ "$fresh" -ge 6 ] && break
+        else
+            fresh=0
+        fi
+    done
+
+    rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
+    RESET_FILE=''
+    ok "opcode caches reset (release $rel)"
+}
+
+# The check that would have stopped 2026-08-17 before it became an outage: ask the
+# live site which release it is actually running, and do it enough times to sample
+# more than one pool. /_health reports .revision when given the maintenance key,
+# and it is served by the Symfony kernel without booting laminas — so it answers
+# even when the legacy bootstrap is fatalling, which is exactly the state this is
+# meant to detect.
+assert_live_revision() {
+    local want=$1 i got mismatched=0
+    if [ -z "$DEPLOY_API_KEY" ]; then
+        warn "DEPLOY_API_KEY is empty, so the live revision cannot be read."
+        warn "Proceeding blind: a stale pool would not be detected. Set the key."
+        return 0
+    fi
+    for i in $(seq 1 12); do
+        got=$(curl --silent --show-error --max-time 30 \
+            --header "X-Api-Key: $DEPLOY_API_KEY" "$DEPLOY_BASE_URL/_health" 2>/dev/null \
+            | sed -n 's/.*"revision" *: *"\([0-9a-f]*\)".*/\1/p')
+        if [ -z "$got" ]; then
+            warn "/_health did not report a revision (attempt $i). Is the key right?"
+            return 1
+        fi
+        if [ "$got" != "$want" ]; then
+            warn "/_health reports $got, expected $want"
+            mismatched=1
+        fi
+    done
+    [ "$mismatched" = 0 ] || return 1
+    ok "all 12 probes report $want"
 }
 
 confirm() {
@@ -248,6 +354,48 @@ if [ "$ACTION" = rollback ]; then
     info "rolling back to: $TARGET"
     warn "This re-points code only — a database migration is NOT undone by it."
     warn "See docs/DEPLOY.md § Rollback."
+
+    # "A migration is not undone" is not merely a caveat: for a migration that
+    # DROPS something, it means the target release cannot run at all. On
+    # 2026-08-17 a smoke failure triggered an automatic rollback into exactly that
+    # state — the restored release went on SELECTing five columns db8.1 had just
+    # removed, and every request that built navigation died as an empty 200. The
+    # rollback was offered as the safe response and was the thing that made a
+    # transient fault permanent.
+    #
+    # A migration declaring '@destructive: yes' says older code cannot survive it.
+    # The test is file presence rather than the ledger: a migration ships in the
+    # same commit as the code that copes with it, so a release without the file is
+    # a release from before the change. That over-refuses when a destructive
+    # migration has been shipped but not yet applied — deliberately, because the
+    # cost of over-refusing is one flag and the cost of under-refusing is an outage.
+    if [ -n "$CURRENT" ]; then
+        BLOCKERS=$(rsh "cd $RELEASES/$CURRENT/database 2>/dev/null && for f in \$(grep -l '@destructive: *yes' *.sql 2>/dev/null); do [ -f $RELEASES/$TARGET/database/\$f ] || echo \$f; done" || true)
+        if [ -n "$BLOCKERS" ]; then
+            warn "$TARGET predates these destructive migration(s):"
+            printf '        %s\n' $BLOCKERS >&2
+            if [ "$ALLOW_INCOMPATIBLE" = 1 ]; then
+                warn "--allow-incompatible given: rolling back anyway. Expect fatals."
+            else
+                fail "refusing to roll back into a schema that release cannot run against.
+
+  The database still has those migrations applied, and $TARGET does not ship them,
+  so it is from before the code that copes with the change. Rolling back would not
+  restore service — it would replace one broken state with a differently broken one,
+  and the last time that happened it read as 'the rollback did not help'.
+
+  What to do instead, in order of preference:
+    1. Roll FORWARD to a release that ships them:
+         ./tools/deploy.sh --rollback --to <newer-release>
+       (--releases lists them; the newest is usually the one that just failed, and
+       its failure may have been the swap not being visible rather than the code.)
+    2. Fix forward with a new deploy.
+    3. Only if you have decided the data loss is acceptable and understand what
+       breaks: ./tools/deploy.sh --rollback --to $TARGET --allow-incompatible"
+            fi
+        fi
+    fi
+
     confirm "roll back to $TARGET"
 
     step "Swapping the symlink"
@@ -256,6 +404,13 @@ if [ "$ACTION" = rollback ]; then
 
     step "Flushing the persistent cache"
     rsh "cd $RELEASES/$TARGET && php bin/console cache:flush-persistent" || warn "flush failed; the site is rolled back but APCu may hold stale entries."
+
+    step "Making the swap visible to PHP"
+    # A rollback is a symlink swap, so it is invisible to OPcache for exactly the
+    # same reason a deploy is. Without this the rollback appears to do nothing.
+    # home-relative, like the rest of this block: HOME_ABS is not resolved until the
+    # deploy path, well below here, and rsh lands in the home directory anyway.
+    reset_opcode_caches "$RELEASES/$TARGET" "$TARGET" || true
 
     step "Smoke checks"
     build_smoke_env
@@ -541,6 +696,23 @@ if [ -z "$DEPLOY_API_KEY" ]; then
     warn "DEPLOY_API_KEY is empty — skipping the cache-status smoke checks."
 fi
 
+step "Making the swap visible to PHP"
+reset_opcode_caches "$NEW_ABS" "$REL"
+
+step "Confirming the live site is running $REL"
+assert_live_revision "$SHA" \
+    || fail "the live site is NOT running the release that was just swapped in.
+
+  Nothing irreversible has happened yet: the symlink points at $REL, no post-deploy
+  migration has run, and the previous release is untouched. This is the check that
+  exists because on 2026-08-17 it did not: the swap succeeded, a migration dropped
+  five columns, and three OPcache pools went on serving the PREVIOUS release, which
+  could not run against the new schema. 449 fatals, and the automatic rollback made
+  it permanent by restoring the very release that was broken.
+
+  Read docs/incident-2026-08-17-stale-opcache.md, then either re-run the deploy or
+  reset the caches by hand. Do NOT run migrations until /_health reports $SHA."
+
 step "Post-deploy migrations"
 # The code is live, which is what 'post' is for: every db7.x retirement had to
 # run after its fix, because phrase discovery un-retires whatever the site still
@@ -556,10 +728,31 @@ build_smoke_env
 if env "${SMOKE_ENV[@]}" bash tools/smoke-prod.sh; then
     ok "smoke checks passed"
 else
-    printf '\n%sSMOKE CHECKS FAILED — rolling back automatically%s\n' "$C_ERR" "$C_OFF" >&2
+    printf '\n%sSMOKE CHECKS FAILED%s\n' "$C_ERR" "$C_OFF" >&2
+    # Whether rolling back is the safe move depends on what already ran. If a
+    # destructive migration applied in THIS deploy is absent from the previous
+    # release, that release cannot run against the schema it would return to, and
+    # rolling back trades a possibly-partial failure for a certain one. That is the
+    # 2026-08-17 sequence exactly, and the automatic rollback is what made it stick.
+    ROLLBACK_BLOCKERS=''
     if [ -n "$PREV" ]; then
+        ROLLBACK_BLOCKERS=$(rsh "cd $RELEASES/$REL/database 2>/dev/null && for f in \$(grep -l '@destructive: *yes' *.sql 2>/dev/null); do [ -f $RELEASES/$PREV/database/\$f ] || echo \$f; done" || true)
+    fi
+    if [ -n "$ROLLBACK_BLOCKERS" ]; then
+        warn "NOT rolling back automatically. $PREV predates these destructive migration(s):"
+        printf '        %s\n' $ROLLBACK_BLOCKERS >&2
+        warn "and they are already applied, so $PREV cannot run against this schema."
+        warn "The site stays on $REL, which at least matches the database."
+        info ""
+        info "Diagnose before acting. If smoke reported zero-byte 200s, read"
+        info "docs/incident-2026-08-17-stale-opcache.md first — a stale opcode cache"
+        info "looks exactly like broken code and is fixed by re-running the deploy."
+        info "To override once you have decided: ./tools/deploy.sh --rollback --to $PREV --allow-incompatible"
+    elif [ -n "$PREV" ]; then
+        printf '%srolling back automatically%s\n' "$C_ERR" "$C_OFF" >&2
         rsh "cd $HOME_ABS/$APP && ln -sfn releases/$PREV/public public.swap && mv -Tf public.swap public"
         rsh "cd $HOME_ABS/$RELEASES/$PREV && php bin/console cache:flush-persistent" || true
+        reset_opcode_caches "$HOME_ABS/$RELEASES/$PREV" "$PREV" || true
         warn "rolled back to $PREV. The failed release is kept at $RELEASES/$REL for inspection."
         warn "No database migration was undone by this rollback."
     elif [ "$INITIAL_SWAP" = 1 ]; then
