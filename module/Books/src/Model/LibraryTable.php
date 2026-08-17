@@ -944,44 +944,10 @@ ORDER BY `publisher`";
         return $lookup;
     }
 
-    public function updateLibraryBookPublicationReferences(bool $isSimulation, array $oldIdToNewIdMap): array
-    {
-//        var_dump($oldIdToNewIdMap);
-        //ex. 1862
-
-        $query = [
-            new IsNotNull('publication_id')
-        ];
-        $queryResults = $this->queryObjects('book', $query);
-
-        $maxProcessedRows = 200;
-        $i = 0;
-        $results = [];
-        foreach ($queryResults as $result) {
-            if ($i >= $maxProcessedRows) {
-                break;
-            }
-            $cBookId = $result['bookId'];
-            if (! isset($oldIdToNewIdMap[$result['publicationId']])) {
-                continue;
-            }
-            $newId = $oldIdToNewIdMap[$result['publicationId']];
-            $results[$cBookId] = $result;
-            $results[$cBookId]['result'] = $newId;
-            if (! $isSimulation) {
-                $this->updateEntity(
-                    'book',
-                    $cBookId,
-                    ['publicationId' => $newId],
-                    [],
-                    false
-                );
-                $i++;
-            }
-        }
-
-        return $results;
-    }
+    // updateLibraryBookPublicationReferences() lived here until 2026-08-17. It repointed a
+    // book at the publication its data-sourced original had been merged into, and was
+    // reachable only from the retired /admin/literature-maintenance routes. Two books were
+    // left for it, both cataloguing publication 1426; database/db8.2.sql moves them.
 
     /**
      * Checks in the bookId's passed to the function. If requested, a book that wasn't checked

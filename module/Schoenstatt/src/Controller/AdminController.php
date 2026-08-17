@@ -13,7 +13,6 @@ use Laminas\View\Model\ViewModel;
 use Laminas\Mvc\Controller\AbstractActionController;
 use JTranslate\Model\TranslationsTable;
 use JTranslate\Controller\Plugin\NowMessenger;
-use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\PatresGateway;
 use SionModel\Service\ProblemService;
 use Schoenstatt\Form\ImportFatherForm;
@@ -30,21 +29,21 @@ class AdminController extends AbstractActionController
     protected $translationsTable;
     protected $problemService;
     protected $importFatherForm;
-    protected $schoenstattTable;
     /** @var \Schoenstatt\Service\PatresGateway $patresGateway */
     protected $patresGateway;
 
+    // SchoenstattTable went with maintenanceAction() on 2026-08-17; it was that action's
+    // dependency and nothing else read it. LazyControllerFactory resolves constructor
+    // arguments by reflection, so dropping one needs no factory change.
     public function __construct(
         TranslationsTable $translationsTable,
         ProblemService $problemService,
         ImportFatherForm $importFatherForm,
-        SchoenstattTable $schoenstattTable,
         PatresGateway $patresGateway
     ) {
         $this->translationsTable = $translationsTable;
         $this->problemService = $problemService;
         $this->importFatherForm = $importFatherForm;
-        $this->schoenstattTable = $schoenstattTable;
         $this->patresGateway = $patresGateway;
     }
 
@@ -60,7 +59,6 @@ class AdminController extends AbstractActionController
             'juser'                     => "User Management",
             'jtranslate'                => "Manage Translations",
             'sion-model/data-problems'  => "Data problems",
-            'admin/literature-maintenance'  => "Literature maintenance",
             'kernel-switch'             => "Switch kernel",
         ];
         $badges = [];
@@ -108,35 +106,7 @@ class AdminController extends AbstractActionController
         ]);
     }
 
-    public function maintenanceAction()
-    {
-        /** @var SchoenstattTable $table */
-        $table = $this->schoenstattTable;
-
-        //remove erroneous priest tag from seminarians (so far, all priests should have priestDate)
-        $persons = $table->getUnlinkedPersons();
-        $simulate = (bool)$this->params()->fromQuery('simulate', true);
-        $changes = [];
-        foreach ($persons as $personId => $object) {
-            $hasPriestTag = in_array('priest', $object['personTags']);
-            if ($hasPriestTag && ! isset($object['priestDate'])) {
-                $personTags = $object['personTags'];
-                foreach ($personTags as $key => $value) {
-                    if ('priest' === $value) {
-                        unset($personTags[$key]);
-                        break;
-                    }
-                }
-                if (! $simulate) {
-                    $table->updateEntity('person', $personId, ['personTags' => $personTags]);
-                }
-                $changes[] = $personId;
-            }
-        }
-
-        return new ViewModel([
-            'changes' => $changes,
-            'simulate'  => $simulate,
-        ]);
-    }
+    // maintenanceAction() lived here until 2026-08-17. See the note where its route was,
+    // in module/Schoenstatt/config/module.config.php: it stripped a correct `priest` tag
+    // from five people whose ordination date is simply not recorded.
 }
