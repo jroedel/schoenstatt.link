@@ -818,41 +818,28 @@ return [
                     ],
                 ],
             ],
+            // `may_terminate` is false on purpose: /checkouts is not a page, only the
+            // prefix of /checkouts/library/:id. It carried an `index` action, plus
+            // `checkout` (/:checkout_id) and `checkout/edit` children, until 2026-08-17.
+            // All three were reachable by nobody — no guard entry, so default-deny — and
+            // there was nothing behind the door either: they resolved to SionController's
+            // generic index/show/edit, and the `checkout` entity spec has index_template,
+            // show_action_template, edit_action_form and edit_action_template all
+            // commented out. Nothing linked to them. A library's loans are read through
+            // checkouts/library/{current,overdue} and a person's through
+            // borrowers/borrower, both of which work.
+            //
+            // The `controller` default stays: the `library` child has none of its own.
             'checkouts' => [
                 'type' => Literal::class,
                 'options' => [
                     'route'    => '/checkouts',
                     'defaults' => [
                         'controller' => Controller\CheckoutsController::class,
-                        'action'    => 'index',
                     ],
                 ],
-                'may_terminate' => true,
+                'may_terminate' => false,
                 'child_routes' => [
-                    'checkout' => [
-                        'type'    => Segment::class,
-                        'options' => [
-                            'route'    => '/:checkout_id',
-                            'constraints' => [
-                                'book_id' => '[0-9]{1,5}',
-                            ],
-                            'defaults' => [
-                                'action'     => 'show',
-                            ],
-                        ],
-                        'may_terminate' => true,
-                        'child_routes' => [
-                            'edit' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/edit',
-                                    'defaults' => [
-                                        'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
                     'library' => [
                         'type'    => Segment::class,
                         'options' => [
@@ -1745,9 +1732,9 @@ return [
 //                 'index_route'                        => 'events',
 //                 'index_template'                         => 'project/events/index',
 //                 'show_action_template'                   => 'books/checkouts/show',
-                'show_route'                            => 'checkouts/checkout',
-                'show_route_key'                        => 'checkout_id',
-                'show_route_key_field'                  => 'checkoutId',
+//                 'show_route'                             => 'checkouts/checkout',
+//                 'show_route_key'                         => 'checkout_id',
+//                 'show_route_key_field'                   => 'checkoutId',
 //                 'edit_action_form'                       => 'Books\Form\EditCheckoutForm',
 //                 'edit_action_template'                   => 'project/events/edit',
 //                 'edit_route'                             => 'events/event/edit',
@@ -1764,10 +1751,18 @@ return [
 //                 'moderate_route'                         => 'events/event/moderate',
 //                 'moderate_route_entity_key'          => 'event_id',
 //                 'suggest_form'                           => 'Project\Form\SuggestEventForm',
-                'enable_delete_action'                  => true,
-                'delete_action_acl_resource'            => 'checkout_:id',
-                'delete_action_acl_permission'          => 'delete_checkout',
-                'delete_action_redirect_route'          => 'checkouts',
+                // The three show_* keys above and the four delete_* keys below were live
+                // until 2026-08-17 and none of them ever did anything. There is no
+                // checkouts delete route for `enable_delete_action` to enable;
+                // `checkout_:id` is a resource no provider emits (LibraryTable::
+                // getResources() emits `library_<id>` only), so the permission could
+                // never be granted; and both route names point at routes deleted with
+                // the record views. Commented rather than removed, to match how every
+                // other unbuilt key in this spec is recorded.
+//                 'enable_delete_action'                   => true,
+//                 'delete_action_acl_resource'             => 'checkout_:id',
+//                 'delete_action_acl_permission'           => 'delete_checkout',
+//                 'delete_action_redirect_route'           => 'checkouts',
                 'update_columns'                        => [
                     'checkoutId'            => 'CheckoutId',
                     'personId'              => 'PersonId',

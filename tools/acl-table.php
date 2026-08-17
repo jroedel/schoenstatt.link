@@ -747,6 +747,108 @@ function readRoleHierarchy(array $config, array &$warnings): array
 }
 
 /**
+ * The per-library rules `Books\Model\LibraryTable` builds from `lib_libraries` at
+ * request time, reproduced here so a baseline diff can see them.
+ *
+ * They were invisible to this tool until 2026-08-17, and that is how three libraries
+ * came to grant `checkout` to every signed-in account without anyone reviewing it: a
+ * config-derived snapshot cannot list a rule that lives in a database row, and nothing
+ * else was looking. The rules are ordinary ACL rules with real consequences — they are
+ * what `CheckoutsController::createAction()` and `LibrariesController::showAction()`
+ * ask about — so leaving them out made the baseline quietly incomplete rather than
+ * merely brief.
+ *
+ * The mapping below mirrors `LibraryTable::getRules()`, including its rule that a
+ * `guest` value also admits `user`. Reproduction can drift from the method it copies,
+ * so `test/Integration/LibraryAclRuleDriftTest` builds the real LibraryTable and fails
+ * if the two disagree. Do not edit this without running it.
+ *
+ * Plain PDO for the same reason readRoleHierarchy() gives: no Laminas\Db adapter and
+ * no service manager, so it keeps working while vendor/ is mid-migration.
+ *
+ * @param array<string, mixed> $config
+ * @param list<string> $warnings
+ * @return array{libraries: list<array<string, mixed>>, available: bool}
+ */
+function readLibraryPolicies(array $config, array &$warnings): array
+{
+    $db = $config['db'] ?? [];
+    if (! isset($db['database'])) {
+        return ['libraries' => [], 'available' => false];
+    }
+
+    $dsn = sprintf(
+        'mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4',
+        (string) ($db['hostname'] ?? $db['host'] ?? '127.0.0.1'),
+        (int) ($db['port'] ?? 3306),
+        (string) $db['database']
+    );
+
+    try {
+        $pdo = new PDO(
+            $dsn,
+            (string) ($db['username'] ?? ''),
+            (string) ($db['password'] ?? ''),
+            [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+        );
+
+        $rows = $pdo->query(
+            'SELECT `LibraryId`, `LibraryName`, `ViewRole`, `CheckoutBooksRole`,'
+            . ' CAST(`EnableCheckouts` AS UNSIGNED) AS `EnableCheckouts`,'
+            . ' CAST(`IsActive` AS UNSIGNED) AS `IsActive`,'
+            . ' `CheckoutPersonListKind`'
+            . ' FROM `lib_libraries` ORDER BY `LibraryId`'
+        )->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        $warnings[] = 'Could not read lib_libraries (' . $e->getMessage() . '); the per-library '
+            . 'rules are omitted. Everything derived from configuration alone is still reported.';
+        return ['libraries' => [], 'available' => false];
+    }
+
+    $libraries = [];
+    foreach ($rows as $row) {
+        $libraries[] = [
+            'library_id'      => (int) $row['LibraryId'],
+            'name'            => (string) $row['LibraryName'],
+            'resource'        => 'library_' . $row['LibraryId'],
+            'is_active'       => (bool) $row['IsActive'],
+            'checkouts_on'    => (bool) $row['EnableCheckouts'],
+            'person_list'     => $row['CheckoutPersonListKind'] !== null
+                ? (string) $row['CheckoutPersonListKind']
+                : null,
+            'view_role'       => $row['ViewRole'] !== null ? (string) $row['ViewRole'] : null,
+            'checkout_role'   => $row['CheckoutBooksRole'] !== null
+                ? (string) $row['CheckoutBooksRole']
+                : null,
+        ];
+    }
+
+    return ['libraries' => $libraries, 'available' => true];
+}
+
+/**
+ * Turn one library's policy columns into the rules LibraryTable::getRules() emits.
+ *
+ * Delegates to App\Books\LibraryAclRules, which is the single copy of that mapping and
+ * is pinned against the real method by test/Integration/LibraryAclRuleDriftTest.
+ *
+ * @param array<string, mixed> $library as readLibraryPolicies() returns one
+ * @return list<array{roles: list<string>, permission: string}>
+ */
+function libraryRules(array $library): array
+{
+    require_once __DIR__ . '/../vendor/autoload.php';
+
+    /** @var array{view_role: string|null, checkout_role: string|null} $row */
+    $row = [
+        'view_role'     => $library['view_role'],
+        'checkout_role' => $library['checkout_role'],
+    ];
+
+    return App\Books\LibraryAclRules::forLibrary($row);
+}
+
+/**
  * @param array<string, string|null> $parents role => parent role
  * @return list<string> the role's ancestors, nearest first
  */
@@ -1057,6 +1159,7 @@ $descendants  = descendantMap($parents);
 $ctrlGuards   = controllerGuards($config);
 $resourceInfo = nonRouteResources($config);
 $ruleInfo     = configRules($config);
+$libraryInfo  = readLibraryPolicies($config, $warnings);
 $symfony      = symfonyRoutes();
 $shadowInfo   = shadowedBySymfony($config, laminasRoutePaths($config), $routes);
 $shadowed     = $shadowInfo['shadowed'];
@@ -1386,6 +1489,22 @@ if ($format === 'json') {
             'resource' => $resourceInfo['other_providers'],
             'rule'     => $ruleInfo['other_providers'],
         ],
+        // The one dynamic provider whose rules ARE reproduced — see readLibraryPolicies().
+        // Sorted by library id by the query, so this diffs cleanly.
+        'library_rules' => array_map(
+            static function (array $library) use ($descendants, $allRoles): array {
+                $rules = [];
+                foreach (libraryRules($library) as $rule) {
+                    $rules[] = [
+                        'permission'      => $rule['permission'],
+                        'roles'           => $rule['roles'],
+                        'effective_roles' => effectiveRoles($rule['roles'], $descendants, $allRoles)['effective'],
+                    ];
+                }
+                return $library + ['rules' => $rules];
+            },
+            $libraryInfo['libraries']
+        ),
         'guarded_routes'    => $jsonRows,
         'laminas_routes_shadowed_by_symfony' => array_map(
             static fn (string $name, array $info): array => [
@@ -1885,6 +2004,53 @@ if ($ruleInfo['other_providers'] !== []) {
     $o('time — a `show`/`checkout`/`administrate` allow per library row and per event text — so the parity');
     $o('check for them has to be behavioural, not textual: `'
         . implode('`, `', $ruleInfo['other_providers']) . '`.');
+    $o('`Books\Model\LibraryTable` is the exception: its rules are reproduced in the next section.');
+}
+$o();
+
+$o('## Per-library rules (`Books\Model\LibraryTable`)');
+$o();
+$o('One `library_<id>` resource per row of `lib_libraries`, with up to three allows built from the');
+$o('row\'s own columns. **These are real rules with real consequences** — `checkout` is what');
+$o('`CheckoutsController::createAction()` asks about before showing the lending form, `show` is what');
+$o('`LibrariesController::showAction()` asks about — and until 2026-08-17 they appeared in no snapshot');
+$o('at all, because a config-derived table cannot see a rule that lives in a database row. That is how');
+$o('three libraries came to grant `checkout` to every signed-in account with nobody reviewing it.');
+$o();
+$o('Two things to read carefully:');
+$o();
+$o('- **`guest` does not mean "anonymous only".** `getRules()` adds `user` alongside it, and `user` is the');
+$o('  root every library role descends from, so `guest` here means *everyone*. The effective-roles count');
+$o('  is the number to look at, not the configured value.');
+$o('- **A NULL `CheckoutBooksRole` emits no rule at all**, which under default-deny means nobody — not');
+$o('  everybody. `EnableCheckouts` is a separate switch and is shown so the two cannot be confused.');
+$o();
+if (! $libraryInfo['available']) {
+    $o('_Unavailable: no database connection._');
+} elseif ($libraryInfo['libraries'] === []) {
+    $o('_None._');
+} else {
+    $o('| library | resource | active | checkouts | person list | permission | configured roles | effective roles |');
+    $o('| --- | --- | --- | --- | --- | --- | --- | --- |');
+    foreach ($libraryInfo['libraries'] as $library) {
+        $first = true;
+        foreach (libraryRules($library) as $rule) {
+            $exp = effectiveRoles($rule['roles'], $descendants, $allRoles)['effective'];
+            $o(sprintf(
+                '| %s | %s | %s | %s | %s | %s | %s | %s (%d) |',
+                $first ? '`' . $library['name'] . '` (' . $library['library_id'] . ')' : '',
+                $first ? '`' . $library['resource'] . '`' : '',
+                $first ? ($library['is_active'] ? 'yes' : 'no') : '',
+                $first ? ($library['checkouts_on'] ? 'yes' : 'no') : '',
+                $first ? '`' . ($library['person_list'] ?? '(none)') . '`' : '',
+                $rule['permission'],
+                implode(', ', $rule['roles']),
+                implode(', ', $exp),
+                count($exp)
+            ));
+            $first = false;
+        }
+    }
 }
 $o();
 

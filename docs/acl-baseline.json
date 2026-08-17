@@ -35,9 +35,9 @@
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
         "symfony_served_routes": 161,
-        "total_routes": 144,
-        "unguarded_routes": 20,
-        "unguarded_routes_matchable": 10
+        "total_routes": 142,
+        "unguarded_routes": 18,
+        "unguarded_routes_matchable": 7
     },
     "dynamic_providers": {
         "resource": [
@@ -5171,6 +5171,468 @@
         }
     ],
     "laminas_routes_uncomparable": [],
+    "library_rules": [
+        {
+            "library_id": 1,
+            "name": "Bellavista",
+            "resource": "library_1",
+            "is_active": true,
+            "checkouts_on": true,
+            "person_list": "patres-sion",
+            "view_role": "guest",
+            "checkout_role": "guest",
+            "rules": [
+                {
+                    "permission": "show",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "checkout",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "administrate",
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "effective_roles": [
+                        "lib_administrator"
+                    ]
+                }
+            ]
+        },
+        {
+            "library_id": 3,
+            "name": "Colegio Mayor",
+            "resource": "library_3",
+            "is_active": true,
+            "checkouts_on": true,
+            "person_list": "patres-sion",
+            "view_role": "guest",
+            "checkout_role": "lib_patres",
+            "rules": [
+                {
+                    "permission": "show",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "checkout",
+                    "roles": [
+                        "lib_patres"
+                    ],
+                    "effective_roles": [
+                        "lib_patres"
+                    ]
+                },
+                {
+                    "permission": "administrate",
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "effective_roles": [
+                        "lib_administrator"
+                    ]
+                }
+            ]
+        },
+        {
+            "library_id": 4,
+            "name": "PUC",
+            "resource": "library_4",
+            "is_active": false,
+            "checkouts_on": false,
+            "person_list": "all-borrowers",
+            "view_role": "lib_user",
+            "checkout_role": null,
+            "rules": [
+                {
+                    "permission": "show",
+                    "roles": [
+                        "lib_user"
+                    ],
+                    "effective_roles": [
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user"
+                    ]
+                },
+                {
+                    "permission": "administrate",
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "effective_roles": [
+                        "lib_administrator"
+                    ]
+                }
+            ]
+        },
+        {
+            "library_id": 5,
+            "name": "Vaterhaus Investigation Library",
+            "resource": "library_5",
+            "is_active": true,
+            "checkouts_on": false,
+            "person_list": "all-borrowers",
+            "view_role": "lib_user",
+            "checkout_role": null,
+            "rules": [
+                {
+                    "permission": "show",
+                    "roles": [
+                        "lib_user"
+                    ],
+                    "effective_roles": [
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user"
+                    ]
+                },
+                {
+                    "permission": "administrate",
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "effective_roles": [
+                        "lib_administrator"
+                    ]
+                }
+            ]
+        },
+        {
+            "library_id": 6,
+            "name": "Schoenstatt Fathers Austin, Texas",
+            "resource": "library_6",
+            "is_active": true,
+            "checkouts_on": true,
+            "person_list": "all-borrowers",
+            "view_role": "guest",
+            "checkout_role": "guest",
+            "rules": [
+                {
+                    "permission": "show",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "checkout",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "administrate",
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "effective_roles": [
+                        "lib_administrator"
+                    ]
+                }
+            ]
+        },
+        {
+            "library_id": 7,
+            "name": "Schoenstatt University Men - Austin, TX",
+            "resource": "library_7",
+            "is_active": true,
+            "checkouts_on": true,
+            "person_list": "all-borrowers",
+            "view_role": "guest",
+            "checkout_role": "guest",
+            "rules": [
+                {
+                    "permission": "show",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "checkout",
+                    "roles": [
+                        "guest",
+                        "user"
+                    ],
+                    "effective_roles": [
+                        "administrator",
+                        "guest",
+                        "lib_academic",
+                        "lib_institute",
+                        "lib_patres",
+                        "lib_user",
+                        "pub_administrator",
+                        "pub_all",
+                        "pub_brothers",
+                        "pub_brothers_moderator",
+                        "pub_families",
+                        "pub_families_moderator",
+                        "pub_general_moderator",
+                        "pub_institute",
+                        "pub_institute_moderator",
+                        "pub_ladies",
+                        "pub_ladies_moderator",
+                        "pub_moderator",
+                        "pub_patres",
+                        "pub_patres_moderator",
+                        "pub_sisters",
+                        "pub_sisters_moderator",
+                        "pub_user",
+                        "sch_administrator",
+                        "sch_basic",
+                        "sch_general_moderator",
+                        "sch_institute",
+                        "sch_moderator",
+                        "sch_patres",
+                        "sch_user",
+                        "texts_administrator",
+                        "texts_moderator",
+                        "texts_user",
+                        "user"
+                    ]
+                },
+                {
+                    "permission": "administrate",
+                    "roles": [
+                        "lib_administrator"
+                    ],
+                    "effective_roles": [
+                        "lib_administrator"
+                    ]
+                }
+            ]
+        }
+    ],
     "non_route_resources": {
         "book": null,
         "book_sch": null,
@@ -7748,8 +8210,6 @@
         "assignments",
         "books",
         "checkouts",
-        "checkouts/checkout",
-        "checkouts/checkout/edit",
         "collections",
         "collections/collection",
         "comments",
@@ -7767,9 +8227,6 @@
         "sion-model"
     ],
     "unguarded_routes_matchable": [
-        "checkouts",
-        "checkouts/checkout",
-        "checkouts/checkout/edit",
         "event",
         "event-delete",
         "event-edit",
