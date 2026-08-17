@@ -117,19 +117,6 @@ class MusicTable extends SionTable
         return $schema;
     }
 
-    public function getCompositionListSchemaV1($objects)//, &$resultingMd5s)
-    {
-        $schemata = [];
-//         $resultingMd5s = [];
-        foreach ($objects as $object) {
-            $schema = $this->getAssociationSchemaV1($object);
-//             $resultingMd5s[$object['jsonId']] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
-            $array = $schema->toArray();
-            $schemata[] = $array;
-        }
-        return $schemata;
-    }
-
     public function linkCompositions(&$objects)
     {
         //get linked composers/lyricists

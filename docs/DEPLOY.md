@@ -982,7 +982,7 @@ each prints, and any failure before the swap leaves production untouched.
 | 6 | **Pre-migrations** | local→tunnel | `@phase: pre` against the live database while the OLD code still serves; a failure aborts before the swap |
 | 7 | **Warm** | server | `jtranslate:export-catalogs`, merged-config cache, `sitemap:build --force` — in a tree nothing is serving |
 | 8 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
-| 9 | **Post-swap** | server / local | `cache:flush-persistent` (APCu), `/en/associations/do-work`, then `@phase: post` migrations |
+| 9 | **Post-swap** | server / local | `cache:flush-persistent` (APCu), then `@phase: post` migrations |
 | 10 | **Verify** | local | `tools/smoke-prod.sh`; **a failure rolls back automatically** and exits non-zero |
 
 Then it tags `deploy/<ts>` locally (never pushed — `git tag -l 'deploy/*'`
@@ -1019,10 +1019,30 @@ be real:
   SAPI that created it, so a CLI `apcu_clear_cache()` flushes a segment nobody
   reads — measured 2026-08-04, all 21 web-segment entries survived it.
   `cache:flush-persistent` makes the request for us.
-- `/en/associations/do-work` is still a URL rather than a command
-  (`autoFillTimeZones()`, `updateAssociationMd5s()`); porting it is in
-  docs/BACKLOG.md.
 - A sign-in round trip with a real email.
+
+### What the deploy no longer does
+
+Until 2026-08-17 the post-swap step also sent a `curl` to
+`/en/associations/do-work`, the last HTTP callback in the pipeline. It was not
+ported to a console command; it was **deleted**, because measuring it showed both
+halves were dead work:
+
+- `autoFillTimeZones()` fills a time zone only for a country that has exactly one.
+  Of the 54 associations with a country and no time zone, **0** qualify — 28 are in
+  multi-zone countries and 26 in countries the validator lists no zone for. It also
+  returned `void`, so the `timeZones` key in its response was always `null`, and it
+  printed three `var_dump()`s into the HTTP response on every deploy.
+- `updateAssociationMd5s()` recomputed five `SchemaOrgJsonMd5V1*` columns that
+  nothing read. It existed to repair a write-path bug: the association save path
+  computed the digest without a locale, writing five identical values, while the
+  sweep wrote five locale-specific ones. Of 498 associations, 490 held the sweep's
+  values and 8 held the save path's — the 8 edited since the previous deploy.
+
+The columns went with it in `database/db8.1.sql`, along with the three orphaned
+list-schema methods that returned the digests to the retired v1/v2 APIs. If you
+are reading this because a deploy no longer runs some maintenance you remember:
+it never did any.
 
 ## The layout on the server
 
@@ -1233,8 +1253,7 @@ editing config *on* the server.
   Cache-Control policies from the now-tracked `public/.htaccess` fail the
   deploy on regression; HTTP/2 only WARNs (hoster-provided, not ours to
   fix). Non-zero exit on any failure.
-- With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value — the
-  same one the `do-work` hook sends), it also polls
+- With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value), it also polls
   `/en/sm/cache-status` (both APCu **and** OPcache), passing the key as an `X-Api-Key` header rather
   than in the URL, and WARNs — without failing — when the APCu
   segment is ≥80% full or has ever expunged. The `apc.shm_size` raise has since

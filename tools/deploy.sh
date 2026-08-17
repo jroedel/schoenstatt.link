@@ -529,17 +529,16 @@ step "Post-swap"
 rsh "cd $NEW_ABS && php bin/console cache:flush-persistent" \
     || warn "persistent-cache flush failed; APCu may serve stale navigation branches. Re-run: php bin/console cache:flush-persistent"
 
-if [ -n "$DEPLOY_API_KEY" ]; then
-    # Data maintenance that needs the fully-deployed site (autoFillTimeZones,
-    # updateAssociationMd5s). Header, never a query string: a query string is
-    # written to the access log on every deploy.
-    curl --silent --show-error --fail --max-time 120 \
-        --header "X-Api-Key: $DEPLOY_API_KEY" \
-        --output /dev/null "$DEPLOY_BASE_URL/en/associations/do-work" \
-        || warn "associations/do-work failed; re-run it by hand."
-    ok "post-deploy maintenance ran"
-else
-    warn "DEPLOY_API_KEY is empty — skipped associations/do-work and the cache-status smoke checks."
+# There used to be a second hook here: a curl to /en/associations/do-work, which
+# ran autoFillTimeZones() and updateAssociationMd5s(). Both were retired 2026-08-17
+# because both were dead work. The time-zone sweep filled 0 rows (every candidate
+# is in a multi-zone country or one with no zone list) and returned void, so the
+# key it reported under was always null. The md5 sweep wrote five columns that
+# nothing read — the sole consumer outside the model was a commented-out line —
+# and it existed to repair a write-path bug that wrote the same digest to all five.
+# See docs/DEPLOY.md § What the deploy no longer does.
+if [ -z "$DEPLOY_API_KEY" ]; then
+    warn "DEPLOY_API_KEY is empty — skipping the cache-status smoke checks."
 fi
 
 step "Post-deploy migrations"
