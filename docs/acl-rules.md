@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 161 |
-| total routes | 144 |
-| unguarded routes | 20 |
-| unguarded routes matchable | 10 |
+| total routes | 142 |
+| unguarded routes | 18 |
+| unguarded routes matchable | 7 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (124 + 20 = 144). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (124 + 18 = 142). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -630,15 +630,13 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-10 of the 20 are endpoints reachable by nobody.
+7 of the 18 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
 | `assignments` | no |
 | `books` | no |
-| `checkouts` | **yes** |
-| `checkouts/checkout` | **yes** |
-| `checkouts/checkout/edit` | **yes** |
+| `checkouts` | no |
 | `collections` | no |
 | `collections/collection` | no |
 | `comments` | no |
@@ -727,6 +725,43 @@ request time (one resource per library / event text), so no config-derived table
 **Not in this snapshot:** these rule providers generate row-level rules from the database at request
 time — a `show`/`checkout`/`administrate` allow per library row and per event text — so the parity
 check for them has to be behavioural, not textual: `Books\Model\LibraryTable`.
+`Books\Model\LibraryTable` is the exception: its rules are reproduced in the next section.
+
+## Per-library rules (`Books\Model\LibraryTable`)
+
+One `library_<id>` resource per row of `lib_libraries`, with up to three allows built from the
+row's own columns. **These are real rules with real consequences** — `checkout` is what
+`CheckoutsController::createAction()` asks about before showing the lending form, `show` is what
+`LibrariesController::showAction()` asks about — and until 2026-08-17 they appeared in no snapshot
+at all, because a config-derived table cannot see a rule that lives in a database row. That is how
+three libraries came to grant `checkout` to every signed-in account with nobody reviewing it.
+
+Two things to read carefully:
+
+- **`guest` does not mean "anonymous only".** `getRules()` adds `user` alongside it, and `user` is the
+  root every library role descends from, so `guest` here means *everyone*. The effective-roles count
+  is the number to look at, not the configured value.
+- **A NULL `CheckoutBooksRole` emits no rule at all**, which under default-deny means nobody — not
+  everybody. `EnableCheckouts` is a separate switch and is shown so the two cannot be confused.
+
+| library | resource | active | checkouts | person list | permission | configured roles | effective roles |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `Bellavista` (1) | `library_1` | yes | yes | `patres-sion` | show | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | checkout | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | administrate | lib_administrator | lib_administrator (1) |
+| `Colegio Mayor` (3) | `library_3` | yes | yes | `patres-sion` | show | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | checkout | lib_patres | lib_patres (1) |
+|  |  |  |  |  | administrate | lib_administrator | lib_administrator (1) |
+| `PUC` (4) | `library_4` | no | no | `all-borrowers` | show | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) |
+|  |  |  |  |  | administrate | lib_administrator | lib_administrator (1) |
+| `Vaterhaus Investigation Library` (5) | `library_5` | yes | no | `all-borrowers` | show | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) |
+|  |  |  |  |  | administrate | lib_administrator | lib_administrator (1) |
+| `Schoenstatt Fathers Austin, Texas` (6) | `library_6` | yes | yes | `all-borrowers` | show | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | checkout | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | administrate | lib_administrator | lib_administrator (1) |
+| `Schoenstatt University Men - Austin, TX` (7) | `library_7` | yes | yes | `all-borrowers` | show | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | checkout | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) |
+|  |  |  |  |  | administrate | lib_administrator | lib_administrator (1) |
 
 ## Controller guard entries
 
