@@ -2,7 +2,8 @@
 
 | document | what it covers |
 | --- | --- |
-| [DEPLOY.md](DEPLOY.md) | how a deploy actually runs, the two-identity SFTP arrangement, server facts, post-deploy smoke checks, rollback |
+| [DEPLOY.md](DEPLOY.md) | how a deploy actually runs: the atomic release layout and symlink swap, why the swap needs an opcode-cache reset and a revision check before any migration, the migration ledger and its phases, server facts, post-deploy smoke checks, rollback and when it is refused |
+| [incident-2026-08-17-stale-opcache.md](incident-2026-08-17-stale-opcache.md) | the 40-minute outage a destructive migration caused by meeting a stale opcode cache: why a release symlink swap is invisible to OPcache, why three independent pools made recovery look random, why the automatic rollback made it permanent, the diagnosis that was wrong and the one field that settled it, and the four protections added afterwards |
 | [exception-reporting.md](exception-reporting.md) | how production failures reach your inbox, the on-disk store, the capture/privacy profile, and the `fetch-` / `clear-exceptions.sh` scripts |
 | [caching.md](caching.md) | the APCu layer: why an oversized cache item wipes the whole segment, the `max_cached_item_size` budget, `/sm/cache-status`, and what to watch when adding a cached call |
 | [api-v3.md](api-v3.md) | the read/write API for automated agents: shrines and translation phrases, how a bot gets a token, why each resource has its **own** role, the field contract, and why validation is the web form's |

@@ -286,7 +286,10 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->appConfig,
                 new LaminasResponseConverter()
             ),
-            HealthController::class => static fn (): HealthController => new HealthController(),
+            HealthController::class => fn (): HealthController => new HealthController(
+                new MaintenanceKey($this->laminas()),
+                dirname(__DIR__)
+            ),
             // The sitemap, and the one route here that is normally never reached: the files
             // are static and Apache serves them, so this only runs when public/sitemap.xml is
             // missing. Its generator is still the only thing on this side that walks the whole

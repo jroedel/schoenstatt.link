@@ -18,6 +18,7 @@ CURL_OPTS=(--silent --show-error --compressed --max-time 45
     --user-agent 'schoenstatt-smoke-prod (tools/smoke-prod.sh)')
 
 FAILURES=0
+FATAL_200S=0
 BODY=$(mktemp -t smoke-prod-body-XXXXXX)
 HDRS=$(mktemp -t smoke-prod-hdrs-XXXXXX)
 trap 'rm -f "$BODY" "$HDRS"' EXIT
@@ -42,6 +43,24 @@ fetch() {
     # (curl only reports a redirect it did NOT take) and %{http_code} is the destination's.
     # Without them a URL that 301s is indistinguishable from one that answers 200.
     IFS="$US" read -r STATUS REDIRECT CTYPE HTTPVER HOPS EFFECTIVE <<<"$meta"
+
+    # A PHP fatal with display_errors=Off is an HTTP 200 with an EMPTY body, and
+    # every individual check below asks a question that answer can satisfy by
+    # accident: a check expecting 404 reports "got 200" and a check expecting 200
+    # sees the status it wanted. On 2026-08-17 that is exactly what happened —
+    # 21 checks failed reading "got 200", every one of them a zero-byte fatal, and
+    # the run named the wrong problem in 21 different ways.
+    #
+    # So the detection lives here, once, before any check gets to interpret the
+    # response. no_fatals() cannot do this job: it greps for PHP's error text, and
+    # the whole point of an empty fatal is that there is no text to find.
+    if [ "$STATUS" = "200" ] && [ ! -s "$BODY" ]; then
+        fail "fatal-200: $url answered 200 with an EMPTY body — a PHP fatal, not a page.
+      Look in shared/data/exceptions/ on the server. If the newest report names an
+      older .revision than the live release, OPcache is still serving the previous
+      release — see docs/incident-2026-08-17-stale-opcache.md."
+        FATAL_200S=$((FATAL_200S + 1))
+    fi
 }
 
 # header <name> — value of <name> from the LAST response in $HDRS (--follow
@@ -633,6 +652,15 @@ if [ -n "${SMOKE_PROD_CANARY_COOKIE:-}" ]; then
 fi
 
 echo
+if [ "$FATAL_200S" -gt 0 ]; then
+    # Said separately from the failure count, because these are not N independent
+    # problems. One stale code path produces a fatal-200 on every URL that reaches
+    # it, and the count is a measure of coverage, not of causes.
+    echo "$FATAL_200S response(s) were zero-byte HTTP 200s — PHP fatals." >&2
+    echo "Treat that as ONE fault with many symptoms, and diagnose it before reading" >&2
+    echo "the other failures: most of them are the same fatal seen through a check" >&2
+    echo "that expected some other status." >&2
+fi
 if [ "$FAILURES" -gt 0 ]; then
     echo "$FAILURES smoke check(s) FAILED against $BASE" >&2
     exit 1
