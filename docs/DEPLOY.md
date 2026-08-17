@@ -969,8 +969,31 @@ the capsule stops drifting.
 ./tools/deploy.sh
 ```
 
-It pulls master itself, so there is nothing to do first. The run is nine steps;
-each prints, and any failure before the swap leaves production untouched.
+It pulls master itself, so there is nothing to do first. Each step prints, and any
+failure before the swap leaves production untouched.
+
+**A routine deploy does not ask for confirmation.** It proceeds as soon as the
+preflight passes, which makes this a single unattended command:
+
+```bash
+gh pr merge <n> --merge && git checkout master && git pull --ff-only && ./tools/deploy.sh
+```
+
+The prompt is kept for runs where a human has something to decide, and the list is
+deliberately conservative — anything that makes this differ from *current master,
+verified, onto the usual server*:
+
+- `--ref` — deploying something other than master
+- `--skip-tests` — nothing verified this build, and CI cannot run until 2026-09-01
+- `--stash` — what ships is HEAD, not what you are looking at
+- the **first swap** on a server (`mv` + `ln`, the one non-atomic moment)
+- `.deploy.local` not mode 600, since it holds the full-DDL password
+
+The prompt was dropped because on 2026-08-17 it prevented none of three failed
+deploys: the preflight, the revision gate and the smoke rollback caught all of
+them, and every abort happened before anything irreversible. Those checks are what
+protect a deploy; a `y` before the work starts never did. `--dry-run` still shows
+exactly what would transfer, and `-y` still forces past an unusual-run prompt.
 
 | # | step | where | notes |
 |---|---|---|---|

@@ -21,7 +21,8 @@
 #   --allow-incompatible   with --rollback, proceed even when the target predates
 #                  a destructive migration (it will almost certainly be broken)
 #   --bootstrap    first swap only, converting a flat tree to the release layout
-#   -y, --yes      no confirmation prompt
+#   -y, --yes      no confirmation prompt (a routine deploy already asks nothing;
+#                  this forces past the prompt an UNUSUAL run would raise)
 #
 # Configuration is .deploy.local (gitignored, mode 0600), seeded from
 # .deploy.local.dist by config.sh. Credentials never reach the server.
@@ -56,6 +57,13 @@ fail() { printf '\n%sABORT: %s%s\n' "$C_ERR" "$1" "$C_OFF" >&2; exit 1; }
 
 DRY_RUN=0 SKIP_TESTS=0 DO_STASH=0 ACTION=deploy ROLLBACK_TO='' GIT_REF='' ASSUME_YES=0
 ALLOW_INCOMPATIBLE=0
+
+# Reasons this run is not a routine deploy, appended to as they are discovered.
+# An empty list is what lets the deploy proceed without a confirmation prompt, so
+# anything added here is a claim that a human should look before production
+# changes. Declared before the config is read, because the first entry can come
+# from there.
+UNUSUAL=()
 BOOTSTRAP=0 INITIAL_SWAP=0 POST_MIGRATIONS_FAILED=0
 
 usage() {
@@ -94,7 +102,8 @@ CONFIG=$REPO_ROOT/.deploy.local
 CONFIG_MODE=$(stat -c '%a' "$CONFIG" 2>/dev/null || stat -f '%Lp' "$CONFIG")
 case $CONFIG_MODE in
     600|400) ;;
-    *) warn ".deploy.local is mode $CONFIG_MODE; it holds credentials. chmod 600 it." ;;
+    *) warn ".deploy.local is mode $CONFIG_MODE; it holds credentials. chmod 600 it."
+       UNUSUAL+=(".deploy.local is mode $CONFIG_MODE, not 600 — it holds the DDL password") ;;
 esac
 
 # shellcheck disable=SC1090
@@ -211,12 +220,18 @@ reset_opcode_caches() {
     RESET_FILE="$RELEASES/*/public/zz-opcache-$token.php"
     url="$DEPLOY_BASE_URL/zz-opcache-$token.php?t=$token"
 
-    # Quoted heredoc, then substitute: the shell must not touch a single byte of
-    # this PHP. The first version of this used an UNQUOTED heredoc so the token
-    # could interpolate, and getting `\$s` right by hand across bash-then-ssh is
-    # the kind of thing that looks fine and ships a parse error. It did, twice on
-    # 2026-08-17 — once here, once in a hand-written helper during the incident,
-    # where 30 requests to a 500 were mistaken for 30 successful resets.
+    # Quoted heredoc, then substitute the token with a bash expansion. The point is
+    # that the shell never interprets this PHP: `$_GET`, `$s` and the rest arrive
+    # exactly as written, with no backslash-escaping to get right by hand.
+    #
+    # An earlier version used an unquoted heredoc so the token could interpolate,
+    # which forced `\$s` escaping throughout. That was suspected of shipping a parse
+    # error and was NOT guilty — the bytes it produced were checked afterwards and
+    # lint clean. It is written this way because it is easier to read and impossible
+    # to get subtly wrong, not because the other way was broken. A hand-written
+    # helper during the 2026-08-17 incident *did* ship a parse error exactly this
+    # way, and 30 requests to the resulting 500 were mistaken for 30 successful
+    # resets — which is the real argument for not hand-escaping anything here.
     src=$(cat <<'PHPEOF'
 <?php
 if (!hash_equals('__TOKEN__', $_GET['t'] ?? '')) { http_response_code(404); exit; }
@@ -227,10 +242,15 @@ echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : n
 echo 'from=', __DIR__, "\n";
 PHPEOF
     )
-    # base64 over the wire for the same reason: no quoting, no locale, no newline
-    # translation between here and the remote shell.
-    printf '%s\n' "${src//__TOKEN__/$token}" | base64 \
-        | rsh "d=\$(mktemp) && base64 -d > \$d && for r in $RELEASES/*/public; do cp \$d \$r/zz-opcache-$token.php; done && rm -f \$d" \
+    # Sent as plain text on stdin, deliberately. An earlier version base64'd it,
+    # on a suspicion that shell quoting was corrupting the PHP — that suspicion was
+    # measured and found false, and encoding it made the one thing this script
+    # writes to a production docroot unreadable both in the script and in `ps` on
+    # the server. Anything a deploy executes remotely should be legible to whoever
+    # is reading the deploy at 2am; the exact bytes are the heredoc directly above.
+    # Piping to `cat` over ssh is already binary-safe.
+    printf '%s\n' "${src//__TOKEN__/$token}" \
+        | rsh "d=\$(mktemp) && cat > \$d && for r in $RELEASES/*/public; do cp \$d \$r/zz-opcache-$token.php; done && rm -f \$d" \
         || { warn "could not write the opcache reset helper"; RESET_FILE=''; return 1; }
 
     # Wait for the web server to SEE it before judging a 404. This is the whole
@@ -409,6 +429,9 @@ assert_bootstrapped() {
         dir)
             [ "$BOOTSTRAP" = 1 ] || fail "$APP/public is still a real directory. The server has not been converted to the release layout yet — run tools/deploy-bootstrap.sh, then ./tools/deploy.sh --bootstrap (docs/DEPLOY.md § Cutover)."
             INITIAL_SWAP=1
+            # The one swap that is not atomic — mv + ln, with a real (sub-second)
+            # window. It happens once per server, and it is worth a human eye.
+            UNUSUAL+=("first swap: public/ is a real directory, so this is mv + ln with a brief window")
             ;;
         *)  fail "$APP/public does not exist on the server. Something is very wrong; do not deploy." ;;
     esac
@@ -546,6 +569,7 @@ if [ -n "$DIRTY" ]; then
         # on_exit pops it on any exit, success or failure — a stash left parked
         # is how a stash gets forgotten and later lost.
         STASHED=1
+        UNUSUAL+=("local changes were stashed — this deploys HEAD, not what you see")
         ok "stashed"
     else
         printf '%s\n' "$DIRTY" | sed 's/^/      /'
@@ -555,6 +579,7 @@ fi
 
 if [ -n "$GIT_REF" ]; then
     warn "deploying '$GIT_REF' rather than master — this is not a normal deploy."
+    UNUSUAL+=("deploying '$GIT_REF', not master")
     git rev-parse --verify "$GIT_REF" >/dev/null 2>&1 || fail "ref '$GIT_REF' does not exist."
     git checkout --quiet "$GIT_REF"
     CHECKED_OUT_REF=1   # on_exit puts the branch back
@@ -621,6 +646,10 @@ fi
 
 if [ "$SKIP_TESTS" = 1 ]; then
     warn "skipping tools/ci-local.sh (--skip-tests)"
+    # CI cannot run until 2026-09-01 (Actions quota), so ci-local is the ONLY
+    # verification this change gets. Skipping it is exactly the case where someone
+    # should be asked.
+    [ "$DRY_RUN" = 1 ] || UNUSUAL+=("tests were skipped, and CI cannot run — nothing verified this build")
 else
     step "Verification (tools/ci-local.sh --ci)"
     dim "lint, composer --no-dev rehearsal, PHPStan level 0, unit, integration"
@@ -666,7 +695,25 @@ if [ "$DRY_RUN" = 1 ]; then
     exit 0
 fi
 
-confirm "deploy $SHORT to $DEPLOY_BASE_URL"
+# A routine deploy no longer asks.
+#
+# The prompt was the last human checkpoint before production, and on 2026-08-17 it
+# prevented exactly none of three failed deploys: the preflight, the revision gate
+# and the smoke rollback caught all of them, and every abort happened before
+# anything irreversible. What it costs is real, though — it is the one thing
+# stopping `merge, pull, deploy` from being a single unattended command.
+#
+# So it stays for the runs where a human genuinely has something to decide, and
+# goes for the rest. The test is deliberately conservative: anything making this
+# differ from "current master, verified, onto the usual server" puts it back.
+if [ "${#UNUSUAL[@]}" -eq 0 ]; then
+    dim "routine deploy — nothing overridden; not asking. (--dry-run inspects first)"
+    dim "the revision gate, destructive-migration wait and smoke rollback still apply"
+else
+    warn "this is NOT a routine deploy:"
+    printf '        - %s\n' "${UNUSUAL[@]}" >&2
+    confirm "deploy $SHORT to $DEPLOY_BASE_URL anyway"
+fi
 
 step "Backing up the live public/.htaccess"
 # Tracked, and therefore replaced by every release. The backup is the escape
