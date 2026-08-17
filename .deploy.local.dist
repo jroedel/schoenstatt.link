@@ -27,10 +27,11 @@ DEPLOY_BASE_URL=https://schoenstatt.link
 
 # --- keys --------------------------------------------------------------------
 
-# Any entry from the server's sion_model.api_keys. Used for the post-deploy
-# /associations/do-work call and for the cache-status smoke checks. It travels
-# in an X-Api-Key header, never a query string — a query string is written to
-# the server's access log on every deploy and kept in shell history.
+# Any entry from the server's sion_model.api_keys. Used for the cache-status
+# smoke checks. It travels in an X-Api-Key header, never a query string — a
+# query string is written to the server's access log on every deploy and kept
+# in shell history. (It also fed the post-deploy /associations/do-work call
+# until that hook was deleted on 2026-08-17; see docs/DEPLOY.md.)
 DEPLOY_API_KEY=xxxxTODOxxxx
 
 # --- behaviour ---------------------------------------------------------------

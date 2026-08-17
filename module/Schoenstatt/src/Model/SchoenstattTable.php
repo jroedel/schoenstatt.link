@@ -41,14 +41,6 @@ class SchoenstattTable extends SionTable implements
 {
     const TRANSLATOR_DOMAIN = 'Schoenstatt';
 
-    const LOCALES_TO_MD5_COLUMN_NAME = [
-        'en_US' => 'SchemaOrgJsonMd5V1En',
-        'es_ES' => 'SchemaOrgJsonMd5V1Es',
-        'pt_BR' => 'SchemaOrgJsonMd5V1Pt',
-        'de_DE' => 'SchemaOrgJsonMd5V1De',
-        'it_IT' => 'SchemaOrgJsonMd5V1It',
-    ];
-
     const LOCALES_TO_SLUG_COLUMN_NAME = [
         'en_US' => 'SlugEn',
         'es_ES' => 'SlugEs',
@@ -366,8 +358,7 @@ class SchoenstattTable extends SionTable implements
         if ('association' === $entity) {
             $entitySpec = $this->getEntitySpecification($entity);
             $columns = array_values($entitySpec->updateColumns);
-            $columns = array_merge($columns, ['SchemaOrgJsonMd5V1En','SchemaOrgJsonMd5V1Es','SchemaOrgJsonMd5V1Pt','SchemaOrgJsonMd5V1De',
-                'SchemaOrgJsonMd5V1It', 'SlugEn', 'SlugEs', 'SlugDe', 'SlugPt', 'SlugIt']);
+            $columns = array_merge($columns, ['SlugEn', 'SlugEs', 'SlugDe', 'SlugPt', 'SlugIt']);
             $columns['GeoPoint'] = new Expression('ST_AsText(`Location`)');
             $select->columns($columns);
         }
@@ -914,19 +905,6 @@ class SchoenstattTable extends SionTable implements
             'updatedOn'             => $this->filterDbDate($row['UpdatedOn']),
             'updatedBy'             => $this->filterDbId($row['UpdatedBy']),
 
-            //@todo add V2 Jsons
-            'schemaOrgJsonMd5V1En'  => $row['SchemaOrgJsonMd5V1En'],
-            'schemaOrgJsonMd5V1Es'  => $row['SchemaOrgJsonMd5V1Es'],
-            'schemaOrgJsonMd5V1Pt'  => $row['SchemaOrgJsonMd5V1Pt'],
-            'schemaOrgJsonMd5V1De'  => $row['SchemaOrgJsonMd5V1De'],
-            'schemaOrgJsonMd5V1It'  => $row['SchemaOrgJsonMd5V1It'],
-            'schemaOrgJsonMd5V1ByLocale' => [
-                'en_US' => $row['SchemaOrgJsonMd5V1En'],
-                'es_ES' => $row['SchemaOrgJsonMd5V1Es'],
-                'pt_BR' => $row['SchemaOrgJsonMd5V1Pt'],
-                'de_DE' => $row['SchemaOrgJsonMd5V1De'],
-                'it_IT' => $row['SchemaOrgJsonMd5V1It'],
-            ],
             'slugByLocale' => $slugByLocale,
 //             'jsonId'                => "https://schoenstatt.link/en/associations/".$identifier,
             'nameByLocale'          => $namesByLocale, //should never be null
@@ -1242,26 +1220,6 @@ class SchoenstattTable extends SionTable implements
         return $schema;
     }
 
-    public function getAssociationListSchemaV1($objects, &$resultingMd5s, $locale = null)
-    {
-        if (! isset($locale)) {
-            $locale = $this->getLocale();
-        }
-        $schemata = [];
-        $resultingMd5s = [];
-        foreach ($objects as $object) {
-            $schema = $this->getAssociationSchemaV1($object, $locale);
-            $jsonId = $schema->getProperty('@id');
-            if (! isset($jsonId) || ! is_string($jsonId)) {
-                throw new \Exception("We didn't get a proper json Id");
-            }
-            $resultingMd5s[$jsonId] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
-            $array = $schema->toArray();
-            $schemata[] = $array;
-        }
-        return $schemata;
-    }
-
     /**
      *
      * @param mixed[] $object
@@ -1525,27 +1483,6 @@ class SchoenstattTable extends SionTable implements
         return $schema;
     }
 
-    public function getAssociationListSchemaV2($objects, &$resultingMd5s, $locale = null)
-    {
-        if (! isset($locale)) {
-            $locale = $this->getLocale();
-        }
-        $schemata = [];
-        $resultingMd5s = [];
-        foreach ($objects as $object) {
-            $schema = $this->getAssociationSchemaV2($object, $locale);
-            $jsonId = $schema->getProperty('@id');
-            if (! isset($jsonId) || ! is_string($jsonId)) {
-                throw new \Exception("We didn't get a proper json Id");
-            }
-            //@todo update with v2 jsons
-            $resultingMd5s[$jsonId] = $object['schemaOrgJsonMd5V1ByLocale'][$locale];
-            $array = $schema->toArray();
-            $schemata[] = $array;
-        }
-        return $schemata;
-    }
-
     /**
      * @todo we shouldn't need to query the whole table to get 1 association. Create a linkAssociation function
      * @param int $id
@@ -1694,73 +1631,6 @@ class SchoenstattTable extends SionTable implements
                         ];
                         $this->createEntity('association', $branchData);
                     }
-                }
-            }
-        }
-        //Set the MD5 sum
-        $localeMd5Columns = self::LOCALES_TO_MD5_COLUMN_NAME;
-        $data = [];
-        foreach ($localeMd5Columns as $locale => $column) {
-            $schema = $this->getAssociationSchemaV1($newData);
-            $array = $schema->toArray();
-            $md5 = md5(json_encode($array));
-            $adapter = $this->getTableGateway('sch_associations');
-            $data[$column] = $md5;
-        }
-        $adapter->update($data, ['AssociationId' => $newData['associationId']]);
-    }
-
-    /**
-     * Update the SchemaOrgJsonMd5 with the latest schema digests
-     */
-    public function updateAssociationMd5s(array $associationIds = [])
-    {
-        $localeMd5Columns = self::LOCALES_TO_MD5_COLUMN_NAME;
-        //@todo afterwards, do all associations, not just shrines
-        $associations = $this->getAssociations();
-        $return = [];
-        foreach ($associations as $object) {
-            $data = [];
-            foreach ($localeMd5Columns as $locale => $column) {
-                $schema = $this->getAssociationSchemaV1($object, $locale);
-                $array = $schema->toArray();
-                $md5 = md5(json_encode($array));
-                $return[$object['associationId']] = $md5;
-                $adapter = $this->getTableGateway('sch_associations');
-                $data[$column] = $md5;
-            }
-            $adapter->update($data, ['AssociationId' => $object['associationId']]);
-        }
-        return $return;
-    }
-
-    public function autoFillTimeZones()
-    {
-        $objects = $this->queryObjects('association', [
-            new PredicateSet([
-                new IsNull('TimeZone'),
-                new IsNotNull('Country')
-                ])
-        ]);
-        $countryTzs = [];
-        $count = count($objects);
-        var_dump("$count associations are missing time zones");
-        foreach ($objects as $object) {
-            $country = $object['country'];
-            if (isset($country) && 'GB-SCT' !== $country) {
-                if (! isset($countryTzs[$country])) {
-                    $countryTzs[$country] =
-                        array_keys(\Schoenstatt\Validator\TimeZone::getTimeZoneValueOptions($country));
-                    if ('CL' === $country) {
-                        var_dump($countryTzs[$country]);
-                    }
-                }
-                if (1 === count($countryTzs[$country])) {
-                    $tz = $countryTzs[$country][0];
-                    var_dump("$country => $tz");
-                    $this->updateEntity('association', $object['associationId'], [
-                        'timeZoneId' => $tz
-                    ]);
                 }
             }
         }

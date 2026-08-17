@@ -40,12 +40,12 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 133 |
-| guarded routes total | 133 |
+| guarded routes existing | 132 |
+| guarded routes total | 132 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 135 |
+| route guard entries | 134 |
 | routes declared twice | 2 |
 | routes shadowed by symfony | 70 |
 | routes uncomparable | 0 |
@@ -54,11 +54,11 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
 | symfony served routes | 161 |
-| total routes | 153 |
+| total routes | 152 |
 | unguarded routes | 20 |
 | unguarded routes matchable | 10 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (133 + 20 = 153). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (132 + 20 = 152). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -516,7 +516,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `associations` | yes | sch_basic, sch_user | sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (7) | no |  |
 | `associations/association` | yes | guest, sch_basic, sch_user, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `associations/create` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |
-| `associations/do-work` | yes | `null`, guest, user | **everyone (public)** — 45 named roles plus anonymous | yes |  |
 | `associations/old-association` | yes | guest, sch_basic, sch_user, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `books/book` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `books/book/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |

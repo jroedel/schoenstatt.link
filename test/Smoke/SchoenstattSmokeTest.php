@@ -10,8 +10,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
  * Schoenstatt module: the public shrine database plus the members-only
  * movement, association, person and administration areas.
  *
- * Deliberately not covered: /en/associations/do-work, which triggers
- * background maintenance work and is used as a post-deploy hook.
  */
 class SchoenstattSmokeTest extends SmokeTestCase
 {
