@@ -211,12 +211,18 @@ reset_opcode_caches() {
     RESET_FILE="$RELEASES/*/public/zz-opcache-$token.php"
     url="$DEPLOY_BASE_URL/zz-opcache-$token.php?t=$token"
 
-    # Quoted heredoc, then substitute: the shell must not touch a single byte of
-    # this PHP. The first version of this used an UNQUOTED heredoc so the token
-    # could interpolate, and getting `\$s` right by hand across bash-then-ssh is
-    # the kind of thing that looks fine and ships a parse error. It did, twice on
-    # 2026-08-17 — once here, once in a hand-written helper during the incident,
-    # where 30 requests to a 500 were mistaken for 30 successful resets.
+    # Quoted heredoc, then substitute the token with a bash expansion. The point is
+    # that the shell never interprets this PHP: `$_GET`, `$s` and the rest arrive
+    # exactly as written, with no backslash-escaping to get right by hand.
+    #
+    # An earlier version used an unquoted heredoc so the token could interpolate,
+    # which forced `\$s` escaping throughout. That was suspected of shipping a parse
+    # error and was NOT guilty — the bytes it produced were checked afterwards and
+    # lint clean. It is written this way because it is easier to read and impossible
+    # to get subtly wrong, not because the other way was broken. A hand-written
+    # helper during the 2026-08-17 incident *did* ship a parse error exactly this
+    # way, and 30 requests to the resulting 500 were mistaken for 30 successful
+    # resets — which is the real argument for not hand-escaping anything here.
     src=$(cat <<'PHPEOF'
 <?php
 if (!hash_equals('__TOKEN__', $_GET['t'] ?? '')) { http_response_code(404); exit; }
@@ -227,10 +233,15 @@ echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : n
 echo 'from=', __DIR__, "\n";
 PHPEOF
     )
-    # base64 over the wire for the same reason: no quoting, no locale, no newline
-    # translation between here and the remote shell.
-    printf '%s\n' "${src//__TOKEN__/$token}" | base64 \
-        | rsh "d=\$(mktemp) && base64 -d > \$d && for r in $RELEASES/*/public; do cp \$d \$r/zz-opcache-$token.php; done && rm -f \$d" \
+    # Sent as plain text on stdin, deliberately. An earlier version base64'd it,
+    # on a suspicion that shell quoting was corrupting the PHP — that suspicion was
+    # measured and found false, and encoding it made the one thing this script
+    # writes to a production docroot unreadable both in the script and in `ps` on
+    # the server. Anything a deploy executes remotely should be legible to whoever
+    # is reading the deploy at 2am; the exact bytes are the heredoc directly above.
+    # Piping to `cat` over ssh is already binary-safe.
+    printf '%s\n' "${src//__TOKEN__/$token}" \
+        | rsh "d=\$(mktemp) && cat > \$d && for r in $RELEASES/*/public; do cp \$d \$r/zz-opcache-$token.php; done && rm -f \$d" \
         || { warn "could not write the opcache reset helper"; RESET_FILE=''; return 1; }
 
     # Wait for the web server to SEE it before judging a 404. This is the whole
