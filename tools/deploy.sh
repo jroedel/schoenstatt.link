@@ -827,14 +827,28 @@ bash tools/migrate.sh apply --phase=pre --yes \
     || fail "a pre-deploy migration failed. Nothing was swapped; production is still on ${PREV:-the previous release} and its data is unchanged (a dml migration rolls back whole). Read the error above and data/deploy/backups/."
 
 step "Warming the release (still not serving)"
-# Every one of these used to run *after* the code went live, which is why a
-# deploy had a stale window: English strings until the catalogs rebuilt, a
-# sitemap from the previous release, a cold config cache for the first visitor.
+# These used to run *after* the code went live, which is why a deploy had a stale
+# window: English strings until the catalogs rebuilt, and a sitemap from the
+# previous release.
+#
+# The merged-config cache is NOT warmed here, and this step used to claim it was.
+# It cannot be: bin/console sets config_cache_enabled=false (see the comment there
+# — a test run must not write data/config, and CI has no writable one), so no
+# console command can ever populate it. Measured 2026-08-17 by clearing
+# data/config and running a console command: still empty. One web request: both
+# files written.
+#
+# In practice it is warm before any visitor arrives anyway — the opcode-cache
+# reset, the twelve /_health probes and the smoke run all execute the new release
+# before the deploy finishes, and on production the cache file appears ~30s after
+# the swap because of them. The two deploys that aborted at the gate are the proof
+# of the mechanism: their config cache was written 7-8 minutes later, at the exact
+# moment the caches were reset by hand and the release first executed anything.
 rsh "cd $NEW_ABS && php bin/console jtranslate:export-catalogs" \
     || warn "jtranslate:export-catalogs failed — translations are safe in the database, but this release's catalogs are stale and some strings will render in English."
 rsh "cd $NEW_ABS && php bin/console sitemap:build --force" \
     || warn "sitemap:build failed — this release ships without sitemap files until the cron rebuilds them."
-ok "catalogs, merged config and sitemap built"
+ok "catalogs and sitemap built (merged config warms on the first request, below)"
 
 # ============================================================== the swap ====
 
