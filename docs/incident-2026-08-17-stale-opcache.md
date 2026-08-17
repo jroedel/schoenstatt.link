@@ -128,6 +128,36 @@ of an applied migration whose **comments** changed, after proving via git histor
 that no statement moved. Without it `@destructive` could never be added to `db8.1`,
 since an applied migration's bytes are frozen.
 
+## The first deploy of the protections, and what it proved
+
+The very next deploy (`b317f7a`, 13:56) **stopped at the new gate**, which is the
+system working: it aborted at step 13 with no post-deploy migration run and the
+site healthy. But it stopped for a reason worth recording.
+
+- Step 12's cache reset **missed** — `opcache reset helper did not answer as
+  expected on attempt 1` — and then printed `✓ opcode caches reset`. It reported
+  success having done nothing. That is the same "looks like it worked" failure as
+  the 30 requests to a 500 during the incident itself, and it is now fixed: the
+  helper is delivered base64-encoded, retried three times, and prints the actual
+  HTTP status and body when it does not get a reset.
+- Step 13 then correctly refused, because a pool was still serving the *pre*-#120
+  `HealthController`, which has no `revision` field at all. Diagnosis took four
+  rounds and produced two wrong hypotheses of mine — a heredoc quoting bug
+  (disproved: the generated PHP lints clean) and a memory limit (disproved: 8 MiB
+  peak). The actual proof came from running the controller in the web SAPI, where
+  it worked, versus over HTTP, where it did not.
+- A single `opcache_reset()` from an unrelated probe fixed it: `/_health` went
+  from 0/20 reporting a revision to **12/12**.
+
+Two lessons beyond the code. **A diagnostic script must reproduce the real
+environment or it will manufacture its own failures** — mine reported a
+`Could not create temporary file in directory "data/config"` throwable that was
+purely an artifact of not `chdir`-ing, since laminas resolves that path relative
+to the CWD that `public/index.php` sets. And **the gate can deadlock**: if the
+reset misses, the gate refuses, and re-running the deploy hits the same wall. The
+gate now retries the reset once itself, and its failure message spells out the
+manual recovery rather than saying "re-run the deploy".
+
 ## What is still true and worth knowing
 
 - **The capsule cannot reproduce this.** It runs one PHP pool and serves from a
