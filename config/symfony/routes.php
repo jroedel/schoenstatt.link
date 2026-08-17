@@ -35,6 +35,7 @@ use App\Controller\Api\PhrasesV3Controller;
 use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
+use App\Controller\BorrowerCheckoutsController;
 use App\Controller\CacheStatusController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\CommentCreateController;
@@ -1518,6 +1519,28 @@ $ported(
 // is App\Api\BotIdentity — a valid JWT whose account holds `sch_api_bot`, a role
 // nothing else on this site names. tools/acl-table.php lists these as open, which is
 // accurate: the ACL genuinely does not protect them, and something else does.
+// A borrower's own checkouts, reached only by the link in an overdue notice.
+//
+// openToEveryone is accurate rather than a loophole: the reader is not signed in and
+// has no account, so the ACL has nothing to say. The gate is the `?t=` token, which
+// resolves to exactly one person at one library — see Books\Model\BorrowerTokenTable
+// for why an account was the wrong answer here (there is no user-to-person link in
+// this database, and every account inherits the is_default lib_user role).
+//
+// Note the URL carries no person id and must never carry one. The moment a request
+// parameter can name a person, the token stops being a grant over one person's books.
+// GET renders, POST renews and redirects back to GET; both need the token.
+$borrowerBooks = RouteAccess::openToEveryone(
+    'shadows no laminas route, and its reader has no session for BjyAuthorize to read an identity '
+    . 'from. The gate is the emailed token resolved by Books\Model\BorrowerTokenTable, which '
+    . 'authorises one person at one library and nothing else'
+);
+$routes->add('library/my-books', new Route('/library/my-books', [
+    '_controller'                           => BorrowerCheckoutsController::class,
+    RouteAccess::ATTRIBUTE                  => $borrowerBooks,
+    LaminasExtension::TEXT_DOMAIN_ATTRIBUTE => 'Books',
+], [], [], '', [], ['GET', 'POST']));
+
 $apiV3 = RouteAccess::openToEveryone(
     'shadows no laminas route, so there is no guard entry to consult, and BjyAuthorize reads its '
     . 'identity from a session an agent does not have. The gate is App\Api\BotIdentity: a bearer JWT '
