@@ -985,6 +985,7 @@ each prints, and any failure before the swap leaves production untouched.
 | 9 | **Post-swap** | server | `cache:flush-persistent` (APCu) |
 | 10 | **Make the swap visible** | server / local | reset every opcode cache — see below, this is not optional |
 | 11 | **Confirm the live release** | local | `/_health` polled 12×; a disagreement **aborts before any migration runs** |
+| 11b | **Sustained check** | local | only when a `@destructive` migration is pending: three rounds, 45 s apart |
 | 12 | **Post-migrations** | local→tunnel | `@phase: post`, now that the new code is provably the code running |
 | 13 | **Verify** | local | `tools/smoke-prod.sh`; a failure rolls back automatically *unless* a destructive migration makes that worse |
 
@@ -1034,6 +1035,35 @@ Step 11 is the check that makes step 10 honest. `/_health` reports the release's
 without booting laminas — so it answers even while the legacy bootstrap is
 fatalling, which is exactly the state worth detecting. Twelve probes, because one
 would only ever sample one pool.
+
+Step 10 stops on that same signal rather than on OPcache segment ages: it keeps
+resetting until **eight consecutive probes** report the new release. Segment age
+was only ever a proxy, and a poor one — the 2026-08-17 15:03 deploy never saw six
+consecutive fresh segments in forty hits and warned about it, while step 11 then
+passed 12/12. A warning that fires on a successful deploy is worse than none,
+because it teaches everyone to ignore the mechanism guarding the migration.
+
+### Step 11b: why a destructive migration waits longer
+
+**Agreement at one moment is not agreement.** Measured after the 15:03 deploy: the
+gate passed 12/12, two minutes later **6 of 6** probes reported the *previous*
+release, then a mixed 9/11, and only after roughly four minutes did it settle at
+20/20 on the new one. Pools the reset loop never reached kept serving old code
+until they recycled by themselves.
+
+For an ordinary deploy that is harmless: both releases run against the same schema,
+and which one answers is invisible. For a migration that DROPS something it is the
+original incident with a delay on it — the column goes while a pool is still
+executing code that selects it.
+
+So when a pending migration declares `@destructive: yes`, the deploy requires the
+agreement to *hold*: three full rounds, 45 s apart, before it will migrate. If any
+round disagrees it aborts having changed nothing, and drift clears on its own —
+wait a few minutes and run `bash tools/migrate.sh apply --phase=post`.
+
+This is deliberately **not** applied to every deploy. Three extra minutes on every
+release, for a hazard that applies to a handful of them, is a tax people route
+around — and a check people route around protects nothing.
 
 **Nothing irreversible happens before step 11 passes.** That ordering is the whole
 lesson of 2026-08-17: the old ordering ran the post-deploy migration first, against
