@@ -1297,15 +1297,15 @@ rediscovered.
     (as `checkouts/library`, `…/current`, `…/overdue` all are);
     `publication-upload-cover` → `pub_moderator` (as `publications/create`).~~
     **All four are dead config. Do not grant them.**
-    - `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` resolve to
+    - ~~`checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` resolve to
       `SionController`'s generic `indexAction`/`showAction`/`editAction`, which
       render from the entity spec — and in the `checkout` spec `index_route`,
       `index_template`, `show_action_template`, `edit_action_form` and
       `edit_action_template` are **all commented out**. There is nothing to
-      render. (`CheckoutsController` itself defines only `create`, `library`,
-      `checkin` and `massCheckout`, which is what made this look like dead config
-      at first glance; the base class is why it is not *quite* that, and why the
-      only reliable check is the entity spec.)
+      render.~~ **Deleted 2026-08-17.** `/checkouts` is now an unmatchable prefix
+      (`may_terminate => false`) so `/checkouts/library/:id` keeps working, and the
+      two child routes are gone along with the `show_*` and `delete_*` spec keys
+      that pointed at them. See [libraries.md](libraries.md).
     - `publication-upload-cover` is dead **three** ways over, and any one of them
       is enough. (1) No guard entry. (2) `uploadCoverAction()`'s success test is
       inverted — `if (! $newId = $filesTable->createEntity('file', $data))` — so
@@ -1360,6 +1360,32 @@ rediscovered.
     an earlier note here saying so: that provider only ever emitted
     `person_*`/`association_*` resources, never `route/*` ones, so it could not
     have guarded a route.
+- [x] ~~**The per-library ACL rules are invisible to the baseline.**~~ **Fixed
+  2026-08-17.** `Books\Model\LibraryTable` builds a `show`/`checkout`/`administrate`
+  allow per row of `lib_libraries` at request time, so `tools/acl-table.php` — which
+  reads merged config plus plain PDO, deliberately, so it survives a mid-migration
+  `vendor/` — could not list them, and said so in its own output. The consequence was a
+  baseline covering every route guard and **none of the rules that actually gate the
+  library pages**: three libraries granted `checkout` to all 34 effective roles for years
+  and no diff ever showed it. `App\Books\LibraryAclRules` now reproduces the mapping, the
+  tool reports it in a new section, and `test/Integration/LibraryAclRuleDriftTest` fails
+  if the copy and `getRules()` disagree — mutation-checked, not merely written.
+  - The general lesson, worth more than the fix: **"this cannot appear in a
+    config-derived snapshot" was stated accurately and then treated as the end of the
+    matter.** A tool that documents its own blind spot still has the blind spot, and a
+    baseline that is confidently silent reads exactly like one that is confidently
+    complete.
+  - Still not covered: `Books\Model\EventTextTable`, the other dynamic rule provider. Its
+    resources are per *event text* rather than per library, so the same reproduction needs
+    a row-count bound before it belongs in a diffable file.
+
+- [ ] **`LibraryOptions` creates dynamic properties**, deprecated on PHP 8.5 and an
+  `Error` in 9. `module/Books/src/Model/LibraryOptions.php:185` assigns
+  `$isPublicallyListed` to an object that declares no such property; it fires once per
+  library on anything that loads the library list, which `LibraryAclRuleDriftTest` made
+  visible. Declare the property — but read the whole class first, because a constructor
+  that assigns from an array rarely has only one.
+
 - [ ] **8 template permission checks name an ACL resource that does not
   exist**, listed in `AclGuardRouteDriftTest::KNOWN_DEAD_PERMISSION_CHECKS`.
   `BjyAuthorize\View\Helper\IsAllowed` answers *false* for an unknown resource

@@ -41,6 +41,13 @@ class PatresGateway
     protected $personListUri;
 
     /**
+     * Validation messages from the last getRemotePerson() call, keyed by field.
+     *
+     * @var array<string, mixed> $lastRemotePersonMessages
+     */
+    protected $lastRemotePersonMessages = [];
+
+    /**
      *
      * @var LoggerInterface $logger
      */
@@ -128,8 +135,31 @@ class PatresGateway
      * @param number $personId
      * @param array $options
      */
-    public function importRemotePerson($personId, $options = [])
+    /**
+     * Copy a person from the Patres database into sch_persons.
+     *
+     * `$overwroteExisting` is set to true when an already-imported row was found and
+     * its fields were replaced with the remote ones, false when a new row was created.
+     * That distinction used to be invisible — the branch below carried
+     * `//@todo warn the user that existing data will be overwritten` and the caller
+     * reported both outcomes as "Person successfully imported." A re-import is a
+     * legitimate way to refresh a record, so this reports rather than refuses; the
+     * point is that whoever triggered it is told which of the two happened.
+     *
+     * Worth knowing before treating the overwrite as a hazard: it is not reachable
+     * from the checkout form. getSchoenstattPersonFromPatresPersonId() only calls this
+     * after getPersonInSchoenstattTable() missed, and that method runs the *identical*
+     * searchPersons() query as the check below — so a miss there is a miss here, and
+     * the create branch is the one that runs. The overwrite belongs to
+     * AdminController::importFatherAction(), which is sch_administrator only.
+     *
+     * @param number $personId
+     * @param array $options
+     * @param bool $overwroteExisting set by reference; see above
+     */
+    public function importRemotePerson($personId, $options = [], &$overwroteExisting = false)
     {
+        $overwroteExisting = false;
         if (false === $personData = $this->getRemotePerson($personId)) {
             return false;
         }
@@ -145,10 +175,10 @@ class PatresGateway
             true
         ))
         ) {
-            //@todo warn the user that existing data will be overwritten
             $currentPerson = current($currentPersonList);
             $currentPersonId = $currentPerson['personId'];
             $table->updateEntity('person', $currentPerson['personId'], $personData);
+            $overwroteExisting = true;
             return $currentPersonId;
         } else {
             $newId = $table->createEntity('person', $personData);
@@ -204,6 +234,7 @@ class PatresGateway
                 . '\' failed. No information returned.');
         }
         $person = $data['data'];
+        $this->lastRemotePersonMessages = [];
         if (isset($person['bishopDate'])) {
             $person['personTags'] = 'bishop';
         } elseif (isset($person['priestDate'])) {
@@ -218,10 +249,37 @@ class PatresGateway
         if ($inputFilter->isValid()) {
             $return = $inputFilter->getValues();
             return $return;
-        } else {
-            //@todo find a way to log this
+        }
+
+        // Was `//@todo find a way to log this` until 2026-08-17, and the silence cost
+        // more than a log line usually does: this is the ONLY way importRemotePerson()
+        // returns false, and AdminController reported that as "Person already exists in
+        // the database." So the one thing an administrator was ever told about a failed
+        // import was both wrong and unactionable. Keep the messages for the caller as
+        // well as logging them — the person doing the import is the person who can ask
+        // Patres to correct the record.
+        $this->lastRemotePersonMessages = $inputFilter->getMessages();
+        $logger = $this->getLogger();
+        if (isset($logger)) {
+            $logger->error(sprintf(
+                'Person %s from Patres failed validation and was not imported. Invalid fields: %s',
+                $personId,
+                implode(', ', array_keys($this->lastRemotePersonMessages))
+            ));
         }
         return false;
+    }
+
+    /**
+     * Why the last getRemotePerson() call rejected the record, as an InputFilter
+     * message array keyed by field name. Empty when the last call succeeded or was
+     * never made.
+     *
+     * @return array<string, mixed>
+     */
+    public function getLastRemotePersonMessages(): array
+    {
+        return $this->lastRemotePersonMessages;
     }
 
     /**

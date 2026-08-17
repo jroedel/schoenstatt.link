@@ -13,6 +13,7 @@ use Laminas\View\Model\ViewModel;
 use Laminas\Mvc\Controller\AbstractActionController;
 use JTranslate\Model\TranslationsTable;
 use JTranslate\Controller\Plugin\NowMessenger;
+use JTranslate\I18n\TranslatableMessage;
 use Schoenstatt\Service\PatresGateway;
 use SionModel\Service\ProblemService;
 use Schoenstatt\Form\ImportFatherForm;
@@ -88,9 +89,27 @@ class AdminController extends AbstractActionController
             $form->setData($data);
             if ($form->isValid()) { //here the sent personId will be checked against the haystack
                 $personId = $form->getData()['personId'];
-                if (false === $this->patresGateway->importRemotePerson($personId)) {
+                //Three outcomes, not two. Until 2026-08-17 this reported `false` as
+                //"Person already exists in the database." — which it never meant: false
+                //comes back only when the record from Patres fails the person input
+                //filter, and existing records are updated rather than refused. So the
+                //one message an administrator ever got about a failed import named the
+                //wrong cause and offered nothing to act on. The overwrite was the
+                //opposite problem: it succeeded silently under "successfully imported".
+                $overwroteExisting = false;
+                $result = $this->patresGateway->importRemotePerson($personId, [], $overwroteExisting);
+                if (false === $result) {
+                    $fields = array_keys($this->patresGateway->getLastRemotePersonMessages());
                     $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_ERROR)
-                        ->addMessage('Person already exists in the database.');
+                        ->addMessage(new TranslatableMessage(
+                            'The record for this person in Patres could not be imported because it '
+                            . 'is not valid. Fields at fault: %s. Ask Patres to correct it, then try again.',
+                            [$fields === [] ? '(none reported)' : implode(', ', $fields)]
+                        ));
+                } elseif ($overwroteExisting) {
+                    $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_SUCCESS)
+                        ->addMessage('This person had already been imported. Their record has been '
+                            . 'refreshed from Patres, replacing what was stored here.');
                 } else {
                     //$form = $sm->get('Schoenstatt\Form\ImportFatherForm'); why was this here?
                     $this->nowMessenger()->setNamespace(NowMessenger::NAMESPACE_SUCCESS)
