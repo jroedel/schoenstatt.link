@@ -253,10 +253,11 @@ $ported(
 // signed-in visitor holding neither gets 403. Measured in
 // test/Smoke/AdminAuthorizationSmokeTest.
 //
-// Only `/admin` itself. Its laminas children — /admin/import-father,
-// /admin/maintenance, /admin/literature-maintenance, /admin/translations — are
-// separate routes with their own guards, and a literal path with no trailing-slash
-// variant is what leaves every one of them falling through to `legacy`.
+// Only `/admin` itself. Its laminas children — /admin/import-father and
+// /admin/translations — are separate routes with their own guards, and a literal path
+// with no trailing-slash variant is what leaves every one of them falling through to
+// `legacy`. (/admin/maintenance and /admin/literature-maintenance were two more until
+// 2026-08-17, when both were retired rather than ported — see docs/BACKLOG.md.)
 $ported(
     'admin',
     '/admin',

@@ -322,6 +322,74 @@ rediscovered.
   `prime-authors`. `data/import/` is gitignored, so the 12 MB JSON was never deployed and
   nothing needed removing from the server.
 
+- [x] ~~**`/admin/literature-maintenance` and its six children, and
+  `/admin/maintenance`.**~~ **Retired 2026-08-17**, eight routes, after measuring what
+  each one would still do. They were the 2020 migration that turned imported
+  ("data-sourced") publication rows into first-class ones, plus one unrelated person
+  sweep. Measured in the capsule against a production export days old:
+
+  | sweep | rows today |
+  |---|---|
+  | `copy-data-sourced-row-to-first-class-citizen` | **0** |
+  | `update-main-publication-ids` | **0** |
+  | `update-translated-from-publication-id` | 1 |
+  | `update-library-book-publication-references` | 2 |
+  | `update-cover-images` | 20 files, 4 publications |
+  | `list-merged-publication-id-map` | read-only report, 3,630 entries |
+
+  - **The bulk phase was finished and the residue was one publication.** All three
+    database rows pointed at 1426 → 10249 ("Wachstum im höheren Gebetsleben"). The
+    2,333 publications that still carry a `DataSource` are *not* unfinished work: they
+    sit at `IsAwaitingMerge = 1`, which the bulk sweep skips by design, and a human
+    merges them one at a time through `publication-copy-to-main-corpus`, which stays.
+    `database/db8.2.sql` follows the merge in all three reference columns, written as a
+    join on the merge map rather than against the three ids measured that day, so it is
+    correct on whatever production actually holds.
+  - **`update-cover-images` would have quietly overwritten two publications' covers.**
+    `rename()` clobbers its destination without a word, and the sweep did two opposite
+    things at once. For 10249 and 10186 it moves a cover onto a publication that has
+    **none** — a visible defect, since both controllers resolve covers by
+    `file_exists('public/covers/<id>-400px.jpg')`, so those two pages show no picture
+    while the file sits on disk under the pre-merge id. For 10203 and 10185 it would
+    replace a cover that already exists with a **different image** (verified not a
+    re-encoding: 1672-2000px.jpg is 484,373 bytes against 10185-2000px.jpg's 326,012).
+    `tools/fix-merged-covers.sh` does the first pair and refuses the second; deciding
+    between those two pairs wants someone who can look at them. **One-off — delete the
+    script once it has run against production.** Covers are gitignored and live in
+    `shared/public/covers`, so no deploy can carry this: it is `--apply` over SSH.
+  - **`/admin/maintenance` was the dangerous one.** It stripped the `priest` tag from
+    any person without a `PriestDate`, on a 2020 comment's premise that "so far, all
+    priests should have priestDate". False today: of 15 people carrying the tag, **5
+    have no date**, so a real run removed a correct-looking tag from five named people.
+    Nothing linked to it — it was absent from both admin-index lists — so it was
+    reachable only by typing the URL, and only by `administrator`.
+  - The lesson is the same one `/en/associations/do-work` taught: the question that
+    dissolves these is *what would it do if I ran it today*, and it goes unasked
+    precisely because a simulate-by-default page never hurt anybody.
+
+- [ ] **Upload a book cover from the site.** There is no working way to do it, and this
+  is the request that came out of the retirement above. Whoever picks it up starts from
+  three separate defects, not one:
+  - **`publication-upload-cover` exists and is dead three ways over** — see the
+    unguarded-routes item under "Config rot" for the detail. No guard entry; an inverted
+    success test in `uploadCoverAction()`; and `bookCoverFileId`, the column it writes,
+    does not exist in `sch_publications` and is hardcoded to `null` in the row
+    projection. Granting the route a role fixes none of that.
+  - **Display and storage disagree about what a cover *is*.** Both readers resolve one
+    by filename convention — `public/covers/<publicationId>-400px.jpg` in
+    `App\Controller\PublicationController`, `-80px.jpg` in
+    `App\Controller\LiteratureController` — while the upload path stores a row in
+    `sch_files` and tries to point at it by id. Only one of those can be the design.
+    The convention is what actually works today and what `public/cover-thumbnails.sh`
+    produces, so the burden is on the file-row approach to justify itself.
+  - **The five sizes are a pipeline, not an upload.** A publication's cover is
+    `<id>.jpg` plus `-80px`, `-200px`, `-400px` and `-2000px` variants; an upload that
+    writes one file gives the index no thumbnail. Whatever gets built has to run the
+    resize, and `public/cover-thumbnails.sh` is the existing answer to that.
+  - Worth doing on the **Symfony** side. It is a form route, the form layer exists, and
+    a file upload is one of the few places where reproducing laminas behaviour buys
+    nothing.
+
 - [x] ~~**`trim-titles` still changes data on a GET.**~~ **Retired 2026-08-14**, after
   measuring where the titles it cleaned actually came from. The question asked was whether it
   guards against a live ingress or is archaic, and the answer is unambiguous:
@@ -1209,13 +1277,44 @@ rediscovered.
     than just deleting the names: a stale to-do reads exactly like a live one,
     and the only way to tell was to ask the router.
   - **Re-measured 2026-08-14 after the dead-code sweep: 22 names, 11 of them real
-    endpoints** — down from 29/18. The eleven left all need a *guard entry*
-    rather than deletion, and none of them is dead config.
-  - **4 answer themselves from their siblings** and need no product decision —
+    endpoints** — down from 29/18. ~~The eleven left all need a *guard entry*
+    rather than deletion, and none of them is dead config.~~
+  - **That claim is wrong, measured 2026-08-17, and the way it was wrong is the
+    point.** Five of the six entries below were about to be written when a spot
+    check on one of them found it broken; checking the rest found four more.
+    **Granting a role is not the last step — it is the step that reveals whether
+    anything is behind the door.** A route with no guard entry is *silently*
+    denied, so nothing downstream of the guard has ever executed and nothing has
+    ever failed. Sibling agreement says who *should* be allowed in; it says
+    nothing about whether there is a page to see. This is exactly the shape
+    `EventFeatureStateTest` was written to protect against — "adding a guard entry
+    alone converts a clean default-deny into a 500" — and the note above talks
+    itself out of applying that lesson to its own list. **Verify the action, the
+    template and the form before granting anything.**
+  - ~~**4 answer themselves from their siblings** and need no product decision —
     every neighbouring route in the same tree already agrees:
     `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` → `lib_user`
     (as `checkouts/library`, `…/current`, `…/overdue` all are);
-    `publication-upload-cover` → `pub_moderator` (as `publications/create`).
+    `publication-upload-cover` → `pub_moderator` (as `publications/create`).~~
+    **All four are dead config. Do not grant them.**
+    - `checkouts`, `checkouts/checkout`, `checkouts/checkout/edit` resolve to
+      `SionController`'s generic `indexAction`/`showAction`/`editAction`, which
+      render from the entity spec — and in the `checkout` spec `index_route`,
+      `index_template`, `show_action_template`, `edit_action_form` and
+      `edit_action_template` are **all commented out**. There is nothing to
+      render. (`CheckoutsController` itself defines only `create`, `library`,
+      `checkin` and `massCheckout`, which is what made this look like dead config
+      at first glance; the base class is why it is not *quite* that, and why the
+      only reliable check is the entity spec.)
+    - `publication-upload-cover` is dead **three** ways over, and any one of them
+      is enough. (1) No guard entry. (2) `uploadCoverAction()`'s success test is
+      inverted — `if (! $newId = $filesTable->createEntity('file', $data))` — so
+      it redirects on failure and throws `Error uploading file.` on success. (3)
+      The column it writes does not exist: `bookCoverFileId` is hardcoded to
+      `null` in `PublicationsTable`'s row projection and `sch_publications` has no
+      `Cover`/`File` column at all, so `updateEntity()` would discard it. Granting
+      `pub_moderator` would produce a page that looks like it works and silently
+      loses every upload. See the cover-upload item below.
   - **`sign-in-no-cookies` is already reachable, by accident of listener
     priority** — worth writing down because the obvious reading is wrong. It
     looks like the cookieless sign-in explainer must be broken under
@@ -1228,9 +1327,21 @@ rediscovered.
     direct navigation works and so reachability stops depending on two
     listeners' relative priorities — but it is a robustness fix, not a live
     bug, and it should not be described as one.
-  - **`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
+  - ~~**`libraries/library/delete` → `lib_administrator`**, deliberately *not* the
     `lib_user` its siblings carry: it is the destructive one in that tree and
-    `lib_administrator` already exists for exactly this.
+    `lib_administrator` already exists for exactly this.~~ **Also dead config,
+    measured 2026-08-17.** It resolves to `SionController::deleteAction()`, which
+    is gated on the entity spec's `enable_delete_action` — commented out for the
+    `library` entity, along with `delete_action_acl_resource`,
+    `delete_action_acl_permission` and `delete_action_redirect_route`. The role
+    choice is still the right one *if* the feature is ever finished; it is the
+    "needs only a guard entry" part that was false.
+  - **`sign-in-no-cookies` is the one that really does need only a guard entry**,
+    re-checked 2026-08-17: `IndexController::signInNoCookiesAction()` exists and
+    `module/Application/view/application/index/sign-in-no-cookies.phtml` renders
+    it. It is also the one that is already reachable, per the note below — so the
+    only route in this list that is safe to grant is the one where granting
+    changes the least.
   - ~~**`api-v1/libraries/books/patch-list` → `guest, user`**~~ — **moot
     2026-08-14: the route was deleted with the rest of `/api/v1`.** It was one of
     the two unguarded routes among the 26, which is why the ACL baseline's

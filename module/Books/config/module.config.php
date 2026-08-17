@@ -304,83 +304,10 @@ return [
     ],
     'router' => [
         'routes' => [
-            'admin' => [
-                'child_routes' => [
-                    'literature-maintenance' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/literature-maintenance',
-                            'defaults' => [
-                                'controller' => Controller\PublicationsController::class,
-                                'action'     => 'migrateDataSourceStructure',
-                            ],
-                        ],
-                        'may_terminate' => true,
-                        'child_routes' => [
-                            'copy-data-sourced-row-to-first-class-citizen' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/copy-data-sourced-row-to-first-class-citizen',
-                                    'defaults' => [
-                                        'controller' => Controller\PublicationsController::class,
-                                        'action'     => 'copyDataSourcedRowToFirstClassCitizen',
-                                    ],
-                                ],
-                            ],
-                            'update-main-publication-ids' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/update-main-publication-ids',
-                                    'defaults' => [
-                                        'controller' => Controller\PublicationsController::class,
-                                        'action'     => 'updateMainPublicationIds',
-                                    ],
-                                ],
-                            ],
-                            'update-translated-from-publication-id' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/update-translated-from-publication-id',
-                                    'defaults' => [
-                                        'controller' => Controller\PublicationsController::class,
-                                        'action'     => 'updateTranslatedFromPublicationIdReferences',
-                                    ],
-                                ],
-                            ],
-                            'update-cover-images' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/update-cover-images',
-                                    'defaults' => [
-                                        'controller' => Controller\PublicationsController::class,
-                                        'action'     => 'updateCoverImages',
-                                    ],
-                                ],
-                            ],
-                            'update-library-book-publication-references' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/update-library-book-publication-references',
-                                    'defaults' => [
-                                        'controller' => Controller\PublicationsController::class,
-                                        'action'     => 'updateLibraryBookPublicationReferences',
-                                    ],
-                                ],
-                            ],
-                            'list-merged-publication-id-map' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/list-merged-publication-id-map',
-                                    'defaults' => [
-                                        'controller' => Controller\PublicationsController::class,
-                                        'action'     => 'listMergedPublicationIdMap',
-                                    ],
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
+            // The `admin` route itself belongs to the Schoenstatt module. Books used to
+            // graft `literature-maintenance` and its six children onto it — the 2020
+            // data-source migration — retired 2026-08-17 once measuring showed the
+            // migration had finished. See database/db8.2.sql.
             'publication' => [
                 'type'    => Segment::class,
                 'options' => [
@@ -2495,32 +2422,6 @@ return [
         ],
         'guards' => [
             Route::class => [
-                ['route' => 'admin/literature-maintenance', 'roles' => ['pub_administrator']],
-                [
-                    'route' => 'admin/literature-maintenance/copy-data-sourced-row-to-first-class-citizen',
-                    'roles' => ['pub_administrator']
-                ],
-                [
-                    'route' => 'admin/literature-maintenance/update-main-publication-ids',
-                    'roles' => ['pub_administrator']
-                ],
-                [
-                    'route' => 'admin/literature-maintenance/update-translated-from-publication-id',
-                    'roles' => ['pub_administrator']
-                ],
-                [
-                    'route' => 'admin/literature-maintenance/update-cover-images',
-                    'roles' => ['pub_administrator']
-                ],
-                [
-                    'route' => 'admin/literature-maintenance/update-library-book-publication-references',
-                    'roles' => ['pub_administrator']
-                ],
-                [
-                    'route' => 'admin/literature-maintenance/list-merged-publication-id-map',
-                    'roles' => ['pub_administrator']
-                ],
-
                 ['route' => 'publications', 'roles' => ['guest', 'user']],
                 ['route' => 'publications/prime-authors', 'roles' => ['pub_administrator']],
                 ['route' => 'publications/search', 'roles' => ['guest', 'user']],
