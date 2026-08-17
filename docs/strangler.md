@@ -94,9 +94,14 @@ by asking whether `_route` is anything other than `legacy`:
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
-As of batch 6, **110 of the 188 laminas routes are served by Symfony** (55 distinct paths,
-each declared twice for its locale prefix), of which 80 are ACL-checked and 30 declared
-open; `docs/acl-rules.md` carries the count and the guard each one is checked against.
+Re-measured 2026-08-17 with `tools/acl-table.php`: there are **161 Symfony-served routes**
+(134 ACL-checked, 27 declared open — most paths are declared twice, once with a locale
+prefix and once without), and they shadow **70 of the 144 laminas routes**, leaving 74 on
+laminas. `docs/acl-rules.md` carries the counts and the guard each route is checked against,
+and is the thing to trust: this paragraph said "110 of the 188 … as of batch 6" until
+2026-08-17, four batches and several deletions out of date, and the two numerators were not
+even counting the same thing — 110 was a count of Symfony routes, 188 of laminas ones. Cite
+the tool, not this line.
 
 `config/symfony/routes.php` **is** the migration status of the site, read top to
 bottom: `UrlMatcher` takes the first route that matches, so everything declared

@@ -892,16 +892,12 @@ return [
                             ],
                         ],
                     ],
-                    'maintenance' => [
-                        'type'    => Literal::class,
-                        'options' => [
-                            'route'    => '/maintenance',
-                            'defaults' => [
-                                'controller' => Controller\AdminController::class,
-                                'action'     => 'maintenance',
-                            ],
-                        ],
-                    ],
+                    // `maintenance` lived here until 2026-08-17. It stripped the `priest`
+                    // tag from anyone without a PriestDate, on the premise — stated in a
+                    // 2020 comment — that "so far, all priests should have priestDate".
+                    // That premise is false on today's data: of 15 people carrying the
+                    // tag, 5 have no date, so a real run removed a correct tag from five
+                    // named people. Nothing linked to it. See docs/BACKLOG.md.
                 ],
             ],
             'schoenstatt' => [
@@ -1789,7 +1785,6 @@ return [
                 ['route' => 'shrines/submitting-photos', 'roles' => ['user', 'guest', null]],
                 ['route' => 'wayside-shrines', 'roles' => ['user', 'guest', null]],
                 ['route' => 'admin/import-father', 'roles' => ['sch_administrator']],
-                ['route' => 'admin/maintenance', 'roles' => ['administrator']],
                 ['route' => 'assignments/assignment', 'roles' => ['sch_user', 'sch_basic']],
                 ['route' => 'assignments/assignment/edit', 'roles' => ['sch_moderator']],
                 ['route' => 'assignments/assignment/delete', 'roles' => ['sch_general_moderator']],
