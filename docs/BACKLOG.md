@@ -1427,17 +1427,29 @@ Background and measurements: [caching.md](caching.md).
     `apcu_clear_cache()` left all 21 web-segment entries untouched. Only an
     HTTP request into the web SAPI can flush it, which is what
     `cache:flush-persistent` does.
-- [ ] Port `/en/associations/do-work` to a console command. It is the last
-  deploy hook that is still a `wget` (now header-authenticated, so it is no
-  longer a leak — just the odd one out). Unlike the cache flush this one is
-  genuinely CLI work: `SchoenstattTable::autoFillTimeZones()` and
-  `updateAssociationMd5s()` touch only the database. Needs an acting-user
-  decision first — `ActingUserProviderInterface` has no session identity on
-  CLI.
-  - **There is now a worked precedent for exactly that**: `books:send-notices`
-    (2026-08-17) does the same job for overdue notices and settles the acting-user
-    question with `setActingUserId(null)` — the send is the system's, not a
-    person's. Copy that rather than re-deciding it.
+- [x] ~~Port `/en/associations/do-work` to a console command — the last deploy
+  hook that is still a `wget`.~~ **Deleted instead, 2026-08-17.** The port was
+  scoped, an acting-user decision was worked out, and then measuring the two
+  methods showed there was nothing to port:
+  - `autoFillTimeZones()` fills a zone only where a country has exactly one.
+    **0 of the 54** candidate associations qualify (28 multi-zone, 26 with no zone
+    list). It returned `void` while the endpoint reported it as a value, so its
+    result key was permanently `null`, and it `var_dump()`ed into the response —
+    including a hardcoded `'CL' === $country` debug branch — on every deploy.
+  - `updateAssociationMd5s()` wrote five columns **nothing read**. It was
+    compensating for a bug in the association save path, which computed the digest
+    with no locale and so wrote five identical values where the sweep wrote five
+    distinct ones. 490 of 498 rows held the sweep's version; the 8 exceptions were
+    rows edited since the last deploy. Neither side ever errored, which is why a
+    disagreement this total stayed invisible.
+  - Also removed: the five `SchemaOrgJsonMd5V1*` columns (`database/db8.1.sql`,
+    `@phase: post` — the previous release still SELECTs them during the pre phase),
+    and `getAssociationListSchemaV1()`/`V2()` plus
+    `MusicTable::getCompositionListSchemaV1()`, three methods with no callers that
+    returned those digests to the v1/v2 APIs retired on 2026-08-14.
+  - The lesson worth keeping: this sat on the backlog as "port the last hook" for
+    weeks. The question that dissolved it — *does anything read the output?* — was
+    never asked, because the hook ran on every deploy and never failed.
 - [x] ~~phploy upstream PRs (banago/PHPloy): the directory-purge bug… evaluate
   Deployer…~~ **Moot 2026-08-15: phploy is retired.** `tools/deploy.sh` replaces
   it with rsync into release directories and a symlink swap — so the purge bug,

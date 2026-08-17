@@ -214,26 +214,4 @@ class AssociationsController extends SionController
         }
         return $view;
     }
-
-    public function doWorkAction()
-    {
-        $config = $this->config['sion_model'];
-        $this->assertApiKeyIn(
-            isset($config['api_keys']) && is_array($config['api_keys']) ? $config['api_keys'] : []
-        );
-        /**
-         * @var \Schoenstatt\Model\SchoenstattTable $table
-         */
-        $table = $this->getSionTable();
-        //Both results are reported. This used to assign `$result` twice, so the time-zone
-        //sweep ran and its result was overwritten before anything could read it — the
-        //endpoint said it had done one job when it had done two, and a time zone it failed
-        //to fill was indistinguishable from one it filled.
-        return [
-            'result' => [
-                'timeZones'        => $table->autoFillTimeZones(),
-                'associationMd5s'  => $table->updateAssociationMd5s(),
-            ],
-        ];
-    }
 }
