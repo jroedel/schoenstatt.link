@@ -99,7 +99,8 @@ class SionModelSmokeTest extends SmokeTestCase
      */
     public function testCacheStatusReportsApcuOccupancy(): void
     {
-        $response = $this->get('/en/sm/cache-status?key=' . self::DEV_API_KEY);
+        //header, not ?key= — the query-string channel was dropped 2026-08-17
+        $response = $this->request('GET', '/en/sm/cache-status', ['X-Api-Key: ' . self::DEV_API_KEY]);
 
         $this->assertSame(200, $response['status'], 'cache-status should render with the dev api key');
         $this->assertStringContainsString('json', $response['contentType']);

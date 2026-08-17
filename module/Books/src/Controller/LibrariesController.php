@@ -331,13 +331,12 @@ class LibrariesController extends SionController
         //['user', 'guest'] (module.config.php), so this check is the ONLY
         //protection on the action — it sends real mail to real borrowers.
         //
-        //assertApiKeyIn() rather than a local in_array(): it accepts the key in
-        //an X-Api-Key header, which a query string cannot be because ?key= is
-        //written verbatim to the access log on every call. It also compares with
-        //hash_equals and refuses a non-string, so ?key[]= cannot reach the
-        //comparison. This was the last query-only key check in the codebase;
-        //keeping it here would have left it behind when the ?key= fallback is
-        //dropped from the trait (docs/BACKLOG.md).
+        //assertApiKeyIn() rather than a local in_array(): the key must arrive in
+        //an X-Api-Key header, because ?key= is written verbatim to the access log
+        //on every call. It also compares with hash_equals and refuses a
+        //non-string. This was the last query-only key check in the codebase, and
+        //converting it is what made 2026-08-17's removal of the ?key= fallback
+        //possible without leaving one endpoint behind.
         $resourceId = 'library_' . $this->getLibraryId();
         if (! $this->isAllowed($resourceId, 'administrate')) {
             $this->assertApiKeyIn($apiKeys);
