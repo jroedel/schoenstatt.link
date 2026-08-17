@@ -1001,13 +1001,33 @@ segment** — measured by polling `/en/sm/cache-status` and getting three differ
 uptimes. A reset request only clears the segment that served it, so a partial reset
 looks like "some pages work and some don't".
 
-Step 10 therefore writes a single-use, randomly-named PHP file into the new release
-and requests it until several consecutive hits report an already-fresh segment. A
-new path has no cache entry anywhere, so it always compiles from disk. It cannot be
-an ordinary application endpoint: a pool serving the *previous* release resolves
-routes against that release's code, which need not have the endpoint at all. The
-file is deleted afterwards, including on failure, because a stray one is a
-publicly-reachable cache flush.
+Step 10 therefore writes a single-use, randomly-named PHP file into **every**
+release directory and requests it until several consecutive hits report an
+already-fresh segment. A new path has no cache entry anywhere, so it always
+compiles from disk. It cannot be an ordinary application endpoint: a pool serving
+the *previous* release resolves routes against that release's code, which need not
+have the endpoint at all. The file is deleted afterwards, including on failure,
+because a stray one is a publicly-reachable cache flush.
+
+Two details there were bought with failed deploys, and both look like
+over-engineering until you have watched them fail:
+
+- **It writes into every release, not just the new one.** Which directory the web
+  resolves is not something a deploy script should have to be right about, and one
+  400-byte file per release removes the question.
+- **It waits, up to 60 s, for the helper to become reachable before treating a 404
+  as failure.** A freshly created file is not instantly visible to the web server
+  here. On 2026-08-17 the helper was written and requested inside four seconds,
+  answered `No input file specified`, and three retries two seconds apart were
+  still too eager — while six minutes later the identical file at the identical
+  path served 25 out of 25 requests.
+
+The build step also breaks `public/index.php` out of its hardlink (`cp -p` then
+`mv -f`). rsync `--link-dest` hardlinks unchanged files across releases, and that
+file had eight links to one inode with one shared mtime — so if OPcache caches it
+under the unchanging docroot path, `validate_timestamps` compares an mtime that is
+identical in every release and can never fire. Note a plain `touch` would be
+*wrong*: it moves the mtime on the shared inode, i.e. on every release at once.
 
 Step 11 is the check that makes step 10 honest. `/_health` reports the release's
 `.revision` when given `DEPLOY_API_KEY`, and it is served by the Symfony kernel
