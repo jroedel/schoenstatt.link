@@ -204,7 +204,11 @@ reset_opcode_caches() {
     local release_abs=$1 rel=$2 token src url i fresh=0 misses=0 body status
 
     token=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
-    RESET_FILE="$release_abs/public/zz-opcache-$token.php"
+    # A glob, because the helper is written into EVERY release, not just this one.
+    # Which directory the web server resolves the docroot to is not something this
+    # script should have to be right about, and on 2026-08-17 being wrong about it
+    # cost an afternoon. One 400-byte file per release removes the question.
+    RESET_FILE="$RELEASES/*/public/zz-opcache-$token.php"
     url="$DEPLOY_BASE_URL/zz-opcache-$token.php?t=$token"
 
     # Quoted heredoc, then substitute: the shell must not touch a single byte of
@@ -220,12 +224,36 @@ header('Content-Type: text/plain');
 $s = function_exists('opcache_get_status') ? @opcache_get_status(false) : null;
 echo 'age=', is_array($s) ? time() - $s['opcache_statistics']['start_time'] : -1, "\n";
 echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : null, true), "\n";
+echo 'from=', __DIR__, "\n";
 PHPEOF
     )
     # base64 over the wire for the same reason: no quoting, no locale, no newline
     # translation between here and the remote shell.
-    printf '%s\n' "${src//__TOKEN__/$token}" | base64 | rsh "base64 -d > $RESET_FILE" \
+    printf '%s\n' "${src//__TOKEN__/$token}" | base64 \
+        | rsh "d=\$(mktemp) && base64 -d > \$d && for r in $RELEASES/*/public; do cp \$d \$r/zz-opcache-$token.php; done && rm -f \$d" \
         || { warn "could not write the opcache reset helper"; RESET_FILE=''; return 1; }
+
+    # Wait for the web server to SEE it before judging a 404. This is the whole
+    # lesson of the 14:33 deploy: the helper was written and requested inside four
+    # seconds, answered "No input file specified", and three retries two seconds
+    # apart were still far too eager. Six minutes later the identical file at the
+    # identical path served every one of 25 requests. A freshly created file is not
+    # instantly visible to Apache here, and no amount of cleverness substitutes for
+    # waiting — so wait, visibly, and only then start resetting.
+    local waited=0
+    until curl --silent --show-error --max-time 15 -o /dev/null -w '%{http_code}' "$url" 2>/dev/null | grep -q '^200$'; do
+        waited=$((waited + 3))
+        if [ "$waited" -gt 60 ]; then
+            warn "the reset helper never became reachable after ${waited}s."
+            warn "Last response:"
+            printf '        %s\n' "$(curl --silent --max-time 15 -w ' [http %{http_code}]' "$url" 2>&1 | head -c 200 | tr '\n' '|')" >&2
+            rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete by hand."
+            RESET_FILE=''
+            return 1
+        fi
+        sleep 3
+    done
+    [ "$waited" -gt 0 ] && dim "helper became reachable after ${waited}s"
 
     # Stop once several consecutive hits all land on an already-fresh segment: that
     # is the observable for "every pool has been through this", without needing to
@@ -626,6 +654,30 @@ ok "tree uploaded"
 printf '%s\n' "$SHA" | rsh "cat > $NEW_ABS/.revision"
 dim ".revision written — SionModel\\Error\\RequestContext reads it, so every recorded"
 dim "exception names the release that produced it (immutable now, unlike phploy's)"
+
+# Give public/index.php an identity of its own.
+#
+# rsync --link-dest hardlinks every unchanged file to the previous release, and
+# index.php has not changed since 2026-08-07 — measured on the server, EIGHT links
+# to one inode with one mtime shared across all eight releases. It is also the one
+# file reached through a path that never changes, because the docroot symlink is
+# what varies underneath it. So OPcache can cache it under a stable path, and
+# `validate_timestamps` compares an mtime that is byte-identical in every release:
+# the check cannot fire, and the previous release keeps executing after the swap.
+#
+# `touch` alone would be actively wrong — it would move the mtime on the SHARED
+# inode, i.e. on every release at once. Breaking the link is the point: copy, then
+# rename over, which leaves a new inode with a current mtime and touches nothing
+# else. The release is not serving yet, so the rename is unobserved.
+#
+# Stated honestly: this is reasoned insurance, not a proven fix. Whether OPcache
+# here keys on the symlink path or the resolved one was never established, and if
+# it is the resolved path this changes nothing at all. It costs one copy of a 3 KB
+# file per deploy, which is worth paying for a mechanism this expensive to be wrong
+# about. See docs/incident-2026-08-17-stale-opcache.md.
+rsh "cd $NEW_ABS/public && cp -p index.php index.php.tmp && mv -f index.php.tmp index.php && touch index.php" \
+    || warn "could not break the index.php hardlink; a stale opcode cache is likelier."
+dim "public/index.php unlinked from the previous release and re-stamped"
 
 step "Linking shared state into the release"
 # Data-driven on purpose: anything dropped into shared/data/ or shared/public/
