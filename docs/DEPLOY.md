@@ -1003,7 +1003,7 @@ exactly what would transfer, and `-y` still forces past an unusual-run prompt.
 | 4 | **Link shared** | server | `shared/data`, `shared/public`, `shared/config-autoload` symlinked in; `data/config` and `data/cache` created empty, per-release |
 | 5 | **composer install** | server | `--no-dev --optimize-autoloader`, vendor seeded from the previous release |
 | 6 | **Pre-migrations** | local→tunnel | `@phase: pre` against the live database while the OLD code still serves; a failure aborts before the swap |
-| 7 | **Warm** | server | `jtranslate:export-catalogs`, merged-config cache, `sitemap:build --force` — in a tree nothing is serving |
+| 7 | **Warm** | server | `jtranslate:export-catalogs`, `sitemap:build --force` — in a tree nothing is serving. **Not** the merged-config cache; see below |
 | 8 | **Swap** | server | `ln -sfn` + `mv -Tf`: one `rename(2)` |
 | 9 | **Post-swap** | server | `cache:flush-persistent` (APCu) |
 | 10 | **Make the swap visible** | server / local | reset every opcode cache — see below, this is not optional |
@@ -1011,6 +1011,30 @@ exactly what would transfer, and `-y` still forces past an unusual-run prompt.
 | 11b | **Sustained check** | local | only when a `@destructive` migration is pending: three rounds, 45 s apart |
 | 12 | **Post-migrations** | local→tunnel | `@phase: post`, now that the new code is provably the code running |
 | 13 | **Verify** | local | `tools/smoke-prod.sh`; a failure rolls back automatically *unless* a destructive migration makes that worse |
+
+### What "warm" does not include: the merged-config cache
+
+Step 7 warms the translation catalogs and the sitemap. It does **not** warm
+`data/config`, and until 2026-08-17 it printed a line claiming it did.
+
+It cannot. `bin/console` sets `config_cache_enabled = false` deliberately — a test
+run must not write `data/config`, and a CI runner has no writable one — so no
+console command can ever populate it. Measured: clear `data/config`, run a console
+command, still empty; one web request, both files written.
+
+That is fine in practice, and the evidence is on the server. `data/config` is
+per-release, so a stale cache from another release is impossible by construction,
+and the cache appears about 30 seconds after the swap on every completed deploy —
+written by the deploy's own opcode-cache reset, `/_health` probes and smoke run,
+all of which execute the new release before the deploy finishes. No visitor pays
+for it.
+
+The two deploys that aborted at the revision gate are the control group: their
+config cache was written **7–8 minutes** later, at exactly the moment the caches
+were reset by hand and the release first executed anything at all. An empty
+`data/config` is therefore not a fault — it is a reliable sign that **nothing has
+executed that release yet**, which during the 2026-08-17 outage was precisely the
+problem worth noticing.
 
 ### Steps 10 and 11: why a symlink swap is not enough
 

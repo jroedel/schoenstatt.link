@@ -51,6 +51,59 @@ Measured 2026-08-05 against the installed tree and Packagist.
   that will execute the code, so lint and tests on 8.5 are the only thing
   between an 8.5-only fatal and the live site.
 
+## The per-account `php.ini`, and the values we want in it
+
+**A konsoleH PHP version switch does not carry these forward.** The file is
+
+```
+/home/httpd/php85-ini/ourlink/php.ini
+```
+
+— one directory *per PHP version* (`php53-ini` … `php85-ini` all exist on the
+server), so flipping the version in konsoleH silently reinstates that version's
+defaults and every tuned value is gone. This has already happened once. Nothing
+else in the repository records what those values are supposed to be, which is what
+this table is for: after a version flip, diff reality against it.
+
+It is `----r----- root users` — **not writable by the `ourlink` account**. Changing
+anything here is a konsoleH console change or a support ticket, not something a
+deploy can do.
+
+### Current vs wanted
+
+Measured on production 2026-08-17, straight from the live ini and
+`ini_get_all(null, true)`. "Changeable" is the PHP ini access level, which decides
+whether we could set it ourselves instead of asking.
+
+| setting | current | wanted | changeable | why |
+| --- | --- | --- | --- | --- |
+| `opcache.interned_strings_buffer` | `8` | **`32`** | SYSTEM | sits at **89–99% of 8 MiB** (77,504 strings) on an ordinary day. Once full, OPcache stops interning and stores duplicate strings per script. Nothing to do with whether the app fits — that is `memory_consumption`, at 24.6% |
+| `opcache.revalidate_path` | `0` | **`1`** | ALL | with 0, OPcache never re-resolves a symlinked path, so a release swap keeps executing the previous release. Root cause of [the 2026-08-17 outage](incident-2026-08-17-stale-opcache.md) |
+| `apc.ttl` | `0` | **non-zero** | SYSTEM | with 0 a failed allocation expunges the entire segment instead of evicting. Asked for in the same ticket as the `shm_size` raise and **did not land**; the raise did |
+| `opcache.memory_consumption` | `128` | keep | SYSTEM | 24.6% used, 0 wasted, no OOM restarts. No pressure |
+| `opcache.max_accelerated_files` | `10000` | keep | SYSTEM | prime-adjusted to 16,229 slots, 13.6% used |
+| `opcache.validate_timestamps` | `1` | keep | ALL | **load-bearing**: at 0 every deploy needs `pkill -u ourlink -f php`. See [DEPLOY.md](DEPLOY.md) |
+| `opcache.revalidate_freq` | `2` | keep | ALL | deploys pick up changed files within seconds |
+| `opcache.use_cwd` | `1` | keep | SYSTEM | keeps same-named files in different releases from colliding in the cache |
+| `apc.shm_size` | `256M` | keep | SYSTEM | raised from 32M on 2026-08-11; both historical oversized-item offenders now fit |
+| `memory_limit` | `512M` | keep | ALL | `public/index.php` also sets it, so a reverted ini does not immediately show |
+
+Two of these are `PHP_INI_ALL`, which means a `.user.ini` in the docroot could set
+them without a ticket — `.htaccess` cannot, because `php_value` is a mod_php
+directive and this host runs CGI/FastCGI. Prefer the ini anyway for
+`revalidate_path`: an ini value applies before `public/index.php` is compiled, and
+that file is exactly the one that goes stale.
+
+### Verifying
+
+`/en/sm/cache-status` (maintenance key) reports `internedPercentUsed`,
+`memoryPercentUsed`, `keysPercentUsed`, `validateTimestamps` and `revalidateFreq`
+live, so a change can be confirmed without SSH. `tools/smoke-prod.sh` warns on APCu
+saturation and on any OPcache restart. For the access level of a setting rather
+than its value, `ini_get_all(null, true)` over SSH — note `ini_get_all('Zend
+OPcache')` returns nothing, and the `$details` argument must be `true` or there is
+no `access` field to read.
+
 ## The ceiling
 
 Thirteen locked packages exclude PHP 8.5 — twelve installed by `--no-dev`, the
