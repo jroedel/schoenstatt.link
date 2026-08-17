@@ -201,37 +201,76 @@ build_smoke_env() {
 # endpoint at all.
 RESET_FILE=''
 reset_opcode_caches() {
-    local release_abs=$1 rel=$2 token i fresh=0 out
+    local release_abs=$1 rel=$2 token src url i fresh=0 misses=0 body status
+
     token=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
     RESET_FILE="$release_abs/public/zz-opcache-$token.php"
+    url="$DEPLOY_BASE_URL/zz-opcache-$token.php?t=$token"
 
-    # The token is in the filename AND checked inside, so a guessed path is not
-    # enough. It lives for the length of this step; on_exit removes it even if the
-    # deploy dies in between, because a forgotten reset endpoint is a free
-    # cache-flush for anyone who finds it.
-    rsh "cat > $RESET_FILE" <<PHPEOF || { warn "could not write the opcache reset helper; skipping"; RESET_FILE=''; return 1; }
+    # Quoted heredoc, then substitute: the shell must not touch a single byte of
+    # this PHP. The first version of this used an UNQUOTED heredoc so the token
+    # could interpolate, and getting `\$s` right by hand across bash-then-ssh is
+    # the kind of thing that looks fine and ships a parse error. It did, twice on
+    # 2026-08-17 — once here, once in a hand-written helper during the incident,
+    # where 30 requests to a 500 were mistaken for 30 successful resets.
+    src=$(cat <<'PHPEOF'
 <?php
-if (!hash_equals('$token', \$_GET['t'] ?? '')) { http_response_code(404); exit; }
+if (!hash_equals('__TOKEN__', $_GET['t'] ?? '')) { http_response_code(404); exit; }
 header('Content-Type: text/plain');
-\$s = function_exists('opcache_get_status') ? @opcache_get_status(false) : null;
-echo 'age=', is_array(\$s) ? time() - \$s['opcache_statistics']['start_time'] : -1, "\n";
+$s = function_exists('opcache_get_status') ? @opcache_get_status(false) : null;
+echo 'age=', is_array($s) ? time() - $s['opcache_statistics']['start_time'] : -1, "\n";
 echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : null, true), "\n";
 PHPEOF
+    )
+    # base64 over the wire for the same reason: no quoting, no locale, no newline
+    # translation between here and the remote shell.
+    printf '%s\n' "${src//__TOKEN__/$token}" | base64 | rsh "base64 -d > $RESET_FILE" \
+        || { warn "could not write the opcache reset helper"; RESET_FILE=''; return 1; }
 
-    # Stop once several consecutive hits all land on a just-reset segment; that is
-    # the observable that every pool has been through this, without needing to know
-    # how many pools there are. Capped so a host that reports no age cannot spin.
+    # Stop once several consecutive hits all land on an already-fresh segment: that
+    # is the observable for "every pool has been through this", without needing to
+    # know how many pools there are. Capped so a host that reports no age cannot spin.
     for i in $(seq 1 40); do
-        out=$(curl --silent --show-error --max-time 30 \
-            "$DEPLOY_BASE_URL/zz-opcache-$token.php?t=$token" 2>/dev/null) || out=''
-        case $out in
-            *"age=-1"*) dim "OPcache is not enabled on this host; nothing to reset"; break ;;
+        body=$(curl --silent --show-error --max-time 30 -w '\n%{http_code}' "$url" 2>/dev/null) || body=$'\n000'
+        status=${body##*$'\n'}
+        body=${body%$'\n'*}
+        case $body in
+            *"age=-1"*)
+                dim "OPcache is not enabled on this host; nothing to reset"
+                rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
+                RESET_FILE=''
+                return 0
+                ;;
             *reset=true*) ;;
-            *) warn "opcache reset helper did not answer as expected on attempt $i"; break ;;
+            *)
+                # Say what actually came back, and do not give up on one bad read.
+                #
+                # The previous version printed "did not answer as expected", broke
+                # out of the loop, and then reported success anyway — so a deploy
+                # shipped with no cache reset at all, the next step had to discover
+                # it, and the run recorded nothing about WHY. On 2026-08-17 that
+                # left the cause unknowable after the fact: by the time anyone
+                # looked, the same helper returned `age=47 reset=true HTTP 200` by
+                # hand. Whatever it was, it was transient or environmental, and the
+                # only reason it stayed a mystery is that nothing wrote down the
+                # response. Now it retries, and it prints.
+                misses=$((misses + 1))
+                warn "reset helper answered HTTP $status on attempt $i (miss $misses/3), not a reset:"
+                printf '        %s\n' "$(printf '%s' "$body" | head -c 300 | tr '\n' '|')" >&2
+                if [ "$misses" -ge 3 ]; then
+                    warn "giving up after 3 bad reads. The file on the server was:"
+                    rsh "ls -l $RESET_FILE 2>&1 | sed 's/^/        /'" >&2 || true
+                    rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
+                    RESET_FILE=''
+                    return 1
+                fi
+                sleep 2
+                continue
+                ;;
         esac
         # age is measured BEFORE the reset, so a small one means this segment was
         # already reset by an earlier iteration of this same loop.
-        if [ "$(printf '%s' "$out" | sed -n 's/^age=//p')" -lt 30 ] 2>/dev/null; then
+        if [ "$(printf '%s' "$body" | sed -n 's/^age=//p')" -lt 30 ] 2>/dev/null; then
             fresh=$((fresh + 1))
             [ "$fresh" -ge 6 ] && break
         else
@@ -241,7 +280,15 @@ PHPEOF
 
     rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
     RESET_FILE=''
-    ok "opcode caches reset (release $rel)"
+    if [ "$fresh" -ge 6 ]; then
+        ok "opcode caches reset on every pool that answered (release $rel)"
+        return 0
+    fi
+    # 40 hits without six consecutive fresh reads means pools are being created
+    # faster than they are reset, or something is serving from somewhere else.
+    warn "reset ran but never saw 6 consecutive already-fresh segments in 40 hits."
+    warn "The revision check that follows is what decides whether this mattered."
+    return 1
 }
 
 # The check that would have stopped 2026-08-17 before it became an outage: ask the
@@ -697,11 +744,22 @@ if [ -z "$DEPLOY_API_KEY" ]; then
 fi
 
 step "Making the swap visible to PHP"
-reset_opcode_caches "$NEW_ABS" "$REL"
+# Deliberately not fatal. A failed reset is not itself a reason to stop — the
+# revision check on the next step is what knows whether it mattered, and it gives
+# a far better message than a bare non-zero exit under `set -e` would.
+reset_opcode_caches "$NEW_ABS" "$REL" || warn "continuing to the revision check, which is the real gate."
 
 step "Confirming the live site is running $REL"
-assert_live_revision "$SHA" \
-    || fail "the live site is NOT running the release that was just swapped in.
+# One retry, and it is not belt-and-braces. On the first rollout of this check
+# (2026-08-17) the reset step missed, the gate correctly refused, and re-running
+# the whole deploy would have hit the same wall — the release was fine, the caches
+# were not, and nothing in the loop could break out of it. A second reset is
+# harmless and idempotent, so try that before declaring the deploy stuck.
+if ! assert_live_revision "$SHA"; then
+    warn "retrying the opcode-cache reset once, then re-checking."
+    reset_opcode_caches "$NEW_ABS" "$REL" || true
+    assert_live_revision "$SHA" \
+    || fail "the live site is NOT running the release that was just swapped in, after two cache resets.
 
   Nothing irreversible has happened yet: the symlink points at $REL, no post-deploy
   migration has run, and the previous release is untouched. This is the check that
@@ -710,8 +768,14 @@ assert_live_revision "$SHA" \
   could not run against the new schema. 449 fatals, and the automatic rollback made
   it permanent by restoring the very release that was broken.
 
-  Read docs/incident-2026-08-17-stale-opcache.md, then either re-run the deploy or
-  reset the caches by hand. Do NOT run migrations until /_health reports $SHA."
+  Read docs/incident-2026-08-17-stale-opcache.md, then reset the caches by hand
+  before re-running: write a PHP file with a NEW name into
+  $NEW_ABS/public/ that calls opcache_reset(), request it repeatedly until
+  /_health reports $SHA, and delete it. A new filename is the point — it has no
+  cache entry anywhere, so it always compiles from disk.
+
+  Do NOT run migrations until /_health reports $SHA."
+fi
 
 step "Post-deploy migrations"
 # The code is live, which is what 'post' is for: every db7.x retirement had to
