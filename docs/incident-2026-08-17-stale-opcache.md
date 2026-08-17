@@ -138,8 +138,12 @@ site healthy. But it stopped for a reason worth recording.
   expected on attempt 1` — and then printed `✓ opcode caches reset`. It reported
   success having done nothing. That is the same "looks like it worked" failure as
   the 30 requests to a 500 during the incident itself, and it is now fixed: the
-  helper is delivered base64-encoded, retried three times, and prints the actual
-  HTTP status and body when it does not get a reset.
+  helper is retried three times and prints the actual HTTP status and body when it
+  does not get a reset. (It was briefly base64-encoded over the wire too, on the
+  suspicion that shell quoting was corrupting it. That was measured and found
+  false, and the encoding was removed on the same day: the one thing a deploy
+  writes into a production docroot has to be legible to whoever reads the script
+  later, and "it's only base64" is how a deploy stops being trusted.)
 - Step 13 then correctly refused, because a pool was still serving the *pre*-#120
   `HealthController`, which has no `revision` field at all. Diagnosis took four
   rounds and produced two wrong hypotheses of mine — a heredoc quoting bug
