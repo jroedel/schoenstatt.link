@@ -23,9 +23,11 @@ class PublicationsController extends SionController
     // /admin/literature-maintenance sweeps. They were the 2020 migration that turned
     // imported ("data-sourced") publication rows into first-class ones, and measuring
     // showed it had finished — the whole remaining output of the five write sweeps was
-    // three database references and four publications' cover files. Those are repaired by
-    // database/db8.2.sql and tools/fix-merged-covers.sh; the per-row successor,
-    // copyToMainCorpusAction() below, is what merges the 2,333 rows still awaiting one.
+    // three database references and four publications' cover files. Both were repaired:
+    // database/db8.2.sql for the references, and a one-off script for the covers, applied
+    // by hand on 2026-08-18 and deleted afterwards (docs/BACKLOG.md has the record). The
+    // per-row successor, copyToMainCorpusAction() below, is what merges the 2,333 rows
+    // still awaiting one.
 
     /**
      * Copy a data-sourced publication into the main corpus. **GET confirms, POST copies.**
