@@ -770,6 +770,24 @@ return [
                                     ],
                                 ],
                             ],
+                            /**
+                             * The spreadsheet a librarian downloads to fill in, and — with
+                             * `?books=1` — the library's current catalogue in the same
+                             * layout. Symfony-served only: `action` names no method on the
+                             * laminas controller, because there is no laminas rendering of
+                             * a binary download to fall back to. The route exists here so
+                             * `laminas_path()` can assemble a link to it, which is the only
+                             * way a Twig template addresses any route.
+                             */
+                            'template' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/template',
+                                    'defaults' => [
+                                        'action'     => 'template',
+                                    ],
+                                ],
+                            ],
                         ],
                     ],
                     'library-import' => [
@@ -2458,6 +2476,7 @@ return [
                 ['route' => 'library-imports/library', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library/create', 'roles' => ['lib_user']],
+                ['route' => 'library-imports/library/template', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
 
                 ['route' => 'music', 'roles' => ['guest', 'user']],

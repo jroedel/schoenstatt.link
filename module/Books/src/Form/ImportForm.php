@@ -4,18 +4,45 @@ namespace Books\Form;
 use SionModel\Form\SionForm;
 use Laminas\InputFilter\InputFilterProviderInterface;
 
+/**
+ * Starting a spreadsheet import: what it is called, and the file.
+ *
+ * ## The two fields that are gone
+ *
+ * `filePath` was a **text box holding a path on the server**, carrying the standing
+ * `@todo remove this element and allow uploading of file`. What a librarian typed into
+ * it is on the record: import 14, created 2021-08-10 and still `pending`, says
+ * `C:\Users\Ramon Vergara\Desktop\intento.xlsx`. It is now a file upload, handled by
+ * App\Books\Import\SpreadsheetUpload and stored by App\Books\Import\ImportStorage.
+ *
+ * `worksheet` was a text box too, needing the sheet's name typed exactly and answering
+ * a mistake with a 500. It has moved to the step after this one, where the file has
+ * been read and the names can be offered as a list.
+ *
+ * ## The file element is rendered here and validated elsewhere
+ *
+ * Deliberately. The element exists so the upload row is marked up like every other row
+ * on the page, but the pages that use this form are Symfony-served and the upload
+ * arrives as a `Symfony\Component\HttpFoundation\File\UploadedFile`, not as
+ * `$_FILES` state for `Laminas\InputFilter\FileInput` to reason about. Two mechanisms
+ * inspecting one upload is how a file passes one and fails the other; there is one,
+ * and it is SpreadsheetUpload. `getInputFilterSpecification()` therefore says nothing
+ * about `file`, and `isValid()` does not answer for it.
+ */
 class ImportForm extends SionForm implements InputFilterProviderInterface
 {
     public function __construct()
     {
         parent::__construct('library-import');
         $this->setAttribute('method', 'post');
+        $this->setAttribute('enctype', 'multipart/form-data');
         $this->add([
             'name' => 'name',
             'type' => 'Text',
             'options' => [
                 'label' => 'Import name',
                 'required' => true,
+                'help-block' => 'Something you will recognise later, such as "Jornada de trabajo, June".',
             ],
             'attributes' => [
                 'maxlength' => '100',
@@ -42,27 +69,16 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                 'maxlength' => '1000',
             ],
         ]);
-        /**
-         * @todo remove this element and allow uploading of file
-         */
         $this->add([
-            'name' => 'filePath',
-            'type' => 'Text',
+            'name' => 'file',
+            'type' => 'File',
             'options' => [
-                'label' => 'File path',
+                'label' => 'Spreadsheet',
                 'required' => true,
+                'help-block' => 'An .xlsx, .xls or .ods file. Download the template above if you do not have one yet.',
             ],
             'attributes' => [
-            ],
-        ]);
-        $this->add([
-            'name' => 'worksheet',
-            'type' => 'Text',
-            'options' => [
-                'label' => 'Worksheet',
-                'required' => true,
-            ],
-            'attributes' => [
+                'accept' => '.xlsx,.xls,.ods',
             ],
         ]);
 
@@ -74,7 +90,8 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                 'checked_value' => '1',
                 'unchecked_value' => '0',
                 'use_hidden_element' => true,
-                'help-block' => 'Complete imports will delete books that are not found within.',
+                'help-block' => 'Tick only if this file is the whole library. Every active book it does not '
+                    . 'list will be marked inactive.',
             ],
             'attributes' => [
                 'value'   => '0',
@@ -85,17 +102,9 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
             'name' => 'submit',
             'type' => 'Submit',
             'attributes' => [
-                'value' => 'Submit',
+                'value' => 'Upload and continue',
                 'id' => 'submit',
                 'class' => 'btn-primary'
-            ],
-        ]);
-        $this->add([
-            'name' => 'import',
-            'type' => 'Submit',
-            'attributes' => [
-                'value' => 'Import data',
-                'class' => 'btn-warning'
             ],
         ]);
     }
@@ -146,50 +155,6 @@ class ImportForm extends SionForm implements InputFilterProviderInterface
                         'options' => [
                             'encoding' => 'UTF-8',
                             'max' => 1000,
-                        ],
-                    ],
-                ],
-            ],
-            'filePath' => [
-                'required' => true,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
-                        'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 255,
-                        ],
-                    ],
-                ],
-            ],
-            'worksheet' => [
-                'required' => true,
-                'filters' => [
-                    ['name' => 'StripTags'],
-                    ['name' => 'StripNewlines'],
-                    ['name' => 'StringTrim'],
-                    ['name' => 'ToNull',
-                        'options' => [
-                            'type' => \Laminas\Filter\ToNull::TYPE_STRING,
-                        ]
-                    ],
-                ],
-                'validators' => [
-                    [
-                        'name' => 'StringLength',
-                        'options' => [
-                            'encoding' => 'UTF-8',
-                            'max' => 255,
                         ],
                     ],
                 ],

@@ -1,40 +1,74 @@
 {#
-  module/Books/view/books/library-imports/create.phtml — start a new spreadsheet import.
+  module/Books/view/books/library-imports/create.phtml — start a spreadsheet import.
 
-  This page creates the import *record* only: a name, a file path, a worksheet and the
-  "complete import" flag. Nothing is read from the spreadsheet here. The import is
-  simulated and then run from the edit page, which is why the submit button says
-  "Simulate import" and why success redirects there — and that page stays on laminas, so
-  this is a Symfony page whose success takes the visitor across the bridge.
+  The original asked for two things a librarian cannot know: a **path on the server**
+  and the **exact name of a worksheet**, both as free text, with no way to put a file on
+  the server in the first place. Import 14, still pending from 2021, records what that
+  produced — `C:\Users\Ramon Vergara\Desktop\intento.xlsx`, someone's own desktop, which
+  is the only path a person has.
 
-  The requirements list and the column map are untranslated in the original; the map is
-  hardcoded in the controller (`getColegioMayorLibraryFieldsMap()`), which is the only
-  library whose spreadsheets this has ever been used for.
+  So the page now leads with the template download, because the first question is "what
+  should the spreadsheet look like", and takes an upload for the second. The worksheet
+  question has moved to the next step, where the file has been read and the names can be
+  offered as a list.
+
+  The column table is the same information the original's `<dl>` carried, with two
+  differences: the headings are the ones the template writes rather than one library's
+  Spanish, and each says what it means. It stays on the page rather than moving wholly
+  into the file, because a librarian deciding whether to bother is here, not in Excel.
 #}
 {% extends 'layout.html.twig' %}
 
 {% block content %}
 <h1>{{ translate('Begin new import') }}</h1>
-<p>Importing a file has the following requirements:</p>
+
+<div class="panel panel-default">
+  <div class="panel-heading"><strong>{{ translate('Do you have a spreadsheet yet?') }}</strong></div>
+  <div class="panel-body">
+    <p>{{ translate('Download one of these, fill it in, and upload it below.') }}</p>
+    <p>
+      <a class="btn btn-default" href="{{ template_url }}">{{ translate('Blank template') }}</a>
+      <a class="btn btn-default" href="{{ export_url }}">{{ translate('This library\'s books') }}</a>
+    </p>
+    <p class="help-block">{{ translate('The blank template is for adding books. The export holds every active book in this library, in the same columns, and is the one to use for correcting records in bulk — or for a complete import.') }}</p>
+  </div>
+</div>
+
+<h2>{{ translate('How an import works') }}</h2>
 <ol>
-<li>The file to import must be of format xls or xlsx.</li>
-<li>Given a specified excel file and worksheet, the first row (A) must contain the column names.</li>
-<li>Each line of the worksheet must contain the withinLibraryId value, as well as a title.
-    The only exception is that a row with a publicationId need not have a title defined.</li>
+  <li>{{ translate('Upload the file here. Nothing is read from it yet.') }}</li>
+  <li>{{ translate('Check which spreadsheet column feeds which field. The columns are matched for you; you can change any of them.') }}</li>
+  <li>{{ translate('Look at what the import would do — how many books it would add, change and retire.') }}</li>
+  <li>{{ translate('Confirm. Only then is anything written.') }}</li>
 </ol>
-<p>Currently the column mappings are unconfigurable but are mapped as follows:</p>
-<dl class="dl-horizontal">
-{% for field, column in fields_map %}
-    <dt>{{ field }}</dt>
-    <dd>{{ column }}</dd>
+
+<h2>{{ translate('The columns') }}</h2>
+<p>{{ translate('The first row of the sheet holds the headings. Only Barcode and Title are required, and a heading the import does not recognise is listed for you rather than ignored silently.') }}</p>
+<table class="table table-condensed">
+<thead>
+<tr>
+  <th>{{ translate('Column') }}</th>
+  <th>{{ translate('Required') }}</th>
+  <th>{{ translate('Meaning') }}</th>
+</tr>
+</thead>
+<tbody>
+{% for column in columns %}
+<tr>
+  <td><strong>{{ column.heading }}</strong></td>
+  <td>{{ column.required ? translate('Yes') : '' }}</td>
+  <td>{{ column.help is empty ? '' : translate(column.help) }}</td>
+</tr>
 {% endfor %}
-</dl>
+</tbody>
+</table>
+
+<h2>{{ translate('Upload') }}</h2>
 {{ form_open(form, self_url) }}
 {{ form_row(form.get('name')) }}
 {{ form_row(form.get('libraryId'), false) }}
 {{ form_row(form.get('description')) }}
-{{ form_row(form.get('filePath')) }}
-{{ form_row(form.get('worksheet')) }}
+{{ form_row(form.get('file')) }}
 {{ form_row(form.get('isCompleteImport')) }}
 {{ form_row(form.get('security')) }}
 {{ form_row(form.get('submit')) }}
