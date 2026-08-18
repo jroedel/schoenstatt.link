@@ -122,6 +122,25 @@ final class LibraryImportConfigureController
         }
         /** @var array<string, mixed> $library */
 
+        if (LibraryTable::IMPORT_STATUS_ABANDONED === ($import['status'] ?? null)) {
+            //Configured, never run, and not going to be. `database/db8.3.sql` set this on
+            //the three imports that had been pending since 2017 and 2021; two of them
+            //still offered to inactivate a third of Colegio Mayor from a nine-year-old
+            //spreadsheet. The row stays visible as history and this page stops offering.
+            return new Response($this->twig->render('books/library-import-configure.html.twig', [
+                'page_title'   => 'Import details',
+                'import'       => $import,
+                'library'      => $library,
+                'has_run'      => false,
+                'is_abandoned' => true,
+                'detail_url'   => $this->urls->path(
+                    'library-imports/library-import',
+                    ['import_id' => $importId]
+                ),
+                'library_url'  => $this->urls->path('libraries/library/admin', ['library_id' => $libraryId]),
+            ]));
+        }
+
         if ($this->hasRun($import)) {
             //Its file and worksheet are frozen, so the old page disabled every input and
             //showed the counts. Same answer, without a form nobody may use.
@@ -129,7 +148,8 @@ final class LibraryImportConfigureController
                 'page_title'  => 'Import details',
                 'import'      => $import,
                 'library'     => $library,
-                'has_run'     => true,
+                'has_run'      => true,
+                'is_abandoned' => false,
                 'detail_url'  => $this->urls->path(
                     'library-imports/library-import',
                     ['import_id' => $importId]
@@ -271,7 +291,7 @@ final class LibraryImportConfigureController
         //by running one.
         $plan = $this->plan($import, $libraryId, $filePath, $this->worksheetFor($import, $filePath));
 
-        $form = new RunImportForm(RunImportForm::digestOf($plan));
+        $form = new RunImportForm($plan->digest());
         /** @var array<string, mixed> $posted */
         $posted = $request->request->all();
         $form->setData($posted);
@@ -280,7 +300,7 @@ final class LibraryImportConfigureController
 
             return null;
         }
-        if (($posted['digest'] ?? null) !== RunImportForm::digestOf($plan)) {
+        if (($posted['digest'] ?? null) !== $plan->digest()) {
             //The catalogue or the file moved between the preview and the click. Refusing
             //is the whole point of the digest — see App\Books\Import\RunImportForm.
             $this->now('The library has changed since this preview was made. Please review it again.');
@@ -336,6 +356,7 @@ final class LibraryImportConfigureController
             'import'       => $import,
             'library'      => $library,
             'has_run'      => false,
+            'is_abandoned' => false,
             'readable'     => $readable,
             'file_name'    => basename($filePath),
             'self_url'     => $selfUrl,
@@ -396,7 +417,7 @@ final class LibraryImportConfigureController
         $view['blockers']    = $plan->blockers;
         $view['statistics']  = $plan->statistics();
         if ($plan->canApply() && $plan->writeCount() > 0) {
-            $view['run_form'] = new RunImportForm(RunImportForm::digestOf($plan));
+            $view['run_form'] = new RunImportForm($plan->digest());
         }
 
         return new Response($this->twig->render('books/library-import-configure.html.twig', $view));
@@ -533,7 +554,11 @@ final class LibraryImportConfigureController
         }
     }
 
-    /** Whether this import has already been performed. @param array<string, mixed> $import */
+    /**
+     * Whether this import has already been performed.
+     *
+     * @param array<string, mixed> $import
+     */
     private function hasRun(array $import): bool
     {
         if (LibraryTable::IMPORT_STATUS_COMPLETED === ($import['status'] ?? null)) {

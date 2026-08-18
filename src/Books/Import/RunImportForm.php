@@ -6,10 +6,6 @@ namespace App\Books\Import;
 
 use Laminas\Form\Form;
 
-use function implode;
-use function ksort;
-use function sha1;
-
 /**
  * The confirmation between a librarian and several thousand book records.
  *
@@ -27,6 +23,8 @@ use function sha1;
  * is the thing worth preventing, so the counts they were shown are hashed into the form
  * and checked against a freshly computed plan before anything is written. A mismatch
  * re-renders the preview instead of importing.
+ *
+ * The digest itself is App\Books\Import\ImportPlan::digest(); this only carries it.
  *
  * @extends Form<array<string, mixed>>
  */
@@ -59,25 +57,5 @@ final class RunImportForm extends Form
                 'class' => 'btn-warning',
             ],
         ]);
-    }
-
-    /**
-     * A short signature of what a plan would do.
-     *
-     * Over the *counts*, not the rows: the question being confirmed is "this many
-     * created, this many retired", and hashing every value would make an unrelated
-     * typo-fix in one row invalidate a confirmation whose numbers had not moved.
-     */
-    public static function digestOf(ImportPlan $plan): string
-    {
-        $statistics = $plan->statistics();
-        ksort($statistics);
-        $parts = [];
-        foreach ($statistics as $action => $count) {
-            $parts[] = $action . '=' . $count;
-        }
-        $parts[] = 'complete=' . ($plan->isCompleteImport ? '1' : '0');
-
-        return sha1(implode(';', $parts));
     }
 }

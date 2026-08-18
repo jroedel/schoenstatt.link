@@ -7,6 +7,9 @@ namespace App\Books\Import;
 use function array_filter;
 use function array_values;
 use function count;
+use function implode;
+use function ksort;
+use function sha1;
 
 /**
  * Everything an import would do, decided but not done.
@@ -96,6 +99,30 @@ final class ImportPlan
             $this->rows,
             static fn (PlannedRow $row): bool => ! $row->isUnchanged()
         ));
+    }
+
+    /**
+     * A short signature of what this plan would do.
+     *
+     * Over the *counts*, not the rows: the question a confirmation asks is "this many
+     * created, this many retired", and hashing every value would make an unrelated
+     * typo-fix in one row invalidate a confirmation whose numbers had not moved.
+     *
+     * It lives here rather than on App\Books\Import\RunImportForm, which is where it
+     * is used, so that it can be tested without laminas-form and therefore without
+     * vendor/ — the unit suite's contract.
+     */
+    public function digest(): string
+    {
+        $statistics = $this->statistics();
+        ksort($statistics);
+        $parts = [];
+        foreach ($statistics as $action => $count) {
+            $parts[] = $action . '=' . $count;
+        }
+        $parts[] = 'complete=' . ($this->isCompleteImport ? '1' : '0');
+
+        return sha1(implode(';', $parts));
     }
 
     public function writeCount(): int
