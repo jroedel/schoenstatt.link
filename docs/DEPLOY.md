@@ -1134,6 +1134,21 @@ over-engineering until you have watched them fail:
   still too eager — while six minutes later the identical file at the identical
   path served 25 out of 25 requests.
 
+**Step 10 also prints something on its way past, and it is the only chance to.**
+The reset helper has to read `opcache_get_status()` anyway to report the segment's
+age, so it now also reports the interned-strings buffer — used, size and string
+count — and the deploy prints one line per pool that had been alive at least five
+minutes. That buffer is append-only: nothing is ever evicted, so its usage only
+climbs within a segment's life and the `opcache_reset()` on the very next line of
+that helper puts it back to zero. The moment before a reset is therefore the only
+time a *warm* reading exists, and a deploy is the one occasion something reaches
+every pool. Afterwards, nothing on the site can report it for hours. Readings from
+segments younger than five minutes are deliberately dropped — a young segment
+always looks healthy, which is the exact misreading the line exists to prevent.
+`./tools/opcache-sample.sh` answers the same question on demand, and should be run
+*before* a deploy for the same reason. The parsing is covered by
+`test/Deploy/interned-sampling-test.sh`, which `tools/ci-local.sh` runs.
+
 The build step also breaks `public/index.php` out of its hardlink (`cp -p` then
 `mv -f`). rsync `--link-dest` hardlinks unchanged files across releases, and that
 file had eight links to one inode with one shared mtime — so if OPcache caches it

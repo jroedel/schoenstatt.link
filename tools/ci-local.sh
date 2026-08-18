@@ -161,20 +161,23 @@ suite() {
     [ "$status" -eq 0 ] && rm -f "$log"
 }
 
-# --- Beyond CI: the deploy's remote-call machinery -------------------------
-# Not in ci.yml and not a PHP suite: plain bash, no server, ~10s. It lives here
-# because tools/deploy.sh is the least-tested code that can do the most damage, and
-# the machinery it checks is the part that decides whether a stuck deploy reports
-# itself or hangs silently.
-step "Deploy remote-call machinery  (NOT in ci.yml — plain bash)"
-rsh_log=$(mktemp)
-if bash test/Deploy/rsh-behaviour-test.sh > "$rsh_log" 2>&1; then
-    ok "$(tail -1 "$rsh_log")"
-    rm -f "$rsh_log"
-else
-    sed 's/^/    /' "$rsh_log"
-    bad "deploy remote-call machinery (full output: $rsh_log)"
-fi
+# --- Beyond CI: the deploy's own machinery ---------------------------------
+# Not in ci.yml and not PHP suites: plain bash, no server, ~10s each. They live here
+# because tools/deploy.sh is the least-tested code that can do the most damage. The
+# glob is deliberate — a new test/Deploy/*-test.sh is picked up without editing this
+# file, which is the difference between a check that gets written and one that gets
+# written and then forgotten outside the runner.
+step "Deploy machinery  (NOT in ci.yml — plain bash)"
+for deploy_check in test/Deploy/*-test.sh; do
+    rsh_log=$(mktemp)
+    if bash "$deploy_check" > "$rsh_log" 2>&1; then
+        ok "$(tail -1 "$rsh_log")"
+        rm -f "$rsh_log"
+    else
+        sed 's/^/    /' "$rsh_log"
+        bad "$(basename "$deploy_check") (full output: $rsh_log)"
+    fi
+done
 
 # --- ci.yml job 4: unit ----------------------------------------------------
 step "Unit suite  (ci.yml: unit)"

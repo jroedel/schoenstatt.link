@@ -343,10 +343,48 @@ build_smoke_env() {
 # An endpoint in the application cannot do this job: a pool serving the PREVIOUS
 # release resolves the route against that release's code, which need not have the
 # endpoint at all.
+#
+# One reading this reset destroys, taken on the way past. The interned-strings
+# buffer is append-only — nothing is ever evicted, so its usage only climbs
+# within a segment's life and the opcache_reset() below puts it back to zero.
+# That makes the moment before a reset the only time a *warm* number can be
+# observed, and a deploy is the one occasion something already reaches every
+# pool. It costs no extra request: the helper had to read the status anyway to
+# print `age=`. Without this, the figure that decides whether
+# opcache.interned_strings_buffer is big enough could only ever be measured by
+# someone polling by hand at the right moment — and after a deploy there is no
+# right moment for hours.
+# >>> interned sampling
+WARM_INTERNED=''
+sample_interned() {
+    local body=$1 age line used buf strings rendered
+
+    age=$(printf '%s' "$body" | sed -n 's/^age=//p')
+    line=$(printf '%s' "$body" | sed -n 's|^interned=||p')
+    case $line in ''|'-') return 0 ;; esac
+    # Younger than five minutes means this loop already reset it, or the pool is
+    # newly started. Either way it is a cold number and reporting it would invite
+    # exactly the misreading this exists to prevent.
+    [ "${age:-0}" -ge 300 ] 2>/dev/null || return 0
+
+    used=${line%%/*}; line=${line#*/}
+    buf=${line%%/*}; strings=${line##*/}
+    [ "${buf:-0}" -gt 0 ] 2>/dev/null || return 0
+
+    rendered=$(awk -v a="$age" -v u="$used" -v b="$buf" -v s="$strings" \
+        'BEGIN { printf "after %5.1fh alive: %5.1f%% of %dMB used, %d strings", a/3600, 100*u/b, b/1048576, s }')
+    # Deduplicated on the rendered line, which carries the age — two pools would
+    # have to agree to a tenth of an hour AND on every figure to collapse into one.
+    case $WARM_INTERNED in *"$rendered"*) return 0 ;; esac
+    WARM_INTERNED="${WARM_INTERNED}${rendered}"$'\n'
+}
+# <<< interned sampling
+
 RESET_FILE=''
 reset_opcode_caches() {
     local release_abs=$1 rel=$2 want=${3:-} token src url i fresh=0 agreed=0 misses=0 body status live
 
+    WARM_INTERNED=''
     token=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
     # A glob, because the helper is written into EVERY release, not just this one.
     # Which directory the web server resolves the docroot to is not something this
@@ -373,6 +411,8 @@ if (!hash_equals('__TOKEN__', $_GET['t'] ?? '')) { http_response_code(404); exit
 header('Content-Type: text/plain');
 $s = function_exists('opcache_get_status') ? @opcache_get_status(false) : null;
 echo 'age=', is_array($s) ? time() - $s['opcache_statistics']['start_time'] : -1, "\n";
+$i = is_array($s) && isset($s['interned_strings_usage']) ? $s['interned_strings_usage'] : null;
+echo 'interned=', is_array($i) ? $i['used_memory'] . '/' . $i['buffer_size'] . '/' . $i['number_of_strings'] : '-', "\n";
 echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : null, true), "\n";
 echo 'from=', __DIR__, "\n";
 PHPEOF
@@ -451,6 +491,8 @@ PHPEOF
                 continue
                 ;;
         esac
+        sample_interned "$body"
+
         # Stop on the thing that actually matters: the live site reporting the
         # release we just swapped in. The first version counted OPcache segment
         # ages instead and, on the 15:03 deploy, never saw six consecutive fresh
@@ -485,6 +527,15 @@ PHPEOF
 
     rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
     RESET_FILE=''
+
+    if [ -n "$WARM_INTERNED" ]; then
+        info "Interned strings per pool, read at the instant this reset each one:"
+        printf '%s' "$WARM_INTERNED" | while IFS= read -r line; do dim "  $line"; done
+        dim "  Append-only buffer, so these are high-water marks and the warmest"
+        dim "  readings that exist. 90%+ means it filled and silently stopped interning;"
+        dim "  see docs/php-85.md and tools/opcache-sample.sh."
+    fi
+
     if [ "$agreed" -ge 8 ]; then
         ok "8 consecutive probes report $rel; opcode caches are serving the new release"
         return 0
