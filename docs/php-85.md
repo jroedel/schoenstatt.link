@@ -77,7 +77,7 @@ whether we could set it ourselves instead of asking.
 
 | setting | current | wanted | changeable | why |
 | --- | --- | --- | --- | --- |
-| `opcache.interned_strings_buffer` | `8` | **`32`** | SYSTEM | sits at **89–99% of 8 MiB** (77,504 strings) on an ordinary day. Once full, OPcache stops interning and stores duplicate strings per script. Nothing to do with whether the app fits — that is `memory_consumption`, at 24.6% |
+| `opcache.interned_strings_buffer` | `8` | **`32`** | SYSTEM | sits at **89–99% of 8 MiB** (77,504 strings) on an ordinary day. Once full, OPcache stops interning and stores duplicate strings per script. Nothing to do with whether the app fits — that is `memory_consumption`, at 24.6%. **Raise requested via konsoleH 2026-08-18; still reporting `8` on that date** (checked from `/en/sm/phpinfo`, and see § Confirming the raise below) |
 | `opcache.revalidate_path` | `0` | **`1`** | ALL | with 0, OPcache never re-resolves a symlinked path, so a release swap keeps executing the previous release. Root cause of [the 2026-08-17 outage](incident-2026-08-17-stale-opcache.md) |
 | `apc.ttl` | `0` | **non-zero** | SYSTEM | with 0 a failed allocation expunges the entire segment instead of evicting. Asked for in the same ticket as the `shm_size` raise and **did not land**; the raise did |
 | `opcache.memory_consumption` | `128` | keep | SYSTEM | 24.6% used, 0 wasted, no OOM restarts. No pressure |
@@ -97,12 +97,46 @@ that file is exactly the one that goes stale.
 ### Verifying
 
 `/en/sm/cache-status` (maintenance key) reports `internedPercentUsed`,
-`memoryPercentUsed`, `keysPercentUsed`, `validateTimestamps` and `revalidateFreq`
-live, so a change can be confirmed without SSH. `tools/smoke-prod.sh` warns on APCu
-saturation and on any OPcache restart. For the access level of a setting rather
-than its value, `ini_get_all(null, true)` over SSH — note `ini_get_all('Zend
-OPcache')` returns nothing, and the `$details` argument must be `true` or there is
-no `access` field to read.
+`internedBufferBytes`, `internedBufferConfiguredMb`, `memoryPercentUsed`,
+`keysPercentUsed`, `startTimeUnix`, `uptimeSeconds`, `validateTimestamps` and
+`revalidateFreq` live, so a change can be confirmed without SSH.
+`tools/smoke-prod.sh` warns on APCu saturation and on any OPcache restart. For the
+access level of a setting rather than its value, `ini_get_all(null, true)` over SSH
+— note `ini_get_all('Zend OPcache')` returns nothing, and the `$details` argument
+must be `true` or there is no `access` field to read.
+
+**Do not read a `SYSTEM` directive from the CLI.** `php -i` over SSH answers for
+the CLI SAPI, reading a different ini than the web pools; the per-account file is
+`/home/httpd/php85-ini/ourlink/php.ini` and is *version-scoped*, which is the same
+trap as expecting a CLI `apcu_clear_cache()` to flush the web server's segment. The
+authoritative read is a web request: `/en/sm/phpinfo` (`sch_administrator` only)
+prints the Zend OPcache directive table as the pool that served it booted with.
+
+### Confirming the raise
+
+`opcache.interned_strings_buffer` is `PHP_INI_SYSTEM` — read once, when a process
+starts. Writing the ini file changes nothing for FastCGI workers already running,
+and this host runs at least three pools that recycle independently. So confirming
+a raise is a sampling problem, not a lookup:
+
+1. **`/en/sm/phpinfo`**, reloaded several times. The directive table shows what the
+   answering pool booted with. One reload showing `8` proves nothing about the
+   other two.
+2. **`./tools/opcache-sample.sh`** for the same question answered systematically:
+   it polls `/sm/cache-status`, groups by `startTimeUnix`, and prints each
+   segment's configured buffer beside its age and saturation. It reports the number
+   of segments as a **lower bound**, with the odds it missed one.
+3. **If it has not landed after a day**, `pkill -u ourlink -f php` over SSH forces
+   new processes to read the new ini. Cost is a cold OPcache — seconds of
+   recompilation, no downtime. This is the same command [DEPLOY.md](DEPLOY.md)
+   names for the `validate_timestamps=0` case.
+
+Do not read `uptimeSeconds` as proof a pool restarted: a deploy's `opcache_reset()`
+resets `start_time` too, so a low uptime means the cache was cleared, not that a
+process is new with a new ini. And do not measure saturation just after a deploy —
+see [caching.md](caching.md) on why the buffer being append-only makes every
+post-deploy reading look healthy. `tools/deploy.sh` prints each pool's warm reading
+at the moment it resets it, which is the one time something reaches every pool.
 
 ## The ceiling
 
