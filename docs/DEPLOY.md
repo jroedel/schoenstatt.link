@@ -1102,11 +1102,17 @@ in `tools/ci-local.sh` (plain bash, no server, ~10s).
 
 ### Steps 10 and 11: why a symlink swap is not enough
 
-**Repointing the release symlink does not change what PHP executes.**
-`opcache.revalidate_path` defaults to 0, so OPcache never re-resolves the symlink;
-`validate_timestamps` then checks the *old* target's mtime, which never changes.
-The previous release keeps serving, indefinitely, and nothing in any response says
-so. There is no timeout that rescues you.
+**Repointing the release symlink does not change what PHP executes.** The previous
+release keeps serving and nothing in any response says so.
+
+This paragraph used to attribute that to `opcache.revalidate_path` defaulting to 0.
+Measured 2026-08-18 and false: setting it to 1 changes nothing, and OPcache files
+its entries under the resolved path. In the capsule the staleness clears on its own
+after ~122s, matching `realpath_cache_ttl=120` — but production stayed stale for 12
+and 20 minutes, so do not plan around it clearing. `test/Deploy/opcache-swap-test.sh`
+is the reproduction, and it also holds the load-bearing fact in place: an
+`opcache_reset()` does clear a stale resolution, which is what step 10 below relies
+on.
 
 Worse, **this host runs at least three PHP pools, each with its own OPcache
 segment** — measured by polling `/en/sm/cache-status` and getting three different

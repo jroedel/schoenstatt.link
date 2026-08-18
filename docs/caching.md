@@ -173,7 +173,11 @@ script, and the only lasting evidence is a counter. So:
   is visible rather than surprising.
 - `cachedKeys` exceeds `cachedScripts` because one script can occupy several
   keys (the include path plus the resolved realpath). Compare keys, not scripts,
-  against the ceiling.
+  against the ceiling. Those alias keys are also where a release swap goes to
+  hide: the script entry itself is filed under the resolved path, so it is the
+  alias that still points at the previous release. See
+  [the 2026-08-17 incident](incident-2026-08-17-stale-opcache.md) and
+  `test/Deploy/opcache-swap-test.sh`.
 - `validateTimestamps` is surfaced because it decides whether a deploy needs a
   pool restart. With it on (the current setting, `revalidate_freq=2`) changed
   files are noticed within seconds. With it off, a deploy is invisible to
