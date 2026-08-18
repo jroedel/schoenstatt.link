@@ -94,14 +94,18 @@ by asking whether `_route` is anything other than `legacy`:
 | `GdprCookieListener` | response | strips cookies without consent — `Application\View\GdprStrategy::onFinish()` |
 | `InventedCacheControlListener` | response | drops the `no-cache, private` `ResponseHeaderBag` adds unasked |
 
-Re-measured 2026-08-17 with `tools/acl-table.php`: there are **161 Symfony-served routes**
-(134 ACL-checked, 27 declared open — most paths are declared twice, once with a locale
-prefix and once without), and they shadow **70 of the 144 laminas routes**, leaving 74 on
-laminas. `docs/acl-rules.md` carries the counts and the guard each route is checked against,
-and is the thing to trust: this paragraph said "110 of the 188 … as of batch 6" until
-2026-08-17, four batches and several deletions out of date, and the two numerators were not
-even counting the same thing — 110 was a count of Symfony routes, 188 of laminas ones. Cite
-the tool, not this line.
+**Run `tools/acl-table.php` for the count; do not cite the number below.** As of
+2026-08-18 it was **161 Symfony-served routes** (134 ACL-checked, 27 declared open — most
+paths are declared twice, once with a locale prefix and once without) shadowing **70 of
+the 142 laminas routes**, leaving 72.
+
+That figure has been wrong twice in two days, which is why the instruction comes before
+it. It read "110 of the 188 … as of batch 6" for four batches — and the two numerators
+were not even counting the same thing, 110 being Symfony routes and 188 laminas ones. It
+was corrected on 2026-08-17 and was stale again within a day, because three routes were
+deleted. Any commit that ports or retires a route invalidates it, which is most commits
+that touch this file's subject. `docs/acl-rules.md` is regenerated from the tool and
+carries both the counts and the guard each route is checked against.
 
 `config/symfony/routes.php` **is** the migration status of the site, read top to
 bottom: `UrlMatcher` takes the first route that matches, so everything declared
