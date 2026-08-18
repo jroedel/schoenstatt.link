@@ -78,10 +78,22 @@ three things this section had guessed at:
 That last point makes the `realpath_cache` hypothesis below worth reopening rather
 than treating as settled. It does **not** explain production on its own: the site
 stayed stale for ~12 minutes on 2026-08-18 and 20+ here, against the capsule's 120s.
-So either production's `realpath_cache_ttl` is far larger than the default — it is
-`PHP_INI_SYSTEM`, readable from `/en/sm/phpinfo`, and nobody has looked — or a
-second carrier is involved. **This is the open question**, and it is the one worth
-answering before any further engineering on the gate.
+
+**Production's `realpath_cache_ttl` was read from `/en/sm/phpinfo` on 2026-08-19 and
+it is 120** — the same as the capsule. So the obvious explanation is dead: a 120s
+cache cannot hold a 12-minute failure, and whatever carries staleness on production
+past the two-minute mark has not been identified. Candidates that survive are the
+OPcache path-alias keys (SHM, no TTL, cleared only by a reset or a dead pool) and
+something specific to CGI/FastCGI, which the capsule cannot exercise because it runs
+mod_php.
+
+**The gate is deliberately not built on the answer.** What is measured in both
+environments is that `opcache_reset()` clears a stale resolution, and what failed on
+2026-08-18 and 2026-08-19 is that the reset never reached every pool. So the loop
+now proves per-segment that each one was reset or born after the swap, and it does
+not care which cache was holding the old path. Identifying the carrier would let the
+hardlink break and possibly the whole loop go away; it is worth doing, and nothing
+depends on it.
 
 What did **not** change: the deploy's response is still the right one. The same test
 confirms that `opcache_reset()` clears a stale resolution immediately (+15s, well
