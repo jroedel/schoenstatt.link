@@ -720,7 +720,10 @@ ORDER BY `Publisher`";
 
         $bookFormatType = $row['BookFormatType'];
         $bookFormatTypeUrl = null;
-        if (isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType])) {
+        //`isset($array[null])` is an E_DEPRECATED on PHP 8.5 even though it answers false,
+        //and most publications have no format, so this fired once per row. Invisible in
+        //production, which narrows error_reporting, and noisy in every console run.
+        if (null !== $bookFormatType && isset(self::BOOK_FORMAT_TYPE_URLS[$bookFormatType])) {
             $bookFormatTypeUrl = self::BOOK_FORMAT_TYPE_URLS[$bookFormatType];
         }
         $inLanguage = $this->filterDbArray($row['InLanguage']);

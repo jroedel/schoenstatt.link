@@ -1,0 +1,175 @@
+{#
+  module/Books/view/books/library-imports/edit.phtml — configure an import, see what it
+  would do, run it.
+
+  ## What this replaces
+
+  One form and one table. The table held every mapped column of every row: 11,381 rows
+  in a 5.27 MB document for import 3, of which 9,749 were books the spreadsheet changed
+  nothing about and eight were coloured yellow for "error" with no reason given. Under
+  it sat a button marked *Import data* that did the work on a plain submit, with nothing
+  naming the 1,281 books it would retire.
+
+  ## The order of the three sections is the point
+
+  Which columns, what would happen, then run it — because that is the order in which a
+  librarian can answer the questions. The old page put the form first and the
+  consequences ten thousand rows below the fold, where the button was.
+
+  Updates that change nothing are counted and not listed. Errors are listed first and
+  always, each with a sentence. Everything else is capped, and says how many it is not
+  showing rather than quietly stopping.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'books/_import-problem.html.twig' as problem %}
+
+{% block content %}
+<h1>{{ translate('Configure import') }}</h1>
+<p class="lead">{{ import.name }}</p>
+
+{% if has_run %}
+  {# The old page disabled every input and showed the counts. Same answer, no dead form. #}
+  <div class="alert alert-info">{{ translate('This import has already been run. Its file, worksheet and columns are fixed.') }}</div>
+  <p><strong>{{ translate('Books created') }}:</strong> {{ import.booksCreated }}</p>
+  <p><strong>{{ translate('Books updated') }}:</strong> {{ import.booksUpdated }}</p>
+  <p><strong>{{ translate('Books inactivated') }}:</strong> {{ import.booksInactivated }}</p>
+  <p>
+    <a class="btn btn-default" href="{{ detail_url }}">{{ translate('Import details') }}</a>
+    <a class="btn btn-primary" href="{{ library_url }}">{{ translate('Return to library') }}</a>
+  </p>
+{% elseif not readable %}
+  <div class="alert alert-danger">
+    <p>{{ translate('The file for this import cannot be read.') }}</p>
+    <p><code>{{ file_path }}</code></p>
+    <p>{{ translate('Imports created before 2026 name a path that was typed by hand rather than a file that was uploaded, and some of those paths were never on the server at all. Start a new import and upload the spreadsheet.') }}</p>
+  </div>
+  <p>
+    <a class="btn btn-primary" href="{{ library_url }}">{{ translate('Return to library') }}</a>
+  </p>
+{% else %}
+
+  {% if file_error is not null %}
+  <div class="alert alert-danger">{{ translate('This file could not be opened as a spreadsheet.') }}</div>
+  {% else %}
+
+  {% for blocker in blockers %}
+  <div class="alert alert-danger">
+    <strong>{{ translate('Nothing can be imported yet.') }}</strong>
+    {{ problem.describe(blocker.reason, blocker.params) }}
+  </div>
+  {% endfor %}
+
+  <h2>{{ translate('1. Which columns') }}</h2>
+  <p>{{ translate('These were matched from the headings in %s. Change any of them if the guess is wrong; what you save here is what a re-run of this import will read.')|format(file_name) }}</p>
+
+  {% if unused|length > 0 %}
+  <div class="alert alert-warning">
+    <strong>{{ translate('Columns that will not be imported:') }}</strong>
+    {{ unused|join(', ') }}.
+    {{ translate('Nothing is recognised for them. Point a field at one below if it should be imported.') }}
+  </div>
+  {% endif %}
+
+  {{ form_open(mapping_form, self_url) }}
+  {{ form_row(mapping_form.get('security')) }}
+  {{ form_row(mapping_form.get('worksheet')) }}
+  {% for field in mapping_form.get('map') %}
+  {{ form_row(field) }}
+  {% endfor %}
+  {{ form_row(mapping_form.get('submit')) }}
+  {{ form_close() }}
+
+  <h2>{{ translate('2. What this would do') }}</h2>
+  {% if import.isCompleteImport %}
+  <div class="alert alert-warning">
+    <strong>{{ translate('This is a complete import.') }}</strong>
+    {{ translate('Every active book this sheet does not list will be marked inactive.') }}
+  </div>
+  {% endif %}
+  <table class="table table-condensed" style="max-width:32em">
+  <tbody>
+    <tr><td>{{ translate('Rows in the sheet') }}</td><td class="text-right">{{ plan.row_count }}</td></tr>
+    <tr class="success"><td>{{ translate('Books to create') }}</td><td class="text-right">{{ statistics.create }}</td></tr>
+    <tr class="info"><td>{{ translate('Books to change') }}</td><td class="text-right">{{ statistics.update - statistics['update-unchanged'] }}</td></tr>
+    <tr><td>{{ translate('Books matched but unchanged') }}</td><td class="text-right">{{ statistics['update-unchanged'] }}</td></tr>
+    <tr class="danger"><td>{{ translate('Books to mark inactive') }}</td><td class="text-right">{{ statistics.inactivate }}</td></tr>
+    <tr><td>{{ translate('Collections to create') }}</td><td class="text-right">{{ statistics['create-collection'] }}</td></tr>
+    <tr class="warning"><td>{{ translate('Rows that cannot be imported') }}</td><td class="text-right">{{ statistics.error }}</td></tr>
+  </tbody>
+  </table>
+
+  {% if plan.linked_changes > 0 %}
+  <p class="help-block">{{ translate('%s of the changes are on books linked to a literature record. Those rows take their title, author, year, publisher, place, pages, language and ISBN from the record rather than from the spreadsheet — clear the Literature ID column for a row if the spreadsheet should win.')|format(plan.linked_changes) }}</p>
+  {% endif %}
+
+  {% for group in plan.groups %}
+  <h3>
+    {% if group.action == 'error' %}{{ translate('Rows that cannot be imported') }}
+    {% elseif group.action == 'create' %}{{ translate('Books to create') }}
+    {% elseif group.action == 'update' %}{{ translate('Books to change') }}
+    {% elseif group.action == 'inactivate' %}{{ translate('Books to mark inactive') }}
+    {% else %}{{ translate('Collections to create') }}{% endif %}
+    <small>{{ group.total }}</small>
+  </h3>
+  {% if group.action == 'create-collection' %}
+  <p>{{ group.rows|map(r => r.collection)|join(', ') }}</p>
+  {% else %}
+  <table class="table table-condensed table-striped">
+  <thead>
+  <tr>
+    <th>{{ translate('Row') }}</th>
+    <th>{{ translate('Barcode') }}</th>
+    <th>{{ translate('Title') }}</th>
+    <th>{{ group.action == 'error' ? translate('Why') : translate('Changes') }}</th>
+  </tr>
+  </thead>
+  <tbody>
+  {% for row in group.rows %}
+  <tr>
+    <td>{{ row.rowNumber }}</td>
+    <td>{{ row.withinLibraryId }}</td>
+    <td>{{ row.title }}</td>
+    <td>
+      {%- if group.action == 'error' -%}
+        {{ problem.describe(row.reason, row.reasonParams) }}
+      {%- elseif group.action == 'update' -%}
+        {%- for field, change in row.changes -%}
+          <div><strong>{{ headings[field]|default(field) }}:</strong>
+          <del>{{ change[0] is iterable ? change[0]|join('|') : change[0] }}</del>
+          <ins>{{ change[1] is iterable ? change[1]|join('|') : change[1] }}</ins></div>
+        {%- endfor -%}
+      {%- endif -%}
+    </td>
+  </tr>
+  {% endfor %}
+  </tbody>
+  </table>
+  {% endif %}
+  {% if group.truncated > 0 %}
+  <p class="help-block">{{ translate('%s more not shown.')|format(group.truncated) }}</p>
+  {% endif %}
+  {% endfor %}
+
+  <h2>{{ translate('3. Run it') }}</h2>
+  {% if run_form is null %}
+    {% if blockers|length > 0 %}
+    <p>{{ translate('Fix the problem above, then reload this page.') }}</p>
+    {% else %}
+    <p>{{ translate('This import would change nothing, so there is nothing to run.') }}</p>
+    {% endif %}
+  {% else %}
+  <div class="alert alert-warning">
+    {{ translate('This will create %s books, change %s, and mark %s inactive. It cannot be undone from this page.')|format(statistics.create, statistics.update - statistics['update-unchanged'], statistics.inactivate) }}
+  </div>
+  {{ form_open(run_form, self_url) }}
+  {{ form_row(run_form.get('security')) }}
+  {{ form_hidden(run_form.get('digest')) }}
+  {{ form_submit(run_form.get('submit')) }}
+  {{ form_close() }}
+  {% endif %}
+
+  {% endif %}
+
+  <p><a class="btn btn-default" href="{{ library_url }}">{{ translate('Return to library') }}</a></p>
+{% endif %}
+{% endblock %}
