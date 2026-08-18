@@ -6,9 +6,10 @@
   a link to the publication rather than the words "Publication Info". Both had been
   dropped from the Twig partial as unreachable — see its docblock.
 
-  The commented-out "Add another edition" button in the original is not reproduced. It
-  is markup inside an HTML comment inside a permission check, and there is nothing to
-  preserve about a button that has never rendered.
+  The commented-out "Add another edition" button *is* reproduced, HTML comment and all.
+  It has never rendered and never will as it stands — its href is empty — but it is bytes
+  in the response, and a port whose diff is otherwise clean is worth more than a template
+  three lines shorter. The `@todo` beside it in the original says what it was for.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -32,12 +33,13 @@
     'cover_url': null,
     'cover_thumb_url': null,
     'edit_url': publication_edit_url,
-    'merged_into_url': null,
-    'copy_to_corpus_url': null,
-    'other_editions': []
+    'merged_into_url': merged_into_url,
+    'copy_to_corpus_url': copy_to_corpus_url,
+    'other_editions': other_editions
 } only %}
 {% endif %}
 {% if is_allowed(entity.resourceId, 'administrate') %}
+<!-- <p><a class="btn btn-default" href=""></a></p> -->
 <div class="row"><div class="col-xs-12"><a class="btn btn-default" href="{{ copy_url }}">{{ translate("Add another copy to the library") }}</a></div></div>
 {% include 'sion-model/_entity-changes-panel.html.twig' with {
     'changes': changes,

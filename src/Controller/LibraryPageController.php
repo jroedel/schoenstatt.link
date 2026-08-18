@@ -7,8 +7,10 @@ namespace App\Controller;
 use App\Books\LibraryPage;
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
+use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
+use Laminas\Db\Sql\Predicate;
 use RuntimeException;
 use Schoenstatt\Model\SchoenstattTable;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,7 +19,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
 
 use function array_key_exists;
-use function array_values;
 use function is_array;
 use function is_string;
 
@@ -71,6 +72,25 @@ final class LibraryPageController
     ) {
     }
 
+    /**
+     * `['libraryId' => $id]`, typed to satisfy `queryObjects()`'s @param.
+     *
+     * SionTable declares the parameter as predicates and documents it as
+     * `array|PredicateInterface|PredicateInterface[]`; a column => value map is what every
+     * caller in the application passes and what the method's own SQL builder expects. The
+     * annotation is the thing that is wrong; this states the shape at one place instead of
+     * suppressing it at each call.
+     *
+     * @return array<Predicate\PredicateInterface>
+     */
+    private function predicate(int $libraryId): array
+    {
+        /** @var array<Predicate\PredicateInterface> $map */
+        $map = ['libraryId' => $libraryId];
+
+        return $map;
+    }
+
     public function __invoke(Request $request): Response
     {
         $page = $request->attributes->get(self::PAGE);
@@ -113,13 +133,14 @@ final class LibraryPageController
                     //alone; null rather than absent, because layout.html.twig runs with
                     //strict_variables.
                     'page_title' => null,
-                    'objects'    => $this->rows($table->queryObjects('book', ['libraryId' => $libraryId])),
+                    'objects'    => SionResult::rows($this->books($table, $libraryId)),
                 ])
             ),
             self::BOOK_LIST_JSON => new JsonResponse(['books' => $this->bookStatuses($table, $libraryId)]),
             default              => new Response(
                 $this->twig->render('sion-model/data-problems.html.twig', [
-                    'page_title'         => 'Data problems',
+                    //data-problems.phtml sets no headTitle; the layout default stands.
+                    'page_title'         => null,
                     'problems'           => $this->problems($table, $library, $libraryId),
                     'displayEditPencil'  => true,
                 ])
@@ -172,17 +193,14 @@ final class LibraryPageController
     private function problems(LibraryTable $table, array $library, int $libraryId): array
     {
         return [
-            ...$this->rows($table->getLibraryProblems($library)),
-            ...$this->rows($table->getLibraryBookProblems($libraryId)),
+            ...SionResult::listOf($table->getLibraryProblems($library)),
+            ...SionResult::listOf($table->getLibraryBookProblems($libraryId)),
         ];
     }
 
-    /**
-     * @param mixed $rows
-     * @return list<mixed>
-     */
-    private function rows(mixed $rows): array
+    /** The library's books, as SionTable answers them — see App\Laminas\SionResult. */
+    private function books(LibraryTable $table, int $libraryId): mixed
     {
-        return is_array($rows) ? array_values($rows) : [];
+        return $table->queryObjects('book', $this->predicate($libraryId));
     }
 }

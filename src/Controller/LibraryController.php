@@ -8,10 +8,13 @@ use App\Books\LibraryPage;
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
+use App\Laminas\SionResult;
 use Books\Form\SearchForm;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
-use SionModel\I18n\TranslationsTable;
+use Laminas\Form\Element\Select;
+use JTranslate\Model\TranslationsTable;
+use Laminas\I18n\Translator\TranslatorInterface;
 use SionModel\Problem\EntityProblem;
 use SionModel\Service\ProblemService;
 use Symfony\Component\HttpFoundation\Request;
@@ -82,7 +85,14 @@ final class LibraryController
         }
 
         $library = $this->page->library($request);
-        $refusal = $this->page->refuse($library, $isAdmin ? LibraryPage::ADMINISTRATE : LibraryPage::SHOW);
+        //**Both checks on the admin page, in this order.** `adminAction()` opens with
+        //`$view = $this->showAction()`, so a visitor who may not *see* the library is
+        //redirected by the show half before the `administrate` check ever throws. Asking
+        //only about `administrate` would answer 403 where laminas answers 302.
+        $refusal = $this->page->refuse($library, LibraryPage::SHOW);
+        if (null === $refusal && $isAdmin) {
+            $refusal = $this->page->refuse($library, LibraryPage::ADMINISTRATE);
+        }
         if (null !== $refusal) {
             return $refusal;
         }
@@ -123,7 +133,12 @@ final class LibraryController
         }
 
         return new Response($this->twig->render('books/library-admin.html.twig', [
-            'page_title'           => sprintf('Administrate %s', $name),
+            //Translated **before** the name goes in, which is the order adminAction() uses:
+            //`sprintf($this->translate('Administrate %s'), $name)`. Assembling first and
+            //translating after would look up the whole sentence, library name included —
+            //which finds nothing, files a phrase row per library, and rendered
+            //"Administrate Bellavista" on /es where laminas says "Administrar".
+            'page_title'           => sprintf($this->translate('Administrate %s'), $name),
             'page_title_translate' => false,
             'entity'               => $entity,
             'main_show_display'    => $this->display($entity),
@@ -133,6 +148,15 @@ final class LibraryController
             'publications'         => $this->publications(),
             'pages'                => $this->adminPages($table, $libraryId),
         ]));
+    }
+
+    /** The page's own text domain, which is where its format strings live. */
+    private function translate(string $message): string
+    {
+        /** @var TranslatorInterface $translator */
+        $translator = $this->laminas->get('MvcTranslator');
+
+        return $translator->translate($message, 'Books');
     }
 
     /**
@@ -157,13 +181,16 @@ final class LibraryController
     /**
      * The search half of `showAction()`.
      *
-     * @return array{0: list<mixed>|null, 1: array<int|string, mixed>, 2: SearchForm}
+     * @return array{0: array<int|string, mixed>|null, 1: array<int|string, mixed>, 2: SearchForm}
      */
     private function search(LibraryTable $table, Request $request, int $libraryId): array
     {
         /** @var SearchForm $form */
         $form = $this->laminas->get(SearchForm::class);
-        $form->get('collectionId')->setValueOptions($table->getCollectionValueOptions($libraryId));
+        $collectionId = $form->get('collectionId');
+        if ($collectionId instanceof Select) {
+            $collectionId->setValueOptions($table->getCollectionValueOptions($libraryId));
+        }
 
         $params              = $request->query->all();
         $params['libraryId'] = $libraryId;
@@ -182,10 +209,8 @@ final class LibraryController
             }
             //`> 1` because libraryId is always present: one field means no search terms.
             if (count($data) > 1) {
-                $found     = $table->searchBooks($data, ['maxResults' => self::MAX_RESULTS]);
-                $books     = is_array($found) ? $found : [];
-                $found     = $this->laminas->get('Books\BorrowersValueOptions');
-                $borrowers = is_array($found) ? $found : [];
+                $books     = SionResult::rows($table->searchBooks($data, ['maxResults' => self::MAX_RESULTS]));
+                $borrowers = SionResult::rows($this->laminas->get('Books\BorrowersValueOptions'));
             }
         }
 
@@ -197,9 +222,7 @@ final class LibraryController
     {
         /** @var PublicationsTable $table */
         $table = $this->laminas->get(PublicationsTable::class);
-        $rows  = $table->getObjects('publication');
-
-        return is_array($rows) ? $rows : [];
+        return SionResult::rows($table->getObjects('publication'));
     }
 
     /**
@@ -225,15 +248,19 @@ final class LibraryController
             $pages['libraries/library/data-problems']['badges'] = $this->problemCounts($table, $libraryId);
         }
         if (isset($pages['library-imports/library'])) {
-            $imports = $table->getLibraryImports();
-            $pages['library-imports/library']['badges'] = [count(is_array($imports) ? $imports : [])];
+            //`getLibraryImports()` reads the table's own libraryId, and nothing on this
+            //page has set it — so without this line the badge counts every library's
+            //imports, or whatever a previous request left in the APCu entry cache. It
+            //read 14 against laminas' 0 before this, on a library with none.
+            $table->setLibraryId($libraryId);
+            $pages['library-imports/library']['badges'] = [count(SionResult::rows($table->getLibraryImports()))];
         }
         if (isset($pages['sion-model/auto-fix-data-problems'])) {
             /** @var ProblemService $problems */
             $problems = $this->laminas->get(ProblemService::class);
             //$simulate defaults true, so this counts rather than repairs — see the class docblock
-            $found    = $problems->autoFixProblems();
-            $pages['sion-model/auto-fix-data-problems']['badges'] = [count(is_array($found) ? $found : [])];
+            $found = SionResult::rows($problems->autoFixProblems());
+            $pages['sion-model/auto-fix-data-problems']['badges'] = [count($found)];
         }
 
         foreach ($pages as $route => $values) {
@@ -259,10 +286,10 @@ final class LibraryController
      */
     private function problemCounts(LibraryTable $table, int $libraryId): array
     {
-        $library  = $table->getObject('library', $libraryId, true);
+        $library  = SionResult::rows($table->getObject('library', $libraryId, true));
         $problems = [
-            ...(is_array($found = $table->getLibraryProblems(is_array($library) ? $library : [])) ? $found : []),
-            ...(is_array($found = $table->getLibraryBookProblems($libraryId)) ? $found : []),
+            ...SionResult::listOf($table->getLibraryProblems($library)),
+            ...SionResult::listOf($table->getLibraryBookProblems($libraryId)),
         ];
 
         //Keys are EntityProblem's own severity strings, and SEVERITY_ERROR is 'danger'

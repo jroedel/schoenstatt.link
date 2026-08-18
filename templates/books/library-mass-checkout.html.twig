@@ -1,0 +1,76 @@
+{#
+  module/Books/view/books/checkouts/mass-checkout.phtml — record several loans at once,
+  typically to catch up on checkouts that happened away from the desk.
+
+  **The borrower list is the Schoenstatt Fathers at every library**, not the library's own
+  person provider — see App\Books\CheckoutForms for why that is reproduced rather than
+  corrected.
+
+  The list is shipped once as JSON for selectize rather than once per `<select>`: on a
+  form with many rows the options would otherwise be most of the response. The
+  `#rowTemplate` span carries a blank row with `__index__` where the collection index
+  goes, which "Add 4 rows" substitutes.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}<link href="/css/mass-checkouts.css" media="screen" rel="stylesheet" type="text/css">{% endblock %}
+{% block page_scripts %}<script type="text/javascript" src="/js/gen-books-checkouts.js"></script>{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Book Checkout') }}</h1>
+{{ form_open(form, self_url) }}
+<div class="table-responsive">
+<table class="table">
+<thead>
+<tr>
+    <th>{{ form_label(first_row.get('checkedOutOn')) }}</th>
+    <th>{{ form_label(first_row.get('personId')) }}</th>
+    <th>{{ form_label(first_row.get('withinLibraryIds')) }}</th>
+</tr>
+</thead>
+<tbody>
+{% for fieldset in form.get('checkout') %}
+{% include 'books/_mass-checkout-row.html.twig' with {'fieldset': fieldset, 'with_errors': true} only %}
+{% endfor %}
+</tbody>
+</table>
+</div>
+<ul id="book-list" class="list-unstyled"></ul>
+<span id="rowTemplate" data-template="{{ row_template }}"></span>
+{{ form_row(form.get('security')) }}
+<p>{{ form_submit(form.get('submit')) }}&nbsp;
+<a class="btn btn-default" id="addRows">{{ translate('Add 4 rows') }}</a></p>
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+var personOptions = {{ person_options|raw }};
+$("select[name*='personId']").selectize({
+	valueField: 'id',
+	labelField: 'name',
+	searchField: 'name',
+	options: personOptions,
+    create: false
+});
+$("input[name='checkout[0][checkedOutOn]']").focus();
+$("#addRows").click(function() {
+    var currentCount = $('form tr').length;
+    var template = $('#rowTemplate').data('template');
+    for (var i=0;i<4;i++) {
+        templateHtml = template.replace(/__index__/g, currentCount+i);
+        $('form tbody').append(templateHtml);
+    }
+    $("select[name*='personId']").selectize({
+    	valueField: 'id',
+    	labelField: 'name',
+    	searchField: 'name',
+    	options: personOptions,
+        create: false
+    });
+    return false;
+});
+});
+</script>
+{% endblock %}

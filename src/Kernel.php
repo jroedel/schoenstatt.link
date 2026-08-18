@@ -6,6 +6,7 @@ namespace App;
 
 use App\Authorization\RouteGuard;
 use App\Api\BotIdentity;
+use App\Books\CheckoutForms;
 use App\Books\LibraryPage;
 use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
@@ -34,8 +35,14 @@ use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
+use App\Controller\LibraryCheckoutController;
 use App\Controller\LibraryController;
+use App\Controller\LibraryFormController;
+use App\Controller\LibraryImportsController;
+use App\Controller\LibraryMassCheckoutController;
+use App\Controller\LibraryNoticesController;
 use App\Controller\LibraryPageController;
+use App\Controller\LibrarySortController;
 use App\Controller\LiteratureController;
 use App\Controller\MovementController;
 use App\Controller\MusicController;
@@ -490,7 +497,8 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl(),
-                $this->entityShow()
+                $this->entityShow(),
+                $this->viewHelpers()
             ),
             BorrowerController::class => fn (): BorrowerController => new BorrowerController(
                 $this->laminas(),
@@ -505,6 +513,45 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->libraryPage()
             ),
             LibraryController::class => fn (): LibraryController => new LibraryController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryCheckoutController::class => fn (): LibraryCheckoutController => new LibraryCheckoutController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage(),
+                new CheckoutForms($this->laminas())
+            ),
+            LibraryMassCheckoutController::class
+                => fn (): LibraryMassCheckoutController => new LibraryMassCheckoutController(
+                    $this->laminas(),
+                    $this->twig(),
+                    $this->routeUrl(),
+                    $this->libraryPage(),
+                    new CheckoutForms($this->laminas())
+                ),
+            LibraryFormController::class => fn (): LibraryFormController => new LibraryFormController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibrarySortController::class => fn (): LibrarySortController => new LibrarySortController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryImportsController::class => fn (): LibraryImportsController => new LibraryImportsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryNoticesController::class => fn (): LibraryNoticesController => new LibraryNoticesController(
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl(),

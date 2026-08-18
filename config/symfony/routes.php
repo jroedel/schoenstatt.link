@@ -52,8 +52,14 @@ use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
+use App\Controller\LibraryCheckoutController;
 use App\Controller\LibraryController;
+use App\Controller\LibraryFormController;
+use App\Controller\LibraryImportsController;
+use App\Controller\LibraryMassCheckoutController;
+use App\Controller\LibraryNoticesController;
 use App\Controller\LibraryPageController;
+use App\Controller\LibrarySortController;
 use App\Controller\LiteratureController;
 use App\Controller\MovementController;
 use App\Controller\MusicController;
@@ -1753,6 +1759,102 @@ $libraryPage('book-list', 'book-list');
 $libraryPage('book-list-json', 'book-list-json');
 $libraryPage('data-problems', 'data-problems');
 
+// The two bulk operations that are a form, a table call and a redirect. No method
+// constraint, matching the laminas routes: both render on GET and write on POST.
+$libraryForm = static function (string $page) use ($ported, $textDomain): void {
+    $ported(
+        'libraries/library/' . $page,
+        '/libraries/{library_id}/' . $page,
+        LibraryFormController::class,
+        RouteAccess::guardedBy('route/libraries/library/' . $page),
+        $textDomain('Books') + [LibraryFormController::FORM => $page],
+        ['library_id' => '[0-9]{1,5}']
+    );
+};
+// The lending form. Its permission is `checkout`, not `administrate`, and four of the
+// six libraries grant it to `guest` on purpose — docs/libraries.md.
+$ported(
+    'libraries/library/checkout',
+    '/libraries/{library_id}/checkout',
+    LibraryCheckoutController::class,
+    RouteAccess::guardedBy('route/libraries/library/checkout'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+
+$libraryForm('checkin');
+$ported(
+    'libraries/library/mass-checkout',
+    '/libraries/{library_id}/mass-checkout',
+    LibraryMassCheckoutController::class,
+    RouteAccess::guardedBy('route/libraries/library/mass-checkout'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+$libraryForm('inactivate-books');
+
+// The two *read* pages of the import surface. `library-imports/library/create` and
+// `library-imports/library-import/edit` stay on laminas: they are the import engine, not
+// pages — see App\Controller\LibraryImportsController for why moving them is a refactor
+// rather than a port.
+$ported(
+    'library-imports/library',
+    '/library-imports/library/{library_id}',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
+    'library-imports/library/create',
+    '/library-imports/library/{library_id}/create',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library/create'),
+    $textDomain('Books') + [LibraryImportsController::CREATE => true],
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
+    'library-imports/library-import',
+    '/library-imports/{import_id}',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library-import'),
+    $textDomain('Books') + [LibraryImportsController::DETAIL => true],
+    ['import_id' => '[0-9]{1,5}']
+);
+
+// The overdue-notice preview. Its guard admits everyone on purpose — the action itself
+// requires `administrate` **or** a key in X-Api-Key, which a route guard cannot express.
+$ported(
+    'libraries/library/send-book-notices',
+    '/libraries/{library_id}/send-book-notices',
+    LibraryNoticesController::class,
+    RouteAccess::guardedBy('route/libraries/library/send-book-notices'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// The sort diagnostic and the sweep it links to. **`refresh-sort` is the one route in
+// this batch whose contract changes**: the laminas action rewrote every book's sort_text
+// on a bare GET, with no token and no per-library check, behind a guard every account
+// holds. Here GET renders a confirmation and POST does the work. See
+// App\Books\RefreshSortForm.
+$ported(
+    'libraries/library/sort-debugging',
+    '/libraries/{library_id}/sort-debugging',
+    LibrarySortController::class,
+    RouteAccess::guardedBy('route/libraries/library/sort-debugging'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
+    'libraries/library/refresh-sort',
+    '/libraries/{library_id}/refresh-sort',
+    LibrarySortController::class,
+    RouteAccess::guardedBy('route/libraries/library/refresh-sort'),
+    $textDomain('Books') + [LibrarySortController::REFRESH => true],
+    ['library_id' => '[0-9]{1,5}']
+);
+
 // The library's own page and its admin menu — one controller, because `adminAction()`
 // calls `showAction()` and renders its output underneath the menu.
 $ported(
@@ -1760,7 +1862,12 @@ $ported(
     '/libraries/{library_id}',
     LibraryController::class,
     RouteAccess::guardedBy('route/libraries/library'),
-    $textDomain('Books'),
+    //Lights up **Literature**, because Application\Module::onBootstrap() hangs one
+    //navigation page per library underneath it and App\View\SiteChrome can only see the
+    //static config. Measured against the laminas rendering: of the twenty-three pages in
+    //this batch, this is the only one that marks a navbar item at all — the admin menu,
+    //the checkout lists and the imports mark none.
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications'],
     ['library_id' => '[0-9]{1,5}']
 );
 // One copy of one book. Its guard admits `guest`; the row-level gate is the `book`

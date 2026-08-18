@@ -90,6 +90,8 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('format_entity', $this->formatEntity(...), $html),
             new TwigFunction('short_date', $this->shortDate(...)),
             new TwigFunction('medium_date', $this->mediumDate(...)),
+            new TwigFunction('medium_datetime', $this->mediumDateTime(...)),
+            new TwigFunction('full_datetime', $this->fullDateTime(...)),
             new TwigFunction('diff_for_humans', $this->diffForHumans(...), $html),
             new TwigFunction('format_field', $this->formatField(...), $html),
             new TwigFunction('language_name', $this->languageName(...)),
@@ -417,6 +419,38 @@ final class LaminasExtension extends AbstractExtension
             $date,
             IntlDateFormatter::MEDIUM,
             IntlDateFormatter::NONE
+        );
+    }
+
+    /**
+     * `dateFormat($date, MEDIUM, MEDIUM)` — a date *and* a time, which the imports index
+     * uses for "started" and "last updated". Distinct from `medium_date`, which asks for
+     * no time at all.
+     */
+    public function mediumDateTime(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::MEDIUM,
+            IntlDateFormatter::MEDIUM
+        );
+    }
+
+    /** `dateFormat($date, FULL, LONG)` — the import detail page's own length. */
+    public function fullDateTime(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::FULL,
+            IntlDateFormatter::LONG
         );
     }
 

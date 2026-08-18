@@ -40,25 +40,25 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 124 |
-| guarded routes total | 124 |
+| guarded routes existing | 121 |
+| guarded routes total | 121 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 126 |
+| route guard entries | 123 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 70 |
+| routes shadowed by symfony | 92 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 134 |
+| symfony routes acl checked | 178 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 161 |
-| total routes | 142 |
-| unguarded routes | 18 |
+| symfony served routes | 205 |
+| total routes | 140 |
+| unguarded routes | 19 |
 | unguarded routes matchable | 7 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (124 + 18 = 142). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (121 + 19 = 140). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -133,10 +133,20 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `associations/create.locale` | `/{_locale}/associations/create` | `route/associations/create` | sch_administrator, sch_general_moderator, sch_moderator | html | `App\Controller\EntityCreateController` |
 | `associations/old-association` | `/associations/{association_id}` | `route/associations/old-association` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\SendToNewUrlController::associationById` |
 | `associations/old-association.locale` | `/{_locale}/associations/{association_id}` | `route/associations/old-association` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\SendToNewUrlController::associationById` |
+| `books/book` | `/books/{book_id}` | `route/books/book` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\BookController` |
+| `books/book.locale` | `/{_locale}/books/{book_id}` | `route/books/book` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\BookController` |
 | `books/book/edit` | `/books/{book_id}/edit` | `route/books/book/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `books/book/edit.locale` | `/{_locale}/books/{book_id}/edit` | `route/books/book/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `books/create` | `/books/create/{library_id}` | `route/books/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
 | `books/create.locale` | `/{_locale}/books/create/{library_id}` | `route/books/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
+| `borrowers/borrower` | `/borrowers/{person_id}` | `route/borrowers/borrower` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\BorrowerController` |
+| `borrowers/borrower.locale` | `/{_locale}/borrowers/{person_id}` | `route/borrowers/borrower` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\BorrowerController` |
+| `checkouts/library` | `/checkouts/library/{library_id}` | `route/checkouts/library` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\CheckoutsController` |
+| `checkouts/library.locale` | `/{_locale}/checkouts/library/{library_id}` | `route/checkouts/library` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\CheckoutsController` |
+| `checkouts/library/current` | `/checkouts/library/{library_id}/current` | `route/checkouts/library/current` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\CheckoutsController` |
+| `checkouts/library/current.locale` | `/{_locale}/checkouts/library/{library_id}/current` | `route/checkouts/library/current` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\CheckoutsController` |
+| `checkouts/library/overdue` | `/checkouts/library/{library_id}/overdue` | `route/checkouts/library/overdue` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\CheckoutsController` |
+| `checkouts/library/overdue.locale` | `/{_locale}/checkouts/library/{library_id}/overdue` | `route/checkouts/library/overdue` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\CheckoutsController` |
 | `collections/collection/edit` | `/collections/{collection_id}/edit` | `route/collections/collection/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `collections/collection/edit.locale` | `/{_locale}/collections/{collection_id}/edit` | `route/collections/collection/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `collections/create` | `/collections/create/{library_id}` | `route/collections/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
@@ -166,8 +176,42 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `libraries.locale` | `/{_locale}/libraries` | `route/libraries` | lib_administrator | html | `App\Controller\LibrariesController` |
 | `libraries/create` | `/libraries/create` | `route/libraries/create` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
 | `libraries/create.locale` | `/{_locale}/libraries/create` | `route/libraries/create` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityCreateController` |
+| `libraries/library` | `/libraries/{library_id}` | `route/libraries/library` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryController` |
+| `libraries/library.locale` | `/{_locale}/libraries/{library_id}` | `route/libraries/library` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryController` |
+| `libraries/library/admin` | `/libraries/{library_id}/admin` | `route/libraries/library/admin` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryController` |
+| `libraries/library/admin.locale` | `/{_locale}/libraries/{library_id}/admin` | `route/libraries/library/admin` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryController` |
+| `libraries/library/book-list` | `/libraries/{library_id}/book-list` | `route/libraries/library/book-list` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/book-list-json` | `/libraries/{library_id}/book-list-json` | `route/libraries/library/book-list-json` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/book-list-json.locale` | `/{_locale}/libraries/{library_id}/book-list-json` | `route/libraries/library/book-list-json` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/book-list.locale` | `/{_locale}/libraries/{library_id}/book-list` | `route/libraries/library/book-list` | guest, lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/checkin` | `/libraries/{library_id}/checkin` | `route/libraries/library/checkin` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryFormController` |
+| `libraries/library/checkin.locale` | `/{_locale}/libraries/{library_id}/checkin` | `route/libraries/library/checkin` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryFormController` |
+| `libraries/library/checkout` | `/libraries/{library_id}/checkout` | `route/libraries/library/checkout` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryCheckoutController` |
+| `libraries/library/checkout.locale` | `/{_locale}/libraries/{library_id}/checkout` | `route/libraries/library/checkout` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryCheckoutController` |
+| `libraries/library/collections` | `/libraries/{library_id}/collections` | `route/libraries/library/collections` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryCollectionsController` |
+| `libraries/library/collections.locale` | `/{_locale}/libraries/{library_id}/collections` | `route/libraries/library/collections` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryCollectionsController` |
+| `libraries/library/data-problems` | `/libraries/{library_id}/data-problems` | `route/libraries/library/data-problems` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/data-problems.locale` | `/{_locale}/libraries/{library_id}/data-problems` | `route/libraries/library/data-problems` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
 | `libraries/library/edit` | `/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
 | `libraries/library/edit.locale` | `/{_locale}/libraries/{library_id}/edit` | `route/libraries/library/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\EntityEditController` |
+| `libraries/library/inactivate-books` | `/libraries/{library_id}/inactivate-books` | `route/libraries/library/inactivate-books` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryFormController` |
+| `libraries/library/inactivate-books.locale` | `/{_locale}/libraries/{library_id}/inactivate-books` | `route/libraries/library/inactivate-books` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryFormController` |
+| `libraries/library/label-management` | `/libraries/{library_id}/label-management` | `route/libraries/library/label-management` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/label-management.locale` | `/{_locale}/libraries/{library_id}/label-management` | `route/libraries/library/label-management` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryPageController` |
+| `libraries/library/mass-checkout` | `/libraries/{library_id}/mass-checkout` | `route/libraries/library/mass-checkout` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryMassCheckoutController` |
+| `libraries/library/mass-checkout.locale` | `/{_locale}/libraries/{library_id}/mass-checkout` | `route/libraries/library/mass-checkout` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryMassCheckoutController` |
+| `libraries/library/refresh-sort` | `/libraries/{library_id}/refresh-sort` | `route/libraries/library/refresh-sort` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibrarySortController` |
+| `libraries/library/refresh-sort.locale` | `/{_locale}/libraries/{library_id}/refresh-sort` | `route/libraries/library/refresh-sort` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibrarySortController` |
+| `libraries/library/send-book-notices` | `/libraries/{library_id}/send-book-notices` | `route/libraries/library/send-book-notices` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\LibraryNoticesController` |
+| `libraries/library/send-book-notices.locale` | `/{_locale}/libraries/{library_id}/send-book-notices` | `route/libraries/library/send-book-notices` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\LibraryNoticesController` |
+| `libraries/library/sort-debugging` | `/libraries/{library_id}/sort-debugging` | `route/libraries/library/sort-debugging` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibrarySortController` |
+| `libraries/library/sort-debugging.locale` | `/{_locale}/libraries/{library_id}/sort-debugging` | `route/libraries/library/sort-debugging` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibrarySortController` |
+| `library-imports/library` | `/library-imports/library/{library_id}` | `route/library-imports/library` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library-import` | `/library-imports/{import_id}` | `route/library-imports/library-import` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library-import.locale` | `/{_locale}/library-imports/{import_id}` | `route/library-imports/library-import` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library.locale` | `/{_locale}/library-imports/library/{library_id}` | `route/library-imports/library` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library/create` | `/library-imports/library/{library_id}/create` | `route/library-imports/library/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library/create.locale` | `/{_locale}/library-imports/library/{library_id}/create` | `route/library-imports/library/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
 | `library/my-books` | `/library/my-books` | _open_ | everyone — reason below | n/a | `App\Controller\BorrowerCheckoutsController` |
 | `music` | `/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
 | `music.locale` | `/{_locale}/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
@@ -317,8 +361,13 @@ warning at the top of this file.
 | `associations/association` | `/associations/:sw_id` | `/associations/SL10000A` | `associations/association` | **public** (names the default role `guest`) | `route/associations/association` — **the same resource** |
 | `associations/create` | `/associations/create` | `—` | `associations/create` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/associations/create` — **the same resource** |
 | `associations/old-association` | `/associations/:association_id` | `/associations/0` | `associations/old-association` | **public** (names the default role `guest`) | `route/associations/old-association` — **the same resource** |
+| `books/book` | `/books/:book_id` | `/books/0` | `books/book` | **public** (names the default role `guest`) | `route/books/book` — **the same resource** |
 | `books/book/edit` | `/books/:book_id/edit` | `/books/0/edit` | `books/book/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/books/book/edit` — **the same resource** |
 | `books/create` | `/books/create/:library_id` | `/books/create/0` | `books/create` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/books/create` — **the same resource** |
+| `borrowers/borrower` | `/borrowers/:person_id` | `/borrowers/0` | `borrowers/borrower` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/borrowers/borrower` — **the same resource** |
+| `checkouts/library` | `/checkouts/library/:library_id` | `/checkouts/library/0` | `checkouts/library` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/checkouts/library` — **the same resource** |
+| `checkouts/library/current` | `/checkouts/library/:library_id/current` | `/checkouts/library/0/current` | `checkouts/library/current` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/checkouts/library/current` — **the same resource** |
+| `checkouts/library/overdue` | `/checkouts/library/:library_id/overdue` | `/checkouts/library/0/overdue` | `checkouts/library/overdue` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/checkouts/library/overdue` — **the same resource** |
 | `collections/collection/edit` | `/collections/:collection_id/edit` | `/collections/0/edit` | `collections/collection/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/collections/collection/edit` — **the same resource** |
 | `collections/create` | `/collections/create/:library_id` | `/collections/create/0` | `collections/create` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/collections/create` — **the same resource** |
 | `comments/create` | `/comments/create/:entity/:entity_id[/:kind]` | `/comments/create/a/0/comment` | `comments/create` | restricted to administrator, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | `route/comments/create` — **the same resource** |
@@ -333,7 +382,24 @@ warning at the top of this file.
 | `events` | `/timeline` | `—` | `events` | **public** (names the default role `guest`) | `route/events` — **the same resource** |
 | `libraries` | `/libraries` | `—` | `libraries` | restricted to lib_administrator | `route/libraries` — **the same resource** |
 | `libraries/create` | `/libraries/create` | `—` | `libraries/create` | **public** (names the default role `guest`) | `route/libraries/create` — **the same resource** |
+| `libraries/library` | `/libraries/:library_id` | `/libraries/0` | `libraries/library` | **public** (names the default role `guest`) | `route/libraries/library` — **the same resource** |
+| `libraries/library/admin` | `/libraries/:library_id/admin` | `/libraries/0/admin` | `libraries/library/admin` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/admin` — **the same resource** |
+| `libraries/library/book-list` | `/libraries/:library_id/book-list` | `/libraries/0/book-list` | `libraries/library/book-list` | **public** (names the default role `guest`) | `route/libraries/library/book-list` — **the same resource** |
+| `libraries/library/book-list-json` | `/libraries/:library_id/book-list-json` | `/libraries/0/book-list-json` | `libraries/library/book-list-json` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/book-list-json` — **the same resource** |
+| `libraries/library/checkin` | `/libraries/:library_id/checkin` | `/libraries/0/checkin` | `libraries/library/checkin` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/checkin` — **the same resource** |
+| `libraries/library/checkout` | `/libraries/:library_id/checkout` | `/libraries/0/checkout` | `libraries/library/checkout` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/checkout` — **the same resource** |
+| `libraries/library/collections` | `/libraries/:library_id/collections` | `/libraries/0/collections` | `libraries/library/collections` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/collections` — **the same resource** |
+| `libraries/library/data-problems` | `/libraries/:library_id/data-problems` | `/libraries/0/data-problems` | `libraries/library/data-problems` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/data-problems` — **the same resource** |
 | `libraries/library/edit` | `/libraries/:library_id/edit` | `/libraries/0/edit` | `libraries/library/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/edit` — **the same resource** |
+| `libraries/library/inactivate-books` | `/libraries/:library_id/inactivate-books` | `/libraries/0/inactivate-books` | `libraries/library/inactivate-books` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/inactivate-books` — **the same resource** |
+| `libraries/library/label-management` | `/libraries/:library_id/label-management` | `/libraries/0/label-management` | `libraries/library/label-management` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/label-management` — **the same resource** |
+| `libraries/library/mass-checkout` | `/libraries/:library_id/mass-checkout` | `/libraries/0/mass-checkout` | `libraries/library/mass-checkout` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/mass-checkout` — **the same resource** |
+| `libraries/library/refresh-sort` | `/libraries/:library_id/refresh-sort` | `/libraries/0/refresh-sort` | `libraries/library/refresh-sort` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/refresh-sort` — **the same resource** |
+| `libraries/library/send-book-notices` | `/libraries/:library_id/send-book-notices` | `/libraries/0/send-book-notices` | `libraries/library/send-book-notices` | **public** (names the default role `guest`) | `route/libraries/library/send-book-notices` — **the same resource** |
+| `libraries/library/sort-debugging` | `/libraries/:library_id/sort-debugging` | `/libraries/0/sort-debugging` | `libraries/library/sort-debugging` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/sort-debugging` — **the same resource** |
+| `library-imports/library` | `/library-imports/library/:library_id` | `/library-imports/library/0` | `library-imports/library` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library` — **the same resource** |
+| `library-imports/library-import` | `/library-imports/:import_id` | `/library-imports/0` | `library-imports/library-import` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library-import` — **the same resource** |
+| `library-imports/library/create` | `/library-imports/library/:library_id/create` | `/library-imports/library/0/create` | `library-imports/library/create` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library/create` — **the same resource** |
 | `music` | `/music` | `—` | `music` | **public** (names the default role `guest`) | `route/music` — **the same resource** |
 | `music/create-composition` | `/music/create-composition` | `—` | `music/create-composition` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/music/create-composition` — **the same resource** |
 | `persons` | `/persons` | `—` | `persons` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons` — **the same resource** |
@@ -512,7 +578,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `books/book` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `books/book/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `books/create` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
-| `borrowers` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `borrowers/borrower` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `checkouts/library` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `checkouts/library/current` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
@@ -547,7 +612,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `libraries/create` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `libraries/library` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `libraries/library/admin` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
-| `libraries/library/batch-operations` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `libraries/library/book-list` | yes | guest, lib_user | guest, lib_academic, lib_institute, lib_patres, lib_user (5) | yes |  |
 | `libraries/library/book-list-json` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `libraries/library/checkin` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
@@ -563,7 +627,6 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `libraries/library/sort-debugging` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `library-imports/library` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `library-imports/library-import` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
-| `library-imports/library-import/cancel` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `library-imports/library-import/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `library-imports/library/create` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `music` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
@@ -630,12 +693,13 @@ The last declaration in merge order wins; the others are silently discarded.
 
 `endpoint?` = no means the name is a Part-route parent with `may_terminate` false: it can never be
 the matched route name, so the missing guard costs nothing. The `yes` rows are the real finding —
-7 of the 18 are endpoints reachable by nobody.
+7 of the 19 are endpoints reachable by nobody.
 
 | route | endpoint? |
 | --- | --- |
 | `assignments` | no |
 | `books` | no |
+| `borrowers` | no |
 | `checkouts` | no |
 | `collections` | no |
 | `collections/collection` | no |

@@ -103,7 +103,17 @@ suites run from the superproject working tree.
   declared in `config/symfony/routes.php`, whose order *is* the migration status.
   Form routes are no longer blocked: `src/Form/BootstrapFormRenderer` reproduces
   TwbBundle's markup and `association-edit` is ported (byte-identical to the laminas
-  rendering apart from inter-tag whitespace). The **v3 API** for automated agents
+  rendering apart from inter-tag whitespace).
+  **The library circulation surface is Symfony-served since 2026-08-18** — the library
+  page, its admin menu, the lending and check-in forms, the checkout lists, the book and
+  borrower pages and the imports. `App\Books\LibraryPage` holds what every one of those
+  opens with (the row, the per-library ACL check, the breadcrumb), and the per-library
+  check is the real protection: every route guard on that surface names `lib_user`, which
+  is `is_default = 1`. One route stays on laminas by decision —
+  `library-imports/library-import/edit`, which is the spreadsheet import engine rather
+  than a page. Read [docs/libraries.md](docs/libraries.md) before changing any of it: the
+  permissive `checkout` rule is deliberate, and `refresh-sort` answers GET with a
+  confirmation because the laminas action rewrote every book in the library on one. The **v3 API** for automated agents
   lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
   It is the *only* API the site serves: v1 and v2 were retired 2026-08-14 and their
   26 URLs answer a JSON **410 Gone** carrying

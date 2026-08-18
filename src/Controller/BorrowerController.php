@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Books\LibraryPage;
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
+use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
 use Schoenstatt\Model\SchoenstattTable;
@@ -76,7 +77,7 @@ final class BorrowerController
         $entities = [];
         $libraries = [];
 
-        foreach (is_array($found) ? $found : [] as $checkoutId => $checkout) {
+        foreach (SionResult::rows($found) as $checkoutId => $checkout) {
             $libraryId = $checkout['book']['libraryId'] ?? null;
             if (null === $libraryId || ! $this->page->isAllowed('library_' . $libraryId, LibraryPage::ADMINISTRATE)) {
                 continue;

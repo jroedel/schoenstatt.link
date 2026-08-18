@@ -7,6 +7,7 @@ namespace App\Controller;
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
+use App\Authorization\Denial;
 use App\Sion\EntityCreate;
 use App\Sion\FormViewVariables;
 use BjyAuthorize\View\Helper\IsAllowed;
@@ -272,10 +273,12 @@ final class EntityCreateController
             return null;
         }
 
-        return new Response(
-            $this->twig->render('error/403.html.twig', ['page_title' => 'Access denied']),
-            Response::HTTP_FORBIDDEN
-        );
+        //Through Denial rather than rendering the template directly: `error/403.html.twig`
+        //requires a `subject`, and omitting it under strict_variables throws after the
+        //response is assembled — a blank HTTP 200 rather than a 403. That is what this
+        //branch did from batch 9 until 2026-08-18, on every create route whose visitor
+        //held the route guard but not the library's `administrate`.
+        return Denial::forbiddenPage($this->twig, 'library_' . $libraryId);
     }
 
     /**
