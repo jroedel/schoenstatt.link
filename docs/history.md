@@ -10,11 +10,95 @@ State reached by 2026-08-04: production runs **PHP 8.4.24** on a current
 Laminas stack with OPcache enabled, master is fully deployed, `composer audit
 --locked` reports zero advisories, and 198 tests run across three suites.
 
+State reached by 2026-08-18: **161 Symfony-served routes shadowing 70 of the 142
+laminas ones**, 72 left — measured by `tools/acl-table.php`, which is the number to
+cite; prose counts in these files have gone stale twice, and this line was itself
+wrong on both figures before it was checked against the tool. Production runs
+`SYMFONY_KERNEL=1`. The library surface (32 routes) is the next batch.
+
 State reached by 2026-08-08: **eighteen routes ported to the Symfony kernel**, ten of them
 deployed dormant — `SYMFONY_KERNEL` is still unset in production, so every one of them
 continues to render through laminas and turning them on is a `SetEnv` in
 `public/.htaccess`, not a deploy. 802 tests across four suites. See
 [strangler.md](strangler.md) for the mechanism and the route table.
+
+## Library-surface groundwork, and a deploy that could hang forever (2026-08-17/18, DEPLOYED)
+
+Three merged changes clearing the ground before the library routes port, plus one
+that came out of a live incident. What is worth keeping is mostly the method.
+
+**Eight admin routes retired rather than ported.** `/admin/literature-maintenance`
+and its six children were the 2020 data-source migration; `/admin/maintenance` was an
+unrelated person sweep. The question that dissolved them is the same one that
+dissolved `/en/associations/do-work` — *what would this do if I ran it today?* — and
+it goes unasked precisely because a simulate-by-default page has never hurt anybody.
+The answers: 0 rows, 0 rows, 1 row, 2 rows, and 20 cover files. All three database
+rows traced to a single publication (1426 → 10249), repaired by `database/db8.2.sql`,
+written as a join on the merge map rather than against the three ids measured that
+day, because the capsule is days behind production and a moderator can merge another
+row at any time.
+
+`/admin/maintenance` was the one worth stopping: it stripped the `priest` tag from
+anyone without a `PriestDate`, on a 2020 comment's premise that *"so far, all priests
+should have priestDate"*. **15 people carry the tag and 5 have no date.** A premise
+stated in a comment is not a measurement, and this one had been false for years.
+
+**A tool that documents its own blind spot still has the blind spot.** The
+per-library ACL rules — the ones that decide who may borrow at each library — are
+built from `lib_libraries` rows at request time, so `tools/acl-table.php` could not
+list them, *and said so in its output*. That sentence was accurate and was treated as
+the end of the matter. The consequence: a baseline covering every route guard and
+none of the rules actually gating the library pages, with three libraries granting
+`checkout` to all 34 effective roles and no diff ever showing it.
+`App\Books\LibraryAclRules` reproduces the mapping now, pinned to the real provider
+by a drift test. **A baseline that is confidently silent reads exactly like one that
+is confidently complete.**
+
+**Granting a role is the step that reveals whether anything is behind the door.**
+Six guard entries had been "decided" in the backlog on sibling agreement — every
+neighbouring route in the tree already said who should get in. Five of the six turned
+out to be dead config: templates and forms commented out of the entity spec,
+`enable_delete_action` commented out, and in one case (`publication-upload-cover`) a
+column that does not exist in the table. A route with no guard entry is *silently*
+denied, so nothing behind it has ever executed and nothing has ever failed. Sibling
+agreement says who should be let in; it says nothing about whether there is a page to
+see.
+
+### Techniques worth reusing
+
+**Mutation-test your own tests.** Used twice, and it changed the outcome both times.
+`LibraryAclRuleDriftTest` survived it and is therefore trustworthy. The deploy's
+`rsh-behaviour-test.sh` did not: the check that supposedly guarded piped stdin sailed
+straight past both `ssh -n` and a backgrounded ssh, because it substitutes a local
+stand-in for ssh and cannot see the flags at all. That split the test into two checks
+and rewrote its rationale. A test written and never falsified is a hypothesis.
+
+**When the rationale survives the mutation but the fact does not, fix the rationale.**
+The same test was justified by a piece of near-universal folklore — *"a background
+command in a non-interactive shell has its stdin reassigned to `/dev/null`"* — which
+would have meant a backgrounded ssh silently writing an empty `.revision`. Measured on
+bash 5.2: `printf x | { cat > f & wait $!; }` writes `x`. The POSIX rule does not bite
+when stdin is an explicit redirection. The design was right and the reason was wrong,
+which is the combination that survives review indefinitely. Both the comment and the
+test now name what actually breaks those call sites: `ssh -n` and `< /dev/null`.
+
+**Ask production, not the merge log, whether an out-of-repo repair happened.** The
+cover fix was a one-off script; `public/covers` is gitignored and lives in
+`shared/`, where no release reaches it. "Merged and deployed" was true and irrelevant
+— the script had never run. One `curl` for the file settled it. Deleting the script
+first would not have lost the script, which git keeps; it would have lost the
+knowledge that it still needed running.
+
+**A deploy could hang forever, and nothing said so.** There was no timeout of any kind
+on any of the ~40 remote calls, no keepalive, and no output while one was in flight —
+so a stalled step and a slow step were indistinguishable, and the only signal was a
+cursor that stopped moving. It surfaced on "Warming the release", on a redeploy of a
+commit that had warmed fine nine minutes earlier, in a step whose two commands take
+1.64s between them. Three defences now, because they catch different failures: ssh
+keepalives for a dead path, `timeout` for a healthy connection whose remote command is
+stuck, and a heartbeat that prevents nothing and is the only one that would have
+answered the question on the night. See [DEPLOY.md](DEPLOY.md) § When a step stops
+answering.
 
 ## Symfony strangler, batch 4: eight routes, and the blog retired (2026-08-08, not yet deployed)
 
