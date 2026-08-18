@@ -138,10 +138,140 @@ for t in git rsync ssh curl; do
     command -v "$t" >/dev/null 2>&1 || fail "$t is not installed locally."
 done
 
+# ------------------------------------------------------- not hanging forever ----
+#
+# Until 2026-08-18 there was no timeout of any kind on any of the ~40 remote calls,
+# no keepalive, and no output at all while one was in flight. So a stalled step and
+# a slow step looked identical from the outside, and the operator's only signal was
+# a cursor that had stopped moving. It happened on "Warming the release", to a
+# deploy of a commit that had warmed fine nine minutes earlier — the two commands in
+# that step take under two seconds between them, so it was never the work.
+#
+# Three defences, because they catch different failures and none of them subsumes
+# the others:
+#
+#   1. **ssh keepalives** notice a dead network path — the connection the local end
+#      still believes in and the far end has forgotten. ssh then exits instead of
+#      blocking on a socket nothing will ever answer.
+#   2. **`timeout`** bounds a call whose connection is perfectly healthy but whose
+#      remote command is stuck: a lock wait, a full disk, a process nothing will
+#      wake. Keepalives cannot see this — the channel is fine, it is the far end
+#      that is not coming back.
+#   3. **A heartbeat** prints elapsed seconds while a call is in flight, so a slow
+#      step announces itself instead of being indistinguishable from a wedged one.
+#      This is the one that would have answered the question on the day.
+
+# GNU coreutils has `timeout`; macOS has it only as `gtimeout`, and only if
+# coreutils is installed. Absent both, the deploy still runs and loses defence 2 —
+# said out loud at preflight rather than degrading silently, because "no timeout"
+# is exactly the condition this block exists to make visible.
+# >>> remote-call machinery — test/Deploy/rsh-behaviour-test.sh extracts everything
+# between these two markers and drives it with a local stand-in for ssh. Keep the
+# block self-contained: it may use `warn` and the colour variables, and nothing else
+# from this script.
+TIMEOUT_BIN=''
+if command -v timeout >/dev/null 2>&1; then
+    TIMEOUT_BIN=timeout
+elif command -v gtimeout >/dev/null 2>&1; then
+    TIMEOUT_BIN=gtimeout
+fi
+
+# Seconds before a remote command is presumed hung. Generous on purpose: this is
+# meant to bound a stall, not to police a slow server. The handful of calls that
+# legitimately take minutes set their own with `RSH_TIMEOUT=<seconds> rsh ...`.
+RSH_DEFAULT_TIMEOUT=180
+
+# Silence before the heartbeat speaks, and the gap between beats after that. The
+# first beat is late enough that the dozens of sub-second calls stay quiet.
+RSH_HEARTBEAT_AFTER=15
+RSH_HEARTBEAT_EVERY=15
+
+# Not gated on stderr being a terminal: when a deploy is piped to a log, a beat
+# every 15 seconds is precisely the record you want when reading back to find out
+# where it stopped.
+HEARTBEAT_PID=''
+heartbeat_start() {
+    local label=$1 budget=$2
+    (
+        local waited=$RSH_HEARTBEAT_AFTER
+        sleep "$RSH_HEARTBEAT_AFTER"
+        while :; do
+            printf '%s      … still waiting on %s — %ds of %ds%s\n' \
+                "$C_DIM" "$label" "$waited" "$budget" "$C_OFF" >&2
+            sleep "$RSH_HEARTBEAT_EVERY"
+            waited=$((waited + RSH_HEARTBEAT_EVERY))
+        done
+    ) &
+    HEARTBEAT_PID=$!
+}
+heartbeat_stop() {
+    if [ -n "$HEARTBEAT_PID" ]; then
+        kill "$HEARTBEAT_PID" 2>/dev/null || true
+        wait "$HEARTBEAT_PID" 2>/dev/null || true
+        HEARTBEAT_PID=''
+    fi
+}
+
+# Every remote call goes through here, which is why the timeout lives here and not
+# at the call sites: a protection that has to be remembered is one that will be
+# forgotten by the fortieth call.
+#
+# ssh runs in the FOREGROUND and the heartbeat is the background job, not the other
+# way round. Two reasons: a backgrounded ssh cannot prompt for the key passphrase —
+# it would be stopped on SIGTTIN instead, which looks exactly like the hang this
+# block exists to prevent — and it would stop receiving Ctrl-C from the terminal, so
+# an interrupted deploy would leave the remote command running.
+#
+# A third reason was written here first and is false, which is worth leaving on the
+# record because it is the one everybody reaches for: *"a background command in a
+# non-interactive shell has its stdin reassigned to /dev/null"*. Measured on bash
+# 5.2 — `printf x | { cat > f & wait $!; }` writes x. The POSIX sentence people
+# quote does not bite when stdin is an explicit redirection, so backgrounding would
+# NOT have corrupted the two piped call sites. It is still not worth doing, because
+# `timeout` already bounds the call and backgrounding buys nothing.
+#
+# What genuinely would break those two sites — the .revision write and the
+# opcache-helper distribution — is anything that takes stdin away: `ssh -n`, a
+# `< /dev/null` on the command, or a redirect added inside this function. An empty
+# .revision would then be blamed on the server by the revision gate downstream.
+# test/Deploy/rsh-behaviour-test.sh covers both that wiring and the absence of -n.
+#
+# Six call sites capture stdout with $(rsh ...), so the heartbeat writes to stderr.
+rsh() {
+    local budget=${RSH_TIMEOUT:-$RSH_DEFAULT_TIMEOUT}
+    local label=${RSH_LABEL:-remote command}
+    local status=0
+
+    heartbeat_start "$label" "$budget"
+    if [ -n "$TIMEOUT_BIN" ]; then
+        "$TIMEOUT_BIN" "${budget}s" "${SSH[@]}" "$1" || status=$?
+    else
+        "${SSH[@]}" "$1" || status=$?
+    fi
+    heartbeat_stop
+
+    # 124 is `timeout` reporting that it killed the call. Worth separating from the
+    # remote command's own non-zero exit, because the two mean opposite things: a
+    # normal failure is the server telling you something, a 124 is the server
+    # telling you nothing at all, and only the second one implicates the deploy
+    # rather than the release.
+    if [ "$status" = 124 ]; then
+        warn "no response from the server after ${budget}s — $label. The connection was open; the remote command did not return. Nothing later in this deploy has run."
+    fi
+    return $status
+}
+# <<< remote-call machinery
+
 # One multiplexed connection for the whole run: a deploy makes a dozen ssh
 # calls and the key needs its passphrase entered at most once.
+#
+# ServerAliveInterval x ServerAliveCountMax is the dead-path budget (~60s).
+# ConnectTimeout bounds only the initial handshake, which is a different failure
+# again — an unreachable host rather than one that stops replying mid-call.
 CTRL_PATH=$(mktemp -u "${TMPDIR:-/tmp}/deploy-ssh-XXXXXX")
+SSH_KEEPALIVE=(-o ConnectTimeout=15 -o ServerAliveInterval=15 -o ServerAliveCountMax=4)
 SSH=(ssh -o ControlMaster=auto -o ControlPath="$CTRL_PATH" -o ControlPersist=120
+     "${SSH_KEEPALIVE[@]}"
      -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST")
 
 # One exit handler for everything, installed once. Both halves are conditional
@@ -153,12 +283,19 @@ CHECKED_OUT_REF=0
 ORIG_BRANCH=''
 on_exit() {
     local status=$?
+    # First, before anything prints: a heartbeat that outlives the script would keep
+    # talking over whatever the shell says next, and Ctrl-C reaches here with one
+    # still running by definition.
+    heartbeat_stop
     if [ -n "$FILE_LIST" ]; then rm -f "$FILE_LIST"; fi
     # A reset helper left on the server is a publicly reachable cache flush, so it
     # goes even if the deploy died mid-step. RESET_FILE is cleared by the happy
     # path, so this only fires when something went wrong.
     if [ -n "${RESET_FILE:-}" ]; then
-        rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
+        # 20s, not the default 180: this runs on the way out, often after Ctrl-C, and
+        # a cleanup that hangs is how a hang gets blamed on the wrong step.
+        RSH_TIMEOUT=20 RSH_LABEL="removing the opcache reset helper" \
+            rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
     fi
     # --ref checks something else out; put the branch back rather than leaving
     # the user on a detached HEAD they did not ask to be on.
@@ -173,8 +310,6 @@ on_exit() {
     return $status
 }
 trap on_exit EXIT
-
-rsh() { "${SSH[@]}" "$1"; }
 
 SMOKE_ENV=()
 build_smoke_env() {
@@ -552,6 +687,13 @@ START_TS=$SECONDS
 
 step "Preflight"
 
+# Say it at the top, where it can still be acted on, rather than discovering it
+# from a deploy that hangs. Everything else still applies — ssh keepalives and the
+# heartbeat do not depend on this binary — so it is a warning, not a failure.
+if [ -z "$TIMEOUT_BIN" ]; then
+    warn "neither 'timeout' nor 'gtimeout' is installed locally, so remote calls are unbounded: a stuck command on the server will hang this deploy indefinitely, as it did on 2026-08-18. The heartbeat below will still tell you it is stuck. On macOS: brew install coreutils."
+fi
+
 ORIG_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 # Dirty-tree handling comes first: checking out --ref with a dirty tree either
@@ -689,7 +831,7 @@ info "$FILE_COUNT tracked files (superproject + three submodules)"
 if [ "$DRY_RUN" = 1 ]; then
     step "Dry run — what would transfer"
     rsync -a --files-from="$FILE_LIST" --from0 "${RSYNC_LINK[@]}" \
-        --dry-run --stats -e "ssh -o ControlPath=$CTRL_PATH -p $DEPLOY_SSH_PORT" \
+        --dry-run --stats --timeout=120 -e "ssh -o ControlPath=$CTRL_PATH ${SSH_KEEPALIVE[*]} -p $DEPLOY_SSH_PORT" \
         ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$NEW_ABS/" | sed -n '/^Number of files/,/^Total bytes/p' | sed 's/^/    /'
     printf '\n%sDry run complete. The server was not modified.%s\n' "$C_DIM" "$C_OFF"
     exit 0
@@ -724,7 +866,7 @@ ok "saved to shared/data/htaccess-backups/ (reachable as data/htaccess-backups/ 
 step "Building release $REL"
 rsh "mkdir -p $NEW_ABS"
 rsync -a --files-from="$FILE_LIST" --from0 "${RSYNC_LINK[@]}" \
-    -e "ssh -o ControlPath=$CTRL_PATH -p $DEPLOY_SSH_PORT" \
+    --timeout=120 -e "ssh -o ControlPath=$CTRL_PATH ${SSH_KEEPALIVE[*]} -p $DEPLOY_SSH_PORT" \
     ./ "$DEPLOY_SSH_USER@$DEPLOY_SSH_HOST:$NEW_ABS/"
 ok "tree uploaded"
 
@@ -809,13 +951,16 @@ step "composer install --no-dev"
 # A full copy rather than cp -al: composer may rewrite files in place, and a
 # hardlink shared with the previous release would corrupt the rollback target.
 if [ -n "$PREV" ]; then
-    rsh "cp -a $HOME_ABS/$RELEASES/$PREV/vendor $NEW_ABS/vendor 2>/dev/null || true"
+    RSH_TIMEOUT=600 RSH_LABEL="copying vendor from the previous release" \
+        rsh "cp -a $HOME_ABS/$RELEASES/$PREV/vendor $NEW_ABS/vendor 2>/dev/null || true"
     dim "seeded vendor/ from $PREV; install below is a no-op when the lock is unchanged"
 elif [ "$INITIAL_SWAP" = 1 ]; then
-    rsh "cp -a $HOME_ABS/$APP/vendor $NEW_ABS/vendor 2>/dev/null || true"
+    RSH_TIMEOUT=600 RSH_LABEL="copying vendor from the live tree" \
+        rsh "cp -a $HOME_ABS/$APP/vendor $NEW_ABS/vendor 2>/dev/null || true"
     dim "seeded vendor/ from the flat tree being replaced"
 fi
-rsh "cd $NEW_ABS && php composer.phar install --no-dev --no-interaction --optimize-autoloader" \
+RSH_TIMEOUT=1800 RSH_LABEL="composer install" \
+    rsh "cd $NEW_ABS && php composer.phar install --no-dev --no-interaction --optimize-autoloader" \
     || fail "composer install failed in the new release. Nothing was swapped; the site is untouched."
 ok "dependencies installed"
 
@@ -844,9 +989,11 @@ step "Warming the release (still not serving)"
 # the swap because of them. The two deploys that aborted at the gate are the proof
 # of the mechanism: their config cache was written 7-8 minutes later, at the exact
 # moment the caches were reset by hand and the release first executed anything.
-rsh "cd $NEW_ABS && php bin/console jtranslate:export-catalogs" \
+RSH_TIMEOUT=300 RSH_LABEL="jtranslate:export-catalogs" \
+    rsh "cd $NEW_ABS && php bin/console jtranslate:export-catalogs" \
     || warn "jtranslate:export-catalogs failed — translations are safe in the database, but this release's catalogs are stale and some strings will render in English."
-rsh "cd $NEW_ABS && php bin/console sitemap:build --force" \
+RSH_TIMEOUT=300 RSH_LABEL="sitemap:build" \
+    rsh "cd $NEW_ABS && php bin/console sitemap:build --force" \
     || warn "sitemap:build failed — this release ships without sitemap files until the cron rebuilds them."
 ok "catalogs and sitemap built (merged config warms on the first request, below)"
 
@@ -864,14 +1011,16 @@ if [ "$INITIAL_SWAP" = 1 ]; then
     ok "live release is now $REL; previous docroot kept as public.pre-atomic"
     dim "way back: mv public public.symlink && mv public.pre-atomic public"
 else
-    rsh "cd $HOME_ABS/$APP && ln -sfn releases/$REL/public public.swap && mv -Tf public.swap public"
+    RSH_TIMEOUT=30 RSH_LABEL="the symlink swap" \
+        rsh "cd $HOME_ABS/$APP && ln -sfn releases/$REL/public public.swap && mv -Tf public.swap public"
     ok "live release is now $REL (one rename(2); no window)"
 fi
 
 step "Post-swap"
 # APCu belongs to the SAPI that created it, so this has to be an HTTP request
 # into the web server — a CLI apcu_clear_cache() flushes a segment nobody reads.
-rsh "cd $NEW_ABS && php bin/console cache:flush-persistent" \
+RSH_TIMEOUT=120 RSH_LABEL="cache:flush-persistent" \
+    rsh "cd $NEW_ABS && php bin/console cache:flush-persistent" \
     || warn "persistent-cache flush failed; APCu may serve stale navigation branches. Re-run: php bin/console cache:flush-persistent"
 
 # There used to be a second hook here: a curl to /en/associations/do-work, which
