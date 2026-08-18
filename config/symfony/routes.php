@@ -55,6 +55,7 @@ use App\Controller\LibraryCollectionsController;
 use App\Controller\LibraryCheckoutController;
 use App\Controller\LibraryController;
 use App\Controller\LibraryFormController;
+use App\Controller\LibraryImportConfigureController;
 use App\Controller\LibraryImportsController;
 use App\Controller\LibraryMassCheckoutController;
 use App\Controller\LibraryNoticesController;
@@ -548,10 +549,10 @@ $ported(
 // App\Http\SessionListener has already started the laminas session, and the write goes
 // through SionTable::updateEntity() exactly as SionController does it.
 //
-// `library-imports/library-import/edit` is deliberately **not** here. It is not an edit
-// form: LibraryImportsController::editAction() reads a spreadsheet off disk and runs a
-// full import simulation on GET, then performs the real import when the POST carries
-// `import`. See docs/strangler.md.
+// `library-imports/library-import/edit` is not here, and never will be. It is not an edit
+// form: it configures a spreadsheet import, previews what it would do, and performs it.
+// It has its own controller — App\Controller\LibraryImportConfigureController — declared
+// with the rest of the import surface further down.
 /**
  * @param array<string, mixed> $extra
  * @param array<string, string> $requirements
@@ -845,8 +846,8 @@ $edit(
 // - `juser/create` and `juser/create-role` do not use `createAction()` at all —
 //   `UsersController::createAction()` is a standalone implementation — so they belong with
 //   the `juser/*` bloc, not here.
-// - `library-imports/library/create` is an import *simulation*, overriding
-//   `getPostDataForCreateAction()` and `createEntityPostFormValidation()`.
+// - `library-imports/library/create` takes a file upload and stores it before writing a
+//   row, which no shared create action does.
 // - `publication-create-new-edition` is its own action, not `createAction()`.
 // - `events/create` is **unportable**: its spec's `create_action_form` is commented out, its
 //   `create_action_valid_data_handler` names a method that exists nowhere in the repository,
@@ -1793,10 +1794,16 @@ $ported(
 );
 $libraryForm('inactivate-books');
 
-// The two *read* pages of the import surface. `library-imports/library/create` and
-// `library-imports/library-import/edit` stay on laminas: they are the import engine, not
-// pages — see App\Controller\LibraryImportsController for why moving them is a refactor
-// rather than a port.
+// The whole spreadsheet-import surface, five routes. The last of them,
+// `library-imports/library-import/edit`, is the one batch 11b left behind: it was not an
+// edit form but the import engine, three hundred lines inside a laminas controller that
+// created, updated and inactivated books in bulk. The engine is now
+// App\Books\Import\LibraryImporter and the page is
+// App\Controller\LibraryImportConfigureController.
+//
+// `library-imports/library/template` is new and has no laminas twin to fall back to — it
+// is a generated .xlsx, and there is no .phtml rendering of a spreadsheet. Its laminas
+// route entry exists so `laminas_path()` can assemble a link to it and for nothing else.
 $ported(
     'library-imports/library',
     '/library-imports/library/{library_id}',
@@ -1814,11 +1821,30 @@ $ported(
     ['library_id' => '[0-9]{1,5}']
 );
 $ported(
+    'library-imports/library/template',
+    '/library-imports/library/{library_id}/template',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library/template'),
+    $textDomain('Books') + [LibraryImportsController::TEMPLATE => true],
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
     'library-imports/library-import',
     '/library-imports/{import_id}',
     LibraryImportsController::class,
     RouteAccess::guardedBy('route/library-imports/library-import'),
     $textDomain('Books') + [LibraryImportsController::DETAIL => true],
+    ['import_id' => '[0-9]{1,5}']
+);
+// Configure, preview and run. The only route in the application whose POST can retire
+// thousands of books, which is why App\Books\Import\RunImportForm carries a digest of
+// the counts the operator was shown as well as a CSRF token.
+$ported(
+    'library-imports/library-import/edit',
+    '/library-imports/{import_id}/edit',
+    LibraryImportConfigureController::class,
+    RouteAccess::guardedBy('route/library-imports/library-import/edit'),
+    $textDomain('Books'),
     ['import_id' => '[0-9]{1,5}']
 );
 

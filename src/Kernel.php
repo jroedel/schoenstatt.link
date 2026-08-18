@@ -7,6 +7,9 @@ namespace App;
 use App\Authorization\RouteGuard;
 use App\Api\BotIdentity;
 use App\Books\CheckoutForms;
+use App\Books\Import\ImportStorage;
+use App\Books\Import\ImportTemplate;
+use App\Books\Import\SpreadsheetUpload;
 use App\Books\LibraryPage;
 use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
@@ -37,8 +40,9 @@ use App\Controller\LibrariesController;
 use App\Controller\LibraryCollectionsController;
 use App\Controller\LibraryCheckoutController;
 use App\Controller\LibraryController;
-use App\Controller\LibraryFormController;
+use App\Controller\LibraryImportConfigureController;
 use App\Controller\LibraryImportsController;
+use App\Controller\LibraryFormController;
 use App\Controller\LibraryMassCheckoutController;
 use App\Controller\LibraryNoticesController;
 use App\Controller\LibraryPageController;
@@ -89,6 +93,9 @@ use App\Sion\EntityShow;
 use App\Twig\TwigFactory;
 use App\View\NavigationTree;
 use App\View\PreferredUrls;
+use App\Twig\LaminasExtension;
+use Books\Service\SpreadsheetReader;
+use Closure;
 use SionModel\Error\FatalErrorHandler;
 use SionModel\Error\RequestContext as ErrorRequestContext;
 use SionModel\Service\ErrorHandling;
@@ -549,8 +556,20 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->twig(),
                 $this->routeUrl(),
-                $this->libraryPage()
+                $this->libraryPage(),
+                new SpreadsheetUpload(new ImportStorage(), $this->laminas()->get(SpreadsheetReader::class)),
+                //The template's prose is translated; its column headings are not. See
+                //App\Books\Import\ImportColumns for why a heading is a data key.
+                new ImportTemplate($this->twigTranslate())
             ),
+            LibraryImportConfigureController::class
+                => fn (): LibraryImportConfigureController => new LibraryImportConfigureController(
+                    $this->laminas(),
+                    $this->twig(),
+                    $this->routeUrl(),
+                    $this->libraryPage(),
+                    new ImportStorage()
+                ),
             LibraryNoticesController::class => fn (): LibraryNoticesController => new LibraryNoticesController(
                 $this->laminas(),
                 $this->twig(),
@@ -791,6 +810,23 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
             $this->requests(),
             $this->cspNonce()
         );
+    }
+
+    /**
+     * The same page-aware `translate()` every Twig template calls, as a closure.
+     *
+     * Taken off the Twig extension rather than built again from `MvcTranslator`: it
+     * carries the text-domain fallback the routes declare, and the generated spreadsheet
+     * should say what the page around it says. Its only caller is the import template.
+     *
+     * @return Closure(string): string
+     */
+    private function twigTranslate(): Closure
+    {
+        /** @var LaminasExtension $extension */
+        $extension = $this->twig()->getExtension(LaminasExtension::class);
+
+        return $extension->translate(...);
     }
 
     private function viewHelpers(): ViewHelpers

@@ -6,25 +6,36 @@
   indexAction()` calls `SionController::indexAction()`, which fetches the entity's index
   through a path that throws `InvalidArgumentException: No entity provided.` when there
   are none — so five of the six libraries answer 500 here today, every one of them except
-  Colegio Mayor, which holds all 22 imports. An empty list is not an error, and the
+  Colegio Mayor, which holds all fourteen imports. An empty list is not an error, and the
   controller now renders one.
 
   The edit pencil appears only on a *pending* import: once an import has run, its file
-  path and worksheet are frozen, so linking to a form that cannot change them would be a
-  link to a disabled page.
+  and columns are frozen, so linking to a form that cannot change them would be a link to
+  a disabled page.
+
+  The two download buttons are the entry point for a library that has never imported
+  anything, which until 2026 was five of the six: the import matched one library's
+  Spanish headings and the file had to already be on the server, so there was no way in.
+  They sit beside "Start new import" because the file comes first.
 #}
 {% extends 'layout.html.twig' %}
 {% import 'schoenstatt/_entity-format.html.twig' as format %}
 
 {% block content %}
 {% if is_allowed('route/library-imports/library/create') %}
-<p><a class="btn btn-primary" href="{{ laminas_path('library-imports/library/create', {'library_id': library_id}) }}">{{ translate('Start new import') }}</a></p>
+<p>
+  <a class="btn btn-primary" href="{{ laminas_path('library-imports/library/create', {'library_id': library_id}) }}">{{ translate('Start new import') }}</a>
+  <a class="btn btn-default" href="{{ template_url }}">{{ translate('Blank template') }}</a>
+  <a class="btn btn-default" href="{{ export_url }}">{{ translate('This library\'s books') }}</a>
+</p>
+<p class="help-block">{{ translate('Cataloguing in a spreadsheet is much faster than the web form. Download one of these, fill it in, and start an import with it.') }}</p>
 {% endif %}
 <table class="table">
 <thead>
 <tr>
     <th>{{ translate('Import name') }}</th>
     <th>{{ translate('Description') }}</th>
+    <th>{{ translate('Status') }}</th>
     <th>{{ translate('Complete import') }}</th>
     <th>{{ translate('Import started') }}</th>
     <th>{{ translate('Last updated') }}</th>
@@ -38,6 +49,7 @@
 <tr>
     <td>{{ format.entity('library-import', object, {'displayEditPencil': object.status == 'pending'}) }}</td>
     <td>{{ object.description }}</td>
+    <td>{% if object.status == 'completed' %}{{ translate('Run') }}{% elseif object.status == 'abandoned' %}{{ translate('Abandoned') }}{% else %}{{ translate('Not run yet') }}{% endif %}</td>
     <td>{{ object.isCompleteImport ? translate('Yes') : translate('No') }}</td>
     <td>{{ medium_datetime(object.createdOn) }}</td>
     <td>{{ medium_datetime(object.updatedOn) }}</td>

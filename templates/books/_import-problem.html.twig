@@ -1,0 +1,37 @@
+{#
+  The sentence for an App\Books\Import\ImportProblem key.
+
+  A macro rather than a translated string built in PHP, for the reason
+  docs/translation.md gives: the phrase a translator sees has to be the template with
+  its placeholders still in it. Interpolating first would file one phrase row per
+  barcode — and the duplicate-barcode message did exactly that until 2026, which is why
+  JTranslate\I18n\TranslatableMessage exists.
+
+  Every key App\Books\Import\ImportProblem declares appears here. One that does not
+  falls through to the key itself, which is ugly on purpose: an unexplained error is the
+  thing this whole page was built to stop.
+#}
+{% macro describe(reason, params) %}
+{%- set first = params|length > 0 ? params[0] : '' -%}
+{%- if reason == 'barcode-missing' -%}
+{{ translate('No barcode, or one that is not a whole number.') }}
+{%- elseif reason == 'barcode-duplicated' -%}
+{{ translate('Barcode %s is used by an earlier row in this sheet.')|format(first) }}
+{%- elseif reason == 'title-missing' -%}
+{{ translate('No title.') }}
+{%- elseif reason == 'literature-id-unknown' -%}
+{{ translate('No title, and literature record %s does not exist. A row may leave the title blank only when its Literature ID names a record that does.')|format(first) }}
+{%- elseif reason == 'columns-missing' -%}
+{{ translate('These columns are required and nothing in the sheet feeds them: %s.')|format(params|join(', ')) }}
+{%- elseif reason == 'barcodes-duplicated' -%}
+{{ translate('These barcodes appear more than once: %s. Every barcode must be unique within the library, so nothing can be imported until they are.')|format(first) }}
+{%- elseif reason == 'worksheet-missing' -%}
+{{ translate('The worksheet %s is not in this file.')|format(first) }}
+{%- elseif reason == 'file-missing' -%}
+{{ translate('The uploaded file is no longer on the server.') }}
+{%- elseif reason == 'no-rows' -%}
+{{ translate('This worksheet has no rows under its headings.') }}
+{%- else -%}
+{{ reason }}
+{%- endif -%}
+{% endmacro %}

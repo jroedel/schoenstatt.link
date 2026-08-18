@@ -6,6 +6,7 @@ namespace SchoenstattTest\Integration;
 
 use Laminas\Form\View\Helper\FormDate;
 use Laminas\Form\View\Helper\FormEmail;
+use Laminas\Form\View\Helper\FormFile;
 use Laminas\Form\View\Helper\FormNumber;
 use Laminas\Form\View\Helper\FormText;
 use Laminas\Form\View\Helper\FormUrl;
@@ -75,6 +76,9 @@ class BootstrapFormRendererTest extends TestCase
             'url'    => ['url', FormUrl::class],
             //FormDate declares none of its own and inherits AbstractFormDateTime's.
             'date'   => ['date', FormDate::class],
+            //The import upload, and the shortest list of the six: no `value`, because a
+            //file input's value cannot be set from markup.
+            'file'   => ['file', FormFile::class],
         ];
     }
 

@@ -1853,10 +1853,11 @@ to three fields that have never had them, which is a content change; it is in `d
 
 Five things worth knowing before touching any of it:
 
-- **`library-imports/library-import/edit` is not an edit form and is not in the batch.**
-  `LibraryImportsController::editAction()` reads a spreadsheet off disk and runs a full
-  import simulation on GET, then performs the real import when the POST carries `import`.
-  Porting it means porting the PhpSpreadsheet pipeline.
+- **`library-imports/library-import/edit` is not an edit form and was not in the batch.**
+  `LibraryImportsController::editAction()` read a spreadsheet off disk and ran a full
+  import simulation on GET, then performed the real import when the POST carried `import`.
+  It was ported on its own two weeks later, with the engine extracted first — see § The
+  spreadsheet import below.
 - **`EntityEdit`'s `$loader` hook is needed by `association` alone.** `getObject()` already
   dispatches to an entity's `get_object_function`, so `getPublication`, `getPerson`,
   `getRole` and `getAssignment` are reached by the plain call; `association`'s is commented
@@ -2003,7 +2004,7 @@ parses and the hardcoded `/libraries/3` redirect never fires), and mass-checkout
 list, which is the Schoenstatt Fathers at every library rather than the library's own person
 provider.
 
-#### One route stays on laminas, and it is not "not done yet"
+#### One route stayed on laminas, and it is not "not done yet"
 
 `library-imports/library-import/edit` is not a page with a form on it; it is the import
 engine. It opens a spreadsheet, walks it against a column map and either simulates or
@@ -2013,6 +2014,8 @@ reachable only through it. Porting it means extracting that into a service both 
 controllers call, which is a worthwhile refactor and is not a port: it moves destructive,
 untested code that writes to `lib_books` in bulk. Doing it as the tail of a batch of
 twenty-two routes is how a library gets silently re-imported.
+
+**Done 2026-08-18, on its own.** See § The spreadsheet import.
 
 #### What the batch taught the shared code
 
@@ -2043,6 +2046,83 @@ Two more general lessons, both about verification rather than about code:
   materialises the `count => 4` fieldsets.
 - **A page that introduces a phrase does not capture reproducibly.** See the note in the
   known-differences section above.
+
+### The spreadsheet import — 2026-08-18
+
+The one route batch 11b left behind, ported on its own because the engine had to come out
+of the controller first. It is also the first route tree here whose laminas side is
+**deleted** rather than shadowed: `Books\Controller\LibraryImportsController` and its six
+view scripts are gone, the entity spec's `sion_controllers` and `controller_services` keys
+with them, and the `library-imports` route tree no longer names a `controller` at all. The
+routes stay because `laminas_path()` is how a Twig template addresses a route and
+BjyAuthorize's guards are keyed by route name.
+
+That deletion is a departure from the rule the other 92 ported routes follow — laminas
+code stays, Symfony shadows it — and the reason is what the code was. Keeping it would
+mean maintaining a second copy of an engine that creates, updates and inactivates books in
+bulk, reachable by flipping one environment variable, against a front controller
+production has not used since 2026-08-11. The precedent is the v1/v2 API, deleted rather
+than ported for the same kind of reason.
+
+#### How a port of destructive code was verified without a rendering diff
+
+`tools/port-baseline.php` is the usual oracle and it is the wrong one here: the page is
+deliberately different, so a byte diff would be 5 MB of intended change with any real
+regression buried in it. The check that replaced it compares **plans, not pages**.
+
+The old engine's output was recovered by fetching the old edit page for the two imports
+whose spreadsheets are still on disk and parsing its table back into rows — 11,381 for
+import 3, 11,919 for import 1 — then the new engine was asked to plan the same files and
+the two were compared action by action, barcode by barcode:
+
+| | import 3 | import 1 |
+|---|---|---|
+| create | 1 = 1 | 8 vs **9** |
+| update | 10,091 = 10,091 | 8,417 = 8,417 |
+| inactivate | 1,281 = 1,281 | 3,492 = 3,492 |
+| error | 8 = 8 | 2 vs **1** |
+
+Identical everywhere except one row of import 1, and that row is the point: the old engine
+planned a **new book with barcode 0** for a row whose barcode cell was blank, because
+`(int) $cell` ran before the `is_numeric()` meant to catch it. The new engine calls it an
+error and imports the rest of the file.
+
+Neither of those spreadsheets can be a committed fixture — `data/import/` is gitignored —
+so this ran by hand and its result is recorded here. The committed tests use small
+fixtures under `test/Integration/fixtures/import/`.
+
+#### Round-tripping a library is the strongest test available
+
+Export Colegio Mayor's 10,874 active books through the new template writer, upload the
+file back, and the plan should be empty. It was not: **879 changes**, in two groups.
+
+285 were trailing whitespace — the export trims cells, 285 stored titles and authors have
+a trailing space. `LibraryImporter::same()` now compares trimmed, because a difference
+invisible in both the spreadsheet and the catalogue is not one worth showing or making.
+
+The remaining 326 are the real finding, and they are not a defect: a row carrying a
+**Literature ID** takes its title, author, year, publisher, place, pages, language and
+ISBN from the linked literature record rather than from the spreadsheet. 459 of Colegio
+Mayor's books are linked and 326 differ from their record. That is what linking means and
+it had never been written down anywhere a librarian would see it; the review page now
+counts those rows and says so. Nothing but a round trip would have surfaced it.
+
+#### What it cost the shared code
+
+- **`form_open()` emitted no `enctype`.** No form had ever needed one, so a browser would
+  have posted the upload as `application/x-www-form-urlencoded`, PHP would have populated
+  no `$_FILES`, and the file would simply not be there — with no error anywhere, on the
+  one form whose entire purpose is the file. The attribute is now emitted when the form
+  declares one.
+- **`BootstrapFormRenderer` had no `file` input type.** Unknown types pass their
+  attributes through unfiltered, which happened to be harmless, but `value` was set on
+  every input and `FormFile` emits none. Transcribed from `FormFile::$validTagAttributes`
+  and pinned by `BootstrapFormRendererTest` like the other five.
+- **Two PHP 8.5 deprecations** in code this exercises: `unserialize(null)` in
+  `getLibraryImports()` (one of the fourteen rows has no column mapping) and
+  `isset($array[null])` in `processPublicationRow()` (most publications have no format),
+  the second firing once per publication row. Invisible in production, which narrows
+  `error_reporting`, and noisy in every console run.
 
 ### The create surface — batch 9, 2026-08-15
 

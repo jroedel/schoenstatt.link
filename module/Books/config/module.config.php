@@ -59,6 +59,10 @@ return [
     'console' => [
         'commands' => [
             'books:send-notices' => \App\Console\Command\SendBookNoticesCommand::class,
+            //The spreadsheet import, for when a request cannot finish it: applying a
+            //complete import of PUC is 16,383 rows of writes against a 240-second
+            //max_execution_time. See App\Console\Command\ImportLibraryBooksCommand.
+            'books:import'       => \App\Console\Command\ImportLibraryBooksCommand::class,
         ],
     ],
     'books' => [
@@ -259,6 +263,8 @@ return [
             Model\LibraryTable::class           => Service\LibraryTableServiceFactory::class,
             Model\BorrowerTokenTable::class     => Service\BorrowerTokenTableFactory::class,
             \App\Console\Command\SendBookNoticesCommand::class => \App\Console\Command\SendBookNoticesCommandFactory::class,
+            \App\Console\Command\ImportLibraryBooksCommand::class
+                => \App\Console\Command\ImportLibraryBooksCommandFactory::class,
             Model\EventTextTable::class         => Service\EventTextTableFactory::class,
             Model\DictionaryTable::class        => Service\DictionaryTableFactory::class,
             Form\SearchForm::class              => Service\SearchFormFactory::class,
@@ -738,13 +744,28 @@ return [
                     ],
                 ],
             ],
+            /**
+             * The spreadsheet-import surface, and **the first route tree in this
+             * application with no laminas controller behind it at all.**
+             *
+             * `Books\Controller\LibraryImportsController` and its six view scripts were
+             * deleted 2026-08-18, when the last of these five routes moved to Symfony.
+             * Keeping them would have meant maintaining a second copy of an engine that
+             * creates, updates and inactivates books in bulk — reachable by flipping one
+             * environment variable — against a front controller production has not used
+             * since 2026-08-11.
+             *
+             * The routes themselves stay, and are not vestigial: `laminas_path()` is how
+             * every Twig template addresses a route, and BjyAuthorize's guards are keyed
+             * by route name. What is gone is `'controller' => …`, because there is no
+             * longer one to name. A request that reached laminas for one of these paths
+             * would fail to dispatch, which is the truthful answer: the pages, the
+             * upload and the generated spreadsheet exist only on the Symfony side.
+             */
             'library-imports' => [
                 'type' => Literal::class,
                 'options' => [
                     'route'    => '/library-imports',
-                    'defaults' => [
-                        'controller' => Controller\LibraryImportsController::class,
-                    ],
                 ],
                 'may_terminate' => false,
                 'child_routes' => [
@@ -767,6 +788,24 @@ return [
                                     'route'    => '/create',
                                     'defaults' => [
                                         'action'     => 'create',
+                                    ],
+                                ],
+                            ],
+                            /**
+                             * The spreadsheet a librarian downloads to fill in, and — with
+                             * `?books=1` — the library's current catalogue in the same
+                             * layout. Symfony-served only: `action` names no method on the
+                             * laminas controller, because there is no laminas rendering of
+                             * a binary download to fall back to. The route exists here so
+                             * `laminas_path()` can assemble a link to it, which is the only
+                             * way a Twig template addresses any route.
+                             */
+                            'template' => [
+                                'type'    => Literal::class,
+                                'options' => [
+                                    'route'    => '/template',
+                                    'defaults' => [
+                                        'action'     => 'template',
                                     ],
                                 ],
                             ],
@@ -1499,11 +1538,15 @@ return [
                 'table_key'                                 => 'ImportId',
                 'entity_key_field'                          => 'importId',
                 'sion_model_class'                          => Model\LibraryTable::class,
-                'sion_controllers'                          => [Controller\LibraryImportsController::class],
-                'controller_services'                       => [
-                    Model\PublicationsTable::class,
-                    Service\SpreadsheetReader::class,
-                ],
+                //No `sion_controllers` and no `controller_services`: this entity has no
+                //laminas controller any more. `EntitiesService` reads the first to tell a
+                //SionController which entity it serves, and `SionControllerFactory` reads
+                //the second to inject services into one — neither has anything to answer.
+                //The Symfony side resolves LibraryTable, PublicationsTable and
+                //SpreadsheetReader from the container directly, in
+                //App\Console\Command\ImportLibraryBooksCommandFactory and
+                //App\Controller\LibraryImportConfigureController.
+
                 'get_object_function'                       => 'getLibraryImport',
                 'get_objects_function'                      => 'getLibraryImports',
                 'row_processor_function'                    => 'processLibraryImportRow',
@@ -2458,6 +2501,7 @@ return [
                 ['route' => 'library-imports/library', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library/create', 'roles' => ['lib_user']],
+                ['route' => 'library-imports/library/template', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
 
                 ['route' => 'music', 'roles' => ['guest', 'user']],

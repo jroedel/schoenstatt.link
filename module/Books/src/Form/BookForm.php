@@ -39,6 +39,11 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Number',
             'options' => [
                 'label' => 'Barcode',
+                //Named for the label a librarian prints, and the one word that makes the
+                //spreadsheet import legible: this is the column the import matches a row
+                //to a book by, and the field it calls `withinLibraryId` internally.
+                'help-block' => 'This library\'s own number for this copy. It must be unique within the '
+                    . 'library, and it is what a spreadsheet import matches a row to this book by.',
             ],
             'attributes' => [
                 'required' => true,
@@ -90,7 +95,11 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'name' => 'authorsText',
             'type' => 'Text',
             'options' => [
-                'label' => 'Author(s) [separated by `|`]',
+                //Not rendered on the form — `authors` is, as a selectize picker, and
+                //`preprocessBook()` joins it into this. The label still matters: this is
+                //the field the spreadsheet import writes, and the one an error names.
+                'label' => 'Author',
+                'help-block' => 'One name, or several separated by a vertical bar.',
             ],
             'attributes' => [
                 'maxlength' => '500',
@@ -101,7 +110,8 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'name' => 'callNumber',
             'type' => 'Text',
             'options' => [
-                'label' => 'Call number'
+                'label' => 'Call number',
+                'help-block' => 'Where this copy stands on the shelf, as printed on its label.',
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -133,6 +143,11 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Text',
             'options' => [
                 'label' => 'Edition',
+                //The field that tells two copies of one work apart when nothing else
+                //does, which for Schoenstatt literature is most of the time: the same
+                //text is reissued by several houses in several languages.
+                'help-block' => 'Which edition or printing this copy is — what distinguishes it from '
+                    . 'another copy of the same work.',
             ],
             'attributes' => [
                 'maxlength' => '50',
@@ -155,7 +170,15 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'name' => 'publicationId',
             'type' => 'Select',
             'options' => [
-                'label' => 'Literature dataset link',
+                //"Literature dataset link" said what it was made of, not what it does.
+                //The help block is the part that was missing entirely: linking a copy
+                //makes the literature record authoritative for eight of this form's
+                //fields the next time a spreadsheet import touches the book, which is
+                //visible nowhere else and surprised the round-trip test.
+                'label' => 'Linked literature record',
+                'help-block' => 'The work in the site-wide literature catalogue that this copy is of. '
+                    . 'While it is set, a spreadsheet import takes the title, author, year, publisher, '
+                    . 'place, pages, language and ISBN from that record rather than from the spreadsheet.',
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => false,
@@ -167,6 +190,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Category',
+                'help-block' => 'One classification for this copy. For several subject terms use Keywords.',
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,
@@ -208,7 +232,10 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             ],
             'attributes' => [
                 'min'         => 1800,
-                'max'         => 2025,
+                //Was a hardcoded 2025, which since 1 January 2026 has meant the browser
+                //refusing this year's books. The input filter never enforced a range at
+                //all, so this was only ever an HTML hint — and a wrong one.
+                'max'         => (int) date('Y') + 1,
                 'step'        => 1,
                 'inclusive'   => true,
             ],
@@ -240,6 +267,7 @@ class BookForm extends SionForm implements InputFilterProviderInterface
             'type' => 'Select',
             'options' => [
                 'label' => 'Keywords',
+                'help-block' => 'Subject terms shown to readers. Several are fine.',
                 'empty_option' => '',
                 'unselected_value' => '',
                 'disable_inarray_validator' => true,

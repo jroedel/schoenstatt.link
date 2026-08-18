@@ -31,6 +31,16 @@ class LibraryTable extends SionTable implements
 {
     const IMPORT_STATUS_PENDING = 'pending';
     const IMPORT_STATUS_COMPLETED = 'completed';
+    /**
+     * Configured, never run, and not going to be.
+     *
+     * Added 2026-08-18 with `database/db8.3.sql`, which applies it to the three imports
+     * that had been sitting `pending` since 2017 and 2021. Two of them were live: their
+     * configure page still offered to run a spreadsheet from August 2017, which for
+     * import 1 means inactivating 3,492 of Colegio Mayor's 10,874 active books and for
+     * import 3 means 1,281.
+     */
+    const IMPORT_STATUS_ABANDONED = 'abandoned';
 
     const CHECKOUT_STATUS_CHECKED_OUT = 'checked-out';
     const CHECKOUT_STATUS_RETURNED = 'returned';
@@ -944,6 +954,51 @@ ORDER BY `publisher`";
         return $lookup;
     }
 
+    /**
+     * Every book in a library as a processed entity, keyed by barcode (`original_id`).
+     *
+     * The spreadsheet import needs this and nothing else did, which is why it did not
+     * exist: `getLibraryBookLookupWithActive()` answers "does this barcode name a book",
+     * and that was all the old engine ever asked. Asking what would *change* needs the
+     * stored values too, and they have to be the same shape `updateEntity()` compares
+     * against — the processed entity, not the raw row — or the diff shown to a librarian
+     * and the write that follows it disagree about arrays, dates and empty strings.
+     *
+     * Built on getUnlinkedBooks(), so it is the cached per-library set rather than a
+     * second query: one call, then re-keyed. The unique index on
+     * (`library_id`, `original_id`) is what makes the key safe.
+     *
+     * @param int|null $libraryId
+     * @return mixed[] barcode => book entity
+     */
+    public function getLibraryBooksByBarcode($libraryId = null)
+    {
+        if (! isset($libraryId)) {
+            $libraryId = $this->getLibraryId();
+        }
+        if (! isset($libraryId) || ! is_numeric($libraryId)) {
+            throw new \InvalidArgumentException(
+                'There must by a libraryId set to get the library book list by barcode.'
+            );
+        }
+        $previousLibraryId = $this->getLibraryId();
+        $this->setLibraryId($libraryId);
+        try {
+            $books = $this->getUnlinkedBooks();
+        } finally {
+            $this->setLibraryId($previousLibraryId);
+        }
+
+        $byBarcode = [];
+        foreach ($books as $book) {
+            if (! isset($book['withinLibraryId'])) {
+                continue;
+            }
+            $byBarcode[$book['withinLibraryId']] = $book;
+        }
+        return $byBarcode;
+    }
+
     // updateLibraryBookPublicationReferences() lived here until 2026-08-17. It repointed a
     // book at the publication its data-sourced original had been merged into, and was
     // reachable only from the retired /admin/literature-maintenance routes. Two books were
@@ -1733,7 +1788,12 @@ ORDER BY CreatedOn DESC";
                 'updatedBy'                 => $this->filterDbId($row['UpdatedBy']),
 
                 'resourceId'                => 'library_' . $libraryId,
-                'columnMapping'             => unserialize($columnMappingSerialized),
+                //Thirteen of the fourteen import rows have a mapping and one does not;
+                //`unserialize(null)` is an E_DEPRECATED on PHP 8.5. `false` is also what
+                //unserialize() returns for unparseable bytes, so callers already handle it.
+                'columnMapping'             => null === $columnMappingSerialized
+                    ? false
+                    : unserialize($columnMappingSerialized),
                 'fileAvailable'             => $fileAvailable,
             ];
         }

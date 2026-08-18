@@ -109,11 +109,19 @@ suites run from the superproject working tree.
   borrower pages and the imports. `App\Books\LibraryPage` holds what every one of those
   opens with (the row, the per-library ACL check, the breadcrumb), and the per-library
   check is the real protection: every route guard on that surface names `lib_user`, which
-  is `is_default = 1`. One route stays on laminas by decision —
-  `library-imports/library-import/edit`, which is the spreadsheet import engine rather
-  than a page. Read [docs/libraries.md](docs/libraries.md) before changing any of it: the
-  permissive `checkout` rule is deliberate, and `refresh-sort` answers GET with a
-  confirmation because the laminas action rewrote every book in the library on one. The **v3 API** for automated agents
+  is `is_default = 1`. Read [docs/libraries.md](docs/libraries.md) before changing any of
+  it: the permissive `checkout` rule is deliberate, and `refresh-sort` answers GET with a
+  confirmation because the laminas action rewrote every book in the library on one.
+  **The spreadsheet import is Symfony-only since 2026-08-18** — `/library-imports` is the
+  first route tree here with **no laminas controller at all**, its routes kept solely so
+  `laminas_path()` and the BjyAuthorize guards can name them. The engine is
+  `App\Books\Import\LibraryImporter` (`plan()` / `apply()`), the column vocabulary is
+  `App\Books\Import\ImportColumns` and is the only such list, and
+  `bin/console books:import` runs the same thing without a 240-second request. Read
+  [docs/library-imports.md](docs/library-imports.md) before touching any of it: a blank
+  cell **erases** the stored value, a complete import **inactivates** every active book
+  the sheet omits, and a row naming a literature record takes eight of its fields from
+  that record rather than from the spreadsheet. The **v3 API** for automated agents
   lives under `src/Api/` and `src/Controller/Api/` — see [docs/api-v3.md](docs/api-v3.md).
   It is the *only* API the site serves: v1 and v2 were retired 2026-08-14 and their
   26 URLs answer a JSON **410 Gone** carrying

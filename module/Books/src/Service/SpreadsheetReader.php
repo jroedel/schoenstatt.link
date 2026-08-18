@@ -17,6 +17,27 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class SpreadsheetReader
 {
     /**
+     * The worksheets a file contains, in the order the file lists them.
+     *
+     * Exists because the import used to ask a librarian to *type* the worksheet name,
+     * with no indication of what the file held and no error until the whole page 500'd
+     * on `Worksheet "Hoja 1" not found`. The names come from the reader rather than the
+     * controller because loading a spreadsheet is this class's job and nobody else's.
+     *
+     * @return list<string>
+     * @throws \Exception if the file cannot be read as a spreadsheet at all
+     */
+    public function worksheetNames(string $filePath): array
+    {
+        $spreadsheet = IOFactory::load($filePath);
+        try {
+            return array_values($spreadsheet->getSheetNames());
+        } finally {
+            $spreadsheet->disconnectWorksheets();
+        }
+    }
+
+    /**
      * @return array{header: array<int, string|null>, rows: array<int, array<int, string|null>>}
      * @throws InvalidArgumentException if the worksheet doesn't exist
      * @throws \Exception if the worksheet holds no data

@@ -97,6 +97,7 @@ return [
     // total pass-through: no filter, no validator, no length bound.
     'elementsMissingFromSpec' => [
         'Books\\Form\\CheckoutForm: \'personId\' is not named in the input filter spec (element-provided validation only, no filters)',
+        'Books\\Form\\ImportForm: \'file\' is not named in the input filter spec (element-provided validation only, no filters)',
         'Books\\Form\\PublicationsSearchForm: \'includeDataSources\' is not named in the input filter spec (element-provided validation only, no filters)',
         'Books\\Form\\SearchForm: \'category\' is not named in the input filter spec (PASS-THROUGH: no filter, no validator, no length bound)',
         'JUser\\Form\\EditUserForm: \'rolesList\' is not named in the input filter spec (element-provided validation only, no filters)',

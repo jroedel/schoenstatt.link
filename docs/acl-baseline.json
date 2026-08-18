@@ -21,21 +21,21 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 121,
-        "guarded_routes_total": 121,
+        "guarded_routes_existing": 122,
+        "guarded_routes_total": 122,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 123,
+        "route_guard_entries": 124,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 92,
+        "routes_shadowed_by_symfony": 94,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 178,
+        "symfony_routes_acl_checked": 182,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 205,
-        "total_routes": 140,
+        "symfony_served_routes": 209,
+        "total_routes": 141,
         "unguarded_routes": 19,
         "unguarded_routes_matchable": 7
     },
@@ -2375,6 +2375,32 @@
             "matchable": true,
             "public": false,
             "route": "library-imports/library/create"
+        },
+        "library-imports/library/template": {
+            "anonymous_allowed": false,
+            "assertion": null,
+            "declaration_count": 1,
+            "declarations": [
+                {
+                    "roles": [
+                        "lib_user"
+                    ],
+                    "assertion": null
+                }
+            ],
+            "declared_roles": [
+                "lib_user"
+            ],
+            "effective_roles": [
+                "lib_academic",
+                "lib_institute",
+                "lib_patres",
+                "lib_user"
+            ],
+            "exists_in_router": true,
+            "matchable": true,
+            "public": false,
+            "route": "library-imports/library/template"
         },
         "music": {
             "anonymous_allowed": true,
@@ -4922,6 +4948,16 @@
             "probe": "/library-imports/0"
         },
         {
+            "laminas_route": "library-imports/library-import/edit",
+            "path": "/library-imports/:import_id/edit",
+            "symfony_route": "library-imports/library-import/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/library-imports/library-import/edit",
+            "access_kind": "acl",
+            "probe": "/library-imports/0/edit"
+        },
+        {
             "laminas_route": "library-imports/library/create",
             "path": "/library-imports/library/:library_id/create",
             "symfony_route": "library-imports/library/create",
@@ -4930,6 +4966,16 @@
             "now_checks": "route/library-imports/library/create",
             "access_kind": "acl",
             "probe": "/library-imports/library/0/create"
+        },
+        {
+            "laminas_route": "library-imports/library/template",
+            "path": "/library-imports/library/:library_id/template",
+            "symfony_route": "library-imports/library/template",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/library-imports/library/template",
+            "access_kind": "acl",
+            "probe": "/library-imports/library/0/template"
         },
         {
             "laminas_route": "music",
@@ -7987,6 +8033,26 @@
                 "denial_style": "html"
             }
         },
+        "library-imports/library-import/edit": {
+            "path": "/library-imports/{import_id}/edit",
+            "controller": "App\\Controller\\LibraryImportConfigureController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library-import/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library-import/edit.locale": {
+            "path": "/{_locale}/library-imports/{import_id}/edit",
+            "controller": "App\\Controller\\LibraryImportConfigureController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library-import/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "library-imports/library.locale": {
             "path": "/{_locale}/library-imports/library/{library_id}",
             "controller": "App\\Controller\\LibraryImportsController",
@@ -8013,6 +8079,26 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/library-imports/library/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library/template": {
+            "path": "/library-imports/library/{library_id}/template",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library/template",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library/template.locale": {
+            "path": "/{_locale}/library-imports/library/{library_id}/template",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library/template",
                 "reason": null,
                 "denial_style": "html"
             }
