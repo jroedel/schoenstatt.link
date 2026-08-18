@@ -1,0 +1,47 @@
+{#
+  module/Books/view/books/books/show.phtml — one copy of one book in one library.
+
+  The publication panel underneath is the *same* partial the publication page renders,
+  with two options the book page is the only caller of: no cover, and a heading that is
+  a link to the publication rather than the words "Publication Info". Both had been
+  dropped from the Twig partial as unreachable — see its docblock.
+
+  The commented-out "Add another edition" button in the original is not reproduced. It
+  is markup inside an HTML comment inside a permission check, and there is nothing to
+  preserve about a button that has never rendered.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ entity.title }}{% if not entity.isActive %}&nbsp;<span class="label label-warning">{{ translate('Inactive') }}</span>{% endif %}</h1>
+{% include 'books/_book-info.html.twig' with {
+    'object': entity,
+    'cover_url': cover_url,
+    'cover_thumb_url': cover_thumb_url,
+    'edit_url': edit_url,
+    'collection_name': collection_name,
+    'collection_url': collection_url,
+    'category_url': category_url,
+    'borrower_name': borrower_name
+} only %}
+{% if entity.publication is defined and entity.publication %}
+{% include 'books/_publication-info.html.twig' with {
+    'object': entity.publication,
+    'show_cover': false,
+    'panel_title': 'book-title-and-link',
+    'cover_url': null,
+    'cover_thumb_url': null,
+    'edit_url': publication_edit_url,
+    'merged_into_url': null,
+    'copy_to_corpus_url': null,
+    'other_editions': []
+} only %}
+{% endif %}
+{% if is_allowed(entity.resourceId, 'administrate') %}
+<div class="row"><div class="col-xs-12"><a class="btn btn-default" href="{{ copy_url }}">{{ translate("Add another copy to the library") }}</a></div></div>
+{% include 'sion-model/_entity-changes-panel.html.twig' with {
+    'changes': changes,
+    'panel_title': 'Change log'
+} only %}
+{% endif %}
+{% endblock %}

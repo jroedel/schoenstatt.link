@@ -137,14 +137,6 @@ class LibrariesController extends SionController
         }
     }
 
-    public function batchOperationsAction()
-    {
-        $resourceId = 'library_' . $this->getLibraryId();
-        if (! $this->isAllowed($resourceId, 'administrate')) {
-            throw new UnAuthorizedException();
-        }
-    }
-
     public function getBookListJsonAction()
     {
         $resourceId = 'library_' . $this->getLibraryId();

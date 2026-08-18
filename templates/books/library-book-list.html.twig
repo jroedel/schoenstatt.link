@@ -1,0 +1,43 @@
+{#
+  module/Books/view/books/libraries/book-list.phtml — the printable barcode/call-number
+  list, and the one **publicly reachable** page in this batch: its guard admits `guest`.
+  It is not in the sitemap, so it is reachable but not indexed.
+
+  Two faithful reproductions worth naming, because both look like mistakes:
+
+  - the cover column's cell is a `<th>`, not a `<td>`, inside every body row.
+  - the table carries no class at all, so it gets none of Bootstrap's table styling.
+
+  The cover column appears only when `publications` is passed, which the bookList action
+  does not do — so on this route the column is always absent. Reproduced anyway: the
+  template is what would have to change if the action ever passed them, and dropping the
+  branch here would move that decision somewhere less obvious.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<div class="table-responsive">
+<table>
+<tr>
+{% if publications is defined and publications is iterable %}<th></th>{% endif %}
+<th>{{ translate('Barcode') }}</th>
+<th>{{ translate('Call number') }}</th>
+<th>{{ translate('Author') }}</th>
+</tr>
+{% for book in objects %}
+<tr>
+    {% if publications is defined and publications is iterable %}<th>
+    {%- set cover = publications[book.publicationId] is defined ? publications[book.publicationId] : null %}
+    {%- if book.publicationId is not null and cover and cover.coverThumbnail80pxUri is not null %}
+    <a href="{{ laminas_path('publication', {'sw_id': book.identifier, 'slug': book.slug}) }}">
+    <img src="{{ cover.coverThumbnail80pxUri }}" height="80px" alt="{{ cover.title }}"></a>
+    {%- endif %}
+    </th>{% endif %}
+    <td>{{ book.withinLibraryId }}</td>
+    <td>{{ book.callNumber }}</td>
+    <td>{{ book.authorsText }}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
+{% endblock %}

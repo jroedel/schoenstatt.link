@@ -36,7 +36,10 @@ use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\BorrowerCheckoutsController;
+use App\Controller\BookController;
+use App\Controller\BorrowerController;
 use App\Controller\CacheStatusController;
+use App\Controller\CheckoutsController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\CommentCreateController;
 use App\Controller\CompositionController;
@@ -48,6 +51,9 @@ use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
+use App\Controller\LibraryCollectionsController;
+use App\Controller\LibraryController;
+use App\Controller\LibraryPageController;
 use App\Controller\LiteratureController;
 use App\Controller\MovementController;
 use App\Controller\MusicController;
@@ -1701,6 +1707,108 @@ $routes->add('api-v3/phrase-unretire-method', new Route('/api/v3/phrases/{phrase
     MethodNotAllowedController::ALLOWED => ['POST'],
     RouteAccess::ATTRIBUTE              => $apiV3Phrases,
 ], $phraseIdentifier));
+
+// ---------------------------------------------------------------------------
+// Batch 11b — the library circulation surface, ported 2026-08-18.
+//
+// Twenty-three routes across five laminas controllers. Three more were **retired
+// rather than ported** after an audit, all three broken or empty in production:
+// `/borrowers` answered 500 (an `index` action that does not exist, rendering a
+// template that does not exist), `/library-imports/{id}/cancel` answered 404 (no
+// `cancelAction` anywhere in the chain), and `/libraries/{id}/batch-operations`
+// rendered a blank page (its .phtml was the four characters `<?php`). See
+// docs/strangler.md for the probe that measured each one.
+//
+// Every route here is library-scoped, and the per-library ACL is the real
+// authorization: the route guards all name `lib_user`, which is `is_default = 1`
+// and therefore means nothing more than "signed in". `App\Books\LibraryPage` holds
+// the row lookup and the check; a `guardedBy()` on the route alone would be a
+// route that admits everybody.
+// ---------------------------------------------------------------------------
+
+$ported(
+    'libraries/library/collections',
+    '/libraries/{library_id}/collections',
+    LibraryCollectionsController::class,
+    RouteAccess::guardedBy('route/libraries/library/collections'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// The four read-only library pages behind one controller — see App\Controller\
+// LibraryPageController for why they share, and for the one authorization difference
+// this batch introduces (`data-problems` gains the per-library check its siblings make).
+$libraryPage = static function (string $page, string $suffix) use ($ported, $textDomain): void {
+    $ported(
+        'libraries/library/' . $page,
+        '/libraries/{library_id}/' . $suffix,
+        LibraryPageController::class,
+        RouteAccess::guardedBy('route/libraries/library/' . $page),
+        $textDomain('Books') + [LibraryPageController::PAGE => $page],
+        ['library_id' => '[0-9]{1,5}']
+    );
+};
+$libraryPage('label-management', 'label-management');
+$libraryPage('book-list', 'book-list');
+$libraryPage('book-list-json', 'book-list-json');
+$libraryPage('data-problems', 'data-problems');
+
+// The library's own page and its admin menu — one controller, because `adminAction()`
+// calls `showAction()` and renders its output underneath the menu.
+$ported(
+    'libraries/library',
+    '/libraries/{library_id}',
+    LibraryController::class,
+    RouteAccess::guardedBy('route/libraries/library'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+// One copy of one book. Its guard admits `guest`; the row-level gate is the `book`
+// spec's aclResourceIdField, inside App\Sion\EntityShow.
+$ported(
+    'books/book',
+    '/books/{book_id}',
+    BookController::class,
+    RouteAccess::guardedBy('route/books/book'),
+    $textDomain('Books'),
+    ['book_id' => '[0-9]{1,6}']
+);
+
+// One person's loans. The route guard is `lib_user` and therefore admits everyone
+// signed in; the real gate is the per-checkout filter inside the controller.
+$ported(
+    'borrowers/borrower',
+    '/borrowers/{person_id}',
+    BorrowerController::class,
+    RouteAccess::guardedBy('route/borrowers/borrower'),
+    $textDomain('Books'),
+    ['person_id' => '[0-9]{1,5}']
+);
+
+// The three checkout views. One controller; `subset` is the only difference, and it
+// chooses the heading, the columns and which rows the query returns.
+$checkouts = static function (string $name, string $path, string $subset) use ($ported, $textDomain): void {
+    $ported(
+        $name,
+        $path,
+        CheckoutsController::class,
+        RouteAccess::guardedBy('route/' . $name),
+        $textDomain('Books') + [CheckoutsController::SUBSET => $subset],
+        ['library_id' => '[0-9]{1,5}']
+    );
+};
+$checkouts('checkouts/library', '/checkouts/library/{library_id}', 'all');
+$checkouts('checkouts/library/current', '/checkouts/library/{library_id}/current', 'current');
+$checkouts('checkouts/library/overdue', '/checkouts/library/{library_id}/overdue', 'overdue');
+
+$ported(
+    'libraries/library/admin',
+    '/libraries/{library_id}/admin',
+    LibraryController::class,
+    RouteAccess::guardedBy('route/libraries/library/admin'),
+    $textDomain('Books') + [LibraryController::ADMIN => true],
+    ['library_id' => '[0-9]{1,5}']
+);
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

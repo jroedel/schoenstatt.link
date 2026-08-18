@@ -1,0 +1,30 @@
+{#
+  module/Books/view/books/library/search-bar.phtml.
+
+  The library's own search box — distinct from the navbar one App\View\SiteChrome
+  assembles, though both post to the same place. `collectionId` rides along as a hidden
+  field so a search made from inside a collection stays inside it.
+
+  `center_on_page` is read unconditionally by the original (`$this->centerOnPage`, no
+  isset guard), which under PhpRenderer is a silent null and here would be a fatal, so
+  every caller passes it.
+#}
+{% macro bar(form, action, center_on_page) %}
+<div class="row search-bar {% if center_on_page %} search-bar-center{% endif %}">
+      <div class="col-md-6 col-md-offset-3 col-xs-12">
+          <div id="custom-search-input">
+            {{ form_open(form, action, '') }}
+              <div class="input-group col-md-12">
+                    {{ form_element(form.get('search')) }}
+                  <span class="input-group-btn">
+                      <button class="btn btn-info btn-lg" type="submit">
+                          <i class="glyphicon glyphicon-search"></i>
+                      </button>
+                  </span>
+              </div>
+            {{ form_hidden(form.get('collectionId')) }}
+            {{ form_close() }}
+          </div>
+      </div>
+</div>
+{% endmacro %}

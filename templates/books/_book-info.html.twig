@@ -1,0 +1,102 @@
+{#
+  module/Books/view/books/books/book-info.phtml — the bibliographic panel on a book page,
+  plus the public and admin notes panels beneath it.
+
+  Everything needing the filesystem is resolved in App\Controller\BookController and
+  arrives as a variable: `file_exists('public/covers/…-200px.jpg')` most of all, which a
+  template has no business doing and which a Twig template cannot do at all.
+
+  Three of the fields are gated by a *permission* rather than by a value —
+  `format_field`'s `displayOnlyWithPermission`, which is checked inside the helper:
+  the borrower's name and the due date on `view_checkout_person`, the inactivation
+  reason on `route/libraries/library/inactivate-books`, and the admin tags on the book's
+  own `library_<id>` resource. Passing them and letting the helper decide is what the
+  original does; deciding here would put the same rule in two places.
+#}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+<div class="row">
+<div class="col-md-3">
+{% if cover_thumb_url %}
+    <a href="{{ cover_url }}">
+    <img src="{{ cover_thumb_url }}" height="200px" alt="{{ object.title }}"></a>
+{% endif %}
+</div>
+<div class="col-md-9">
+<div class="panel panel-default" id="infoPanel">
+    <div class="panel-heading">
+        <div class="row">
+        <div class="col-xs-6">
+            <h3 class="panel-title">{{ translate('Book Info') }}</h3>
+        </div>
+        <div class="col-xs-6">
+            {% if is_allowed(object.resourceId, 'administrate') %}
+                <span class="pull-right"><a class="btn btn-primary btn-sm" href="{{ edit_url }}">
+                    {{ translate('Edit book') }}</a>
+                </span>
+            {% endif %}
+        </div>
+        </div>
+    </div>
+    <div class="panel-body"><div class="row">
+    <div class="col-md-6">
+        <p><strong>{{ translate('Library') }}:</strong> {{ format.entity('library', object.library) }}</p>
+        {{ format_field('Call number', object.callNumber) }}
+        {{ format_field('Pending call number', object.newCallNumber, {'displayOnlyIfNotNull': true}) }}
+        {% if collection_name %}<p><strong>{{ translate('Collection') }}:</strong> <a href="{{ collection_url }}">{{ collection_name }}</a>
+        {% endif %}
+        {{ format_field('Barcode', object.withinLibraryId) }}
+        {{ format_field('Author(s)', object.authorsPrettyText) }}
+    </div> <!-- info 1 column -->
+
+    <div class="col-md-6">
+        <p><strong>{{ translate('Language') }}:</strong> {% for language in object.inLanguage|default([]) %}{{ language_name(language) }}{% if not loop.last %}, {% endif %}{% endfor %}</p>
+        {% if object.category is not empty %}
+        <p><strong>{{ translate('Category') }}:</strong> <a href="{{ category_url }}">{{ object.category }}</a></p>
+        {% endif %}
+        {{ format_field('ISBN', object.isbn, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Edition', object.bookEdition, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Number of pages', object.numberOfPages, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Year published', object.publishedYear, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Publisher', object.publisher, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Publishing place', object.publishingPlace, {'displayOnlyIfNotNull': true}) }}
+        {{ format_field('Keywords', object.keywords, {'displayOnlyIfNotNull': true, 'translateLabel': false}) }}
+        {{ format_field('Admin tags', object.adminTags, {'displayOnlyIfNotNull': true, 'translateLabel': false, 'displayOnlyWithPermission': object.resourceId}) }}
+        {% if borrower_name %}{{ format_field('Checked out by', borrower_name, {'displayOnlyIfNotNull': true, 'displayOnlyWithPermission': 'view_checkout_person'}) }}{% endif %}
+        {% if object.currentCheckout is not empty %}{{ format_field('Due on', object.currentCheckout.dueOn, {'displayOnlyIfNotNull': true, 'displayOnlyWithPermission': 'view_checkout_person'}) }}{% endif %}
+        {{ format_field('Inactivation reason', object.inactivationReason, {'displayOnlyIfNotNull': true, 'displayOnlyWithPermission': 'route/libraries/library/inactivate-books'}) }}
+    </div> <!-- info 2 column -->
+    </div></div> <!-- contact info panel body -->
+</div> <!-- course info 1 panel -->
+</div> <!-- info 1 column -->
+</div> <!-- Info row -->
+
+{% if object.publicNotes is not empty %}
+<div class="row"> <!-- notes row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="notesPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Notes') }}</h3>
+    </div>
+    <div class="panel-body">
+    <div>{{ markdown(object.publicNotes) }}
+    </div>
+    </div> <!-- notes panel body -->
+</div> <!-- notes panel -->
+</div> <!-- notes column 12 -->
+</div> <!-- notes row -->
+{% endif %}
+{% if object.adminNotes is not empty and is_allowed(object.resourceId, 'show-admin-info') %}
+<div class="row"> <!-- notes row -->
+<div class="col-md-12">
+<div class="panel panel-default" id="adminNotesPanel">
+    <div class="panel-heading">
+        <h3 class="panel-title">{{ translate('Admin notes') }}</h3>
+    </div>
+    <div class="panel-body">
+    <div>{{ markdown(object.adminNotes) }}
+    </div>
+    </div> <!-- notes panel body -->
+</div> <!-- notes panel -->
+</div> <!-- notes column 12 -->
+</div> <!-- notes row -->
+{% endif %}
