@@ -279,8 +279,12 @@ rediscovered.
 - [ ] **Strangler batch 11b: the library surface — 32 routes.** The groundwork is
   merged and deployed (2026-08-18); this is the port itself. Start here rather than
   re-deriving it, but **re-run `tools/acl-table.php` before trusting the list** — the
-  first draft of this item invented a `libraries/create` route that does not exist and
+  first draft of this item listed `libraries/create` among the routes still to port and
   got both totals wrong, which is the failure mode the rest of this entry warns about.
+  (The note recording that correction was itself imprecise until 2026-08-18: it said the
+  route "does not exist". It does — `/libraries/create`, guarded `route/libraries/create`
+  — it was simply **already ported**, which is a different mistake and a more ordinary
+  one. Re-running the tool is what settles either.)
   - **The routes**, by cluster, as the tool reported them on 2026-08-18:
     `libraries/library` + 15 children (admin, batch-operations, book-list,
     book-list-json, checkin, checkout, collections, data-problems, delete,
@@ -296,16 +300,24 @@ rediscovered.
     three companions are commented out of the `library` entity spec, so it is
     unfinished rather than merely unguarded. See the unguarded-routes item under
     "Config rot".
-  - **Do the `SiteChrome` work first.** `layout.phtml` swaps the navbar search from
-    "Search contacts" to the *current library's* search whenever the route name
-    contains `libraries/library/`, `books/`, `checkouts/` or `library-imports/`, using
-    `libraryInfo()` — an MvcEvent helper a Symfony route cannot call. Two already-ported
-    pages under those prefixes therefore show a contacts search where laminas shows a
-    library one: a functional regression, accepted twice and recorded in
-    [strangler.md](strangler.md). **Every route in this batch hits that branch**, so
-    teaching `SiteChrome` which library the page belongs to is cheaper once than
-    accepting it thirty more times. The row is already loaded; it needs the library's
-    name plus an `isAllowed($resourceId, 'show')`.
+  - ~~**Do the `SiteChrome` work first.**~~ **Done 2026-08-18**, before any of the routes.
+    `layout.phtml` swaps the navbar search from "Search contacts" to the *current
+    library's* search whenever the route name contains `libraries/library/`, `books/`,
+    `checkouts/` or `library-imports/`, using `libraryInfo()` — an MvcEvent helper a
+    Symfony route cannot call — so three already-ported pages showed a contacts search
+    where laminas shows a library one. `App\Books\CurrentLibrary` supplies the answer
+    from the route parameters instead, and the four affected paths are now
+    byte-identical to laminas in all five locales. **Every route in this batch hits that
+    branch**, so it is inherited rather than re-derived. Two things to know when porting
+    on top of it:
+    - the four prefixes are a *copy* of the layout's, pinned by
+      `test/Unit/LibraryRoutePrefixesTest`; a new library route whose name does not
+      contain one of them gets the contacts search, exactly as it does under laminas;
+    - `test/Smoke/LibrarySearchBoxSmokeTest` compares a ported library page against an
+      **unported one in the same cluster**. As batch 11b ports
+      `libraries/library/checkout`, that reference page has to move to whatever is still
+      laminas-served; when nothing is, the test's premise is gone and it should be
+      retired rather than quietly re-pinned to a fixed string.
   - **Verification is baseline-diff per route** (`tools/port-baseline.php` before and
     after), decided 2026-08-17. This surface has real daily users and its authorization
     is per-row, not per-route.
