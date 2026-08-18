@@ -183,11 +183,13 @@ suites run from the superproject working tree.
   (the annotation naming the reason needs `checks:read`, which a fine-grained PAT cannot
   hold). **Verify with `./tools/ci-local.sh` instead** and paste its result into the PR.
   It mirrors ci.yml's five jobs in order — lint, composer `--no-dev` rehearsal, PHPStan
-  level 0, unit, integration — and then runs **smoke and fuzz, which CI cannot run at
-  all** because they need a live Apache/MariaDB/APCu. So a green run there is a stricter
+  level 0, unit, integration — plus a plain-bash check of the deploy's remote-call
+  machinery (`test/Deploy/rsh-behaviour-test.sh`), and then runs **smoke and fuzz,
+  which CI cannot run at all** because they need a live Apache/MariaDB/APCu. So a green run there is a stricter
   check than a green run on GitHub, not a weaker stand-in; say so in the PR body, because
-  the reflex is to read local verification as second best. `--ci` limits it to the five
-  CI jobs and skips the ~4-minute smoke suite.
+  the reflex is to read local verification as second best. `--ci` skips the ~4-minute
+  smoke suite and the fuzz harness; the deploy-machinery check runs either way, since it
+  needs no server.
   - **Read the run's own output for `composer audit --locked` rather than assuming it
     skipped.** This line used to say the check always reports `SKIP` because "the capsule
     has no DNS" — measured wrong on 2026-08-14: the *running* container resolves through
@@ -236,6 +238,11 @@ suites run from the superproject working tree.
 
 ## Deployment
 
+- A remote call that stops answering no longer hangs the deploy: every ssh call is
+  bounded by `timeout` (180s default, per-call overrides), ssh keepalives catch a dead
+  network path, and a heartbeat prints elapsed seconds to stderr so a slow step and a
+  wedged one stop looking alike. Added 2026-08-18 after a hang on "Warming the
+  release"; see [docs/DEPLOY.md](docs/DEPLOY.md) § When a step stops answering.
 - Deployment is `./tools/deploy.sh` — one command, rsync over the port-222 shell account, **atomic**: a release is built, composer-installed and warmed in a directory nothing is serving, and goes live when one symlink is replaced by a single `rename(2)`. **Never run a deploy** — if asked, give the user the command to run instead.
 - The server layout is `releases/<ts>-<sha>/` + `shared/` + a `public` symlink. Two distinctions there are load-bearing and both fail silently if got wrong: `data/config` and `data/cache` are **per-release** (a new tree meeting an old merged-config cache is what produced a fatal burst on every deploy), and `data/publications` is tracked repo content rather than shared state. Read [docs/DEPLOY.md](docs/DEPLOY.md) § The layout before adding anything to `shared/`.
 - **A symlink swap is invisible to OPcache, and this host runs three of them.** `opcache.revalidate_path` defaults to 0, so the previous release keeps executing after the swap — indefinitely, with nothing in any response saying so — and each of the three PHP pools has its own segment, so one reset fixes a fraction of traffic. The deploy therefore resets every opcode cache and then polls `/_health` twelve times for the release's own `.revision`, and **runs no post-deploy migration until they agree**. A migration that older code cannot survive must declare `-- @destructive: yes`; both rollback paths then refuse a target release that does not ship it. All of this was bought on 2026-08-17 — read [docs/incident-2026-08-17-stale-opcache.md](docs/incident-2026-08-17-stale-opcache.md) before changing the swap, the phases, or the rollback. **The capsule cannot reproduce any of it**: one pool, no release symlink.
