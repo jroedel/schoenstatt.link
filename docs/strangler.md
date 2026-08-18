@@ -1129,7 +1129,7 @@ Batch 7's, after three defects the capture found were fixed (see below):
 
 | what | where | why |
 |---|---|---|
-| the navbar search box points at contacts, not at the library | `/books/{id}/edit`, `/libraries/{id}/edit` (12 responses) | **the one accepted regression of this batch**, and it is a real one — see the section below |
+| the navbar search box points at contacts, not at the library | `/books/{id}/edit`, `/libraries/{id}/edit` (12 responses) | **the one accepted regression of this batch**, and it is a real one — **fixed 2026-08-18**, see the section below |
 | the `//<!-- -->` inline-script wrapper | every ported edit form with a selectize block | the batch-2 chrome nit below, now on more pages: `inlineScript()` wraps its content and `layout.html.twig` does not. Invisible in a browser |
 | delete-button attribute order, and a space around a `&nbsp;` | `/assignments/{id}/edit` | the button carries the same attributes in a different order, and the template puts `&nbsp;` on its own line. No rendered difference |
 
@@ -1151,7 +1151,7 @@ falls into a group that already existed:
 |---|---|---|---|
 | 101 | Symfony renders the translated help block, placeholder or option label where laminas renders English | the four non-English locales of every create page carrying one | **an intentional improvement, and pre-existing rather than new**: the same difference is already on `/es/SL100319A/edit`, which batch 5 ported. laminas leaves a form's help text in the source language; the ported page runs it through the same translator the rest of the page uses. It reaches more paths now because the create pages include the same field partials |
 | 65 | the `//<!-- -->` inline-script wrapper | every create page with a selectize block | the batch-2 chrome nit, unchanged and invisible in a browser |
-| 10 | the navbar search box points at contacts, not at the library | `/books/create/{library_id}` × 5 locales × 2 variants | **batch 7's one accepted regression**, now on the book create page for exactly the same reason — see the section below it |
+| 10 | the navbar search box points at contacts, not at the library | `/books/create/{library_id}` × 5 locales × 2 variants | **batch 7's one accepted regression**, now on the book create page for exactly the same reason — **fixed 2026-08-18**, see the section below it |
 
 Batch 10's, on the two create paths batch 9 left behind, signed in, across five locales —
 **19 differing responses, no new group and no defect**:
@@ -1212,27 +1212,46 @@ which is what makes "233 differ" readable as 36 bare-form entries plus 197 pre-e
 divergences on paths the batch never touched, rather than as drift of unknown size. It costs
 one capture and it converts a scary number into a decided one.
 
-##### The navbar search box on library-scoped pages — accepted, not fixed
+##### The navbar search box on library-scoped pages — **fixed 2026-08-18**
 
 `module/Application/view/layout/layout.phtml` switches the navbar search from "Search
 contacts" to the *current library's* search whenever the route name contains
 `libraries/library/`, `books/`, `checkouts/` or `library-imports/`. It gets the name and
 the resource id from **`libraryInfo()`**, which is on the unavailable-helper list above —
-it needs an MvcEvent — so a Symfony-served route cannot call it, and
-`App\View\SiteChrome` falls through to the contacts search.
+it needs an MvcEvent — so a Symfony-served route could not call it, and
+`App\View\SiteChrome` fell through to the contacts search. A librarian got a box that
+searched contacts where laminas gives them one that searches their library: a functional
+regression, not a cosmetic one, accepted in batch 7 and again in batch 8.
 
-So on the two ported pages under those prefixes a librarian gets a search box that searches
-contacts where laminas gives them one that searches their library. That is a functional
-regression, not a cosmetic one, and it is recorded here rather than fixed because
-reproducing it means teaching `SiteChrome` which library the current page belongs to — the
-row is already loaded, so it is the library's name plus an `isAllowed($resourceId, 'show')`
-check — which is chrome work rather than porting work and touches every ported page's
-layout path.
+`App\Books\CurrentLibrary` closes it. The helper's rule is small — `library_id`, else
+`book_id`, else `import_id`, each resolved to a library row — and none of it needs an
+MvcEvent once the route parameters are handed in, which `App\Twig\ChromeExtension` does
+from the request attributes. `SiteChrome::searchBox()` then reproduces the layout's
+condition, both ACL checks included.
 
-**It is also a preview of the rest of the circulation surface.** Every remaining
+Three corrections to what this section said while it was open, each of which mattered:
+
+- **It was three pages, not two.** `books/create` matches `books/` as squarely as
+  `books/book/edit` and `libraries/library/edit` do; the count here was written before
+  batch 7 added it and never revised. Nothing in the sentence looked stale.
+- **Fixing it did not touch every ported page's layout path**, which was the stated reason
+  for deferring. `port-baseline.php` A/B'd the whole 936-response corpus before and after:
+  exactly 20 responses changed — 4 paths × 5 locales, all signed-in — and the normalized
+  diff on each is the two lines of the search form. The cost was over-estimated by the
+  page count of the whole site.
+- **The library branch is now byte-identical to laminas in all five locales**, including
+  the translated placeholder (`Buscar en Bellavista`, `Suche in Bellavista`). What remains
+  between the two renderings on those pages is the pre-existing `//<!-- -->` script
+  wrapper, which is chrome and predates the batch.
+
+Guarded by `test/Smoke/LibrarySearchBoxSmokeTest` — which compares a ported library page
+against an unported one in the same cluster rather than against a fixed string, so it
+fails if either side moves — and by `test/Unit/LibraryRoutePrefixesTest`, which pins the
+four route prefixes against the `strpos` calls in `layout.phtml` they were copied from.
+
+**This was the prerequisite for the rest of the circulation surface.** Every remaining
 `libraries/library/*`, `books/*`, `checkouts/*` and `library-imports/*` route hits the same
-branch, so whoever ports those should expect to do the `SiteChrome` work first rather than
-accept it twenty more times.
+branch, so batch 11b now inherits a working navbar instead of thirty more acceptances.
 
 Carried over from earlier batches, unchanged:
 
