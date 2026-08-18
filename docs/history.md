@@ -23,6 +23,57 @@ continues to render through laminas and turning them on is a `SetEnv` in
 `public/.htaccess`, not a deploy. 802 tests across four suites. See
 [strangler.md](strangler.md) for the mechanism and the route table.
 
+## The spreadsheet import, rebuilt (2026-08-18)
+
+The route batch 11b left behind, and the first laminas controller deleted outright rather
+than shadowed. [library-imports.md](library-imports.md) is the feature;
+[strangler.md](strangler.md) has the port. What belongs here is the method.
+
+**A feature can be "working" and reachable by nobody.** The import had run fourteen times
+and moved 12,394 books into the catalogue, so nothing about it looked broken. It was also
+usable by exactly one of the six libraries: it matched that library's Spanish column
+headings and no others, and the file had to already be on the server, named by a path
+typed into a text box. The evidence was one row in the database — import 14, created
+2021-08-10, still pending, `FilePath` = `C:\Users\Ramon Vergara\Desktop\intento.xlsx`.
+Somebody typed the path to the file on their own computer, because that is the only path a
+person has. No log, no exception, no ticket; a row in a table nobody reads.
+
+**When the page is deliberately different, diff the decisions instead.**
+`tools/port-baseline.php` is the usual oracle for a port and it was the wrong one: the new
+page is meant to be unrecognisable, so a byte diff would be 5 MB of intended change with
+any real regression inside it. What replaced it: fetch the *old* page for the two imports
+whose spreadsheets are still on disk, parse its 11,381-row table back into rows, and
+compare the old engine's plan against the new one's action by action and barcode by
+barcode. Identical on import 3 across all four actions; different on import 1 by exactly
+one row, which turned out to be the bug — `(int) $cell` ran before the `is_numeric()` that
+was supposed to catch a blank barcode, so a blank one became barcode 0 and was planned as a
+new book.
+
+**Round-trip a real corpus.** Export a library through the new template writer, upload the
+file straight back, and the plan should be empty. It was not, twice over, and neither cause
+was reachable any other way. 285 books differed by a trailing space in the stored value —
+invisible in the spreadsheet, invisible in the catalogue, and pure noise in a review page.
+The other 326 were the finding: a row carrying a **Literature ID** takes eight of its
+fields from the linked literature record rather than from the spreadsheet, so 326 of the
+459 linked books "change" on a re-import of their own data. That is what linking means and
+it had never been written down anywhere a librarian would see it.
+
+**The test that would have caught it is the boring one.** `copyrightYear` was discarded on
+every import from 2018-11-02, because the book entity had been renamed to `publishedYear`
+and `SionTable` silently skips a key it has no column for. Nothing failed, nothing logged,
+and the plan and the write were both correct — the field was simply absent from the
+statement. What catches that is a test asserting that every field one list names is a field
+the other list can store: `test/Integration/ImportColumnsWriteRealFieldsTest`, nine lines of
+comparison. Two lists that must agree and no assertion between them is a defect waiting for
+a rename.
+
+**Three more of the same shape, found by reading the change log rather than the code.**
+`sch_changes` holds 44,095 `inLanguage` rows for December 2017 against 734 for the
+next-busiest field that month — the signature of `updateHelper()` comparing an array
+against a string with `==`, so every matched book had its language rewritten. A query over
+a change log is a cheap way to ask "what has this code actually been doing", and it answers
+for years at a time.
+
 ## Strangler batch 11b — the library circulation surface (2026-08-18)
 
 Twenty-two routes ported, three retired, one left behind on purpose. The largest batch, and

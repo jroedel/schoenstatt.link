@@ -910,6 +910,14 @@ cd $HOME_ABS/$APP
 # may not exist yet — data/ in particular is almost entirely gitignored.
 mkdir -p releases/$REL/data releases/$REL/public releases/$REL/config/autoload
 
+# shared/data/import is the one shared directory the *application* creates files
+# in rather than an operator, so it has to exist before the first upload rather
+# than after somebody notices. Without it the loop below links nothing, the
+# library import writes into releases/<this one>/data/import/, and every
+# uploaded spreadsheet disappears at the next swap — weeks later, as imports
+# whose file 'went missing'. Cheap to guarantee, expensive to diagnose.
+mkdir -p shared/data/import
+
 # A shared entry whose name collides with tracked content is refused rather than
 # linked: 'ln -sfn' onto an existing directory creates the link *inside* it, so
 # the release would silently get releases/X/data/foo/foo and the real directory
