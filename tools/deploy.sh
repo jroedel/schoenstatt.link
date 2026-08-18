@@ -12,6 +12,8 @@
 #   ./tools/deploy.sh --dry-run    # preflight + plan, server untouched
 #   ./tools/deploy.sh --rollback   # re-point the symlink at the previous release
 #   ./tools/deploy.sh --releases   # what is on the server, and what is live
+#   ./tools/deploy.sh --reset-caches  # force every opcode-cache segment onto the
+#                                  # release already live, and prove it. No swap.
 #   ./tools/deploy.sh --migrations # what is applied to the database, and what is pending
 #
 #   --stash        deploy HEAD with local changes stashed, restored afterwards
@@ -80,6 +82,7 @@ while [ $# -gt 0 ]; do
         --rollback)   ACTION=rollback ;;
         --bootstrap)  BOOTSTRAP=1 ;;
         --releases)   ACTION=releases ;;
+        --reset-caches) ACTION=reset ;;
         --migrations) exec bash tools/migrate.sh status ;;
         --to)         ROLLBACK_TO=${2:-}; shift ;;
         --allow-incompatible) ALLOW_INCOMPATIBLE=1 ;;
@@ -357,6 +360,33 @@ build_smoke_env() {
 # opcache.interned_strings_buffer is big enough could only ever be measured by
 # someone polling by hand at the right moment — and after a deploy there is no
 # right moment for hours.
+# >>> segment bookkeeping
+# Pure text handling, extracted into its own marked block so
+# test/Deploy/segment-gate-test.sh can drive it with synthetic helper responses and
+# no server. The decision it encodes is the whole of the 2026-08-18 fix, and it is
+# the kind of thing that is easy to get backwards and impossible to notice: a
+# verdict function that answers "ok" too readily makes the gate pass while a pool
+# serves the previous release, which is silent by construction.
+segment_field() { printf '%s' "$1" | sed -n "s/^$2=//p" | head -1; }
+
+# ok | pending | unknown, from one helper response.
+#
+# `unknown` is not a soft `ok`. It is census mode (which resets nothing and reports
+# `stale=-`), a build with no OPcache, or a truncated read — none of which say
+# anything about whether that pool is current, so none of them may satisfy the gate.
+segment_verdict() {
+    local body=$1 seg stale
+    seg=$(segment_field "$body" segment)
+    stale=$(segment_field "$body" stale)
+    case $seg in ''|0) printf unknown; return 0 ;; esac
+    case $stale in
+        0) printf ok ;;
+        1) printf pending ;;
+        *) printf unknown ;;
+    esac
+}
+# <<< segment bookkeeping
+
 # >>> interned sampling
 WARM_INTERNED=''
 sample_interned() {
@@ -385,7 +415,15 @@ sample_interned() {
 
 RESET_FILE=''
 reset_opcode_caches() {
-    local release_abs=$1 rel=$2 want=${3:-} token src url i fresh=0 agreed=0 misses=0 body status live
+    local release_abs=$1 rel=$2 want=${3:-} token src url i agreed=0 misses=0 body status live
+    # pending starts empty rather than unset: the summary below reads it, and under
+    # `set -u` an unset local is a fatal error, not an empty string. The loop can
+    # reach that summary without ever computing it — every hit being a miss is
+    # enough — so this is a real path, not a defensive habit.
+    local ago seg s pending='' clean=0
+    # Per-segment state, keyed by start_time — the one identity OPcache exposes that
+    # survives a reset. `declare` inside a function is local to it.
+    declare -A seg_state=()
 
     WARM_INTERNED=''
     token=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
@@ -413,10 +451,39 @@ reset_opcode_caches() {
 if (!hash_equals('__TOKEN__', $_GET['t'] ?? '')) { http_response_code(404); exit; }
 header('Content-Type: text/plain');
 $s = function_exists('opcache_get_status') ? @opcache_get_status(false) : null;
-echo 'age=', is_array($s) ? time() - $s['opcache_statistics']['start_time'] : -1, "\n";
+$stats = is_array($s) && isset($s['opcache_statistics']) ? $s['opcache_statistics'] : null;
+$start = is_array($stats) ? (int) ($stats['start_time'] ?? 0) : 0;
+$restart = is_array($stats) ? (int) ($stats['last_restart_time'] ?? 0) : 0;
+echo 'age=', $start > 0 ? time() - $start : -1, "\n";
+// The only per-segment identity OPcache exposes, and it is STABLE across a reset:
+// start_time does not move when opcache_reset() runs (measured 2026-08-18 —
+// 1786961626 before and after). last_restart_time is what moves, so the pair
+// answers both "which segment is this" and "has it been through a reset since".
+// Any check written against age or uptime can never pass; this script had one.
+echo 'segment=', $start, "\n";
+echo 'restarted=', $restart, "\n";
 $i = is_array($s) && isset($s['interned_strings_usage']) ? $s['interned_strings_usage'] : null;
 echo 'interned=', is_array($i) ? $i['used_memory'] . '/' . $i['buffer_size'] . '/' . $i['number_of_strings'] : '-', "\n";
-echo 'reset=', var_export(function_exists('opcache_reset') ? opcache_reset() : null, true), "\n";
+// `ago` is seconds since the swap, not an absolute time: a duration is immune to
+// clock skew between the deploying machine and the server, and an absolute
+// timestamp compared against the server's own time is not. Absent entirely means
+// census mode — report, reset nothing.
+$ago = isset($_GET['ago']) ? (int) $_GET['ago'] : null;
+if ($ago === null) {
+    echo "stale=-\nreset=census\n";
+} else {
+    $since = time() - $ago;
+    // A segment born after the swap compiled through the current symlink and is
+    // correct by construction; one restarted after the swap re-compiled through
+    // it. Anything else is still resolving to the previous release.
+    $stale = $start > 0 && $start < $since && $restart < $since;
+    echo 'stale=', $stale ? 1 : 0, "\n";
+    // Conditional, because a reset costs every script in that segment a recompile
+    // under live traffic, and this loop may hit a healthy segment dozens of times.
+    echo 'reset=', $stale
+        ? var_export(function_exists('opcache_reset') ? opcache_reset() : null, true)
+        : 'skipped', "\n";
+}
 echo 'from=', __DIR__, "\n";
 PHPEOF
     )
@@ -453,11 +520,21 @@ PHPEOF
     done
     [ "$waited" -gt 0 ] && dim "helper became reachable after ${waited}s"
 
-    # Stop once several consecutive hits all land on an already-fresh segment: that
-    # is the observable for "every pool has been through this", without needing to
-    # know how many pools there are. Capped so a host that reports no age cannot spin.
-    for i in $(seq 1 40); do
-        body=$(curl --silent --show-error --max-time 30 -w '\n%{http_code}' "$url" 2>/dev/null) || body=$'\n000'
+    # Stop when every segment that has answered is provably serving THIS release,
+    # and at least as many distinct segments have answered as the pre-swap census
+    # found. Capped so a host that reports no age cannot spin.
+    #
+    # The old exit condition was eight consecutive /_health probes agreeing, and it
+    # is what let 2026-08-18 through twice. /_health and the helper are separate
+    # requests that need not land on the same pool, so eight agreements can be one
+    # lucky pool answering while another has never been reset at all — which is
+    # exactly what happened: both deploys stopped at the gate afterwards with every
+    # production segment reporting manualRestarts: 0. Agreement between probes was
+    # never evidence about coverage; per-segment state is.
+    for i in $(seq 1 80); do
+        ago=0
+        [ -n "${SWAP_EPOCH:-}" ] && ago=$(( $(date +%s) - SWAP_EPOCH ))
+        body=$(curl --silent --show-error --max-time 30 -w '\n%{http_code}' "$url&ago=$ago" 2>/dev/null) || body=$'\n000'
         status=${body##*$'\n'}
         body=${body%$'\n'*}
         case $body in
@@ -467,7 +544,7 @@ PHPEOF
                 RESET_FILE=''
                 return 0
                 ;;
-            *reset=true*) ;;
+            *segment=*) ;;
             *)
                 # Say what actually came back, and do not give up on one bad read.
                 #
@@ -496,16 +573,30 @@ PHPEOF
         esac
         sample_interned "$body"
 
-        # Stop on the thing that actually matters: the live site reporting the
-        # release we just swapped in. The first version counted OPcache segment
-        # ages instead and, on the 15:03 deploy, never saw six consecutive fresh
-        # reads in forty hits — so it warned on a deploy that had in fact worked,
-        # while the revision check on the very next step passed 12/12. A warning
-        # that fires on success is worse than no warning: it teaches everyone to
-        # ignore the one mechanism standing between a bad swap and a destructive
-        # migration.
-        #
-        # Segment age was always a proxy anyway. The revision is the observable.
+        # Record what this segment looks like NOW. Last observation wins, and a
+        # reset does not count as a pass: the restart happens on the segment's next
+        # request, so `reset=true` only promises the next hit will say stale=0.
+        # Until one does, that segment stays pending — an unconfirmed reset is
+        # precisely the thing that read as success on 2026-08-17.
+        seg=$(segment_field "$body" segment)
+        case $(segment_verdict "$body") in
+            ok)      seg_state[$seg]=ok;      clean=$((clean + 1)) ;;
+            pending) seg_state[$seg]=pending; clean=0 ;;
+            unknown) ;;
+        esac
+
+        pending=''
+        for s in "${!seg_state[@]}"; do
+            [ "${seg_state[$s]}" = ok ] || pending="$pending $s"
+        done
+        [ -n "$pending" ] && continue
+        [ "${#seg_state[@]}" -ge "${EXPECTED_SEGMENTS:-1}" ] || continue
+
+        # Every segment seen is current and we have seen as many as we expected.
+        # /_health is still required to agree, because it is the outward observable
+        # and a pool that has never answered this helper would show up nowhere else.
+        # Requiring both is strictly stronger than the old condition, which required
+        # only this half.
         if [ -n "$want" ] && [ -n "$DEPLOY_API_KEY" ]; then
             live=$(curl --silent --show-error --max-time 20 \
                 --header "X-Api-Key: $DEPLOY_API_KEY" "$DEPLOY_BASE_URL/_health" 2>/dev/null \
@@ -518,38 +609,79 @@ PHPEOF
             fi
             continue
         fi
-        # No key, or no expected revision (a rollback): fall back to segment age,
-        # which is the best available signal when nothing can report a revision.
-        if [ "$(printf '%s' "$body" | sed -n 's/^age=//p')" -lt 30 ] 2>/dev/null; then
-            fresh=$((fresh + 1))
-            [ "$fresh" -ge 6 ] && break
-        else
-            fresh=0
-        fi
+        # No key, or no expected revision (a rollback): the segment state is then the
+        # only signal there is, so require a run of clean hits on top of it.
+        [ "$clean" -ge 6 ] && break
     done
 
     rsh "rm -f $RESET_FILE" || warn "could not remove $RESET_FILE — delete it by hand."
     RESET_FILE=''
 
     if [ -n "$WARM_INTERNED" ]; then
-        info "Interned strings per pool, read at the instant this reset each one:"
+        info "Interned strings per pool, read just before this loop wiped each one:"
         printf '%s' "$WARM_INTERNED" | while IFS= read -r line; do dim "  $line"; done
         dim "  Append-only buffer, so these are high-water marks and the warmest"
         dim "  readings that exist. 90%+ means it filled and silently stopped interning;"
         dim "  see docs/php-85.md and tools/opcache-sample.sh."
     fi
 
-    if [ "$agreed" -ge 8 ]; then
-        ok "8 consecutive probes report $rel; opcode caches are serving the new release"
-        return 0
+    dim "segments seen: ${#seg_state[@]} (census expected ${EXPECTED_SEGMENTS:-1})"
+
+    if [ -z "$pending" ] && [ "${#seg_state[@]}" -ge "${EXPECTED_SEGMENTS:-1}" ]; then
+        if [ "$agreed" -ge 8 ] || { [ -z "$want" ] || [ -z "$DEPLOY_API_KEY" ]; } && [ "$clean" -ge 6 ]; then
+            ok "every one of ${#seg_state[@]} segments is serving $rel"
+            return 0
+        fi
     fi
-    if { [ -z "$want" ] || [ -z "$DEPLOY_API_KEY" ]; } && [ "$fresh" -ge 6 ]; then
-        ok "opcode caches reset on every pool that answered (release $rel)"
-        return 0
+
+    # Say which segments are still stale, by id. "40 hits without agreement" sent
+    # the reader to the wrong half of the problem twice: the caches were fine and a
+    # pool had simply never been asked.
+    if [ -n "$pending" ]; then
+        warn "these opcode-cache segments are still serving the previous release:$pending"
+        warn "(ids are OPcache start_time; poll tools/opcache-sample.sh to watch them)"
+    elif [ "${#seg_state[@]}" -lt "${EXPECTED_SEGMENTS:-1}" ]; then
+        warn "only ${#seg_state[@]} of ${EXPECTED_SEGMENTS:-1} known segments answered in 80 hits."
+        warn "A pool that never answers cannot be reset, and it is still serving traffic."
+    else
+        warn "segments are current but /_health still disagrees about $rel."
     fi
-    warn "40 reset hits without 8 consecutive probes agreeing on $rel."
     warn "The revision check that follows is what decides whether this mattered."
     return 1
+}
+
+# How many OPcache segments this host is running, counted before the swap so the
+# reset loop knows how many it has to reach. Without a floor, "every segment I saw
+# is current" is satisfied by seeing one — which is how a deploy can reset a single
+# pool and declare the fleet done.
+#
+# It reads /en/sm/cache-status rather than writing a probe file, because before the
+# swap the application is healthy by definition and already reports startTimeUnix.
+# That field only exists since 879aca1; against anything older this finds nothing,
+# EXPECTED_SEGMENTS stays at its floor of 1, and the gate is exactly as strong as it
+# was before this function existed. Degrading to the old behaviour is the right
+# failure here — a census that guessed high would block every deploy.
+#
+# It is a LOWER bound, always. Segments are sampled by whichever one answers, so a
+# quiet pool can miss the census; and they churn (5-15 minutes on production), so
+# the roster is stale almost immediately. Only the count is used, never the ids.
+EXPECTED_SEGMENTS=1
+census_segments() {
+    local i seg
+    declare -A seen=()
+    [ -n "$DEPLOY_API_KEY" ] || { dim "no maintenance key; segment census skipped"; return 0; }
+    for i in $(seq 1 24); do
+        seg=$(curl --silent --show-error --max-time 20 \
+            --header "X-Api-Key: $DEPLOY_API_KEY" "$DEPLOY_BASE_URL/en/sm/cache-status" 2>/dev/null \
+            | sed -n 's/.*"startTimeUnix" *: *\([0-9]*\).*/\1/p')
+        [ -n "$seg" ] && [ "$seg" != 0 ] && seen[$seg]=1
+    done
+    if [ "${#seen[@]}" -gt 0 ]; then
+        EXPECTED_SEGMENTS=${#seen[@]}
+        ok "$EXPECTED_SEGMENTS opcode-cache segment(s) answered in 24 polls (a lower bound)"
+    else
+        dim "no segment ids reported; the reset loop will require only one"
+    fi
 }
 
 # The check that would have stopped 2026-08-17 before it became an outage: ask the
@@ -642,6 +774,47 @@ if [ "$ACTION" = releases ]; then
     exit 0
 fi
 
+# ======================================================== --reset-caches ====
+#
+# Force every opcode-cache segment onto the release the symlink already points at,
+# and prove it. No swap, no build, no migration — this only ever moves the site
+# TOWARDS what is already live.
+#
+# It exists for two reasons. The first is that until now the recovery printed by a
+# failed revision gate was "write a PHP file with a new name into the release, call
+# opcache_reset(), request it repeatedly, then delete it" — a hand-written file in a
+# production docroot at the worst possible moment, which is exactly how a parse
+# error went unnoticed through 30 requests on 2026-08-17. This is that procedure,
+# already written and already tested.
+#
+# The second is that the gate itself cannot be rehearsed. The capsule runs one
+# segment; the arithmetic that failed on 2026-08-18 and 2026-08-19 only exists on a
+# multi-pool host. This runs the real census and the real loop against production
+# without deploying anything, which is the only way to exercise them before trusting
+# them in a deploy.
+if [ "$ACTION" = reset ]; then
+    CURRENT=$(current_release)
+    [ -n "$CURRENT" ] || fail "could not read the live release from $APP/public."
+    CURRENT_SHA=$(rsh "cat $RELEASES/$CURRENT/.revision 2>/dev/null" | tr -d '\r\n') || CURRENT_SHA=''
+    info "live release is $CURRENT (${CURRENT_SHA:-no .revision})"
+
+    step "Counting opcode-cache segments"
+    census_segments
+
+    step "Resetting every segment that predates now"
+    # Everything alive at this instant counts as stale, which is what makes this a
+    # "converge now" rather than a no-op: there is no swap to date segments against.
+    SWAP_EPOCH=$(date +%s)
+    reset_opcode_caches "$RELEASES/$CURRENT" "$CURRENT" "$CURRENT_SHA" || true
+
+    if [ -n "$CURRENT_SHA" ]; then
+        step "Confirming the live site is running $CURRENT"
+        assert_live_revision "$CURRENT_SHA" \
+            || fail "segments were reset but /_health still disagrees. A pool is not being reached; read docs/incident-2026-08-17-stale-opcache.md."
+    fi
+    exit 0
+fi
+
 # ============================================================ --rollback ====
 
 if [ "$ACTION" = rollback ]; then
@@ -711,6 +884,10 @@ if [ "$ACTION" = rollback ]; then
 
     step "Swapping the symlink"
     rsh "cd $APP && ln -sfn releases/$TARGET/public public.swap && mv -Tf public.swap public"
+    # A rollback is a swap like any other, so the reset loop needs the same clock to
+    # judge which segments predate it. Without this it falls back to ago=0, which
+    # resets every segment unconditionally — safe, but it wipes healthy pools.
+    SWAP_EPOCH=$(date +%s)
     ok "live release is now $TARGET"
 
     step "Flushing the persistent cache"
@@ -1063,8 +1240,16 @@ ok "catalogs and sitemap built (merged config warms on the first request, below)
 
 # ============================================================== the swap ====
 
+step "Counting opcode-cache segments before the swap"
+census_segments
+
 step "Swapping"
 SWAP_TS=$SECONDS
+# Wall-clock, for the reset loop. It is sent to the helper as a DURATION ("ago"),
+# never as an absolute time: elapsed seconds are identical on both machines, while
+# an epoch compared against the server's clock is only as good as the skew between
+# them. Nothing here has any reason to assume the two agree.
+SWAP_EPOCH=$(date +%s)
 if [ "$INITIAL_SWAP" = 1 ]; then
     # The one non-atomic moment in the whole design, and it happens exactly once:
     # a real directory cannot be replaced by a symlink with rename(2). The old
@@ -1124,12 +1309,21 @@ if ! assert_live_revision "$SHA"; then
   could not run against the new schema. 449 fatals, and the automatic rollback made
   it permanent by restoring the very release that was broken.
 
-  Read docs/incident-2026-08-17-stale-opcache.md, then reset the caches by hand
-  before re-running: write a PHP file with a NEW name into
-  $NEW_ABS/public/ that calls opcache_reset(), request it repeatedly until
-  /_health reports $SHA, and delete it. A new filename is the point — it has no
-  cache entry anywhere, so it always compiles from disk.
+  Recover with:
 
+      ./tools/deploy.sh --reset-caches
+
+  which forces every opcode-cache segment onto the release the symlink already
+  points at — $REL — and then proves it, naming any segment it could not reach.
+  It performs no swap and no migration, so it can only move the site towards what
+  is already live. Re-run the deploy afterwards.
+
+  This used to say 'write a PHP file with a NEW name into the release by hand'.
+  That is what the command above does, without anyone hand-writing PHP into a
+  production docroot at the worst possible moment — which on 2026-08-17 shipped a
+  parse error that 30 requests then mistook for 30 successful resets.
+
+  Read docs/incident-2026-08-17-stale-opcache.md if it does not converge.
   Do NOT run migrations until /_health reports $SHA."
 fi
 
@@ -1225,6 +1419,7 @@ else
     elif [ -n "$PREV" ]; then
         printf '%srolling back automatically%s\n' "$C_ERR" "$C_OFF" >&2
         rsh "cd $HOME_ABS/$APP && ln -sfn releases/$PREV/public public.swap && mv -Tf public.swap public"
+        SWAP_EPOCH=$(date +%s)
         rsh "cd $HOME_ABS/$RELEASES/$PREV && php bin/console cache:flush-persistent" || true
         PREV_SHA=$(rsh "cat $RELEASES/$PREV/.revision 2>/dev/null" | tr -d '\r\n') || PREV_SHA=''
         reset_opcode_caches "$HOME_ABS/$RELEASES/$PREV" "$PREV" "$PREV_SHA" || true
