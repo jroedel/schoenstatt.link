@@ -1,0 +1,21 @@
+{#
+  The confirmation the refresh-sort route now answers a GET with, and the "Done." it
+  answers a successful POST with.
+
+  `libraries/refresh-sort.phtml` was the single word "Done." with no trailing newline —
+  the page did its 16,383 writes and said nothing else. That word survives here as the
+  POST response; the GET response is new, and App\Books\RefreshSortForm explains why.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+{% if done %}Done.
+{% else %}
+<h1>{{ translate('Refresh sort text') }}</h1>
+<p>{{ translate('This rewrites the sort text of every book in %s. It changes no book data and can be repeated safely, but it writes one row per book.')|format(library_name) }}</p>
+{{ form_open(form, form_action) }}
+{{- form_row(form.get('security')) -}}
+{{- form_submit(form.get('submit')) -}}
+{{ form_close() }}
+{% endif %}
+{% endblock %}

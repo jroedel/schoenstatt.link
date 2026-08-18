@@ -1,0 +1,17 @@
+{#
+  One row of the mass-checkout table.
+
+  A plain template rather than a macro, because it is rendered from two places and one of
+  them is PHP: App\Controller\LibraryMassCheckoutController renders it against the
+  collection's *target* element, rewrites the field names to `checkout[__index__][…]` and
+  hands the result to the page as `#rowTemplate` for the "Add 4 rows" button to clone. A
+  macro cannot be reached from a controller; a template can.
+
+  The original does the same thing with `ob_start()` around a copy of this markup. One
+  file, two renderings, so the cloned row and the real ones cannot drift.
+
+  Expects: `fieldset`, and `with_errors` (false for the clone — a blank row has none).
+#}
+<tr><td>{{ form_text(fieldset.get('checkedOutOn')) }}{% if with_errors %}{{ form_errors(fieldset.get('checkedOutOn')) }}{% endif %}</td>
+<td>{{ form_element(fieldset.get('personId'), false, false) }}{% if with_errors %}{{ form_errors(fieldset.get('personId')) }}{% endif %}</td>
+<td>{{ form_text(fieldset.get('withinLibraryIds')) }}{% if with_errors %}{{ form_errors(fieldset.get('withinLibraryIds')) }}{% endif %}</td></tr>

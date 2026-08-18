@@ -7,8 +7,10 @@ namespace App\Controller;
 use App\Books\LibraryPage;
 use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
+use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
+use Laminas\Db\Sql\Predicate;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -41,6 +43,25 @@ final class LibraryCollectionsController
     ) {
     }
 
+    /**
+     * `['libraryId' => $id]`, typed to satisfy `queryObjects()`'s @param.
+     *
+     * SionTable declares the parameter as predicates and documents it as
+     * `array|PredicateInterface|PredicateInterface[]`; a column => value map is what every
+     * caller in the application passes and what the method's own SQL builder expects. The
+     * annotation is the thing that is wrong; this states the shape at one place instead of
+     * suppressing it at each call.
+     *
+     * @return array<Predicate\PredicateInterface>
+     */
+    private function predicate(int $libraryId): array
+    {
+        /** @var array<Predicate\PredicateInterface> $map */
+        $map = ['libraryId' => $libraryId];
+
+        return $map;
+    }
+
     public function __invoke(Request $request): Response
     {
         $libraryId = (int) $request->attributes->get('library_id');
@@ -62,7 +83,11 @@ final class LibraryCollectionsController
 
         /** @var LibraryTable $table */
         $table       = $this->laminas->get(LibraryTable::class);
-        $collections = $table->queryObjects('collection', ['libraryId' => $libraryId]);
+        //queryObjects()'s @param names predicates; every laminas caller passes a
+        //column => value map and the method accepts one. The local is `mixed` because
+        //the return annotation is wrong too — see App\Laminas\SionResult.
+        /** @var mixed $collections */
+        $collections = $table->queryObjects('collection', $this->predicate($libraryId));
 
         return new Response($this->twig->render('books/library-collections.html.twig', [
             //index.phtml calls no headTitle(), so the layout's own "Schoenstatt Link"
@@ -70,7 +95,7 @@ final class LibraryCollectionsController
             //strict_variables and an absent `page_title` is a fatal, not a blank.
             'page_title' => null,
             'library_id' => $libraryId,
-            'objects'    => is_array($collections) ? $collections : [],
+            'objects'    => SionResult::rows($collections),
         ]));
     }
 }

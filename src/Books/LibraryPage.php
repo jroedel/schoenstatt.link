@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Books;
 
+use App\Authorization\Denial;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
@@ -83,7 +84,7 @@ final class LibraryPage
      * flash-and-redirect to `/libraries`, **not permitted** is the 403 template every
      * other ported route renders, and null is "carry on".
      *
-     * @param array<string, mixed>|null $library
+     * @param array<int|string, mixed>|null $library
      */
     public function refuse(?array $library, string $permission): ?Response
     {
@@ -97,10 +98,26 @@ final class LibraryPage
 
         $resourceId = $library['resourceId'] ?? null;
         if (! is_string($resourceId) || ! $this->isAllowed($resourceId, $permission)) {
-            return new Response(
-                $this->twig->render('error/403.html.twig', ['page_title' => 'Access denied']),
-                Response::HTTP_FORBIDDEN
-            );
+            if (self::SHOW === $permission) {
+                //**A denied `show` is a redirect, not a 403**, and the two are not
+                //interchangeable. The library page's own check lives in
+                //`SionController::showAction()`, which flashes and redirects to the
+                //libraries index; the fourteen other actions call `isAllowed()` themselves
+                //and `throw new UnAuthorizedException`, which BjyAuthorize renders as 403.
+                //Same question, two answers, decided by which code asks it.
+                //
+                //Measured: test/Smoke/BooksSmokeTest pins `/en/libraries/5` — ViewRole
+                //`lib_user`, so anonymous visitors are refused — as a 302, and this
+                //returned 403 until 2026-08-18.
+                return new RedirectResponse($this->urls->path('libraries'));
+            }
+
+            //Denial::forbiddenPage() rather than rendering the template directly, because
+            //`error/403.html.twig` requires a `subject` and Twig runs with
+            //strict_variables: a hand-rolled render that omits it throws *after* the
+            //response is assembled, which is the fatal-200 wedge — HTTP 200, zero bytes.
+            //Two call sites had exactly that bug, one of them shipped; see the batch notes.
+            return Denial::forbiddenPage($this->twig, $resourceId ?? 'this library');
         }
 
         return null;
