@@ -1,7 +1,10 @@
 {#
   module/Books/view/books/library-imports/show.phtml plus its import-stats partial, which
-  is three lines and rendered from exactly two places — inlined here and repeated in the
-  edit page, which stays on laminas.
+  is three lines and was rendered from exactly two places — inlined here, and shown again
+  on the configure page once an import has run.
+
+  The "Configure and run" button is the one link into the page that does the work, and it
+  appears only while the import is still pending.
 #}
 {% extends 'layout.html.twig' %}
 
@@ -9,7 +12,7 @@
 <h1>{{ translate('Import details') }}</h1>
 <p><strong>{{ translate('Import name') }}:</strong> {{ entity.name }}</p>
 <p><strong>{{ translate('Description') }}:</strong> {{ entity.description }}</p>
-<p><strong>{{ translate('File path') }}:</strong> {{ entity.filePath }}</p>
+<p><strong>{{ translate('File') }}:</strong> {{ entity.filePath }}</p>
 <p><strong>{{ translate('Worksheet') }}:</strong> {{ entity.worksheet }}</p>
 
 <p><strong>{{ translate('Complete import') }}:</strong> {{ entity.isCompleteImport ? translate('Yes') : translate('No') }}</p>
@@ -21,5 +24,8 @@
 <p><strong>{{ translate('Books updated') }}:</strong> {{ entity.booksUpdated }}</p>
 <p><strong>{{ translate('Books inactivated') }}:</strong> {{ entity.booksInactivated }}</p>
 
+{% if edit_url is not null %}
+<a class="btn btn-warning" href="{{ edit_url }}">{{ translate('Configure and run this import') }}</a>
+{% endif %}
 <a class="btn btn-primary" href="{{ laminas_path('libraries/library/admin', {'library_id': entity.libraryId}) }}">{{ translate('Return to library') }}</a>
 {% endblock %}

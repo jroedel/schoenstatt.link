@@ -128,11 +128,23 @@ final class BootstrapFormRenderer
             ? ''
             : sprintf(' action="%s"', $this->escaper->escapeHtmlAttr($action));
 
+        /**
+         * **`enctype` is emitted when the form declares one**, and no form did until the
+         * import upload. Without it a browser posts `application/x-www-form-urlencoded`,
+         * PHP populates no `$_FILES`, and the file simply is not there — a failure with
+         * no error anywhere, on the one form whose entire purpose is the file.
+         */
+        $enctype          = $form->getAttribute('enctype');
+        $enctypeAttribute = is_scalar($enctype) && '' !== (string) $enctype
+            ? sprintf(' enctype="%s"', $this->escaper->escapeHtmlAttr((string) $enctype))
+            : '';
+
         return sprintf(
-            '<form method="%s" name="%s"%s class="%s" id="%s">',
+            '<form method="%s" name="%s"%s%s class="%s" id="%s">',
             $this->escaper->escapeHtmlAttr($method),
             $this->escaper->escapeHtmlAttr($name),
             $actionAttribute,
+            $enctypeAttribute,
             $this->escaper->escapeHtmlAttr($class),
             $this->escaper->escapeHtmlAttr($name)
         );
@@ -557,7 +569,9 @@ final class BootstrapFormRenderer
 
         $attributes = self::filteredByInputType($attributes, $type);
 
-        $attributes['value'] = self::asString($element->getValue());
+        if ('file' !== $type) {
+            $attributes['value'] = self::asString($element->getValue());
+        }
 
         return '<input ' . $this->attributeString($attributes) . '>';
     }
@@ -601,8 +615,16 @@ final class BootstrapFormRenderer
         $date = ['name', 'autocomplete', 'autofocus', 'disabled', 'form', 'list', 'max',
                  'min', 'readonly', 'required', 'step', 'type', 'value'];
 
+        /**
+         * FormFile::$validTagAttributes, verbatim — and notably short. No `value`, which
+         * is why input() suppresses it for this type: a file input's value is not
+         * settable from markup, and laminas does not emit one.
+         */
+        $file = ['name', 'accept', 'autofocus', 'disabled', 'form', 'multiple', 'required', 'type'];
+
         $perType = [
             'text'   => $text,
+            'file'   => $file,
             'hidden' => $hidden,
             'number' => $number,
             'email'  => $email,
