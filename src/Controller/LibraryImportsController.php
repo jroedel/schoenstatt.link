@@ -351,9 +351,11 @@ final class LibraryImportsController
         return new Response($this->twig->render('books/library-import.html.twig', [
             'page_title' => 'Import details',
             'entity'     => $import,
-            'edit_url'   => 'completed' === ($import['status'] ?? null)
-                ? null
-                : $this->urls->path('library-imports/library-import/edit', ['import_id' => $importId]),
+            //Only a pending import links to the page that runs it — not a completed one
+            //and not an abandoned one, both of which that page refuses anyway.
+            'edit_url'   => LibraryTable::IMPORT_STATUS_PENDING === ($import['status'] ?? null)
+                ? $this->urls->path('library-imports/library-import/edit', ['import_id' => $importId])
+                : null,
         ]));
     }
 

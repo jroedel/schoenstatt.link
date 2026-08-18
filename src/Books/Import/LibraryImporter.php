@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Books\Import;
 
+use App\Laminas\SionResult;
 use Books\Model\LibraryTable;
 use Books\Model\PublicationsTable;
 use Books\Service\SpreadsheetReader;
+use Laminas\Db\Sql\Predicate\PredicateInterface;
 use InvalidArgumentException;
 use Throwable;
 
@@ -460,9 +462,24 @@ final class LibraryImporter
             return [];
         }
 
-        $found = $this->publications->queryObjects('publication', ['publicationId' => array_keys($ids)]);
+        //queryObjects()'s @param names predicates while every caller in the application
+        //passes a column => value map, which is what its SQL builder expects. Stated at
+        //one place rather than suppressed at the call, as LibraryCollectionsController does.
+        /** @var array<PredicateInterface> $predicate */
+        $predicate = ['publicationId' => array_keys($ids)];
+        //SionResult, not `is_array($found) ? … : []`: queryObjects() is annotated
+        //`@return mixed[]` and returns null on some paths, so the guard is real while the
+        //annotation says it is dead code. See App\Laminas\SionResult.
+        $found = SionResult::rows($this->publications->queryObjects('publication', $predicate));
 
-        return is_array($found) ? $found : [];
+        $publications = [];
+        foreach ($found as $id => $publication) {
+            if (is_array($publication)) {
+                $publications[(int) $id] = $publication;
+            }
+        }
+
+        return $publications;
     }
 
     /**
@@ -486,7 +503,11 @@ final class LibraryImporter
         return $found ? $values : [];
     }
 
-    /** The barcode this row declares, or null when it declares none usable. */
+    /**
+     * The barcode this row declares, or null when it declares none usable.
+     *
+     * @param array<int, string|null> $cells
+     */
     private function barcode(ColumnMap $map, array $cells): ?int
     {
         $index = $map->indexOf('withinLibraryId');
@@ -597,8 +618,8 @@ final class LibraryImporter
     /** @return array<string, mixed> */
     private function libraryOptions(int $libraryId): array
     {
-        $library = $this->library->getObject('library', $libraryId, true);
-        $options = is_array($library) ? ($library['options'] ?? null) : null;
+        $library = SionResult::rowOrNull($this->library->getObject('library', $libraryId, true));
+        $options = null === $library ? null : ($library['options'] ?? null);
 
         return [
             'useCollections' => (bool) ($options->useCollections ?? false),
@@ -625,7 +646,10 @@ final class LibraryImporter
         return $byName;
     }
 
-    /** @param list<string> $fields @return list<string> */
+    /**
+     * @param list<string> $fields
+     * @return list<string>
+     */
     private function headingsFor(array $fields): array
     {
         $headings = [];
@@ -636,7 +660,10 @@ final class LibraryImporter
         return $headings;
     }
 
-    /** @param list<string> $params @return array{reason: string, params: list<string>} */
+    /**
+     * @param list<string> $params
+     * @return array{reason: string, params: list<string>}
+     */
     private function blocker(string $reason, array $params): array
     {
         return ['reason' => $reason, 'params' => $params];

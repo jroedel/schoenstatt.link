@@ -91,7 +91,11 @@ final class ImportColumns
         return self::$columns ??= self::build();
     }
 
-    /** The columns the blank template carries, in template order. @return list<ImportColumn> */
+    /**
+     * The columns the blank template carries, in template order.
+     *
+     * @return list<ImportColumn>
+     */
     public static function core(): array
     {
         return array_values(array_filter(self::all(), static fn (ImportColumn $c): bool => $c->core));

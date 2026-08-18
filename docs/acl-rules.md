@@ -40,25 +40,25 @@ table. No timestamp on purpose: this file is meant to `diff` cleanly.
 | metric | count |
 | --- | --- |
 | controller guard entries | 0 |
-| guarded routes existing | 121 |
-| guarded routes total | 121 |
+| guarded routes existing | 122 |
+| guarded routes total | 122 |
 | non route resources | 14 |
 | phantom guard entries | 0 |
 | roles | 45 |
-| route guard entries | 123 |
+| route guard entries | 124 |
 | routes declared twice | 2 |
-| routes shadowed by symfony | 92 |
+| routes shadowed by symfony | 94 |
 | routes uncomparable | 0 |
 | rules from rule config | 34 |
-| symfony routes acl checked | 178 |
+| symfony routes acl checked | 182 |
 | symfony routes open | 27 |
 | symfony routes undeclared | 0 |
-| symfony served routes | 205 |
-| total routes | 140 |
+| symfony served routes | 209 |
+| total routes | 141 |
 | unguarded routes | 19 |
 | unguarded routes matchable | 7 |
 
-`guarded routes existing` + `unguarded routes` = `total routes` (121 + 19 = 140). Phantom entries are excluded because they are not routes.
+`guarded routes existing` + `unguarded routes` = `total routes` (122 + 19 = 141). Phantom entries are excluded because they are not routes.
 
 ## Routes served by the Symfony kernel
 
@@ -209,9 +209,13 @@ it matches every path by design, and laminas-mvc runs its own guard behind it.
 | `library-imports/library` | `/library-imports/library/{library_id}` | `route/library-imports/library` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
 | `library-imports/library-import` | `/library-imports/{import_id}` | `route/library-imports/library-import` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
 | `library-imports/library-import.locale` | `/{_locale}/library-imports/{import_id}` | `route/library-imports/library-import` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library-import/edit` | `/library-imports/{import_id}/edit` | `route/library-imports/library-import/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportConfigureController` |
+| `library-imports/library-import/edit.locale` | `/{_locale}/library-imports/{import_id}/edit` | `route/library-imports/library-import/edit` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportConfigureController` |
 | `library-imports/library.locale` | `/{_locale}/library-imports/library/{library_id}` | `route/library-imports/library` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
 | `library-imports/library/create` | `/library-imports/library/{library_id}/create` | `route/library-imports/library/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
 | `library-imports/library/create.locale` | `/{_locale}/library-imports/library/{library_id}/create` | `route/library-imports/library/create` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library/template` | `/library-imports/library/{library_id}/template` | `route/library-imports/library/template` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
+| `library-imports/library/template.locale` | `/{_locale}/library-imports/library/{library_id}/template` | `route/library-imports/library/template` | lib_academic, lib_institute, lib_patres, lib_user | html | `App\Controller\LibraryImportsController` |
 | `library/my-books` | `/library/my-books` | _open_ | everyone — reason below | n/a | `App\Controller\BorrowerCheckoutsController` |
 | `music` | `/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
 | `music.locale` | `/{_locale}/music` | `route/music` | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user | html | `App\Controller\MusicController` |
@@ -399,7 +403,9 @@ warning at the top of this file.
 | `libraries/library/sort-debugging` | `/libraries/:library_id/sort-debugging` | `/libraries/0/sort-debugging` | `libraries/library/sort-debugging` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/libraries/library/sort-debugging` — **the same resource** |
 | `library-imports/library` | `/library-imports/library/:library_id` | `/library-imports/library/0` | `library-imports/library` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library` — **the same resource** |
 | `library-imports/library-import` | `/library-imports/:import_id` | `/library-imports/0` | `library-imports/library-import` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library-import` — **the same resource** |
+| `library-imports/library-import/edit` | `/library-imports/:import_id/edit` | `/library-imports/0/edit` | `library-imports/library-import/edit` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library-import/edit` — **the same resource** |
 | `library-imports/library/create` | `/library-imports/library/:library_id/create` | `/library-imports/library/0/create` | `library-imports/library/create` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library/create` — **the same resource** |
+| `library-imports/library/template` | `/library-imports/library/:library_id/template` | `/library-imports/library/0/template` | `library-imports/library/template` | restricted to lib_academic, lib_institute, lib_patres, lib_user | `route/library-imports/library/template` — **the same resource** |
 | `music` | `/music` | `—` | `music` | **public** (names the default role `guest`) | `route/music` — **the same resource** |
 | `music/create-composition` | `/music/create-composition` | `—` | `music/create-composition` | restricted to sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user | `route/music/create-composition` — **the same resource** |
 | `persons` | `/persons` | `—` | `persons` | restricted to sch_administrator, sch_general_moderator, sch_moderator | `route/persons` — **the same resource** |
@@ -629,6 +635,7 @@ One row per route named by a guard entry, showing the **winning** entry only.
 | `library-imports/library-import` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `library-imports/library-import/edit` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `library-imports/library/create` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
+| `library-imports/library/template` | yes | lib_user | lib_academic, lib_institute, lib_patres, lib_user (4) | no |  |
 | `music` | yes | guest, user | administrator, guest, lib_academic, lib_institute, lib_patres, lib_user, pub_administrator, pub_all, pub_brothers, pub_brothers_moderator, pub_families, pub_families_moderator, pub_general_moderator, pub_institute, pub_institute_moderator, pub_ladies, pub_ladies_moderator, pub_moderator, pub_patres, pub_patres_moderator, pub_sisters, pub_sisters_moderator, pub_user, sch_administrator, sch_basic, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user, texts_administrator, texts_moderator, texts_user, user (34) | yes |  |
 | `music/create-composition` | yes | sch_user | sch_administrator, sch_general_moderator, sch_institute, sch_moderator, sch_patres, sch_user (6) | no |  |
 | `persons` | yes | sch_moderator | sch_administrator, sch_general_moderator, sch_moderator (3) | no |  |

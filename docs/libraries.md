@@ -135,8 +135,10 @@ Since strangler batch 11b (2026-08-18) all of these pages are **Symfony-served**
 checks moved with them into `App\Books\LibraryPage` — one implementation of "read
 `library_id`, load the row, ask the ACL" where the laminas controllers had the same nine
 lines four times over, twice returning a redirect object from a method declared to return an
-int. One route stays on laminas: `library-imports/library-import/edit`, which is the
-spreadsheet import engine rather than a page.
+int. The last of them, `library-imports/library-import/edit`, followed on 2026-08-18 —
+`Books\Controller\LibraryImportsController` and its six view scripts are gone, making
+`/library-imports` the first route tree in the application with no laminas controller
+behind it at all. See [library-imports.md](library-imports.md).
 
 | what | check |
 |---|---|

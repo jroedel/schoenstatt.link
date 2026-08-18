@@ -283,17 +283,42 @@ rediscovered.
   deliberate differences and the four fixes it forced into older shared code. What it left
   behind is below.
 
-- [ ] **Extract the spreadsheet import engine from its controller.** The one route batch 11b
-  left on laminas is `library-imports/library-import/edit`, and it is not a page:
-  `LibraryImportsController::importSpreadsheetFile()` is three hundred lines that open a
-  workbook, walk it against a column map and create, update and inactivate books in bulk —
-  living inside the laminas controller and reachable only through it. Porting it means
-  extracting a service both front controllers call. Two things to fix while doing it: the
-  column map is hardcoded to Colegio Mayor's spreadsheet headings in **two** places
-  (`getColegioMayorLibraryFieldsMap()` and `App\Controller\LibraryImportsController::
-  FIELDS_MAP`) with a `@todo` saying it should come from the import row's own
-  `columnMapping`, which is stored and never read; and the import runs on a GET of the edit
-  page when `import` is posted, which deserves the same look `refresh-sort` got.
+- [x] **Extract the spreadsheet import engine from its controller** — done 2026-08-18, and
+  the feature around it rebuilt. The engine is `App\Books\Import\LibraryImporter`, split
+  into `plan()` and `apply()` where it was one method taking a `&$simulate` flag it also
+  wrote to; `library-imports/library-import/edit` is Symfony-served; and
+  `Books\Controller\LibraryImportsController` with its six view scripts is deleted, making
+  `/library-imports` the first route tree here with no laminas controller behind it.
+
+  The reason it was worth more than a port: **the import was usable by exactly one of the
+  six libraries.** It matched Colegio Mayor's Spanish headings and nothing else, and the
+  file had to already be on the server, named by a path typed into a text box. Import 14,
+  created 2021-08-10 and still pending, records what that produced —
+  `C:\Users\Ramon Vergara\Desktop\intento.xlsx`. So: a downloadable template (blank, or
+  the library's own books in the same layout), an upload, worksheet discovery, alias
+  matching against the file's own headings with a correction screen, per-row error reasons,
+  a review page that shows changes rather than rows, a POST-plus-digest confirmation, and
+  `bin/console books:import`. Four silent defects fixed on the way — the discarded
+  `publishedYear`, the array-vs-string comparison behind 44,095 junk `sch_changes` rows, the
+  barcode-becomes-zero ordering bug, and unexplained errors. See
+  [library-imports.md](library-imports.md).
+
+- [ ] **Nothing prunes uploaded import spreadsheets.** They live in `shared/data/import/` on
+  the server and are kept deliberately — an import row names its file and the detail page
+  shows it — but there is no budget and no expiry. Colegio Mayor's fourteen files are 2 MB
+  together, so this is not urgent; it is unbounded.
+
+- [ ] **An import is not transactional.** It applies row by row, as it always has, so a
+  failure halfway through leaves the first half applied. Wrapping 16,000 writes in one
+  transaction would hold locks on the whole library for its duration, which is a real
+  trade-off rather than an oversight — but nobody has decided it. `sch_changes` records
+  every field change with its old value, so the information to *undo* an import exists;
+  nothing reads it that way.
+
+- [ ] **`Subtítulo` is not importable.** Four of Colegio Mayor's spreadsheets carry the
+  column and the import lists it among the ones it ignores. `lib_books` has no subtitle
+  column; `sch_publications` does. Either add one or say why the literature record is the
+  right home for it.
 
 - [ ] **Library label printing.** `libraries/library/label-management` is a three-panel
   mockup — select books, export labels to Excel, confirm the call-number change — with all

@@ -27,7 +27,13 @@
 <h1>{{ translate('Configure import') }}</h1>
 <p class="lead">{{ import.name }}</p>
 
-{% if has_run %}
+{% if is_abandoned %}
+  <div class="alert alert-info">{{ translate('This import was abandoned. It was configured but never run, and it cannot be run now.') }}</div>
+  <p>
+    <a class="btn btn-default" href="{{ detail_url }}">{{ translate('Import details') }}</a>
+    <a class="btn btn-primary" href="{{ library_url }}">{{ translate('Return to library') }}</a>
+  </p>
+{% elseif has_run %}
   {# The old page disabled every input and showed the counts. Same answer, no dead form. #}
   <div class="alert alert-info">{{ translate('This import has already been run. Its file, worksheet and columns are fixed.') }}</div>
   <p><strong>{{ translate('Books created') }}:</strong> {{ import.booksCreated }}</p>

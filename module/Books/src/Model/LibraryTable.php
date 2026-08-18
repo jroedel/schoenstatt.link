@@ -31,6 +31,16 @@ class LibraryTable extends SionTable implements
 {
     const IMPORT_STATUS_PENDING = 'pending';
     const IMPORT_STATUS_COMPLETED = 'completed';
+    /**
+     * Configured, never run, and not going to be.
+     *
+     * Added 2026-08-18 with `database/db8.3.sql`, which applies it to the three imports
+     * that had been sitting `pending` since 2017 and 2021. Two of them were live: their
+     * configure page still offered to run a spreadsheet from August 2017, which for
+     * import 1 means inactivating 3,492 of Colegio Mayor's 10,874 active books and for
+     * import 3 means 1,281.
+     */
+    const IMPORT_STATUS_ABANDONED = 'abandoned';
 
     const CHECKOUT_STATUS_CHECKED_OUT = 'checked-out';
     const CHECKOUT_STATUS_RETURNED = 'returned';

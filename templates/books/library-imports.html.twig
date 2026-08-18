@@ -35,6 +35,7 @@
 <tr>
     <th>{{ translate('Import name') }}</th>
     <th>{{ translate('Description') }}</th>
+    <th>{{ translate('Status') }}</th>
     <th>{{ translate('Complete import') }}</th>
     <th>{{ translate('Import started') }}</th>
     <th>{{ translate('Last updated') }}</th>
@@ -48,6 +49,7 @@
 <tr>
     <td>{{ format.entity('library-import', object, {'displayEditPencil': object.status == 'pending'}) }}</td>
     <td>{{ object.description }}</td>
+    <td>{% if object.status == 'completed' %}{{ translate('Run') }}{% elseif object.status == 'abandoned' %}{{ translate('Abandoned') }}{% else %}{{ translate('Not run yet') }}{% endif %}</td>
     <td>{{ object.isCompleteImport ? translate('Yes') : translate('No') }}</td>
     <td>{{ medium_datetime(object.createdOn) }}</td>
     <td>{{ medium_datetime(object.updatedOn) }}</td>
