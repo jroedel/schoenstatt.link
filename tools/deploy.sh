@@ -324,12 +324,15 @@ build_smoke_env() {
 
 # ------------------------------------------------- making a swap visible ----
 #
-# Repointing the release symlink does not change what PHP executes. OPcache keys
-# its compiled scripts on the path it resolved when it first saw them, and
-# `opcache.revalidate_path` defaults to 0, so it never re-resolves the symlink;
-# `validate_timestamps` then checks the OLD target's mtime, which never changes.
-# The old release therefore keeps serving, indefinitely, with nothing in the
-# response to say so.
+# Repointing the release symlink does not change what PHP executes: the old release
+# keeps serving, with nothing in the response to say so.
+#
+# This comment used to blame `opcache.revalidate_path` defaulting to 0. Measured
+# 2026-08-18 in test/Deploy/opcache-swap-test.sh and false — with the directive at 1
+# the swap is just as invisible, and OPcache files entries under the RESOLVED path.
+# What that test does confirm is the part this step depends on: opcache_reset()
+# clears a stale resolution immediately. The reset below is therefore the right
+# lever, whatever carries the staleness.
 #
 # Worse, there is more than one cache. Polling /en/sm/cache-status on 2026-08-17
 # returned three distinct uptimes, so this host runs at least three PHP pools,
@@ -940,11 +943,13 @@ dim "exception names the release that produced it (immutable now, unlike phploy'
 # rename over, which leaves a new inode with a current mtime and touches nothing
 # else. The release is not serving yet, so the rename is unobserved.
 #
-# Stated honestly: this is reasoned insurance, not a proven fix. Whether OPcache
-# here keys on the symlink path or the resolved one was never established, and if
-# it is the resolved path this changes nothing at all. It costs one copy of a 3 KB
-# file per deploy, which is worth paying for a mechanism this expensive to be wrong
-# about. See docs/incident-2026-08-17-stale-opcache.md.
+# Stated honestly: this does nothing. It was reasoned insurance against OPcache
+# keying on the symlink path, and on 2026-08-18 that question was finally settled —
+# it keys on the RESOLVED path (test/Deploy/opcache-swap-test.sh, check 2), which is
+# the case this comment already said "changes nothing at all". Kept because it costs
+# one copy of a 3 KB file per deploy and removing it would be a change to the swap
+# made on the strength of one measurement. Delete it once the open question in
+# docs/incident-2026-08-17-stale-opcache.md is closed.
 rsh "cd $NEW_ABS/public && cp -p index.php index.php.tmp && mv -f index.php.tmp index.php && touch index.php" \
     || warn "could not break the index.php hardlink; a stale opcode cache is likelier."
 dim "public/index.php unlinked from the previous release and re-stamped"

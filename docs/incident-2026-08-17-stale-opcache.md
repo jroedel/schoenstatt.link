@@ -47,11 +47,47 @@ effect, and what a rollback means once the columns are gone.
 
 ## Why the swap did not take effect
 
-`opcache.revalidate_path` defaults to `0`. OPcache keys compiled scripts on the
-path it resolved when it first saw them and never re-resolves the symlink;
-`validate_timestamps=On` then checks the **old** target's mtime, which never
-changes. The old release therefore keeps serving indefinitely, with nothing in any
-response to say so. This does not self-heal.
+**The paragraph that follows was the working explanation from 2026-08-17 until
+2026-08-18, and it is wrong in both of its clauses. It is kept because four
+protections in `tools/deploy.sh` were built on it and because the corrected version
+below is only legible against it.**
+
+> `opcache.revalidate_path` defaults to `0`. OPcache keys compiled scripts on the
+> path it resolved when it first saw them and never re-resolves the symlink;
+> `validate_timestamps=On` then checks the **old** target's mtime, which never
+> changes. The old release therefore keeps serving indefinitely, with nothing in any
+> response to say so. This does not self-heal.
+
+### What is actually happening (measured 2026-08-18)
+
+`test/Deploy/opcache-swap-test.sh` reproduces the failure in the capsule and settles
+three things this section had guessed at:
+
+- **OPcache keys script entries on the resolved path**, not on the requested
+  symlink path. The rig requests `…/current/index.php` and the cache reports
+  `…/rel-a/index.php`. The stale mapping lives in the path-*alias* keys instead —
+  which is why production reports roughly twice as many `cachedKeys` as
+  `cachedScripts`.
+- **`opcache.revalidate_path=1` does not fix it.** With the directive on, 60/60
+  requests still served the old release. It governs include-path resolution, not
+  symlink resolution. It had been recorded in [php-85.md](php-85.md) as a wanted
+  konsoleH change on the strength of the paragraph above; it no longer is.
+- **It does self-heal.** The capsule flips to the new release between +113s and
+  +125s with no intervention, which is `realpath_cache_ttl=120` to the second.
+
+That last point makes the `realpath_cache` hypothesis below worth reopening rather
+than treating as settled. It does **not** explain production on its own: the site
+stayed stale for ~12 minutes on 2026-08-18 and 20+ here, against the capsule's 120s.
+So either production's `realpath_cache_ttl` is far larger than the default — it is
+`PHP_INI_SYSTEM`, readable from `/en/sm/phpinfo`, and nobody has looked — or a
+second carrier is involved. **This is the open question**, and it is the one worth
+answering before any further engineering on the gate.
+
+What did **not** change: the deploy's response is still the right one. The same test
+confirms that `opcache_reset()` clears a stale resolution immediately (+15s, well
+inside the TTL), so the reset helper is the correct lever. On 2026-08-18 the problem
+was not that the mechanism is wrong but that it never landed — all four production
+segments read `manualRestarts: 0` afterwards.
 
 And there is more than one cache. Polling `/en/sm/cache-status` ten times returned
 three distinct uptimes:
@@ -73,9 +109,18 @@ traffic — which presented as "some pages load, some don't" and looked random.
 
 The first explanation offered was PHP's `realpath_cache` (120 s TTL). It fit the
 ten-second gap between swap and smoke, and it is a real hazard in symlink deploys.
-It was **wrong**: `realpath_cache` is per-process, and there are no persistent
+It was judged **wrong**: `realpath_cache` is per-process, and there are no persistent
 processes here. It was refuted by `ps`, and by the failure persisting for 20 minutes
 rather than 120 seconds.
+
+**That refutation is now doubtful** (2026-08-18). The capsule's stale resolution
+expires at 122s against a `realpath_cache_ttl` of 120, which is not a coincidence,
+and the premise that there are no persistent processes sits badly beside OPcache
+segments that live 20 minutes and accumulate 69,889 hits — shared memory needs
+something attached to it. What survives is the *second* half: a 120s cache cannot
+by itself explain a 20-minute failure. Both halves of that can be true at once if
+production's `realpath_cache_ttl` is not the default, which nobody has checked. The
+lesson below still holds; it is the verdict that was premature, not the method.
 
 The datum that actually settled it was `.revision`. Each release carries its own,
 the exception reporter prints it, and reports at 12:29 still named the *old*
@@ -206,9 +251,11 @@ That does not explain the 404, but it is a coherent account of why the stale sta
 *persists* rather than clearing on the next request. The deploy now breaks that
 hardlink after upload — `cp -p` then `mv -f`, giving a new inode and a current
 mtime, leaving the previous release's copy untouched (a plain `touch` would move
-the mtime on the shared inode, i.e. on every release at once). Whether OPcache here
-keys on the symlink path or the resolved one was never established; if it is the
-resolved path this changes nothing, and it costs one copy of a 3 KB file.
+the mtime on the shared inode, i.e. on every release at once).
+
+**Established 2026-08-18: it is the resolved path**, so by this section's own
+reckoning the hardlink break changes nothing. It costs one copy of a 3 KB file per
+deploy and is kept for that reason alone — not because it is known to help.
 
 ## The deploy that worked, and the last thing it exposed
 
@@ -244,10 +291,18 @@ every release is a check people would route around.
 
 ## What is still true and worth knowing
 
-- **The capsule cannot reproduce this.** It runs one PHP pool and serves from a
-  plain directory, not a release symlink. The capsule suite passed against the
-  post-drop schema both before and after the incident. Local green does not predict
-  swap coherence, and nothing in this repository can test it.
+- **The capsule reproduces this** — corrected 2026-08-18. This section used to say
+  it could not, and that "nothing in this repository can test it", which is what
+  left four protections resting on an unverified mechanism for a day.
+  `test/Deploy/opcache-swap-test.sh` builds two release directories, a symlink and
+  a byte-identical `index.php`, and the swap is invisible to warm workers exactly as
+  it was in production. The precondition is the warm-up: with two requests of it the
+  swap takes effect instantly and it reads as a clean non-repro, which is very
+  likely why the original judgement was made.
+  What the capsule still **cannot** show is the part that failed on 2026-08-18: it
+  runs one segment where production runs three or four, so per-segment coverage —
+  whether the reset reached every pool — has no local analogue. Local green does not
+  predict swap coherence across pools.
 - **Pools recycle on their own** (observed 148/349/485 s), so this class of failure
   eventually self-heals. Slowly, unpredictably, and never fast enough.
 - The rehearsal that would have caught it is a production deploy of a

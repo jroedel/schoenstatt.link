@@ -78,7 +78,7 @@ whether we could set it ourselves instead of asking.
 | setting | current | wanted | changeable | why |
 | --- | --- | --- | --- | --- |
 | `opcache.interned_strings_buffer` | `8` | **`32`** | SYSTEM | sits at **89–99% of 8 MiB** (77,504 strings) on an ordinary day. Once full, OPcache stops interning and stores duplicate strings per script. Nothing to do with whether the app fits — that is `memory_consumption`, at 24.6%. **Raise requested via konsoleH 2026-08-18; still reporting `8` on that date** (checked from `/en/sm/phpinfo`, and see § Confirming the raise below) |
-| `opcache.revalidate_path` | `0` | **`1`** | ALL | with 0, OPcache never re-resolves a symlinked path, so a release swap keeps executing the previous release. Root cause of [the 2026-08-17 outage](incident-2026-08-17-stale-opcache.md) |
+| `opcache.revalidate_path` | `0` | keep | ALL | **was listed as wanted `1` until 2026-08-18, on a diagnosis that turned out to be false.** Measured in the capsule with `test/Deploy/opcache-swap-test.sh`: with the directive at `1`, 60/60 requests still served the previous release after a swap. It governs include-path resolution, not symlink resolution, and OPcache files its script entries under the **resolved** path regardless. Do not spend a ticket on it |
 | `apc.ttl` | `0` | **non-zero** | SYSTEM | with 0 a failed allocation expunges the entire segment instead of evicting. Asked for in the same ticket as the `shm_size` raise and **did not land**; the raise did |
 | `opcache.memory_consumption` | `128` | keep | SYSTEM | 24.6% used, 0 wasted, no OOM restarts. No pressure |
 | `opcache.max_accelerated_files` | `10000` | keep | SYSTEM | prime-adjusted to 16,229 slots, 13.6% used |
@@ -90,9 +90,20 @@ whether we could set it ourselves instead of asking.
 
 Two of these are `PHP_INI_ALL`, which means a `.user.ini` in the docroot could set
 them without a ticket — `.htaccess` cannot, because `php_value` is a mod_php
-directive and this host runs CGI/FastCGI. Prefer the ini anyway for
-`revalidate_path`: an ini value applies before `public/index.php` is compiled, and
-that file is exactly the one that goes stale.
+directive and this host runs CGI/FastCGI. Neither is worth setting that way today:
+`validate_timestamps` is already where it needs to be, and `revalidate_path` was
+measured not to do what this section claimed. A `.user.ini` would also have to be a
+**tracked file at `public/.user.ini`**, shipped inside every release, since the
+docroot after a swap is `releases/<id>/public`; one in `shared/` is not on the
+resolved path.
+
+The knob the 2026-08-18 measurements actually implicate is **`realpath_cache_ttl`**,
+which is `PHP_INI_SYSTEM` and therefore a ticket. In the capsule a swap becomes
+visible on its own after 122s against a `realpath_cache_ttl` of 120 — but production
+stayed stale for ~12 minutes on 2026-08-18 and 20+ on 2026-08-17, so either its TTL
+is far larger than the default or a second carrier is involved. **Read its value from
+`/en/sm/phpinfo` before proposing anything**; it is not in the cache-status payload,
+and the maintenance key alone gets a 302 on that page.
 
 ### Verifying
 
