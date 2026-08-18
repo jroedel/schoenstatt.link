@@ -148,11 +148,16 @@ const PATHS = [
     // Neither belongs in a tool whose contract is "GET everything twice". They are covered
     // by test/Smoke instead, against a library small enough to assert on.
     //
-    // Library 1 (Bellavista, 4,604 books) is the subject wherever a library id is needed,
-    // except for the imports, which exist only under library 3 — all 22 of them. That
-    // asymmetry is the point of `/library-imports/library/1`: it is the *empty* case, a 500
-    // on laminas today for the five libraries with no imports, and a rendered empty list
-    // after the port. An intended difference, and the only one in this batch.
+    // Library 1 (Bellavista, 4,604 books) is the subject wherever a library id is needed.
+    //
+    // **The five `/library-imports/…` paths this batch carried are gone from the list, and
+    // will not come back.** They were removed on 2026-08-18 with
+    // `Books\Controller\LibraryImportsController` itself: that tree is Symfony-only now,
+    // its laminas routes exist solely so `laminas_path()` and the guards can name them, and
+    // a laminas capture of any of them dispatches to nothing. A path with no laminas side
+    // cannot be diffed against one, so leaving them here would turn every future capture
+    // into five failures that mean "this was ported hard" rather than "this drifted".
+    // They are covered by test/Smoke/LibraryImportSmokeTest instead.
     '/books/18370',
     '/borrowers/514',
     '/checkouts/library/1',
@@ -171,11 +176,6 @@ const PATHS = [
     '/libraries/1/label-management',
     '/libraries/1/mass-checkout',
     '/libraries/1/sort-debugging',
-    '/library-imports/library/1',
-    '/library-imports/library/3',
-    '/library-imports/library/3/create',
-    '/library-imports/2',
-    '/library-imports/2/edit',
     // batch 8 — the delete surface: the seven entity delete confirmations that share
     // SionModel\Controller\SionController::deleteAction().
     //

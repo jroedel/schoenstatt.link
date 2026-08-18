@@ -1280,6 +1280,17 @@ Two traps here, both silent:
   without a prefix. A single-pattern loop skips it in silence and the swap takes
   the site down. Both scripts use both patterns.
 
+**`data/import` is the one shared directory the application writes to itself.**
+Everything else on the shared side is populated by an operator or by a log
+writer that has been running for years; since 2026-08-18 the library import
+stores uploaded spreadsheets there. The link loop iterates `shared/data/*`, so an
+absent `shared/data/import` links nothing, the upload lands in
+`releases/<current>/data/import/`, and every uploaded file disappears at the next
+swap — surfacing weeks later as imports whose file "went missing".
+`tools/deploy.sh` therefore `mkdir -p shared/data/import` before the loop rather
+than leaving it to a bootstrap that ran once. Nothing prunes the directory; see
+[BACKLOG.md](BACKLOG.md).
+
 ### Server-only files in the docroot
 
 phploy left unknown files in `public/` alone. **A release swap deletes them**,

@@ -175,7 +175,7 @@ final class LibraryImportsController
                 $stored = $this->upload->accept($uploadedFile, $libraryId, gmdate('Y-m-d'));
                 if (null !== $stored['error']) {
                     $form->get('file')->setMessages([
-                        $this->uploadMessage($stored['error']),
+                        $this->uploadMessage($stored['error'], $stored['params']),
                     ]);
                 } else {
                     return $this->createRow($table, $form, $libraryId, $stored);
@@ -384,19 +384,29 @@ final class LibraryImportsController
     /**
      * A librarian-facing sentence for an upload problem.
      *
-     * The engine's own parameters — a PhpSpreadsheet exception, an extension — are
-     * deliberately not interpolated. "That file could not be opened as a spreadsheet"
-     * is actionable; `Reader\Exception: Unable to identify a reader for this file` is
+     * The engine's own parameters are deliberately **not** interpolated for the four
+     * cases a librarian can act on: "that file could not be opened as a spreadsheet" is
+     * actionable, and `Reader\Exception: Unable to identify a reader for this file` is
      * the same fact addressed to somebody else.
+     *
+     * The catch-all is the exception, and on purpose. It means the *server* refused —
+     * most likely `shared/data/import` missing or not writable by the web user, which is
+     * the one thing about this feature a deploy can get wrong (see
+     * docs/DEPLOY.md § The layout on the server). "Please try again" would be advice to
+     * repeat a failure forever. Only library administrators reach this page, and the
+     * detail is a relative path.
+     *
+     * @param list<string> $params
      */
-    private function uploadMessage(string $problem): string
+    private function uploadMessage(string $problem, array $params = []): string
     {
         return match ($problem) {
             SpreadsheetUpload::NO_FILE    => 'Choose a spreadsheet to upload.',
             SpreadsheetUpload::TOO_LARGE  => 'That file is larger than 10 MB.',
             SpreadsheetUpload::WRONG_TYPE => 'Only .xlsx, .xls and .ods files can be imported.',
             SpreadsheetUpload::UNREADABLE => 'That file could not be opened as a spreadsheet.',
-            default                       => 'The upload did not complete. Please try again.',
+            default                       => 'The upload could not be stored on the server: '
+                . ($params[0] ?? 'no reason given') . '.',
         };
     }
 
