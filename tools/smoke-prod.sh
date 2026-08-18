@@ -69,6 +69,39 @@ header() {
     sed -n "s/^$1: *//Ip" "$HDRS" | tr -d '\r' | tail -1 | tr '[:upper:]' '[:lower:]'
 }
 
+# >>> cache-status parsing
+# One number out of /en/sm/cache-status's "opcache" object. $1 key, $2 body file.
+#
+# Scoped to that object, never read from the whole document, because three keys —
+# uptimeSeconds, hits and misses — exist in BOTH the APCu and the OPcache sections.
+# An unqualified grep then returns two lines, and the newline between them makes
+# $(( )) a syntax ERROR rather than a wrong number:
+#
+#   tools/smoke-prod.sh: line 423: 77
+#   838 / 60 : syntax error in expression
+#
+# That is not hypothetical — it is what the interned-strings line did on its first
+# production run, 2026-08-19, having been added the day before. It could not have
+# been caught before then: tools/ci-local.sh runs the PHPUnit test/Smoke suite, not
+# this script, and this script only ever executes against the live site. So the
+# parsing lives in its own marked block, and test/Deploy/smoke-parsing-test.sh
+# drives it against a fixture with the duplicates in it.
+#
+# `head -1` after the slice is belt and braces: the slice already removes the APCu
+# copy, and a future duplicate INSIDE the opcache object would otherwise reintroduce
+# exactly this failure.
+oc_num() {
+    # Answer nothing when there is no opcache object, rather than falling through to
+    # a whole-document read. Without this guard `sed` substitutes nothing, passes the
+    # entire body along, and the APCu copy of a duplicated key comes back as if it
+    # were OPcache's — the same bug again, in the one case the caller's own
+    # `grep -q '"opcache"'` is what happens to be preventing. A parser should not
+    # depend on its caller's guard.
+    grep -q '"opcache":' "$2" || return 0
+    sed 's/.*"opcache":/{/' "$2" | grep -o "\"$1\":[0-9.]*" | head -1 | cut -d: -f2
+}
+# <<< cache-status parsing
+
 pass() { echo "  ok  $*"; }
 fail() {
     echo "FAIL  $*" >&2
@@ -405,16 +438,16 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
     # prime-rounded table size), not the configured max_accelerated_files.
     if [ "$STATUS" = "200" ] && grep -q '"opcache"' "$BODY"; then
         if grep -q '"enabled":true' "$BODY"; then
-            OC_MEM=$(grep -o '"memoryPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
-            OC_KEYS=$(grep -o '"keysPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
-            OC_SCRIPTS=$(grep -o '"cachedScripts":[0-9]*' "$BODY" | cut -d: -f2)
-            OC_MAXKEYS=$(grep -o '"maxCachedKeys":[0-9]*' "$BODY" | cut -d: -f2)
-            OC_HIT=$(grep -o '"hitRatePercent":[0-9.]*' "$BODY" | cut -d: -f2)
-            OC_INTERNED=$(grep -o '"internedPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
-            OC_INTERNED_MB=$(grep -o '"internedBufferConfiguredMb":[0-9]*' "$BODY" | cut -d: -f2)
-            OC_UPTIME=$(grep -o '"uptimeSeconds":[0-9]*' "$BODY" | cut -d: -f2)
-            OC_OOM=$(grep -o '"oomRestarts":[0-9]*' "$BODY" | cut -d: -f2)
-            OC_HASH=$(grep -o '"hashRestarts":[0-9]*' "$BODY" | cut -d: -f2)
+            OC_MEM=$(oc_num memoryPercentUsed "$BODY")
+            OC_KEYS=$(oc_num keysPercentUsed "$BODY")
+            OC_SCRIPTS=$(oc_num cachedScripts "$BODY")
+            OC_MAXKEYS=$(oc_num maxCachedKeys "$BODY")
+            OC_HIT=$(oc_num hitRatePercent "$BODY")
+            OC_INTERNED=$(oc_num internedPercentUsed "$BODY")
+            OC_INTERNED_MB=$(oc_num internedBufferConfiguredMb "$BODY")
+            OC_UPTIME=$(oc_num uptimeSeconds "$BODY")
+            OC_OOM=$(oc_num oomRestarts "$BODY")
+            OC_HASH=$(oc_num hashRestarts "$BODY")
             pass "OPcache ${OC_MEM:-?}% memory, ${OC_KEYS:-?}% of ${OC_MAXKEYS:-?} keys (${OC_SCRIPTS:-?} scripts), ${OC_HIT:-?}% hit rate"
             # Interned usage is meaningless without the segment's age beside it: the
             # buffer is append-only, so the percentage only ever rises within one
