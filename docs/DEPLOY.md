@@ -1504,6 +1504,28 @@ editing config *on* the server.
   Cache-Control policies from the now-tracked `public/.htaccess` fail the
   deploy on regression; HTTP/2 only WARNs (hoster-provided, not ours to
   fix). Non-zero exit on any failure.
+- **It also runs against the capsule**, as part of `tools/ci-local.sh`:
+
+      SMOKE_PROD_BASE_URL=http://localhost:8080 \
+      SMOKE_PROD_CACHE_KEY=local-dev-api-key bash tools/smoke-prod.sh
+
+  Rebuild the capsule's sitemap first — `php bin/console sitemap:build --force
+  --url=http://localhost:8080`, 2.4s — because the script filters the sitemap
+  index by base URL and one generated for another host lists nothing it will
+  match. That strictness is deliberate: in production a `<loc>` that does not
+  start with the canonical base is a real fault, so the sitemap is rebuilt to
+  suit the check rather than the check taught to accept a foreign host.
+
+  This closes a real gap. Until 2026-08-19 **nothing but a deploy had ever
+  executed this script**, so a bug in it could only be found by shipping —
+  which is exactly what happened: an unqualified grep for `uptimeSeconds`, a
+  key present in *both* the APCu and OPcache sections of one JSON document,
+  returned two lines and killed a run with `77\n838 / 60: syntax error` after
+  an otherwise successful deploy. 38 of its checks pass against the capsule;
+  on the first attempt, with nothing changed but the URL, 28 of 30 already
+  passed and both failures were the sitemap host. The canary-cookie checks stay skipped there and only
+  there: the capsule's vhost `SetEnv` masks the `.htaccess` kernel lines, so
+  neither cookie can work locally.
 - With `SMOKE_PROD_CACHE_KEY` set (any `sion_model.api_keys` value), it also polls
   `/en/sm/cache-status` (both APCu **and** OPcache), passing the key as an `X-Api-Key` header rather
   than in the URL, and WARNs — without failing — when the APCu

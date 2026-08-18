@@ -6,12 +6,20 @@
 # with no runner assigned and no steps executed — which looks alarming and is not about
 # your code. Do not spend time re-running those; run this instead and paste the result.
 #
-# It mirrors ci.yml's five jobs in the same order, plus the two suites CI CANNOT run
-# because they need a live application (smoke, fuzz). That makes a green run here a
-# STRICTER check than a green run on GitHub, not a weaker one — worth saying out loud,
-# because the reflex is to treat a local pass as second best.
+# It mirrors ci.yml's five jobs in the same order, plus the three things CI CANNOT run
+# because they need a live application: the smoke suite, the fuzz harness, and
+# tools/smoke-prod.sh itself. That makes a green run here a STRICTER check than a green
+# run on GitHub, not a weaker one — worth saying out loud, because the reflex is to
+# treat a local pass as second best.
 #
-#   ./tools/ci-local.sh          # the five CI jobs, then smoke + fuzz
+# The last of those was added on 2026-08-19 and is a different kind of coverage from the
+# other two. smoke-prod.sh is the bash script the DEPLOY runs against production as its
+# final step, and nothing had ever executed it except a deploy — so its own bugs could
+# only be discovered by shipping them, which is how a run died on `77\n838 / 60: syntax
+# error` after an otherwise successful deploy. Pointing it at the capsule exercises the
+# script, not just the site.
+#
+#   ./tools/ci-local.sh          # the five CI jobs, then smoke, fuzz + smoke-prod.sh
 #   ./tools/ci-local.sh --ci     # only the five CI jobs (faster; skips the ~4min smoke)
 #
 # Everything runs through `docker compose exec app` except the syntax lint, which needs
@@ -196,6 +204,48 @@ if [ "$CI_ONLY" -eq 0 ]; then
 
     step "Form fuzz harness  (NOT in ci.yml)"
     suite fuzz 3
+
+    # --- Beyond CI: the post-deploy smoke script, against the capsule ----------
+    #
+    # tools/smoke-prod.sh is NOT the `smoke` suite above. That one is PHPUnit under
+    # test/Smoke; this is the bash script the deploy runs as its last step, and until
+    # 2026-08-19 the only thing that ever executed it was a production deploy. So its
+    # own bugs could only ever be found by shipping: an unqualified grep for a key
+    # that exists in two sections of one JSON document killed a run with
+    # `77\n838 / 60: syntax error` after a successful deploy, and no local check
+    # could have seen it.
+    #
+    # It is BASE-parameterised already, so pointing it at the capsule exercises the
+    # whole script — its parsing, its assertions, its exit status — against a real
+    # application. 38 checks pass there. On the first attempt, with nothing changed but the
+    # URL, 28 of 30 already passed — both failures were the sitemap host.
+    #
+    # The sitemap is rebuilt first because the script filters the index by BASE, and
+    # a sitemap generated for a different host lists nothing it will match. That is
+    # the strict behaviour and worth keeping: in production a loc that does not start
+    # with the canonical base is a real fault. `--url` costs 2.4s and keeps the check
+    # honest rather than teaching it to accept a foreign host.
+    #
+    # The cache key is the capsule's own, from docker/local.docker.php. With it set,
+    # the APCu and OPcache blocks run — which is precisely the code that broke.
+    # SMOKE_PROD_CANARY_COOKIE is deliberately NOT set: the vhost's SetEnv masks the
+    # .htaccess kernel lines, so neither canary works here (see CLAUDE.md).
+    step "Post-deploy smoke script  (NOT in ci.yml — tools/smoke-prod.sh vs the capsule)"
+    sm_log=$(mktemp)
+    if in_capsule php bin/console sitemap:build --force --url=http://localhost:8080 > "$sm_log" 2>&1; then
+        if SMOKE_PROD_BASE_URL=http://localhost:8080 \
+           SMOKE_PROD_CACHE_KEY=local-dev-api-key \
+           bash tools/smoke-prod.sh > "$sm_log" 2>&1; then
+            ok "smoke-prod.sh: $(grep -c '^  ok  ' "$sm_log") checks passed against the capsule"
+            rm -f "$sm_log"
+        else
+            grep -E '^(FAIL|WARN)' "$sm_log" | sed 's/^/    /'
+            bad "smoke-prod.sh against the capsule (full output: $sm_log)"
+        fi
+    else
+        sed 's/^/    /' "$sm_log"
+        warn "could not build the capsule sitemap, so smoke-prod.sh was not run"
+    fi
 fi
 
 printf '\n'
@@ -205,7 +255,7 @@ if [ "$WARNINGS" -gt 0 ]; then
 fi
 if [ "$FAILURES" -eq 0 ]; then
     printf '\033[32mAll checks that ran passed.\033[0m'
-    [ "$CI_ONLY" -eq 0 ] && printf ' This covers everything CI runs, plus smoke and fuzz, which it cannot.'
+    [ "$CI_ONLY" -eq 0 ] && printf ' This covers everything CI runs, plus smoke, fuzz and the\npost-deploy smoke script, none of which it can.'
     printf '\n'
     exit 0
 fi
