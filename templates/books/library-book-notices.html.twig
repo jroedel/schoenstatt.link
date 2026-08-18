@@ -1,0 +1,34 @@
+{#
+  module/Books/view/books/libraries/send-book-notices.phtml — the overdue-notice preview,
+  and the page that sends them.
+
+  **Simulation is the default and the URL is the switch.** `?simulate=0` sends real email
+  to real borrowers; anything else, including no parameter at all, renders this preview.
+  That is why the "Send emails now" button is a link: it is the same GET with one query
+  parameter changed. Kept as it is — see the controller for why this route was not
+  converted to a POST the way `refresh-sort` was.
+
+  The heading interpolates the *formatted* library — a link with the library's name —
+  into a translated format string, so the `%s` is markup and the whole thing has to be
+  emitted raw. `format.entity` escapes the name itself.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+{% import 'books/_checkout-list.html.twig' as checkouts %}
+
+{% block page_stylesheets %}<link href="/css/gen-bootstrap-sortable.min.css" media="screen" rel="stylesheet" type="text/css">{% endblock %}
+{% block page_scripts %}<script type="text/javascript" src="/js/gen-bootstrap-sortable.min.js"></script>{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Book notices for %s')|format(format.entity('library', library, {'displayEditPencil': false}))|raw }}</h1>
+{% if simulate %}
+<p>{{ translate('All following emails are a simulation, click "Send now" to send emails.') }}</p>
+<p><a href="{{ send_now_url }}" class="btn btn-primary">{{ translate('Send emails now') }}</a>
+{% endif %}
+{% for object in borrowers %}
+<h2>{{ format.entity('borrower', object) }}</h2>
+<p>{{ translate('Email') }}: {{ object.email }}</p>
+<p>{{ translate('Locale') }}: {{ object.primaryLocale }}</p>
+    {{ checkouts.list(object.checkouts, ['withinLibraryId', 'callNumber', 'book', 'checkedOutOn', 'dueOn'], null, false) }}
+{% endfor %}
+{% endblock %}

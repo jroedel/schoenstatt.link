@@ -89,6 +89,9 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('edit_pencil', $this->editPencil(...), $html),
             new TwigFunction('format_entity', $this->formatEntity(...), $html),
             new TwigFunction('short_date', $this->shortDate(...)),
+            new TwigFunction('medium_date', $this->mediumDate(...)),
+            new TwigFunction('medium_datetime', $this->mediumDateTime(...)),
+            new TwigFunction('full_datetime', $this->fullDateTime(...)),
             new TwigFunction('diff_for_humans', $this->diffForHumans(...), $html),
             new TwigFunction('format_field', $this->formatField(...), $html),
             new TwigFunction('language_name', $this->languageName(...)),
@@ -396,6 +399,58 @@ final class LaminasExtension extends AbstractExtension
             $date,
             IntlDateFormatter::SHORT,
             IntlDateFormatter::NONE
+        );
+    }
+
+    /**
+     * `dateFormat($date, IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE)` — the
+     * length the checkout tables use, and the only place in the ported templates that
+     * wants it. Distinct from `short_date` in a way that matters on these pages: MEDIUM
+     * spells the month ("Aug 18, 2026") where SHORT gives digits, and a due-date column
+     * read at a lending desk is the reason the original chose it.
+     */
+    public function mediumDate(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::MEDIUM,
+            IntlDateFormatter::NONE
+        );
+    }
+
+    /**
+     * `dateFormat($date, MEDIUM, MEDIUM)` — a date *and* a time, which the imports index
+     * uses for "started" and "last updated". Distinct from `medium_date`, which asks for
+     * no time at all.
+     */
+    public function mediumDateTime(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::MEDIUM,
+            IntlDateFormatter::MEDIUM
+        );
+    }
+
+    /** `dateFormat($date, FULL, LONG)` — the import detail page's own length. */
+    public function fullDateTime(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::FULL,
+            IntlDateFormatter::LONG
         );
     }
 

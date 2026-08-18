@@ -98,6 +98,13 @@
 
         <link href="/css/gen-basic.css" media="screen" rel="stylesheet" type="text/css">
         {#
+          `headMeta()->appendName('description', …)`, which a handful of record pages
+          call from inside their view script. Optional: most pages set none, and laminas
+          then emits no tag at all rather than an empty one.
+        #}
+        {% if meta_description is defined and meta_description %}<meta name="description" content="{{ meta_description }}">{% endif %}
+
+        {#
           A page's own stylesheets, which the laminas layout gets from
           headLink()->appendStylesheet() inside the view script. Emitted here, after
           gen-basic.css, because that is where headLink appends them.

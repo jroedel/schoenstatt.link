@@ -1,0 +1,25 @@
+{#
+  module/Books/view/books/collections/index.phtml — four lines, and three of the four
+  details worth stating are things the original does *not* do:
+
+  - **no `headTitle()` call**, so the page keeps the layout's default "Schoenstatt Link".
+    Measured against the laminas rendering rather than assumed; giving it a real title
+    here would be an improvement and a difference.
+  - **no `<h1>`** and no breadcrumbs.
+  - the `<p>` elements are never closed, and the last one wraps the button. Reproduced:
+    the browser repairs it, and closing them changes the rendering for a reason that has
+    nothing to do with the port.
+
+  `format.entity('collection', …)` links each collection to its *library*, not to itself
+  — `EntityFormatter`'s collection branch has no show route to point at. That is the
+  laminas behaviour and it is what the baseline capture shows.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% block content %}
+{% for object in objects %}
+<p>{{ format.entity('collection', object) }}
+{% endfor %}
+<p><a class="btn btn-primary" href="{{ laminas_path('collections/create', {'library_id': library_id}) }}">{{ translate('Add another collection') }}</a>
+{% endblock %}

@@ -47,6 +47,7 @@ final class FormExtension extends AbstractExtension
             //render their options.
             new TwigFunction('form_select_without_options', $this->renderer->selectWithoutOptions(...), $html),
             new TwigFunction('help_block', $this->renderer->helpBlock(...), $html),
+            new TwigFunction('form_text', $this->renderer->text(...), $html),
             new TwigFunction('form_hidden', $this->renderer->hidden(...), $html),
             new TwigFunction('form_submit', $this->renderer->submit(...), $html),
             new TwigFunction('form_button', $this->renderer->button(...), $html),

@@ -1,0 +1,19 @@
+{#
+  module/Books/view/books/checkouts/checkin.phtml — scan barcodes, check the books back in.
+
+  `gen-books-checkin.js` populates the `#book-list` <ul> as barcodes are typed, which is
+  why the list is empty markup here. The form posts to itself.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_scripts %}<script type="text/javascript" src="/js/gen-books-checkin.js"></script>{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Book Check-in') }}</h1>
+{{ form_open(form, self_url) }}
+{{ form_row(form.get('withinLibraryIds')) }}
+<ul id="book-list" class="list-unstyled"></ul>
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}

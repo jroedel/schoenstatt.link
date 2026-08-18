@@ -329,6 +329,20 @@ final class BootstrapFormRenderer
         return $this->input($element, is_scalar($type) ? (string) $type : 'text', withClass: true);
     }
 
+    /**
+     * `formText()`: a bare `<input type="text">`, whatever the element's own type says.
+     *
+     * The distinction matters where a template calls `formText()` on a `Date` element,
+     * which mass-checkout.phtml does for `checkedOutOn`: the generic path would render
+     * `type="date"` with the element's `min` and `step`, and the browser would give the
+     * librarian a date picker where the original gives a text box the barcode scanner can
+     * be tabbed out of. Also no `class`, matching the helper.
+     */
+    public function text(ElementInterface $element): string
+    {
+        return $this->input($element, 'text', withClass: false);
+    }
+
     /** `formHidden()`: no `class`, unlike a hidden rendered through a row. */
     public function hidden(ElementInterface $element): string
     {
@@ -363,18 +377,36 @@ final class BootstrapFormRenderer
         $value   = self::asString($element->getValue());
         $content = null !== $label && '' !== $label ? $label : $value;
 
-        $declared = $this->declaredAttributes($element);
-        $class    = isset($declared['class']) ? (string) $declared['class'] : '';
-        unset($declared['class'], $declared['type'], $declared['name']);
+        $declared    = $this->declaredAttributes($element);
+        $class       = isset($declared['class']) ? (string) $declared['class'] : '';
+        $hasOwnClass = isset($declared['class']);
+        unset($declared['type'], $declared['name']);
 
+        /**
+         * **`class` keeps the position the element declared it in**, and only a button
+         * with no class of its own gets one appended at the end.
+         *
+         * This used to append unconditionally, which is right for a button whose class is
+         * added by TwbBundle and wrong for one that declares its own: laminas renders the
+         * element's attributes in declaration order, so `CheckoutForm`'s submit comes out
+         * `id`, `class`, `tabindex` and this emitted `id`, `tabindex`, `class`. Invisible
+         * until batch 11b, because it takes a button that declares *both* a class and a
+         * later attribute, and the checkout form is the first ported page with one.
+         */
         /** @var array<string, scalar> $attributes */
         $attributes = ['type' => $type, 'name' => (string) $element->getName()];
         foreach ($declared as $key => $declaredValue) {
+            if ('class' === $key) {
+                $attributes['class'] = self::buttonClass($class);
+                continue;
+            }
             if (is_scalar($declaredValue)) {
                 $attributes[(string) $key] = $declaredValue;
             }
         }
-        $attributes['class'] = self::buttonClass($class);
+        if (! $hasOwnClass) {
+            $attributes['class'] = self::buttonClass($class);
+        }
         //rendered even when empty: FormButton::openTag() always sets it from
         //getValue(), so the baseline carries `value=""` on both buttons of the
         //advanced search

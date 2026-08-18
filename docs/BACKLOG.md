@@ -276,62 +276,76 @@ rediscovered.
 
 ## Next
 
-- [ ] **Strangler batch 11b: the library surface — 32 routes.** The groundwork is
-  merged and deployed (2026-08-18); this is the port itself. Start here rather than
-  re-deriving it, but **re-run `tools/acl-table.php` before trusting the list** — the
-  first draft of this item listed `libraries/create` among the routes still to port and
-  got both totals wrong, which is the failure mode the rest of this entry warns about.
-  (The note recording that correction was itself imprecise until 2026-08-18: it said the
-  route "does not exist". It does — `/libraries/create`, guarded `route/libraries/create`
-  — it was simply **already ported**, which is a different mistake and a more ordinary
-  one. Re-running the tool is what settles either.)
-  - **The routes**, by cluster, as the tool reported them on 2026-08-18:
-    `libraries/library` + 15 children (admin, batch-operations, book-list,
-    book-list-json, checkin, checkout, collections, data-problems, delete,
-    inactivate-books, label-management, mass-checkout, refresh-sort,
-    send-book-notices, sort-debugging) = 16 · `library-imports` + 5 = 6 ·
-    `checkouts` + library/current/overdue = 4 · `books`, `books/book` = 2 ·
-    `borrowers`, `borrowers/borrower` = 2 · `collections`, `collections/collection`
-    = 2.
-  - Several of those are unmatchable Part parents that come along free —
-    `checkouts` among them since 2026-08-18. `unguarded_routes_matchable` in the
-    baseline is the honest count of what a visitor can actually reach.
-  - **`libraries/library/delete` is not portable** — `enable_delete_action` and its
-    three companions are commented out of the `library` entity spec, so it is
-    unfinished rather than merely unguarded. See the unguarded-routes item under
-    "Config rot".
-  - ~~**Do the `SiteChrome` work first.**~~ **Done 2026-08-18**, before any of the routes.
-    `layout.phtml` swaps the navbar search from "Search contacts" to the *current
-    library's* search whenever the route name contains `libraries/library/`, `books/`,
-    `checkouts/` or `library-imports/`, using `libraryInfo()` — an MvcEvent helper a
-    Symfony route cannot call — so three already-ported pages showed a contacts search
-    where laminas shows a library one. `App\Books\CurrentLibrary` supplies the answer
-    from the route parameters instead, and the four affected paths are now
-    byte-identical to laminas in all five locales. **Every route in this batch hits that
-    branch**, so it is inherited rather than re-derived. Two things to know when porting
-    on top of it:
-    - the four prefixes are a *copy* of the layout's, pinned by
-      `test/Unit/LibraryRoutePrefixesTest`; a new library route whose name does not
-      contain one of them gets the contacts search, exactly as it does under laminas;
-    - `test/Smoke/LibrarySearchBoxSmokeTest` compares a ported library page against an
-      **unported one in the same cluster**. As batch 11b ports
-      `libraries/library/checkout`, that reference page has to move to whatever is still
-      laminas-served; when nothing is, the test's premise is gone and it should be
-      retired rather than quietly re-pinned to a fixed string.
-  - **Verification is baseline-diff per route** (`tools/port-baseline.php` before and
-    after), decided 2026-08-17. This surface has real daily users and its authorization
-    is per-row, not per-route.
-  - **Read [libraries.md](libraries.md) first.** The permissive `checkout` rule on
-    three libraries is a deliberate friction trade-off, not a defect, and the smoke
-    test that pins it will fail if a port "tightens" it. Authorization here is
-    `isAllowed('library_<id>', …)` inside the controllers — a ported route must
-    reproduce that, and `RouteAccess::guardedBy()` on the route alone is not enough.
-  - **Expect the per-library rules to appear in the ACL baseline diff** now that
-    `tools/acl-table.php` reports them; regenerate `docs/acl-rules.md` and
-    `docs/acl-baseline.json` with every change here.
-  - Current position: **161 Symfony routes shadowing 70 of 142 laminas ones, 72 left.**
-    Cite `tools/acl-table.php` for this, never a prose count — the one in
-    strangler.md was four batches stale before 2026-08-17.
+- [x] ~~**Strangler batch 11b: the library surface — 32 routes.**~~ **Done 2026-08-18.**
+  Twenty-two ported, three retired as dead or empty, one left on laminas deliberately, five
+  unmatchable Part parents unchanged, and `libraries/library/delete` still unportable. See
+  [strangler.md](strangler.md) § The library circulation surface for the audit, the four
+  deliberate differences and the four fixes it forced into older shared code. What it left
+  behind is below.
+
+- [ ] **Extract the spreadsheet import engine from its controller.** The one route batch 11b
+  left on laminas is `library-imports/library-import/edit`, and it is not a page:
+  `LibraryImportsController::importSpreadsheetFile()` is three hundred lines that open a
+  workbook, walk it against a column map and create, update and inactivate books in bulk —
+  living inside the laminas controller and reachable only through it. Porting it means
+  extracting a service both front controllers call. Two things to fix while doing it: the
+  column map is hardcoded to Colegio Mayor's spreadsheet headings in **two** places
+  (`getColegioMayorLibraryFieldsMap()` and `App\Controller\LibraryImportsController::
+  FIELDS_MAP`) with a `@todo` saying it should come from the import row's own
+  `columnMapping`, which is stored and never read; and the import runs on a GET of the edit
+  page when `import` is posted, which deserves the same look `refresh-sort` got.
+
+- [ ] **Library label printing.** `libraries/library/label-management` is a three-panel
+  mockup — select books, export labels to Excel, confirm the call-number change — with all
+  five buttons `href=""` and the count hardcoded to 3. Ported as the sketch it is, because
+  the workflow it describes is worth more than the page costs. It is also unreachable from
+  the admin menu: its `admin_pages` entry has been commented out for years. The template is
+  the specification.
+
+- [ ] **The borrower page's countdown redirect is broken and its target is hardcoded.**
+  `books/borrowers/show.phtml` builds `var timerText = $timerText;` — the translated string
+  interpolated without quotes — so the emitted JavaScript is a syntax error, the whole
+  script fails to parse, the timer never starts and the announced redirect never happens.
+  Reproduced verbatim in `templates/books/borrower.html.twig` rather than fixed, and the
+  reason is the second half: `var redirect = "/libraries/3"` is hardcoded, so a working
+  version would send every borrower page on the site to Colegio Mayor after fifteen seconds.
+  Decide what the page is for before repairing it.
+
+- [ ] **Mass checkout offers the wrong people at four of the six libraries.**
+  `massCheckoutAction()` populates its borrower dropdown from
+  `Schoenstatt\FathersValueOptions` unconditionally, where the single-checkout form uses the
+  library's own `checkoutPersonListKind` provider. So the Austin libraries, which lend to
+  anyone, offer a list of Schoenstatt Fathers. Reproduced because "who may this library lend
+  to" has a real answer that nobody has written down — see [libraries.md](libraries.md).
+
+- [ ] **Library 7's `SortTextFormat` does not parse.** `%1{author}{title}` expands to three
+  printf parameters against one capture group, so building the library's sort filter throws.
+  The ported diagnostic now reports it instead of dying, which makes it visible; the data
+  still needs correcting, and until it is, `refresh-sort` on library 7 will throw when
+  POSTed.
+
+- [ ] **`show-collections` is an offered library display with no template.**
+  `LibraryTable::MAIN_SHOW_DISPLAY_VALUE_OPTIONS` lets a moderator choose it on the library
+  edit form and there is no `.phtml` for it on either side, so choosing it makes the library
+  page fatal. The ported page falls back to the default rather than crashing; the option
+  should either get a template or leave the form.
+
+- [ ] **SionModel's read methods are annotated as never returning null, and they do.**
+  `getObject()`, `getObjects()`, `queryObjects()`, `getLibraryImport()` and neighbours are
+  `@return mixed[]` and answer null for a missing row, an empty projection or an empty
+  query — so every honest null check reads to PHPStan level 8 as dead code.
+  `App\Laminas\SionResult` funnels them through one `mixed` parameter to keep the checks
+  and the analysis both. Fixing the annotations is the right end state and is a change to a
+  library other projects use.
+
+- [ ] **The `mailings` table's retention question.** Raised again by batch 11b because
+  `send-book-notices` is now Symfony-served and unchanged: the table looks like an outbound
+  queue and is a post-send log. `Status`, `Attempt`, `MaxAttempts` and `QueueUntil` are
+  vestigial, all 117 rows date from 2017–18, and `OpenedOn` is null in every one — open
+  tracking has never worked. Re-enabling the book-notices cron starts writing full message
+  bodies into it again. The governing principle from the relay work: server-generated
+  content may be logged, recipient behaviour may not be observed, so open tracking goes
+  regardless of what happens to the table.
 
 - [ ] **The comment form's open redirect.** `SionModel\Controller\CommentController::
   redirectAfterCreate()` redirects to `$data['redirect']` — a hidden form field — under a

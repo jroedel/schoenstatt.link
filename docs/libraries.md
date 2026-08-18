@@ -131,12 +131,42 @@ that ever needs bounding, the place to do it is the input filter, not the ACL.
 
 ## Where the checks actually live
 
+Since strangler batch 11b (2026-08-18) all of these pages are **Symfony-served**, and the
+checks moved with them into `App\Books\LibraryPage` — one implementation of "read
+`library_id`, load the row, ask the ACL" where the laminas controllers had the same nine
+lines four times over, twice returning a redirect object from a method declared to return an
+int. One route stays on laminas: `library-imports/library-import/edit`, which is the
+spreadsheet import engine rather than a page.
+
 | what | check |
 |---|---|
-| see a library | `LibrariesController::showAction()` → `isAllowed('library_<id>', 'show')` |
-| use the lending form | `CheckoutsController::createAction()` → `isAllowed('library_<id>', 'checkout')` |
-| check in, mass checkout, library admin | `'administrate'` — `lib_administrator` |
+| see a library | `App\Controller\LibraryController` → `LibraryPage::refuse(…, 'show')` |
+| use the lending form | `App\Controller\LibraryCheckoutController` → `LibraryPage::refuse(…, 'checkout')` |
+| check in, mass checkout, library admin, imports | `'administrate'` — `lib_administrator` |
 | borrower sees own loans | scoped token, not a role — `App\Controller\BorrowerCheckoutsController` |
+
+**A denied `show` redirects; a denied anything-else answers 403**, and that is reproduced
+rather than tidied. The library page's check lives inside
+`SionModel\Controller\SionController::showAction()`, which flashes and redirects to the
+libraries index; every other action calls `isAllowed()` itself and throws
+`UnAuthorizedException`, which BjyAuthorize renders as a 403. Same question, two answers,
+decided by which code asks it — and `BooksSmokeTest` pins the redirect for library 5, whose
+`ViewRole` is `lib_user`.
 
 Route guards are the outer gate and are listed in [acl-rules.md](acl-rules.md); the
 per-library rules are the inner one and are in that same file under "Per-library rules".
+**Every guard on this surface names `lib_user`, which is `is_default = 1`** — so the outer
+gate means no more than "signed in", and the inner one is the whole of the protection.
+
+## Two things on this surface that are broken and reproduced
+
+Both were found by the batch-11b audit and left as they were, because fixing either is a
+decision rather than a transcription:
+
+- **Mass checkout offers the Schoenstatt Fathers at every library**, where the
+  single-checkout form offers the library's own `checkoutPersonListKind` list. So the two
+  Austin libraries, which lend to anyone, present a list of priests.
+- **The borrower page announces a redirect it never performs.** Its countdown script does
+  not parse — a translated string is interpolated into JavaScript without quotes — and the
+  target it would have used is the hardcoded `/libraries/3`. Repairing the syntax without
+  deciding the target would send every borrower page to Colegio Mayor after fifteen seconds.

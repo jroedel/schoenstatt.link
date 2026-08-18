@@ -184,7 +184,14 @@ class BooksSmokeTest extends SmokeTestCase
         return [
             'texts'     => ['/en/texts'],
             'libraries' => ['/en/libraries'],
-            'borrowers' => ['/en/borrowers'],
+            //`/en/borrowers` was here until 2026-08-18 and is now a 404: the route
+            //declared an `index` action BorrowersController does not have, so it answered
+            //500 rather than the 302 this asserted — the guard redirected anonymous
+            //visitors before the missing action could be reached, which is why an
+            //anonymous check passed on a page no signed-in visitor could open. Retired in
+            //strangler batch 11b; test/Smoke/LibrarySurfaceSmokeTest pins the 404.
+            //`/en/borrowers/{person_id}` is unaffected and still redirects.
+            'borrower'  => ['/en/borrowers/514'],
         ];
     }
 }

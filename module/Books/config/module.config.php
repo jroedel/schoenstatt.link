@@ -158,13 +158,6 @@ return [
 //                     'library_id' => ':libraryId',
 //                 ],
 //             ],
-//             'libraries/library/batch-operations'=> [
-//                 'label' => "Batch book operations",
-//                 'description' => 'Perform changes to multiple books including inactivation, label printing, or changes to collection, language, or category.',
-//                 'route_parameters' => [
-//                     'library_id' => ':libraryId',
-//                 ],
-//             ],
 //             'libraries/library/inactivate-books'=> [
 //                 'label' => "Inactivate books",
 //                 'description' => 'Remove books from the library.',
@@ -617,16 +610,6 @@ return [
                                     ],
                                 ],
                             ],
-                            'batch-operations' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/batch-operations',
-                                    'defaults' => [
-                                        'action'     => 'batchOperations',
-                                        'controller' => Controller\LibrariesController::class,
-                                    ],
-                                ],
-                            ],
                             'send-book-notices' => [
                                 'type'    => Literal::class,
                                 'options' => [
@@ -729,11 +712,17 @@ return [
                 'options' => [
                     'route'    => '/borrowers',
                     'defaults' => [
+                        //NOTE no 'action' here, and `may_terminate` is false: /borrowers
+                        //was a 500, not a page. It declared `action => index`,
+                        //BorrowersController has no indexAction and no
+                        //`books/borrowers/index.phtml` exists, so every request answered
+                        //"Unable to render template". Measured 2026-08-18 signed in as a
+                        //library administrator. The 'controller' default stays because the
+                        //`borrower` child has none of its own and inherits this one.
                         'controller' => Controller\BorrowersController::class,
-                        'action'    => 'index',
                     ],
                 ],
-                'may_terminate' => true,
+                'may_terminate' => false,
                 'child_routes' => [
                     'borrower' => [
                         'type'    => Segment::class,
@@ -802,15 +791,6 @@ return [
                                     'route'    => '/edit',
                                     'defaults' => [
                                         'action'     => 'edit',
-                                    ],
-                                ],
-                            ],
-                            'cancel' => [
-                                'type'    => Literal::class,
-                                'options' => [
-                                    'route'    => '/cancel',
-                                    'defaults' => [
-                                        'action'     => 'cancel',
                                     ],
                                 ],
                             ],
@@ -2457,7 +2437,6 @@ return [
                 ['route' => 'libraries/library/checkout', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/checkin', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/mass-checkout', 'roles' => ['lib_user']],
-                ['route' => 'libraries/library/batch-operations', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/label-management', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/send-book-notices', 'roles' => ['user', 'guest']], //controller action has additional protection
                 ['route' => 'libraries/library/inactivate-books', 'roles' => ['lib_user']],
@@ -2467,7 +2446,6 @@ return [
                 ['route' => 'libraries/library/sort-debugging', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/refresh-sort', 'roles' => ['lib_user']],
                 ['route' => 'libraries/library/collections', 'roles' => ['lib_user']],
-                ['route' => 'borrowers', 'roles' => ['lib_user']],
                 ['route' => 'borrowers/borrower', 'roles' => ['lib_user']],
 
                 ['route' => 'collections/collection/edit', 'roles' => ['lib_user']],
@@ -2480,7 +2458,6 @@ return [
                 ['route' => 'library-imports/library', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library/create', 'roles' => ['lib_user']],
-                ['route' => 'library-imports/library-import/cancel', 'roles' => ['lib_user']],
                 ['route' => 'library-imports/library-import/edit', 'roles' => ['lib_user']],
 
                 ['route' => 'music', 'roles' => ['guest', 'user']],

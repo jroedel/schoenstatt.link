@@ -21,22 +21,22 @@
     "controller_guards": [],
     "counts": {
         "controller_guard_entries": 0,
-        "guarded_routes_existing": 124,
-        "guarded_routes_total": 124,
+        "guarded_routes_existing": 121,
+        "guarded_routes_total": 121,
         "non_route_resources": 14,
         "phantom_guard_entries": 0,
         "roles": 45,
-        "route_guard_entries": 126,
+        "route_guard_entries": 123,
         "routes_declared_twice": 2,
-        "routes_shadowed_by_symfony": 70,
+        "routes_shadowed_by_symfony": 92,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 134,
+        "symfony_routes_acl_checked": 178,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 161,
-        "total_routes": 142,
-        "unguarded_routes": 18,
+        "symfony_served_routes": 205,
+        "total_routes": 140,
+        "unguarded_routes": 19,
         "unguarded_routes_matchable": 7
     },
     "dynamic_providers": {
@@ -756,32 +756,6 @@
             "matchable": true,
             "public": false,
             "route": "books/create"
-        },
-        "borrowers": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "lib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "lib_user"
-            ],
-            "effective_roles": [
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "borrowers"
         },
         "borrowers/borrower": {
             "anonymous_allowed": false,
@@ -1925,32 +1899,6 @@
             "public": false,
             "route": "libraries/library/admin"
         },
-        "libraries/library/batch-operations": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "lib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "lib_user"
-            ],
-            "effective_roles": [
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "libraries/library/batch-operations"
-        },
         "libraries/library/book-list": {
             "anonymous_allowed": true,
             "assertion": null,
@@ -2375,32 +2323,6 @@
             "matchable": true,
             "public": false,
             "route": "library-imports/library-import"
-        },
-        "library-imports/library-import/cancel": {
-            "anonymous_allowed": false,
-            "assertion": null,
-            "declaration_count": 1,
-            "declarations": [
-                {
-                    "roles": [
-                        "lib_user"
-                    ],
-                    "assertion": null
-                }
-            ],
-            "declared_roles": [
-                "lib_user"
-            ],
-            "effective_roles": [
-                "lib_academic",
-                "lib_institute",
-                "lib_patres",
-                "lib_user"
-            ],
-            "exists_in_router": true,
-            "matchable": true,
-            "public": false,
-            "route": "library-imports/library-import/cancel"
         },
         "library-imports/library-import/edit": {
             "anonymous_allowed": false,
@@ -4620,6 +4542,16 @@
             "probe": "/associations/0"
         },
         {
+            "laminas_route": "books/book",
+            "path": "/books/:book_id",
+            "symfony_route": "books/book",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/books/book",
+            "access_kind": "acl",
+            "probe": "/books/0"
+        },
+        {
             "laminas_route": "books/book/edit",
             "path": "/books/:book_id/edit",
             "symfony_route": "books/book/edit",
@@ -4638,6 +4570,46 @@
             "now_checks": "route/books/create",
             "access_kind": "acl",
             "probe": "/books/create/0"
+        },
+        {
+            "laminas_route": "borrowers/borrower",
+            "path": "/borrowers/:person_id",
+            "symfony_route": "borrowers/borrower",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/borrowers/borrower",
+            "access_kind": "acl",
+            "probe": "/borrowers/0"
+        },
+        {
+            "laminas_route": "checkouts/library",
+            "path": "/checkouts/library/:library_id",
+            "symfony_route": "checkouts/library",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/checkouts/library",
+            "access_kind": "acl",
+            "probe": "/checkouts/library/0"
+        },
+        {
+            "laminas_route": "checkouts/library/current",
+            "path": "/checkouts/library/:library_id/current",
+            "symfony_route": "checkouts/library/current",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/checkouts/library/current",
+            "access_kind": "acl",
+            "probe": "/checkouts/library/0/current"
+        },
+        {
+            "laminas_route": "checkouts/library/overdue",
+            "path": "/checkouts/library/:library_id/overdue",
+            "symfony_route": "checkouts/library/overdue",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/checkouts/library/overdue",
+            "access_kind": "acl",
+            "probe": "/checkouts/library/0/overdue"
         },
         {
             "laminas_route": "collections/collection/edit",
@@ -4780,6 +4752,86 @@
             "probe": "/libraries/create"
         },
         {
+            "laminas_route": "libraries/library",
+            "path": "/libraries/:library_id",
+            "symfony_route": "libraries/library",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library",
+            "access_kind": "acl",
+            "probe": "/libraries/0"
+        },
+        {
+            "laminas_route": "libraries/library/admin",
+            "path": "/libraries/:library_id/admin",
+            "symfony_route": "libraries/library/admin",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/admin",
+            "access_kind": "acl",
+            "probe": "/libraries/0/admin"
+        },
+        {
+            "laminas_route": "libraries/library/book-list",
+            "path": "/libraries/:library_id/book-list",
+            "symfony_route": "libraries/library/book-list",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/book-list",
+            "access_kind": "acl",
+            "probe": "/libraries/0/book-list"
+        },
+        {
+            "laminas_route": "libraries/library/book-list-json",
+            "path": "/libraries/:library_id/book-list-json",
+            "symfony_route": "libraries/library/book-list-json",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/book-list-json",
+            "access_kind": "acl",
+            "probe": "/libraries/0/book-list-json"
+        },
+        {
+            "laminas_route": "libraries/library/checkin",
+            "path": "/libraries/:library_id/checkin",
+            "symfony_route": "libraries/library/checkin",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/checkin",
+            "access_kind": "acl",
+            "probe": "/libraries/0/checkin"
+        },
+        {
+            "laminas_route": "libraries/library/checkout",
+            "path": "/libraries/:library_id/checkout",
+            "symfony_route": "libraries/library/checkout",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/checkout",
+            "access_kind": "acl",
+            "probe": "/libraries/0/checkout"
+        },
+        {
+            "laminas_route": "libraries/library/collections",
+            "path": "/libraries/:library_id/collections",
+            "symfony_route": "libraries/library/collections",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/collections",
+            "access_kind": "acl",
+            "probe": "/libraries/0/collections"
+        },
+        {
+            "laminas_route": "libraries/library/data-problems",
+            "path": "/libraries/:library_id/data-problems",
+            "symfony_route": "libraries/library/data-problems",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/data-problems",
+            "access_kind": "acl",
+            "probe": "/libraries/0/data-problems"
+        },
+        {
             "laminas_route": "libraries/library/edit",
             "path": "/libraries/:library_id/edit",
             "symfony_route": "libraries/library/edit",
@@ -4788,6 +4840,96 @@
             "now_checks": "route/libraries/library/edit",
             "access_kind": "acl",
             "probe": "/libraries/0/edit"
+        },
+        {
+            "laminas_route": "libraries/library/inactivate-books",
+            "path": "/libraries/:library_id/inactivate-books",
+            "symfony_route": "libraries/library/inactivate-books",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/inactivate-books",
+            "access_kind": "acl",
+            "probe": "/libraries/0/inactivate-books"
+        },
+        {
+            "laminas_route": "libraries/library/label-management",
+            "path": "/libraries/:library_id/label-management",
+            "symfony_route": "libraries/library/label-management",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/label-management",
+            "access_kind": "acl",
+            "probe": "/libraries/0/label-management"
+        },
+        {
+            "laminas_route": "libraries/library/mass-checkout",
+            "path": "/libraries/:library_id/mass-checkout",
+            "symfony_route": "libraries/library/mass-checkout",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/mass-checkout",
+            "access_kind": "acl",
+            "probe": "/libraries/0/mass-checkout"
+        },
+        {
+            "laminas_route": "libraries/library/refresh-sort",
+            "path": "/libraries/:library_id/refresh-sort",
+            "symfony_route": "libraries/library/refresh-sort",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/refresh-sort",
+            "access_kind": "acl",
+            "probe": "/libraries/0/refresh-sort"
+        },
+        {
+            "laminas_route": "libraries/library/send-book-notices",
+            "path": "/libraries/:library_id/send-book-notices",
+            "symfony_route": "libraries/library/send-book-notices",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/send-book-notices",
+            "access_kind": "acl",
+            "probe": "/libraries/0/send-book-notices"
+        },
+        {
+            "laminas_route": "libraries/library/sort-debugging",
+            "path": "/libraries/:library_id/sort-debugging",
+            "symfony_route": "libraries/library/sort-debugging",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/libraries/library/sort-debugging",
+            "access_kind": "acl",
+            "probe": "/libraries/0/sort-debugging"
+        },
+        {
+            "laminas_route": "library-imports/library",
+            "path": "/library-imports/library/:library_id",
+            "symfony_route": "library-imports/library",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/library-imports/library",
+            "access_kind": "acl",
+            "probe": "/library-imports/library/0"
+        },
+        {
+            "laminas_route": "library-imports/library-import",
+            "path": "/library-imports/:import_id",
+            "symfony_route": "library-imports/library-import",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/library-imports/library-import",
+            "access_kind": "acl",
+            "probe": "/library-imports/0"
+        },
+        {
+            "laminas_route": "library-imports/library/create",
+            "path": "/library-imports/library/:library_id/create",
+            "symfony_route": "library-imports/library/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/library-imports/library/create",
+            "access_kind": "acl",
+            "probe": "/library-imports/library/0/create"
         },
         {
             "laminas_route": "music",
@@ -7085,6 +7227,26 @@
                 "denial_style": "html"
             }
         },
+        "books/book": {
+            "path": "/books/{book_id}",
+            "controller": "App\\Controller\\BookController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/books/book",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "books/book.locale": {
+            "path": "/{_locale}/books/{book_id}",
+            "controller": "App\\Controller\\BookController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/books/book",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "books/book/edit": {
             "path": "/books/{book_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -7121,6 +7283,86 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/books/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "borrowers/borrower": {
+            "path": "/borrowers/{person_id}",
+            "controller": "App\\Controller\\BorrowerController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/borrowers/borrower",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "borrowers/borrower.locale": {
+            "path": "/{_locale}/borrowers/{person_id}",
+            "controller": "App\\Controller\\BorrowerController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/borrowers/borrower",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "checkouts/library": {
+            "path": "/checkouts/library/{library_id}",
+            "controller": "App\\Controller\\CheckoutsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/checkouts/library",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "checkouts/library.locale": {
+            "path": "/{_locale}/checkouts/library/{library_id}",
+            "controller": "App\\Controller\\CheckoutsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/checkouts/library",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "checkouts/library/current": {
+            "path": "/checkouts/library/{library_id}/current",
+            "controller": "App\\Controller\\CheckoutsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/checkouts/library/current",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "checkouts/library/current.locale": {
+            "path": "/{_locale}/checkouts/library/{library_id}/current",
+            "controller": "App\\Controller\\CheckoutsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/checkouts/library/current",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "checkouts/library/overdue": {
+            "path": "/checkouts/library/{library_id}/overdue",
+            "controller": "App\\Controller\\CheckoutsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/checkouts/library/overdue",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "checkouts/library/overdue.locale": {
+            "path": "/{_locale}/checkouts/library/{library_id}/overdue",
+            "controller": "App\\Controller\\CheckoutsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/checkouts/library/overdue",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -7415,6 +7657,166 @@
                 "denial_style": "html"
             }
         },
+        "libraries/library": {
+            "path": "/libraries/{library_id}",
+            "controller": "App\\Controller\\LibraryController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library.locale": {
+            "path": "/{_locale}/libraries/{library_id}",
+            "controller": "App\\Controller\\LibraryController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/admin": {
+            "path": "/libraries/{library_id}/admin",
+            "controller": "App\\Controller\\LibraryController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/admin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/admin.locale": {
+            "path": "/{_locale}/libraries/{library_id}/admin",
+            "controller": "App\\Controller\\LibraryController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/admin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/book-list": {
+            "path": "/libraries/{library_id}/book-list",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/book-list",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/book-list-json": {
+            "path": "/libraries/{library_id}/book-list-json",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/book-list-json",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/book-list-json.locale": {
+            "path": "/{_locale}/libraries/{library_id}/book-list-json",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/book-list-json",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/book-list.locale": {
+            "path": "/{_locale}/libraries/{library_id}/book-list",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/book-list",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/checkin": {
+            "path": "/libraries/{library_id}/checkin",
+            "controller": "App\\Controller\\LibraryFormController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/checkin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/checkin.locale": {
+            "path": "/{_locale}/libraries/{library_id}/checkin",
+            "controller": "App\\Controller\\LibraryFormController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/checkin",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/checkout": {
+            "path": "/libraries/{library_id}/checkout",
+            "controller": "App\\Controller\\LibraryCheckoutController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/checkout",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/checkout.locale": {
+            "path": "/{_locale}/libraries/{library_id}/checkout",
+            "controller": "App\\Controller\\LibraryCheckoutController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/checkout",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/collections": {
+            "path": "/libraries/{library_id}/collections",
+            "controller": "App\\Controller\\LibraryCollectionsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/collections",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/collections.locale": {
+            "path": "/{_locale}/libraries/{library_id}/collections",
+            "controller": "App\\Controller\\LibraryCollectionsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/collections",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/data-problems": {
+            "path": "/libraries/{library_id}/data-problems",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/data-problems",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/data-problems.locale": {
+            "path": "/{_locale}/libraries/{library_id}/data-problems",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/data-problems",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
         "libraries/library/edit": {
             "path": "/libraries/{library_id}/edit",
             "controller": "App\\Controller\\EntityEditController",
@@ -7431,6 +7833,186 @@
             "access": {
                 "kind": "acl",
                 "resource": "route/libraries/library/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/inactivate-books": {
+            "path": "/libraries/{library_id}/inactivate-books",
+            "controller": "App\\Controller\\LibraryFormController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/inactivate-books",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/inactivate-books.locale": {
+            "path": "/{_locale}/libraries/{library_id}/inactivate-books",
+            "controller": "App\\Controller\\LibraryFormController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/inactivate-books",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/label-management": {
+            "path": "/libraries/{library_id}/label-management",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/label-management",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/label-management.locale": {
+            "path": "/{_locale}/libraries/{library_id}/label-management",
+            "controller": "App\\Controller\\LibraryPageController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/label-management",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/mass-checkout": {
+            "path": "/libraries/{library_id}/mass-checkout",
+            "controller": "App\\Controller\\LibraryMassCheckoutController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/mass-checkout",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/mass-checkout.locale": {
+            "path": "/{_locale}/libraries/{library_id}/mass-checkout",
+            "controller": "App\\Controller\\LibraryMassCheckoutController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/mass-checkout",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/refresh-sort": {
+            "path": "/libraries/{library_id}/refresh-sort",
+            "controller": "App\\Controller\\LibrarySortController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/refresh-sort",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/refresh-sort.locale": {
+            "path": "/{_locale}/libraries/{library_id}/refresh-sort",
+            "controller": "App\\Controller\\LibrarySortController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/refresh-sort",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/send-book-notices": {
+            "path": "/libraries/{library_id}/send-book-notices",
+            "controller": "App\\Controller\\LibraryNoticesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/send-book-notices",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/send-book-notices.locale": {
+            "path": "/{_locale}/libraries/{library_id}/send-book-notices",
+            "controller": "App\\Controller\\LibraryNoticesController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/send-book-notices",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/sort-debugging": {
+            "path": "/libraries/{library_id}/sort-debugging",
+            "controller": "App\\Controller\\LibrarySortController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/sort-debugging",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "libraries/library/sort-debugging.locale": {
+            "path": "/{_locale}/libraries/{library_id}/sort-debugging",
+            "controller": "App\\Controller\\LibrarySortController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/libraries/library/sort-debugging",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library": {
+            "path": "/library-imports/library/{library_id}",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library-import": {
+            "path": "/library-imports/{import_id}",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library-import",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library-import.locale": {
+            "path": "/{_locale}/library-imports/{import_id}",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library-import",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library.locale": {
+            "path": "/{_locale}/library-imports/library/{library_id}",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library/create": {
+            "path": "/library-imports/library/{library_id}/create",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "library-imports/library/create.locale": {
+            "path": "/{_locale}/library-imports/library/{library_id}/create",
+            "controller": "App\\Controller\\LibraryImportsController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/library-imports/library/create",
                 "reason": null,
                 "denial_style": "html"
             }
@@ -8209,6 +8791,7 @@
     "unguarded_routes": [
         "assignments",
         "books",
+        "borrowers",
         "checkouts",
         "collections",
         "collections/collection",

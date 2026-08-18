@@ -1,0 +1,38 @@
+{#
+  module/Books/view/books/checkouts/multiple-checkouts.phtml — the lending form.
+
+  The busiest page in this batch and the one docs/libraries.md is about: its per-library
+  `checkout` permission is deliberately permissive at three of the six libraries, because
+  in a religious community a checkout that is not effortless simply does not happen. Read
+  that document before tightening anything here.
+
+  The borrower select is populated from the *library's* person provider — see
+  App\Books\CheckoutForms — and selectize is initialised with `create: false`, so a
+  librarian may pick a person but not type a new one.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_stylesheets %}<link href="/css/gen-selectize.bootstrap.min.css" media="screen" rel="stylesheet" type="text/css">{% endblock %}
+{% block page_scripts %}<script type="text/javascript" src="/js/gen-books-checkouts.js"></script>{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Book checkout') }}</h1>
+{{ form_open(form, self_url) }}
+{{ form_row(form.get('withinLibraryIds')) }}
+<ul id="book-list" class="list-unstyled"></ul>
+{{ form_row(form.get('personId'), false) }}
+{{ form_row(form.get('adminNotes')) }}
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}
+
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+$(function () {
+$("select[name='personId']").selectize({
+    create: false
+});
+});
+</script>
+{% endblock %}

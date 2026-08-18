@@ -1,0 +1,22 @@
+{#
+  module/Books/view/books/libraries/inactivate-books.phtml — take books out of the
+  catalogue in bulk, with a reason recorded against each.
+
+  Inactivation is not deletion: the row stays, `is_active` goes false, and
+  `inactivationReason` is shown on the book page to anyone holding
+  `route/libraries/library/inactivate-books`.
+#}
+{% extends 'layout.html.twig' %}
+
+{% block page_scripts %}<script type="text/javascript" src="/js/books-inactivate-books.js"></script>{% endblock %}
+
+{% block content %}
+<h1>{{ translate('Inactivate books') }}</h1>
+{{ form_open(form, self_url) }}
+{{ form_row(form.get('inactivationReason')) }}
+{{ form_row(form.get('withinLibraryIds')) }}
+<ul id="book-list" class="list-unstyled"></ul>
+{{ form_row(form.get('security')) }}
+{{ form_submit(form.get('submit')) }}
+{{ form_close() }}
+{% endblock %}

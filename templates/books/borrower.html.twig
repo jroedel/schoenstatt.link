@@ -1,0 +1,78 @@
+{#
+  module/Books/view/books/borrowers/show.phtml — one person's loans, across the libraries
+  the *viewer* administrates.
+
+  The filtering happens in the controller, not here: a checkout the viewer may not see is
+  removed from the list before this template runs, and a viewer left with nothing gets
+  the same redirect as a person who does not exist, so the page cannot be used to
+  discover which libraries a stranger borrows from.
+
+  ## The countdown script is reproduced broken, on purpose
+
+  The original builds an inline script with
+
+      var timerText = $timerText;
+
+  — the translated string interpolated **without quotes**, so the emitted JavaScript is
+  `var timerText = This page will redirect in {0} seconds.;`, a syntax error. The whole
+  script fails to parse, which means the timer never starts, the `#timer` alert stays
+  hidden, and the page never performs the redirect it announces. Measured in the laminas
+  capture, not inferred.
+
+  Kept exactly as it is, and the reason is not fidelity for its own sake: the redirect
+  target is the hardcoded `/libraries/3`, so a "fix" would send every borrower page on
+  the site to Colegio Mayor after fifteen seconds. Broken is better than that, and the
+  right repair is a decision about what this page is for. Filed in the backlog.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'books/_checkout-list.html.twig' as checkouts %}
+
+{% block page_stylesheets %}<link href="/css/gen-bootstrap-sortable.min.css" media="screen" rel="stylesheet" type="text/css">{% endblock %}
+{% block page_scripts %}<script type="text/javascript" src="/js/gen-bootstrap-sortable.min.js"></script>{% endblock %}
+
+{% block content %}
+<div class="alert alert-warning hide" role="alert" id="timer"></div>
+<h1>{{ page_title }}</h1>
+{% if notice_buttons is not empty %}
+<p>{% for button in notice_buttons %}<a href="{{ button.href }}" class="btn btn-primary">{{ translate('Send email regarding %s books')|format(button.name) }}</a> {% endfor %}</p>
+{% endif %}
+{{ checkouts.list(entities, ['library', 'book', 'checkedOutOn', 'dueOn', 'checkedInOn'], null, true) }}
+{% endblock %}
+
+{% block inline_scripts %}
+<script nonce="{{ csp_nonce() }}">
+var count = 15;
+var redirect = "/libraries/3";
+var timerTextTranslations = {
+    "en": "This page will redirect in {0} seconds.",
+    "es": "Esta página será redireccionada en {0} segundos.",
+};
+var lang = $('html')[0].lang;
+var timerText = {{ translate('This page will redirect in {0} seconds.')|raw }};
+$timer = $("#timer");
+// First, checks if it isn't implemented yet.
+if (!String.prototype.format) {
+  String.prototype.format = function() {
+    var args = arguments;
+    return this.replace(/{(\d+)}/g, function(match, number) {
+      return typeof args[number] != 'undefined'
+        ? args[number]
+        : match
+      ;
+    });
+  };
+}
+countDown();
+
+function countDown() {
+    if(count > 0){
+        count--;
+        $timer.show();
+        $timer.html(timerText.format(count));
+        setTimeout("countDown()", 1000);
+    }else{
+        window.location.href = redirect;
+    }
+}
+</script>
+{% endblock %}
