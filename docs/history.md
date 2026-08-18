@@ -22,6 +22,60 @@ continues to render through laminas and turning them on is a `SetEnv` in
 `public/.htaccess`, not a deploy. 802 tests across four suites. See
 [strangler.md](strangler.md) for the mechanism and the route table.
 
+## The navbar's library search box, ported ahead of its routes (2026-08-18)
+
+The first piece of strangler batch 11b, done before any route: the layout branch that
+swaps the navbar search from "Search contacts" to the *current library's* search. It
+reads `libraryInfo()`, an MvcEvent-dependent view helper, so the Symfony layout never had
+it — and because the **layout** calls it, the gap landed on every ported page under
+`libraries/library/`, `books/`, `checkouts/` or `library-imports/`. Three of them, since
+2026-08-09: a librarian on `/books/{id}/edit` got a box that searched contacts.
+
+`App\Books\CurrentLibrary` answers the question from the route parameters instead —
+`library_id`, else `book_id`, else `import_id` — which a Symfony request has and an
+MvcEvent is not needed for. The helper stays unavailable; what changed is that the branch
+depending on it no longer is.
+
+Four things worth reusing.
+
+**An accepted regression is a debt with interest, and the interest is the thing to
+measure.** This one was accepted twice — batch 7, then batch 8 — each time for a good
+local reason. What made it wrong to accept a third time was not that it got worse but
+that batch 11b would have multiplied it by thirty. The general form: when the same
+deferral is about to be made again, price the *next* thirty, not the one in front of you.
+
+**Two of the three reasons given for deferring it were wrong, and only measuring showed
+it.** `docs/strangler.md` said the fix "touches every ported page's layout path" and that
+two pages were affected. `tools/port-baseline.php` A/B'd all 936 responses before and
+after: **exactly 20 changed** — 4 paths × 5 locales, signed-in only — and each normalized
+diff is two lines. It was three pages, not two, because `books/create` matches `books/`
+and the count predated batch 7. A deferral's stated cost ages exactly as badly as any
+other prose in these files, and nothing re-checks it, because a deferral is not something
+anyone re-opens to verify.
+
+**A before/after capture on the *same* front controller isolates a change; a
+laminas-vs-symfony capture does not.** Comparing the two front controllers over the whole
+corpus reports 341 differences, almost all of them pre-existing — the `//<!-- -->` script
+wrapper, the bare-path redirect, and rows added by the capture harness registering its own
+account. Stashing the change and capturing `symfony-before` reduced the signal to 20 files
+and made the review trivial. Worth doing whenever the baseline is not already green,
+which after eleven batches it is not.
+
+**A scoping test that never exercises the scope passes anyway.** The first version of
+`LibrarySearchBoxSmokeTest` proved "a non-library page still shows the contacts search"
+using `/roles/create` — which has no `library_id`, so it would pass with the prefix rule
+mutated to match every route on the site. Mutation testing caught it; the fix was to pick
+`/collections/create/1`, a page that **names a library and is still not library-scoped**,
+which is the only shape that tests the rule. Same lesson as the `form_submit` docblock
+that made `PortedFormsAreSubmittableTest` pass with the fix deleted: a negative assertion
+needs a case where the two candidate rules actually disagree.
+
+One claim was withdrawn rather than kept: the Spanish assertion in that suite does *not*
+detect naming the wrong text domain, because `module/Books/language/*.lang.php` carries
+the same `Search %s` phrase as `Application`'s, so the swap is byte-invisible. It does
+detect no translation at all, which is the failure that would otherwise ship unseen —
+in English a missing translation is the source string.
+
 ## Library-surface groundwork, and a deploy that could hang forever (2026-08-17/18, DEPLOYED)
 
 Three merged changes clearing the ground before the library routes port, plus one
