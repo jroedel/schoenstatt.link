@@ -276,6 +276,51 @@ rediscovered.
 
 ## Next
 
+- [ ] **Strangler batch 11b: the library surface — 32 routes.** The groundwork is
+  merged and deployed (2026-08-18); this is the port itself. Start here rather than
+  re-deriving it, but **re-run `tools/acl-table.php` before trusting the list** — the
+  first draft of this item invented a `libraries/create` route that does not exist and
+  got both totals wrong, which is the failure mode the rest of this entry warns about.
+  - **The routes**, by cluster, as the tool reported them on 2026-08-18:
+    `libraries/library` + 15 children (admin, batch-operations, book-list,
+    book-list-json, checkin, checkout, collections, data-problems, delete,
+    inactivate-books, label-management, mass-checkout, refresh-sort,
+    send-book-notices, sort-debugging) = 16 · `library-imports` + 5 = 6 ·
+    `checkouts` + library/current/overdue = 4 · `books`, `books/book` = 2 ·
+    `borrowers`, `borrowers/borrower` = 2 · `collections`, `collections/collection`
+    = 2.
+  - Several of those are unmatchable Part parents that come along free —
+    `checkouts` among them since 2026-08-18. `unguarded_routes_matchable` in the
+    baseline is the honest count of what a visitor can actually reach.
+  - **`libraries/library/delete` is not portable** — `enable_delete_action` and its
+    three companions are commented out of the `library` entity spec, so it is
+    unfinished rather than merely unguarded. See the unguarded-routes item under
+    "Config rot".
+  - **Do the `SiteChrome` work first.** `layout.phtml` swaps the navbar search from
+    "Search contacts" to the *current library's* search whenever the route name
+    contains `libraries/library/`, `books/`, `checkouts/` or `library-imports/`, using
+    `libraryInfo()` — an MvcEvent helper a Symfony route cannot call. Two already-ported
+    pages under those prefixes therefore show a contacts search where laminas shows a
+    library one: a functional regression, accepted twice and recorded in
+    [strangler.md](strangler.md). **Every route in this batch hits that branch**, so
+    teaching `SiteChrome` which library the page belongs to is cheaper once than
+    accepting it thirty more times. The row is already loaded; it needs the library's
+    name plus an `isAllowed($resourceId, 'show')`.
+  - **Verification is baseline-diff per route** (`tools/port-baseline.php` before and
+    after), decided 2026-08-17. This surface has real daily users and its authorization
+    is per-row, not per-route.
+  - **Read [libraries.md](libraries.md) first.** The permissive `checkout` rule on
+    three libraries is a deliberate friction trade-off, not a defect, and the smoke
+    test that pins it will fail if a port "tightens" it. Authorization here is
+    `isAllowed('library_<id>', …)` inside the controllers — a ported route must
+    reproduce that, and `RouteAccess::guardedBy()` on the route alone is not enough.
+  - **Expect the per-library rules to appear in the ACL baseline diff** now that
+    `tools/acl-table.php` reports them; regenerate `docs/acl-rules.md` and
+    `docs/acl-baseline.json` with every change here.
+  - Current position: **161 Symfony routes shadowing 70 of 142 laminas ones, 72 left.**
+    Cite `tools/acl-table.php` for this, never a prose count — the one in
+    strangler.md was four batches stale before 2026-08-17.
+
 - [ ] **The comment form's open redirect.** `SionModel\Controller\CommentController::
   redirectAfterCreate()` redirects to `$data['redirect']` — a hidden form field — under a
   `@todo confirm that redirect is a valid route`. Narrowed by CSRF (the POST must come
