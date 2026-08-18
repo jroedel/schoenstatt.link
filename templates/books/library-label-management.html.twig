@@ -1,0 +1,51 @@
+{#
+  module/Books/view/books/libraries/label-management.phtml.
+
+  **This page is a mockup and is ported as one.** Every one of its five buttons is
+  `href=""`, the "Confirm change of %s call numbers" count is the literal 3, and the
+  action behind it does nothing but an ACL check. It is also unreachable from the
+  library admin menu — its `admin_pages` entry has been commented out for years — so
+  the only way here is to type the URL.
+
+  Kept rather than retired (decided 2026-08-18) because the three panels document an
+  intended workflow — select books, export labels to Excel, confirm the call-number
+  change in the database — and that sketch is worth more than the page costs. Reproduced
+  faithfully, dead links included: "fixing" the hrefs would invent behaviour, and
+  removing them would destroy the sketch.
+
+  If you are here to build label printing, this file is the specification and the
+  backlog item is "Library label printing".
+#}
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+<h1>{{ translate('Label management') }}</h1>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{ translate('Step 1: Select books to print call number') }}</h3>
+  </div>
+  <div class="panel-body">
+    <p><a href="" class="btn btn-default">{{ translate('Select by list of barcodes') }}</a>
+    <a href="" class="btn btn-default">{{ translate('Select by advanced search') }}</a></p>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{ translate('Step 2: Export labels to Excel & print') }}</h3>
+  </div>
+  <div class="panel-body">
+    <p><a href="" class="btn btn-default">{{ translate('Export') }}</a></p>
+  </div>
+</div>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{ translate('Step 3: Confirm call number change in the database') }}</h3>
+  </div>
+  <div class="panel-body">
+    <p><a href="" class="btn btn-default">{{ translate('Deselect some books') }}</a> {{ translate('or') }}
+    <a href="" class="btn btn-default">{{ translate('Confirm change of %s call numbers')|format(3) }}</a></p>
+  </div>
+</div>
+{% endblock %}

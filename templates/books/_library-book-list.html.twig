@@ -1,0 +1,56 @@
+{#
+  module/Books/view/books/library/book-list.phtml — the search-results table on a
+  library's page.
+
+  Three faithful reproductions:
+
+  - the `</tr>` sits **outside** the loop and the `<tr>` inside it, so every row but the
+    last nests wrongly. Same shape as `schoenstatt/roles.html.twig`; browsers repair it.
+  - the cover cell is a `<th>` inside a body row.
+  - a dead `if (0 && …)` branch in the original selected between a file link and
+    `formatEntity`. It has been unreachable since it was written, so only the reachable
+    half is here.
+
+  `view_checkout_person` decides whether the due-date column exists at all — it is a
+  non-route ACL resource, and it is what keeps a borrower's name off the page for
+  visitors who may see the catalogue but not who has what.
+#}
+{% macro list(entities, publications, borrowers) %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+{% if entities is not empty %}
+{% set show_checkouts = is_allowed('view_checkout_person') %}
+<table class="table">
+<tr>
+    {% if publications is iterable %}<th></th>{% endif %}
+    <th>#</th>
+    <th>{{ translate("Author") }}</th>
+    <th>{{ translate("Title") }}</th>
+    <th>{{ translate("Edition") }}</th>
+    {% if show_checkouts %}<th>{{ translate("Due on") }}</th>{% endif %}
+</tr>
+    {% for book in entities %}
+    <tr{% if not book.isAvailable %} class="danger"{% endif %}>
+    {%- if publications is iterable %}<th>
+    {%- set cover = book.publicationId is not null and publications[book.publicationId] is defined
+        ? publications[book.publicationId] : null %}
+    {%- if cover and cover.coverThumbnail80pxUri is not null %}
+            <a href="{{ laminas_path('publication', {'sw_id': cover.identifier, 'slug': cover.slug}) }}">
+            <img src="{{ cover.coverThumbnail80pxUri }}" height="80px" alt="{{ cover.title }}"></a>
+    {%- endif %}
+    </th>{% endif %}
+        <td>{{ book.callNumber }}</td>
+        <td>{{ book.authorsPrettyText }}</td>
+            <td>{{ format.entity('book', book) }}</td>
+        <td>{{ book.bookEdition }}</td>
+            {% if show_checkouts %}<td>
+            {%- if book.currentCheckout is not empty %}{{ format.entity('checkout', book.currentCheckout) }}
+            {%- if borrowers is iterable and borrowers[book.currentCheckout.personId] is defined %}
+                {{- ' ' ~ translate('by %s')|format(borrowers[book.currentCheckout.personId]) }}
+            {%- endif %}{% endif %}</td>{% endif %}
+    {% endfor %}
+    </tr>
+</table>
+{% else %}
+<p>{{ translate('No results found.') }}</p>
+{% endif %}
+{% endmacro %}

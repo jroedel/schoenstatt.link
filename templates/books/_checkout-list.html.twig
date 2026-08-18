@@ -1,0 +1,66 @@
+{#
+  module/Books/view/books/checkouts/checkout-list.phtml — the sortable checkout table,
+  shared by the three `checkouts/library` views and by the borrower's own page.
+
+  The column set is chosen by the caller, which is what makes one table serve four pages:
+  the "current" view shows barcode and call number, "overdue" drops the call number,
+  "all" drops both and adds the check-in date, and the borrower page adds the library.
+
+  `sortable` on the table is picked up by gen-bootstrap-sortable, which the original
+  appends from inside the partial. Here it goes through the layout's `page_stylesheets`
+  and `page_scripts` blocks — a Twig macro cannot reach headScript(), and the assets
+  belong to the page rather than to the fragment anyway.
+
+  Row colour is the checkout's status: overdue red, returned green, current unstyled.
+  Rendering nothing at all when there are no rows is the original's behaviour — no
+  "nothing found" message, just an absent panel.
+#}
+{% macro list(entities, columns, persons, show_library) %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+{% set column_names = {
+    'library': 'Library',
+    'book': 'Book',
+    'callNumber': 'Call number',
+    'withinLibraryId': 'Barcode',
+    'borrower': 'Checked out by',
+    'checkedOutOn': 'Checked out on',
+    'dueOn': 'Due on',
+    'checkedInOn': 'Checked in on'
+} %}
+{% if entities is not empty %}
+<div class="panel panel-default">
+<div id="book-list" class="table-responsive panel-body">
+    <table class="table sortable">
+        <thead>
+        <tr>
+            {% for col in columns %}
+                <th>{{ translate(column_names[col]) }}</th>
+            {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+        {% for entity in entities %}
+        <tr {% if entity.status == 'overdue' %}class="danger"{% elseif entity.status == 'returned' %}class="success"{% endif %}>
+            {% for col in columns %}
+                {% if col == 'library' %}
+            <td>{{ format.entity('library', entity.book.library, {'displayEditPencil': false}) }}</td>
+                {% elseif col == 'book' %}
+            <td>{{ format.entity('book', entity.book) }}</td>
+                {% elseif col == 'callNumber' %}
+            <td>{{ entity.book.callNumber|default('') }}</td>
+                {% elseif col == 'withinLibraryId' %}
+            <td>{{ entity.book.withinLibraryId|default('') }}</td>
+                {% elseif col == 'borrower' %}
+            <td>{% if persons is iterable and persons[entity.personId] is defined %}{{ format.entity('borrower', persons[entity.personId]) }}{% endif %}</td>
+                {% else %}
+            <td>{% if entity[col] is not empty %}{{ medium_date(entity[col]) }}{% endif %}</td>
+                {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+{% endif %}
+{% endmacro %}

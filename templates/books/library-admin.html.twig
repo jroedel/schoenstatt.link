@@ -1,0 +1,43 @@
+{#
+  module/Books/view/books/libraries/admin.phtml.
+
+  The admin page **is** the library page with a menu on top: `adminAction()` opens with
+  `$view = $this->showAction()`, so everything below the menu — search bar, heading,
+  category listing — is the same content, rendered by the same partials. Hence the
+  `include` rather than a second copy.
+
+  Each entry is filtered by `is_allowed('route/' ~ route)`, which is the *route* guard
+  rather than the per-library resource. That is the original's check and it is weaker
+  than it looks: every one of these guards names `lib_user`, a default role, so the
+  filter passes for every signed-in account and the page itself is what restricts
+  access. Reproduced as-is — the page's own `administrate` check is the real gate.
+
+  Badge classes: only info/warning/danger/success become `alert-*`; a numeric key (which
+  is what every count badge has) gets no class at all. Reproduced, including that the
+  `alert-*` prefix is not a Bootstrap badge class and therefore does nothing visible.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'books/_library-search-bar.html.twig' as search %}
+{% import 'books/_library-book-list.html.twig' as booklist %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+<div class="row">
+<div class="col-md-8 col-md-offset-2">
+<div class="list-group">
+{% for route, values in pages %}
+    {% if is_allowed('route/' ~ route) %}
+    <a href="{{ laminas_path(route, values.route_parameters|default({})) }}" class="list-group-item">
+    {%- for badge, value in values.badges|default([]) %}
+        <span class="badge {% if badge in ['info', 'warning', 'danger', 'success'] %}alert-{{ badge }}{% endif %}">{{ value }}</span>
+    {%- endfor %}
+    <h4 class="list-group-item-heading">{{ translate(values.label) }}</h4>
+        {% if values.description is defined and values.description is not null %}
+    <p class="list-group-item-text">{{ translate(values.description) }}</p>
+        {% endif %}</a>
+    {% endif %}
+{% endfor %}
+</div>
+</div>
+</div>
+{% endblock %}

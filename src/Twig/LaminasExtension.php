@@ -89,6 +89,7 @@ final class LaminasExtension extends AbstractExtension
             new TwigFunction('edit_pencil', $this->editPencil(...), $html),
             new TwigFunction('format_entity', $this->formatEntity(...), $html),
             new TwigFunction('short_date', $this->shortDate(...)),
+            new TwigFunction('medium_date', $this->mediumDate(...)),
             new TwigFunction('diff_for_humans', $this->diffForHumans(...), $html),
             new TwigFunction('format_field', $this->formatField(...), $html),
             new TwigFunction('language_name', $this->languageName(...)),
@@ -395,6 +396,26 @@ final class LaminasExtension extends AbstractExtension
         return (string) $this->helpers->dateFormat()->__invoke(
             $date,
             IntlDateFormatter::SHORT,
+            IntlDateFormatter::NONE
+        );
+    }
+
+    /**
+     * `dateFormat($date, IntlDateFormatter::MEDIUM, IntlDateFormatter::NONE)` — the
+     * length the checkout tables use, and the only place in the ported templates that
+     * wants it. Distinct from `short_date` in a way that matters on these pages: MEDIUM
+     * spells the month ("Aug 18, 2026") where SHORT gives digits, and a due-date column
+     * read at a lending desk is the reason the original chose it.
+     */
+    public function mediumDate(mixed $date): string
+    {
+        if (null === $date) {
+            return '';
+        }
+
+        return (string) $this->helpers->dateFormat()->__invoke(
+            $date,
+            IntlDateFormatter::MEDIUM,
             IntlDateFormatter::NONE
         );
     }

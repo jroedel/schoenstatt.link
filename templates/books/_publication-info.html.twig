@@ -17,11 +17,17 @@
 
   The original also takes an `options` array with `showCover` and a `panelTitle` of
   `book-title-and-link`, which swaps the "Publication Info" heading for the formatted
-  publication itself. Nothing passes either: the show page renders this with `object`
-  alone, so `showCover` is true and the heading is the literal. `show_cover` survives as
-  a defaulted variable because the layout genuinely changes with it (9 columns against
-  12); the title variant does not, because reproducing an unreachable branch is how a
-  port acquires untested code.
+  publication itself.
+
+  **This block said "nothing passes either" and that was true only until batch 11b.**
+  `books/books/show.phtml` renders this partial with *both* — `showCover: false` and
+  `panelTitle: 'book-title-and-link'` — so a book page shows the publication panel
+  headed by a link to the publication rather than by the words "Publication Info". The
+  branch was dropped when this file was written on the reasoning that it was
+  unreachable, which was a statement about the four routes ported at the time and read
+  as a statement about the application. Restored 2026-08-18, and the lesson is worth
+  more than the branch: "nothing calls this" is only ever true of the code that exists
+  when you write it down.
 
   ## The four FormatPublication display modes
 
@@ -41,6 +47,7 @@
   does, on the same page, and neither has anything to do with reaching the page at all.
   `format_field`'s `displayOnlyWithPermission` is a third such check, inside the helper.
 #}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
 {% set show_cover = show_cover|default(true) %}
 <div class="row">
 {% if show_cover %}
@@ -58,7 +65,7 @@
     <div class="panel-heading">
         <div class="row">
         <div class="col-xs-6">
-            <h3 class="panel-title">{{ translate('Publication Info') }}</h3>
+            <h3 class="panel-title">{% if panel_title|default('text') == 'book-title-and-link' %}{{ format.entity('publication', object) }}{% else %}{{ translate('Publication Info') }}{% endif %}</h3>
         </div>
 
         <div class="col-xs-6">

@@ -1,0 +1,71 @@
+{#
+  module/Books/view/books/libraries/show.phtml, plus the two partials it dispatches to.
+
+  ## The dispatch is data, and it is why this is one template rather than three
+
+  `show.phtml` ends with `partial($libraryOptions->mainShowDisplay, $this->vars)` —
+  a template name taken from the `MainShowDisplay` **column**. Two values are in use:
+  `show-collections-categories` (libraries 1 and 3) and `show-categories` (4, 5, 6, 7).
+  A third, `show-collections`, is offered by the library edit form's value options and
+  **has no template at all**, so choosing it makes this page fatal. Reproduced as a
+  fallback to the default rather than a crash: an unrecognised value renders the
+  categories view, which is `MAIN_SHOW_DISPLAY_DEFAULT`. That is a deliberate
+  difference — the alternative is a 500 nobody asked for — and the missing option is
+  filed in the backlog rather than invented here.
+
+  ## Categories and books are alternatives, not both
+
+  Each display branch shows its statistics **only when no search has run**
+  (`books is null`); once the visitor searches, the same slot holds the results table.
+  That is the whole interaction on this page.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'books/_library-search-bar.html.twig' as search %}
+{% import 'books/_library-book-list.html.twig' as booklist %}
+
+{% block content %}
+{{ search.bar(form, laminas_path('libraries/library', {'library_id': entity.libraryId}), false) }}
+<h1>{{ entity.name }}</h1>
+<div class="row">
+{%- if entity.options.enableCheckouts and is_allowed(entity.resourceId, 'checkout') %}
+<a class="btn btn-primary" href="{{ laminas_path('libraries/library/checkout', {'library_id': entity.libraryId}) }}">{{ translate('Checkout books') }}</a>
+{%- endif %}
+{% if is_allowed(entity.resourceId, 'administrate') %}<a class="btn btn-default pull-right" href="{{ laminas_path('libraries/library/admin', {'library_id': entity.libraryId}) }}">{{ translate('Admin menu') }}</a>
+{% endif %}
+</div>
+
+{% if main_show_display == 'show-collections-categories' %}
+    {% if entity.collectionCategoryStatistics is not empty and books is null %}
+    {% for collection_id, categories in entity.collectionCategoryStatistics %}
+        {%- set collection = entity.options.collections[collection_id] is defined
+            ? entity.options.collections[collection_id] : null %}
+        <h3 id="collection_{{ collection_id }}">
+        <a href="{{ current_path() }}?collectionId={{ collection_id }}">{{ collection ? translate(collection.name) : '(%s)'|format(translate('none')) }}</a>
+        {%- if collection and is_allowed(entity.resourceId, 'administrate') %}{{ edit_pencil('collection', collection_id) }}{% endif %}</h3>
+        <ul class="list-group">
+        {% for category, count in categories %}
+            <li class="list-group-item">
+                <span class="badge">{{ count }}</span>
+                <a href="{{ laminas_path('libraries/library', {'library_id': entity.libraryId}, {'query': {'category': category, 'collectionId': collection_id == 0 ? '' : collection_id}}) }}">{{ category is empty ? '(%s)'|format(translate('none')) : category }}</a>
+            </li>
+        {% endfor %}
+        </ul>
+    {% endfor %}
+    {% else %}
+    {{ booklist.list(books, publications, borrowers) }}
+    {% endif %}
+{% else %}
+    {% if entity.categoryStatistics is not empty and books is null %}
+    <ul class="list-group">
+    {% for category, count in entity.categoryStatistics %}
+      <li class="list-group-item">
+        <span class="badge">{{ count }}</span>
+        <a href="{{ laminas_path('libraries/library', {'library_id': entity.libraryId}, {'query': {'category': category}}) }}">{{ category is empty ? '(%s)'|format(translate('none')) : category }}</a>
+      </li>
+    {% endfor %}
+    </ul>
+    {% else %}
+    {{ booklist.list(books, publications, null) }}
+    {% endif %}
+{% endif %}
+{% endblock %}
