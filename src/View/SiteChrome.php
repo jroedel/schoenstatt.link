@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\View;
 
+use App\Books\CurrentLibrary;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\ViewHelpers;
 use App\Locale\Locales;
+use Closure;
 use Laminas\Math\Rand;
 use Locale;
 use Throwable;
@@ -15,6 +17,7 @@ use Throwable;
 use function in_array;
 use function is_array;
 use function is_string;
+use function sprintf;
 use function str_contains;
 
 /**
@@ -83,10 +86,18 @@ final class SiteChrome
         'libraries/library',
     ];
 
+    /**
+     * @param Closure(string, ?string): string $translate the page-aware translator
+     *        App\Twig\LaminasExtension exposes to templates. Taken as a callable rather
+     *        than by resolving MvcTranslator here so the chrome and the templates around
+     *        it can never disagree about what a phrase says.
+     */
     public function __construct(
         private readonly ServiceBridge $laminas,
         private readonly ViewHelpers $helpers,
-        private readonly RouteUrl $urls
+        private readonly RouteUrl $urls,
+        private readonly CurrentLibrary $library,
+        private readonly Closure $translate
     ) {
     }
 
@@ -204,20 +215,59 @@ final class SiteChrome
      * The navbar search form, or null when this page gets none.
      *
      * Only reachable for a signed-in visitor, because that is the branch of the
-     * layout it lives in. The placeholders really are untranslated in the original.
+     * layout it lives in. Two of the three placeholders really are untranslated in the
+     * original; the library one is translated, in the `Application` domain, and asking
+     * for that exact string in that exact domain is what keeps the port from filing a
+     * second phrase row for a string laminas already has.
      *
-     * The library-scoped variant is missing on purpose: it needs the `libraryInfo`
-     * view helper, which needs an MvcEvent, and it only ever applies to library,
-     * book, checkout and import routes — none of them ported, and each will have to
-     * bring that helper's replacement along when it moves.
+     * ## The library branch, added 2026-08-18
      *
+     * A page belonging to a library searches *that library* rather than the site's
+     * contacts. It was left out when this class was written, on the reasoning that no
+     * library route was ported yet — but `books/book/edit`, `books/create` and
+     * `libraries/library/edit` all match the prefixes, so three pages have been showing
+     * a contacts search where laminas shows a library one. Batch 11b would have added
+     * about thirty more, which is why it is closed first rather than accepted again.
+     *
+     * The branch reproduces layout.phtml exactly, including the part that reads as
+     * redundant: **both** `route/libraries/library` (may this visitor see library pages
+     * at all) and `library_<id>`+`show` (may they see *this* one) must pass. They are
+     * genuinely different questions here — the per-library rule is what
+     * Books\Model\LibraryTable::getRules() emits from each row's `viewRole`, so a
+     * visitor can hold the route guard and still be refused one library. Failing either
+     * falls through to the contacts box rather than dropping the search entirely, which
+     * is also the original's behaviour.
+     *
+     * The library's name is returned **unescaped**, where layout.phtml escapes it before
+     * sprintf. Not a divergence: the layout echoes its placeholder raw and Twig escapes
+     * the value it is handed, so the same bytes reach the attribute either way.
+     *
+     * @param array<string, mixed> $routeParams the request's route parameters, which the
+     *        library branch needs — see App\Books\CurrentLibrary
      * @return array{action: string, placeholder: string}|null
      */
-    public function searchBox(string $activeRoute): ?array
+    public function searchBox(string $activeRoute, array $routeParams = []): ?array
     {
         if ('' === $activeRoute || in_array($activeRoute, self::NO_SEARCH_ROUTES, true)) {
             return null;
         }
+
+        $library = $this->library->forRoute($activeRoute, $routeParams);
+        if (
+            null !== $library
+            && is_string($library['resourceId'] ?? null)
+            && $this->isAllowed('route/libraries/library')
+            && $this->isAllowed($library['resourceId'], 'show')
+        ) {
+            return [
+                'action'      => $this->urls->path('libraries/library', ['library_id' => $library['libraryId']]),
+                'placeholder' => sprintf(
+                    ($this->translate)('Search %s', 'Application'),
+                    is_string($library['name'] ?? null) ? $library['name'] : ''
+                ),
+            ];
+        }
+
         if (! str_contains($activeRoute, 'publication') && $this->isAllowed('route/assignments/search')) {
             return ['action' => $this->urls->path('assignments/search'), 'placeholder' => 'Search contacts'];
         }
@@ -323,8 +373,8 @@ final class SiteChrome
         return false;
     }
 
-    private function isAllowed(string $resource): bool
+    private function isAllowed(string $resource, ?string $privilege = null): bool
     {
-        return (bool) $this->helpers->isAllowed()->__invoke($resource);
+        return (bool) $this->helpers->isAllowed()->__invoke($resource, $privilege);
     }
 }

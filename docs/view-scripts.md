@@ -121,6 +121,14 @@ only the four: anything that *calls* one of them fails the same way, which cover
 work, with a typed method per helper so the ones that do not cannot be asked for
 by name.
 
+Three of the four still have no replacement and are simply not called from the
+Symfony side. `libraryInfo` does: `App\Books\CurrentLibrary` answers the same
+question — which library this page belongs to — from the route parameters, which
+a Symfony request has and an MvcEvent is not needed for. The helper itself is
+still unavailable, and still on the list; what changed is that the layout branch
+depending on it is no longer blocked. Added 2026-08-18, ahead of the library
+route cluster.
+
 Two corrections to earlier versions of this list, both found porting `shrines`:
 
 - `zfcUserDisplayName` **works.** `JUser\View\Helper\ZfcUserDisplayName` needs

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use App\Books\CurrentLibrary;
 use App\Form\BootstrapFormRenderer;
 use App\Http\CspNonce;
 use App\Laminas\RouteUrl;
@@ -108,7 +109,17 @@ final class TwigFactory
         $twig->addExtension(new FormExtension(
             new BootstrapFormRenderer($laminasExtension->translate(...))
         ));
-        $twig->addExtension(new ChromeExtension(new SiteChrome($laminas, $helpers, $urls), $requests, $nonce));
+        $twig->addExtension(new ChromeExtension(
+            new SiteChrome(
+                $laminas,
+                $helpers,
+                $urls,
+                new CurrentLibrary($laminas),
+                $laminasExtension->translate(...)
+            ),
+            $requests,
+            $nonce
+        ));
         $twig->addExtension(new MarkdownExtension());
         //One page minifies its inline script on laminas; see the extension's docblock.
         $twig->addExtension(new ScriptExtension());

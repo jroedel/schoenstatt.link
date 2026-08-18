@@ -202,7 +202,36 @@ final class ChromeExtension extends AbstractExtension
     /** @return array{action: string, placeholder: string}|null */
     public function searchBox(): ?array
     {
-        return $this->chrome->searchBox($this->currentRoute());
+        return $this->chrome->searchBox($this->currentRoute(), $this->libraryRouteParams());
+    }
+
+    /**
+     * The three route parameters that can name the page's library, read straight off the
+     * request attributes.
+     *
+     * Only these three, rather than handing the chrome every attribute: the rest of a
+     * Symfony request's attribute bag is framework bookkeeping (`_route`,
+     * `_controller`, the text domain, SiteChrome::NAV_ROUTE), and a chrome that received
+     * all of it would be free to start depending on any of it.
+     *
+     * @return array<string, mixed>
+     */
+    private function libraryRouteParams(): array
+    {
+        $request = $this->request();
+        if (null === $request) {
+            return [];
+        }
+
+        $params = [];
+        foreach (['library_id', 'book_id', 'import_id'] as $name) {
+            $value = $request->attributes->get($name);
+            if (null !== $value) {
+                $params[$name] = $value;
+            }
+        }
+
+        return $params;
     }
 
     public function displayName(): string|false
