@@ -1036,6 +1036,70 @@ were reset by hand and the release first executed anything at all. An empty
 executed that release yet**, which during the 2026-08-17 outage was precisely the
 problem worth noticing.
 
+### When a step stops answering: timeouts, keepalives and the heartbeat
+
+Added 2026-08-18, after a deploy hung on **step 9, "Warming the release"**, and sat
+there. Until then there was no timeout of any kind on any of the ~40 remote calls,
+no keepalive, and no output at all while one was in flight — so a stalled step and a
+slow step looked identical, and the only signal was a cursor that had stopped moving.
+
+The circumstances are worth keeping, because they are what ruled the code out. It
+was a redeploy of the **same commit** that had warmed fine nine minutes earlier, and
+step 9 runs exactly two commands, measured against comparable data at **1.28s**
+(`sitemap:build --force`, 35,444 URLs) and **0.36s** (`jtranslate:export-catalogs`).
+Neither reads stdin or prompts. So it was never the work; it was the channel or the
+far end, and nothing in the deploy could tell you which.
+
+Three defences now, because they catch different failures and none subsumes the
+others:
+
+| defence | catches | budget |
+|---|---|---|
+| ssh keepalives (`ServerAliveInterval` × `CountMax`) | a dead network path the local end still believes in | ~60s |
+| `timeout` around every call | a healthy connection whose remote command is stuck — lock wait, full disk, a process nothing will wake | 180s default |
+| a heartbeat on stderr | nothing; it makes a slow step *visible* rather than indistinguishable from a wedged one | first beat at 15s, then every 15s |
+
+Only the heartbeat would have answered the question on the day, which is why it is
+there even though it prevents nothing.
+
+**Per-call budgets.** The 180s default bounds a stall, not a slow server. The calls
+that legitimately take longer set their own with `RSH_TIMEOUT=<seconds> RSH_LABEL=…
+rsh …`: composer install 1800s, the vendor copies 600s, the two warming commands and
+`cache:flush-persistent` 300s/120s, and the symlink swap **30s** — two renames that
+have no business taking longer, and waiting three minutes to learn otherwise helps
+nobody. The exit trap's own cleanup gets 20s, because a cleanup that hangs is how a
+hang gets blamed on the wrong step.
+
+`timeout` exit **124** is reported separately from the remote command's own non-zero
+exit. The two need opposite responses: a normal failure is the server telling you
+something, a 124 is the server telling you nothing, and only the second implicates
+the deploy rather than the release.
+
+**rsync gets `--timeout=120` instead**, which is an I/O-stall timeout rather than a
+wall-clock one — a large transfer that is still moving must not be killed for being
+large, but one that has not moved in two minutes has stalled.
+
+**`timeout` is not on stock macOS** (it is `gtimeout`, from coreutils). Preflight
+warns when neither is present and the deploy continues without that defence, because
+"remote calls are unbounded" is exactly the condition this section exists to make
+visible rather than discover.
+
+**Why ssh is not backgrounded**, since the heartbeat obviously is: a backgrounded ssh
+cannot prompt for the key passphrase — it is stopped on `SIGTTIN`, which looks exactly
+like the hang being prevented — and it stops receiving Ctrl-C, so an interrupted
+deploy would leave the remote command running. A third reason was believed and is
+false, recorded because everyone reaches for it: *"a background command in a
+non-interactive shell gets stdin from /dev/null"*. Measured on bash 5.2,
+`printf x | { cat > f & wait $!; }` writes `x` — the POSIX rule does not bite when
+stdin is an explicit redirection. What **does** break the two call sites that pipe
+into `rsh` (the `.revision` write and the opcache-helper distribution) is `ssh -n` or
+a `< /dev/null`, and an empty `.revision` would then be blamed on the server by the
+revision gate downstream.
+
+`test/Deploy/rsh-behaviour-test.sh` holds all of this in place — seven checks,
+mutation-verified against `ssh -n`, a stdin redirect and a removed `timeout`. It runs
+in `tools/ci-local.sh` (plain bash, no server, ~10s).
+
 ### Steps 10 and 11: why a symlink swap is not enough
 
 **Repointing the release symlink does not change what PHP executes.**
