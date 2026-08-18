@@ -411,9 +411,16 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
             OC_MAXKEYS=$(grep -o '"maxCachedKeys":[0-9]*' "$BODY" | cut -d: -f2)
             OC_HIT=$(grep -o '"hitRatePercent":[0-9.]*' "$BODY" | cut -d: -f2)
             OC_INTERNED=$(grep -o '"internedPercentUsed":[0-9.]*' "$BODY" | cut -d: -f2)
+            OC_INTERNED_MB=$(grep -o '"internedBufferConfiguredMb":[0-9]*' "$BODY" | cut -d: -f2)
+            OC_UPTIME=$(grep -o '"uptimeSeconds":[0-9]*' "$BODY" | cut -d: -f2)
             OC_OOM=$(grep -o '"oomRestarts":[0-9]*' "$BODY" | cut -d: -f2)
             OC_HASH=$(grep -o '"hashRestarts":[0-9]*' "$BODY" | cut -d: -f2)
             pass "OPcache ${OC_MEM:-?}% memory, ${OC_KEYS:-?}% of ${OC_MAXKEYS:-?} keys (${OC_SCRIPTS:-?} scripts), ${OC_HIT:-?}% hit rate"
+            # Interned usage is meaningless without the segment's age beside it: the
+            # buffer is append-only, so the percentage only ever rises within one
+            # segment's life and a deploy's reset puts it back near zero. Both are
+            # printed together, always, so nobody reads a cold number as a healthy one.
+            pass "OPcache interned strings ${OC_INTERNED:-?}% of ${OC_INTERNED_MB:-?}MB after $(( ${OC_UPTIME:-0} / 60 ))m uptime"
 
             if awk "BEGIN { exit !(${OC_MEM:-0} >= 80) }"; then
                 echo "WARN  OPcache memory is ${OC_MEM}% used — raise opcache.memory_consumption" >&2
@@ -422,7 +429,14 @@ if [ -n "${SMOKE_PROD_CACHE_KEY:-}" ]; then
                 echo "WARN  OPcache is using ${OC_KEYS}% of its key table — raise opcache.max_accelerated_files" >&2
             fi
             if awk "BEGIN { exit !(${OC_INTERNED:-0} >= 90) }"; then
-                echo "WARN  OPcache interned-strings buffer is ${OC_INTERNED}% used — raise opcache.interned_strings_buffer" >&2
+                echo "WARN  OPcache interned strings ${OC_INTERNED}% of ${OC_INTERNED_MB:-?}MB after only $(( ${OC_UPTIME:-0} / 60 ))m — raise opcache.interned_strings_buffer" >&2
+                echo "      Nothing is ever evicted from this buffer, so it fills once and then stops interning silently." >&2
+            fi
+            # One pool answered this. There are three, each with its own segment, and
+            # this run cannot say which one it reached — tools/opcache-sample.sh polls
+            # and groups by startTimeUnix when that distinction matters.
+            if [ -n "${OC_INTERNED_MB:-}" ] && [ "${OC_INTERNED_MB:-0}" -lt 32 ]; then
+                echo "note  opcache.interned_strings_buffer is ${OC_INTERNED_MB}MB on the pool that answered; 32 is what docs/php-85.md asks for"
             fi
             if [ "${OC_OOM:-0}" -gt 0 ] || [ "${OC_HASH:-0}" -gt 0 ]; then
                 echo "WARN  OPcache restarted (${OC_OOM:-0} out-of-memory, ${OC_HASH:-0} hash) — it has been discarding the whole cache" >&2

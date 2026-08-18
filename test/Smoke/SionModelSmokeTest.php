@@ -150,6 +150,9 @@ class SionModelSmokeTest extends SmokeTestCase
                 'oomRestarts',
                 'hashRestarts',
                 'internedPercentUsed',
+                'internedBufferBytes',
+                'internedBufferConfiguredMb',
+                'startTimeUnix',
                 'validateTimestamps',
             ] as $key
         ) {
@@ -164,6 +167,36 @@ class SionModelSmokeTest extends SmokeTestCase
             $opcache['maxCachedKeys']
         );
         $this->assertLessThanOrEqual(100, $opcache['keysPercentUsed']);
+
+        //The allocated buffer is the configured megabytes, and asserting the
+        //relationship rather than either number is what keeps this true after the
+        //setting is raised. It is also the one place the two are checked against
+        //each other on a live SAPI: the unit suite pins the arithmetic, but only a
+        //real opcache_get_status() can show that PHP allocates what the ini asked
+        //for rather than clamping it.
+        $this->assertSame(
+            $opcache['internedBufferConfiguredMb'] * 1024 * 1024,
+            $opcache['internedBufferBytes'],
+            'OPcache allocated a different interned buffer than opcache.interned_strings_buffer asked for'
+        );
+        $this->assertSame(
+            $opcache['internedUsedBytes'] + $opcache['internedFreeBytes'],
+            $opcache['internedBufferBytes'],
+            'used + free is the buffer; if that stops holding, the percentage is over the wrong total'
+        );
+
+        //The segment identity has to be stable, or tools/opcache-sample.sh counts
+        //one pool as several. Two requests in one test cannot prove it survives a
+        //pool restart, but they can prove it is not simply the current time.
+        $again = json_decode(
+            $this->request('GET', '/en/sm/cache-status', ['X-Api-Key: ' . self::DEV_API_KEY])['body'],
+            true
+        );
+        $this->assertSame(
+            $opcache['startTimeUnix'],
+            $again['opcache']['startTimeUnix'],
+            'the capsule runs one pool, so both requests must report the same segment'
+        );
     }
 
     /**

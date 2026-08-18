@@ -595,14 +595,28 @@ rediscovered.
   `comment` key stating the exit condition). Upstream PRs: diablomedia#27 and
   the SlmLocale one, both open. When either ships a release including the 8.4
   constraint, delete its entry and restore a version constraint.
-- [ ] **Consider raising `opcache.interned_strings_buffer`** — the one OPcache
-  number actually close to its limit. First live reading after enabling it:
-  **73% of the 8 MB buffer used** (74,545 strings), against ~29% memory and ~15%
-  of the key table. When the interned buffer fills, strings simply stop being
-  interned: no restart, no error, just a quiet loss of the saving the buffer
-  exists to provide. `/sm/cache-status` now reports `internedPercentUsed` and
-  `smoke-prod.sh` warns at 90%, so this can wait for a real warning rather than
-  a guess.
+- [ ] **`opcache.interned_strings_buffer` raise — requested 2026-08-18, not yet
+  applied.** konsoleH ticket open to take it from 8 MB to 32 MB; `/en/sm/phpinfo`
+  still reported `8` on the day it was raised. First live reading after enabling
+  OPcache was **73% of 8 MB** (74,545 strings) against ~29% memory and ~15% of the
+  key table; it has since sat at 89–100%. When the buffer fills, strings simply
+  stop being interned: no restart, no error, just a quiet loss of the saving the
+  buffer exists to provide.
+  - **Confirming it landed is a sampling problem, not a lookup**, and the
+    instrumentation for it went in on 2026-08-18: the directive is
+    `PHP_INI_SYSTEM`, so a running pool keeps the old buffer after the file
+    changes, and this host has at least three pools recycling independently. Use
+    `./tools/opcache-sample.sh` (groups polls by `startTimeUnix`, reports a lower
+    bound on the segment count) or reload `/en/sm/phpinfo` several times. See
+    [php-85.md](php-85.md) § Confirming the raise.
+  - **`/sm/cache-status` reported the ratio and not its denominator until
+    2026-08-18**, which meant it could not answer whether a raise had taken effect
+    — a ratio cannot show its own denominator changing. It now reports
+    `internedBufferBytes` and `internedBufferConfiguredMb` as well.
+  - **The buffer is append-only**, so a reading taken after a deploy is cold and
+    will look healthy no matter how undersized it is. `tools/deploy.sh` prints each
+    pool's usage at the instant its reset wipes it — the warmest reading that
+    exists, and free, since the reset helper already read the status.
   - **The slot-count worry recorded here earlier was wrong, and the correction
     is worth keeping**: `opcache.max_accelerated_files` is 10000, but PHP rounds
     the script hash table up to the next prime, so the real ceiling is

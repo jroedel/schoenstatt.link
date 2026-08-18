@@ -179,6 +179,42 @@ script, and the only lasting evidence is a counter. So:
   files are noticed within seconds. With it off, a deploy is invisible to
   OPcache and would serve the previous release until `pkill -u ourlink -f php`.
 
+### The interned-strings buffer reads differently from everything else here
+
+Every other number on this page describes a cache that evicts. The interned
+buffer does not: **nothing is ever removed from it**. Within one segment's life
+its usage only rises, it stops rising when full, and a restart puts it back to
+near zero. Three consequences, all of which have caught someone:
+
+- **A percentage is meaningless without the segment's uptime beside it.** 84% at
+  nine minutes and 84% at nine days are opposite findings. `internedPercentUsed`
+  and `uptimeSeconds` are printed as one line by `tools/smoke-prod.sh` for that
+  reason.
+- **A reading taken after a deploy is worthless.** The deploy resets every
+  segment, so the buffer starts cold and climbs for hours. The warmest reading
+  that exists is the one taken immediately *before* a reset — which is why
+  `tools/deploy.sh` now prints each pool's usage at the instant it wipes it, and
+  why `tools/opcache-sample.sh` should be run before a deploy, not after.
+- **When it fills, nothing happens.** No restart, no error, no counter. OPcache
+  simply stops interning and stores duplicate strings per script. The only
+  evidence is the percentage sitting at 100.
+
+`internedBufferBytes` (allocated) and `internedBufferConfiguredMb` (what the ini
+asked for) are both reported, added 2026-08-18. Until then the endpoint gave the
+ratio alone, and **a ratio cannot show its own denominator changing** — so it
+could not answer "did the raise take effect", which is the one question anyone
+asks about this setting. `opcache.interned_strings_buffer` is `PHP_INI_SYSTEM`,
+read once when a process starts, so the two can legitimately disagree while a
+pool that has not recycled runs on the old buffer.
+
+`startTimeUnix` is reported for a related reason: this host runs at least three
+PHP pools, each with its own segment, and a request answers for whichever one
+served it. One reading describes a third of production without saying which
+third. It is the only per-segment identity OPcache exposes — `uptimeSeconds`
+cannot serve, since it differs between two polls of the *same* segment.
+`tools/opcache-sample.sh` polls and groups by it, and reports its segment count
+as a lower bound rather than a count.
+
 `tools/smoke-prod.sh` polls all of this and warns — never fails — at 80% memory
 or keys, 90% interned strings, any restart, `cacheFull`, or timestamp validation
 being off. First live reading after enabling OPcache: ~29% memory, ~15% of 16229
