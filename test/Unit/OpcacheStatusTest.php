@@ -42,6 +42,7 @@ class OpcacheStatusTest extends TestCase
             'interned_strings_usage' => [
                 'buffer_size' => 8_388_608,
                 'used_memory' => 6_291_456,
+                'free_memory' => 2_097_152,
                 'number_of_strings' => 74_545,
             ],
             'opcache_statistics' => [
@@ -65,6 +66,7 @@ class OpcacheStatusTest extends TestCase
             'opcache.validate_timestamps' => '1',
             'opcache.revalidate_freq' => '2',
             'opcache.max_accelerated_files' => '10000',
+            'opcache.interned_strings_buffer' => '8',
         ];
     }
 
@@ -164,6 +166,78 @@ class OpcacheStatusTest extends TestCase
     }
 
     /**
+     * The buffer size is reported, not just the ratio over it — and this is the
+     * assertion that would have failed before 2026-08-18, when the endpoint gave a
+     * percentage whose denominator was invisible.
+     *
+     * A ratio cannot show its own denominator changing. Raising
+     * opcache.interned_strings_buffer from 8 MB to 32 MB moves nothing else in this
+     * payload in a way that distinguishes it from the app simply interning fewer
+     * strings, so "did the setting take effect" was unanswerable from here.
+     */
+    public function testTheInternedBufferSizeIsReportedAndNotJustTheRatioOverIt(): void
+    {
+        $out = OpcacheStatus::summarize($this->rawStatus(), $this->ini());
+
+        $this->assertSame(8_388_608, $out['internedBufferBytes'], '8 MiB, exactly');
+        $this->assertSame(6_291_456, $out['internedUsedBytes']);
+        $this->assertSame(2_097_152, $out['internedFreeBytes']);
+        $this->assertSame(75.0, $out['internedPercentUsed'], '6 MiB of 8 MiB');
+        $this->assertSame(74_545, $out['internedStrings']);
+    }
+
+    /**
+     * The configured size and the allocated size are separate readings, because
+     * they can disagree — and the disagreement is the interesting state.
+     *
+     * opcache.interned_strings_buffer is PHP_INI_SYSTEM: read once, when the process
+     * starts. So after the ini file is changed, a pool that has not recycled reports
+     * the NEW configured value from ini_get() while still running on the OLD buffer.
+     * Reporting one number would hide exactly the transition anyone raising this
+     * setting is trying to observe.
+     */
+    public function testConfiguredAndAllocatedBufferSizesAreReportedSeparately(): void
+    {
+        $out = OpcacheStatus::summarize(
+            $this->rawStatus(),
+            $this->ini(['opcache.interned_strings_buffer' => '32'])
+        );
+
+        $this->assertSame(32, $out['internedBufferConfiguredMb'], 'what the ini asks for');
+        $this->assertSame(8_388_608, $out['internedBufferBytes'], 'what this pool actually allocated');
+    }
+
+    /**
+     * The raw start time, kept as well as the derived uptime, because it is the only
+     * per-segment identity OPcache exposes and this host runs three pools. Uptime
+     * cannot serve as that identity: it differs between two polls of the same
+     * segment, which is precisely what a sampling tool must not treat as two pools.
+     */
+    public function testStartTimeIsReportedAsAStableSegmentIdentity(): void
+    {
+        OpcacheStatus::$clock = fn(): int => 1_000_500;
+        $first = OpcacheStatus::summarize($this->rawStatus(), $this->ini());
+
+        OpcacheStatus::$clock = fn(): int => 1_000_900;
+        $second = OpcacheStatus::summarize($this->rawStatus(), $this->ini());
+
+        $this->assertSame(1_000_000, $first['startTimeUnix']);
+        $this->assertSame($first['startTimeUnix'], $second['startTimeUnix'], 'same segment, same key');
+        $this->assertNotSame($first['uptimeSeconds'], $second['uptimeSeconds'], 'uptime moves, so it is no key');
+    }
+
+    /** A never-started cache has no identity to report either. */
+    public function testStartTimeIsNullWithoutAStartTime(): void
+    {
+        $out = OpcacheStatus::summarize(
+            $this->rawStatus(['opcache_statistics' => ['start_time' => 0]]),
+            $this->ini()
+        );
+
+        $this->assertNull($out['startTimeUnix']);
+    }
+
+    /**
      * These are the OPcache equivalent of APCu's expunges: OPcache does not slow
      * down when it runs out of room, it restarts and discards everything, and the
      * counter is the only lasting evidence.
@@ -239,6 +313,9 @@ class OpcacheStatusTest extends TestCase
         $this->assertSame(0, $out['cachedScripts']);
         $this->assertSame(0, $out['memoryTotalBytes']);
         $this->assertNull($out['memoryPercentUsed']);
+        $this->assertSame(0, $out['internedBufferBytes']);
+        $this->assertNull($out['internedPercentUsed']);
+        $this->assertNull($out['startTimeUnix']);
         $this->assertFalse($out['jitEnabled']);
     }
 }
