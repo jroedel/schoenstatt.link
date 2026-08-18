@@ -201,13 +201,25 @@ suites run from the superproject working tree.
   (the annotation naming the reason needs `checks:read`, which a fine-grained PAT cannot
   hold). **Verify with `./tools/ci-local.sh` instead** and paste its result into the PR.
   It mirrors ci.yml's five jobs in order — lint, composer `--no-dev` rehearsal, PHPStan
-  level 0, unit, integration — plus a plain-bash check of the deploy's remote-call
-  machinery (`test/Deploy/rsh-behaviour-test.sh`), and then runs **smoke and fuzz,
-  which CI cannot run at all** because they need a live Apache/MariaDB/APCu. So a green run there is a stricter
+  level 0, unit, integration — plus every `test/Deploy/*-test.sh` (plain bash, no server:
+  the deploy's remote-call machinery, its per-segment cache gate, the OPcache swap
+  reproduction, the smoke script's cache-status parsing — the glob picks up new ones
+  without editing the runner), and then runs **smoke, fuzz, and `tools/smoke-prod.sh`
+  itself, none of which CI can run at all** because they need a live
+  Apache/MariaDB/APCu. So a green run there is a stricter
   check than a green run on GitHub, not a weaker stand-in; say so in the PR body, because
   the reflex is to read local verification as second best. `--ci` skips the ~4-minute
-  smoke suite and the fuzz harness; the deploy-machinery check runs either way, since it
-  needs no server.
+  smoke suite, the fuzz harness and the smoke-script run; the deploy-machinery checks run
+  either way, since they need no server.
+  - **`tools/smoke-prod.sh` is not the `smoke` suite.** The suite is PHPUnit under
+    `test/Smoke`; that script is the bash one the *deploy* runs against production as its
+    last step. Until 2026-08-19 nothing but a deploy had ever executed it, so its own
+    bugs could only be found by shipping them — a grep for a key that exists in **two**
+    sections of one JSON document killed a run with `77\n838 / 60: syntax error` after an
+    otherwise successful deploy. `ci-local` now points it at the capsule, which needs the
+    sitemap rebuilt for `http://localhost:8080` first (`sitemap:build --url`, 2.4s)
+    because the script filters the sitemap index by base URL, and that strictness is
+    worth keeping rather than teaching it to accept a foreign host.
   - **Read the run's own output for `composer audit --locked` rather than assuming it
     skipped.** This line used to say the check always reports `SKIP` because "the capsule
     has no DNS" — measured wrong on 2026-08-14: the *running* container resolves through
