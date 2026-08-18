@@ -1,0 +1,16 @@
+{#
+  module/Books/view/books/checkouts/library.phtml — one library's checkouts, in one of
+  three subsets. The subset is a route default (`all`, `current`, `overdue`), it picks
+  both the heading and the column set, and it is the only difference between the three
+  routes.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'books/_checkout-list.html.twig' as checkouts %}
+
+{% block page_stylesheets %}<link href="/css/gen-bootstrap-sortable.min.css" media="screen" rel="stylesheet" type="text/css">{% endblock %}
+{% block page_scripts %}<script type="text/javascript" src="/js/gen-bootstrap-sortable.min.js"></script>{% endblock %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+{{ checkouts.list(entities, columns, persons, false) }}
+{% endblock %}

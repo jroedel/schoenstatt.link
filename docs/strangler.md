@@ -1167,6 +1167,34 @@ attribute, no ordering. That is the useful control for the batch: the text templ
 nothing at all, so anything else differing would have been the shared create machinery rather
 than the page.
 
+Batch 11b's, on the twenty-two new library paths, signed in, across five locales —
+**37 differing responses, none of them a defect.** Four groups, and only the last two are
+new:
+
+| n | what | where | why |
+|---|---|---|---|
+| 15 | the `//<!-- -->` inline-script wrapper | `/libraries/{id}/checkout`, `/libraries/{id}/mass-checkout`, `/borrowers/{id}` | the batch-2 chrome nit, unchanged |
+| 9 | Symfony renders the translated help block or label where laminas renders English | the non-English locales of `/libraries/{id}/checkin`, `/inactivate-books`, `/label-management`, `/books/{id}`, `/library-imports/library/{id}/create` | batch 9's group, on five more pages. The strings are `One barcode per line`, `Export` and `Change log` |
+| 5 | a 500 becomes a rendered empty list | `/library-imports/library/1` × 5 locales | **the fix, not a side effect.** `SionController::indexAction()` throws `InvalidArgumentException: No entity provided.` when a library has no imports, so this answered 500 for five of the six libraries. Pinned by `LibrarySurfaceSmokeTest` |
+| 5 | a link becomes a confirmation form | `/libraries/{id}/sort-debugging` × 5 locales | **the one contract this batch changed** — the "Refresh all library sort text" link pointed at a route that rewrote every book in the library on the resulting GET. See App\Books\RefreshSortForm |
+| 10 | the page is gone | `/libraries/{id}/batch-operations` × 5 locales × 2 identities | retired: its template was the four characters `<?php` |
+
+Eleven of the twenty-two paths are **byte-identical in all five locales**, including the
+library page itself with its 884 category rows, all three checkout views, the printable
+book list, the status JSON, the data-problems page and two of the three import pages.
+
+**A capture of a page that introduces a new phrase is not reproducible, and this batch is
+where that was noticed.** `/es/libraries/1/label-management` matched laminas in one capture
+and rendered `Exportar` where laminas renders `Export` in the next, with no code change
+between them. The cause is the discovery loop working as designed: the ported page asks the
+translator for `Export` in the `Books` domain, the miss files a `trans_phrases` row —
+`origin_route = libraries/library/label-management`, timestamped mid-run — and the phrase
+then acquires translations, so the *second* render of the same code answers differently.
+Six phrases were filed by this batch's captures. So: when a baseline diff moves between two
+runs of unchanged code, check `trans_phrases` by `added_on` before looking for a bug, and
+expect the row to be filed under the **page's own** text domain rather than whichever domain
+laminas' dispatch listener had set for that helper.
+
 **`/timeline` differs on purpose, from 2026-08-15 — the first entry here that is not a
 side effect of porting.** Every previous row in this section is something the port did
 incidentally and the question was whether to accept it. This one is a change made
@@ -1920,6 +1948,101 @@ Two smaller things worth carrying forward:
   what the port reproduces, not the dead line. The 401 on a failed CSRF *is* observable
   because that branch renders, and is reproduced verbatim. Both are filed rather than
   corrected inside a port.
+
+### The library circulation surface — batch 11b, 2026-08-18
+
+Twenty-two routes across five laminas controllers, and three more retired rather than
+ported. It is the largest single batch, the first with real daily users behind it, and the
+first whose *audit* changed the plan more than the porting did.
+
+#### The audit came first, and it found six things
+
+Every one of the thirty-one routes was fetched signed in as a library administrator before
+any of them was ported. Four of the six findings are live defects that predate the
+migration:
+
+| route | what it does today |
+|---|---|
+| `/libraries/{id}/refresh-sort` | **writes on a bare GET** — one `UPDATE` per book, 16,383 for library 4 — with no confirmation, no token and no per-library check |
+| `/borrowers` | **500**: declares an `index` action `BorrowersController` does not have, rendering `books/borrowers/index`, which does not exist |
+| `/library-imports/{id}/cancel` | **404**: no `cancelAction` on the controller or anywhere in the `SionController` chain |
+| `/library-imports/library/{id}` | **500 for five of the six libraries** — every one with no imports. All 22 belong to Colegio Mayor |
+| `/libraries/{id}/batch-operations` | a blank page. Its `.phtml` is the four characters `<?php` |
+| `/libraries/{id}/label-management` | a mockup: five `href=""` buttons and `Confirm change of 3 call numbers` with the 3 hardcoded |
+
+**The refresh-sort finding was proven, not read off the code**, and the distinction is the
+point: a book's `sort_text` was set to `ZZZ-PROBE` in the capsule and the URL fetched with
+an empty body; the row came back restored. The sweep is *idempotent* — every row is
+rewritten to what the current algorithm says it should be — so this was never data loss.
+What it was is an unauthenticated writer and a load amplifier reachable by any registered
+account, because its guard is `lib_user` and that role is `is_default = 1`. A link
+prefetcher was enough.
+
+Three routes were retired: `/borrowers` (the parent keeps serving `/borrowers/{id}`),
+`library-imports/.../cancel`, and `batch-operations` with its template, its action and its
+commented-out `admin_pages` entry. 140 routes, down from 142.
+
+#### Four deliberate differences, and why each one is not a transcription error
+
+- **`refresh-sort` answers GET with a confirmation and does the work on POST**, with the
+  `administrate` check its fourteen sibling actions make and it alone skipped. The one
+  contract this batch changed.
+- **`data-problems` gains the per-library `show` check** its thirteen siblings make. Its
+  guard is `lib_user`, so today every signed-in account can read any library's problem list.
+- **The imports list renders an empty list** where laminas throws.
+- **The sort diagnostic survives a sort-text format that does not parse.** Library 7's is
+  `%1{author}{title}`, which expands to three printf parameters against one capture group,
+  and building its filter throws — so the laminas page answers 500 on precisely the library
+  whose configuration a developer would come here to diagnose. The message takes the
+  filter dump's place.
+
+Everything else is reproduced, including three things that look like defects and are:
+`label-management`'s dead links, the borrower page's countdown script (`var timerText =
+This page will redirect in {0} seconds.;` — a JavaScript syntax error, so the script never
+parses and the hardcoded `/libraries/3` redirect never fires), and mass-checkout's borrower
+list, which is the Schoenstatt Fathers at every library rather than the library's own person
+provider.
+
+#### One route stays on laminas, and it is not "not done yet"
+
+`library-imports/library-import/edit` is not a page with a form on it; it is the import
+engine. It opens a spreadsheet, walks it against a column map and either simulates or
+**performs** the import — creating, updating and inactivating books — through
+`importSpreadsheetFile()`, three hundred lines living inside the laminas controller and
+reachable only through it. Porting it means extracting that into a service both front
+controllers call, which is a worthwhile refactor and is not a port: it moves destructive,
+untested code that writes to `lib_books` in bulk. Doing it as the tail of a batch of
+twenty-two routes is how a library gets silently re-imported.
+
+#### What the batch taught the shared code
+
+Four fixes landed in code older than this batch, each found by a page that happened to
+exercise it first:
+
+- **`App\Controller\EntityCreateController` rendered a blank 200 instead of a 403.** Its
+  per-library refusal rendered `error/403.html.twig` without the `subject` the template
+  requires, and Twig's `strict_variables` throws *after* the response is assembled — the
+  fatal-200 wedge. Shipped since batch 9, on every create route whose visitor held the
+  route guard but not the library's `administrate`. All three hand-rolled 403 renders now
+  go through `App\Authorization\Denial::forbiddenPage()`.
+- **`BootstrapFormRenderer::button()` moved `class` to the end** of the attribute list.
+  laminas renders an element's attributes in declaration order, so `CheckoutForm`'s submit
+  comes out `id`, `class`, `tabindex` and this emitted `id`, `tabindex`, `class`. It takes a
+  button declaring both a class and a later attribute, and the checkout form is the first.
+- **`_publication-info.html.twig` had dropped two options as unreachable.** "Nothing passes
+  `showCover` or `panelTitle`" was true of the four routes ported when it was written; the
+  book page passes both. Restored.
+- **`formText()` had no counterpart.** `form_element()` dispatches on the element's type, so
+  a `Date` element rendered `type="date"` where mass-checkout.phtml asks for `formText()`
+  and gets a text box — a date picker where a barcode scanner is meant to tab through.
+
+Two more general lessons, both about verification rather than about code:
+
+- **`prepare()` matters on a `Collection` and on nothing else so far.** No ported controller
+  had needed it; mass-checkout renders zero rows without it, because `prepare()` is what
+  materialises the `count => 4` fieldsets.
+- **A page that introduces a phrase does not capture reproducibly.** See the note in the
+  known-differences section above.
 
 ### The create surface — batch 9, 2026-08-15
 

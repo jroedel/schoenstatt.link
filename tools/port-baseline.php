@@ -139,6 +139,43 @@ const LOCALES = ['en', 'es', 'de', 'pt', 'it'];
  * comparison would notice.
  */
 const PATHS = [
+    // batch 11b — the library circulation surface: 24 routes across five controllers.
+    //
+    // **Two of the batch's routes are deliberately absent, and both would do real work if
+    // fetched.** `/libraries/{id}/refresh-sort` issues one UPDATE per book on a bare GET —
+    // 16,383 of them for library 4 — which this harness would trigger twelve times per
+    // capture; and `/libraries/{id}/send-book-notices` hands a real library to the mailer.
+    // Neither belongs in a tool whose contract is "GET everything twice". They are covered
+    // by test/Smoke instead, against a library small enough to assert on.
+    //
+    // Library 1 (Bellavista, 4,604 books) is the subject wherever a library id is needed,
+    // except for the imports, which exist only under library 3 — all 22 of them. That
+    // asymmetry is the point of `/library-imports/library/1`: it is the *empty* case, a 500
+    // on laminas today for the five libraries with no imports, and a rendered empty list
+    // after the port. An intended difference, and the only one in this batch.
+    '/books/18370',
+    '/borrowers/514',
+    '/checkouts/library/1',
+    '/checkouts/library/1/current',
+    '/checkouts/library/1/overdue',
+    '/libraries/1',
+    '/libraries/1/admin',
+    '/libraries/1/batch-operations',
+    '/libraries/1/book-list',
+    '/libraries/1/book-list-json',
+    '/libraries/1/checkin',
+    '/libraries/1/checkout',
+    '/libraries/1/collections',
+    '/libraries/1/data-problems',
+    '/libraries/1/inactivate-books',
+    '/libraries/1/label-management',
+    '/libraries/1/mass-checkout',
+    '/libraries/1/sort-debugging',
+    '/library-imports/library/1',
+    '/library-imports/library/3',
+    '/library-imports/library/3/create',
+    '/library-imports/2',
+    '/library-imports/2/edit',
     // batch 8 — the delete surface: the seven entity delete confirmations that share
     // SionModel\Controller\SionController::deleteAction().
     //

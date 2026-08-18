@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App;
 
 use App\Authorization\RouteGuard;
-use App\Books\LibraryScopedForms;
 use App\Api\BotIdentity;
+use App\Books\CheckoutForms;
+use App\Books\LibraryPage;
+use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
@@ -16,8 +18,11 @@ use App\Controller\AssignmentSearchController;
 use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
+use App\Controller\BookController;
 use App\Controller\BorrowerCheckoutsController;
+use App\Controller\BorrowerController;
 use App\Controller\CacheStatusController;
+use App\Controller\CheckoutsController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\CommentCreateController;
 use App\Controller\CompositionController;
@@ -29,6 +34,15 @@ use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
+use App\Controller\LibraryCollectionsController;
+use App\Controller\LibraryCheckoutController;
+use App\Controller\LibraryController;
+use App\Controller\LibraryFormController;
+use App\Controller\LibraryImportsController;
+use App\Controller\LibraryMassCheckoutController;
+use App\Controller\LibraryNoticesController;
+use App\Controller\LibraryPageController;
+use App\Controller\LibrarySortController;
 use App\Controller\LiteratureController;
 use App\Controller\MovementController;
 use App\Controller\MusicController;
@@ -135,6 +149,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private CspNonce $cspNonce;
     private Environment $twig;
     private ViewHelpers $viewHelpers;
+    private LibraryPage $libraryPage;
     private RouteUrl $routeUrl;
     private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
@@ -466,6 +481,88 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->twig(),
                 $this->routeUrl()
             ),
+            // Batch 11b, the library circulation surface. Every one of these takes
+            // App\Books\LibraryPage as its fourth dependency: the library row, the
+            // per-library ACL check and the breadcrumb trail are the same four lines in
+            // every laminas action under /libraries/{id}/…, spelled slightly differently
+            // each time — see that class for what the differences were hiding.
+            LibraryCollectionsController::class
+                => fn (): LibraryCollectionsController => new LibraryCollectionsController(
+                    $this->laminas(),
+                    $this->twig(),
+                    $this->routeUrl(),
+                    $this->libraryPage()
+                ),
+            BookController::class => fn (): BookController => new BookController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->entityShow(),
+                $this->viewHelpers()
+            ),
+            BorrowerController::class => fn (): BorrowerController => new BorrowerController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            CheckoutsController::class => fn (): CheckoutsController => new CheckoutsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryController::class => fn (): LibraryController => new LibraryController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryCheckoutController::class => fn (): LibraryCheckoutController => new LibraryCheckoutController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage(),
+                new CheckoutForms($this->laminas())
+            ),
+            LibraryMassCheckoutController::class
+                => fn (): LibraryMassCheckoutController => new LibraryMassCheckoutController(
+                    $this->laminas(),
+                    $this->twig(),
+                    $this->routeUrl(),
+                    $this->libraryPage(),
+                    new CheckoutForms($this->laminas())
+                ),
+            LibraryFormController::class => fn (): LibraryFormController => new LibraryFormController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibrarySortController::class => fn (): LibrarySortController => new LibrarySortController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryImportsController::class => fn (): LibraryImportsController => new LibraryImportsController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryNoticesController::class => fn (): LibraryNoticesController => new LibraryNoticesController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
+            LibraryPageController::class => fn (): LibraryPageController => new LibraryPageController(
+                $this->laminas(),
+                $this->twig(),
+                $this->routeUrl(),
+                $this->libraryPage()
+            ),
             // The first restricted page, and the only reason to trust
             // App\Authorization\RouteGuard: a bridge no guarded route exercises
             // proves nothing. Same three dependencies as the shrines port — the
@@ -699,6 +796,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private function viewHelpers(): ViewHelpers
     {
         return $this->viewHelpers ??= new ViewHelpers($this->laminas(), $this->routeUrl(...));
+    }
+
+    /** Shared by every batch-11b controller; see App\Books\LibraryPage. */
+    private function libraryPage(): LibraryPage
+    {
+        return $this->libraryPage ??= new LibraryPage(
+            $this->laminas(),
+            $this->viewHelpers(),
+            $this->routeUrl(),
+            $this->twig()
+        );
     }
 
     /**

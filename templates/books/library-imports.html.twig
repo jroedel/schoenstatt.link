@@ -1,0 +1,51 @@
+{#
+  module/Books/view/books/library-imports/index.phtml — the imports run against one
+  library.
+
+  **The empty case is the reason this page changes.** `LibraryImportsController::
+  indexAction()` calls `SionController::indexAction()`, which fetches the entity's index
+  through a path that throws `InvalidArgumentException: No entity provided.` when there
+  are none — so five of the six libraries answer 500 here today, every one of them except
+  Colegio Mayor, which holds all 22 imports. An empty list is not an error, and the
+  controller now renders one.
+
+  The edit pencil appears only on a *pending* import: once an import has run, its file
+  path and worksheet are frozen, so linking to a form that cannot change them would be a
+  link to a disabled page.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% block content %}
+{% if is_allowed('route/library-imports/library/create') %}
+<p><a class="btn btn-primary" href="{{ laminas_path('library-imports/library/create', {'library_id': library_id}) }}">{{ translate('Start new import') }}</a></p>
+{% endif %}
+<table class="table">
+<thead>
+<tr>
+    <th>{{ translate('Import name') }}</th>
+    <th>{{ translate('Description') }}</th>
+    <th>{{ translate('Complete import') }}</th>
+    <th>{{ translate('Import started') }}</th>
+    <th>{{ translate('Last updated') }}</th>
+    <th>{{ translate('Books created') }}</th>
+    <th>{{ translate('Books updated') }}</th>
+    <th>{{ translate('Books inactivated') }}</th>
+</tr>
+</thead>
+<tbody>
+{% for object in objects %}
+<tr>
+    <td>{{ format.entity('library-import', object, {'displayEditPencil': object.status == 'pending'}) }}</td>
+    <td>{{ object.description }}</td>
+    <td>{{ object.isCompleteImport ? translate('Yes') : translate('No') }}</td>
+    <td>{{ medium_datetime(object.createdOn) }}</td>
+    <td>{{ medium_datetime(object.updatedOn) }}</td>
+    <td>{{ object.booksCreated }}</td>
+    <td>{{ object.booksUpdated }}</td>
+    <td>{{ object.booksInactivated }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}

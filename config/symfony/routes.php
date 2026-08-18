@@ -36,7 +36,10 @@ use App\Controller\AssociationController;
 use App\Controller\AssociationEditController;
 use App\Controller\AssociationsController;
 use App\Controller\BorrowerCheckoutsController;
+use App\Controller\BookController;
+use App\Controller\BorrowerController;
 use App\Controller\CacheStatusController;
+use App\Controller\CheckoutsController;
 use App\Controller\ClearPersistentCacheController;
 use App\Controller\CommentCreateController;
 use App\Controller\CompositionController;
@@ -48,6 +51,15 @@ use App\Controller\EntityDeleteController;
 use App\Controller\EntityEditController;
 use App\Controller\HealthController;
 use App\Controller\LibrariesController;
+use App\Controller\LibraryCollectionsController;
+use App\Controller\LibraryCheckoutController;
+use App\Controller\LibraryController;
+use App\Controller\LibraryFormController;
+use App\Controller\LibraryImportsController;
+use App\Controller\LibraryMassCheckoutController;
+use App\Controller\LibraryNoticesController;
+use App\Controller\LibraryPageController;
+use App\Controller\LibrarySortController;
 use App\Controller\LiteratureController;
 use App\Controller\MovementController;
 use App\Controller\MusicController;
@@ -1701,6 +1713,209 @@ $routes->add('api-v3/phrase-unretire-method', new Route('/api/v3/phrases/{phrase
     MethodNotAllowedController::ALLOWED => ['POST'],
     RouteAccess::ATTRIBUTE              => $apiV3Phrases,
 ], $phraseIdentifier));
+
+// ---------------------------------------------------------------------------
+// Batch 11b — the library circulation surface, ported 2026-08-18.
+//
+// Twenty-three routes across five laminas controllers. Three more were **retired
+// rather than ported** after an audit, all three broken or empty in production:
+// `/borrowers` answered 500 (an `index` action that does not exist, rendering a
+// template that does not exist), `/library-imports/{id}/cancel` answered 404 (no
+// `cancelAction` anywhere in the chain), and `/libraries/{id}/batch-operations`
+// rendered a blank page (its .phtml was the four characters `<?php`). See
+// docs/strangler.md for the probe that measured each one.
+//
+// Every route here is library-scoped, and the per-library ACL is the real
+// authorization: the route guards all name `lib_user`, which is `is_default = 1`
+// and therefore means nothing more than "signed in". `App\Books\LibraryPage` holds
+// the row lookup and the check; a `guardedBy()` on the route alone would be a
+// route that admits everybody.
+// ---------------------------------------------------------------------------
+
+$ported(
+    'libraries/library/collections',
+    '/libraries/{library_id}/collections',
+    LibraryCollectionsController::class,
+    RouteAccess::guardedBy('route/libraries/library/collections'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// The four read-only library pages behind one controller — see App\Controller\
+// LibraryPageController for why they share, and for the one authorization difference
+// this batch introduces (`data-problems` gains the per-library check its siblings make).
+$libraryPage = static function (string $page, string $suffix) use ($ported, $textDomain): void {
+    $ported(
+        'libraries/library/' . $page,
+        '/libraries/{library_id}/' . $suffix,
+        LibraryPageController::class,
+        RouteAccess::guardedBy('route/libraries/library/' . $page),
+        $textDomain('Books') + [LibraryPageController::PAGE => $page],
+        ['library_id' => '[0-9]{1,5}']
+    );
+};
+$libraryPage('label-management', 'label-management');
+$libraryPage('book-list', 'book-list');
+$libraryPage('book-list-json', 'book-list-json');
+$libraryPage('data-problems', 'data-problems');
+
+// The two bulk operations that are a form, a table call and a redirect. No method
+// constraint, matching the laminas routes: both render on GET and write on POST.
+$libraryForm = static function (string $page) use ($ported, $textDomain): void {
+    $ported(
+        'libraries/library/' . $page,
+        '/libraries/{library_id}/' . $page,
+        LibraryFormController::class,
+        RouteAccess::guardedBy('route/libraries/library/' . $page),
+        $textDomain('Books') + [LibraryFormController::FORM => $page],
+        ['library_id' => '[0-9]{1,5}']
+    );
+};
+// The lending form. Its permission is `checkout`, not `administrate`, and four of the
+// six libraries grant it to `guest` on purpose — docs/libraries.md.
+$ported(
+    'libraries/library/checkout',
+    '/libraries/{library_id}/checkout',
+    LibraryCheckoutController::class,
+    RouteAccess::guardedBy('route/libraries/library/checkout'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+
+$libraryForm('checkin');
+$ported(
+    'libraries/library/mass-checkout',
+    '/libraries/{library_id}/mass-checkout',
+    LibraryMassCheckoutController::class,
+    RouteAccess::guardedBy('route/libraries/library/mass-checkout'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+$libraryForm('inactivate-books');
+
+// The two *read* pages of the import surface. `library-imports/library/create` and
+// `library-imports/library-import/edit` stay on laminas: they are the import engine, not
+// pages — see App\Controller\LibraryImportsController for why moving them is a refactor
+// rather than a port.
+$ported(
+    'library-imports/library',
+    '/library-imports/library/{library_id}',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
+    'library-imports/library/create',
+    '/library-imports/library/{library_id}/create',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library/create'),
+    $textDomain('Books') + [LibraryImportsController::CREATE => true],
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
+    'library-imports/library-import',
+    '/library-imports/{import_id}',
+    LibraryImportsController::class,
+    RouteAccess::guardedBy('route/library-imports/library-import'),
+    $textDomain('Books') + [LibraryImportsController::DETAIL => true],
+    ['import_id' => '[0-9]{1,5}']
+);
+
+// The overdue-notice preview. Its guard admits everyone on purpose — the action itself
+// requires `administrate` **or** a key in X-Api-Key, which a route guard cannot express.
+$ported(
+    'libraries/library/send-book-notices',
+    '/libraries/{library_id}/send-book-notices',
+    LibraryNoticesController::class,
+    RouteAccess::guardedBy('route/libraries/library/send-book-notices'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// The sort diagnostic and the sweep it links to. **`refresh-sort` is the one route in
+// this batch whose contract changes**: the laminas action rewrote every book's sort_text
+// on a bare GET, with no token and no per-library check, behind a guard every account
+// holds. Here GET renders a confirmation and POST does the work. See
+// App\Books\RefreshSortForm.
+$ported(
+    'libraries/library/sort-debugging',
+    '/libraries/{library_id}/sort-debugging',
+    LibrarySortController::class,
+    RouteAccess::guardedBy('route/libraries/library/sort-debugging'),
+    $textDomain('Books'),
+    ['library_id' => '[0-9]{1,5}']
+);
+$ported(
+    'libraries/library/refresh-sort',
+    '/libraries/{library_id}/refresh-sort',
+    LibrarySortController::class,
+    RouteAccess::guardedBy('route/libraries/library/refresh-sort'),
+    $textDomain('Books') + [LibrarySortController::REFRESH => true],
+    ['library_id' => '[0-9]{1,5}']
+);
+
+// The library's own page and its admin menu — one controller, because `adminAction()`
+// calls `showAction()` and renders its output underneath the menu.
+$ported(
+    'libraries/library',
+    '/libraries/{library_id}',
+    LibraryController::class,
+    RouteAccess::guardedBy('route/libraries/library'),
+    //Lights up **Literature**, because Application\Module::onBootstrap() hangs one
+    //navigation page per library underneath it and App\View\SiteChrome can only see the
+    //static config. Measured against the laminas rendering: of the twenty-three pages in
+    //this batch, this is the only one that marks a navbar item at all — the admin menu,
+    //the checkout lists and the imports mark none.
+    $textDomain('Books') + [SiteChrome::NAV_ROUTE => 'publications'],
+    ['library_id' => '[0-9]{1,5}']
+);
+// One copy of one book. Its guard admits `guest`; the row-level gate is the `book`
+// spec's aclResourceIdField, inside App\Sion\EntityShow.
+$ported(
+    'books/book',
+    '/books/{book_id}',
+    BookController::class,
+    RouteAccess::guardedBy('route/books/book'),
+    $textDomain('Books'),
+    ['book_id' => '[0-9]{1,6}']
+);
+
+// One person's loans. The route guard is `lib_user` and therefore admits everyone
+// signed in; the real gate is the per-checkout filter inside the controller.
+$ported(
+    'borrowers/borrower',
+    '/borrowers/{person_id}',
+    BorrowerController::class,
+    RouteAccess::guardedBy('route/borrowers/borrower'),
+    $textDomain('Books'),
+    ['person_id' => '[0-9]{1,5}']
+);
+
+// The three checkout views. One controller; `subset` is the only difference, and it
+// chooses the heading, the columns and which rows the query returns.
+$checkouts = static function (string $name, string $path, string $subset) use ($ported, $textDomain): void {
+    $ported(
+        $name,
+        $path,
+        CheckoutsController::class,
+        RouteAccess::guardedBy('route/' . $name),
+        $textDomain('Books') + [CheckoutsController::SUBSET => $subset],
+        ['library_id' => '[0-9]{1,5}']
+    );
+};
+$checkouts('checkouts/library', '/checkouts/library/{library_id}', 'all');
+$checkouts('checkouts/library/current', '/checkouts/library/{library_id}/current', 'current');
+$checkouts('checkouts/library/overdue', '/checkouts/library/{library_id}/overdue', 'overdue');
+
+$ported(
+    'libraries/library/admin',
+    '/libraries/{library_id}/admin',
+    LibraryController::class,
+    RouteAccess::guardedBy('route/libraries/library/admin'),
+    $textDomain('Books') + [LibraryController::ADMIN => true],
+    ['library_id' => '[0-9]{1,5}']
+);
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"
 // matches too, with an empty `path`.

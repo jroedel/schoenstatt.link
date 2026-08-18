@@ -1,0 +1,67 @@
+{#
+  module/Books/view/books/libraries/sort-debugging.phtml — a developer diagnostic showing,
+  per collection, the call-number regex and sort-text format and how each book's call
+  number matches them.
+
+  Untranslated on purpose: the original's prose is English literals, and this page is read
+  by whoever is debugging a sort order, not by a visitor.
+
+  The regex work happens in App\Controller\LibrarySortDebuggingController: Twig has no
+  `preg_match`, and the page needs the capture groups, not just a yes/no. `var_dump` and
+  `print_r` output is captured there too, for the same reason and because that is what the
+  original prints.
+
+  **The "Refresh all library sort text" link is now a form.** It used to be an `<a href>`
+  to a route that rewrote every book's sort_text on the resulting GET. See
+  App\Books\RefreshSortForm.
+#}
+{% extends 'layout.html.twig' %}
+{% import 'schoenstatt/_entity-format.html.twig' as format %}
+
+{% block content %}
+<h1>{{ page_title }}</h1>
+<p>Currently the regex for processing call numbers for the {{ options.name }}
+ library is `<strong>{{ options.callNumberRegex }}</strong>`</p>
+<p>The sort text print format is `<strong>{{ options.sortTextFormat }}</strong>`</p>
+<p>{{ form_open(refresh_form, refresh_action, 'form-inline') }}{{ form_row(refresh_form.get('security')) }}{{ form_submit(refresh_form.get('submit')) }}{{ form_close() }}</p>
+{% for group in groups %}
+    {% if group.collection %}
+<h3>{{ format.entity('collection', group.collection) }}</h3>
+<p>Call number regex: `<strong>{{ group.regex_source }}</strong>`{% if group.regex_invalid %} (INVALID)!{% endif %}</p>
+<p>Sort text format: `<strong>{{ group.sort_text_format }}</strong>`</p>
+{% if not group.filter_error %}{{ group.filter_dump|raw }}{% endif %}
+    {% else %}
+<h3>Books without collection:</h3>
+    {% endif %}
+{# Outside the branch above on purpose: a library with no collections has only the
+   null group, and that is exactly the library whose format is most likely to be
+   unreviewed — library 7's is `%1{author}{title}`, which does not parse. Putting the
+   message inside the `if` hid it on the only page that needed it. #}
+{% if group.filter_error %}<p class="text-danger"><strong>Sort filter could not be built:</strong> {{ group.filter_error }}</p>
+{% endif %}
+    {% if group.books is not empty %}
+<div class="table-responsive">
+<table class="table">
+<thead>
+<tr>
+<th>Title</th>
+<th>Call number</th>
+<th>Detail</th>
+<th>Sort text</th>
+</tr>
+</thead>
+<tbody>
+        {% for row in group.books %}
+<tr>
+<td>{{ format.entity('book', row.book) }}</td>
+<td>{{ row.book.callNumber }}{% if row.matched == 1 %}<span class="glyphicon glyphicon-ok"></span>{% elseif row.matched == 0 %}<span class="glyphicon glyphicon-remove"></span>{% endif %}</td>
+<td>{{ row.matches_dump|raw }}</td>
+<td>{{ row.sort_text }}</td>
+</tr>
+        {% endfor %}
+</tbody>
+</table>
+</div>
+    {% endif %}
+{% endfor %}
+{% endblock %}

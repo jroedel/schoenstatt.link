@@ -10,17 +10,70 @@ State reached by 2026-08-04: production runs **PHP 8.4.24** on a current
 Laminas stack with OPcache enabled, master is fully deployed, `composer audit
 --locked` reports zero advisories, and 198 tests run across three suites.
 
-State reached by 2026-08-18: **161 Symfony-served routes shadowing 70 of the 142
-laminas ones**, 72 left — measured by `tools/acl-table.php`, which is the number to
+State reached by 2026-08-18: **205 Symfony-served routes shadowing 92 of the 140
+laminas ones**, 48 left — measured by `tools/acl-table.php`, which is the number to
 cite; prose counts in these files have gone stale twice, and this line was itself
 wrong on both figures before it was checked against the tool. Production runs
-`SYMFONY_KERNEL=1`. The library surface (32 routes) is the next batch.
+`SYMFONY_KERNEL=1`. The library circulation surface went in batch 11b; the route
+total fell from 142 because three dead routes were retired with it.
 
 State reached by 2026-08-08: **eighteen routes ported to the Symfony kernel**, ten of them
 deployed dormant — `SYMFONY_KERNEL` is still unset in production, so every one of them
 continues to render through laminas and turning them on is a `SetEnv` in
 `public/.htaccess`, not a deploy. 802 tests across four suites. See
 [strangler.md](strangler.md) for the mechanism and the route table.
+
+## Strangler batch 11b — the library circulation surface (2026-08-18)
+
+Twenty-two routes ported, three retired, one left behind on purpose. The largest batch, and
+the first where the audit mattered more than the porting. [strangler.md](strangler.md) has
+the route table and the differences; what belongs here is the method.
+
+**Probe the routes before planning the batch.** Thirty-one routes were fetched signed in as
+a library administrator before a line was written, and six of them were not what the config
+said they were: two answered errors, one rendered a blank page, one was a mockup, one 500s
+for five of six libraries, and one wrote to the database on a bare GET. Reading the
+controllers would have found some of that; fetching them found all of it in ten minutes.
+The batch that came out of the audit is a different batch from the one the backlog
+described.
+
+**"It writes on a GET" is a claim to prove, not to infer.** `refresh-sort` reads like it
+writes, and the way to know is to make a row wrong and see it corrected: `sort_text` set to
+`ZZZ-PROBE`, one fetch with an empty body, row restored. That also established what kind of
+problem it is — the sweep is idempotent, so it was never data loss, and calling it data loss
+in the PR would have been wrong in the direction that gets a change waved through.
+
+**A test can pass because the page it covers is unreachable.** `BooksSmokeTest` asserted
+that `/en/borrowers` redirects an anonymous visitor, and it did — the guard answered before
+the missing action could be reached. Every signed-in visitor got a 500. An anonymous
+assertion on a guarded route proves the guard, not the page.
+
+**The suite caught what the byte-comparison could not.** `tools/port-baseline.php` compared
+1,212 responses and reported no defect on the book page; `CopyToMainCorpusSmokeTest` failed,
+because the book it drives hangs off a *data-sourced* publication and the one in `PATHS`
+does not. The ported page had dropped the "Copy into main corpus" button for every
+moderator. A corpus-wide diff is only as good as the rows in it, and the fixture chosen for
+a behaviour is worth more than the page chosen for a diff.
+
+**A capture is not reproducible when the page introduces a phrase.** The same code produced
+`Export` in one capture and `Exportar` in the next. The ported page asks the translator in
+its own text domain, the miss files a `trans_phrases` row mid-run, the phrase acquires
+translations, and the second render answers differently. Six rows were filed by this batch's
+captures. When a baseline diff moves between two runs of unchanged code, check
+`trans_phrases` by `added_on` before looking for a bug.
+
+**Refusal has a shape, and the shape is per page.** `libraries/library` denies by flashing
+and redirecting to the index, because its check lives in `SionController::showAction()`;
+its fourteen siblings deny with a 403, because they call `isAllowed()` and throw. Same
+question, two answers, decided by which code asks it — and a port that answers 403 where
+laminas answers 302 breaks a test that had been right for years.
+
+**Porting exercises old code in new ways, and four fixes fell out of that**: a shipped
+blank-200 where a 403 belonged, an attribute-order bug in the form renderer, two options
+deleted from a partial as "unreachable" that this batch reaches, and a missing `formText()`.
+None was found by looking for it. The general form: the first page to use a shared
+component differently is the page that finds its bugs, so a batch that reaches new corners
+should expect to fix code it did not touch.
 
 ## The navbar's library search box, ported ahead of its routes (2026-08-18)
 
