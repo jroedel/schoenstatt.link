@@ -97,13 +97,17 @@ measured not to do what this section claimed. A `.user.ini` would also have to b
 docroot after a swap is `releases/<id>/public`; one in `shared/` is not on the
 resolved path.
 
-The knob the 2026-08-18 measurements actually implicate is **`realpath_cache_ttl`**,
-which is `PHP_INI_SYSTEM` and therefore a ticket. In the capsule a swap becomes
-visible on its own after 122s against a `realpath_cache_ttl` of 120 — but production
-stayed stale for ~12 minutes on 2026-08-18 and 20+ on 2026-08-17, so either its TTL
-is far larger than the default or a second carrier is involved. **Read its value from
-`/en/sm/phpinfo` before proposing anything**; it is not in the cache-status payload,
-and the maintenance key alone gets a 302 on that page.
+The knob the 2026-08-18 measurements implicated was **`realpath_cache_ttl`**, and it
+turned out to be a dead end too. In the capsule a swap becomes visible on its own
+after 122s against a `realpath_cache_ttl` of 120 — but **production reads 120 as
+well** (checked from `/en/sm/phpinfo`, 2026-08-19), and it stayed stale for ~12
+minutes on 2026-08-18 and 20+ on 2026-08-17. A 120s cache cannot do that, so
+whatever carries the staleness on production has not been identified and no ini
+change is known to address it. Do not raise a ticket for this one either.
+
+The deploy therefore acts on the observable rather than the mechanism: it proves,
+per segment, that each one was reset or created after the swap. See
+[DEPLOY.md](DEPLOY.md) § Steps 10 and 11.
 
 ### Verifying
 

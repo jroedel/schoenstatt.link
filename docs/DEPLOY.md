@@ -1120,12 +1120,35 @@ uptimes. A reset request only clears the segment that served it, so a partial re
 looks like "some pages work and some don't".
 
 Step 10 therefore writes a single-use, randomly-named PHP file into **every**
-release directory and requests it until several consecutive hits report an
-already-fresh segment. A new path has no cache entry anywhere, so it always
+release directory and requests it until **every segment that answers is provably
+serving the new release**. A new path has no cache entry anywhere, so it always
 compiles from disk. It cannot be an ordinary application endpoint: a pool serving
 the *previous* release resolves routes against that release's code, which need not
 have the endpoint at all. The file is deleted afterwards, including on failure,
 because a stray one is a publicly-reachable cache flush.
+
+**How a segment is judged**, and why it is judged one at a time. The helper reports
+`start_time` — the only per-segment identity OPcache exposes, and one that does
+**not** move when `opcache_reset()` runs — alongside `last_restart_time`, which
+does. A segment passes if it was born after the swap (it compiled through the
+current symlink, so it is correct by construction) or restarted after it. The reset
+is conditional on that same test, because wiping a healthy segment costs every
+script in it a recompile under live traffic.
+
+This replaced an exit condition of "eight consecutive `/_health` probes agree",
+which let two deploys through on 2026-08-18 and 2026-08-19. `/_health` and the
+helper are separate requests that need not land on the same pool, so eight
+agreements can be one lucky pool answering while another has never been reset —
+and afterwards every production segment reported `manualRestarts: 0`. Agreement
+between probes was never evidence about coverage. Both conditions are now required,
+which is strictly stronger than either.
+
+The step before the swap counts the segments, so the loop knows how many pools it
+has to reach; without a floor, "every segment I saw is current" is satisfied by
+seeing one. It is a **lower bound** — a quiet pool can miss the census, and segments
+churn every 5–15 minutes here, so only the count is used and never the ids. When it
+finds nothing (an older release with no `startTimeUnix` in its cache-status payload)
+the floor stays at 1 and the gate is exactly as strong as it was before.
 
 Two details there were bought with failed deploys, and both look like
 over-engineering until you have watched them fail:
