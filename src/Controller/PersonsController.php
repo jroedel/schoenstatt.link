@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Http\SymfonyRoute;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
@@ -69,17 +68,6 @@ final class PersonsController
 
     public function __invoke(Request $request): Response
     {
-        //**Which of the two routes is being served, from the request.** `persons` and
-        //`persons/search` render identically, but the unprefixed-form redirect has to
-        //point back at the URL the visitor actually asked for — hardcoding either name
-        //would send /persons/search to /en/persons and quietly collapse two URLs into
-        //one. SymfonyRoute::routeName() strips the `.locale` suffix, so it yields the
-        //laminas name RouteUrl assembles from.
-        $redirect = LocalePrefix::redirect($request, $this->urls, SymfonyRoute::routeName($request));
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $form = new SearchForm();
         $form->setData($request->query->all());
 

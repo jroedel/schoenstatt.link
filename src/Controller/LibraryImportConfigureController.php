@@ -14,7 +14,6 @@ use App\Books\Import\LibraryImporter;
 use App\Books\Import\PlannedRow;
 use App\Books\Import\RunImportForm;
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Laminas\SionResult;
@@ -97,15 +96,6 @@ final class LibraryImportConfigureController
     public function __invoke(Request $request): Response
     {
         $importId = (int) $request->attributes->get('import_id');
-        $redirect = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'library-imports/library-import/edit',
-            ['import_id' => $importId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         /** @var LibraryTable $table */
         $table  = $this->laminas->get(LibraryTable::class);

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use JTranslate\Controller\Plugin\NowMessenger;
 use Laminas\Form\FormInterface;
@@ -71,19 +69,13 @@ final class AssignmentSearchController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     /** GET /assignments/search — the navbar search box's results page. */
     public function search(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'assignments/search');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $form = new SearchForm();
         $form->setData($request->query->all());
 
@@ -119,11 +111,6 @@ final class AssignmentSearchController
     /** GET /assignments/advanced-search — the four-field form over the same search. */
     public function advancedSearch(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'assignments/advanced-search');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $form = $this->advancedForm();
         $form->setData($request->query->all());
 

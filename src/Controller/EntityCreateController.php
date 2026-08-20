@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Authorization\Denial;
@@ -124,11 +123,6 @@ final class EntityCreateController
             $raw = is_string($raw) || is_int($raw) ? (string) $raw : '';
             $routeParams[$libraryParam] = $raw;
             $libraryId = ctype_digit($raw) ? (int) $raw : null;
-        }
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, $laminasRoute, $routeParams);
-        if (null !== $redirect) {
-            return $redirect;
         }
 
         $denial = $this->libraryPermission($request, $libraryId);

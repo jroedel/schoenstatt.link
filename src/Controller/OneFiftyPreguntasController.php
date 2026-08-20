@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Request;
@@ -52,11 +51,6 @@ final class OneFiftyPreguntasController
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'publications/one-fifty-preguntas');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         $path = dirname(__DIR__, 2) . self::DOCUMENT;
         if (! is_file($path)) {
             throw new RuntimeException('The 150-preguntas document is missing: ' . $path);

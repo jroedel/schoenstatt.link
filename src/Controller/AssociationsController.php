@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
-use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Schoenstatt\Model\SchoenstattTable;
 use Schoenstatt\Service\AssociationKindsService;
@@ -37,18 +35,12 @@ final class AssociationsController
 {
     public function __construct(
         private readonly ServiceBridge $laminas,
-        private readonly Environment $twig,
-        private readonly RouteUrl $urls
+        private readonly Environment $twig
     ) {
     }
 
     public function __invoke(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'associations');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         /** @var SchoenstattTable $table */
         $table = $this->laminas->get(SchoenstattTable::class);
         /** @var AssociationKindsService $kinds */

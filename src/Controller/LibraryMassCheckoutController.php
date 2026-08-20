@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Books\CheckoutForms;
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\LibraryTable;
@@ -68,15 +67,6 @@ final class LibraryMassCheckoutController
     public function __invoke(Request $request): Response
     {
         $libraryId = (int) $request->attributes->get('library_id');
-        $redirect  = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'libraries/library/mass-checkout',
-            ['library_id' => $libraryId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $refusal = $this->page->refuse($this->page->library($request), LibraryPage::ADMINISTRATE);
         if (null !== $refusal) {

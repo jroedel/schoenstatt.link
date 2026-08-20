@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\SionResult;
 use App\Laminas\ServiceBridge;
@@ -58,10 +57,6 @@ final class BorrowerController
     public function __invoke(Request $request): Response
     {
         $personId = (int) $request->attributes->get('person_id');
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'borrowers/borrower', ['person_id' => $personId]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         if ($personId <= 0) {
             return new RedirectResponse($this->urls->path('libraries'));
