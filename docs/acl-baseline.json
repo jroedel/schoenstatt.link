@@ -28,13 +28,13 @@
         "roles": 45,
         "route_guard_entries": 119,
         "routes_declared_twice": 1,
-        "routes_shadowed_by_symfony": 94,
+        "routes_shadowed_by_symfony": 101,
         "routes_uncomparable": 0,
         "rules_from_rule_config": 34,
-        "symfony_routes_acl_checked": 182,
+        "symfony_routes_acl_checked": 196,
         "symfony_routes_open": 27,
         "symfony_routes_undeclared": 0,
-        "symfony_served_routes": 209,
+        "symfony_served_routes": 223,
         "total_routes": 137,
         "unguarded_routes": 19,
         "unguarded_routes_matchable": 7
@@ -4563,6 +4563,76 @@
             "probe": "/timeline"
         },
         {
+            "laminas_route": "juser",
+            "path": "/users",
+            "symfony_route": "juser",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser",
+            "access_kind": "acl",
+            "probe": "/users"
+        },
+        {
+            "laminas_route": "juser/create",
+            "path": "/users/create",
+            "symfony_route": "juser/create",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser/create",
+            "access_kind": "acl",
+            "probe": "/users/create"
+        },
+        {
+            "laminas_route": "juser/create-role",
+            "path": "/users/roles/create",
+            "symfony_route": "juser/create-role",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser/create-role",
+            "access_kind": "acl",
+            "probe": "/users/roles/create"
+        },
+        {
+            "laminas_route": "juser/user/api-token-revoke",
+            "path": "/users/:user_id/api-tokens/:token_id/revoke",
+            "symfony_route": "juser/user/api-token-revoke",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser/user/api-token-revoke",
+            "access_kind": "acl",
+            "probe": "/users/0/api-tokens/0/revoke"
+        },
+        {
+            "laminas_route": "juser/user/api-tokens",
+            "path": "/users/:user_id/api-tokens",
+            "symfony_route": "juser/user/api-tokens",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser/user/api-tokens",
+            "access_kind": "acl",
+            "probe": "/users/0/api-tokens"
+        },
+        {
+            "laminas_route": "juser/user/delete",
+            "path": "/users/:user_id/delete",
+            "symfony_route": "juser/user/delete",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser/user/delete",
+            "access_kind": "acl",
+            "probe": "/users/0/delete"
+        },
+        {
+            "laminas_route": "juser/user/edit",
+            "path": "/users/:user_id/edit",
+            "symfony_route": "juser/user/edit",
+            "was_guarded": true,
+            "was_public": false,
+            "now_checks": "route/juser/user/edit",
+            "access_kind": "acl",
+            "probe": "/users/0/edit"
+        },
+        {
             "laminas_route": "libraries",
             "path": "/libraries",
             "symfony_route": "libraries",
@@ -7465,6 +7535,146 @@
                 "resource": null,
                 "reason": "shadows no laminas route, so there is no guard entry to consult; it reports liveness only, which is nothing a visitor could not learn from the site answering at all",
                 "denial_style": "n/a"
+            }
+        },
+        "juser": {
+            "path": "/users",
+            "controller": "App\\Controller\\UsersController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser.locale": {
+            "path": "/{_locale}/users",
+            "controller": "App\\Controller\\UsersController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/create": {
+            "path": "/users/create",
+            "controller": "App\\Controller\\UserCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/create-role": {
+            "path": "/users/roles/create",
+            "controller": "App\\Controller\\UserCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/create-role",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/create-role.locale": {
+            "path": "/{_locale}/users/roles/create",
+            "controller": "App\\Controller\\UserCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/create-role",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/create.locale": {
+            "path": "/{_locale}/users/create",
+            "controller": "App\\Controller\\UserCreateController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/create",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/api-token-revoke": {
+            "path": "/users/{user_id}/api-tokens/{token_id}/revoke",
+            "controller": "App\\Controller\\ApiTokensController::revoke",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/api-token-revoke",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/api-token-revoke.locale": {
+            "path": "/{_locale}/users/{user_id}/api-tokens/{token_id}/revoke",
+            "controller": "App\\Controller\\ApiTokensController::revoke",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/api-token-revoke",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/api-tokens": {
+            "path": "/users/{user_id}/api-tokens",
+            "controller": "App\\Controller\\ApiTokensController::screen",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/api-tokens",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/api-tokens.locale": {
+            "path": "/{_locale}/users/{user_id}/api-tokens",
+            "controller": "App\\Controller\\ApiTokensController::screen",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/api-tokens",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/delete": {
+            "path": "/users/{user_id}/delete",
+            "controller": "App\\Controller\\UserDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/delete.locale": {
+            "path": "/{_locale}/users/{user_id}/delete",
+            "controller": "App\\Controller\\UserDeleteController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/delete",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/edit": {
+            "path": "/users/{user_id}/edit",
+            "controller": "App\\Controller\\UserEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/edit",
+                "reason": null,
+                "denial_style": "html"
+            }
+        },
+        "juser/user/edit.locale": {
+            "path": "/{_locale}/users/{user_id}/edit",
+            "controller": "App\\Controller\\UserEditController",
+            "access": {
+                "kind": "acl",
+                "resource": "route/juser/user/edit",
+                "reason": null,
+                "denial_style": "html"
             }
         },
         "libraries": {

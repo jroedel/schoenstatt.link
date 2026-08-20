@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 use App\Authorization\RouteAccess;
 use App\Controller\AdminController;
+use App\Controller\ApiTokensController;
 use App\Controller\AssignmentSearchController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
@@ -76,6 +77,10 @@ use App\Controller\SitemapController;
 use App\Controller\TextController;
 use App\Controller\TextsController;
 use App\Controller\TimelineController;
+use App\Controller\UserCreateController;
+use App\Controller\UserDeleteController;
+use App\Controller\UserEditController;
+use App\Controller\UsersController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\LegacyBridge;
@@ -2004,6 +2009,104 @@ $ported(
     RouteAccess::guardedBy('route/libraries/library/admin'),
     $textDomain('Books') + [LibraryController::ADMIN => true],
     ['library_id' => '[0-9]{1,5}']
+);
+
+// ---------------------------------------------------------------------------
+// Batch 12, ported 2026-08-21: the JUser user-administration surface — seven routes,
+// five controllers, one shared `App\JUser\UserAdmin`.
+// ---------------------------------------------------------------------------
+//
+// Every one of them is `JUser\Controller\UsersController`'s own action rather than a
+// shared SionModel one, which is why none of them came with batch 7 (edit), batch 8
+// (delete) or batch 9 (create) and why there are five controllers here instead of a
+// route default on one. `config/symfony/routes.php` said so in batch 9's preamble:
+// "`juser/create` and `juser/create-role` do not use `createAction()` at all … so they
+// belong with the `juser/*` bloc, not here."
+//
+// **All seven are guarded `administrator`, and that is the whole protection.** Unusual on
+// this site: `lib_user`, `pub_user`, `sch_user` and `bib_user` are `is_default = 1`, so a
+// guard naming one of them means "signed in" and the real check has to live in the page
+// (see App\Books\LibraryPage). `administrator` is not a default role — 2 of 292 accounts
+// hold it — so `route/juser…` really does gate these pages and no controller here carries
+// a second check. Said out loud because the *absence* of one is what a reader coming from
+// the library surface will notice.
+//
+// **What is NOT here: the four `zfcuser/*` sign-in routes.** They are batch 13 and they
+// are gated on JUser 3.0.0 rather than on effort: `LoginController` is the module's last
+// laminas-mvc controller, and porting it is what lets the package drop laminas-mvc
+// entirely. See module/JUser/README.md for the release plan.
+//
+// **Order.** The two literal create paths come first, and — unlike batch 9, where order
+// genuinely did not matter — one of the two really does need to. `/users/roles/create` is
+// three segments and so is `/users/{user_id}/api-tokens`; the `[0-9]{1,5}` constraint is
+// what keeps `roles` out of `user_id`, so the constraint and not the order is doing the
+// work. Declaring the literals first anyway, because a constraint is a thing someone can
+// widen and a reader should not have to check one to know what `/users/roles/create` does.
+$ported(
+    'juser',
+    '/users',
+    UsersController::class,
+    RouteAccess::guardedBy('route/juser'),
+    $textDomain('JUser')
+);
+
+// The two create forms. `KIND` is what tells the one controller which record it is making,
+// which form to build and which of the two success messages to flash.
+$ported(
+    'juser/create',
+    '/users/create',
+    UserCreateController::class,
+    RouteAccess::guardedBy('route/juser/create'),
+    $textDomain('JUser') + [UserCreateController::KIND => UserCreateController::USER]
+);
+$ported(
+    'juser/create-role',
+    '/users/roles/create',
+    UserCreateController::class,
+    RouteAccess::guardedBy('route/juser/create-role'),
+    $textDomain('JUser') + [UserCreateController::KIND => UserCreateController::ROLE]
+);
+
+// One account's form. Renders the delete modal, which posts to the next route.
+$ported(
+    'juser/user/edit',
+    '/users/{user_id}/edit',
+    UserEditController::class,
+    RouteAccess::guardedBy('route/juser/user/edit'),
+    $textDomain('JUser'),
+    ['user_id' => '[0-9]{1,5}']
+);
+
+// GET renders a confirmation, POST deletes. Both verbs on one route, no method constraint —
+// the laminas route has none either, and adding one would turn a mistaken GET into a 405
+// where today it renders the page.
+$ported(
+    'juser/user/delete',
+    '/users/{user_id}/delete',
+    UserDeleteController::class,
+    RouteAccess::guardedBy('route/juser/user/delete'),
+    $textDomain('JUser'),
+    ['user_id' => '[0-9]{1,5}']
+);
+
+// The credential screen and its revoke twin. Two methods on one controller rather than two
+// controllers, because the second is not a view of the first: it takes a `token_id` of its
+// own, answers nothing but a redirect, and shares only the account it scopes to.
+$ported(
+    'juser/user/api-tokens',
+    '/users/{user_id}/api-tokens',
+    [ApiTokensController::class, 'screen'],
+    RouteAccess::guardedBy('route/juser/user/api-tokens'),
+    $textDomain('JUser'),
+    ['user_id' => '[0-9]{1,5}']
+);
+$ported(
+    'juser/user/api-token-revoke',
+    '/users/{user_id}/api-tokens/{token_id}/revoke',
+    [ApiTokensController::class, 'revoke'],
+    RouteAccess::guardedBy('route/juser/user/api-token-revoke'),
+    $textDomain('JUser'),
+    ['user_id' => '[0-9]{1,5}', 'token_id' => '[0-9]+']
 );
 
 // The catch-all, and last for that reason. `.*` rather than `.+` so that "/"

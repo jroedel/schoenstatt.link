@@ -11,8 +11,10 @@ use App\Books\Import\ImportStorage;
 use App\Books\Import\ImportTemplate;
 use App\Books\Import\SpreadsheetUpload;
 use App\Books\LibraryPage;
+use App\JUser\UserAdmin;
 use App\Books\LibraryScopedForms;
 use App\Controller\AdminController;
+use App\Controller\ApiTokensController;
 use App\Controller\Api\ApiSchemaController;
 use App\Controller\Api\AssociationsV3Controller;
 use App\Controller\Api\MethodNotAllowedController;
@@ -62,6 +64,10 @@ use App\Controller\SitemapController;
 use App\Controller\TextController;
 use App\Controller\TextsController;
 use App\Controller\TimelineController;
+use App\Controller\UserCreateController;
+use App\Controller\UserDeleteController;
+use App\Controller\UserEditController;
+use App\Controller\UsersController;
 use App\Controller\ViewChangesController;
 use App\Controller\WaysideShrinesController;
 use App\Http\AuthorizationListener;
@@ -158,6 +164,7 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     private Environment $twig;
     private ViewHelpers $viewHelpers;
     private LibraryPage $libraryPage;
+    private UserAdmin $userAdmin;
     private RouteUrl $routeUrl;
     private PreferredUrls $preferredUrls;
     private RouteGuard $routeGuard;
@@ -692,6 +699,34 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
                 $this->laminas(),
                 $this->routeUrl()
             ),
+            // Batch 12 — the user-administration surface. All five take the same
+            // App\JUser\UserAdmin, which is where the table, the person list, the acting
+            // user and the two messengers live; the index needs no RouteUrl because every
+            // link on it is a `laminas_path()` in the template.
+            UsersController::class => fn (): UsersController => new UsersController(
+                $this->userAdmin(),
+                $this->twig()
+            ),
+            UserCreateController::class => fn (): UserCreateController => new UserCreateController(
+                $this->userAdmin(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            UserEditController::class => fn (): UserEditController => new UserEditController(
+                $this->userAdmin(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            UserDeleteController::class => fn (): UserDeleteController => new UserDeleteController(
+                $this->userAdmin(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
+            ApiTokensController::class => fn (): ApiTokensController => new ApiTokensController(
+                $this->userAdmin(),
+                $this->twig(),
+                $this->routeUrl()
+            ),
         ]);
     }
 
@@ -833,6 +868,17 @@ final class Kernel implements HttpKernelInterface, TerminableInterface
     }
 
     /** Shared by every batch-11b controller; see App\Books\LibraryPage. */
+    /**
+     * The user-administration surface's shared plumbing. Shared per request, like
+     * {@see libraryPage()}, and for the cheaper of that method's two reasons: it holds no
+     * memo, but the five controllers of the surface never run together, so building it once
+     * costs nothing and reads as one thing rather than five.
+     */
+    private function userAdmin(): UserAdmin
+    {
+        return $this->userAdmin ??= new UserAdmin($this->laminas());
+    }
+
     private function libraryPage(): LibraryPage
     {
         return $this->libraryPage ??= new LibraryPage(

@@ -1255,6 +1255,43 @@ is deliberately not fixed here. Making it translatable files a new phrase row pe
 and belongs with the translation pass in
 [timeline-and-corpus.md](timeline-and-corpus.md).
 
+Batch 12's, on the eight new `/users…` paths, signed in, across five locales — **15
+differing responses of 96, all three groups deliberate, and no group that was not decided
+on purpose**:
+
+| n | what | where | why |
+|---|---|---|---|
+| 5 | the confirmation names the account | `/users/5/delete` × 5 locales | **a defect not reproduced.** `delete.phtml` filled its `%s` from `$this->user->username` — a property read on the array `UserTable::getUser()` returns — so the page asked whether to permanently delete `''`, with a PHP warning where the name should be. Invisible in production only because `display_errors` is off. A destructive confirmation that names nobody is a safety defect, not a cosmetic one, and it is the entire content of the page |
+| 5 | the `<form>` is closed | `/users/create` × 5 locales | neither `create.phtml` nor `create-role.phtml` calls `closeTag()`, so laminas serves an unclosed form element that the browser closes at `</body>`, taking the footer in with it. Every field and the submit button are already above the tag and nothing after it is an input |
+| 5 | the same | `/users/roles/create` × 5 locales | as above |
+
+The other **81 of 96 are byte-identical**, including the index with all 293 of its rows and
+both permission-gated icons, the edit form in all five locales for an account with a person
+reference and one without, the API-token screen, and the revoke route's non-POST redirect.
+Also worth stating: the same run reported the delete page's id-not-found branch as a
+redirect on both sides, which is the *second* half of that first row — an id naming no
+account now goes to the index with 'User not found.' instead of rendering a confirmation for
+an account that does not exist.
+
+**Three defects in the shared form renderer were found by this diff and fixed rather than
+listed**, and one of them was losing data:
+
+| what | consequence | why no earlier form found it |
+|---|---|---|
+| the `[]` a multiple select's name needs was appended only when `multiple` was the boolean `true` | `<select name="rolesList">`, so a browser posts `rolesList=1&rolesList=41&…`, **PHP keeps only the last**, and pressing Submit on an unchanged account form cuts it to one role. Nothing fails and the page says "User successfully updated." | the literature search box, which first found the missing `[]`, declares `'multiple' => true`; `EditUserForm` declares `'multiple' => 'multiple'` — the string, which is what the HTML attribute's value actually is |
+| an HTML boolean attribute was rendered from its PHP type rather than its name | `multiple="multiple"` where laminas emits a bare `multiple`. Cosmetic, but the same code path is what `disabled`, `readonly` and `required` would take | `is_bool()` is right for the `checked` a checkbox row synthesises, and every earlier form's boolean attributes were synthesised rather than declared |
+| `type` and `name` were rendered *before* the element's own attributes instead of assigned into them | `<input type="text" name="username" size="30">` where laminas emits `name="username" type="text" size="30"`. Equivalent to a browser, unequal to a diff — and "the bytes match" is the only claim this renderer can make | an element declared as `'type' => 'Text'` gets `['type' => 'text']` seeded by its own class, so `type` really was first. `EditUserForm` is the first ported form to declare the type *inside* `attributes`, which leaves a plain `Laminas\Form\Element` whose array starts at `name` |
+
+Correcting the third exposed a fourth: `Laminas\Form\Element\Textarea` seeds `type` too, and
+the old ordering code had been unsetting it as a side effect — so three
+`<textarea type="textarea">` appeared on the collection and library forms the moment the
+order was right. `BootstrapFormRenderer::textarea()` now filters by `FormTextarea`'s own
+valid-attribute list, transcribed rather than inferred, as `select()` already did.
+
+The net is the measurement worth keeping: **903 → 913 identical responses** while adding 96
+new comparisons, with **zero** previously-matching response regressed. A renderer fix that
+made ten already-ported form pages match is a stronger result than the batch it came from.
+
 The capture is also what found batch 9's one real defect, which is fixed rather than
 listed: `/associations/create` rendered **two empty options** on its time-zone select where
 laminas renders one. `FormSelect::render()` merges the empty option into the value options
@@ -2163,6 +2200,73 @@ counts those rows and says so. Nothing but a round trip would have surfaced it.
   `isset($array[null])` in `processPublicationRow()` (most publications have no format),
   the second firing once per publication row. Invisible in production, which narrows
   `error_reporting`, and noisy in every console run.
+
+### The user-administration surface — batch 12, 2026-08-21
+
+The seven `juser/*` routes: the index, the two create forms, the account form, the delete
+confirmation, and the API-token screen with its revoke twin. Five controllers over one
+`App\JUser\UserAdmin`, and **the first surface whose port deleted its laminas controller in
+the same change** — `JUser\Controller\UsersController` and its six view scripts are gone,
+its routes kept declared for the reason the `library-imports` tree keeps its own.
+
+**Five controllers, not one, and that is the departure.** Batches 7 to 9 put ten, seven and
+nine routes behind one class each, because on the laminas side they were one *method* reached
+through many controllers. Here it is the opposite: seven routes, seven hand-written actions,
+sharing almost nothing. `createAction()` checks `createEntity()`'s return value and
+`createRoleAction()` discards it; `editAction()` reports a validation failure with a flash
+and `createAction()` with a now-message; the delete action calls `deleteUser()` rather than
+`deleteEntity()`. A route default distinguishing seven behaviours would have been a dispatch
+table pretending to be a policy. The two that genuinely *are* the same shape — the two create
+forms — do share a class.
+
+**The guard is the whole protection, which is unusual here.** Every one of the seven is
+`administrator`, and `administrator` is not `is_default = 1`: 2 of 292 accounts hold it. So
+unlike the library surface, where `lib_user` means "signed in" and the per-row check inside
+`App\Books\LibraryPage` is the real gate, there is nothing left for a controller to check.
+`UserAdmin` has no `refuse()` and the absence is deliberate.
+
+#### What the port found
+
+Three of these were pre-existing and are fixed; the fourth is the port's own and was caught
+before it shipped.
+
+- **`/users/roles/create` had never created a role.** The `user-role` entity spec's
+  `required_columns_for_creation` said `username`, `email`, `displayName` — copy-pasted from
+  the `user` spec above it — so `createEntity('user-role', …)` threw
+  `InvalidArgumentException: … Missing \`username\`` on every submission. Verified identical
+  on **both** front controllers before changing anything, which is the part worth keeping:
+  the failure predates the port and the port is only what made it testable. Fixed in the
+  submodule to the role's own required column, `name`.
+- **The delete confirmation named nobody**, because `delete.phtml` read `username` as a
+  property off an array. See the known-differences table.
+- **Two create pages served an unclosed `<form>`.** Same table.
+- **The roles select would have saved one role instead of all of them**, because the renderer
+  keyed the `name="…[]"` suffix on `multiple` being the boolean `true` and this form declares
+  the string. Three renderer defects in that family, all in the same table, all fixed —
+  and fixing them made ten *already-ported* form pages match laminas that had not before.
+
+#### Two things reproduced that are wrong, and why
+
+- **`editAction()` reports a validation failure with a flash and then re-renders the form.**
+  A flash is read by the *next* page, so the administrator sees a clean form with no
+  explanation and then finds "Error in form submission, please review." decorating whatever
+  they open next. Every sibling action uses `nowMessenger` and is right to. Reproduced, filed
+  in BACKLOG.md: correcting it in the same commit would mean the baseline diff no longer
+  proves the port is faithful, which is the only evidence there is that nothing else moved.
+- **The `<h1>` is untranslated on three of these pages while the `<title>` is translated.**
+  `create.phtml`, `create-role.phtml` and `edit.phtml` all do `escapeHtml($title)` with no
+  `translate()` next to a `headTitle($title)` that the layout does translate, so a Spanish
+  administrator reads "Crear nuevo usuario" in the browser tab and "Create new user" on the
+  page. A one-word fix on three templates, filed rather than folded in, for the same reason.
+
+#### One trap, and it cost a debugging session
+
+`layout.html.twig` reads `page_title` **without an `is defined` guard**, and Twig runs with
+`strict_variables`. The delete page has no `headTitle()` at all on the laminas side, so the
+obvious reproduction is to omit `page_title` — which renders a **200 with an empty body** and
+nothing in any log. That is the fatal-200 wedge CLAUDE.md warns about, reached from the one
+direction the warning does not describe: not a wedged app, just a page that declined to set a
+variable the chrome requires. Pass `''`.
 
 ### The create surface — batch 9, 2026-08-15
 
