@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Sion\EntityShow;
 use App\Sion\SiteWideIdentifier;
@@ -65,11 +64,6 @@ final class TextController
         }
 
         $params = ['sw_id' => $swId] + (is_string($slug) ? ['slug' => $slug] : []);
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'text', $params);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $id = SiteWideIdentifier::toId(IdentifierValidator::ENTITY_TEXT, $swId);
         if (null === $id) {

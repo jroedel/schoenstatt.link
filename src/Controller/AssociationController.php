@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use App\Sion\EntityShow;
@@ -96,11 +95,6 @@ final class AssociationController
         }
 
         $params = ['sw_id' => $swId] + (is_string($slug) ? ['slug' => $slug] : []);
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, self::ENTITY, $params);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $id = SiteWideIdentifier::toId(IdentifierValidator::ENTITY_ASSOCIATION, $swId);
         if (null === $id) {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Http\LocalePrefix;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
 use Books\Model\DictionaryTable;
@@ -59,11 +58,6 @@ final class DictionaryController
     /** GET /dictionary — the layout, and nothing inside it. */
     public function index(Request $request): Response
     {
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'dictionary');
-        if (null !== $redirect) {
-            return $redirect;
-        }
-
         return new Response($this->twig->render('books/dictionary.html.twig', [
             //no headTitle(), not in the `navigation` config: no title prefix, no trail
             'page_title' => '',
@@ -74,13 +68,6 @@ final class DictionaryController
     public function inLanguage(Request $request): Response
     {
         $inLanguage = (string) $request->attributes->get('inLanguage');
-
-        $redirect = LocalePrefix::redirect($request, $this->urls, 'dictionary/inLanguage', [
-            'inLanguage' => $inLanguage,
-        ]);
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         /** @var DictionaryTable $table */
         $table = $this->laminas->get(DictionaryTable::class);

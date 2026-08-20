@@ -6,7 +6,6 @@ namespace App\Controller;
 
 use App\Authorization\Denial;
 use App\Books\LibraryPage;
-use App\Http\LocalePrefix;
 use App\Http\MaintenanceKey;
 use App\Laminas\RouteUrl;
 use App\Laminas\ServiceBridge;
@@ -64,15 +63,6 @@ final class LibraryNoticesController
     public function __invoke(Request $request): Response
     {
         $libraryId = (int) $request->attributes->get('library_id');
-        $redirect  = LocalePrefix::redirect(
-            $request,
-            $this->urls,
-            'libraries/library/send-book-notices',
-            ['library_id' => $libraryId]
-        );
-        if (null !== $redirect) {
-            return $redirect;
-        }
 
         $library = $this->page->library($request);
         if (null === $library) {
